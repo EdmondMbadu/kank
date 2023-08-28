@@ -1,0 +1,96 @@
+<app-navbar></app-navbar>
+<div class="flex container mx-auto m-12 justify-center">
+    <h1 class="text-2xl md:text-4xl mr-10">New Client</h1>
+    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="goToClientInfo()">Client Info</button>
+</div>
+
+<div class="flex container justify-center mx-auto">
+
+<form class="border-2 shadow border-green-800 p-12 rounded-lg">
+    <div class="grid gap-6 mb-6 md:grid-cols-2">
+        <div>
+            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">First name</label>
+            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required>
+        </div>
+        <div>
+            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Last name</label>
+            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" required>
+        </div>   
+         
+    </div>
+    <div class="grid gap-6 mb-6 md:grid-cols-2">
+        <div>
+            <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
+            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required>
+        </div>
+        <div>
+            <label for="bcapital" class="block mb-2 text-sm font-medium text-gray-900 ">Business Captial</label>
+            <input type="text" id="bcapital" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC 50,000" required>
+        </div>   
+         
+    </div>
+    <div class="mb-6">
+        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Home Address</label>
+        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required>
+    </div> 
+    <div class="mb-6">
+        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Business Address</label>
+        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required>
+    </div> 
+    <div class="mb-6">
+        <label for="email" class="block mb-2 text-sm font-medium text-gray-900 ">Phone Number</label>
+        <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123-45-678" required pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}">
+    </div> 
+
+<div class="mb-6">
+    <label for="countries" class="block mb-2 text-sm font-medium text-gray-900">Application Fee</label>
+    <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+    <option selected>Choose</option>
+    <option value="US">FC 5000</option>
+    <option value="CA">FC 10,000</option>
+    <option value="FR">FC 20,000</option>
+    <option value="DE">FC 30,000</option>
+    </select>
+</div>
+<div class="mb-6">
+    <label for="countries" class="block mb-2 text-sm font-medium text-gray-900">Membership Fee</label>
+    <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+    <option selected>Choose</option>
+    <option value="US">FC 5000</option>
+    <option value="CA">FC 10,000</option>
+    <option value="FR">FC 20,000</option>
+    <option value="DE">FC 30,000</option>
+    </select>
+</div>
+<div class="mb-6">
+    <label for="countries" class="block mb-2 text-sm font-medium text-gray-900">Personal Savings</label>
+    <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+    <option selected>Choose</option>
+    <option value="US">FC 5000</option>
+    <option value="CA">FC 10,000</option>
+    <option value="FR">FC 20,000</option>
+    <option value="DE">FC 30,000</option>
+    </select>
+</div>
+
+<div class="mb-6">
+    <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Loan Amount</label>
+    <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+    <option selected>Choose</option>
+    <option value="US">FC 100,000</option>
+    <option value="CA">FC 200,000</option>
+    <option value="FR">FC 300,000</option>
+    <option value="DE">FC 500,000</option>
+    </select>
+</div>
+
+
+   
+<button type="submit" class="text-white m-12  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Cancel</button>
+    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Submit</button>
+</form>
+
+
+</div>
+
+
