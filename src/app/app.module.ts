@@ -12,6 +12,7 @@ import { ClientPortalComponent } from './components/client-portal/client-portal.
 import { PaymentComponent } from './components/payment/payment.component';
 import { PaymentActivityComponent } from './components/payment-activity/payment-activity.component';
 import { ButtonsComponent } from './tools/buttons/buttons.component';
+import { NgApexchartsModule } from 'ng-apexcharts';
 
 @NgModule({
   declarations: [
@@ -24,13 +25,10 @@ import { ButtonsComponent } from './tools/buttons/buttons.component';
     ClientPortalComponent,
     PaymentComponent,
     PaymentActivityComponent,
-    ButtonsComponent
+    ButtonsComponent,
   ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule
-  ],
+  imports: [BrowserModule, AppRoutingModule, NgApexchartsModule],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

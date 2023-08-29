@@ -7,6 +7,7 @@ import { NewClientComponent } from './components/new-client/new-client.component
 import { ClientPortalComponent } from './components/client-portal/client-portal.component';
 import { PaymentComponent } from './components/payment/payment.component';
 import { PaymentActivityComponent } from './components/payment-activity/payment-activity.component';
+import { ButtonsComponent } from './tools/buttons/buttons.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -16,6 +17,7 @@ const routes: Routes = [
   { path: 'client-portal', component: ClientPortalComponent },
   { path: 'payment', component: PaymentComponent },
   { path: 'payment-activity', component: PaymentActivityComponent },
+  { path: 'testing', component: ButtonsComponent },
 ];
 
 @NgModule({
