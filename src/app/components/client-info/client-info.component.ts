@@ -15,28 +15,28 @@ export class ClientInfoComponent {
       name: 'Masevo Konde',
       dateJoined: '11/03/2021',
       creditScore: '330',
-      phone: '123-323-2323',
+      phoneNumber: '123-323-2323',
     },
     {
       id: 2,
       name: 'Vuandu Albertine',
       dateJoined: '11/03/2021',
       creditScore: '800',
-      phone: '123-323-2323',
+      phoneNumber: '123-323-2323',
     },
     {
       id: 3,
       name: 'Mukulu Josue',
       dateJoined: '11/03/2021',
       creditScore: '100',
-      phone: '123-323-2323',
+      phoneNumber: '123-323-2323',
     },
     {
       id: 3,
       name: 'Mabela Kikona',
       dateJoined: '11/03/2021',
       creditScore: '802',
-      phone: '123-323-2323',
+      phoneNumber: '123-323-2323',
     },
   ];
 

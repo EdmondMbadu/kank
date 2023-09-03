@@ -1,5 +1,9 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { AngularFireModule } from '@angular/fire/compat';
+import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
+import { provideAuth, getAuth } from '@angular/fire/auth';
+import { provideFirestore, getFirestore } from '@angular/fire/firestore';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -13,6 +17,12 @@ import { PaymentComponent } from './components/payment/payment.component';
 import { PaymentActivityComponent } from './components/payment-activity/payment-activity.component';
 import { ButtonsComponent } from './tools/buttons/buttons.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
+import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
+import { CreateAccountComponent } from './components/create-account/create-account.component';
+import { environment } from 'src/environments/environments';
+import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
+import { FormsModule } from '@angular/forms';
+import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 
 @NgModule({
   declarations: [
@@ -26,8 +36,20 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     PaymentComponent,
     PaymentActivityComponent,
     ButtonsComponent,
+    ForgotPasswordComponent,
+    CreateAccountComponent,
+    VerifyEmailComponent,
   ],
-  imports: [BrowserModule, AppRoutingModule, NgApexchartsModule],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    NgApexchartsModule,
+    FormsModule,
+    AngularFireModule.initializeApp(environment.firebase),
+    AngularFirestoreModule,
+    provideAuth(() => getAuth()),
+    // provideFirestore(() => getFirestore()),
+  ],
   providers: [],
   bootstrap: [AppComponent],
 })

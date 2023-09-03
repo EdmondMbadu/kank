@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-landing-page',
@@ -7,9 +9,23 @@ import { Router } from '@angular/router';
   styleUrls: ['./landing-page.component.css'],
 })
 export class LandingPageComponent {
-  constructor(private route: Router) {}
+  email: string = '';
+  password: string = '';
+  ngOnInit() {
+    // const today = new Date();
+    // console.log('today is ', today);
+  }
+  constructor(
+    private route: Router,
+    private auth: AuthService,
+    private data: DataService
+  ) {}
 
-  gotoInvestements() {
-    this.route.navigate(['investements']);
+  SignOn() {
+    if (this.email === '' || this.password === '') {
+      alert('FIll all fields');
+      return;
+    }
+    this.auth.SignOn(this.email, this.password);
   }
 }

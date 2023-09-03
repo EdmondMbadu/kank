@@ -5,9 +5,11 @@
     <div class="flex-col w-[22rem] shadow-md  my-6 h-[25rem] border border-green-950 rounded-lg">
       <label class="block my-28 mx-8">
   
-        <input type="text" name="username" class="mt-2 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Username" />
-        <input type="password" name="password" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Password" />
-        <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="gotoInvestements()">Sign On</button>
+        <input type="text" name="username" class="mt-2 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Username" required [(ngModel)]="email"/>
+        <input type="password" name="password" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Password" required [(ngModel)]="password" />
+        <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="SignOn()">Sign On</button>
+
+        <p routerLink="/forgot-password" class="p-2  hover:underline">Forgot Password?</p>
       </label> 
      
     </div>
@@ -18,6 +20,8 @@
         Come lend money from us to start 
         your business
         </p>
+        <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/create-account">Create an Account</button>
+
     </div>
   
   </section>

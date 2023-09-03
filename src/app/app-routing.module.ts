@@ -8,16 +8,27 @@ import { ClientPortalComponent } from './components/client-portal/client-portal.
 import { PaymentComponent } from './components/payment/payment.component';
 import { PaymentActivityComponent } from './components/payment-activity/payment-activity.component';
 import { ButtonsComponent } from './tools/buttons/buttons.component';
+import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
+import { CreateAccountComponent } from './components/create-account/create-account.component';
+import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
+import { AuthGuard } from './services/auth.guard';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
-  { path: 'investements', component: InvestementsSummaryComponent },
+  {
+    path: 'home',
+    component: InvestementsSummaryComponent,
+    canActivate: [AuthGuard],
+  },
   { path: 'client-info', component: ClientInfoComponent },
   { path: 'new-client', component: NewClientComponent },
   { path: 'client-portal', component: ClientPortalComponent },
   { path: 'payment', component: PaymentComponent },
   { path: 'payment-activity', component: PaymentActivityComponent },
   { path: 'testing', component: ButtonsComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'create-account', component: CreateAccountComponent },
+  { path: 'verify-email', component: VerifyEmailComponent },
 ];
 
 @NgModule({

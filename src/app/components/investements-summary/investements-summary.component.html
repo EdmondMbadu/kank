@@ -1,4 +1,4 @@
-<app-navbar></app-navbar>
+<app-navbar [email]="this.auth.email | async " [path]="'home'"></app-navbar>
 
 <!-- investements -->
 
