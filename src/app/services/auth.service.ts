@@ -3,38 +3,62 @@ import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { Router } from '@angular/router';
 import {
   AngularFirestore,
+  AngularFirestoreCollection,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
-import { Observable, of, from } from 'rxjs';
-import { filter, switchMap } from 'rxjs/operators';
+import { Observable, of, from, ReplaySubject } from 'rxjs';
+import { filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
 import { DataService } from './data.service';
+import { Client } from '../models/client';
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   user$: Observable<any>;
+  clientsRef$: AngularFirestoreCollection<Client>;
   email?: Observable<any>;
+  currentUser: any = {};
   constructor(
     private fireauth: AngularFireAuth,
     private afs: AngularFirestore,
     private router: Router,
     private data: DataService
   ) {
+    this.clientsRef$ = this.afs.collection(
+      `users/${this.currentUser.uid}/clients/`
+    );
     this.user$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
           this.email = of(user.email);
+          this.clientsRef$ = this.afs.collection(`users/${user.uid}/clients/`);
           return this.afs.doc<User>(`users/${user.uid}`).valueChanges();
         } else {
           return of(null);
         }
       })
     );
-  }
-  ngOnInit() {}
 
-  // login method
+    this.getCurrentUser();
+
+    // .valueChanges();
+  }
+  ngOnInit() {
+    this.getCurrentUser();
+  }
+
+  getAllClients(): AngularFirestoreCollection<Client> {
+    // return this.afs.collection(`users/${this.currentUser.uid}/clients/`);
+    return this.clientsRef$;
+  }
+
+  getCurrentUser() {
+    this.user$.subscribe((user) => {
+      this.currentUser = user;
+    });
+  }
+
   SignOn(email: string, password: string) {
     this.fireauth.signInWithEmailAndPassword(email, password).then(
       (res) => {
@@ -51,13 +75,18 @@ export class AuthService {
     );
   }
 
-  register(email: string, password: string) {
+  register(
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string
+  ) {
     this.fireauth.createUserWithEmailAndPassword(email, password).then(
       (res) => {
         alert('Registration was Successful');
         this.sendEmailForVerification(res.user);
-        // add user. we probably need a cleaner way to do this
-        this.addUser(res.user);
+
+        this.addNewUser(firstName, lastName, res.user);
         this.router.navigate(['/verify-email']);
       },
       (err) => {
@@ -66,15 +95,59 @@ export class AuthService {
     );
   }
 
-  addUser({ uid, email }: any) {
+  addNewUser(firstName: string, lastName: string, user: any) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
-      `users/${uid}`
+      `users/${user.uid}`
     );
     const data = {
-      uid,
-      email,
+      uid: user.uid,
+      email: user.email,
+      firstName: firstName,
+      lastName: lastName,
+      numberOfClients: '0',
+      amountInvested: '0',
+      investements: {},
+      amountLended: '0',
+      clientsSavings: '0',
+      expensesAmount: '0',
+      expenses: {},
+      projectedRevenue: '0',
+      reserveAmount: '0',
+      reserve: {},
+      fees: '0',
     };
     return userRef.set(data, { merge: true });
+  }
+
+  addNewClient(client: Client) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const data = {
+      uid: this.afs.createId().toString(),
+      firstName: client.firstName,
+      lastName: client.lastName,
+      phoneNumber: client.phoneNumber,
+      businessCapital: client.businessCapital,
+      homeAddress: client.homeAddress,
+      businessAddress: client.businessAddress,
+      debtCycle: '0',
+      membershipFee: client.membershipFee,
+      applicationFee: client.applicationFee,
+      savings: client.savings,
+      loanAmount: client.loanAmount,
+      creditScore: '0',
+      amountPaid: '0',
+      dateJoined: `${month}/${day}/${year}`,
+      numberOfPaymentsMissed: '0',
+      numberOfPaymentsMade: '0',
+      payments: {},
+    };
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.currentUser.uid}/clients/${data.uid}`
+    );
+    return clientRef.set(data, { merge: true });
   }
 
   sendEmailForVerification(user: any) {
@@ -86,6 +159,32 @@ export class AuthService {
         alert('Something went wrong. Unable to send you an email');
       }
     );
+  }
+
+  updateUserInfo(client: Client) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      numberOfClients: (
+        Number(this.currentUser.numberOfClients) + 1
+      ).toString(),
+      amountInvested: '0',
+      investements: {},
+      amountLended: (
+        Number(this.currentUser.amountLended) + Number(client.loanAmount!)
+      ).toString(),
+      clientsSavings: (
+        Number(this.currentUser.clientsSavings) + Number(client.savings)
+      ).toString(),
+      expensesAmount: '0',
+      expenses: {},
+      projectedRevenue: '0',
+      reserveAmount: '0',
+      reserve: {},
+      fees: '0',
+    };
+    return userRef.set(data, { merge: true });
   }
 
   logout() {

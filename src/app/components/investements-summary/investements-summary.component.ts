@@ -14,7 +14,7 @@ export class InvestementsSummaryComponent implements OnInit {
   elements: number = 10;
 
   summary: string[] = [
-    'Clients Information',
+    'Number of Clients',
     'Amount Invested',
     'Amount Lended',
     'Clients Total Savings',
@@ -26,19 +26,30 @@ export class InvestementsSummaryComponent implements OnInit {
     'Benefits with Expenses',
   ];
   summaryContent: string[] = [
-    '60',
-    'FC 50,000',
-    'FC 50,000',
-    'FC 50,000',
-    'FC 50,000',
-    'FC 50,000',
-    'FC 50,000',
-    'FC 50,000',
-    'FC 50,000',
-    'FC 50,000',
+    this.auth.currentUser.numberOfClients,
+    `FC ${this.auth.currentUser.amountInvested}`,
+    `FC ${this.auth.currentUser.amountLended}`,
+    `FC ${this.auth.currentUser.clientsSavings}`,
+    `FC ${this.auth.currentUser.expensesAmount}`,
+    `FC ${this.auth.currentUser.projectedRevenue}`,
+    `FC ${this.auth.currentUser.reserveAmount}`,
+    `FC ${this.auth.currentUser.fees}`,
+    `FC ${this.BenefitsWithoutExpenses()}`,
+    `FC ${this.BenefitsWithExpenses()}`,
   ];
 
-  gotoClientInfo() {
-    this.router.navigate(['/client-info']);
+  BenefitsWithExpenses(): string {
+    const benefit =
+      Number(this.auth.currentUser.projectedRevenue) -
+      (Number(this.auth.currentUser.amountInvested) +
+        Number(this.auth.currentUser.expensesAmount));
+    return benefit.toString();
+  }
+  BenefitsWithoutExpenses(): string {
+    const benefit =
+      Number(this.auth.currentUser.projectedRevenue) -
+      Number(this.auth.currentUser.amountInvested);
+
+    return benefit.toString();
   }
 }

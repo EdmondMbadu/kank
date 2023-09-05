@@ -12,6 +12,7 @@ export class NavbarComponent {
   hide: boolean = true;
   @Input() email = '';
   @Input() path = '';
+  @Input() firstName = '';
 
   toggleMenu() {
     if (this.hide === true) {

@@ -3,6 +3,7 @@ export class Client {
   name?: string;
   firstName?: string;
   lastName?: string;
+  profession?: string;
   phoneNumber?: string;
   businessCapital?: string;
   homeAddress?: string;
@@ -13,10 +14,9 @@ export class Client {
   savings?: string;
   loanAmount?: string;
   creditScore?: string;
-  amountBorrowed?: string;
   amountPaid?: string;
   dateJoined?: string;
   numberOfPaymentsMissed?: string;
   numberOfPaymentsMade?: string;
-  payments?: Map<string, string>;
+  payments?: { [key: string]: string } = {};
 }

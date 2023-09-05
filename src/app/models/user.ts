@@ -5,13 +5,13 @@ export class User {
   lastName?: string;
   numberOfClients?: string;
   amountInvested?: string;
-  investements?: Map<string, string>;
+  investements?: { [key: string]: string } = {};
   amountLended?: string;
   clientsSavings?: string;
   expensesAmount?: string;
-  expenses?: Map<string, string>;
+  expenses?: { [key: string]: string } = {};
   projectedRevenue?: string;
   reserveAmount?: string;
-  reserve?: Map<string, string>;
+  reserve?: { [key: string]: string } = {};
   fees?: string;
 }

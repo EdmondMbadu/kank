@@ -12,11 +12,10 @@ import { DataService } from 'src/app/services/data.service';
 export class CreateAccountComponent {
   email: string = '';
   password: string = '';
+  firstName: string = '';
+  lastName: string = '';
   rePassword: string = '';
-  user: User = {
-    uid: '',
-    email: '',
-  };
+
   constructor(
     private auth: AuthService,
     private data: DataService,
@@ -24,16 +23,25 @@ export class CreateAccountComponent {
   ) {}
   ngOnInit(): void {}
   createAccount() {
-    if (this.email === '' || this.password === '' || this.rePassword === '') {
+    if (
+      this.email === '' ||
+      this.password === '' ||
+      this.firstName === '' ||
+      this.lastName === '' ||
+      this.rePassword === ''
+    ) {
       alert('Fill all the fields');
       return;
     } else if (this.password !== this.rePassword) {
       alert(' Both Passwords need to match');
       return;
     }
-
-    this.user.email = this.email;
-    this.auth.register(this.email, this.password);
+    this.auth.register(
+      this.firstName,
+      this.lastName,
+      this.email,
+      this.password
+    );
     this.resetFields();
   }
 
@@ -41,5 +49,7 @@ export class CreateAccountComponent {
     this.email = '';
     this.password = '';
     this.rePassword = '';
+    this.firstName = '';
+    this.lastName = '';
   }
 }
