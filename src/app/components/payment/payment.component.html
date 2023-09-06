@@ -1,12 +1,12 @@
-<app-navbar></app-navbar>
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl mr-4">Payment By Masevo Konde</h1>
+    <h1 class="text-xl md:text-3xl mr-4">Payment By {{client.firstName}} {{client.lastName}}</h1>
     <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "  routerLink="/client-portal">Client Portal</button> -->
 </div>
 
 <div class="flex container justify-center mx-auto">
 
-<form class=" border-2 border-green-800 rounded-lg p-12">
+<div class=" border-2 border-green-800 rounded-lg p-12">
   
     
 
@@ -21,6 +21,10 @@
     <option value="DE">FC 30,000</option>
     </select>
 </div>
+<div class="mb-6">
+    <label for="savingsOther" class="block mb-2 text-sm font-medium text-gray-900 "> Savings Other Amount</label>
+    <input type="text" id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+</div> 
 
 
 
@@ -35,17 +39,17 @@
     </select>
 </div>
 <div class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 ">Other Amount</label>
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Payment Other Amount</label>
     <input type="text" id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
 </div> 
 
 
    
 
-<button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-portal">Cancel</button>
-    <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Submit</button>
+<button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Cancel</button>
+    <button type="submit" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Submit</button>
    
-</form>
+</div>
 
 
 </div>

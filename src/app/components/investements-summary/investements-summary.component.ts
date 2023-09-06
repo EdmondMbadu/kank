@@ -12,7 +12,18 @@ export class InvestementsSummaryComponent implements OnInit {
   ngOnInit() {}
 
   elements: number = 10;
-
+  paths: string[] = [
+    '../../../assets/img/people.svg',
+    '../../../assets/img/invest.svg',
+    '../../../assets/img/lend.svg',
+    '../../../assets/img/saving.svg',
+    '../../../assets/img/expense.svg',
+    '../../../assets/img/revenue.svg',
+    '../../../assets/img/reserve.svg',
+    '../../../assets/img/member.svg',
+    '../../../assets/img/benefit.svg',
+    '../../../assets/img/benefit.svg',
+  ];
   summary: string[] = [
     'Number of Clients',
     'Amount Invested',
@@ -27,15 +38,15 @@ export class InvestementsSummaryComponent implements OnInit {
   ];
   summaryContent: string[] = [
     this.auth.currentUser.numberOfClients,
-    `FC ${this.auth.currentUser.amountInvested}`,
-    `FC ${this.auth.currentUser.amountLended}`,
-    `FC ${this.auth.currentUser.clientsSavings}`,
-    `FC ${this.auth.currentUser.expensesAmount}`,
-    `FC ${this.auth.currentUser.projectedRevenue}`,
-    `FC ${this.auth.currentUser.reserveAmount}`,
-    `FC ${this.auth.currentUser.fees}`,
-    `FC ${this.BenefitsWithoutExpenses()}`,
-    `FC ${this.BenefitsWithExpenses()}`,
+    ` ${this.auth.currentUser.amountInvested}`,
+    ` ${this.auth.currentUser.amountLended}`,
+    ` ${this.auth.currentUser.clientsSavings}`,
+    ` ${this.auth.currentUser.expensesAmount}`,
+    `${this.auth.currentUser.projectedRevenue}`,
+    ` ${this.auth.currentUser.reserveAmount}`,
+    ` ${this.auth.currentUser.fees}`,
+    `${this.BenefitsWithoutExpenses()}`,
+    ` ${this.BenefitsWithExpenses()}`,
   ];
 
   BenefitsWithExpenses(): string {

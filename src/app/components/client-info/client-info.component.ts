@@ -17,19 +17,9 @@ export class ClientInfoComponent implements OnInit {
   }
 
   retrieveClients(): void {
-    this.auth
-      .getAllClients()
-      .snapshotChanges()
-      .pipe(
-        map((changes: any) =>
-          changes.map((c: any) => ({
-            id: c.payload.doc.id,
-            ...c.payload.doc.data(),
-          }))
-        )
-      )
-      .subscribe((data: any) => {
-        this.clients = data;
-      });
+    this.auth.getAllClients().subscribe((data: any) => {
+      this.clients = data;
+      console.log('clienf info ', data);
+    });
   }
 }

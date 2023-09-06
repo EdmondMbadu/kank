@@ -16,24 +16,31 @@ import { Client } from '../models/client';
 })
 export class AuthService {
   user$: Observable<any>;
-  clientsRef$: AngularFirestoreCollection<Client>;
+  clientsRef$: Observable<any>;
   email?: Observable<any>;
   currentUser: any = {};
+  currentClient: Client = new Client();
   constructor(
     private fireauth: AngularFireAuth,
     private afs: AngularFirestore,
-    private router: Router,
-    private data: DataService
+    private router: Router
   ) {
-    this.clientsRef$ = this.afs.collection(
-      `users/${this.currentUser.uid}/clients/`
-    );
     this.user$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
           this.email = of(user.email);
-          this.clientsRef$ = this.afs.collection(`users/${user.uid}/clients/`);
           return this.afs.doc<User>(`users/${user.uid}`).valueChanges();
+        } else {
+          return of(null);
+        }
+      })
+    );
+    this.clientsRef$ = this.fireauth.authState.pipe(
+      switchMap((user) => {
+        if (user) {
+          return this.afs
+            .collection(`users/${user.uid}/clients/`)
+            .valueChanges();
         } else {
           return of(null);
         }
@@ -41,21 +48,21 @@ export class AuthService {
     );
 
     this.getCurrentUser();
-
-    // .valueChanges();
   }
-  ngOnInit() {
-    this.getCurrentUser();
-  }
-
-  getAllClients(): AngularFirestoreCollection<Client> {
-    // return this.afs.collection(`users/${this.currentUser.uid}/clients/`);
+  ngOnInit() {}
+  getAllClients(): Observable<Client> {
     return this.clientsRef$;
   }
 
   getCurrentUser() {
     this.user$.subscribe((user) => {
       this.currentUser = user;
+    });
+  }
+
+  getCurrentClient() {
+    this.clientsRef$.subscribe((client) => {
+      this.currentClient = client;
     });
   }
 

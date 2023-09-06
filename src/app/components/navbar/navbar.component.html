@@ -1,7 +1,7 @@
 
 <!-- Navbar -->
 <nav class="relative   bg-green-700">
-    <div class="flex items-center justify-between">
+    <div class="container flex mx-auto items-center justify-between">
       <img src="../assets/img/kank-updated.png" alt="" class="flex max-w-[10rem] p-2" routerLink="/{{path}}">
       <div *ngIf="email!==''" class=" mr-4 relative inline-block text-left">
         <div>
@@ -15,6 +15,7 @@
 
         <div *ngIf="hide ==false" class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu"  >
           <div class="py-1" >
+            <a routerLink="/home"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Home</a>
             <a  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Account Settings</a>
             <a (click)="logOut()"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-1">Sign Off</a>
        
