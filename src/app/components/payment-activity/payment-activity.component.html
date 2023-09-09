@@ -1,7 +1,7 @@
 
-<app-navbar></app-navbar>
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl md:text-2xl mr-10">Payment Activity of {{clientName}}</h2>
+   <h2 class="text-xl md:text-2xl mr-10">Payment Activity of {{client.firstName}} {{client.lastName}}</h2>
    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Client Info</button>
 
 
@@ -30,24 +30,24 @@
    </div>
    <div class="flow-root">
            <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let s of payments; let i=index  " routerLink="/client-portal">
+               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let s of payments; let i=index  " [routerLink]="['/client-portal',id ]">
                    <div class="flex items-center space-x-4">
                        <!-- <div class="flex-shrink-0">
                            <img class="w-8 h-8 rounded-full" src="/docs/images/people/profile-picture-1.jpg" alt="Neil image">
                        </div> -->
                        <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                           <span class="font-medium text-gray-600 dark:text-gray-300">{{clientName!.substring(0,2)}}</span>
+                           <span class="font-medium text-gray-600 dark:text-gray-300">{{client.firstName?.substring(0,2)}}</span>
                        </div>
                        <div class="flex-1 min-w-0">
                            <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                           {{clientName}}
+                           {{client.firstName}} {{client.lastName}}
                            </p>
                            <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                           {{paymentDates[i]}}
+                           {{paymentDates[i].replaceAll('-','/').substring(0,8)}}
                            </p>
                        </div>
                        <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                           FC {{s}}
+                           FC {{s | number:'1.0-0'}}
                        </div>
                    </div>
                </li>

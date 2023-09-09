@@ -11,15 +11,24 @@ import { AuthService } from 'src/app/services/auth.service';
 })
 export class ClientInfoComponent implements OnInit {
   clients?: Client[];
-  constructor(private router: Router, public auth: AuthService) {}
-  ngOnInit(): void {
+  constructor(private router: Router, public auth: AuthService) {
     this.retrieveClients();
+  }
+  debts: string[] = [];
+  ngOnInit(): void {
+    // this.retrieveClients();
   }
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
-      console.log('clienf info ', data);
+      this.computeDebts();
+      // console.log('clienf info ', data);
     });
+  }
+  computeDebts() {
+    for (let s of this.clients!) {
+      this.debts.push((Number(s.loanAmount) - Number(s.amountPaid)).toString());
+    }
   }
 }

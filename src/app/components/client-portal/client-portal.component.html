@@ -9,37 +9,55 @@
     <div class=" mx-4 lg:mx-60 p-4 bg-white rounded-lg md:p-8 border-2 shadow-lg border-gray-200 dark:bg-gray-800" id="stats" role="tabpanel" aria-labelledby="stats-tab">
         <dl class="grid  max-w-screen-xl grid-cols-2 text-gray-900 gap-8 p-4 mx-auto sm:grid-cols-3 xl:grid-cols-3 dark:text-white sm:p-8">
             <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-3xl font-extrabold text-center"> {{client.firstName}} {{client.lastName}}</dt>
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center"> {{client.firstName}} {{client.lastName}}</dt>
                 <dd class="text-gray-500 dark:text-gray-400">Member Since {{client.dateJoined?.replaceAll('-','/')}}</dd>
             </div>
+           
             <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-3xl font-extrabold">{{client.creditScore}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Credit Score</dd>
+                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center"> ({{client.phoneNumber| slice:0:3}}) - {{client.phoneNumber| slice:3:6}} - {{client.phoneNumber| slice:6:10}}</dt>
+                <dd class="text-gray-500 dark:text-gray-400">Phone Number</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-3xl font-extrabold">{{client.loanAmount| number:'1.0-0'}}</dt>
+                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center">{{client.businessAddress}}</dt>
+                <dd class="text-gray-500 dark:text-gray-400">Business Address</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.loanAmount| number:'1.0-0'}}</dt>
                 <dd class="text-gray-500 dark:text-gray-400">Borrowed (FC)</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-3xl font-extrabold">{{minPay}}</dt>
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold"> {{client.amountPaid | number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 dark:text-gray-400">Paid (FC)</dd>
+            </div>
+
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{aRemaining | number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 dark:text-gray-400">Remaining (FC)</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.savings | number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 dark:text-gray-400">Savings (FC)</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
+                <dd class="text-gray-500 dark:text-gray-400">Credit Score</dd>
+            </div>
+         
+        
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{minPay | number:'1.0-0'}}</dt>
                 <dd class="text-gray-500 dark:text-gray-400">Minimum Payment (FC)</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-3xl font-extrabold">{{paymentDate}}</dt>
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{paymentDate}}</dt>
                 <dd class="text-gray-500 dark:text-gray-400">Next Payment Due </dd>
             </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-3xl font-extrabold"> {{client.amountPaid | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Paid (FC)</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-3xl font-extrabold">{{aRemaining | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Remaining (FC)</dd>
-            </div>
+         
+          
             <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-whit  focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-3/4 px-5 py-2.5 text-center " [routerLink]="['/payment',id ]">Make a Payment</button>
 
             
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-3/4 px-5 py-2.5 text-center "routerLink="/payment-activity">Payment Activity</button>
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-3/4 px-5 py-2.5 text-center "[routerLink]="['/payment-activity',id ]">Payment Activity</button>
 
         </dl>
     </div>

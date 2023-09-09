@@ -24,7 +24,7 @@ const routes: Routes = [
   { path: 'new-client', component: NewClientComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
   { path: 'payment/:id', component: PaymentComponent },
-  { path: 'payment-activity', component: PaymentActivityComponent },
+  { path: 'payment-activity/:id', component: PaymentActivityComponent },
   { path: 'testing', component: ButtonsComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'create-account', component: CreateAccountComponent },

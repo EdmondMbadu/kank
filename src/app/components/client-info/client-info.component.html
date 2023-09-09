@@ -43,9 +43,20 @@
                             ({{s.phoneNumber| slice:0:3}}) - {{s.phoneNumber| slice:3:6}} - {{s.phoneNumber| slice:6:10}} 
                             </p>
                         </div>
-                        <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                            FC {{s.loanAmount | number:'1.0-0'}} 
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate dark:text-white" >
+                                FC {{debts[i] | number:'1.0-0'}}
+                            <!-- <div ng-bind="Number(s.loanAmount)-Number(s.amountPaid)"></div> -->
+                          
+                            </p>
+                            <p class="text-sm ml-6 text-gray-500 truncate dark:text-gray-400">
+                            {{s.amountPaid}}
+                            </p>
                         </div>
+                        <!-- <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
+                            FC {{s.loanAmount | number:'1.0-0'}} 
+                            
+                        </div> -->
                     </div>
                 </li>
             </ul>

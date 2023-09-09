@@ -1,5 +1,5 @@
 export class Client {
-  id?: number;
+  uid?: string;
   name?: string;
   firstName?: string;
   lastName?: string;
@@ -19,4 +19,5 @@ export class Client {
   numberOfPaymentsMissed?: string;
   numberOfPaymentsMade?: string;
   payments?: { [key: string]: string } = {};
+  savingsPayments?: { [key: string]: string } = {};
 }

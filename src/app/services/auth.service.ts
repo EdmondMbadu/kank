@@ -25,6 +25,7 @@ export class AuthService {
     private afs: AngularFirestore,
     private router: Router
   ) {
+    this.clientsRef$ = of(null);
     this.user$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
@@ -144,9 +145,9 @@ export class AuthService {
       applicationFee: client.applicationFee,
       savings: client.savings,
       loanAmount: client.loanAmount,
-      creditScore: '0',
+      creditScore: '50',
       amountPaid: '0',
-      dateJoined: `${month}/${day}/${year}`,
+      dateJoined: `${month}-${day}-${year}`,
       numberOfPaymentsMissed: '0',
       numberOfPaymentsMade: '0',
       payments: {},
@@ -176,20 +177,13 @@ export class AuthService {
       numberOfClients: (
         Number(this.currentUser.numberOfClients) + 1
       ).toString(),
-      amountInvested: '0',
-      investements: {},
       amountLended: (
         Number(this.currentUser.amountLended) + Number(client.loanAmount!)
       ).toString(),
       clientsSavings: (
         Number(this.currentUser.clientsSavings) + Number(client.savings)
       ).toString(),
-      expensesAmount: '0',
-      expenses: {},
-      projectedRevenue: '0',
-      reserveAmount: '0',
-      reserve: {},
-      fees: '0',
+      // fees: (Number(this,this.currentUser.fees)+ Number())
     };
     return userRef.set(data, { merge: true });
   }
