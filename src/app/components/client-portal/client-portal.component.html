@@ -10,47 +10,72 @@
         <dl class="grid  max-w-screen-xl grid-cols-2 text-gray-900 gap-8 p-4 mx-auto sm:grid-cols-3 xl:grid-cols-3 dark:text-white sm:p-8">
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center"> {{client.firstName}} {{client.lastName}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Member Since {{client.dateJoined?.replaceAll('-','/')}}</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Member Since {{client.dateJoined?.replaceAll('-','/')}}</dd>
             </div>
            
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center"> ({{client.phoneNumber| slice:0:3}}) - {{client.phoneNumber| slice:3:6}} - {{client.phoneNumber| slice:6:10}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Phone Number</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Phone Number</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center">{{client.businessAddress}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Business Address</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Business Address</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.loanAmount| number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Borrowed (FC)</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Borrowed (FC)</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold"> {{client.amountPaid | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Paid (FC)</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Paid (FC)</dd>
             </div>
 
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{aRemaining | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Remaining (FC)</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Remaining (FC)</dd>
+            </div>
+
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.amountToPay| number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Amount To Pay (FC)</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-2xl text-center font-bold"> {{ debtStart}} - {{debtEnd}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Debt Cycle Range: {{client.paymentPeriodRange}} weeks</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.numberOfPaymentsMade}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Number of Payments Made</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.savings | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Savings (FC)</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Savings (FC)</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Credit Score</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Credit Score</dd>
             </div>
-         
-        
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{minPay | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Minimum Payment (FC)</dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Minimum Payment (FC)</dd>
+            </div>
+
+
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.debtCycle}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Debt Cycle</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl text-center md:text-2xl font-extrabold">{{client.homeAddress}}</dt>
+                <dd class="text-gray-500 text-center  dark:text-gray-400">Home Address</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-2xl text-center font-extrabold">{{client.profession}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Profession</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{paymentDate}}</dt>
-                <dd class="text-gray-500 dark:text-gray-400">Next Payment Due </dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Next Payment Due </dd>
             </div>
          
           
@@ -61,3 +86,13 @@
 
         </dl>
     </div>
+    <div class="flex container flex-col md:flex-row mx-auto justify-center">
+    <div  class="flex container  mx-auto justify-center">
+        <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="startNewDebtCycle()" >Start A New Debt Cycle</button>
+      
+    </div>
+    <div  class="flex container mx-auto justify-center">
+        <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="withDrawFromSavings()"  >Withdraw Savings Money</button>
+      
+    </div>
+</div>

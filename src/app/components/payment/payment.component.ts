@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import { TimeService } from 'src/app/services/time.service';
 
 @Component({
   selector: 'app-payment',
@@ -21,7 +22,8 @@ export class PaymentComponent {
     private activatedRoute: ActivatedRoute,
     public auth: AuthService,
     private data: DataService,
-    private router: Router
+    private router: Router,
+    private time: TimeService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -74,57 +76,31 @@ export class PaymentComponent {
       ).toString();
       this.client.numberOfPaymentsMissed = Math.max(
         0,
-        this.weeksSince(this.client.dateJoined!) -
+        this.time.weeksSince(this.client.dateJoined!) -
           Number(this.client.numberOfPaymentsMade)
       ).toString();
 
-      this.client.payments = { [this.paymentDate()]: this.paymentAmount };
+      this.client.payments = { [this.time.todaysDate()]: this.paymentAmount };
       if (this.savingsAmount !== '0') {
         this.client.savings = (
           Number(this.client.savings) + Number(this.savingsAmount)
         ).toString();
         this.client.savingsPayments = {
-          [this.paymentDate()]: this.savingsAmount,
+          [this.time.todaysDate()]: this.savingsAmount,
         };
       }
+      this.client.debtLeft = (
+        Number(this.client.amountToPay) - Number(this.client.amountPaid)
+      ).toString();
     }
-    console.log('client class', this.client);
-    this.data.clientPayment(this.client);
+    this.data.clientPayment(this.client, this.savingsAmount);
     this.router.navigate(['/client-portal/' + this.id]);
   }
 
-  paymentDate(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const day = now.getDate();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const seconds = now.getSeconds();
-    let date = `${month}-${day}-${year}-${hours}-${minutes}-${seconds}`;
-
-    return date;
-  }
-
   computeCreditScore() {
-    const weeksElapsed = this.weeksSince(this.client.dateJoined!);
+    const weeksElapsed = this.time.weeksSince(this.client.dateJoined!);
     const creditScore =
       Number(this.client.numberOfPaymentsMade) * 5 - weeksElapsed * 5;
     return Math.min(creditScore, 100);
-  }
-
-  weeksSince(dateString: string) {
-    const givenDate: any = new Date(dateString);
-    const today: any = new Date();
-
-    // Reset the time parts to avoid time offsets
-    givenDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-
-    const millisecondsPerDay = 24 * 60 * 60 * 1000;
-    const daysPassed = (today - givenDate) / millisecondsPerDay;
-    const weeksPassed = daysPassed / 7;
-
-    return Math.floor(weeksPassed);
   }
 }

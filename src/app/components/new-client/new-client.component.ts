@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
+import { TimeService } from 'src/app/services/time.service';
 
 @Component({
   selector: 'app-new-client',
@@ -9,8 +11,16 @@ import { AuthService } from 'src/app/services/auth.service';
   styleUrls: ['./new-client.component.css'],
 })
 export class NewClientComponent implements OnInit {
-  constructor(private router: Router, public auth: AuthService) {}
+  constructor(
+    private router: Router,
+    public auth: AuthService,
+    public data: DataService,
+    private time: TimeService
+  ) {}
   ngOnInit() {}
+  rateDisplay: boolean = false;
+  amountToPayDisplay: boolean = false;
+  debtCycleDisplay: boolean = false;
   client = new Client();
   firstName: string = '';
   lastName: string = '';
@@ -23,6 +33,11 @@ export class NewClientComponent implements OnInit {
   memberShipFee: string = '';
   savings: string = '';
   loanAmount: string = '';
+  payRange: string = '';
+  interestRate: string = '';
+  amountToPay: string = '';
+  debtCycleStartDate: string = '';
+  debtCycleEndDate: string = '';
 
   addNewClient() {
     console.log('firstnmae, loan amount', this.firstName, this.loanAmount);
@@ -37,7 +52,12 @@ export class NewClientComponent implements OnInit {
       this.applicactionFee === '' ||
       this.memberShipFee === '' ||
       this.savings === '' ||
-      this.loanAmount === ''
+      this.loanAmount === '' ||
+      this.payRange === '' ||
+      this.debtCycleStartDate === '' ||
+      this.debtCycleEndDate === '' ||
+      this.interestRate === '' ||
+      this.amountToPay === ''
     ) {
       alert('All fields are required');
       return;
@@ -51,7 +71,7 @@ export class NewClientComponent implements OnInit {
           alert('Something went wrong. Unable to add New client');
         }
       );
-      this.auth.updateUserInfo(this.client).then(
+      this.auth.updateUserInfoForNewClient(this.client).then(
         (res: any) => {
           console.log('Updated user info successfully');
         },
@@ -78,6 +98,11 @@ export class NewClientComponent implements OnInit {
     this.memberShipFee = '';
     this.savings = '';
     this.loanAmount = '';
+    this.payRange = '';
+    this.debtCycleStartDate = '';
+    this.debtCycleEndDate = '';
+    this.interestRate = '';
+    this.amountToPay = '';
   }
   setNewClientValues() {
     this.client.firstName = this.firstName;
@@ -90,6 +115,33 @@ export class NewClientComponent implements OnInit {
     this.client.applicationFee = this.applicactionFee;
     this.client.membershipFee = this.memberShipFee;
     this.client.savings = this.savings;
+    this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
     this.client.loanAmount = this.loanAmount;
+    this.client.amountToPay = this.amountToPay;
+    this.client.interestRate = this.interestRate;
+    this.client.paymentPeriodRange = this.payRange;
+    this.client.debtCycleStartDate = this.debtCycleStartDate;
+    this.client.debtCycleEndDate = this.debtCycleEndDate;
+    this.client.debtLeft = this.amountToPay;
+  }
+  displayRate() {
+    if (this.payRange === '' || this.loanAmount === '') {
+      return;
+    }
+    this.rateDisplay = true;
+    if (this.payRange == '8') {
+      this.interestRate = '40';
+    } else {
+      this.interestRate = '20';
+    }
+    this.amountToPay = this.data.computeAmountToPay(
+      this.interestRate,
+      this.loanAmount
+    );
+    let result = this.time.computeDateRange();
+    this.debtCycleStartDate = result[0];
+    this.debtCycleEndDate = result[1];
+    this.amountToPayDisplay = true;
+    this.debtCycleDisplay = true;
   }
 }

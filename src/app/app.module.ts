@@ -21,8 +21,10 @@ import { ForgotPasswordComponent } from './components/forgot-password/forgot-pas
 import { CreateAccountComponent } from './components/create-account/create-account.component';
 import { environment } from 'src/environments/environments';
 import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
+import { DebtCycleComponent } from './components/debt-cycle/debt-cycle.component';
+import { WithdrawSavingsComponent } from './components/withdraw-savings/withdraw-savings.component';
 
 @NgModule({
   declarations: [
@@ -39,11 +41,14 @@ import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
     ForgotPasswordComponent,
     CreateAccountComponent,
     VerifyEmailComponent,
+    DebtCycleComponent,
+    WithdrawSavingsComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     NgApexchartsModule,
+    ReactiveFormsModule,
     FormsModule,
     AngularFireModule.initializeApp(environment.firebase),
     AngularFirestoreModule,

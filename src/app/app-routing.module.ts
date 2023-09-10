@@ -12,6 +12,8 @@ import { ForgotPasswordComponent } from './components/forgot-password/forgot-pas
 import { CreateAccountComponent } from './components/create-account/create-account.component';
 import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
 import { AuthGuard } from './services/auth.guard';
+import { DebtCycleComponent } from './components/debt-cycle/debt-cycle.component';
+import { WithdrawSavingsComponent } from './components/withdraw-savings/withdraw-savings.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -24,7 +26,9 @@ const routes: Routes = [
   { path: 'new-client', component: NewClientComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
   { path: 'payment/:id', component: PaymentComponent },
+  { path: 'withdraw-savings/:id', component: WithdrawSavingsComponent },
   { path: 'payment-activity/:id', component: PaymentActivityComponent },
+  { path: 'debt-cycle/:id', component: DebtCycleComponent },
   { path: 'testing', component: ButtonsComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'create-account', component: CreateAccountComponent },

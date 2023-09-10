@@ -1,5 +1,6 @@
 export class Client {
   uid?: string;
+  trackingId?: string;
   name?: string;
   firstName?: string;
   lastName?: string;
@@ -15,9 +16,15 @@ export class Client {
   loanAmount?: string;
   creditScore?: string;
   amountPaid?: string;
+  debtLeft?: string;
   dateJoined?: string;
   numberOfPaymentsMissed?: string;
   numberOfPaymentsMade?: string;
   payments?: { [key: string]: string } = {};
   savingsPayments?: { [key: string]: string } = {};
+  interestRate?: string;
+  amountToPay?: string;
+  paymentPeriodRange?: string;
+  debtCycleStartDate?: string;
+  debtCycleEndDate?: string;
 }

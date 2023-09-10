@@ -140,12 +140,19 @@ export class AuthService {
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
       businessAddress: client.businessAddress,
-      debtCycle: '0',
+      debtCycle: '1',
       membershipFee: client.membershipFee,
       applicationFee: client.applicationFee,
       savings: client.savings,
       loanAmount: client.loanAmount,
       creditScore: '50',
+      debtLeft: client.debtLeft,
+      amountToPay: client.amountToPay,
+      interestRate: client.interestRate,
+      debtCycleStartDate: client.debtCycleStartDate,
+      debtCycleEndDate: client.debtCycleEndDate,
+      paymentPeriodRange: client.paymentPeriodRange,
+      profession: client.profession,
       amountPaid: '0',
       dateJoined: `${month}-${day}-${year}`,
       numberOfPaymentsMissed: '0',
@@ -169,7 +176,7 @@ export class AuthService {
     );
   }
 
-  updateUserInfo(client: Client) {
+  updateUserInfoForNewClient(client: Client) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.currentUser.uid}`
     );
@@ -183,7 +190,14 @@ export class AuthService {
       clientsSavings: (
         Number(this.currentUser.clientsSavings) + Number(client.savings)
       ).toString(),
-      // fees: (Number(this,this.currentUser.fees)+ Number())
+      fees: (
+        Number(this.currentUser.fees) +
+        Number(client.membershipFee) +
+        Number(client.applicationFee)
+      ).toString(),
+      projectedRevenue: (
+        Number(this.currentUser.projectedRevenue) + Number(client.amountToPay)
+      ).toString(),
     };
     return userRef.set(data, { merge: true });
   }
