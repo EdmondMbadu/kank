@@ -17,7 +17,7 @@ import { PaymentActivityComponent } from './components/payment-activity/payment-
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { CreateAccountComponent } from './components/create-account/create-account.component';
-import { environment } from 'src/environments/environments';
+import { environment } from '../../environments/environments';
 import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
