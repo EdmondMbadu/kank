@@ -40,6 +40,7 @@ export class NewClientComponent implements OnInit {
   debtCycleEndDate: string = '';
 
   addNewClient() {
+    let date = this.time.todaysDateMonthDayYear();
     console.log('firstnmae, loan amount', this.firstName, this.loanAmount);
     if (
       this.firstName === '' ||
@@ -71,7 +72,7 @@ export class NewClientComponent implements OnInit {
           alert('Something went wrong. Unable to add New client');
         }
       );
-      this.auth.updateUserInfoForNewClient(this.client).then(
+      this.data.updateUserInfoForNewClient(this.client, date).then(
         (res: any) => {
           console.log('Updated user info successfully');
         },

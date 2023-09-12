@@ -2,17 +2,17 @@
 
 <section class="container flex flex-col md:flex-row justify-center items-center px-6 mx-auto">
     <div class="flex-col w-[22rem] shadow-md  my-6 h-full border border-green-950 rounded-lg">
-        <h3 class="px-10 pt-14 text-xl md:text-2xl">Create Account</h3>
+        <h3 class="px-10 pt-14 text-xl md:text-2xl">Créer Un Compte</h3>
       <label class="block my-10 mx-8">
   
-        <input type="text" name="firstName" class="mt-2 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500  block  rounded-full sm:text-sm"  placeholder="First Name" [(ngModel)]="firstName" required/>
-        <input type="email" name="lastName" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500  block  rounded-full sm:text-sm"  placeholder="Last Name" [(ngModel)]="lastName" required/>
-        <input type="email" name="email" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500  block  rounded-full sm:text-sm"  placeholder="email" [(ngModel)]="email" required/>
-        <input type="password" name="password" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1"   placeholder="Password" [(ngModel)]="password" required/>
-        <input type="password" name="password-again" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" [(ngModel)]="rePassword" placeholder="Enter Password Again ..." />
+        <input type="text" name="firstName" class="mt-2 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500  block  rounded-full sm:text-sm"  placeholder="Nom" [(ngModel)]="firstName" required/>
+        <input type="email" name="lastName" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500  block  rounded-full sm:text-sm"  placeholder="Postnom" [(ngModel)]="lastName" required/>
+        <input type="email" name="email" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500  block  rounded-full sm:text-sm"  placeholder="Email" [(ngModel)]="email" required/>
+        <input type="password" name="password" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1"   placeholder="Mot De Passe" [(ngModel)]="password" required/>
+        <input type="password" name="password-again" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" [(ngModel)]="rePassword" placeholder="Entrez A nouveau le mot de passe ..." />
 
-        <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="createAccount()">Create Account</button>
-        <p routerLink="/" class="py-4 text-red  hover:underline "> Have an account? Sign On</p>
+        <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="createAccount()">Créer Un Compte</button>
+        <p routerLink="/" class="py-4 text-red  hover:underline "> Avoir Un Compte? Se Connecter</p>
    
       </label> 
      

@@ -11,15 +11,8 @@ import { DataService } from 'src/app/services/data.service';
 export class LandingPageComponent {
   email: string = '';
   password: string = '';
-  ngOnInit() {
-    // const today = new Date();
-    // console.log('today is ', today);
-  }
-  constructor(
-    private route: Router,
-    private auth: AuthService,
-    private data: DataService
-  ) {}
+  ngOnInit() {}
+  constructor(private auth: AuthService) {}
 
   SignOn() {
     if (this.email === '' || this.password === '') {

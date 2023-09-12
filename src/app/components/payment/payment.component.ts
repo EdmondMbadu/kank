@@ -93,7 +93,13 @@ export class PaymentComponent {
         Number(this.client.amountToPay) - Number(this.client.amountPaid)
       ).toString();
     }
-    this.data.clientPayment(this.client, this.savingsAmount);
+    let date = this.time.todaysDateMonthDayYear();
+    this.data.clientPayment(
+      this.client,
+      this.savingsAmount,
+      date,
+      this.paymentAmount
+    );
     this.router.navigate(['/client-portal/' + this.id]);
   }
 

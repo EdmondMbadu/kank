@@ -9,11 +9,11 @@
 <div class="border-2 shadow border-green-800 p-12 rounded-lg">
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
-            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">First name</label>
+            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
             <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required [(ngModel)]="firstName">
         </div>
         <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Last name</label>
+            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
             <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" [(ngModel)]="lastName" required>
         </div>   
          
@@ -24,26 +24,26 @@
             <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required [(ngModel)]="profession">
         </div>
         <div>
-            <label for="bcapital" class="block mb-2 text-sm font-medium text-gray-900 ">Business Captial (FC)</label>
+            <label for="bcapital" class="block mb-2 text-sm font-medium text-gray-900 ">Capital(FC)</label>
             <input type="text" id="bcapital" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="50000" required [(ngModel)]="bussinessCapital">
         </div>   
          
     </div>
     <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Home Address</label>
+        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Adresse Domicile</label>
         <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="homeAddress">
     </div> 
     <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Business Address</label>
+        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Addresse Business </label>
         <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="businessAddress">
     </div> 
     <div class="mb-6">
-        <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Phone Number</label>
+        <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
         <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="phoneNumber">
     </div> 
 
 <div class="mb-6">
-    <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Application Fee</label>
+    <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
     <select id="applicationFee" [(ngModel)]="applicactionFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
     <option selected>Choose</option>
     <option [ngValue]="5000">FC 5000</option>
@@ -53,7 +53,7 @@
     </select>
 </div>
 <div class="mb-6">
-    <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Membership Fee</label>
+    <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
     <select id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
     <option selected>Choose</option>
     <option [ngValue]="5000">FC 5000</option>
@@ -63,7 +63,7 @@
     </select>
 </div>
 <div class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Personal Savings</label>
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
     <select id="savings"[(ngModel)]="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
         <option [ngValue]="5000">FC 5000</option>
         <option [ngValue]="10000">FC 10,000</option>
@@ -73,7 +73,7 @@
 </div>
 
 <div class="mb-6">
-    <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Loan Amount</label>
+    <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant De Prêt</label>
     <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayRate()">
     <option selected>Choose</option>
     <option [ngValue]="100000">FC 100,000</option>
@@ -83,7 +83,7 @@
     </select>
 </div>
 <div class="mb-6">
-    <label for="payRange" class="block mb-2 text-sm font-medium text-gray-700">Pay Range</label> 
+    <label for="payRange" class="block mb-2 text-sm font-medium text-gray-700">Cycle De Paiment</label> 
     <select id="payRange"[(ngModel)]="payRange"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayRate()">
     <option selected>Choose</option>
     <option [ngValue]="4">4 Weeks (1 month) </option>
@@ -93,25 +93,25 @@
 </div>
 
 <div  *ngIf="rateDisplay" class="mb-6">
-    <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Interest Rate %</label> 
+    <label for="rate" class="block mb-2 text-sm font-medium text-red-700"> Taux D'intérêt</label> 
     <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="interestRate" required  [(ngModel)]="interestRate">
 
   
 </div>
 <div  *ngIf="amountToPayDisplay" class="mb-6">
-    <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Amount To Pay</label> 
+    <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Montant A Payer</label> 
     <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="amountToPay">  
 </div>
 <div  *ngIf="debtCycleDisplay" class="mb-6">
-    <label for="debtCycle" class="block mb-2 text-sm font-medium text-red-700">Debt Cycle Range</label> 
-    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="debtCycleStartDate+' to '+debtCycleEndDate">  
+    <label for="debtCycle" class="block mb-2 text-sm font-medium text-red-700">Period De Cycle De Paiment </label> 
+    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="debtCycleStartDate+' A '+debtCycleEndDate">  
 </div>
 
 
 
    
-<button  class="text-white m-12  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Cancel</button>
-    <button class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="addNewClient()">Submit</button>
+<button  class="text-white m-12  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>
+    <button class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="addNewClient()">Soumettre</button>
 </div>
 
 

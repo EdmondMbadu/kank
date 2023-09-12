@@ -7,13 +7,15 @@ import { NewClientComponent } from './components/new-client/new-client.component
 import { ClientPortalComponent } from './components/client-portal/client-portal.component';
 import { PaymentComponent } from './components/payment/payment.component';
 import { PaymentActivityComponent } from './components/payment-activity/payment-activity.component';
-import { ButtonsComponent } from './tools/buttons/buttons.component';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { CreateAccountComponent } from './components/create-account/create-account.component';
 import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
 import { AuthGuard } from './services/auth.guard';
 import { DebtCycleComponent } from './components/debt-cycle/debt-cycle.component';
 import { WithdrawSavingsComponent } from './components/withdraw-savings/withdraw-savings.component';
+import { AmountInvestedComponent } from './components/amount-invested/amount-invested.component';
+import { ExpensesComponent } from './components/expenses/expenses.component';
+import { ReserveComponent } from './components/reserve/reserve.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -25,11 +27,13 @@ const routes: Routes = [
   { path: 'client-info', component: ClientInfoComponent },
   { path: 'new-client', component: NewClientComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
+  { path: 'add-investment', component: AmountInvestedComponent },
+  { path: 'add-expense', component: ExpensesComponent },
+  { path: 'add-reserve', component: ReserveComponent },
   { path: 'payment/:id', component: PaymentComponent },
   { path: 'withdraw-savings/:id', component: WithdrawSavingsComponent },
   { path: 'payment-activity/:id', component: PaymentActivityComponent },
   { path: 'debt-cycle/:id', component: DebtCycleComponent },
-  { path: 'testing', component: ButtonsComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'create-account', component: CreateAccountComponent },
   { path: 'verify-email', component: VerifyEmailComponent },

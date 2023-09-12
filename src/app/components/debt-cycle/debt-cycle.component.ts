@@ -76,8 +76,9 @@ export class DebtCycleComponent implements OnInit {
           alert('Something went wrong. Unable to add New client');
         }
       );
+      let date = this.time.todaysDateMonthDayYear();
       this.data
-        .updateUserInfoForClientNewDebtCycle(this.client, this.savings)
+        .updateUserInfoForClientNewDebtCycle(this.client, this.savings, date)
         .then(
           (res: any) => {
             console.log('Updated user info successfully');

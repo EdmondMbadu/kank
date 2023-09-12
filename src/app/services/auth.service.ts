@@ -68,19 +68,26 @@ export class AuthService {
   }
 
   SignOn(email: string, password: string) {
-    this.fireauth.signInWithEmailAndPassword(email, password).then(
-      (res) => {
-        if (res.user?.emailVerified == true) {
-          this.router.navigate(['/home']);
-        } else {
-          this.router.navigate(['/verify-email']);
+    this.fireauth
+      .signInWithEmailAndPassword(email, password)
+      .then(
+        (res) => {
+          if (res.user?.emailVerified == true) {
+            this.router.navigate(['/home']);
+          } else {
+            this.router.navigate(['/verify-email']);
+          }
+        },
+        (err) => {
+          alert('Something went wrong');
+          this.router.navigate(['/']);
         }
-      },
-      (err) => {
+      )
+      .catch((error) => {
         alert('Something went wrong');
         this.router.navigate(['/']);
-      }
-    );
+        // ...
+      });
   }
 
   register(
@@ -89,18 +96,25 @@ export class AuthService {
     email: string,
     password: string
   ) {
-    this.fireauth.createUserWithEmailAndPassword(email, password).then(
-      (res) => {
-        alert('Registration was Successful');
-        this.sendEmailForVerification(res.user);
+    this.fireauth
+      .createUserWithEmailAndPassword(email, password)
+      .then(
+        (res) => {
+          alert('Registration was Successful');
+          this.sendEmailForVerification(res.user);
 
-        this.addNewUser(firstName, lastName, res.user);
-        this.router.navigate(['/verify-email']);
-      },
-      (err) => {
-        alert(err.message);
-      }
-    );
+          this.addNewUser(firstName, lastName, res.user);
+          this.router.navigate(['/verify-email']);
+        },
+        (err) => {
+          alert(err.message);
+        }
+      )
+      .catch((error) => {
+        alert('Something went wrong');
+        this.router.navigate(['/']);
+        // ...
+      });
   }
 
   addNewUser(firstName: string, lastName: string, user: any) {
@@ -123,6 +137,8 @@ export class AuthService {
       reserveAmount: '0',
       reserve: {},
       fees: '0',
+      dailyLending: {},
+      dailyReimbursement: {},
     };
     return userRef.set(data, { merge: true });
   }
@@ -166,62 +182,57 @@ export class AuthService {
   }
 
   sendEmailForVerification(user: any) {
-    user.sendEmailVerification().then(
-      (res: any) => {
-        this.router.navigate(['verify-email']);
-      },
-      (err: any) => {
-        alert('Something went wrong. Unable to send you an email');
-      }
-    );
-  }
-
-  updateUserInfoForNewClient(client: Client) {
-    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
-      `users/${this.currentUser.uid}`
-    );
-    const data = {
-      numberOfClients: (
-        Number(this.currentUser.numberOfClients) + 1
-      ).toString(),
-      amountLended: (
-        Number(this.currentUser.amountLended) + Number(client.loanAmount!)
-      ).toString(),
-      clientsSavings: (
-        Number(this.currentUser.clientsSavings) + Number(client.savings)
-      ).toString(),
-      fees: (
-        Number(this.currentUser.fees) +
-        Number(client.membershipFee) +
-        Number(client.applicationFee)
-      ).toString(),
-      projectedRevenue: (
-        Number(this.currentUser.projectedRevenue) + Number(client.amountToPay)
-      ).toString(),
-    };
-    return userRef.set(data, { merge: true });
+    user
+      .sendEmailVerification()
+      .then(
+        (res: any) => {
+          this.router.navigate(['verify-email']);
+        },
+        (err: any) => {
+          alert('Something went wrong. Unable to send you an email');
+        }
+      )
+      .catch((error: any) => {
+        alert('Something went wrong');
+        this.router.navigate(['/']);
+        // ...
+      });
   }
 
   logout() {
     this.email = of('');
-    this.fireauth.signOut().then(
-      () => {
+    this.fireauth
+      .signOut()
+      .then(
+        () => {
+          this.router.navigate(['/']);
+        },
+        (err) => {
+          alert(err.message);
+        }
+      )
+      .catch((error) => {
+        alert('Something went wrong');
         this.router.navigate(['/']);
-      },
-      (err) => {
-        alert(err.message);
-      }
-    );
+        // ...
+      });
   }
 
   forgotPassword(email: string) {
-    this.fireauth.sendPasswordResetEmail(email).then(
-      () => {
-        this.router.navigate(['verify-email']);
-      },
-      (err) => {
+    this.fireauth
+      .sendPasswordResetEmail(email)
+      .then(
+        () => {
+          this.router.navigate(['verify-email']);
+        },
+        (err) => {
+          alert('Something went wrong');
+        }
+      )
+      .catch((error) => {
         alert('Something went wrong');
-      }
-    );
+        this.router.navigate(['/']);
+        // ...
+      });
   }
 }
