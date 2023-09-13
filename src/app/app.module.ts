@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireAuthModule } from '@angular/fire/compat/auth';
+// import { provideFirebaseApp, getApp, initializeApp } from '@angular/fire/app';
 // import { provideAuth, getAuth } from '@angular/fire/auth';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -26,7 +27,6 @@ import { WithdrawSavingsComponent } from './components/withdraw-savings/withdraw
 import { AmountInvestedComponent } from './components/amount-invested/amount-invested.component';
 import { ExpensesComponent } from './components/expenses/expenses.component';
 import { ReserveComponent } from './components/reserve/reserve.component';
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
 
 @NgModule({
   declarations: [

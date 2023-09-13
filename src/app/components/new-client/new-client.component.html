@@ -44,44 +44,69 @@
 
 <div class="mb-6">
     <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
-    <select id="applicationFee" [(ngModel)]="applicactionFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+    <select id="applicationFee" [(ngModel)]="applicactionFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
     <option selected>Choose</option>
+    <option [ngValue]="0">FC 0</option>
+    <option [ngValue]="5000">FC 5000</option>
     <option [ngValue]="5000">FC 5000</option>
     <option [ngValue]="10000">FC 10,000</option>
     <option [ngValue]="20000">FC 20,000</option>
     <option [ngValue]="30000">FC 30,000</option>
+    <option [ngValue]="">Other Amount </option>
     </select>
 </div>
+<div *ngIf="applicationFeeOtherDisplay" class="mb-6">
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
+    <input type="text" [(ngModel)]="applicactionFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+</div> 
 <div class="mb-6">
     <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
-    <select id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+    <select id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaymemberShipFeeOtherAmount()">
     <option selected>Choose</option>
+    <option [ngValue]="0">FC 0</option>
     <option [ngValue]="5000">FC 5000</option>
     <option [ngValue]="10000">FC 10,000</option>
     <option [ngValue]="20000">FC 20,000</option>
     <option [ngValue]="30000">FC 30,000</option>
+    <option [ngValue]="">Other Amount </option>
     </select>
 </div>
+<div *ngIf="memberShipFeeOtherDisplay" class="mb-6">
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais D'Adhesion Autre Montant</label>
+    <input type="text" [(ngModel)]="memberShipFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+</div> 
 <div class="mb-6">
     <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
-    <select id="savings"[(ngModel)]="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+    <select id="savings"[(ngModel)]="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaySavingsOtherAmount()">
+        <option [ngValue]="0">FC 0 </option>
         <option [ngValue]="5000">FC 5000</option>
         <option [ngValue]="10000">FC 10,000</option>
         <option [ngValue]="20000">FC 20,000</option>
         <option [ngValue]="30000">FC 30,000</option>
+        <option [ngValue]="">Other Amount </option>
     </select>
 </div>
+<div *ngIf="savingsOtherDisplay" class="mb-6">
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Epargnes Autre Montant</label>
+    <input type="text" [(ngModel)]="savings"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+</div> 
+
 
 <div class="mb-6">
     <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant De Prêt</label>
-    <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayRate()">
+    <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
     <option selected>Choose</option>
     <option [ngValue]="100000">FC 100,000</option>
     <option [ngValue]="200000">FC 200,000</option>
     <option [ngValue]="300000">FC 300,000</option>
     <option [ngValue]="500000">FC 500,000</option>
+    <option [ngValue]="">Other Amount </option>
     </select>
 </div>
+<div *ngIf="loanAmountOtherDisplay" class="mb-6">
+    <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
+    <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+</div> 
 <div class="mb-6">
     <label for="payRange" class="block mb-2 text-sm font-medium text-gray-700">Cycle De Paiment</label> 
     <select id="payRange"[(ngModel)]="payRange"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayRate()">

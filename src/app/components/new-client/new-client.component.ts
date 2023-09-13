@@ -39,6 +39,11 @@ export class NewClientComponent implements OnInit {
   debtCycleStartDate: string = '';
   debtCycleEndDate: string = '';
 
+  applicationFeeOtherDisplay: boolean = false;
+  memberShipFeeOtherDisplay: boolean = false;
+  savingsOtherDisplay: boolean = false;
+  loanAmountOtherDisplay: boolean = false;
+
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
     console.log('firstnmae, loan amount', this.firstName, this.loanAmount);
@@ -83,6 +88,40 @@ export class NewClientComponent implements OnInit {
 
       this.resetFields();
       return;
+    }
+  }
+
+  displayApplicationFeeOtherAmount() {
+    if (this.applicactionFee === 'Other Amount') {
+      this.applicationFeeOtherDisplay = true;
+      this.applicactionFee = '';
+    } else {
+      this.applicationFeeOtherDisplay = false;
+    }
+  }
+  displaymemberShipFeeOtherAmount() {
+    if (this.memberShipFee === 'Other Amount') {
+      this.memberShipFeeOtherDisplay = true;
+      this.memberShipFee = '';
+    } else {
+      this.memberShipFeeOtherDisplay = false;
+    }
+  }
+  displaySavingsOtherAmount() {
+    if (this.savings === 'Other Amount') {
+      this.savingsOtherDisplay = true;
+      this.savings = '';
+    } else {
+      this.savingsOtherDisplay = false;
+    }
+  }
+
+  displayLoanOtherAmount() {
+    if (this.loanAmount === 'Other Amount') {
+      this.loanAmountOtherDisplay = true;
+      this.loanAmount = '';
+    } else {
+      this.loanAmountOtherDisplay = false;
     }
   }
 

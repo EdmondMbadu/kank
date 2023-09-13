@@ -1,15 +1,16 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { Router } from '@angular/router';
+import { Route, Router } from '@angular/router';
+import { Firestore, collectionData, collection } from '@angular/fire/firestore';
+import { Auth, idToken } from '@angular/fire/auth';
 import {
   AngularFirestore,
   AngularFirestoreCollection,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
-import { Observable, of, from, ReplaySubject } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
-import { DataService } from './data.service';
 import { Client } from '../models/client';
 @Injectable({
   providedIn: 'root',
@@ -20,6 +21,7 @@ export class AuthService {
   email?: Observable<any>;
   currentUser: any = {};
   currentClient: Client = new Client();
+
   constructor(
     private fireauth: AngularFireAuth,
     private afs: AngularFirestore,
@@ -36,6 +38,7 @@ export class AuthService {
         }
       })
     );
+
     this.clientsRef$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
