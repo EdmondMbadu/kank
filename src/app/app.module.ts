@@ -57,7 +57,7 @@ import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
     AngularFireModule.initializeApp(environment.firebase),
     AngularFirestoreModule,
     AngularFireAuthModule,
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    // provideFirebaseApp(() => initializeApp(environment.firebase)),
     // provideAuth(() => getAuth()),
   ],
   providers: [],
