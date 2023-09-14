@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
   providedIn: 'root',
 })
 export class TimeService {
-  constructor(private afs: AngularFirestore, private auth: AuthService) {}
+  constructor() {}
 
   computeDateRange() {
     const now = new Date();

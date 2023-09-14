@@ -1,15 +1,16 @@
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { Router } from '@angular/router';
+import { Route, Router } from '@angular/router';
+import { Firestore, collectionData, collection } from '@angular/fire/firestore';
+import { Auth, idToken } from '@angular/fire/auth';
 import {
   AngularFirestore,
   AngularFirestoreCollection,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
-import { Observable, of, from, ReplaySubject } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
-import { DataService } from './data.service';
 import { Client } from '../models/client';
 @Injectable({
   providedIn: 'root',
@@ -20,6 +21,7 @@ export class AuthService {
   email?: Observable<any>;
   currentUser: any = {};
   currentClient: Client = new Client();
+
   constructor(
     private fireauth: AngularFireAuth,
     private afs: AngularFirestore,
@@ -36,6 +38,7 @@ export class AuthService {
         }
       })
     );
+
     this.clientsRef$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
@@ -179,6 +182,39 @@ export class AuthService {
       `users/${this.currentUser.uid}/clients/${data.uid}`
     );
     return clientRef.set(data, { merge: true });
+  }
+
+  deleteClient(client: Client) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.currentUser.uid}/clients/${client.uid}`
+    );
+    return clientRef.delete();
+  }
+
+  UpdateUserInfoForDeletedClient(client: Client) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      numberOfClients: (
+        Number(this.currentUser.numberOfClients) - 1
+      ).toString(),
+
+      amountLended: (
+        Number(this.currentUser.amountLended) - Number(client.loanAmount)
+      ).toString(),
+      clientsSavings: (
+        Number(this.currentUser.clientsSavings) - Number(client.savings)
+      ).toString(),
+      fees: (
+        Number(this.currentUser.fees) -
+        (Number(client.applicationFee) + Number(client.membershipFee))
+      ).toString(),
+      projectedRevenue: (
+        Number(this.currentUser.projectedRevenue) - Number(client.amountToPay)
+      ).toString(),
+    };
+    return userRef.set(data, { merge: true });
   }
 
   sendEmailForVerification(user: any) {
