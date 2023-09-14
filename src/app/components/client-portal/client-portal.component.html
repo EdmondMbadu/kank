@@ -1,8 +1,9 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
 <div class="flex container mx-auto justify-center m-12">
-    <h1 class="text-2xl md:text-4xl mr-10 ">Profile Du Client</h1>
+    <h1 class="hidden md:block text-2xl text-center md:text-4xl mr-10 ">Profile Du Client</h1>
     <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Info Clients</button>
+    <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info" (click)="delete()">Supprimer Client</button>
 </div>
 
 <div id="fullWidthTabContent" class=" rounded-lg  dark:border-gray-600">
@@ -79,10 +80,10 @@
             </div>
          
           
-            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-whit  focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-3/4 px-5 py-2.5 text-center " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
+            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-whit  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
 
             
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-3/4 px-5 py-2.5 text-center "[routerLink]="['/payment-activity',id ]">Details De Paiments</button>
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity',id ]">Details De Paiments</button>
 
         </dl>
     </div>

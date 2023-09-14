@@ -73,4 +73,25 @@ export class ClientPortalComponent {
       this.router.navigate(['/withdraw-savings/' + this.id]);
     }
   }
+
+  delete() {
+    this.auth
+      .deleteClient(this.client)
+      .then(() => {
+        alert('Client successfully deleted!');
+        this.router.navigate(['/client-info/']);
+      })
+      .catch((error) => {
+        alert('Error deleting client: ');
+      });
+
+    this.auth
+      .UpdateUserInfoForDeletedClient(this.client)
+      .then(() => {
+        console.log('updated user info');
+      })
+      .catch((error) => {
+        alert('Error deleting client: ');
+      });
+  }
 }

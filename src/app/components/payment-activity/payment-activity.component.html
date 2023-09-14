@@ -1,8 +1,8 @@
 
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl md:text-2xl mr-10">Details de paiment de {{client.firstName}} {{client.lastName}}</h2>
-   <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Info Client</button>
+   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Details de Paiment</h2>
+   <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
 
 
 </div>

@@ -184,6 +184,39 @@ export class AuthService {
     return clientRef.set(data, { merge: true });
   }
 
+  deleteClient(client: Client) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.currentUser.uid}/clients/${client.uid}`
+    );
+    return clientRef.delete();
+  }
+
+  UpdateUserInfoForDeletedClient(client: Client) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      numberOfClients: (
+        Number(this.currentUser.numberOfClients) - 1
+      ).toString(),
+
+      amountLended: (
+        Number(this.currentUser.amountLended) - Number(client.loanAmount)
+      ).toString(),
+      clientsSavings: (
+        Number(this.currentUser.clientsSavings) - Number(client.savings)
+      ).toString(),
+      fees: (
+        Number(this.currentUser.fees) -
+        (Number(client.applicationFee) + Number(client.membershipFee))
+      ).toString(),
+      projectedRevenue: (
+        Number(this.currentUser.projectedRevenue) - Number(client.amountToPay)
+      ).toString(),
+    };
+    return userRef.set(data, { merge: true });
+  }
+
   sendEmailForVerification(user: any) {
     user
       .sendEmailVerification()
