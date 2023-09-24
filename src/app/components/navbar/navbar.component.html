@@ -5,19 +5,21 @@
    
       <div class="flex flex-row items-center space-x-10">
         <img src="../assets/img/kank-updated.png" alt="" class="flex max-w-[10rem] p-2" routerLink="/{{path}}">
-        <div class="hidden md:block  flex-col justify-center" routerLink="/home">
-          <img src="../../../assets/img/white-house.png" class="w-10 h-10  hover:w-11 hover:h-11" alt="">
-          <h1 *ngIf="currentHome" class=" {{current}}"></h1>
+      <div  *ngIf="email!==''" class="flex flex-row items-center space-x-10" >
+            <div class="hidden md:block  flex-col justify-center" routerLink="/home">
+              <img src="../../../assets/img/white-house.png" class="w-10 h-10  hover:w-11 hover:h-11" alt="">
+              <h1 *ngIf="currentHome" class=" {{current}}"></h1>
 
-        </div>
-        <div routerLink="/client-info" class="hidden md:block">
-          <img src="../../../assets/img/file.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
-          <h1 *ngIf="currentClientInfo" class=" {{current}}"></h1>
-        </div>
-        <div routerLink="/new-client" class="hidden md:block">
-          <img src="../../../assets/img/new-client.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
-          <h1 *ngIf="currentNewClient" class=" {{current}}"></h1>
-        </div>
+            </div>
+            <div routerLink="/client-info" class="hidden md:block">
+              <img src="../../../assets/img/file.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
+              <h1 *ngIf="currentClientInfo" class=" {{current}}"></h1>
+            </div>
+            <div routerLink="/new-client" class="hidden md:block">
+              <img src="../../../assets/img/new-client.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
+              <h1 *ngIf="currentNewClient" class=" {{current}}"></h1>
+            </div>
+          </div>
         
       </div>
       <div *ngIf="email!==''" class=" mr-4 relative inline-block text-left">
