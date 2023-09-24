@@ -22,7 +22,6 @@ export class ClientPortalComponent {
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
     private router: Router,
-    private data: DataService,
     private time: TimeService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');

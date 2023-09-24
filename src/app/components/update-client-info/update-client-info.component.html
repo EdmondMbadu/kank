@@ -1,0 +1,51 @@
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+
+<div class="flex container mx-auto m-12 justify-center">
+    <h1 class="text-xl md:text-3xl mr-4 text-center">Mettre à Jour L'information de {{client.firstName}} {{client.lastName}}</h1>
+</div>
+
+
+
+<div class="flex container justify-center mx-auto ">
+
+    <div class=" border-2 border-green-800 rounded-lg p-12">
+      
+        
+    
+    
+ 
+    <div  class="mb-6">
+        <label for="phoneNumber" class="block mb-2 text-sm font-medium text-gray-900 "> Numero de Telephone</label>
+        <input [(ngModel)]="client.phoneNumber" type="text" id="telelphone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.phoneNumber}}" required>
+    </div>
+
+    <div  class="mb-6">
+        <label for="businessAddress" class="block mb-2 text-sm font-medium text-gray-900 "> Address du Business</label>
+        <input [(ngModel)]="client.businessAddress" type="text" id="homeAddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.businessAddress}}" required>
+    </div>
+    
+
+    <div  class="mb-6">
+        <label for="homeAddress" class="block mb-2 text-sm font-medium text-gray-900 "> Address Domicile</label>
+        <input [(ngModel)]="client.homeAddress" type="text" id="businessAddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.homeAddress}}" required>
+    </div>
+
+
+    <div  class="mb-6">
+        <label for="profession" class="block mb-2 text-sm font-medium text-gray-900 "> Profession</label>
+        <input [(ngModel)]="client.profession" type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.profession}}" required>
+    </div>
+    
+    
+ 
+    
+    
+       
+    
+    <button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
+        <button (click)="updateClientInfo()"   class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumettre</button>
+       
+    </div>
+    
+    
+    </div>

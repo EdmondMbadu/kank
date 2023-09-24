@@ -16,6 +16,7 @@ import { WithdrawSavingsComponent } from './components/withdraw-savings/withdraw
 import { AmountInvestedComponent } from './components/amount-invested/amount-invested.component';
 import { ExpensesComponent } from './components/expenses/expenses.component';
 import { ReserveComponent } from './components/reserve/reserve.component';
+import { UpdateClientInfoComponent } from './components/update-client-info/update-client-info.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -37,6 +38,7 @@ const routes: Routes = [
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'create-account', component: CreateAccountComponent },
   { path: 'verify-email', component: VerifyEmailComponent },
+  { path: 'update-client-info/:id', component: UpdateClientInfoComponent },
 ];
 
 @NgModule({

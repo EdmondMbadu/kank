@@ -27,6 +27,7 @@ import { WithdrawSavingsComponent } from './components/withdraw-savings/withdraw
 import { AmountInvestedComponent } from './components/amount-invested/amount-invested.component';
 import { ExpensesComponent } from './components/expenses/expenses.component';
 import { ReserveComponent } from './components/reserve/reserve.component';
+import { UpdateClientInfoComponent } from './components/update-client-info/update-client-info.component';
 
 @NgModule({
   declarations: [
@@ -47,6 +48,7 @@ import { ReserveComponent } from './components/reserve/reserve.component';
     AmountInvestedComponent,
     ExpensesComponent,
     ReserveComponent,
+    UpdateClientInfoComponent,
   ],
   imports: [
     BrowserModule,

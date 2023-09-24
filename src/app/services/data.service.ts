@@ -55,6 +55,21 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
 
+  updateClientInfo(client: Client) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+
+    const data = {
+      phoneNumber: client.phoneNumber,
+      businessAddress: client.businessAddress,
+      homeAddress: client.homeAddress,
+      profession: client.profession,
+    };
+
+    return clientRef.set(data, { merge: true });
+  }
+
   initiateNewDebtCycle(client: Client) {
     const data = {
       firstName: client.firstName,

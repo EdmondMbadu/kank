@@ -13,6 +13,11 @@ export class NavbarComponent {
   @Input() email = '';
   @Input() path = '';
   @Input() firstName = '';
+  @Input() currentHome: boolean = false;
+  @Input() currentClientInfo: boolean = false;
+  @Input() currentNewClient: boolean = false;
+
+  @Input() current = 'py-1 border-1 border-b-4';
 
   toggleMenu() {
     if (this.hide === true) {
