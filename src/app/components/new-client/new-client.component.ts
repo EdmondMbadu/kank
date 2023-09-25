@@ -67,14 +67,6 @@ export class NewClientComponent implements OnInit {
     ) {
       alert('All fields are required');
       return;
-    } else if (
-      !Number(this.applicactionFee) ||
-      !Number(this.memberShipFee) ||
-      !Number(this.savings) ||
-      !Number(this.loanAmount)
-    ) {
-      alert('Make sure all number inputs are numbers!');
-      return;
     } else {
       this.setNewClientValues();
       this.auth.addNewClient(this.client).then(
