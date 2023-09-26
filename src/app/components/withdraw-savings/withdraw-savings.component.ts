@@ -24,7 +24,6 @@ export class WithdrawSavingsComponent implements OnInit {
     private time: TimeService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
-    console.log('current id', this.id);
   }
   ngOnInit(): void {
     this.retrieveClient();
