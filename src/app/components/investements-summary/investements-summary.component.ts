@@ -14,8 +14,11 @@ export class InvestementsSummaryComponent implements OnInit {
     public auth: AuthService,
     private time: TimeService
   ) {}
-  ngOnInit() {}
-
+  ngOnInit() {
+    this.initalizeInputs();
+  }
+  dailyLending: string = '0';
+  dailyPayment: string = '0';
   elements: number = 10;
   linkPath: string[] = [
     '/client-info',
@@ -57,27 +60,35 @@ export class InvestementsSummaryComponent implements OnInit {
     'Paiment Du Jour',
     'Emprunt Du Jour',
   ];
-  summaryContent: string[] = [
-    this.auth.currentUser.numberOfClients,
-    ` ${this.auth.currentUser.amountInvested}`,
-    ` ${this.auth.currentUser.amountLended}`,
-    ` ${this.auth.currentUser.clientsSavings}`,
-    ` ${this.auth.currentUser.expensesAmount}`,
-    `${this.auth.currentUser.projectedRevenue}`,
-    ` ${this.auth.currentUser.reserveAmount}`,
-    ` ${this.auth.currentUser.fees}`,
-    `${this.BenefitsWithoutExpenses()}`,
-    ` ${this.BenefitsWithExpenses()}`,
-    ` ${
+  summaryContent: string[] = [];
+
+  initalizeInputs() {
+    this.dailyLending =
+      this.auth.currentUser.dailyLending[this.time.todaysDateMonthDayYear()];
+    this.dailyPayment =
       this.auth.currentUser.dailyReimbursement[
         this.time.todaysDateMonthDayYear()
-      ]
-    }`,
-    ` ${
-      this.auth.currentUser.dailyLending[this.time.todaysDateMonthDayYear()]
-    }`,
-  ];
+      ];
+    this.dailyLending =
+      this.dailyLending === undefined ? '0' : this.dailyLending;
+    this.dailyPayment =
+      this.dailyPayment === undefined ? '0' : this.dailyPayment;
 
+    this.summaryContent = [
+      this.auth.currentUser.numberOfClients,
+      ` ${this.auth.currentUser.amountInvested}`,
+      ` ${this.auth.currentUser.amountLended}`,
+      ` ${this.auth.currentUser.clientsSavings}`,
+      ` ${this.auth.currentUser.expensesAmount}`,
+      `${this.auth.currentUser.projectedRevenue}`,
+      ` ${this.auth.currentUser.reserveAmount}`,
+      ` ${this.auth.currentUser.fees}`,
+      `${this.BenefitsWithoutExpenses()}`,
+      ` ${this.BenefitsWithExpenses()}`,
+      ` ${this.dailyPayment}`,
+      ` ${this.dailyLending}`,
+    ];
+  }
   BenefitsWithExpenses(): string {
     const benefit =
       Number(this.auth.currentUser.projectedRevenue) -

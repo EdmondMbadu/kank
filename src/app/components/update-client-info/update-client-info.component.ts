@@ -20,7 +20,6 @@ export class UpdateClientInfoComponent {
     private data: DataService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
-    console.log('current id', this.id);
   }
   ngOnInit(): void {
     this.retrieveClient();
