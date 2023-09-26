@@ -64,6 +64,18 @@ export class PaymentComponent {
     ) {
       alert('Incorrect input. Enter a number');
       return;
+    } else if (
+      Number(this.paymentAmount) < 0 ||
+      Number(this.savingsAmount) < 0
+    ) {
+      alert('The numbers must be positive');
+      return;
+    } else if (
+      Number(this.paymentAmount) <= 0 &&
+      Number(this.savingsAmount) <= 0
+    ) {
+      alert('At least one number must be greater than 0');
+      return;
     } else {
       this.client.amountPaid = (
         Number(this.client.amountPaid) + Number(this.paymentAmount)

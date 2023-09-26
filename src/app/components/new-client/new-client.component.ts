@@ -46,7 +46,12 @@ export class NewClientComponent implements OnInit {
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
-    console.log('firstnmae, loan amount', this.firstName, this.loanAmount);
+    let inputValid = this.numbersValid(
+      this.loanAmount,
+      this.savings,
+      this.applicactionFee,
+      this.memberShipFee
+    );
     if (
       this.firstName === '' ||
       this.lastName === '' ||
@@ -66,6 +71,9 @@ export class NewClientComponent implements OnInit {
       this.amountToPay === ''
     ) {
       alert('All fields are required');
+      return;
+    } else if (!inputValid) {
+      alert('Make sure all numbers are valid and greater than or equal to 0');
       return;
     } else {
       this.setNewClientValues();
@@ -88,6 +96,28 @@ export class NewClientComponent implements OnInit {
 
       this.resetFields();
       return;
+    }
+  }
+
+  numbersValid(a: string, b: string, c: string, d: string): boolean {
+    if (
+      isNaN(Number(a)) ||
+      isNaN(Number(b)) ||
+      isNaN(Number(c)) ||
+      isNaN(Number(d))
+    ) {
+      console.log('not good numbers', a, b, c, d);
+      return false;
+    } else if (
+      Number(a) < 0 ||
+      Number(b) < 0 ||
+      Number(c) < 0 ||
+      Number(d) < 0
+    ) {
+      console.log('not good numbers', a, b, c, d);
+      return false;
+    } else {
+      return true;
     }
   }
 
