@@ -106,7 +106,6 @@ export class NewClientComponent implements OnInit {
       isNaN(Number(c)) ||
       isNaN(Number(d))
     ) {
-      console.log('not good numbers', a, b, c, d);
       return false;
     } else if (
       Number(a) < 0 ||
@@ -114,7 +113,6 @@ export class NewClientComponent implements OnInit {
       Number(c) < 0 ||
       Number(d) < 0
     ) {
-      console.log('not good numbers', a, b, c, d);
       return false;
     } else {
       return true;

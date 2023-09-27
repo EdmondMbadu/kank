@@ -26,6 +26,11 @@ export class DebtCycleComponent implements OnInit {
   debtCycleStartDate: string = '';
   debtCycleEndDate: string = '';
 
+  applicationFeeOtherDisplay: boolean = false;
+  memberShipFeeOtherDisplay: boolean = false;
+  savingsOtherDisplay: boolean = false;
+  loanAmountOtherDisplay: boolean = false;
+
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -44,6 +49,40 @@ export class DebtCycleComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
     });
+  }
+
+  displayApplicationFeeOtherAmount() {
+    if (this.applicationFee === 'Other Amount') {
+      this.applicationFeeOtherDisplay = true;
+      this.applicationFee = '';
+    } else {
+      this.applicationFeeOtherDisplay = false;
+    }
+  }
+  displaymemberShipFeeOtherAmount() {
+    if (this.memberShipFee === 'Other Amount') {
+      this.memberShipFeeOtherDisplay = true;
+      this.memberShipFee = '';
+    } else {
+      this.memberShipFeeOtherDisplay = false;
+    }
+  }
+  displaySavingsOtherAmount() {
+    if (this.savings === 'Other Amount') {
+      this.savingsOtherDisplay = true;
+      this.savings = '';
+    } else {
+      this.savingsOtherDisplay = false;
+    }
+  }
+
+  displayLoanOtherAmount() {
+    if (this.loanAmount === 'Other Amount') {
+      this.loanAmountOtherDisplay = true;
+      this.loanAmount = '';
+    } else {
+      this.loanAmountOtherDisplay = false;
+    }
   }
 
   initiateClientNewDebtCycle() {

@@ -35,6 +35,7 @@ export class ClientInfoComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
       this.filteredItems = data;
+      this.testing();
       this.addIdToFilterItems();
     });
   }
@@ -43,6 +44,16 @@ export class ClientInfoComponent implements OnInit {
     for (let i = 0; i < this.filteredItems!.length; i++) {
       this.filteredItems![i].trackingId = `${i}`;
     }
+  }
+
+  testing() {
+    console.log('entering testing');
+    let total = 0;
+    for (let i = 0; i < this.clients!.length; i++) {
+      total += Number(this.clients![i].debtLeft);
+    }
+
+    console.log('The total is', total);
   }
   search(value: string) {
     if (value) {

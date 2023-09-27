@@ -161,6 +161,9 @@ export class DataService {
       dailyReimbursement: {
         [date]: `${reimburse}`,
       },
+      totalDebtLeft: (
+        Number(this.auth.currentUser.totalDebtLeft) - Number(payment)
+      ).toString(),
     };
     return userRef.set(data, { merge: true });
   }
@@ -201,6 +204,9 @@ export class DataService {
         Number(client.amountToPay)
       ).toString(),
       dailyLending: { [date]: `${dailyLending}` },
+      totalDebtLeft: (
+        Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
+      ).toString(),
     };
     return userRef.set(data, { merge: true });
   }
@@ -230,7 +236,11 @@ export class DataService {
         Number(client.amountToPay)
       ).toString(),
       dailyLending: { [date]: `${dailyLending}` },
+      totalDebtLeft: (
+        Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
+      ).toString(),
     };
+
     return userRef.set(data, { merge: true });
   }
   computeAmountToPay(interestRate: string, loanAmount: string) {

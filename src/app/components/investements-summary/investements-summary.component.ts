@@ -35,7 +35,7 @@ export class InvestementsSummaryComponent implements OnInit {
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
     '../../../assets/img/invest.svg',
-    '../../../assets/img/lend.svg',
+    '../../../assets/img/debt.png',
     '../../../assets/img/saving.svg',
     '../../../assets/img/expense.svg',
     '../../../assets/img/revenue.svg',
@@ -49,10 +49,10 @@ export class InvestementsSummaryComponent implements OnInit {
   summary: string[] = [
     'Nombres des Clients',
     'Argent Investi',
-    'Argent Emprunté',
+    'Prêt Restant',
     'Epargne Clients',
     'Depenses',
-    'Revenues Attendu',
+    'Benefice Réel',
     'Reserve',
     'Frais Des Membres',
     'Benefice Brute',
@@ -63,6 +63,10 @@ export class InvestementsSummaryComponent implements OnInit {
   summaryContent: string[] = [];
 
   initalizeInputs() {
+    let realBenefit = (
+      Number(this.auth.currentUser.totalDebtLeft) -
+      Number(this.auth.currentUser.amountInvested)
+    ).toString();
     this.dailyLending =
       this.auth.currentUser.dailyLending[this.time.todaysDateMonthDayYear()];
     this.dailyPayment =
@@ -77,10 +81,10 @@ export class InvestementsSummaryComponent implements OnInit {
     this.summaryContent = [
       this.auth.currentUser.numberOfClients,
       ` ${this.auth.currentUser.amountInvested}`,
-      ` ${this.auth.currentUser.amountLended}`,
+      ` ${this.auth.currentUser.totalDebtLeft}`,
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${this.auth.currentUser.expensesAmount}`,
-      `${this.auth.currentUser.projectedRevenue}`,
+      `${realBenefit}`,
       ` ${this.auth.currentUser.reserveAmount}`,
       ` ${this.auth.currentUser.fees}`,
       `${this.BenefitsWithoutExpenses()}`,
@@ -93,7 +97,8 @@ export class InvestementsSummaryComponent implements OnInit {
     const benefit =
       Number(this.auth.currentUser.projectedRevenue) -
       Number(this.auth.currentUser.amountLended) -
-      Number(this.auth.currentUser.expensesAmount);
+      Number(this.auth.currentUser.expensesAmount) -
+      Number(this.auth.currentUser.reserveAmount);
     return benefit.toString();
   }
   BenefitsWithoutExpenses(): string {

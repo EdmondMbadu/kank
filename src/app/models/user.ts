@@ -14,6 +14,7 @@ export class User {
   reserveAmount?: string;
   reserve?: { [key: string]: string } = {};
   fees?: string;
+  totalDebtLeft?: string;
   dailyLending?: { [key: string]: string } = {};
   dailyReimbursement?: { [key: string]: string } = {};
 }
