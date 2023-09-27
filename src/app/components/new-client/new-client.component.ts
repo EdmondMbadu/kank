@@ -46,7 +46,7 @@ export class NewClientComponent implements OnInit {
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
-    let inputValid = this.numbersValid(
+    let inputValid = this.data.numbersValid(
       this.loanAmount,
       this.savings,
       this.applicactionFee,
@@ -96,26 +96,6 @@ export class NewClientComponent implements OnInit {
 
       this.resetFields();
       return;
-    }
-  }
-
-  numbersValid(a: string, b: string, c: string, d: string): boolean {
-    if (
-      isNaN(Number(a)) ||
-      isNaN(Number(b)) ||
-      isNaN(Number(c)) ||
-      isNaN(Number(d))
-    ) {
-      return false;
-    } else if (
-      Number(a) < 0 ||
-      Number(b) < 0 ||
-      Number(c) < 0 ||
-      Number(d) < 0
-    ) {
-      return false;
-    } else {
-      return true;
     }
   }
 

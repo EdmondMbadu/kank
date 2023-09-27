@@ -86,11 +86,11 @@ export class DebtCycleComponent implements OnInit {
   }
 
   initiateClientNewDebtCycle() {
-    console.log(
-      'fees m a, loan amount, savings',
-      this.client.membershipFee,
-      this.client.applicationFee,
-      this.client.savings
+    let inputValid = this.data.numbersValid(
+      this.loanAmount,
+      this.savings,
+      this.applicationFee,
+      this.memberShipFee
     );
     if (
       this.loanAmount === '' ||
@@ -104,6 +104,9 @@ export class DebtCycleComponent implements OnInit {
       this.debtCycleEndDate === ''
     ) {
       alert('All fields are required');
+      return;
+    } else if (!inputValid) {
+      alert('Make sure all numbers are valid and greater than or equal to 0');
       return;
     } else {
       this.setClientNewDebtCycleValues();

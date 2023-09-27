@@ -137,7 +137,7 @@ export class DataService {
       expensesAmount: (
         Number(this.auth.currentUser.expensesAmount) + Number(amount)
       ).toString(),
-      expenses: { [this.time.todaysDate()]: `${amount}-${reason}` },
+      expenses: { [this.time.todaysDate()]: `${amount}:${reason}` },
     };
 
     return userRef.set(data, { merge: true });
@@ -274,5 +274,25 @@ export class DataService {
         Number(client.loanAmount);
     }
     return lending;
+  }
+
+  numbersValid(a: string, b: string, c: string, d: string): boolean {
+    if (
+      isNaN(Number(a)) ||
+      isNaN(Number(b)) ||
+      isNaN(Number(c)) ||
+      isNaN(Number(d))
+    ) {
+      return false;
+    } else if (
+      Number(a) < 0 ||
+      Number(b) < 0 ||
+      Number(c) < 0 ||
+      Number(d) < 0
+    ) {
+      return false;
+    } else {
+      return true;
+    }
   }
 }

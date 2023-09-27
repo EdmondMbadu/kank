@@ -12,6 +12,9 @@ export class ExpensesComponent {
   expenseAmount: string = '';
   expenseReason: string = '';
   expenses: string[] = [];
+  expensesAmounts: string[] = [];
+  expensesReasons: string[] = [];
+  expensesDates: string[] = [];
   currentUser: any = {};
   constructor(
     public auth: AuthService,
@@ -27,6 +30,7 @@ export class ExpensesComponent {
       return;
     } else if (isNaN(Number(this.expenseAmount))) {
       alert('Enter a valid number!');
+      return;
     } else {
       this.data.updateUserInfoForAddExpense(
         this.expenseAmount,
@@ -39,6 +43,16 @@ export class ExpensesComponent {
     this.auth.user$.subscribe((user) => {
       this.currentUser = user;
       this.expenses = this.currentUser.expenses;
+      this.getExpensesData();
     });
+  }
+  getExpensesData() {
+    console.log('Hello there');
+    for (const key in this.expenses) {
+      this.expensesDates.push(key);
+      let current = this.expenses[key].split(':');
+      this.expensesAmounts.push(current[0]);
+      this.expensesReasons.push(current[1]);
+    }
   }
 }
