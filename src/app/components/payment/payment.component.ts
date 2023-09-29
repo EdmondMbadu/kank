@@ -13,10 +13,12 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class PaymentComponent {
   id: any = '';
+  today = this.time.todaysDateMonthDayYear();
   paymentOtherAmount: boolean = false;
   savingsOtherAmount: boolean = false;
   savingsAmount: string = '';
   paymentAmount: string = '';
+  numberOfPaymentToday = 0;
   client: Client = new Client();
   constructor(
     private activatedRoute: ActivatedRoute,
@@ -34,6 +36,7 @@ export class PaymentComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      this.numberOfPaymentToday = this.howManyTimesPaidToday();
     });
   }
   displaySavingsOtherAmount() {
@@ -77,6 +80,12 @@ export class PaymentComponent {
       alert('At least one number must be greater than 0');
       return;
     } else {
+      let conf = confirm(
+        `You have made ${this.numberOfPaymentToday} payment(s) today. Do you still want to proceed?`
+      );
+      if (!conf) {
+        return;
+      }
       this.client.amountPaid = (
         Number(this.client.amountPaid) + Number(this.paymentAmount)
       ).toString();
@@ -120,5 +129,13 @@ export class PaymentComponent {
     const creditScore =
       Number(this.client.numberOfPaymentsMade) * 5 - weeksElapsed * 5;
     return Math.min(creditScore, 100);
+  }
+
+  howManyTimesPaidToday() {
+    const filteredObj = Object.keys(this.client.payments!).filter((key) =>
+      key.startsWith(this.today)
+    );
+    let number = filteredObj.length;
+    return number;
   }
 }

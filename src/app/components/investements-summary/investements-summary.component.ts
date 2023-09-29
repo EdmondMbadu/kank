@@ -31,6 +31,8 @@ export class InvestementsSummaryComponent implements OnInit {
     '/client-info',
     '/client-info',
     '/client-info',
+    '/daily-payments',
+    '/daily-lendings',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',

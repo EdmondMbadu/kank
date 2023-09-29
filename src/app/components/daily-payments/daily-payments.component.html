@@ -1,0 +1,59 @@
+
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<div class="flex container mx-auto m-12 justify-center">
+   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Paiment Du Jour {{today.replaceAll('-','/')}}</h2>
+   <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
+
+
+</div>
+<div class="flex container mx-auto  justify-center">
+   <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
+       <div class="flex items-center justify-between mb-4">
+           <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Payments</h5>
+           <form class="flex items-center">   
+               <label for="simple-search" class="sr-only">Chercher</label>
+               <div class="relative w-full">
+                   <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                       <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
+                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
+                       </svg>
+                   </div>
+                   <input type="text" id="simple-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Chercher la date..." required>
+               </div>
+               <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                   <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                   </svg>
+                   <span class="sr-only">Chercher</span>
+               </button>
+           </form>
+   </div>
+   <div class="flow-root">
+           <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let c of dailyPaymentsNames; let i=index  " [routerLink]="['/client-portal',trackingIds[i]]">
+                   <div class="flex items-center space-x-4">
+                       <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
+                           <span class="font-medium text-gray-600 dark:text-gray-300">{{c?.substring(0,2)}}</span>
+                       </div>
+                       <div class="flex-1 min-w-0">
+                           <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
+                           {{c}}
+                           </p>
+                           <p class="text-sm text-gray-500 truncate dark:text-gray-400">
+                           <!-- {{paymentDates[i].replaceAll('-','/').substring(0,9)}} -->
+                           </p>
+                       </div>
+                       <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
+                           FC {{dailyPamentsAmount[i]| number:'1.0-0'}}
+                       </div>
+                   </div>
+               </li>
+           </ul>
+   </div>
+   </div>
+
+
+</div>
+
+
+

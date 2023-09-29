@@ -28,6 +28,8 @@ import { AmountInvestedComponent } from './components/amount-invested/amount-inv
 import { ExpensesComponent } from './components/expenses/expenses.component';
 import { ReserveComponent } from './components/reserve/reserve.component';
 import { UpdateClientInfoComponent } from './components/update-client-info/update-client-info.component';
+import { DailyPaymentsComponent } from './components/daily-payments/daily-payments.component';
+import { DailyLendingsComponent } from './components/daily-lendings/daily-lendings.component';
 
 @NgModule({
   declarations: [
@@ -49,6 +51,8 @@ import { UpdateClientInfoComponent } from './components/update-client-info/updat
     ExpensesComponent,
     ReserveComponent,
     UpdateClientInfoComponent,
+    DailyPaymentsComponent,
+    DailyLendingsComponent,
   ],
   imports: [
     BrowserModule,
