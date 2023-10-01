@@ -79,6 +79,12 @@ export class PaymentComponent {
     ) {
       alert('At least one number must be greater than 0');
       return;
+    } else if (Number(this.client.debtLeft) <= 0) {
+      alert('You have paid everything. No more payments needed!');
+      return;
+    } else if (Number(this.paymentAmount) > Number(this.client.debtLeft)) {
+      alert('Your payment will go over the amount needed. Adjust the amount');
+      return;
     } else {
       let conf = confirm(
         `You have made ${this.numberOfPaymentToday} payment(s) today. Do you still want to proceed?`

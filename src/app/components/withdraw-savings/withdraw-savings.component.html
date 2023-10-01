@@ -1,6 +1,6 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl text-center md:text-3xl mr-4"> {{client.firstName}} {{client.lastName}} Withdrawal From Savings</h1>
+    <h1 class="text-xl text-center md:text-3xl mr-4"> {{client.firstName}} {{client.lastName}} Retrait De L'Epargne</h1>
     <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "  routerLink="/client-portal">Client Portal</button> -->
 </div>
 
@@ -10,14 +10,14 @@
   
     
     <div class="mb-6">
-        <h1 for="savingsOther" class=" block mb-2 text-sm font-medium text-gray-900 "> Current Savings Amount </h1>
+        <h1 for="savingsOther" class=" block mb-2 text-sm font-medium text-gray-900 "> Compte Epargne Courant </h1>
         <h1 class="text-red-500 ml-6"> FC {{client.savings | number:'1.0-0'}}</h1>
        
     </div> 
 
 
 <div class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Withdrawal Amount</label>
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Montant De Retrait</label>
     <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="savingsWithdrawn" (change)="displaySavingsOtherAmount()"selected>
         <option [ngValue]="0">FC 0</option>
         <option [ngValue]="5000">FC 5000</option>
@@ -26,7 +26,7 @@
     </select>
 </div>
 <div *ngIf="savingsOtherAmount" class="mb-6">
-    <label for="savingsOther" class="block mb-2 text-sm font-medium text-gray-900 "> Withraw Other Amount</label>
+    <label for="savingsOther" class="block mb-2 text-sm font-medium text-gray-900 "> Retrait Autre Montant</label>
     <input [(ngModel)]="savingsWithdrawn" type="text" id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="20000" required>
 </div> 
 
@@ -37,8 +37,8 @@
 
    
 
-<button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Cancel</button>
-    <button  (click)="makePayment()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Submit</button>
+<button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
+    <button  (click)="makePayment()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumetrre</button>
    
 </div>
 

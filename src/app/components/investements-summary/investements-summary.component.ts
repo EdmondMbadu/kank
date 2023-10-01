@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -12,13 +13,15 @@ export class InvestementsSummaryComponent implements OnInit {
   constructor(
     private router: Router,
     public auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private compute: ComputationService
   ) {}
   ngOnInit() {
     this.initalizeInputs();
   }
   dailyLending: string = '0';
   dailyPayment: string = '0';
+  valuesConvertedToDollars: string[] = [];
   elements: number = 10;
   linkPath: string[] = [
     '/client-info',
@@ -69,6 +72,8 @@ export class InvestementsSummaryComponent implements OnInit {
       Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)
     ).toString();
+    let bWithExpenses = this.BenefitsWithExpenses();
+    let bWithoutExpenses = this.BenefitsWithoutExpenses();
     this.dailyLending =
       this.auth.currentUser.dailyLending[this.time.todaysDateMonthDayYear()];
     this.dailyPayment =
@@ -89,10 +94,37 @@ export class InvestementsSummaryComponent implements OnInit {
       `${realBenefit}`,
       ` ${this.auth.currentUser.reserveAmount}`,
       ` ${this.auth.currentUser.fees}`,
-      `${this.BenefitsWithoutExpenses()}`,
-      ` ${this.BenefitsWithExpenses()}`,
+      `${bWithoutExpenses}`,
+      ` ${bWithExpenses}`,
       ` ${this.dailyPayment}`,
       ` ${this.dailyLending}`,
+    ];
+
+    this.valuesConvertedToDollars = [
+      ``,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.amountInvested
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.totalDebtLeft
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.clientsSavings
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.expensesAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.reserveAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.fees
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(bWithoutExpenses)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(bWithExpenses)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
     ];
   }
   BenefitsWithExpenses(): string {

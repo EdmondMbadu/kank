@@ -52,6 +52,9 @@ export class WithdrawSavingsComponent implements OnInit {
     } else if (Number(this.savingsWithdrawn) > Number(this.client.savings)) {
       alert('Not Enough Money!');
       return;
+    } else if (Number(this.savingsWithdrawn) <= 0) {
+      alert('Withraw a valid amount!');
+      return;
     } else {
       this.client.savings = (
         Number(this.client.savings) - Number(this.savingsWithdrawn)
