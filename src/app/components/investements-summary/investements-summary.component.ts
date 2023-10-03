@@ -18,7 +18,28 @@ export class InvestementsSummaryComponent implements OnInit {
   ) {}
   ngOnInit() {
     this.initalizeInputs();
+    this.extractValues();
   }
+  public graph = {
+    data: [{}],
+    layout: {
+      title: 'Paiment Journalier en $',
+      barmode: 'stack',
+    },
+  };
+  public graph2 = {
+    data: [{}],
+    layout: {
+      title: 'Paiment Journalier en $',
+      barmode: 'stack',
+    },
+  };
+
+  today = this.time.todaysDateMonthDayYear();
+  recentReimbursementDates: string[] = [];
+  recentReimbursementAmounts: number[] = [];
+  recentLendingDates: string[] = [];
+  recentLendingAmounts: number[] = [];
   dailyLending: string = '0';
   dailyPayment: string = '0';
   valuesConvertedToDollars: string[] = [];
@@ -74,12 +95,8 @@ export class InvestementsSummaryComponent implements OnInit {
     ).toString();
     let bWithExpenses = this.BenefitsWithExpenses();
     let bWithoutExpenses = this.BenefitsWithoutExpenses();
-    this.dailyLending =
-      this.auth.currentUser.dailyLending[this.time.todaysDateMonthDayYear()];
-    this.dailyPayment =
-      this.auth.currentUser.dailyReimbursement[
-        this.time.todaysDateMonthDayYear()
-      ];
+    this.dailyLending = this.auth.currentUser.dailyLending[this.today];
+    this.dailyPayment = this.auth.currentUser.dailyReimbursement[this.today];
     this.dailyLending =
       this.dailyLending === undefined ? '0' : this.dailyLending;
     this.dailyPayment =
@@ -141,5 +158,83 @@ export class InvestementsSummaryComponent implements OnInit {
       Number(this.auth.currentUser.amountLended);
 
     return benefit.toString();
+  }
+
+  displayGraph() {}
+
+  extractValues() {
+    const sortedKeys = Object.keys(this.auth.currentUser.dailyReimbursement)
+      .sort((a, b) => +this.toDate(a) - +this.toDate(b))
+      .slice(-5);
+    const values = sortedKeys.map(
+      (key) => this.auth.currentUser.dailyReimbursement[key]
+    );
+    this.recentReimbursementDates = sortedKeys;
+    this.recentReimbursementAmounts = this.convertToDollars(values);
+    const sortedKeys2 = Object.keys(this.auth.currentUser.dailyLending)
+      .sort((a, b) => +this.toDate(a) - +this.toDate(b))
+      .slice(-5);
+    const values2 = sortedKeys2.map(
+      (key) => this.auth.currentUser.dailyLending[key]
+    );
+    this.recentLendingDates = sortedKeys2;
+    this.recentLendingAmounts = this.convertToDollars(values2);
+    console.log('lending dates', this.recentLendingDates);
+    console.log('lending amounts', this.recentLendingAmounts);
+
+    this.graph = {
+      data: [
+        {
+          x: this.recentReimbursementDates,
+          y: this.recentReimbursementAmounts,
+          type: 'bar',
+          mode: 'lines+points',
+          marker: { color: 'rgb(0,76,153)' },
+          line: {
+            color: 'rgb(8,48,107)',
+            // width: 1200,
+          },
+        },
+      ],
+      layout: {
+        title: 'Paiment en $',
+        barmode: 'stack',
+      },
+    };
+    this.graph2 = {
+      data: [
+        {
+          x: this.recentLendingDates,
+          y: this.recentLendingAmounts,
+          type: 'bar',
+          mode: 'lines+points',
+          marker: { color: 'rgb(0,153,0)' },
+          line: {
+            color: 'rgb(8,48,107)',
+            // width: 1200,
+          },
+        },
+      ],
+      layout: {
+        title: 'Paiment en $',
+        barmode: 'stack',
+      },
+    };
+  }
+
+  toDate(dateString: string) {
+    const [month, day, year] = dateString
+      .split('-')
+      .map((part: any) => parseInt(part, 10));
+    return new Date(year, month - 1, day);
+  }
+
+  convertToDollars(array: any) {
+    let result: number[] = [];
+    for (let a of array) {
+      result.push(Math.floor(Number(a) * 0.0004));
+    }
+
+    return result;
   }
 }

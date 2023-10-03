@@ -5,6 +5,9 @@ import { AngularFireAuthModule } from '@angular/fire/compat/auth';
 // import { provideFirebaseApp, getApp, initializeApp } from '@angular/fire/app';
 // import { provideAuth, getAuth } from '@angular/fire/auth';
 
+import * as PlotlyJS from 'plotly.js-dist-min';
+PlotlyModule.plotlyjs = PlotlyJS;
+
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { NavbarComponent } from './components/navbar/navbar.component';
@@ -15,7 +18,6 @@ import { NewClientComponent } from './components/new-client/new-client.component
 import { ClientPortalComponent } from './components/client-portal/client-portal.component';
 import { PaymentComponent } from './components/payment/payment.component';
 import { PaymentActivityComponent } from './components/payment-activity/payment-activity.component';
-import { NgApexchartsModule } from 'ng-apexcharts';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { CreateAccountComponent } from './components/create-account/create-account.component';
 import { environment } from '../../environments/environments';
@@ -30,6 +32,8 @@ import { ReserveComponent } from './components/reserve/reserve.component';
 import { UpdateClientInfoComponent } from './components/update-client-info/update-client-info.component';
 import { DailyPaymentsComponent } from './components/daily-payments/daily-payments.component';
 import { DailyLendingsComponent } from './components/daily-lendings/daily-lendings.component';
+import { CommonModule } from '@angular/common';
+import { PlotlyModule } from 'angular-plotly.js';
 
 @NgModule({
   declarations: [
@@ -57,12 +61,13 @@ import { DailyLendingsComponent } from './components/daily-lendings/daily-lendin
   imports: [
     BrowserModule,
     AppRoutingModule,
-    NgApexchartsModule,
     ReactiveFormsModule,
     FormsModule,
     AngularFireModule.initializeApp(environment.firebase),
     AngularFirestoreModule,
     AngularFireAuthModule,
+    CommonModule,
+    PlotlyModule,
     // provideFirebaseApp(() => initializeApp(environment.firebase)),
     // provideAuth(() => getAuth()),
   ],

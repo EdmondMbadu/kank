@@ -26,16 +26,20 @@
 </div>
 
 
-<div class="m-12 container flex mx-auto shadow-xl  flex-col justify-center  md:flex-row ">
-    <div class="flex-col">
-        <h1 class="m-12 text-3xl md:text-4xl">Stats</h1>
+<div class=" container flex mx-auto shadow-xl  flex-col md:justify-center justify-between  md:flex-row ">
+        
+        <div class="flex flex-col">
+            <h1 class="m-12 text-3xl md:text-4xl text-center"> Paiements Quotidiens</h1>
+            <plotly-plot [data]="graph.data" [layout]="graph.layout"></plotly-plot>
 
-    </div>
+        </div>
 
-    <div class="flex-col">
-        <h1 class="m-12 text-3xl md:text-4xl">Charts</h1>
+        <div class="flex flex-col">
+            <h1 class="m-12 text-3xl md:text-4xl text-center">Emprunts Quotidiens</h1>
+            <plotly-plot [data]="graph2.data" [layout]="graph2.layout"></plotly-plot>
 
-    </div>
+        </div>
+
 
 
 </div>
