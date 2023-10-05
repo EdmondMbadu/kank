@@ -57,6 +57,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '/client-info',
     '/daily-payments',
     '/daily-lendings',
+    '/pay-today',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
@@ -71,6 +72,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '../../../assets/img/benefit.svg',
     '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-payment.png',
+    '../../../assets/img/calendar.png',
   ];
   summary: string[] = [
     'Nombres des Clients',
@@ -85,6 +87,7 @@ export class InvestementsSummaryComponent implements OnInit {
     'Benefice',
     'Paiment Du Jour',
     'Emprunt Du Jour',
+    'Attendu a Payer Aujourdhui',
   ];
   summaryContent: string[] = [];
 
@@ -179,8 +182,6 @@ export class InvestementsSummaryComponent implements OnInit {
     );
     this.recentLendingDates = sortedKeys2;
     this.recentLendingAmounts = this.convertToDollars(values2);
-    console.log('lending dates', this.recentLendingDates);
-    console.log('lending amounts', this.recentLendingAmounts);
 
     this.graph = {
       data: [

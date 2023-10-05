@@ -11,7 +11,14 @@
     <div class=" border-2 border-green-800 rounded-lg p-12">
       
         
-    
+        <div  class="mb-6">
+            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Nom</label>
+            <input [(ngModel)]="client.firstName" type="text" id="telelphone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.firstName}}" required>
+        </div>
+        <div  class="mb-6">
+            <label for="lasttName" class="block mb-2 text-sm font-medium text-gray-900 "> Postnom</label>
+            <input [(ngModel)]="client.lastName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.lastName}}" required>
+        </div>
     
  
     <div  class="mb-6">
@@ -34,6 +41,17 @@
     <div  class="mb-6">
         <label for="profession" class="block mb-2 text-sm font-medium text-gray-900 "> Profession</label>
         <input [(ngModel)]="client.profession" type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.profession}}" required>
+    </div>
+    <div class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
+        <select id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <option selected>Choose</option>
+        <option [ngValue]="'Monday'">Lundi</option>
+        <option [ngValue]="'Tuesday'">Mardi</option>
+        <option [ngValue]="'Wednesday'">Mercredi</option>
+        <option [ngValue]="'Thursday'">Jeudi</option>
+        <option [ngValue]="'Friday'">Vendredi </option>
+        </select>
     </div>
     
     

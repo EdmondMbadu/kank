@@ -33,10 +33,13 @@ export class UpdateClientInfoComponent {
 
   updateClientInfo() {
     if (
+      this.client.firstName === '' ||
+      this.client.lastName === '' ||
       this.client.phoneNumber === '' ||
       this.client.businessAddress === '' ||
       this.client.businessAddress === '' ||
-      this.client.profession === ''
+      this.client.profession === '' ||
+      this.client.paymentDay === ''
     ) {
       alert('Fill all fields');
       return;

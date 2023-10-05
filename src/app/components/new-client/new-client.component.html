@@ -41,7 +41,17 @@
         <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
         <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="phoneNumber">
     </div> 
-
+    <div class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
+        <select id="countries"[(ngModel)]="paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <option selected>Choose</option>
+        <option [ngValue]="'Monday'">Lundi</option>
+        <option [ngValue]="'Tuesday'">Mardi</option>
+        <option [ngValue]="'Wednesday'">Mercredi</option>
+        <option [ngValue]="'Thursday'">Jeudi</option>
+        <option [ngValue]="'Friday'">Vendredi </option>
+        </select>
+    </div>
 <div class="mb-6">
     <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
     <select id="applicationFee" [(ngModel)]="applicactionFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
@@ -102,6 +112,8 @@
     <option [ngValue]="">Other Amount </option>
     </select>
 </div>
+
+
 <div *ngIf="loanAmountOtherDisplay" class="mb-6">
     <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
     <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>

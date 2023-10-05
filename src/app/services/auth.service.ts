@@ -176,6 +176,7 @@ export class AuthService {
       dateJoined: `${month}-${day}-${year}`,
       numberOfPaymentsMissed: '0',
       numberOfPaymentsMade: '0',
+      paymentDay: client.paymentDay,
       payments: {},
     };
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(

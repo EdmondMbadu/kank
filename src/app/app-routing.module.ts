@@ -19,6 +19,7 @@ import { ReserveComponent } from './components/reserve/reserve.component';
 import { UpdateClientInfoComponent } from './components/update-client-info/update-client-info.component';
 import { DailyPaymentsComponent } from './components/daily-payments/daily-payments.component';
 import { DailyLendingsComponent } from './components/daily-lendings/daily-lendings.component';
+import { PayTodayComponent } from './components/pay-today/pay-today.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -43,6 +44,7 @@ const routes: Routes = [
   { path: 'update-client-info/:id', component: UpdateClientInfoComponent },
   { path: 'daily-payments', component: DailyPaymentsComponent },
   { path: 'daily-lendings', component: DailyLendingsComponent },
+  { path: 'pay-today', component: PayTodayComponent },
 ];
 
 @NgModule({

@@ -61,10 +61,13 @@ export class DataService {
     );
 
     const data = {
+      firstName: client.firstName,
+      lastName: client.lastName,
       phoneNumber: client.phoneNumber,
       businessAddress: client.businessAddress,
       homeAddress: client.homeAddress,
       profession: client.profession,
+      paymentDay: client.paymentDay,
     };
 
     return clientRef.set(data, { merge: true });

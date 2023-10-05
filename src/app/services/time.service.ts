@@ -130,4 +130,23 @@ export class TimeService {
 
     return Math.floor(weeksPassed);
   }
+
+  getDayOfWeek(dateString: string) {
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    const [month, day, year] = dateString
+      .split('-')
+      .map((part) => parseInt(part, 10));
+    const date = new Date(year, month - 1, day);
+    return days[date.getDay()];
+  }
+
+  // Outputs: "Thursday"
 }

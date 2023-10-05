@@ -38,6 +38,7 @@ export class NewClientComponent implements OnInit {
   amountToPay: string = '';
   debtCycleStartDate: string = '';
   debtCycleEndDate: string = '';
+  paymentDay: string = '';
 
   applicationFeeOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
@@ -68,7 +69,8 @@ export class NewClientComponent implements OnInit {
       this.debtCycleStartDate === '' ||
       this.debtCycleEndDate === '' ||
       this.interestRate === '' ||
-      this.amountToPay === ''
+      this.amountToPay === '' ||
+      this.paymentDay === ''
     ) {
       alert('All fields are required');
       return;
@@ -151,6 +153,7 @@ export class NewClientComponent implements OnInit {
     this.debtCycleEndDate = '';
     this.interestRate = '';
     this.amountToPay = '';
+    this.paymentDay = '';
   }
   setNewClientValues() {
     this.client.firstName = this.firstName;
@@ -171,6 +174,7 @@ export class NewClientComponent implements OnInit {
     this.client.debtCycleStartDate = this.debtCycleStartDate;
     this.client.debtCycleEndDate = this.debtCycleEndDate;
     this.client.debtLeft = this.amountToPay;
+    this.client.paymentDay = this.paymentDay;
   }
   displayRate() {
     if (this.payRange === '' || this.loanAmount === '') {
