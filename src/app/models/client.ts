@@ -7,6 +7,7 @@ export class Client {
   profession?: string;
   phoneNumber?: string;
   paymentDay?: string;
+  frenchPaymentDay?: string;
   businessCapital?: string;
   homeAddress?: string;
   businessAddress?: string;
