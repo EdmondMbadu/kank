@@ -75,6 +75,11 @@ export class ClientPortalComponent {
   }
 
   delete() {
+    let result = confirm('Êtes-vous sûr de vouloir supprimer ce client?');
+    if (!result) {
+      console.log('confirm result', result);
+      return;
+    }
     this.auth
       .deleteClient(this.client)
       .then(() => {

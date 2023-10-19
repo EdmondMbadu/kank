@@ -40,9 +40,12 @@ export class ClientInfoComponent implements OnInit {
   }
 
   addIdToFilterItems() {
+    let total = 0;
     for (let i = 0; i < this.filteredItems!.length; i++) {
       this.filteredItems![i].trackingId = `${i}`;
+      total += Number(this.filteredItems![i].debtLeft);
     }
+    console.log('The total debt left is', total);
   }
   search(value: string) {
     if (value) {

@@ -207,6 +207,9 @@ export class AuthService {
       projectedRevenue: (
         Number(this.currentUser.projectedRevenue) - Number(client.amountToPay)
       ).toString(),
+      totalDebtLeft: (
+        Number(this.currentUser.totalDebtLeft) - Number(client.debtLeft)
+      ).toString(),
     };
     return userRef.set(data, { merge: true });
   }
