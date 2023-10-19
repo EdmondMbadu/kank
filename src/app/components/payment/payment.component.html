@@ -11,34 +11,34 @@
 
 
 <div class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Personal Savings</label>
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
     <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="savingsAmount" (change)="displaySavingsOtherAmount()"selected>
         <option [ngValue]="0">FC 0</option>
         <option [ngValue]="5000">FC 5000</option>
     <option [ngValue]="10000">FC 10,000</option>
     <option [ngValue]="20000">FC 20,000</option>
     <option [ngValue]="30000">FC 30,000</option>
-    <option [ngValue]="" > Other Amount</option>
+    <option [ngValue]="" >Autre Montant</option>
     </select>
 </div>
 <div *ngIf="savingsOtherAmount" class="mb-6">
-    <label for="savingsOther" class="block mb-2 text-sm font-medium text-gray-900 "> Savings Other Amount</label>
+    <label for="savingsOther" class="block mb-2 text-sm font-medium text-gray-900 "> Epargnes Autre Amount</label>
     <input [(ngModel)]="savingsAmount" type="text" id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
 </div> 
 
 
 
 <div class="mb-6">
-    <label for="payment" class="block mb-2 text-sm font-medium text-red-700">Payment Amount</label>
+    <label for="payment" class="block mb-2 text-sm font-medium text-red-700">Montant De Payment</label>
     <select id="payment" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="paymentAmount"(change)="displayPaymentOtherAmount()"selected>
     <option [ngValue]="17500">FC 17,500</option>
     <option [ngValue]="35000">FC 35,000</option>
     <option [ngValue]="70000">FC 70,000</option>
-    <option [ngValue]="">Other Amount </option>
+    <option [ngValue]="">Autre Montant </option>
     </select>
 </div>
 <div *ngIf="paymentOtherAmount" class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Payment Other Amount</label>
+    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Payment Autre Montant</label>
     <input type="text" [(ngModel)]="paymentAmount"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
 </div> 
 

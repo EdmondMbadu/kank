@@ -40,7 +40,7 @@ export class PaymentComponent {
     });
   }
   displaySavingsOtherAmount() {
-    if (this.savingsAmount === 'Other Amount') {
+    if (this.savingsAmount === 'Autre Montant') {
       this.savingsOtherAmount = true;
       this.savingsAmount = '';
     } else {
@@ -49,7 +49,7 @@ export class PaymentComponent {
   }
   displayPaymentOtherAmount() {
     console.log('payment amount', this.paymentAmount);
-    if (this.paymentAmount === 'Other Amount') {
+    if (this.paymentAmount === 'Autre Montant') {
       this.paymentOtherAmount = true;
       this.paymentAmount = '';
     } else {
@@ -71,23 +71,25 @@ export class PaymentComponent {
       Number(this.paymentAmount) < 0 ||
       Number(this.savingsAmount) < 0
     ) {
-      alert('The numbers must be positive');
+      alert('les nombres doivent etre positifs');
       return;
     } else if (
       Number(this.paymentAmount) <= 0 &&
       Number(this.savingsAmount) <= 0
     ) {
-      alert('At least one number must be greater than 0');
+      alert('Au moins un nombre doit etre plus grand que 0.');
       return;
     } else if (Number(this.client.debtLeft) <= 0) {
-      alert('You have paid everything. No more payments needed!');
+      alert('Vous avez tout payé. Plus besoin de paiements!');
       return;
     } else if (Number(this.paymentAmount) > Number(this.client.debtLeft)) {
-      alert('Your payment will go over the amount needed. Adjust the amount');
+      alert(
+        'Votre paiement dépassera le montant nécessaire. Ajuster le montant'
+      );
       return;
     } else {
       let conf = confirm(
-        `You have made ${this.numberOfPaymentToday} payment(s) today. Do you still want to proceed?`
+        ` Vous avez effectué ${this.numberOfPaymentToday} paiement(s) aujourd'hui. Voulez-vous quand même continuer ?`
       );
       if (!conf) {
         return;

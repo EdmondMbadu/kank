@@ -148,5 +148,38 @@ export class TimeService {
     return days[date.getDay()];
   }
 
-  // Outputs: "Thursday"
+  convertDateToDesiredFormat(input: string) {
+    // Split the input string
+    const parts = input.split('-');
+
+    // Map the month numbers to their three-letter names
+    const monthNames = [
+      'Janvier',
+      'Fevrier',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Decembre',
+    ];
+    const month = monthNames[parseInt(parts[0], 10) - 1];
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    const hour = parseInt(parts[3], 10);
+    const minute = parseInt(parts[4], 10);
+    const second = parseInt(parts[5], 10);
+
+    // Create a Date object from the input parts
+
+    // Map the day numbers to their names
+
+    // Construct the desired output format
+    const formatted = ` ${day} ${month} ${year} à  ${hour}:${minute}`;
+    return formatted;
+  }
 }

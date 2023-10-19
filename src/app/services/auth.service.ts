@@ -63,13 +63,6 @@ export class AuthService {
       this.currentUser = user;
     });
   }
-
-  getCurrentClient() {
-    this.clientsRef$.subscribe((client) => {
-      this.currentClient = client;
-    });
-  }
-
   SignOn(email: string, password: string) {
     this.fireauth
       .signInWithEmailAndPassword(email, password)

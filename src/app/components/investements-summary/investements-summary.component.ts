@@ -36,6 +36,12 @@ export class InvestementsSummaryComponent implements OnInit {
   };
 
   today = this.time.todaysDateMonthDayYear();
+
+  week: number = 5;
+  month: number = 20;
+  day: number = 1;
+  graphicTimeRangePayment: number = this.week;
+  graphicTimeRangeLending: number = this.week;
   recentReimbursementDates: string[] = [];
   recentReimbursementAmounts: number[] = [];
   recentLendingDates: string[] = [];
@@ -168,7 +174,7 @@ export class InvestementsSummaryComponent implements OnInit {
   extractValues() {
     const sortedKeys = Object.keys(this.auth.currentUser.dailyReimbursement)
       .sort((a, b) => +this.toDate(a) - +this.toDate(b))
-      .slice(-5);
+      .slice(-this.graphicTimeRangePayment);
     const values = sortedKeys.map(
       (key) => this.auth.currentUser.dailyReimbursement[key]
     );
@@ -176,7 +182,7 @@ export class InvestementsSummaryComponent implements OnInit {
     this.recentReimbursementAmounts = this.convertToDollars(values);
     const sortedKeys2 = Object.keys(this.auth.currentUser.dailyLending)
       .sort((a, b) => +this.toDate(a) - +this.toDate(b))
-      .slice(-5);
+      .slice(-this.graphicTimeRangeLending);
     const values2 = sortedKeys2.map(
       (key) => this.auth.currentUser.dailyLending[key]
     );
@@ -237,5 +243,8 @@ export class InvestementsSummaryComponent implements OnInit {
     }
 
     return result;
+  }
+  updateGraphicTimeRange() {
+    this.extractValues();
   }
 }

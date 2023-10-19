@@ -30,12 +30,28 @@
         
         <div class="flex flex-col">
             <h1 class="m-12 text-3xl md:text-4xl text-center"> Paiements Quotidiens</h1>
+            <div class="mb-6">
+                <label for="applicationFee" class="block mb-2 text-md font-medium text-gray-900">Intervalle De Temps</label>
+                <select id="applicationFee" [(ngModel)]="graphicTimeRangePayment"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="updateGraphicTimeRange()">
+                <option [ngValue]="5">Semaine</option>
+                <option [ngValue]="20">Mois</option>
+                <option [ngValue]="1">Journée</option>
+                </select>
+            </div>
             <plotly-plot [data]="graph.data" [layout]="graph.layout"></plotly-plot>
 
         </div>
 
         <div class="flex flex-col">
             <h1 class="m-12 text-3xl md:text-4xl text-center">Emprunts Quotidiens</h1>
+            <div class="mb-6 mx-10">
+                <label for="applicationFee" class="block mb-2 text-md font-medium text-gray-900">Intervalle De Temps</label>
+                <select id="applicationFee" [(ngModel)]="graphicTimeRangeLending"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="updateGraphicTimeRange()">
+                <option [ngValue]="5">Semaine</option>
+                <option [ngValue]="20">Mois</option>
+                <option [ngValue]="1">Journée</option>
+                </select>
+            </div>
             <plotly-plot [data]="graph2.data" [layout]="graph2.layout"></plotly-plot>
 
         </div>

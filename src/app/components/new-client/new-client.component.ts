@@ -72,10 +72,12 @@ export class NewClientComponent implements OnInit {
       this.amountToPay === '' ||
       this.paymentDay === ''
     ) {
-      alert('All fields are required');
+      alert('Completer tous les données');
       return;
     } else if (!inputValid) {
-      alert('Make sure all numbers are valid and greater than or equal to 0');
+      alert(
+        'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
+      );
       return;
     } else {
       this.setNewClientValues();
@@ -84,15 +86,19 @@ export class NewClientComponent implements OnInit {
           this.router.navigate(['client-info']);
         },
         (err: any) => {
-          alert('Something went wrong. Unable to add New client');
+          alert(
+            "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client!"
+          );
         }
       );
       this.data.updateUserInfoForNewClient(this.client, date).then(
         (res: any) => {
-          console.log('Updated user info successfully');
+          console.log('Informations utilisateur mises à jour avec succès');
         },
         (err: any) => {
-          alert('Something went wrong. Unable to add New client');
+          alert(
+            "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client"
+          );
         }
       );
 
@@ -102,7 +108,7 @@ export class NewClientComponent implements OnInit {
   }
 
   displayApplicationFeeOtherAmount() {
-    if (this.applicactionFee === 'Other Amount') {
+    if (this.applicactionFee === 'Autre Montant') {
       this.applicationFeeOtherDisplay = true;
       this.applicactionFee = '';
     } else {
@@ -110,7 +116,7 @@ export class NewClientComponent implements OnInit {
     }
   }
   displaymemberShipFeeOtherAmount() {
-    if (this.memberShipFee === 'Other Amount') {
+    if (this.memberShipFee === 'Autre Montant') {
       this.memberShipFeeOtherDisplay = true;
       this.memberShipFee = '';
     } else {
@@ -118,7 +124,7 @@ export class NewClientComponent implements OnInit {
     }
   }
   displaySavingsOtherAmount() {
-    if (this.savings === 'Other Amount') {
+    if (this.savings === 'Autre Montant') {
       this.savingsOtherDisplay = true;
       this.savings = '';
     } else {
@@ -127,7 +133,7 @@ export class NewClientComponent implements OnInit {
   }
 
   displayLoanOtherAmount() {
-    if (this.loanAmount === 'Other Amount') {
+    if (this.loanAmount === 'Autre Montant') {
       this.loanAmountOtherDisplay = true;
       this.loanAmount = '';
     } else {

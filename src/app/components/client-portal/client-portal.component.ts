@@ -57,7 +57,9 @@ export class ClientPortalComponent {
 
   startNewDebtCycle() {
     if (this.client.amountPaid !== this.client.amountToPay) {
-      alert(`You still owe FC ${this.aRemaining}. Finish this cycle first.`);
+      alert(
+        `Vous devez encore FC ${this.aRemaining}. Terminez d'abord ce cycle.`
+      );
       return;
     } else {
       this.router.navigate(['/debt-cycle/' + this.id]);
@@ -65,7 +67,7 @@ export class ClientPortalComponent {
   }
   withDrawFromSavings() {
     if (this.client.savings === '0') {
-      alert('You have have no Money!');
+      alert("Vous n'avez pas d'argent !");
       return;
     } else {
       this.router.navigate(['/withdraw-savings/' + this.id]);
@@ -76,7 +78,7 @@ export class ClientPortalComponent {
     this.auth
       .deleteClient(this.client)
       .then(() => {
-        alert('Client successfully deleted!');
+        alert('Client supprimé avec succès !');
         this.router.navigate(['/client-info/']);
       })
       .catch((error) => {

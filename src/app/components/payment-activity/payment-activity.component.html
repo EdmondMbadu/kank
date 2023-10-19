@@ -40,7 +40,7 @@
                            {{client.firstName}} {{client.lastName}}
                            </p>
                            <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                           {{paymentDates[i].replaceAll('-','/').substring(0,9)}}
+                           {{formattedPaymentsDates[i]}}
                            </p>
                        </div>
                        <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
