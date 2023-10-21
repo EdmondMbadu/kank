@@ -38,6 +38,7 @@ export class DailyLendingsComponent {
   }
 
   extractTodayLendings() {
+    this.filteredItems = [];
     for (let client of this.clients!) {
       if (client.debtCycleStartDate === this.today) {
         this.filteredItems!.push(client);

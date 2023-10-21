@@ -36,7 +36,8 @@ export class InvestementsSummaryComponent implements OnInit {
   };
 
   today = this.time.todaysDateMonthDayYear();
-
+  colorPositive: string = '#008080';
+  colorNegative: string = '#ff0000';
   week: number = 5;
   month: number = 20;
   day: number = 1;
@@ -178,6 +179,7 @@ export class InvestementsSummaryComponent implements OnInit {
     const values = sortedKeys.map(
       (key) => this.auth.currentUser.dailyReimbursement[key]
     );
+    const color1 = this.findColor(values);
     this.recentReimbursementDates = sortedKeys;
     this.recentReimbursementAmounts = this.convertToDollars(values);
     const sortedKeys2 = Object.keys(this.auth.currentUser.dailyLending)
@@ -188,17 +190,18 @@ export class InvestementsSummaryComponent implements OnInit {
     );
     this.recentLendingDates = sortedKeys2;
     this.recentLendingAmounts = this.convertToDollars(values2);
+    const color2 = this.findColor(values2);
 
     this.graph = {
       data: [
         {
           x: this.recentReimbursementDates,
           y: this.recentReimbursementAmounts,
-          type: 'bar',
-          mode: 'lines+points',
+          type: 'scatter',
+          mode: 'lines',
           marker: { color: 'rgb(0,76,153)' },
           line: {
-            color: 'rgb(8,48,107)',
+            color: color1,
             // width: 1200,
           },
         },
@@ -213,11 +216,11 @@ export class InvestementsSummaryComponent implements OnInit {
         {
           x: this.recentLendingDates,
           y: this.recentLendingAmounts,
-          type: 'bar',
+          type: 'scatter',
           mode: 'lines+points',
           marker: { color: 'rgb(0,153,0)' },
           line: {
-            color: 'rgb(8,48,107)',
+            color: color2,
             // width: 1200,
           },
         },
@@ -246,5 +249,11 @@ export class InvestementsSummaryComponent implements OnInit {
   }
   updateGraphicTimeRange() {
     this.extractValues();
+  }
+
+  findColor(array: string[]) {
+    let start = Number(array[0]);
+    let end = Number(array[array.length - 1]);
+    return end - start >= 0 ? this.colorPositive : this.colorNegative;
   }
 }
