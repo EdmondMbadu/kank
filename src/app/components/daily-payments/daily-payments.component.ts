@@ -42,6 +42,9 @@ export class DailyPaymentsComponent {
   }
 
   extractTodayPayments() {
+    this.dailyPamentsAmount = [];
+    this.dailyPaymentsNames = [];
+    this.trackingIds = [];
     for (let client of this.clients!) {
       const filteredDict = Object.fromEntries(
         Object.entries(client.payments!).filter(([key, value]) =>
@@ -56,9 +59,6 @@ export class DailyPaymentsComponent {
   }
 
   fillDailyPayment(client: Client, values: string[]) {
-    this.dailyPamentsAmount = [];
-    this.dailyPaymentsNames = [];
-    this.trackingIds = [];
     for (let v of values) {
       this.dailyPaymentsNames.push(`${client.firstName} ${client.lastName}`);
       this.dailyPamentsAmount.push(v);
