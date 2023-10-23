@@ -18,8 +18,19 @@ export class InvestementsSummaryComponent implements OnInit {
   ) {}
   ngOnInit() {
     this.initalizeInputs();
-    this.extractValues();
+    this.updatePaymentGraphics();
+    this.updateLendingGraphics();
+    this.updatePieGrahics();
   }
+  public graphPie = {
+    data: [{}],
+    layout: {
+      title: 'Paiment Journalier en $',
+      height: 400,
+      width: 400,
+      margin: { t: 0, b: 0, l: 0, r: 0 },
+    },
+  };
   public graph = {
     data: [{}],
     layout: {
@@ -35,12 +46,18 @@ export class InvestementsSummaryComponent implements OnInit {
     },
   };
 
+  maxRange = this.auth.currentUser.dailyReimbursement.length;
+
+  totalPayGraphics: number = 0;
+  totalLendingGraphics: number = 0;
   today = this.time.todaysDateMonthDayYear();
   colorPositive: string = '#008080';
   colorNegative: string = '#ff0000';
   week: number = 5;
   month: number = 20;
   day: number = 1;
+  globalTime: number = this.week;
+  graphicsPieTimeRange: number = this.week;
   graphicTimeRangePayment: number = this.week;
   graphicTimeRangeLending: number = this.week;
   recentReimbursementDates: string[] = [];
@@ -172,26 +189,45 @@ export class InvestementsSummaryComponent implements OnInit {
 
   displayGraph() {}
 
-  extractValues() {
+  sortKeysAndValuesPayments(time: number) {
     const sortedKeys = Object.keys(this.auth.currentUser.dailyReimbursement)
       .sort((a, b) => +this.toDate(a) - +this.toDate(b))
-      .slice(-this.graphicTimeRangePayment);
+      .slice(-time);
     const values = sortedKeys.map(
       (key) => this.auth.currentUser.dailyReimbursement[key]
     );
-    const color1 = this.findColor(values);
-    this.recentReimbursementDates = sortedKeys;
-    this.recentReimbursementAmounts = this.convertToDollars(values);
-    const sortedKeys2 = Object.keys(this.auth.currentUser.dailyLending)
+    return [sortedKeys, values];
+  }
+  sortKeysAndValuesLending(time: number) {
+    const sortedKeys = Object.keys(this.auth.currentUser.dailyLending)
       .sort((a, b) => +this.toDate(a) - +this.toDate(b))
-      .slice(-this.graphicTimeRangeLending);
-    const values2 = sortedKeys2.map(
+      .slice(-time);
+    const values = sortedKeys.map(
       (key) => this.auth.currentUser.dailyLending[key]
     );
-    this.recentLendingDates = sortedKeys2;
-    this.recentLendingAmounts = this.convertToDollars(values2);
-    const color2 = this.findColor(values2);
+    return [sortedKeys, values];
+  }
+  toDate(dateString: string) {
+    const [month, day, year] = dateString
+      .split('-')
+      .map((part: any) => parseInt(part, 10));
+    return new Date(year, month - 1, day);
+  }
 
+  convertToDollars(array: any) {
+    let result: number[] = [];
+    for (let a of array) {
+      result.push(Math.floor(Number(a) * 0.0004));
+    }
+
+    return result;
+  }
+
+  updatePaymentGraphics() {
+    let sorted = this.sortKeysAndValuesPayments(this.graphicTimeRangePayment);
+    this.recentReimbursementDates = sorted[0];
+    this.recentReimbursementAmounts = this.convertToDollars(sorted[1]);
+    const color1 = this.findColor(sorted[1]);
     this.graph = {
       data: [
         {
@@ -211,6 +247,43 @@ export class InvestementsSummaryComponent implements OnInit {
         barmode: 'stack',
       },
     };
+  }
+  updatePieGrahics() {
+    let sorted = this.sortKeysAndValuesPayments(this.graphicsPieTimeRange);
+    this.totalPayGraphics = this.findSum(sorted[1]);
+    let sorted2 = this.sortKeysAndValuesLending(this.graphicsPieTimeRange);
+    this.totalLendingGraphics = this.findSum(sorted2[1]);
+    console.log(
+      'current payment, lending',
+      this.totalPayGraphics,
+      this.totalLendingGraphics
+    );
+
+    this.graphPie = {
+      data: [
+        {
+          type: 'pie',
+          values: [this.totalPayGraphics, this.totalLendingGraphics],
+          labels: ['Paiments', 'Emprunts'],
+          textposition: 'inside',
+          hoverinfo: 'label+percent+name',
+          hole: 0.4,
+        },
+      ],
+      layout: {
+        title: 'Emprunts vs Paiment',
+        height: 500,
+        width: 500,
+        margin: { t: 0, b: 0, l: 0, r: 0 },
+      },
+    };
+  }
+
+  updateLendingGraphics() {
+    let sorted = this.sortKeysAndValuesLending(this.graphicTimeRangeLending);
+    this.recentLendingDates = sorted[0];
+    this.recentLendingAmounts = this.convertToDollars(sorted[1]);
+    const color2 = this.findColor(sorted[1]);
     this.graph2 = {
       data: [
         {
@@ -232,28 +305,16 @@ export class InvestementsSummaryComponent implements OnInit {
     };
   }
 
-  toDate(dateString: string) {
-    const [month, day, year] = dateString
-      .split('-')
-      .map((part: any) => parseInt(part, 10));
-    return new Date(year, month - 1, day);
-  }
-
-  convertToDollars(array: any) {
-    let result: number[] = [];
-    for (let a of array) {
-      result.push(Math.floor(Number(a) * 0.0004));
-    }
-
-    return result;
-  }
-  updateGraphicTimeRange() {
-    this.extractValues();
-  }
-
   findColor(array: string[]) {
     let start = Number(array[0]);
     let end = Number(array[array.length - 1]);
     return end - start >= 0 ? this.colorPositive : this.colorNegative;
+  }
+  findSum(array: string[]) {
+    let total = 0;
+    for (let a of array) {
+      total += Number(a);
+    }
+    return total;
   }
 }
