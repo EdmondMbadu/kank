@@ -20,6 +20,7 @@ import { UpdateClientInfoComponent } from './components/update-client-info/updat
 import { DailyPaymentsComponent } from './components/daily-payments/daily-payments.component';
 import { DailyLendingsComponent } from './components/daily-lendings/daily-lendings.component';
 import { PayTodayComponent } from './components/pay-today/pay-today.component';
+import { PaidDateComponent } from './components/paid-date/paid-date.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -45,6 +46,7 @@ const routes: Routes = [
   { path: 'daily-payments', component: DailyPaymentsComponent },
   { path: 'daily-lendings', component: DailyLendingsComponent },
   { path: 'pay-today', component: PayTodayComponent },
+  { path: 'paid-date', component: PaidDateComponent },
 ];
 
 @NgModule({

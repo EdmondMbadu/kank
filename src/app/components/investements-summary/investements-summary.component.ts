@@ -82,6 +82,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '/daily-payments',
     '/daily-lendings',
     '/pay-today',
+    '/paid-date',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
@@ -97,6 +98,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-payment.png',
     '../../../assets/img/calendar.png',
+    '../../../assets/img/audit.png',
   ];
   summary: string[] = [
     'Nombres des Clients',
@@ -112,6 +114,7 @@ export class InvestementsSummaryComponent implements OnInit {
     'Paiment Du Jour',
     'Emprunt Du Jour',
     'Clients & Jour De Payment',
+    'Retracer Les Paiiments',
   ];
   summaryContent: string[] = [];
 
@@ -272,8 +275,8 @@ export class InvestementsSummaryComponent implements OnInit {
       ],
       layout: {
         title: 'Emprunts vs Paiment',
-        height: 500,
-        width: 500,
+        height: 400,
+        width: 400,
         margin: { t: 0, b: 0, l: 0, r: 0 },
       },
     };
