@@ -76,7 +76,7 @@ export class PaidDateComponent {
       const clientsWithPaymentsOnDate = this.getClientsByDate(value);
       return of(clientsWithPaymentsOnDate);
     } else {
-      return of(this.clients);
+      return of([]);
     }
   }
 

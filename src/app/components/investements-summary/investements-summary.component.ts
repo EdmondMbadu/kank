@@ -113,8 +113,8 @@ export class InvestementsSummaryComponent implements OnInit {
     'Benefice',
     'Paiment Du Jour',
     'Emprunt Du Jour',
-    'Clients & Jour De Payment',
-    'Retracer Les Paiiments',
+    'Clients & Jour De Paiement',
+    'Retracer Les Paiements',
   ];
   summaryContent: string[] = [];
 

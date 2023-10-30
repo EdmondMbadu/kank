@@ -52,7 +52,7 @@ export class DebtCycleComponent implements OnInit {
   }
 
   displayApplicationFeeOtherAmount() {
-    if (this.applicationFee === 'Other Amount') {
+    if (this.applicationFee === 'Autre Montant') {
       this.applicationFeeOtherDisplay = true;
       this.applicationFee = '';
     } else {
@@ -60,7 +60,7 @@ export class DebtCycleComponent implements OnInit {
     }
   }
   displaymemberShipFeeOtherAmount() {
-    if (this.memberShipFee === 'Other Amount') {
+    if (this.memberShipFee === 'Autre Montant') {
       this.memberShipFeeOtherDisplay = true;
       this.memberShipFee = '';
     } else {
@@ -68,7 +68,7 @@ export class DebtCycleComponent implements OnInit {
     }
   }
   displaySavingsOtherAmount() {
-    if (this.savings === 'Other Amount') {
+    if (this.savings === 'Autre Montant') {
       this.savingsOtherDisplay = true;
       this.savings = '';
     } else {
@@ -77,7 +77,7 @@ export class DebtCycleComponent implements OnInit {
   }
 
   displayLoanOtherAmount() {
-    if (this.loanAmount === 'Other Amount') {
+    if (this.loanAmount === 'Autre Montant') {
       this.loanAmountOtherDisplay = true;
       this.loanAmount = '';
     } else {
