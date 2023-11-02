@@ -103,10 +103,12 @@ export class DebtCycleComponent implements OnInit {
       this.debtCycleStartDate === '' ||
       this.debtCycleEndDate === ''
     ) {
-      alert('All fields are required');
+      alert('Completer tous les données');
       return;
     } else if (!inputValid) {
-      alert('Make sure all numbers are valid and greater than or equal to 0');
+      alert(
+        'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
+      );
       return;
     } else {
       this.setClientNewDebtCycleValues();
@@ -115,7 +117,9 @@ export class DebtCycleComponent implements OnInit {
           this.router.navigate(['/client-portal/' + this.id]);
         },
         (err: any) => {
-          alert('Something went wrong. Unable to add New client');
+          alert(
+            "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+          );
         }
       );
       let date = this.time.todaysDateMonthDayYear();
@@ -123,10 +127,12 @@ export class DebtCycleComponent implements OnInit {
         .updateUserInfoForClientNewDebtCycle(this.client, this.savings, date)
         .then(
           (res: any) => {
-            console.log('Updated user info successfully');
+            console.log('Informations utilisateur mises à jour avec succès');
           },
           (err: any) => {
-            alert('Something went wrong. Unable to add New client');
+            alert(
+              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+            );
           }
         );
 

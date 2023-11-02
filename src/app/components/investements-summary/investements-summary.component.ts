@@ -111,7 +111,7 @@ export class InvestementsSummaryComponent implements OnInit {
     'Frais Des Membres',
     'Benefice Brute',
     'Benefice',
-    'Paiment Du Jour',
+    'Paiement Du Jour',
     'Emprunt Du Jour',
     'Clients & Jour De Paiement',
     'Retracer Les Paiements',
@@ -120,7 +120,8 @@ export class InvestementsSummaryComponent implements OnInit {
 
   initalizeInputs() {
     let realBenefit = (
-      Number(this.auth.currentUser.totalDebtLeft) -
+      Number(this.auth.currentUser.totalDebtLeft) +
+      Number(this.auth.currentUser.reserveAmount) -
       Number(this.auth.currentUser.amountInvested)
     ).toString();
     let bWithExpenses = this.BenefitsWithExpenses();

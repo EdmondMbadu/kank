@@ -13,6 +13,7 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class PaidDateComponent {
   clients?: Client[];
+  totalGivenDate: number = 0;
   todayPayments: Client[] = [];
   searchControl = new FormControl();
   frenchPaymentDays: { [key: string]: string } = {
@@ -65,7 +66,7 @@ export class PaidDateComponent {
     let day = this.time.getDayOfWeek(this.today);
     for (let client of this.clients!) {
       if (client.paymentDay === day) {
-        console.log(' clients payment', client.payments);
+        // console.log(' clients payment', client.payments);
         this.todayPayments.push(client);
       }
     }
@@ -74,10 +75,26 @@ export class PaidDateComponent {
   search(value: string) {
     if (value) {
       const clientsWithPaymentsOnDate = this.getClientsByDate(value);
+      this.computeExpectedPerDate(clientsWithPaymentsOnDate);
       return of(clientsWithPaymentsOnDate);
     } else {
+      this.computeExpectedPerDate([]);
       return of([]);
     }
+  }
+
+  computeExpectedPerDate(clients: Client[]) {
+    let total = 0;
+
+    for (let client of clients) {
+      if (Number(client.amountToPay) > 0) {
+        const pay =
+          Number(client.amountToPay) / Number(client.paymentPeriodRange);
+
+        total += pay;
+      }
+    }
+    this.totalGivenDate = total;
   }
 
   getClientsByDate(date: string) {
@@ -91,10 +108,13 @@ export class PaidDateComponent {
       );
       return {
         firstName: client.firstName,
-        lastname: client.lastName,
+        lastName: client.lastName,
         date: paymentDate,
         amount: client.payments![paymentDate!],
         trackingId: client.trackingId,
+        amountToPay: client.amountToPay,
+        amountPaid: client.amountPaid,
+        paymentPeriodRange: client.paymentPeriodRange,
       };
     });
   }

@@ -13,6 +13,7 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class PayTodayComponent implements OnInit {
   clients?: Client[];
+  totalGivenDate: number = 0;
   todayPayments: Client[] = [];
   searchControl = new FormControl();
   frenchPaymentDays: { [key: string]: string } = {
@@ -61,6 +62,19 @@ export class PayTodayComponent implements OnInit {
         this.frenchPaymentDays[`${this.clients![i].paymentDay}`];
     }
   }
+  computeExpectedPerDate(clients: Client[]) {
+    let total = 0;
+
+    for (let client of clients) {
+      if (Number(client.amountToPay) > 0) {
+        const pay =
+          Number(client.amountToPay) / Number(client.paymentPeriodRange);
+
+        total += pay;
+      }
+    }
+    this.totalGivenDate = total;
+  }
 
   filterTodayPayments() {
     let day = this.time.getDayOfWeek(this.today);
@@ -75,15 +89,22 @@ export class PayTodayComponent implements OnInit {
   search(value: string) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
+      this.computeExpectedPerDate(
+        this.clients!.filter(
+          (client) =>
+            client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
+            client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
+        )
+      );
       return of(
         this.clients!.filter(
           (client) =>
             client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
             client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
-          // client.amountPaid?.includes(lowerCaseValue)
         )
       );
     } else {
+      this.computeExpectedPerDate([]);
       return of(this.clients);
     }
   }
