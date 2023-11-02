@@ -120,8 +120,7 @@ export class InvestementsSummaryComponent implements OnInit {
 
   initalizeInputs() {
     let realBenefit = (
-      Number(this.auth.currentUser.totalDebtLeft) +
-      Number(this.auth.currentUser.reserveAmount) -
+      Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)
     ).toString();
     let bWithExpenses = this.BenefitsWithExpenses();
