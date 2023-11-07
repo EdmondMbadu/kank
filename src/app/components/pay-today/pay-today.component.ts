@@ -68,7 +68,10 @@ export class PayTodayComponent implements OnInit {
   filterTodayPayments() {
     let day = this.time.getDayOfWeek(this.today);
     for (let client of this.clients!) {
-      if (client.paymentDay === day) {
+      if (
+        client.paymentDay === day &&
+        Number(client.amountToPay) - Number(client.amountPaid) > 0
+      ) {
         console.log('hello');
         this.todayPayments.push(client);
       }

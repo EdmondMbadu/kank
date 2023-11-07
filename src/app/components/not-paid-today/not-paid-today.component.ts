@@ -55,6 +55,7 @@ export class NotPaidTodayComponent {
   extractTodayPayments() {
     this.dailyPamentsAmount = [];
     this.dailyPaymentsNames = [];
+    this.paidToday = [];
     this.trackingIds = [];
     for (let client of this.clients!) {
       const filteredDict = Object.fromEntries(
@@ -70,8 +71,16 @@ export class NotPaidTodayComponent {
     }
   }
   findThoseWhoHaveNotPaidToday() {
+    this.haveNotPaidToday = [];
     for (let c of this.shouldPayToday) {
-      if (this.paidToday.indexOf(c) === -1) {
+      if (
+        this.paidToday.indexOf(c) === -1 &&
+        Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
+        !c.debtCycleStartDate?.startsWith(this.today)
+      ) {
+        c.minPayment = (
+          Number(c.amountToPay) / Number(c.paymentPeriodRange)
+        ).toString();
         this.haveNotPaidToday.push(c);
       }
     }
@@ -85,6 +94,7 @@ export class NotPaidTodayComponent {
     }
   }
   filterPayments() {
+    this.shouldPayToday = [];
     let day = this.time.getDayOfWeek(this.today);
     for (let client of this.clients!) {
       if (client.paymentDay === day) {

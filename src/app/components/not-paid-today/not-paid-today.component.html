@@ -41,16 +41,17 @@
                            {{c.firstName}} {{c.lastName}}
                            </p>
                            <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                            {{c.frenchPaymentDay}} 
+                            <!-- {{c.frenchPaymentDay}}  -->
                            </p>
                        </div>
                        <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white" >
-                            FC {{c.debtLeft| number:'1.0-0'}}
+                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white pl-5" >
+                             FC {{c.minPayment | number:'1.0-0'}}
+                       
                       
                         </p>
                         <p class="text-sm ml-6 text-gray-500 truncate dark:text-gray-400">
-                        {{c.amountPaid | number:'1.0-0'}}
+                            Debt  FC {{c.debtLeft| number:'1.0-0'}}
                         </p>
                        </div>
                    </div>
