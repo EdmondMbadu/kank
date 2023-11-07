@@ -21,6 +21,7 @@ import { DailyPaymentsComponent } from './components/daily-payments/daily-paymen
 import { DailyLendingsComponent } from './components/daily-lendings/daily-lendings.component';
 import { PayTodayComponent } from './components/pay-today/pay-today.component';
 import { PaidDateComponent } from './components/paid-date/paid-date.component';
+import { NotPaidTodayComponent } from './components/not-paid-today/not-paid-today.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -47,6 +48,7 @@ const routes: Routes = [
   { path: 'daily-lendings', component: DailyLendingsComponent },
   { path: 'pay-today', component: PayTodayComponent },
   { path: 'paid-date', component: PaidDateComponent },
+  { path: 'not-paid-today', component: NotPaidTodayComponent },
 ];
 
 @NgModule({

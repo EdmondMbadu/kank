@@ -36,6 +36,7 @@ import { CommonModule } from '@angular/common';
 import { PlotlyModule } from 'angular-plotly.js';
 import { PayTodayComponent } from './components/pay-today/pay-today.component';
 import { PaidDateComponent } from './components/paid-date/paid-date.component';
+import { NotPaidTodayComponent } from './components/not-paid-today/not-paid-today.component';
 
 @NgModule({
   declarations: [
@@ -61,6 +62,7 @@ import { PaidDateComponent } from './components/paid-date/paid-date.component';
     DailyLendingsComponent,
     PayTodayComponent,
     PaidDateComponent,
+    NotPaidTodayComponent,
   ],
   imports: [
     BrowserModule,

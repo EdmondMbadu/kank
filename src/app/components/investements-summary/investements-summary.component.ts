@@ -83,6 +83,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '/daily-lendings',
     '/pay-today',
     '/paid-date',
+    '/not-paid-today',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
@@ -99,6 +100,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '../../../assets/img/daily-payment.png',
     '../../../assets/img/calendar.png',
     '../../../assets/img/audit.png',
+    '../../../assets/img/late-payment.png',
   ];
   summary: string[] = [
     'Nombres des Clients',
@@ -115,6 +117,7 @@ export class InvestementsSummaryComponent implements OnInit {
     'Emprunt Du Jour',
     'Clients & Jour De Paiement',
     'Retracer Les Paiements',
+    "N'ont pas Payé Aujourdhui",
   ];
   summaryContent: string[] = [];
 

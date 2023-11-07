@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -29,7 +30,8 @@ export class PayTodayComponent implements OnInit {
   constructor(
     private router: Router,
     public auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private compute: ComputationService
   ) {
     this.retrieveClients();
   }
@@ -62,19 +64,6 @@ export class PayTodayComponent implements OnInit {
         this.frenchPaymentDays[`${this.clients![i].paymentDay}`];
     }
   }
-  computeExpectedPerDate(clients: Client[]) {
-    let total = 0;
-
-    for (let client of clients) {
-      if (Number(client.amountToPay) > 0) {
-        const pay =
-          Number(client.amountToPay) / Number(client.paymentPeriodRange);
-
-        total += pay;
-      }
-    }
-    this.totalGivenDate = total;
-  }
 
   filterTodayPayments() {
     let day = this.time.getDayOfWeek(this.today);
@@ -89,7 +78,7 @@ export class PayTodayComponent implements OnInit {
   search(value: string) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
-      this.computeExpectedPerDate(
+      this.totalGivenDate = this.compute.computeExpectedPerDate(
         this.clients!.filter(
           (client) =>
             client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
@@ -104,7 +93,7 @@ export class PayTodayComponent implements OnInit {
         )
       );
     } else {
-      this.computeExpectedPerDate([]);
+      this.totalGivenDate = this.compute.computeExpectedPerDate([]);
       return of(this.clients);
     }
   }

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -29,7 +30,8 @@ export class PaidDateComponent {
   constructor(
     private router: Router,
     public auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private compute: ComputationService
   ) {
     this.retrieveClients();
   }
@@ -75,26 +77,14 @@ export class PaidDateComponent {
   search(value: string) {
     if (value) {
       const clientsWithPaymentsOnDate = this.getClientsByDate(value);
-      this.computeExpectedPerDate(clientsWithPaymentsOnDate);
+      this.totalGivenDate = this.compute.computeExpectedPerDate(
+        clientsWithPaymentsOnDate
+      );
       return of(clientsWithPaymentsOnDate);
     } else {
-      this.computeExpectedPerDate([]);
+      this.totalGivenDate = this.compute.computeExpectedPerDate([]);
       return of([]);
     }
-  }
-
-  computeExpectedPerDate(clients: Client[]) {
-    let total = 0;
-
-    for (let client of clients) {
-      if (Number(client.amountToPay) > 0) {
-        const pay =
-          Number(client.amountToPay) / Number(client.paymentPeriodRange);
-
-        total += pay;
-      }
-    }
-    this.totalGivenDate = total;
   }
 
   getClientsByDate(date: string) {
