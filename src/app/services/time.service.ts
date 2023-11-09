@@ -149,13 +149,12 @@ export class TimeService {
   }
 
   convertDateToDesiredFormat(input: string) {
-    // Split the input string
     const parts = input.split('-');
 
-    // Map the month numbers to their three-letter names
+    // Map the month numbers to their names in French
     const monthNames = [
       'Janvier',
-      'Fevrier',
+      'Février',
       'Mars',
       'Avril',
       'Mai',
@@ -165,21 +164,35 @@ export class TimeService {
       'Septembre',
       'Octobre',
       'Novembre',
-      'Decembre',
+      'Décembre',
     ];
+
+    // Map the day numbers to their names in French
+    const dayNames = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+
+    // Create a Date object from the input parts
+    const date = new Date(
+      `${parts[0]}/${parts[1]}/${parts[2]} ${parts[3]}:${parts[4]}:${parts[5]}`
+    );
+
+    // Get the day of the week and month from the Date object
+    const dayOfWeek = dayNames[date.getDay()];
     const month = monthNames[parseInt(parts[0], 10) - 1];
     const day = parseInt(parts[1], 10);
     const year = parseInt(parts[2], 10);
-    const hour = parseInt(parts[3], 10);
-    const minute = parseInt(parts[4], 10);
-    const second = parseInt(parts[5], 10);
+    const hour = ('0' + parseInt(parts[3], 10)).slice(-2); // Add leading zero
+    const minute = ('0' + parseInt(parts[4], 10)).slice(-2); // Add leading zero
 
-    // Create a Date object from the input parts
-
-    // Map the day numbers to their names
-
-    // Construct the desired output format
-    const formatted = ` ${day} ${month} ${year} à  ${hour}:${minute}`;
+    // Construct the desired output format with the day of the week
+    const formatted = `${dayOfWeek} ${day} ${month} ${year} à ${hour}:${minute}`;
     return formatted;
   }
 }

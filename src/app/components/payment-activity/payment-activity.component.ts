@@ -30,8 +30,31 @@ export class PaymentActivityComponent implements OnInit {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      this.payments = Object.values(this.client.payments!);
-      this.paymentDates = Object.keys(this.client.payments!);
+      // this.payments = Object.values(this.client.payments!);
+      // this.paymentDates = Object.keys(this.client.payments!);
+      const paymentsArray = Object.entries(this.client.payments!);
+
+      // Sort the array by date in descending order
+      paymentsArray.sort((a, b) => {
+        // Convert date strings to Date objects
+        const dateA = new Date(
+          a[0].replace(
+            /(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/,
+            '$1/$2/$3 $4:$5:$6'
+          )
+        );
+        const dateB = new Date(
+          b[0].replace(
+            /(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/,
+            '$1/$2/$3 $4:$5:$6'
+          )
+        );
+        return dateB.getTime() - dateA.getTime(); // Sort in descending order
+      });
+
+      // Extract the sorted payment values and dates into separate arrays
+      this.payments = paymentsArray.map((entry) => entry[1]);
+      this.paymentDates = paymentsArray.map((entry) => entry[0]);
       this.formatPaymentDates();
     });
   }

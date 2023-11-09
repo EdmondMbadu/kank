@@ -15,7 +15,10 @@ export class ComputationService {
 
     return dollars;
   }
-
+  minimumPayment(client: Client) {
+    const pay = Number(client.amountToPay) / Number(client.paymentPeriodRange);
+    return pay.toString();
+  }
   computeExpectedPerDate(clients: Client[]) {
     let total = 0;
 

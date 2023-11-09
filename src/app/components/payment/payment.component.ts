@@ -3,6 +3,7 @@ import { isFormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
@@ -19,13 +20,15 @@ export class PaymentComponent {
   savingsAmount: string = '';
   paymentAmount: string = '';
   numberOfPaymentToday = 0;
+  minPayment: string = '';
   client: Client = new Client();
   constructor(
     private activatedRoute: ActivatedRoute,
     public auth: AuthService,
     private data: DataService,
     private router: Router,
-    private time: TimeService
+    private time: TimeService,
+    private compute: ComputationService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -36,6 +39,7 @@ export class PaymentComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      this.minPayment = this.compute.minimumPayment(this.client);
       this.numberOfPaymentToday = this.howManyTimesPaidToday();
     });
   }
@@ -59,13 +63,13 @@ export class PaymentComponent {
 
   makePayment() {
     if (this.paymentAmount === '' || this.savingsAmount === '') {
-      alert('FIll all fields');
+      alert('Remplissez toutes les données');
       return;
     } else if (
       Number.isNaN(Number(this.paymentAmount)) ||
       Number.isNaN(Number(this.savingsAmount))
     ) {
-      alert('Incorrect input. Enter a number');
+      alert('Entrée incorrecte. Entrez un numéro');
       return;
     } else if (
       Number(this.paymentAmount) < 0 ||
