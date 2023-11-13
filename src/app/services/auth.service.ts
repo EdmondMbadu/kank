@@ -12,6 +12,9 @@ import { Observable, of } from 'rxjs';
 import { filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
 import { Client } from '../models/client';
+import { Timestamp } from 'firebase/firestore';
+import { TimeService } from './time.service';
+import { ComputationService } from './computation.service';
 @Injectable({
   providedIn: 'root',
 })
@@ -25,7 +28,9 @@ export class AuthService {
   constructor(
     private fireauth: AngularFireAuth,
     private afs: AngularFirestore,
-    private router: Router
+    private router: Router,
+    private time: TimeService,
+    private compute: ComputationService
   ) {
     this.clientsRef$ = of(null);
     this.user$ = this.fireauth.authState.pipe(

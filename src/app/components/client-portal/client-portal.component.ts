@@ -13,7 +13,7 @@ import { TimeService } from 'src/app/services/time.service';
 export class ClientPortalComponent {
   client = new Client();
   minPay = '';
-  aRemaining = '';
+
   id: any = '';
   paymentDate = '';
   debtStart = '';
@@ -34,7 +34,7 @@ export class ClientPortalComponent {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
       this.minimumPayment();
-      this.amountRemaining();
+
       this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined);
       this.debtStart = this.time.formatDateString(
         this.client.debtCycleStartDate
@@ -49,16 +49,10 @@ export class ClientPortalComponent {
     this.minPay = pay.toString();
   }
 
-  amountRemaining() {
-    const pay =
-      Number(this.client.amountToPay) - Number(this.client.amountPaid);
-    this.aRemaining = pay.toString();
-  }
-
   startNewDebtCycle() {
     if (this.client.amountPaid !== this.client.amountToPay) {
       alert(
-        `Vous devez encore FC ${this.aRemaining}. Terminez d'abord ce cycle.`
+        `Vous devez encore FC ${this.client.debtLeft}. Terminez d'abord ce cycle.`
       );
       return;
     } else {

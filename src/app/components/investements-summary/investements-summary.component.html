@@ -67,12 +67,16 @@
     <div class="flex flex-col mx-auto justify-center">
     <h1 class="text-3xl m-12 md:text-4xl text-center">Stats</h1>
     <div class="m-4">
+  
         <label for="payments" class=" block mb-2 text-md font-medium text-gray-900 m-">Intervalle De Temps</label>
         <select id="payments" [(ngModel)]="graphicsPieTimeRange"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="updatePieGrahics()">
         <option [ngValue]="5">Semaine</option>
         <option [ngValue]="20">Mois</option>
         <option [ngValue]="maxRange">Max</option>
         </select>
+
+        <h1 class="mt-4">Emprunts Total: {{totalLendingGraphics| number:'1.0-0'}}</h1>
+        <h1 class="mt-4">Paiiment Total: {{totalPayGraphics| number:'1.0-0'}}</h1>
     </div>
         <plotly-plot [data]="graphPie.data" [layout]="graphPie.layout"></plotly-plot>
 

@@ -83,6 +83,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '/daily-lendings',
     '/pay-today',
     '/paid-date',
+    '/lending-date',
     '/not-paid-today',
   ];
   imagePaths: string[] = [
@@ -100,6 +101,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '../../../assets/img/daily-payment.png',
     '../../../assets/img/calendar.png',
     '../../../assets/img/audit.png',
+    '../../../assets/img/lending-date.png',
     '../../../assets/img/late-payment.png',
   ];
   summary: string[] = [
@@ -117,6 +119,7 @@ export class InvestementsSummaryComponent implements OnInit {
     'Emprunt Du Jour',
     'Clients & Jour De Paiement',
     'Retracer Les Paiements',
+    'Retracer Les Emprunts ',
     "N'ont pas Payé Aujourdhui",
   ];
   summaryContent: string[] = [];
@@ -257,13 +260,15 @@ export class InvestementsSummaryComponent implements OnInit {
   updatePieGrahics() {
     let sorted = this.sortKeysAndValuesPayments(this.graphicsPieTimeRange);
     this.totalPayGraphics = this.findSum(sorted[1]);
+
     let sorted2 = this.sortKeysAndValuesLending(this.graphicsPieTimeRange);
     this.totalLendingGraphics = this.findSum(sorted2[1]);
-    console.log(
-      'current payment, lending',
-      this.totalPayGraphics,
-      this.totalLendingGraphics
-    );
+    console.log('all the values for total lending', sorted2[0], sorted2[1]);
+    // console.log(
+    //   'current payment, lending',
+    //   this.totalPayGraphics,
+    //   this.totalLendingGraphics
+    // );
 
     this.graphPie = {
       data: [
