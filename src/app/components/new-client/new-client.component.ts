@@ -24,6 +24,7 @@ export class NewClientComponent implements OnInit {
   client = new Client();
   firstName: string = '';
   lastName: string = '';
+  middleName: string = '';
   profession: string = '';
   bussinessCapital: string = '';
   homeAddress: string = '';
@@ -56,6 +57,7 @@ export class NewClientComponent implements OnInit {
     if (
       this.firstName === '' ||
       this.lastName === '' ||
+      this.middleName === '' ||
       this.profession === '' ||
       this.businessAddress === '' ||
       this.bussinessCapital === '' ||
@@ -145,6 +147,7 @@ export class NewClientComponent implements OnInit {
     this.client = new Client();
     this.firstName = '';
     this.lastName = '';
+    this.middleName = '';
     this.profession = '';
     this.bussinessCapital = '';
     this.homeAddress = '';
@@ -164,6 +167,7 @@ export class NewClientComponent implements OnInit {
   setNewClientValues() {
     this.client.firstName = this.firstName;
     this.client.lastName = this.lastName;
+    this.client.middleName = this.middleName;
     this.client.profession = this.profession;
     this.client.businessCapital = this.bussinessCapital;
     this.client.businessAddress = this.businessAddress;

@@ -23,7 +23,7 @@ export class ComputationService {
     let total = 0;
 
     for (let client of clients) {
-      if (Number(client.amountToPay) - Number(client.amountPaid) > 0) {
+      if (Number(client.amountToPay) - Number(client.amountPaid) >= 0) {
         const pay =
           Number(client.amountToPay) / Number(client.paymentPeriodRange);
 

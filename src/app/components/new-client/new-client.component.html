@@ -10,13 +10,28 @@
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
             <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
-            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required [(ngModel)]="firstName">
+            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" required [(ngModel)]="firstName">
         </div>
         <div>
             <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" [(ngModel)]="lastName" required>
+            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="lastName" required>
         </div>   
          
+    </div>
+    <div class="grid gap-6 mb-6 md:grid-cols-2">
+            <div>
+                <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Prenom</label>
+                <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName" required>
+            </div>   
+           
+       
+            <div>
+                <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
+                <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="phoneNumber">
+
+
+            </div>
+
     </div>
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
@@ -37,10 +52,7 @@
         <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Addresse Business </label>
         <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="businessAddress">
     </div> 
-    <div class="mb-6">
-        <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
-        <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="phoneNumber">
-    </div> 
+    
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
         <select id="countries"[(ngModel)]="paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">

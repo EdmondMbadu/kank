@@ -263,12 +263,6 @@ export class InvestementsSummaryComponent implements OnInit {
 
     let sorted2 = this.sortKeysAndValuesLending(this.graphicsPieTimeRange);
     this.totalLendingGraphics = this.findSum(sorted2[1]);
-    console.log('all the values for total lending', sorted2[0], sorted2[1]);
-    // console.log(
-    //   'current payment, lending',
-    //   this.totalPayGraphics,
-    //   this.totalLendingGraphics
-    // );
 
     this.graphPie = {
       data: [

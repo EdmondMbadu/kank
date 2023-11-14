@@ -99,6 +99,7 @@ export class PaidDateComponent {
       return {
         firstName: client.firstName,
         lastName: client.lastName,
+        middleName: client.middleName,
         date: paymentDate,
         amount: client.payments![paymentDate!],
         trackingId: client.trackingId,
@@ -113,6 +114,7 @@ export class PaidDateComponent {
 export class Filtered {
   firstName?: string;
   lastName?: string;
+  middleName?: string;
   date?: string;
   amount?: string;
   trackingId?: string;

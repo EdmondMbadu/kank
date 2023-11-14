@@ -21,6 +21,7 @@ export class DebtCycleComponent implements OnInit {
   savings: string = '';
   loanAmount: string = '';
   payRange: string = '';
+  middleName: string = '';
   interestRate: string = '';
   amountToPay: string = '';
   debtCycleStartDate: string = '';
@@ -95,6 +96,7 @@ export class DebtCycleComponent implements OnInit {
     if (
       this.loanAmount === '' ||
       this.applicationFee === '' ||
+      this.middleName === '' ||
       this.memberShipFee === '' ||
       this.savings === '' ||
       this.amountToPay === '' ||
@@ -171,12 +173,14 @@ export class DebtCycleComponent implements OnInit {
     this.loanAmount = '';
     this.amountToPay = '';
     this.interestRate = '';
+    this.middleName = '';
   }
   setClientNewDebtCycleValues() {
     this.client.savings = (
       Number(this.client.savings) + Number(this.savings)
     ).toString();
     this.client.applicationFee = this.applicationFee;
+    this.client.middleName = this.middleName;
     this.client.membershipFee = this.memberShipFee;
     this.client.amountToPay = this.amountToPay;
     this.client.loanAmount = this.loanAmount;

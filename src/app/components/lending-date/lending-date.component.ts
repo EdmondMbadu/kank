@@ -94,6 +94,7 @@ export class LendingDateComponent {
       return {
         firstName: client.firstName,
         lastName: client.lastName,
+        middleName: client.middleName,
         loanAmount: client.loanAmount,
         date: client.debtCycleStartDate,
         trackingId: client.trackingId,
@@ -110,6 +111,7 @@ export class Filtered {
   lastName?: string;
   date?: string;
   loanAmount?: string;
+  middleName?: string;
 
   trackingId?: string;
 }

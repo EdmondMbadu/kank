@@ -12,6 +12,7 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class UpdateClientInfoComponent {
   id: any = '';
+  middleName: string = '';
   client = new Client();
   constructor(
     public auth: AuthService,
@@ -32,16 +33,20 @@ export class UpdateClientInfoComponent {
   }
 
   updateClientInfo() {
+    if (this.client.middleName === undefined) {
+      this.client.middleName = this.middleName;
+    }
     if (
       this.client.firstName === '' ||
       this.client.lastName === '' ||
+      this.client.middleName === '' ||
       this.client.phoneNumber === '' ||
       this.client.businessAddress === '' ||
       this.client.businessAddress === '' ||
       this.client.profession === '' ||
       this.client.paymentDay === ''
     ) {
-      alert('Fill all fields');
+      alert('Completer tous les données');
       return;
     } else {
       this.data.updateClientInfo(this.client);

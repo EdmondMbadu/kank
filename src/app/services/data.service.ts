@@ -63,6 +63,7 @@ export class DataService {
     const data = {
       firstName: client.firstName,
       lastName: client.lastName,
+      middleName: client.middleName,
       phoneNumber: client.phoneNumber,
       businessAddress: client.businessAddress,
       homeAddress: client.homeAddress,
@@ -77,6 +78,7 @@ export class DataService {
     const data = {
       firstName: client.firstName,
       lastName: client.lastName,
+      middleName: client.middleName,
       phoneNumber: client.phoneNumber,
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,

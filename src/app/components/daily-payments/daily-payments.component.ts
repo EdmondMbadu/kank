@@ -60,7 +60,9 @@ export class DailyPaymentsComponent {
 
   fillDailyPayment(client: Client, values: string[]) {
     for (let v of values) {
-      this.dailyPaymentsNames.push(`${client.firstName} ${client.lastName}`);
+      this.dailyPaymentsNames.push(
+        `${client.firstName} ${client.lastName} ${client.middleName}`
+      );
       this.dailyPamentsAmount.push(v);
       this.trackingIds.push(client.trackingId!);
     }

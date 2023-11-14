@@ -153,6 +153,7 @@ export class AuthService {
       uid: this.afs.createId().toString(),
       firstName: client.firstName,
       lastName: client.lastName,
+      middleName: client.middleName,
       phoneNumber: client.phoneNumber,
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,

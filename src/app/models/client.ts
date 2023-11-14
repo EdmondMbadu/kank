@@ -4,6 +4,7 @@ export class Client {
   name?: string;
   firstName?: string;
   lastName?: string;
+  middleName?: string;
   profession?: string;
   phoneNumber?: string;
   paymentDay?: string;
