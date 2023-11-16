@@ -277,8 +277,8 @@ export class InvestementsSummaryComponent implements OnInit {
       ],
       layout: {
         title: 'Emprunts vs Paiment',
-        height: 400,
-        width: 400,
+        height: 300,
+        width: 300,
         margin: { t: 0, b: 0, l: 0, r: 0 },
       },
     };
