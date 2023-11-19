@@ -55,6 +55,7 @@ export class ClientInfoComponent implements OnInit {
           (client) =>
             client.firstName?.toLowerCase().includes(lowerCaseValue) ||
             client.lastName?.toLowerCase().includes(lowerCaseValue) ||
+            client.middleName?.toLowerCase().includes(lowerCaseValue) ||
             client.amountPaid?.includes(lowerCaseValue)
         )
       );

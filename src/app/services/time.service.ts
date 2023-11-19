@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AuthService } from './auth.service';
+import { Client } from '../models/client';
 
 @Injectable({
   providedIn: 'root',
@@ -194,5 +195,83 @@ export class TimeService {
     // Construct the desired output format with the day of the week
     const formatted = `${dayOfWeek} ${day} ${month} ${year} à ${hour}:${minute}`;
     return formatted;
+  }
+
+  isDateInRange(dateString: string) {
+    // Parse the given date and the start date
+    const givenDate = new Date(dateString);
+    const startDate = new Date('2023-09-13');
+
+    // Get the current date with time set to 00:00:00
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if the date is not before the start date and not after today
+    return givenDate >= startDate && givenDate <= today;
+  }
+
+  isEndDateGreater(start: string, end: string) {
+    // Convert the start and end dates
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    // Compare and return the result
+    return endDate >= startDate;
+  }
+
+  getDatesInRange(start: string, end: string) {
+    const parseDate = (dateStr: string) => {
+      const [month, day, year] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    };
+
+    const formatDate = (date: Date) => {
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      return `${month}-${day}-${year}`;
+    };
+
+    const startDate = parseDate(start);
+    const endDate = parseDate(end);
+    const dates = [];
+
+    for (
+      let date = new Date(startDate);
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      dates.push(formatDate(date));
+    }
+
+    return dates;
+  }
+
+  filterClientsByPaymentDates(clients: Client[], dates: string[]) {
+    // Helper function to extract date part from the payment key
+    const extractDate = (paymentKey: string) => {
+      return paymentKey.split('-').slice(0, 3).join('-');
+    };
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Filter clients
+    return clients.filter((client) => {
+      if (Number(client.debtLeft) === 0) {
+        return false;
+      }
+
+      // Check if the client's debtCycleStartDate is within a week of today
+      const debtCycleStartDate = new Date(client.debtCycleStartDate!);
+      if (debtCycleStartDate > oneWeekAgo) {
+        return false;
+      }
+
+      // Get all payment dates for the client
+      const paymentDates = Object.keys(client.payments!).map(extractDate);
+
+      // Check if none of the payment dates match the given dates
+      return !paymentDates.some((paymentDate) => dates.includes(paymentDate));
+    });
   }
 }

@@ -38,6 +38,7 @@ import { PayTodayComponent } from './components/pay-today/pay-today.component';
 import { PaidDateComponent } from './components/paid-date/paid-date.component';
 import { NotPaidTodayComponent } from './components/not-paid-today/not-paid-today.component';
 import { LendingDateComponent } from './components/lending-date/lending-date.component';
+import { NotPaidComponent } from './components/not-paid/not-paid.component';
 
 @NgModule({
   declarations: [
@@ -65,6 +66,7 @@ import { LendingDateComponent } from './components/lending-date/lending-date.com
     PaidDateComponent,
     NotPaidTodayComponent,
     LendingDateComponent,
+    NotPaidComponent,
   ],
   imports: [
     BrowserModule,
