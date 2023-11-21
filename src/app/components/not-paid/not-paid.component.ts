@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
@@ -9,11 +11,13 @@ import { TimeService } from 'src/app/services/time.service';
   templateUrl: './not-paid.component.html',
   styleUrls: ['./not-paid.component.css'],
 })
-export class NotPaidComponent {
+export class NotPaidComponent implements OnInit {
   clients?: Client[];
+  searchControl = new FormControl();
   totalGivenDate: number = 0;
   numberofPeopleWhodidNotPay: number = 0;
-  haveNotPaid: Client[] = [];
+  haveNotPaid?: Client[] = [];
+  haveNotPaidCopy?: Client[] = [];
   validStartDate: boolean = true;
   validEndDate: boolean = true;
   datesRange: string[] = [];
@@ -25,6 +29,17 @@ export class NotPaidComponent {
     private compute: ComputationService
   ) {
     this.retrieveClients();
+  }
+  ngOnInit(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((value) => this.search(value))
+      )
+      .subscribe((results) => {
+        this.haveNotPaid = results;
+      });
   }
 
   searchThoseWhoDidNotPayPerInterval() {
@@ -40,6 +55,7 @@ export class NotPaidComponent {
         this.clients!,
         this.datesRange
       );
+      this.haveNotPaidCopy = structuredClone(this.haveNotPaid);
       this.totalGivenDate = this.compute.computeExpectedPerDate(
         this.haveNotPaid
       );
@@ -58,6 +74,22 @@ export class NotPaidComponent {
   addId() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;
+    }
+  }
+  search(value: string) {
+    if (value) {
+      const lowerCaseValue = value.toLowerCase();
+      return of(
+        this.haveNotPaidCopy!.filter(
+          (client) =>
+            client.firstName?.toLowerCase().includes(lowerCaseValue) ||
+            client.lastName?.toLowerCase().includes(lowerCaseValue) ||
+            client.middleName?.toLowerCase().includes(lowerCaseValue) ||
+            client.amountPaid?.includes(lowerCaseValue)
+        )
+      );
+    } else {
+      return of(this.haveNotPaidCopy);
     }
   }
 }

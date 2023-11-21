@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
+import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -10,10 +11,11 @@ import { TimeService } from 'src/app/services/time.service';
   templateUrl: './daily-lendings.component.html',
   styleUrls: ['./daily-lendings.component.css'],
 })
-export class DailyLendingsComponent {
+export class DailyLendingsComponent implements OnInit {
   clients?: Client[];
   today = this.time.todaysDateMonthDayYear();
   filteredItems?: Client[] = [];
+  filteredItemsCopy?: Client[] = [];
   searchControl = new FormControl();
   constructor(
     private router: Router,
@@ -21,6 +23,17 @@ export class DailyLendingsComponent {
     private time: TimeService
   ) {
     this.retrieveClients();
+  }
+  ngOnInit(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((value) => this.search(value))
+      )
+      .subscribe((results) => {
+        this.filteredItems = results;
+      });
   }
 
   retrieveClients(): void {
@@ -31,6 +44,21 @@ export class DailyLendingsComponent {
     });
   }
 
+  search(value: string) {
+    if (value) {
+      const lowerCaseValue = value.toLowerCase();
+      return of(
+        this.filteredItemsCopy!.filter(
+          (client) =>
+            client.firstName?.toLowerCase().includes(lowerCaseValue) ||
+            client.lastName?.toLowerCase().includes(lowerCaseValue) ||
+            client.middleName?.toLowerCase().includes(lowerCaseValue)
+        )
+      );
+    } else {
+      return of(this.filteredItemsCopy);
+    }
+  }
   addIdToFilterItems() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;
@@ -42,6 +70,7 @@ export class DailyLendingsComponent {
     for (let client of this.clients!) {
       if (client.debtCycleStartDate === this.today) {
         this.filteredItems!.push(client);
+        this.filteredItemsCopy?.push(client);
       }
     }
   }

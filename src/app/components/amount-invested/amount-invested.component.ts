@@ -32,6 +32,7 @@ export class AmountInvestedComponent implements OnInit {
       return;
     } else if (isNaN(Number(this.investmentAddAmount))) {
       alert('Enter a valid number!');
+      return;
     } else {
       this.data.updateUserInfoForAddInvestment(this.investmentAddAmount);
       this.router.navigate(['/home']);

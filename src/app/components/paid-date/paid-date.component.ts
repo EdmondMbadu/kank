@@ -16,6 +16,7 @@ export class PaidDateComponent {
   clients?: Client[];
   totalGivenDate: number = 0;
   todayPayments: Client[] = [];
+  numberOfPeople: number = 0;
   searchControl = new FormControl();
   frenchPaymentDays: { [key: string]: string } = {
     Monday: 'Lundi',
@@ -77,12 +78,12 @@ export class PaidDateComponent {
   search(value: string) {
     if (value) {
       const clientsWithPaymentsOnDate = this.getClientsByDate(value);
-      this.totalGivenDate = this.compute.computeExpectedPerDate(
-        clientsWithPaymentsOnDate
-      );
+      this.totalGivenDate = this.totalPerDate(clientsWithPaymentsOnDate);
+      this.numberOfPeople = clientsWithPaymentsOnDate.length;
       return of(clientsWithPaymentsOnDate);
     } else {
       this.totalGivenDate = this.compute.computeExpectedPerDate([]);
+      this.numberOfPeople = 0;
       return of([]);
     }
   }
@@ -108,6 +109,14 @@ export class PaidDateComponent {
         paymentPeriodRange: client.paymentPeriodRange,
       };
     });
+  }
+
+  totalPerDate(clients: Filtered[]) {
+    let total = 0;
+    for (let client of clients) {
+      total += Number(client.amount);
+    }
+    return total;
   }
 }
 

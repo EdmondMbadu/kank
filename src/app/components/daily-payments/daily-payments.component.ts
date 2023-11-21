@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
+import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -10,10 +11,11 @@ import { TimeService } from 'src/app/services/time.service';
   templateUrl: './daily-payments.component.html',
   styleUrls: ['./daily-payments.component.css'],
 })
-export class DailyPaymentsComponent {
+export class DailyPaymentsComponent implements OnInit {
   clients?: Client[];
   today = this.time.todaysDateMonthDayYear();
-  filteredItems?: Client[];
+  dailyPayments?: Filtered[] = [];
+  dailyPaymentsCopy?: Filtered[] = [];
   dailyPaymentsNames: string[] = [];
   dailyPamentsAmount: string[] = [];
   trackingIds: string[] = [];
@@ -25,19 +27,30 @@ export class DailyPaymentsComponent {
   ) {
     this.retrieveClients();
   }
+  ngOnInit(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((value) => this.search(value))
+      )
+      .subscribe((results) => {
+        this.dailyPayments = results;
+      });
+  }
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
-      this.filteredItems = data;
+
       this.addIdToFilterItems();
       this.extractTodayPayments();
     });
   }
 
   addIdToFilterItems() {
-    for (let i = 0; i < this.filteredItems!.length; i++) {
-      this.filteredItems![i].trackingId = `${i}`;
+    for (let i = 0; i < this.clients!.length; i++) {
+      this.clients![i].trackingId = `${i}`;
     }
   }
 
@@ -61,11 +74,40 @@ export class DailyPaymentsComponent {
   fillDailyPayment(client: Client, values: string[]) {
     for (let v of values) {
       let middleName = client.middleName === undefined ? '' : client.middleName;
-      this.dailyPaymentsNames.push(
-        `${client.firstName} ${client.lastName} ${middleName}`
-      );
-      this.dailyPamentsAmount.push(v);
-      this.trackingIds.push(client.trackingId!);
+      let filt = {
+        firstName: client.firstName,
+        lastName: client.lastName,
+        middleName: middleName,
+        amount: v,
+        trackingId: client.trackingId,
+      };
+
+      this.dailyPayments?.push(filt);
+      this.dailyPaymentsCopy?.push(filt);
     }
   }
+  search(value: string) {
+    if (value) {
+      const lowerCaseValue = value.toLowerCase();
+      return of(
+        this.dailyPaymentsCopy!.filter(
+          (client) =>
+            client.firstName?.toLowerCase().includes(lowerCaseValue) ||
+            client.lastName?.toLowerCase().includes(lowerCaseValue) ||
+            client.middleName?.toLowerCase().includes(lowerCaseValue)
+        )
+      );
+    } else {
+      return of(this.dailyPaymentsCopy);
+    }
+  }
+}
+
+export class Filtered {
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
+  date?: string;
+  amount?: string;
+  trackingId?: string;
 }

@@ -26,6 +26,7 @@ export class ReserveComponent {
       return;
     } else if (isNaN(Number(this.reserveAmount))) {
       alert('Enter a valid number!');
+      return;
     } else {
       this.data.updateUserInfoForAddToReserve(this.reserveAmount);
       this.router.navigate(['/home']);

@@ -115,6 +115,9 @@ export class DataService {
       amountInvested: (
         Number(this.auth.currentUser.amountInvested) + Number(amount)
       ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) + Number(amount)
+      ).toString(),
       investments: { [this.time.todaysDate()]: amount },
     };
 
@@ -129,6 +132,9 @@ export class DataService {
       reserveAmount: (
         Number(this.auth.currentUser.reserveAmount) + Number(amount)
       ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) - Number(amount)
+      ).toString(),
       reserve: { [this.time.todaysDate()]: amount },
     };
 
@@ -142,6 +148,10 @@ export class DataService {
       expensesAmount: (
         Number(this.auth.currentUser.expensesAmount) + Number(amount)
       ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) - Number(amount)
+      ).toString(),
+
       expenses: { [this.time.todaysDate()]: `${amount}:${reason}` },
     };
 
@@ -166,6 +176,11 @@ export class DataService {
       dailyReimbursement: {
         [date]: `${reimburse}`,
       },
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) +
+        Number(savings) +
+        Number(payment)
+      ).toString(),
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) - Number(payment)
       ).toString(),
@@ -179,6 +194,9 @@ export class DataService {
     const data = {
       clientsSavings: (
         Number(this.auth.currentUser.clientsSavings) - Number(withdrawal)
+      ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) - Number(withdrawal)
       ).toString(),
     };
     return userRef.set(data, { merge: true });
@@ -203,6 +221,13 @@ export class DataService {
         Number(this.auth.currentUser.fees) +
         Number(client.membershipFee) +
         Number(client.applicationFee)
+      ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) +
+        Number(client.membershipFee) +
+        Number(client.savings) +
+        Number(client.applicationFee) -
+        Number(client.loanAmount)
       ).toString(),
       projectedRevenue: (
         Number(this.auth.currentUser.projectedRevenue) +
@@ -235,6 +260,13 @@ export class DataService {
         Number(this.auth.currentUser.fees) +
         Number(client.membershipFee) +
         Number(client.applicationFee)
+      ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) +
+        Number(client.membershipFee) +
+        Number(client.savings) +
+        Number(client.applicationFee) -
+        Number(client.loanAmount)
       ).toString(),
       projectedRevenue: (
         Number(this.auth.currentUser.projectedRevenue) +

@@ -97,7 +97,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '../../../assets/img/reserve.svg',
     '../../../assets/img/member.svg',
     '../../../assets/img/benefit.svg',
-    '../../../assets/img/benefit.svg',
+    '../../../assets/img/salary.png',
     '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-payment.png',
     '../../../assets/img/calendar.png',
@@ -116,7 +116,7 @@ export class InvestementsSummaryComponent implements OnInit {
     'Reserve',
     'Frais Des Membres',
     'Benefice Brute',
-    'Benefice',
+    'Argent en Main',
     'Paiement Du Jour',
     'Emprunt Du Jour',
     'Clients & Jour De Paiement',
@@ -151,7 +151,7 @@ export class InvestementsSummaryComponent implements OnInit {
       ` ${this.auth.currentUser.reserveAmount}`,
       ` ${this.auth.currentUser.fees}`,
       `${bWithoutExpenses}`,
-      ` ${bWithExpenses}`,
+      ` ${this.auth.currentUser.moneyInHands}`,
       ` ${this.dailyPayment}`,
       ` ${this.dailyLending}`,
     ];
@@ -178,7 +178,9 @@ export class InvestementsSummaryComponent implements OnInit {
         this.auth.currentUser.fees
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(bWithoutExpenses)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(bWithExpenses)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.moneyInHands
+      )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
     ];

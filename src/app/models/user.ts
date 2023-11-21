@@ -5,6 +5,7 @@ export class User {
   lastName?: string;
   numberOfClients?: string;
   amountInvested?: string;
+  moneyInHands?: string;
   investments?: { [key: string]: string } = {};
   amountLended?: string;
   clientsSavings?: string;

@@ -15,7 +15,7 @@ import { TimeService } from 'src/app/services/time.service';
 export class PayTodayComponent implements OnInit {
   clients?: Client[];
   totalGivenDate: number = 0;
-  todayPayments: Client[] = [];
+  numberOfPeople: number = 0;
   searchControl = new FormControl();
   frenchPaymentDays: { [key: string]: string } = {
     Monday: 'Lundi',
@@ -37,7 +37,6 @@ export class PayTodayComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.frenchPaymentDays['Monday'] = 'Lundi';
     this.searchControl.valueChanges
       .pipe(
         debounceTime(300),
@@ -54,7 +53,6 @@ export class PayTodayComponent implements OnInit {
       this.clients = data;
       this.filteredItems = data;
       this.addIds();
-      this.filterTodayPayments();
     });
   }
   addIds() {
@@ -65,38 +63,21 @@ export class PayTodayComponent implements OnInit {
     }
   }
 
-  filterTodayPayments() {
-    let day = this.time.getDayOfWeek(this.today);
-    for (let client of this.clients!) {
-      if (
-        client.paymentDay === day &&
-        Number(client.amountToPay) - Number(client.amountPaid) > 0
-      ) {
-        console.log('hello');
-        this.todayPayments.push(client);
-      }
-    }
-  }
-
   search(value: string) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
-      this.totalGivenDate = this.compute.computeExpectedPerDate(
-        this.clients!.filter(
-          (client) =>
-            client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
-            client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
-        )
+      let current = this.clients!.filter(
+        (client) =>
+          client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
+          (client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue) &&
+            Number(client.amountToPay) - Number(client.amountPaid) > 0)
       );
-      return of(
-        this.clients!.filter(
-          (client) =>
-            client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
-            client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
-        )
-      );
+      this.totalGivenDate = this.compute.computeExpectedPerDate(current);
+      this.numberOfPeople = current.length;
+      return of(current);
     } else {
       this.totalGivenDate = this.compute.computeExpectedPerDate([]);
+      this.numberOfPeople = 0;
       return of(this.clients);
     }
   }

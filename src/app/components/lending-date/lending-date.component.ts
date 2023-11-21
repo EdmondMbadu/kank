@@ -16,6 +16,7 @@ export class LendingDateComponent {
   clients?: Client[];
   totalGivenDate: number = 0;
   todayPayments: Client[] = [];
+  numberOfPeople: number = 0;
   searchControl = new FormControl();
   frenchPaymentDays: { [key: string]: string } = {
     Monday: 'Lundi',
@@ -68,7 +69,6 @@ export class LendingDateComponent {
     let day = this.time.getDayOfWeek(this.today);
     for (let client of this.clients!) {
       if (client.paymentDay === day) {
-        // console.log(' clients payment', client.payments);
         this.todayPayments.push(client);
       }
     }
@@ -80,9 +80,11 @@ export class LendingDateComponent {
       this.totalGivenDate = this.compute.computeTotalLoanPerDate(
         clientsWithPaymentsOnDate
       );
+      this.numberOfPeople = clientsWithPaymentsOnDate.length;
       return of(clientsWithPaymentsOnDate);
     } else {
       this.totalGivenDate = this.compute.computeTotalLoanPerDate([]);
+      this.numberOfPeople = 0;
       return of([]);
     }
   }

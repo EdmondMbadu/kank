@@ -17,6 +17,7 @@ export class NotPaidTodayComponent {
   haveNotPaidToday: Client[] = [];
   totalGivenDate: number = 0;
   paidToday: Client[] = [];
+  numberOfPeople: number = 0;
   today = this.time.todaysDateMonthDayYear();
   filteredItems?: Client[];
   dailyPaymentsNames: string[] = [];
@@ -43,6 +44,7 @@ export class NotPaidTodayComponent {
       this.totalGivenDate = this.compute.computeExpectedPerDate(
         this.haveNotPaidToday
       );
+      this.numberOfPeople = this.haveNotPaidToday.length;
     });
   }
 
@@ -84,7 +86,6 @@ export class NotPaidTodayComponent {
         this.haveNotPaidToday.push(c);
       }
     }
-    console.log('those who have not paid today yet are', this.haveNotPaidToday);
   }
   fillDailyPayment(client: Client, values: string[]) {
     for (let v of values) {
