@@ -45,6 +45,7 @@ export class NotPaidComponent implements OnInit {
   searchThoseWhoDidNotPayPerInterval() {
     this.validStartDate = this.time.isDateInRange(this.startDate);
     this.validEndDate = this.time.isDateInRange(this.endDate);
+
     if (
       this.validStartDate &&
       this.validEndDate &&
@@ -60,7 +61,6 @@ export class NotPaidComponent implements OnInit {
         this.haveNotPaid
       );
       this.numberofPeopleWhodidNotPay = this.haveNotPaid.length;
-      console.log('have not paid', this.haveNotPaid);
     } else {
       alert('Les dates ne sont pas valides. Entrez des date valides.');
     }

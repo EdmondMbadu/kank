@@ -47,7 +47,6 @@ export class ExpensesComponent {
     });
   }
   getExpensesData() {
-    console.log('Hello there');
     for (const key in this.expenses) {
       this.expensesDates.push(key);
       let current = this.expenses[key].split(':');

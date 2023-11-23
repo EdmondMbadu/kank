@@ -221,7 +221,7 @@ export class TimeService {
 
   getDatesInRange(start: string, end: string) {
     const parseDate = (dateStr: string) => {
-      const [month, day, year] = dateStr.split('-').map(Number);
+      const [year, month, day] = dateStr.split('-').map(Number);
       return new Date(year, month - 1, day);
     };
 
@@ -248,10 +248,17 @@ export class TimeService {
   }
 
   filterClientsByPaymentDates(clients: Client[], dates: string[]) {
+    // Helper function to convert MM-DD-YYYY to YYYY/MM-DD
+    const convertToDateCompatibleFormat = (dateStr: string) => {
+      const [month, day, year] = dateStr.split('-');
+      return `${year}/${month}/${day}`;
+    };
+
     // Helper function to extract date part from the payment key
     const extractDate = (paymentKey: string) => {
       return paymentKey.split('-').slice(0, 3).join('-');
     };
+
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -261,17 +268,23 @@ export class TimeService {
         return false;
       }
 
-      // Check if the client's debtCycleStartDate is within a week of today
-      const debtCycleStartDate = new Date(client.debtCycleStartDate!);
+      const formattedDebtCycleStartDate = convertToDateCompatibleFormat(
+        client.debtCycleStartDate!
+      );
+      const debtCycleStartDate = new Date(formattedDebtCycleStartDate);
+
       if (debtCycleStartDate > oneWeekAgo) {
         return false;
       }
 
-      // Get all payment dates for the client
-      const paymentDates = Object.keys(client.payments!).map(extractDate);
+      const paymentDates = Object.keys(client.payments!)
+        .map(extractDate)
+        .map(convertToDateCompatibleFormat);
 
-      // Check if none of the payment dates match the given dates
-      return !paymentDates.some((paymentDate) => dates.includes(paymentDate));
+      const formattedDates = dates.map(convertToDateCompatibleFormat);
+      return !paymentDates.some((paymentDate) =>
+        formattedDates.includes(paymentDate)
+      );
     });
   }
 }

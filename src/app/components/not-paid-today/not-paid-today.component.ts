@@ -99,7 +99,6 @@ export class NotPaidTodayComponent {
     let day = this.time.getDayOfWeek(this.today);
     for (let client of this.clients!) {
       if (client.paymentDay === day) {
-        // console.log(' clients payment', client.payments);
         this.shouldPayToday.push(client);
       }
     }

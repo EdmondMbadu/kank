@@ -52,7 +52,6 @@ export class PaymentComponent {
     }
   }
   displayPaymentOtherAmount() {
-    console.log('payment amount', this.paymentAmount);
     if (this.paymentAmount === 'Autre Montant') {
       this.paymentOtherAmount = true;
       this.paymentAmount = '';
