@@ -56,4 +56,20 @@ export class ComputationService {
 
     return total;
   }
+
+  sortArrayByDateDescendingOrder(array: [string, string][]) {
+    // Sort the array by date in descending order
+    array.sort((a, b) => {
+      // Convert date strings to Date objects
+      const dateA = new Date(
+        a[0].replace(/(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/, '$1/$2/$3 $4:$5:$6')
+      );
+      const dateB = new Date(
+        b[0].replace(/(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/, '$1/$2/$3 $4:$5:$6')
+      );
+      return dateB.getTime() - dateA.getTime(); // Sort in descending order
+    });
+
+    return array;
+  }
 }

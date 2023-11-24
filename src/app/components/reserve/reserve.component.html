@@ -55,7 +55,7 @@
                     </div>
                        <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                            {{item.key.replaceAll('-','/').substring(0,10)}}
+                            {{reserveDates[i]}}
                         </p>
                         <!-- <p class="text-sm text-gray-500 truncate dark:text-gray-400">
                         {{paymentDates[i].replaceAll('-','/').substring(0,9)}}
@@ -63,7 +63,7 @@
                     </div>
                  
                        <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                        FC {{  item.value}}
+                        FC {{reserveAmounts[i] | number:'1.0-0'}}
                        </div>
                    </div>
                </li>

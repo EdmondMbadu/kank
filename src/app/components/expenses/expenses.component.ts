@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
+import { TimeService } from 'src/app/services/time.service';
 
 @Component({
   selector: 'app-expenses',
@@ -12,6 +14,7 @@ export class ExpensesComponent {
   expenseAmount: string = '';
   expenseReason: string = '';
   expenses: string[] = [];
+  currentExpenses: [string, string][] = [];
   expensesAmounts: string[] = [];
   expensesReasons: string[] = [];
   expensesDates: string[] = [];
@@ -19,7 +22,9 @@ export class ExpensesComponent {
   constructor(
     public auth: AuthService,
     private data: DataService,
-    private router: Router
+    private router: Router,
+    private compute: ComputationService,
+    private time: TimeService
   ) {
     this.getCurrentUser();
   }
@@ -43,15 +48,21 @@ export class ExpensesComponent {
     this.auth.user$.subscribe((user) => {
       this.currentUser = user;
       this.expenses = this.currentUser.expenses;
-      this.getExpensesData();
+      this.currentExpenses = Object.entries(this.currentUser.expenses);
+      this.currentExpenses = this.compute.sortArrayByDateDescendingOrder(
+        this.currentExpenses
+      );
+
+      this.expensesReasons = this.currentExpenses.map((entry) => entry[1]);
+      this.expensesDates = this.currentExpenses.map((entry) =>
+        this.time.convertTimeFormat(entry[0])
+      );
+      this.expensesAmounts = this.expensesReasons.map(
+        (item) => item.split(':')[0]
+      );
+      this.expensesReasons = this.expensesReasons.map(
+        (item) => item.split(':')[1]
+      );
     });
-  }
-  getExpensesData() {
-    for (const key in this.expenses) {
-      this.expensesDates.push(key);
-      let current = this.expenses[key].split(':');
-      this.expensesAmounts.push(current[0]);
-      this.expensesReasons.push(current[1]);
-    }
   }
 }

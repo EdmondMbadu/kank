@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
@@ -19,7 +20,8 @@ export class PaymentActivityComponent implements OnInit {
   constructor(
     private activatedRoute: ActivatedRoute,
     public auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private compute: ComputationService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -32,26 +34,9 @@ export class PaymentActivityComponent implements OnInit {
       this.client = data[Number(this.id)];
       // this.payments = Object.values(this.client.payments!);
       // this.paymentDates = Object.keys(this.client.payments!);
-      const paymentsArray = Object.entries(this.client.payments!);
-
-      // Sort the array by date in descending order
-      paymentsArray.sort((a, b) => {
-        // Convert date strings to Date objects
-        const dateA = new Date(
-          a[0].replace(
-            /(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/,
-            '$1/$2/$3 $4:$5:$6'
-          )
-        );
-        const dateB = new Date(
-          b[0].replace(
-            /(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/,
-            '$1/$2/$3 $4:$5:$6'
-          )
-        );
-        return dateB.getTime() - dateA.getTime(); // Sort in descending order
-      });
-
+      let paymentsArray = Object.entries(this.client.payments!);
+      paymentsArray =
+        this.compute.sortArrayByDateDescendingOrder(paymentsArray);
       // Extract the sorted payment values and dates into separate arrays
       this.payments = paymentsArray.map((entry) => entry[1]);
       this.paymentDates = paymentsArray.map((entry) => entry[0]);

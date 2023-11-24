@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
+import { TimeService } from 'src/app/services/time.service';
 
 @Component({
   selector: 'app-reserve',
@@ -11,11 +13,15 @@ import { DataService } from 'src/app/services/data.service';
 export class ReserveComponent {
   reserveAmount: string = '';
   reserve: string[] = [];
+  reserveAmounts: string[] = [];
+  reserveDates: string[] = [];
   currentUser: any = {};
   constructor(
     public auth: AuthService,
     private data: DataService,
-    private router: Router
+    private router: Router,
+    private compute: ComputationService,
+    private time: TimeService
   ) {
     this.getCurrentUser();
   }
@@ -36,6 +42,14 @@ export class ReserveComponent {
     this.auth.user$.subscribe((user) => {
       this.currentUser = user;
       this.reserve = this.currentUser.reserve;
+
+      let currentreserve = this.compute.sortArrayByDateDescendingOrder(
+        Object.entries(this.currentUser.reserve)
+      );
+      this.reserveAmounts = currentreserve.map((entry) => entry[1]);
+      this.reserveDates = currentreserve.map((entry) =>
+        this.time.convertTimeFormat(entry[0])
+      );
     });
   }
 }
