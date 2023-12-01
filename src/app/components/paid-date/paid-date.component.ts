@@ -88,28 +88,30 @@ export class PaidDateComponent {
   }
 
   getClientsByDate(date: string) {
-    return this.clients!.filter((client) => {
-      return Object.keys(client.payments!).some((paymentDate) =>
-        paymentDate.startsWith(date)
-      );
-    }).map((client) => {
-      const paymentDate = Object.keys(client.payments!).find((paymentDate) =>
-        paymentDate.startsWith(date)
-      );
-      return {
-        firstName: client.firstName,
-        lastName: client.lastName,
-        middleName: client.middleName,
-        date: paymentDate,
-        amount: client.payments![paymentDate!],
-        trackingId: client.trackingId,
-        amountToPay: client.amountToPay,
-        amountPaid: client.amountPaid,
-        paymentPeriodRange: client.paymentPeriodRange,
-      };
-    });
-  }
+    let clientsWithAllPayments: any = [];
 
+    this.clients!.forEach((client) => {
+      const paymentDates = Object.keys(client.payments!).filter((paymentDate) =>
+        paymentDate.startsWith(date)
+      );
+
+      paymentDates.forEach((paymentDate) => {
+        clientsWithAllPayments.push({
+          firstName: client.firstName,
+          lastName: client.lastName,
+          middleName: client.middleName,
+          date: paymentDate,
+          amount: client.payments![paymentDate],
+          trackingId: client.trackingId,
+          amountToPay: client.amountToPay,
+          amountPaid: client.amountPaid,
+          paymentPeriodRange: client.paymentPeriodRange,
+        });
+      });
+    });
+
+    return clientsWithAllPayments;
+  }
   totalPerDate(clients: Filtered[]) {
     let total = 0;
     for (let client of clients) {
