@@ -78,7 +78,8 @@ export class NotPaidTodayComponent {
       if (
         this.paidToday.indexOf(c) === -1 &&
         Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
-        !c.debtCycleStartDate?.startsWith(this.today)
+        !c.debtCycleStartDate?.startsWith(this.today) &&
+        this.didClientStartThisWeek(c)
       ) {
         c.minPayment = (
           Number(c.amountToPay) / Number(c.paymentPeriodRange)
@@ -102,5 +103,27 @@ export class NotPaidTodayComponent {
         this.shouldPayToday.push(client);
       }
     }
+  }
+
+  didClientStartThisWeek(client: Client) {
+    const convertToDateCompatibleFormat = (dateStr: string) => {
+      const [month, day, year] = dateStr.split('-');
+      return `${year}/${month}/${day}`;
+    };
+
+    const oneWeekAgo = new Date();
+    // watch out for this one. I am not sure. whether it is 7 so I put 6 just in case.
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 6);
+
+    const formattedDebtCycleStartDate = convertToDateCompatibleFormat(
+      client.debtCycleStartDate!
+    );
+    const debtCycleStartDate = new Date(formattedDebtCycleStartDate);
+
+    if (debtCycleStartDate > oneWeekAgo) {
+      return false;
+    }
+
+    return true;
   }
 }
