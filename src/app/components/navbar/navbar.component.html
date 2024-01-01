@@ -19,6 +19,10 @@
               <img src="../../../assets/img/new-client.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
               <h1 *ngIf="currentNewClient" class=" {{current}}"></h1>
             </div>
+            <div routerLink="/team-page" class="hidden md:block">
+              <img src="../../../assets/img/staff.png" class="w-14  hover:w-16 hover:h-16 h-14" alt="">
+              <h1 *ngIf="currentEmployeePage" class=" {{current}}"></h1>
+            </div>
           </div>
         
       </div>
@@ -37,6 +41,7 @@
             <a routerLink="/home"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Depart</a>
             <a routerLink="/client-info"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Info Client</a>
             <a routerLink="/new-client"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Nouveau Client</a>
+            <a routerLink="/team-page"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a>
             <a (click)="logOut()"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-1">
               Se Déconnecter</a>
        

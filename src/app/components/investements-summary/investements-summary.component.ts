@@ -20,6 +20,7 @@ export class InvestementsSummaryComponent implements OnInit {
     this.initalizeInputs();
     this.updatePaymentGraphics();
     this.updateLendingGraphics();
+    this.updatePerformanceGraphics();
     this.updatePieGrahics();
   }
   public graphPie = {
@@ -45,31 +46,42 @@ export class InvestementsSummaryComponent implements OnInit {
       barmode: 'stack',
     },
   };
+  public graphPerformance = {
+    data: [{}],
+    layout: {
+      title: 'Performance Points',
+      barmode: 'stack',
+    },
+  };
 
   maxRange = this.auth.currentUser.dailyReimbursement.length;
-
   totalPayGraphics: number = 0;
   totalLendingGraphics: number = 0;
   today = this.time.todaysDateMonthDayYear();
-  colorPositive: string = '#008080';
-  colorNegative: string = '#ff0000';
+
   week: number = 5;
   month: number = 20;
   day: number = 1;
+  totalPerfomance: number = 0;
   globalTime: number = this.week;
   graphicsPieTimeRange: number = this.week;
   graphicTimeRangePayment: number = this.week;
   graphicTimeRangeLending: number = this.week;
+  graphicPerformanceTimeRange: number = this.week;
   recentReimbursementDates: string[] = [];
   recentReimbursementAmounts: number[] = [];
   recentLendingDates: string[] = [];
   recentLendingAmounts: number[] = [];
+  recentPerformanceDates: string[] = [];
+  recentPerformanceNumbers: number[] = [];
   dailyLending: string = '0';
   dailyPayment: string = '0';
   valuesConvertedToDollars: string[] = [];
   elements: number = 10;
   linkPath: string[] = [
     '/client-info',
+    '/team-page',
+    '/team-page',
     '/add-investment',
     '/client-info',
     '/client-info',
@@ -89,6 +101,8 @@ export class InvestementsSummaryComponent implements OnInit {
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
+    '../../../assets/img/performance.png',
+    '../../../assets/img/performance-global.png',
     '../../../assets/img/invest.svg',
     '../../../assets/img/debt.png',
     '../../../assets/img/saving.svg',
@@ -108,6 +122,8 @@ export class InvestementsSummaryComponent implements OnInit {
   ];
   summary: string[] = [
     'Nombres des Clients',
+    "Performance D'Aujourdhui",
+    'Performance Globale',
     'Argent Investi',
     'Prêt Restant',
     'Epargne Clients',
@@ -135,14 +151,21 @@ export class InvestementsSummaryComponent implements OnInit {
     let bWithExpenses = this.BenefitsWithExpenses();
     let bWithoutExpenses = this.BenefitsWithoutExpenses();
     this.dailyLending = this.auth.currentUser.dailyLending[this.today];
+    let performance =
+      this.auth.currentUser.performances[this.today] === undefined
+        ? ''
+        : this.auth.currentUser.performances[this.today];
     this.dailyPayment = this.auth.currentUser.dailyReimbursement[this.today];
     this.dailyLending =
       this.dailyLending === undefined ? '0' : this.dailyLending;
     this.dailyPayment =
       this.dailyPayment === undefined ? '0' : this.dailyPayment;
+    this.sumPerformance();
 
     this.summaryContent = [
       this.auth.currentUser.numberOfClients,
+      performance,
+      this.totalPerfomance,
       ` ${this.auth.currentUser.amountInvested}`,
       ` ${this.auth.currentUser.totalDebtLeft}`,
       ` ${this.auth.currentUser.clientsSavings}`,
@@ -157,6 +180,8 @@ export class InvestementsSummaryComponent implements OnInit {
     ];
 
     this.valuesConvertedToDollars = [
+      ``,
+      ``,
       ``,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.amountInvested
@@ -201,6 +226,14 @@ export class InvestementsSummaryComponent implements OnInit {
     return benefit.toString();
   }
 
+  sumPerformance() {
+    this.totalPerfomance = 0;
+    for (let key in this.auth.currentUser.performances) {
+      this.totalPerfomance += parseFloat(
+        this.auth.currentUser.performances[key]
+      );
+    }
+  }
   displayGraph() {}
 
   sortKeysAndValuesPayments(time: number) {
@@ -218,6 +251,15 @@ export class InvestementsSummaryComponent implements OnInit {
       .slice(-time);
     const values = sortedKeys.map(
       (key) => this.auth.currentUser.dailyLending[key]
+    );
+    return [sortedKeys, values];
+  }
+  sortKeysAndValuesPerformance(time: number) {
+    const sortedKeys = Object.keys(this.auth.currentUser.performances)
+      .sort((a, b) => +this.toDate(a) - +this.toDate(b))
+      .slice(-time);
+    const values = sortedKeys.map(
+      (key) => this.auth.currentUser.performances[key]
     );
     return [sortedKeys, values];
   }
@@ -241,7 +283,7 @@ export class InvestementsSummaryComponent implements OnInit {
     let sorted = this.sortKeysAndValuesPayments(this.graphicTimeRangePayment);
     this.recentReimbursementDates = sorted[0];
     this.recentReimbursementAmounts = this.convertToDollars(sorted[1]);
-    const color1 = this.findColor(sorted[1]);
+    const color1 = this.compute.findColor(sorted[1]);
     this.graph = {
       data: [
         {
@@ -262,12 +304,41 @@ export class InvestementsSummaryComponent implements OnInit {
       },
     };
   }
+  updatePerformanceGraphics() {
+    let sorted = this.sortKeysAndValuesPerformance(
+      this.graphicPerformanceTimeRange
+    );
+    this.recentPerformanceDates = sorted[0];
+    this.recentPerformanceNumbers = this.compute.convertToNumbers(sorted[1]);
+    const color = this.compute.findColor(sorted[1]);
+
+    this.graphPerformance = {
+      data: [
+        {
+          x: this.recentPerformanceDates,
+          y: this.recentPerformanceNumbers,
+          type: 'scatter',
+          mode: 'lines',
+          marker: { color: 'rgb(0,76,153)' },
+          line: {
+            color: color,
+            // width: 1200,
+          },
+        },
+      ],
+      layout: {
+        title: 'Performance Points',
+        barmode: 'stack',
+      },
+    };
+  }
+
   updatePieGrahics() {
     let sorted = this.sortKeysAndValuesPayments(this.graphicsPieTimeRange);
-    this.totalPayGraphics = this.findSum(sorted[1]);
+    this.totalPayGraphics = this.compute.findSum(sorted[1]);
 
     let sorted2 = this.sortKeysAndValuesLending(this.graphicsPieTimeRange);
-    this.totalLendingGraphics = this.findSum(sorted2[1]);
+    this.totalLendingGraphics = this.compute.findSum(sorted2[1]);
 
     this.graphPie = {
       data: [
@@ -293,7 +364,7 @@ export class InvestementsSummaryComponent implements OnInit {
     let sorted = this.sortKeysAndValuesLending(this.graphicTimeRangeLending);
     this.recentLendingDates = sorted[0];
     this.recentLendingAmounts = this.convertToDollars(sorted[1]);
-    const color2 = this.findColor(sorted[1]);
+    const color2 = this.compute.findColor(sorted[1]);
     this.graph2 = {
       data: [
         {
@@ -313,18 +384,5 @@ export class InvestementsSummaryComponent implements OnInit {
         barmode: 'stack',
       },
     };
-  }
-
-  findColor(array: string[]) {
-    let start = Number(array[0]);
-    let end = Number(array[array.length - 1]);
-    return end - start >= 0 ? this.colorPositive : this.colorNegative;
-  }
-  findSum(array: string[]) {
-    let total = 0;
-    for (let a of array) {
-      total += Number(a);
-    }
-    return total;
   }
 }

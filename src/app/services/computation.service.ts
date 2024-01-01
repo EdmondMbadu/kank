@@ -6,6 +6,8 @@ import { Client } from '../models/client';
 })
 export class ComputationService {
   constructor() {}
+  colorPositive: string = '#008080';
+  colorNegative: string = '#ff0000';
 
   convertCongoleseFrancToUsDollars(value: string) {
     let input = Number(value);
@@ -56,6 +58,13 @@ export class ComputationService {
 
     return total;
   }
+  convertToNumbers(array: any) {
+    let result: number[] = [];
+    for (let a of array) {
+      result.push(Number(a));
+    }
+    return result;
+  }
 
   sortArrayByDateDescendingOrder(array: [string, string][]) {
     // Sort the array by date in descending order
@@ -71,5 +80,18 @@ export class ComputationService {
     });
 
     return array;
+  }
+
+  findColor(array: string[]) {
+    let start = Number(array[0]);
+    let end = Number(array[array.length - 1]);
+    return end - start >= 0 ? this.colorPositive : this.colorNegative;
+  }
+  findSum(array: string[]) {
+    let total = 0;
+    for (let a of array) {
+      total += Number(a);
+    }
+    return total;
   }
 }

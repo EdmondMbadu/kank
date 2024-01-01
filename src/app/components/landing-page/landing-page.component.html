@@ -1,24 +1,27 @@
 <app-navbar></app-navbar>
 <!-- Sign On -->
 
+<div class="">
 <section class="container flex flex-col md:flex-row justify-center items-center px-6 mx-auto">
-    <div class="flex-col w-[22rem] shadow-md  my-6 h-[25rem] border border-green-950 rounded-lg">
+    <div class=" flex-col w-[22rem] shadow-md  my-6 h-[25rem] border border-green-950 rounded-lg " style="background-image: url(../../../assets/img/african-woman.jpg)">
       <label class="block my-28 mx-8">
   
         <input type="text" name="username" class="mt-2 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Email" required [(ngModel)]="email"/>
         <input type="password" name="password" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Mot De Passe" required [(ngModel)]="password" />
         <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="SignOn()">Se Connecter</button>
 
-        <p routerLink="/forgot-password" class="p-2  hover:underline">Mot De passe Oublié?</p>
+        <p routerLink="/forgot-password" class="p-2  hover:underline ">Mot De passe Oublié?</p>
       </label> 
      
     </div>
     <div class="flex-col items-center text-center  md:1-1/2">
-      <h1 class="max-w-md my-6 text-4xl md:text-5xl md:my-2 md:text-left md:mx-24 text-center">Together we thrive</h1>
-      <p class="max-w-sm my-8 text-center text-darkGrayishBlue md:text-left md:mx-24">
-        We invest in small businesses <br>
-        Come lend money from us to start 
-        your business
+     
+      <h1 class="max-w-3xl my-6 text-4xl md:text-5xl font-bold tracking-tight  xl:text-6xl  md:my-2 md:text-left md:mx-24 text-center"> Ensemble nous Prospérons</h1>
+      <p class="max-w-xl font-light my-8 md:text-lg text-center text-darkGrayishBlue md:text-left md:mx-24">
+
+
+        Un logiciel de gestion pour la microfinance locale <br>
+        Suivez les paiements et les prêts de manière transparente
         </p>
         <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/create-account">Créer Un Compte</button>
 
@@ -26,7 +29,6 @@
   
   </section>
 
-  
   <div class="flex container mx-auto mt-12 justify-center">
 
 
@@ -36,6 +38,8 @@
       </div>
       
     </div>
+
+ 
   
 
 
@@ -43,3 +47,6 @@
 
 
   </div>
+</div>
+
+  

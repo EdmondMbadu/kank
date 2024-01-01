@@ -10,6 +10,7 @@ import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthService } from './auth.service';
 import { Client } from '../models/client';
 import { TimeService } from './time.service';
+import { Avatar, Employee } from '../models/employee';
 
 @Injectable({
   providedIn: 'root',
@@ -69,9 +70,42 @@ export class DataService {
       homeAddress: client.homeAddress,
       profession: client.profession,
       paymentDay: client.paymentDay,
+      agent: client.agent,
     };
 
     return clientRef.set(data, { merge: true });
+  }
+
+  updateEmployeeInfoForClientAgentAssignment(agent: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${agent.uid}`
+    );
+
+    const data = {
+      clients: agent.clients,
+    };
+
+    return employeeRef.set(data, { merge: true });
+  }
+
+  updateEmployeeInfo(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    const data = {
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      middleName: employee.middleName,
+      phoneNumber: employee.phoneNumber,
+      dateJoined: employee.dateJoined,
+      sex: employee.sex,
+      dateOfBirth: employee.dateOfBirth,
+      status: employee.status,
+      role: employee.role,
+    };
+
+    return employeeRef.set(data, { merge: true });
   }
 
   initiateNewDebtCycle(client: Client) {
@@ -95,6 +129,7 @@ export class DataService {
       debtCycleEndDate: client.debtCycleEndDate,
       paymentPeriodRange: client.paymentPeriodRange,
       profession: client.profession,
+      agent: client.agent,
       amountPaid: '0',
       numberOfPaymentsMissed: '0',
       numberOfPaymentsMade: '0',
@@ -156,6 +191,16 @@ export class DataService {
     };
 
     return userRef.set(data, { merge: true });
+  }
+
+  updateEmployeePictureData(employee: Employee, avatar: Avatar) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+    const data = {
+      profilePicture: avatar,
+    };
+    return employeeRef.set(data, { merge: true });
   }
 
   updateUserInfoForClientPayment(

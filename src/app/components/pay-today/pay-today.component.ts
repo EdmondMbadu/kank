@@ -3,6 +3,7 @@ import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -14,6 +15,7 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class PayTodayComponent implements OnInit {
   clients?: Client[];
+  employees: Employee[] = [];
   totalGivenDate: number = 0;
   numberOfPeople: number = 0;
   searchControl = new FormControl();
@@ -51,7 +53,13 @@ export class PayTodayComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+      this.retrieveEmployees();
       this.filteredItems = data;
+    });
+  }
+  retrieveEmployees(): void {
+    this.auth.getAllEmployees().subscribe((data: any) => {
+      this.employees = data;
       this.addIds();
     });
   }
@@ -60,6 +68,10 @@ export class PayTodayComponent implements OnInit {
       this.clients![i].trackingId = `${i}`;
       this.clients![i].frenchPaymentDay =
         this.frenchPaymentDays[`${this.clients![i].paymentDay}`];
+      let emp = this.employees.find(
+        (element) => element.uid === this.clients![i].agent
+      );
+      this.clients![i].employee = emp;
     }
   }
 

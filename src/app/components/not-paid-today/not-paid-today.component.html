@@ -5,7 +5,7 @@
    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
 </div>
 <div class="flex container mx-auto justify-center mb-2">
-    <h2 class="text-center text-2xl font-bold ">{{numberOfPeople}} clients - Total: {{totalGivenDate}} FC</h2>
+    <h2 class="text-center text-2xl font-bold ">{{numberOfPeople}} clients - Total: {{totalGivenDate | number:'1.0-0'}} FC</h2>
 </div>
 <div class="flex container mx-auto  justify-center">
    <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
@@ -41,6 +41,7 @@
                            {{c.firstName}} {{c.lastName}} {{c.middleName}}
                            </p>
                            <p class="text-sm text-gray-500 truncate dark:text-gray-400">
+                            Agent: {{c.employee?.firstName}} {{c.employee?.lastName}}
                             <!-- {{c.frenchPaymentDay}}  -->
                            </p>
                        </div>

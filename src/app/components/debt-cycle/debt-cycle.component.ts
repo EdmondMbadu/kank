@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -13,6 +15,7 @@ import { TimeService } from 'src/app/services/time.service';
 export class DebtCycleComponent implements OnInit {
   rateDisplay: boolean = false;
   id: any = '';
+  employees: Employee[] = [];
   amountToPayDisplay: boolean = false;
   debtCycleDisplay: boolean = false;
   client = new Client();
@@ -37,17 +40,25 @@ export class DebtCycleComponent implements OnInit {
     public activatedRoute: ActivatedRoute,
     private data: DataService,
     private router: Router,
-    private time: TimeService
+    private time: TimeService,
+    private performance: PerformanceService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
     this.retrieveClient();
+    this.retrieveEmployees();
   }
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+    });
+  }
+
+  retrieveEmployees(): void {
+    this.auth.getAllEmployees().subscribe((data: any) => {
+      this.employees = data;
     });
   }
 
@@ -102,7 +113,8 @@ export class DebtCycleComponent implements OnInit {
       this.interestRate === '' ||
       this.payRange === '' ||
       this.debtCycleStartDate === '' ||
-      this.debtCycleEndDate === ''
+      this.debtCycleEndDate === '' ||
+      this.client.agent === ''
     ) {
       alert('Completer tous les données');
       return;
@@ -113,16 +125,30 @@ export class DebtCycleComponent implements OnInit {
       return;
     } else {
       this.setClientNewDebtCycleValues();
-      this.data.initiateNewDebtCycle(this.client).then(
-        (res: any) => {
-          this.router.navigate(['/client-portal/' + this.id]);
-        },
-        (err: any) => {
-          alert(
-            "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-          );
-        }
-      );
+      this.data
+        .initiateNewDebtCycle(this.client)
+
+        .then(
+          (res: any) => {
+            this.router.navigate(['/client-portal/' + this.id]);
+          },
+          (err: any) => {
+            alert(
+              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+            );
+          }
+        )
+        .then(() => {
+          this.performance
+            .updateUserPerformance(this.client)
+            .then((res: any) => {
+              console.log('updated user info performance');
+            })
+            .catch((err: any) => {
+              console.log('error while updating performance');
+            });
+        });
+
       let date = this.time.todaysDateMonthDayYear();
       this.data
         .updateUserInfoForClientNewDebtCycle(this.client, this.savings, date)
@@ -140,6 +166,14 @@ export class DebtCycleComponent implements OnInit {
       this.resetFields();
       return;
     }
+  }
+  findAgentWithId(id: string) {
+    for (let em of this.employees) {
+      if (em.uid === id) {
+        return em;
+      }
+    }
+    return null;
   }
   displayRate() {
     if (this.payRange === '' || this.loanAmount === '') {

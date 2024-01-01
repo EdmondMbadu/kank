@@ -5,6 +5,7 @@ import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
+import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -28,7 +29,8 @@ export class PaymentComponent {
     private data: DataService,
     private router: Router,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private performance: PerformanceService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -126,12 +128,11 @@ export class PaymentComponent {
       ).toString();
     }
     let date = this.time.todaysDateMonthDayYear();
-    this.data.clientPayment(
-      this.client,
-      this.savingsAmount,
-      date,
-      this.paymentAmount
-    );
+    this.data
+      .clientPayment(this.client, this.savingsAmount, date, this.paymentAmount)
+      .then(() => {
+        this.performance.updateUserPerformance(this.client);
+      });
     this.router.navigate(['/client-portal/' + this.id]);
   }
 

@@ -3,6 +3,7 @@ import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { TimeService } from 'src/app/services/time.service';
 
@@ -13,6 +14,7 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class DailyPaymentsComponent implements OnInit {
   clients?: Client[];
+  employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
   dailyPayments?: Filtered[] = [];
   dailyPaymentsCopy?: Filtered[] = [];
@@ -42,15 +44,23 @@ export class DailyPaymentsComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
-
+      this.retrieveEmployees();
+    });
+  }
+  retrieveEmployees(): void {
+    this.auth.getAllEmployees().subscribe((data: any) => {
+      this.employees = data;
       this.addIdToFilterItems();
       this.extractTodayPayments();
     });
   }
-
   addIdToFilterItems() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;
+      let emp = this.employees.find(
+        (element) => element.uid === this.clients![i].agent
+      );
+      this.clients![i].employee = emp;
     }
   }
 
@@ -79,6 +89,7 @@ export class DailyPaymentsComponent implements OnInit {
         lastName: client.lastName,
         middleName: middleName,
         amount: v,
+        employee: client.employee,
         trackingId: client.trackingId,
       };
 
@@ -109,5 +120,6 @@ export class Filtered {
   middleName?: string;
   date?: string;
   amount?: string;
+  employee?: Employee;
   trackingId?: string;
 }

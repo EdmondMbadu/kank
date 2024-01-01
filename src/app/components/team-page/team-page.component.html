@@ -1,0 +1,234 @@
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" [currentEmployeePage]="true"></app-navbar>
+<section class="bg-white ">
+    <div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6 ">
+       
+        <div class="flex container mx-auto m-12 justify-center">
+            <h2 class="text-2xl md:text-4xl mr-10">Notre Équipe</h2>
+            <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleAddNewEmployee()">Nouveau Employé(e)</button>
+           
+        
+         </div>
+         <div class="mx-auto max-w-screen-sm text-center mb-8 lg:mb-16">
+            <p class="font-light text-gray-500 lg:mb-16 sm:text-xl "></p>   
+         </div>
+       
+        <div class="grid gap-8 mb-6 lg:mb-16 md:grid-cols-2" >
+        <div *ngFor="let em of employees; let i=index">
+            <div class="items-center bg-gray-50 rounded-lg shadow sm:flex" >
+                <div>
+                
+                    <input type="file" [id]="'getFile'+ i" style="display:none" (change)="startUpload($any($event.target).files, em)">
+                    <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
+                    <img *ngIf="em.profilePicture===undefined" class="w-full rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onImageClick(i)" src="../../../assets/img/user.png" alt="Bonnie Avatar">
+                    <img *ngIf="em.profilePicture!==undefined" class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onImageClick(i)" [src]="em.profilePicture.downloadURL" alt="Bonnie Avatar">
+                    <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
+                
+                </div>
+                <a  class="p-5">
+                    <h3 class="text-xl font-bold tracking-tight text-gray-900 " [routerLink]="['/employee-page',em.trackingId]">
+                       {{em.firstName}} {{em.middleName}} {{em.lastName}}
+                    </h3>
+                    <h1 class="text-gray-500   mt-2">Role: {{em.role}}</h1>
+                    <p class="mt-1 mb-1 font-light text-gray-500">Status: <span class=""> {{em.status}}</span></p>
+                    <p class="mt-1 mb-1 font-light text-gray-500 ">Age:<span class=""> {{em.age}} ans</span></p>
+                    <p class="mt-1 mb-1 font-light text-gray-500 ">Performance: <span class=""> {{em.letterGrade}}</span></p>
+                    <p class="mt-1 mb-1 font-light text-gray-500 ">Points de Performance:<span class=""> {{em.averagePoints}}</span></p>
+                    <p class="mt-1 mb-1 font-light text-gray-500 "># Clients suivi: <span class=""> {{em.clients?.length}}</span></p>
+                    <p class="mt-1 mb-1 font-light text-gray-500 ">Sex: <span class=""> {{em.sex}}</span></p>
+                    <p class="mt-1 mb-1 font-light text-gray-500 ">Debut de Travaille: <span class=""> {{em.dateJoined}}</span></p>
+                    <p class="mt-1 mb-3 font-light text-gray-500 ">Telephone: <span class="">{{em.phoneNumber}}</span></p>
+                    <button type="submit" (click)="toggleEditEmployee(i)" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Modifier</button>
+           
+                </a>
+                <div *ngIf="displayEditEmployees[i]" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6">
+                    <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
+                        <!-- Modal content -->
+                        <div class="relative p-4 bg-white rounded-lg shadow  sm:p-5">
+                            <!-- Modal header -->
+                            <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5">
+                                <h3 class="text-lg font-semibold text-gray-900 ">
+                                    Modifier Employé(e)
+                                </h3>
+                                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center " data-modal-toggle="defaultModal" (click)="toggleEditEmployee(i)">
+                                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                                    <span class="sr-only">Close modal</span>
+                                </button>
+                            </div>
+                            <!-- Modal body -->
+                            <div>
+                                <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                                    <div>
+                                        <label for="lastName" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
+                                        <input type="text" name="lastName" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nkokori" required=""[(ngModel)]="employees[i].lastName">
+                                    </div>
+                                    <div>
+                                        <label for="middleName" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
+                                        <input type="text" name="middleName" id="middlename" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 " [(ngModel)]="employees[i].middleName" placeholder="Mbadu" required="">
+                                    </div>
+                                    <div>
+                                        <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 ">Prenom</label>
+                                        <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="employees[i].firstName" placeholder="Rebecca" required="">
+                                    </div>
+                                    <div>
+                                        <label for="phoneNumber" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Number de Telephone</label>
+                                        <input type="text" name="phoneNumber" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 " [(ngModel)]="employees[i].phoneNumber" placeholder="123456789" required="">
+                                    </div>
+                                    <div>
+                                        <label for="category" class="block mb-2 text-sm font-medium text-gray-900 ">Role</label>
+                                        <select [(ngModel)]="employees[i].role" id="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 ">
+                                            <option selected=""></option>
+                                            <option [ngValue]="'Manager'" >Manager</option>
+                                            <option [ngValue]="'Agent'" >Agent</option>
+                                           
+                                        </select>
+                                    </div>
+                                    <div >
+                                        <label for="dateOfBirth" class="block mb-2 text-sm font-medium text-gray-900 ">Date de Naissance</label>
+                                        <input  [(ngModel)]="employees[i].dateOfBirth"  type="date" id="dateOfBirth" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-18-2023" required>
+                                        <!-- <h1 *ngIf="!validEndDate" class="text-red-500">Date Invalid</h1> -->
+                                    </div>
+                                    <div>
+                                        <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Sex</label>
+                                        <select [(ngModel)]="employees[i].sex" id="sex" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                                            <option selected=""></option>
+                                            <option [ngValue]="'Masculin'">Masculin</option>
+                                            <option [ngValue]="'Feminin'">Feminin</option>
+                                           
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="category" class="block mb-2 text-sm font-medium text-gray-900 ">Statue aux Travaille</label>
+                                        <select [(ngModel)]="employees[i].status" id="sex" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 ">
+                                            <option selected=""></option>
+                                            <option [ngValue]="'Travaille'">Travaille</option>
+                                            <option [ngValue]="'Quitté'">Quitté</option>
+                                            <option [ngValue]="'Malade'">Malade</option>
+                                            <option [ngValue]="'Absent'">Absent</option>
+                                            <option [ngValue]="'Vacance'">Vacance</option>
+                                            <option [ngValue]="'Empeché'">Empeché</option>
+                
+                
+                
+                                           
+                                        </select>
+                                    </div>
+                                    <div >
+                                        <label for="dateJoined" class="block mb-2 text-sm font-medium text-gray-900 ">Date de Debut aux Travaille</label>
+                                        <input  [(ngModel)]="employees[i].dateJoined"  type="date" id="dateOfBirth" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-18-2023" required>
+                                        <!-- <h1 *ngIf="!validEndDate" class="text-red-500">Date Invalid</h1> -->
+                                    </div>
+                                    
+                                   
+                                </div>
+                                <div class="flex flex-row mx-auto justify-center space-x-4">
+                                    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleEditEmployee(i)">Annuler</button>
+                                    <button type="submit" (click)="updateEmployeeInfo(i)" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " >Modifier</button>
+                                
+                                </div>
+                              
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+
+         
+        </div>
+      </div>  
+    </div>
+  </section>
+
+
+
+
+  <!-- Main modal -->
+<div *ngIf="displayAddNewEmployee" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6">
+    <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
+        <!-- Modal content -->
+        <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
+            <!-- Modal header -->
+            <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Nouveau Employé(e)
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="defaultModal" (click)="toggleAddNewEmployee()">
+                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <!-- Modal body -->
+            <div>
+                <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                    <div>
+                        <label for="lastName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nom</label>
+                        <input type="text" name="lastName" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nkokori" required=""[(ngModel)]="lastName">
+                    </div>
+                    <div>
+                        <label for="middleName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Postnom</label>
+                        <input type="text" name="middleName" id="middlename" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="middleName" placeholder="Mbadu" required="">
+                    </div>
+                    <div>
+                        <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Prenom</label>
+                        <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="firstName" placeholder="Rebecca" required="">
+                    </div>
+                    <div>
+                        <label for="phoneNumber" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Number de Telephone</label>
+                        <input type="text" name="phoneNumber" id="brand" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="phoneNumber" placeholder="123456789" required="">
+                    </div>
+                    <div>
+                        <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
+                        <select [(ngModel)]="role" id="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                            <option selected=""></option>
+                            <option [ngValue]="'Manager'" >Manager</option>
+                            <option [ngValue]="'Agent'" >Agent</option>
+                           
+                        </select>
+                    </div>
+                    <div >
+                        <label for="dateOfBirth" class="block mb-2 text-sm font-medium text-gray-900 ">Date de Naissance</label>
+                        <input  [(ngModel)]="dateOfBirth"  type="date" id="dateOfBirth" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-18-2023" required>
+                        <!-- <h1 *ngIf="!validEndDate" class="text-red-500">Date Invalid</h1> -->
+                    </div>
+                    <div>
+                        <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Sex</label>
+                        <select [(ngModel)]="sex" id="sex" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                            <option selected=""></option>
+                            <option [ngValue]="'Masculin'">Masculin</option>
+                            <option [ngValue]="'Feminin'">Feminin</option>
+                           
+                        </select>
+                    </div>
+                    <div>
+                        <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Statue aux Travaille</label>
+                        <select [(ngModel)]="status" id="sex" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                            <option selected=""></option>
+                            <option [ngValue]="'Travaille'">Travaille</option>
+                            <option [ngValue]="'Quitté'">Quitté</option>
+                            <option [ngValue]="'Malade'">Malade</option>
+                            <option [ngValue]="'Absent'">Absent</option>
+                            <option [ngValue]="'Vacance'">Vacance</option>
+                            <option [ngValue]="'Empeché'">Empeché</option>
+
+
+
+                           
+                        </select>
+                    </div>
+                    <div >
+                        <label for="dateJoined" class="block mb-2 text-sm font-medium text-gray-900 ">Date de Debut aux Travaille</label>
+                        <input  [(ngModel)]="dateJoined"  type="date" id="dateOfBirth" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-18-2023" required>
+                        <!-- <h1 *ngIf="!validEndDate" class="text-red-500">Date Invalid</h1> -->
+                    </div>
+                    
+                   
+                </div>
+                <div class="flex flex-row mx-auto justify-center space-x-4">
+                    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleAddNewEmployee()">Annuler</button>
+                    <button type="submit" (click)="addNewEmployee()" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " >Ajouter</button>
+                
+                </div>
+              
+            </div>
+        </div>
+    </div>
+</div>

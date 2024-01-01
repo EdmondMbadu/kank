@@ -52,6 +52,15 @@
         <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Addresse Business </label>
         <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="businessAddress">
     </div> 
+    <div class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Agent</label>
+        <select id="countries"[(ngModel)]="agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <option selected>Choose</option>
+            <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
+     
+       
+        </select>
+    </div>
     
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>

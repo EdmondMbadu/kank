@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireAuthModule } from '@angular/fire/compat/auth';
+import { AngularFireStorageModule } from '@angular/fire/compat/storage';
 // import { provideFirebaseApp, getApp, initializeApp } from '@angular/fire/app';
 // import { provideAuth, getAuth } from '@angular/fire/auth';
 
@@ -39,6 +40,8 @@ import { PaidDateComponent } from './components/paid-date/paid-date.component';
 import { NotPaidTodayComponent } from './components/not-paid-today/not-paid-today.component';
 import { LendingDateComponent } from './components/lending-date/lending-date.component';
 import { NotPaidComponent } from './components/not-paid/not-paid.component';
+import { TeamPageComponent } from './components/team-page/team-page.component';
+import { EmployeePageComponent } from './components/employee-page/employee-page.component';
 
 @NgModule({
   declarations: [
@@ -67,6 +70,8 @@ import { NotPaidComponent } from './components/not-paid/not-paid.component';
     NotPaidTodayComponent,
     LendingDateComponent,
     NotPaidComponent,
+    TeamPageComponent,
+    EmployeePageComponent,
   ],
   imports: [
     BrowserModule,
@@ -76,6 +81,7 @@ import { NotPaidComponent } from './components/not-paid/not-paid.component';
     AngularFireModule.initializeApp(environment.firebase),
     AngularFirestoreModule,
     AngularFireAuthModule,
+    AngularFireStorageModule,
     CommonModule,
     PlotlyModule,
     // provideFirebaseApp(() => initializeApp(environment.firebase)),

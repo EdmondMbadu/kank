@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -12,6 +13,7 @@ import { TimeService } from 'src/app/services/time.service';
   styleUrls: ['./not-paid.component.css'],
 })
 export class NotPaidComponent implements OnInit {
+  employees: Employee[] = [];
   clients?: Client[];
   searchControl = new FormControl();
   totalGivenDate: number = 0;
@@ -68,14 +70,25 @@ export class NotPaidComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
-      this.addId();
+      this.retrieveEmployees();
     });
   }
   addId() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;
+      let emp = this.employees.find(
+        (element) => element.uid === this.clients![i].agent
+      );
+      this.clients![i].employee = emp;
     }
   }
+  retrieveEmployees(): void {
+    this.auth.getAllEmployees().subscribe((data: any) => {
+      this.employees = data;
+      this.addId();
+    });
+  }
+
   search(value: string) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();

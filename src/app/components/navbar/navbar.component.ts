@@ -16,6 +16,7 @@ export class NavbarComponent {
   @Input() currentHome: boolean = false;
   @Input() currentClientInfo: boolean = false;
   @Input() currentNewClient: boolean = false;
+  @Input() currentEmployeePage: boolean = false;
 
   @Input() current = 'py-1 border-1 border-b-4';
 

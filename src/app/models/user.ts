@@ -7,6 +7,7 @@ export class User {
   amountInvested?: string;
   moneyInHands?: string;
   investments?: { [key: string]: string } = {};
+  performances?: { [key: string]: string } = {};
   amountLended?: string;
   clientsSavings?: string;
   expensesAmount?: string;

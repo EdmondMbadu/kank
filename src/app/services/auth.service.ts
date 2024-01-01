@@ -15,14 +15,17 @@ import { Client } from '../models/client';
 import { Timestamp } from 'firebase/firestore';
 import { TimeService } from './time.service';
 import { ComputationService } from './computation.service';
+import { Employee } from '../models/employee';
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   user$: Observable<any>;
   clientsRef$: Observable<any>;
+  employeesRef$: Observable<any>;
   email?: Observable<any>;
   currentUser: any = {};
+  clientId: string = '';
   currentClient: Client = new Client();
 
   constructor(
@@ -56,11 +59,25 @@ export class AuthService {
       })
     );
 
+    this.employeesRef$ = this.fireauth.authState.pipe(
+      switchMap((user) => {
+        if (user) {
+          return this.afs
+            .collection(`users/${user.uid}/employees/`)
+            .valueChanges();
+        } else {
+          return of(null);
+        }
+      })
+    );
     this.getCurrentUser();
   }
   ngOnInit() {}
   getAllClients(): Observable<Client> {
     return this.clientsRef$;
+  }
+  getAllEmployees(): Observable<Employee> {
+    return this.employeesRef$;
   }
 
   getCurrentUser() {
@@ -134,6 +151,7 @@ export class AuthService {
       clientsSavings: '0',
       expensesAmount: '0',
       expenses: {},
+      performances: {},
       projectedRevenue: '0',
       reserveAmount: '0',
       reserve: {},
@@ -164,6 +182,7 @@ export class AuthService {
       savings: client.savings,
       loanAmount: client.loanAmount,
       creditScore: '50',
+      agent: client.agent,
       debtLeft: client.debtLeft,
       amountToPay: client.amountToPay,
       interestRate: client.interestRate,
@@ -177,11 +196,39 @@ export class AuthService {
       numberOfPaymentsMade: '0',
       paymentDay: client.paymentDay,
       payments: {},
+      clients: [],
     };
+    this.clientId = data.uid;
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.currentUser.uid}/clients/${data.uid}`
     );
     return clientRef.set(data, { merge: true });
+  }
+
+  addNewEmployee(employee: Employee) {
+    const data = {
+      uid: this.afs.createId().toString(),
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      middleName: employee.middleName,
+      phoneNumber: employee.phoneNumber,
+      dateJoined: employee.dateJoined,
+      dailyPoints: {},
+      totalDailyPoints: {},
+      averagePoints: '0',
+      totalPoints: '0',
+      sex: employee.sex,
+      dateOfBirth: employee.dateOfBirth,
+      status: employee.status,
+      role: employee.role,
+      clients: [],
+      dailyStatus: {},
+      dateLeft: '',
+    };
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.currentUser.uid}/employees/${data.uid}`
+    );
+    return employeeRef.set(data, { merge: true });
   }
 
   deleteClient(client: Client) {

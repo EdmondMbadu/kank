@@ -8,21 +8,23 @@
 
 <div class="border-2 shadow border-green-800 p-12 rounded-lg">
     <div class="grid gap-6 mb-6 md:grid-cols-2">
+     
         <div>
-            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
-            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required [(ngModel)]="client.firstName">
-        </div>
-        <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
+            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Nom</label>
             <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" [(ngModel)]="client.lastName" required>
         </div>   
+        <div>
+            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
+            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName" required>
+        </div> 
          
     </div>
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Prenom</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName" required>
-        </div>   
+            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Prenom</label>
+            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required [(ngModel)]="client.firstName">
+        </div>
+   
        
    
         <div>
@@ -64,6 +66,17 @@
         <option [ngValue]="'Friday'">Vendredi </option>
         </select>
     </div>
+
+    <div class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Agent</label>
+        <select id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <option selected>Choose</option>
+            <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
+     
+       
+        </select>
+    </div>
+    
 
 
     <div class="mb-6">

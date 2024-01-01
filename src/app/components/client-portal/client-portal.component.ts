@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -13,6 +14,8 @@ import { TimeService } from 'src/app/services/time.service';
 export class ClientPortalComponent {
   client = new Client();
   minPay = '';
+  employees: Employee[] = [];
+  agent?: Employee = { firstName: '-' };
 
   id: any = '';
   paymentDate = '';
@@ -22,12 +25,28 @@ export class ClientPortalComponent {
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
     private router: Router,
-    private time: TimeService
+    private time: TimeService,
+    private data: DataService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
     this.retrieveClient();
+
+    this.retrieveEmployees();
+  }
+  retrieveEmployees(): void {
+    this.auth.getAllEmployees().subscribe((data: any) => {
+      this.employees = data;
+      this.findAgent();
+    });
+  }
+  findAgent() {
+    for (let em of this.employees) {
+      if (this.client.agent !== undefined && this.client.agent === em.uid) {
+        this.agent = em;
+      }
+    }
   }
 
   retrieveClient(): void {
@@ -91,5 +110,16 @@ export class ClientPortalComponent {
       .catch((error) => {
         alert('Error deleting client: ');
       });
+    this.removeClientFromAgentList();
+  }
+
+  removeClientFromAgentList() {
+    this.agent!.clients = this.agent?.clients?.filter(
+      (element) => element !== this.client.uid
+    );
+
+    this.data
+      .updateEmployeeInfoForClientAgentAssignment(this.agent!)
+      .then(() => console.log('agent clients list updated succesfully.'));
   }
 }

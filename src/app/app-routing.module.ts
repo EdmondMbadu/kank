@@ -24,6 +24,8 @@ import { PaidDateComponent } from './components/paid-date/paid-date.component';
 import { NotPaidTodayComponent } from './components/not-paid-today/not-paid-today.component';
 import { LendingDateComponent } from './components/lending-date/lending-date.component';
 import { NotPaidComponent } from './components/not-paid/not-paid.component';
+import { TeamPageComponent } from './components/team-page/team-page.component';
+import { EmployeePageComponent } from './components/employee-page/employee-page.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -53,6 +55,8 @@ const routes: Routes = [
   { path: 'lending-date', component: LendingDateComponent },
   { path: 'not-paid-today', component: NotPaidTodayComponent },
   { path: 'not-paid', component: NotPaidComponent },
+  { path: 'team-page', component: TeamPageComponent },
+  { path: 'employee-page/:id', component: EmployeePageComponent },
 ];
 
 @NgModule({

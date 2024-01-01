@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -15,9 +17,13 @@ export class NewClientComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     public data: DataService,
-    private time: TimeService
+    private time: TimeService,
+    private performance: PerformanceService
   ) {}
-  ngOnInit() {}
+  ngOnInit() {
+    this.retrieveEmployees();
+  }
+  employees: Employee[] = [];
   rateDisplay: boolean = false;
   amountToPayDisplay: boolean = false;
   debtCycleDisplay: boolean = false;
@@ -34,6 +40,7 @@ export class NewClientComponent implements OnInit {
   memberShipFee: string = '';
   savings: string = '';
   loanAmount: string = '';
+  agent: string = '';
   payRange: string = '';
   interestRate: string = '';
   amountToPay: string = '';
@@ -60,6 +67,7 @@ export class NewClientComponent implements OnInit {
       this.middleName === '' ||
       this.profession === '' ||
       this.businessAddress === '' ||
+      this.agent === '' ||
       this.bussinessCapital === '' ||
       this.homeAddress === '' ||
       this.phoneNumber === '' ||
@@ -83,6 +91,7 @@ export class NewClientComponent implements OnInit {
       return;
     } else {
       this.setNewClientValues();
+      let employee = this.findAgentWithId(this.client.agent!);
       this.auth.addNewClient(this.client).then(
         (res: any) => {
           this.router.navigate(['client-info']);
@@ -93,22 +102,58 @@ export class NewClientComponent implements OnInit {
           );
         }
       );
-      this.data.updateUserInfoForNewClient(this.client, date).then(
-        (res: any) => {
-          console.log('Informations utilisateur mises à jour avec succès');
-        },
-        (err: any) => {
-          alert(
-            "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client"
-          );
-        }
-      );
+      this.data
+        .updateUserInfoForNewClient(this.client, date)
+        .then(
+          (res: any) => {
+            console.log('Informations utilisateur mises à jour avec succès');
+          },
+          (err: any) => {
+            alert(
+              "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client"
+            );
+          }
+        )
+        .then(() => {
+          if (this.auth.clientId !== undefined) {
+            employee?.clients?.push(this.auth.clientId);
+            console.log(
+              'entering here, agent clients after update',
+              employee!.clients
+            );
+          }
+          this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
+        })
+        .then(() => {
+          this.performance.updateUserPerformance(this.client);
+        });
 
       this.resetFields();
       return;
     }
   }
-
+  findAgentWithId(id: string) {
+    for (let em of this.employees) {
+      if (em.uid === id) {
+        return em;
+      }
+    }
+    return null;
+  }
+  retrieveEmployees(): void {
+    this.auth.getAllEmployees().subscribe((data: any) => {
+      this.employees = data;
+    });
+  }
+  updateAgentClients(agent: Employee) {
+    console.log('printing it here', agent.clients!.includes(this.client.uid!));
+    console.log('here is the client', this.client);
+    if (this.client!.agent !== undefined) {
+      agent?.clients?.push(this.client.uid!);
+      console.log('entering here, agent clients now', agent.clients);
+    }
+    return agent;
+  }
   displayApplicationFeeOtherAmount() {
     if (this.applicactionFee === 'Autre Montant') {
       this.applicationFeeOtherDisplay = true;
@@ -163,6 +208,7 @@ export class NewClientComponent implements OnInit {
     this.interestRate = '';
     this.amountToPay = '';
     this.paymentDay = '';
+    this.agent = '';
   }
   setNewClientValues() {
     this.client.firstName = this.firstName;
@@ -171,6 +217,7 @@ export class NewClientComponent implements OnInit {
     this.client.profession = this.profession;
     this.client.businessCapital = this.bussinessCapital;
     this.client.businessAddress = this.businessAddress;
+    this.client.agent = this.agent;
     this.client.phoneNumber = this.phoneNumber;
     this.client.homeAddress = this.homeAddress;
     this.client.applicationFee = this.applicactionFee;

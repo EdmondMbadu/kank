@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -14,6 +15,7 @@ import { TimeService } from 'src/app/services/time.service';
 export class NotPaidTodayComponent {
   clients?: Client[];
   shouldPayToday: Client[] = [];
+  employees: Employee[] = [];
   haveNotPaidToday: Client[] = [];
   totalGivenDate: number = 0;
   paidToday: Client[] = [];
@@ -36,8 +38,9 @@ export class NotPaidTodayComponent {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+      this.retrieveEmployees();
       this.filteredItems = data;
-      this.addIdToFilterItems();
+
       this.extractTodayPayments();
       this.filterPayments();
       this.findThoseWhoHaveNotPaidToday();
@@ -47,10 +50,20 @@ export class NotPaidTodayComponent {
       this.numberOfPeople = this.haveNotPaidToday.length;
     });
   }
+  retrieveEmployees(): void {
+    this.auth.getAllEmployees().subscribe((data: any) => {
+      this.employees = data;
+      this.addIdToFilterItems();
+    });
+  }
 
   addIdToFilterItems() {
     for (let i = 0; i < this.filteredItems!.length; i++) {
       this.filteredItems![i].trackingId = `${i}`;
+      let emp = this.employees.find(
+        (element) => element.uid === this.filteredItems![i].agent
+      );
+      this.filteredItems![i].employee = emp;
     }
   }
 

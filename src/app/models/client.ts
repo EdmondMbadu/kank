@@ -1,3 +1,5 @@
+import { Employee } from './employee';
+
 export class Client {
   uid?: string;
   trackingId?: string;
@@ -27,8 +29,10 @@ export class Client {
   payments?: { [key: string]: string } = {};
   savingsPayments?: { [key: string]: string } = {};
   interestRate?: string;
+  agent?: string;
   amountToPay?: string;
   paymentPeriodRange?: string;
   debtCycleStartDate?: string;
   debtCycleEndDate?: string;
+  employee?: Employee;
 }

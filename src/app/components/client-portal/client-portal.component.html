@@ -53,8 +53,8 @@
                 <dd class="text-gray-500 text-center dark:text-gray-400">Epargnes (FC)</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Credit Score</dd>
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center">{{agent?.firstName}} {{agent?.middleName}} {{agent?.lastName}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Agent</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{minPay | number:'1.0-0'}}</dt>
@@ -78,6 +78,7 @@
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.paymentDay}} {{paymentDate}}</dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
             </div>
+            
          
           
             <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-whit  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
