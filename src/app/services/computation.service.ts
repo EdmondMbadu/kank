@@ -13,7 +13,7 @@ export class ComputationService {
     let input = Number(value);
     if (isNaN(input)) return '';
 
-    let dollars = Math.floor(input * 0.0004);
+    let dollars = Math.floor(input * 0.00037);
 
     return dollars;
   }
@@ -93,5 +93,9 @@ export class ComputationService {
       total += Number(a);
     }
     return total;
+  }
+  roundNumber(num: any) {
+    let rounded: any = Math.round(num * 10) / 10;
+    return rounded;
   }
 }

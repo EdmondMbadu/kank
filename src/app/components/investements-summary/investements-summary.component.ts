@@ -77,6 +77,7 @@ export class InvestementsSummaryComponent implements OnInit {
   dailyLending: string = '0';
   dailyPayment: string = '0';
   valuesConvertedToDollars: string[] = [];
+  vDollars: string[] = [];
   elements: number = 10;
   linkPath: string[] = [
     '/client-info',
@@ -98,6 +99,18 @@ export class InvestementsSummaryComponent implements OnInit {
     '/lending-date',
     '/not-paid-today',
     '/not-paid',
+  ];
+  lPath: string[] = [
+    '/client-info',
+    '/add-investment',
+    '/client-info',
+    '/client-info',
+  ];
+  iPath: string[] = [
+    '../../../assets/img/people.svg',
+    '../../../assets/img/invest.svg',
+    '../../../assets/img/debt.png',
+    '../../../assets/img/revenue.svg',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
@@ -141,8 +154,14 @@ export class InvestementsSummaryComponent implements OnInit {
     "N'ont pas Payé Aujourdhui",
     "N'ont pas Payé",
   ];
+  sm: string[] = [
+    'Nombres des Clients',
+    'Argent Investi',
+    'Prêt Restant',
+    'Benefice Réel',
+  ];
   summaryContent: string[] = [];
-
+  sContent: string[] = [];
   initalizeInputs() {
     let realBenefit = (
       Number(this.auth.currentUser.totalDebtLeft) -
@@ -178,6 +197,12 @@ export class InvestementsSummaryComponent implements OnInit {
       ` ${this.dailyPayment}`,
       ` ${this.dailyLending}`,
     ];
+    this.sContent = [
+      this.auth.currentUser.numberOfClients,
+      ` ${this.auth.currentUser.amountInvested}`,
+      ` ${this.auth.currentUser.totalDebtLeft}`,
+      `${realBenefit}`,
+    ];
 
     this.valuesConvertedToDollars = [
       ``,
@@ -208,6 +233,16 @@ export class InvestementsSummaryComponent implements OnInit {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
+    ];
+    this.vDollars = [
+      ``,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.amountInvested
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.auth.currentUser.totalDebtLeft
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
     ];
   }
   BenefitsWithExpenses(): string {

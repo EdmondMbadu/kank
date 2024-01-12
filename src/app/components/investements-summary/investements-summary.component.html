@@ -10,14 +10,14 @@
 
 <div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
 
-    <div class="flex-col w-60  m-6 " *ngFor="let s of summary; let i = index;  ">
-        <a routerLink="{{linkPath[i]}}" class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
-            <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
+    <div class="flex-col w-60  m-6 " *ngFor="let s of sm; let i = index;  ">
+        <a routerLink="{{lPath[i]}}" class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
+            <img src="{{iPath[i]}}" alt="" class="w-20  justify-center mx-auto ">
             
             <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" *ngIf="i!==0 && i!==1 && i!==2 "> FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" *ngIf="i!==0  && i!==1  && i!==2 "> $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
-            <h2 class="font-bold  text-lg text-green-700 text-center" *ngIf="i==0 || i ==1 || i==2">  {{summaryContent[i] }}</h2>
+            <h2 class="font-bold text-lg text-green-700 text-center" *ngIf="i!==0 "> FC {{sContent[i] | number:'1.0-0'}} </h2>
+            <h2 class="font-bold text-lg text-yellow-900 text-center" *ngIf="i!==0 "> $ {{vDollars[i] | number:'1.0-0'}}</h2>
+            <h2 class="font-bold  text-lg text-green-700 text-center" *ngIf="i==0 ">  {{sContent[i] }}</h2>
         </a>
     </div>
     

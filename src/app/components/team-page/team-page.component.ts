@@ -6,6 +6,7 @@ import {
 import { Router } from '@angular/router';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -22,7 +23,8 @@ export class TeamPageComponent implements OnInit {
     public data: DataService,
     private time: TimeService,
     private performance: PerformanceService,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private compute: ComputationService
   ) {}
   displayEditEmployees: boolean[] = [];
 
@@ -114,6 +116,8 @@ export class TeamPageComponent implements OnInit {
       this.employees[i].letterGrade = this.performance.findLetterGrade(
         result[0] / result[1]
       );
+      let rounded = this.compute.roundNumber((result[0] * 100) / result[1]);
+      this.employees[i].performancePercantage = rounded.toString();
     }
   }
   onImageClick(index: number): void {

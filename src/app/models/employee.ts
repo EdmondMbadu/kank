@@ -14,6 +14,7 @@ export class Employee {
   phoneNumber?: string;
   sex?: string;
   letterGrade?: string;
+  performancePercantage?: string;
   dateOfBirth?: string;
   dateJoined?: string;
   status?: string;

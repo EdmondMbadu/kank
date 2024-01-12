@@ -26,12 +26,36 @@ import { LendingDateComponent } from './components/lending-date/lending-date.com
 import { NotPaidComponent } from './components/not-paid/not-paid.component';
 import { TeamPageComponent } from './components/team-page/team-page.component';
 import { EmployeePageComponent } from './components/employee-page/employee-page.component';
+import { BenefitComponent } from './components/benefit/benefit.component';
+import { TrackingComponent } from './components/tracking/tracking.component';
+import { TodayComponent } from './components/today/today.component';
+import { RetraceComponent } from './components/retrace/retrace.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
   {
     path: 'home',
     component: InvestementsSummaryComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'benefit',
+    component: BenefitComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'tracking',
+    component: TrackingComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'today',
+    component: TodayComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'retrace',
+    component: RetraceComponent,
     canActivate: [AuthGuard],
   },
   { path: 'client-info', component: ClientInfoComponent },

@@ -53,8 +53,13 @@ export class EmployeePageComponent implements OnInit {
       this.employee.letterGrade = this.performance.findLetterGrade(
         result[0] / result[1]
       );
+
       this.averageToday = this.employee!.dailyPoints![this.today];
       this.totalToday = this.employee.totalDailyPoints![this.today];
+      let rounded = this.compute.roundNumber(
+        (Number(this.averageToday) * 100) / Number(this.totalToday)
+      );
+      this.employee.performancePercantage = rounded.toString();
     });
   }
   sortKeysAndValuesPerformance(time: number) {

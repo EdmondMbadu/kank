@@ -42,6 +42,10 @@ import { LendingDateComponent } from './components/lending-date/lending-date.com
 import { NotPaidComponent } from './components/not-paid/not-paid.component';
 import { TeamPageComponent } from './components/team-page/team-page.component';
 import { EmployeePageComponent } from './components/employee-page/employee-page.component';
+import { BenefitComponent } from './components/benefit/benefit.component';
+import { TrackingComponent } from './components/tracking/tracking.component';
+import { TodayComponent } from './components/today/today.component';
+import { RetraceComponent } from './components/retrace/retrace.component';
 
 @NgModule({
   declarations: [
@@ -72,6 +76,10 @@ import { EmployeePageComponent } from './components/employee-page/employee-page.
     NotPaidComponent,
     TeamPageComponent,
     EmployeePageComponent,
+    BenefitComponent,
+    TrackingComponent,
+    TodayComponent,
+    RetraceComponent,
   ],
   imports: [
     BrowserModule,
