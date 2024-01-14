@@ -17,6 +17,7 @@ import { Employee } from '../models/employee';
 })
 export class PerformanceService {
   clients?: Client[];
+  currentClients?: Client[] = [];
   employees?: Employee[] = [];
   shouldPayToday: Client[] = [];
   haveNotPaidToday: Client[] = [];

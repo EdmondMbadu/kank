@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
+import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -16,8 +18,11 @@ export class InvestementsSummaryComponent implements OnInit {
     private time: TimeService,
     private compute: ComputationService
   ) {}
+  clients?: Client[];
+  currentClients?: Client[] = [];
   ngOnInit() {
-    this.initalizeInputs();
+    this.retrieveClients();
+
     this.updatePaymentGraphics();
     this.updateLendingGraphics();
     this.updatePerformanceGraphics();
@@ -74,87 +79,25 @@ export class InvestementsSummaryComponent implements OnInit {
   recentLendingAmounts: number[] = [];
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
-  dailyLending: string = '0';
-  dailyPayment: string = '0';
+
   valuesConvertedToDollars: string[] = [];
-  vDollars: string[] = [];
+
   elements: number = 10;
+
   linkPath: string[] = [
     '/client-info',
-    '/team-page',
-    '/team-page',
     '/add-investment',
     '/client-info',
     '/client-info',
-    '/add-expense',
-    '/client-info',
-    '/add-reserve',
-    '/client-info',
-    '/client-info',
-    '/client-info',
-    '/daily-payments',
-    '/daily-lendings',
-    '/pay-today',
-    '/paid-date',
-    '/lending-date',
-    '/not-paid-today',
-    '/not-paid',
-  ];
-  lPath: string[] = [
-    '/client-info',
-    '/add-investment',
-    '/client-info',
-    '/client-info',
-  ];
-  iPath: string[] = [
-    '../../../assets/img/people.svg',
-    '../../../assets/img/invest.svg',
-    '../../../assets/img/debt.png',
-    '../../../assets/img/revenue.svg',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
-    '../../../assets/img/performance.png',
-    '../../../assets/img/performance-global.png',
     '../../../assets/img/invest.svg',
     '../../../assets/img/debt.png',
-    '../../../assets/img/saving.svg',
-    '../../../assets/img/expense.svg',
     '../../../assets/img/revenue.svg',
-    '../../../assets/img/reserve.svg',
-    '../../../assets/img/member.svg',
-    '../../../assets/img/benefit.svg',
-    '../../../assets/img/salary.png',
-    '../../../assets/img/daily-reimbursement.png',
-    '../../../assets/img/daily-payment.png',
-    '../../../assets/img/calendar.png',
-    '../../../assets/img/audit.png',
-    '../../../assets/img/lending-date.png',
-    '../../../assets/img/late-payment.png',
-    '../../../assets/img/payment-method.png',
   ];
+
   summary: string[] = [
-    'Nombres des Clients',
-    "Performance D'Aujourdhui",
-    'Performance Globale',
-    'Argent Investi',
-    'Prêt Restant',
-    'Epargne Clients',
-    'Depenses',
-    'Benefice Réel',
-    'Reserve',
-    'Frais Des Membres',
-    'Benefice Brute',
-    'Argent en Main',
-    'Paiement Du Jour',
-    'Emprunt Du Jour',
-    'Clients & Jour De Paiement',
-    'Retracer Les Paiements',
-    'Retracer Les Emprunts ',
-    "N'ont pas Payé Aujourdhui",
-    "N'ont pas Payé",
-  ];
-  sm: string[] = [
     'Nombres des Clients',
     'Argent Investi',
     'Prêt Restant',
@@ -163,42 +106,16 @@ export class InvestementsSummaryComponent implements OnInit {
   summaryContent: string[] = [];
   sContent: string[] = [];
   initalizeInputs() {
+    this.currentClients = [];
     let realBenefit = (
       Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)
     ).toString();
-    let bWithExpenses = this.BenefitsWithExpenses();
-    let bWithoutExpenses = this.BenefitsWithoutExpenses();
-    this.dailyLending = this.auth.currentUser.dailyLending[this.today];
-    let performance =
-      this.auth.currentUser.performances[this.today] === undefined
-        ? ''
-        : this.auth.currentUser.performances[this.today];
-    this.dailyPayment = this.auth.currentUser.dailyReimbursement[this.today];
-    this.dailyLending =
-      this.dailyLending === undefined ? '0' : this.dailyLending;
-    this.dailyPayment =
-      this.dailyPayment === undefined ? '0' : this.dailyPayment;
-    this.sumPerformance();
 
     this.summaryContent = [
-      this.auth.currentUser.numberOfClients,
-      performance,
-      this.totalPerfomance,
-      ` ${this.auth.currentUser.amountInvested}`,
-      ` ${this.auth.currentUser.totalDebtLeft}`,
-      ` ${this.auth.currentUser.clientsSavings}`,
-      ` ${this.auth.currentUser.expensesAmount}`,
-      `${realBenefit}`,
-      ` ${this.auth.currentUser.reserveAmount}`,
-      ` ${this.auth.currentUser.fees}`,
-      `${bWithoutExpenses}`,
-      ` ${this.auth.currentUser.moneyInHands}`,
-      ` ${this.dailyPayment}`,
-      ` ${this.dailyLending}`,
-    ];
-    this.sContent = [
-      this.auth.currentUser.numberOfClients,
+      `${
+        this.auth.currentUser.numberOfClients
+      } Total -  ${this.findClientsWithDebts()} Actuel`,
       ` ${this.auth.currentUser.amountInvested}`,
       ` ${this.auth.currentUser.totalDebtLeft}`,
       `${realBenefit}`,
@@ -206,36 +123,6 @@ export class InvestementsSummaryComponent implements OnInit {
 
     this.valuesConvertedToDollars = [
       ``,
-      ``,
-      ``,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.amountInvested
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.totalDebtLeft
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.clientsSavings
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.expensesAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.reserveAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.fees
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(bWithoutExpenses)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.moneyInHands
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
-    ];
-    this.vDollars = [
-      ``,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.amountInvested
       )}`,
@@ -245,31 +132,21 @@ export class InvestementsSummaryComponent implements OnInit {
       `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
     ];
   }
-  BenefitsWithExpenses(): string {
-    const benefit =
-      Number(this.auth.currentUser.projectedRevenue) -
-      Number(this.auth.currentUser.amountLended) -
-      Number(this.auth.currentUser.expensesAmount) -
-      Number(this.auth.currentUser.reserveAmount);
-    return benefit.toString();
-  }
-  BenefitsWithoutExpenses(): string {
-    const benefit =
-      Number(this.auth.currentUser.projectedRevenue) -
-      Number(this.auth.currentUser.amountLended);
-
-    return benefit.toString();
+  findClientsWithDebts() {
+    this.clients?.forEach((client) => {
+      if (Number(client.debtLeft) > 0) {
+        this.currentClients!.push(client);
+      }
+    });
+    return this.currentClients?.length;
   }
 
-  sumPerformance() {
-    this.totalPerfomance = 0;
-    for (let key in this.auth.currentUser.performances) {
-      this.totalPerfomance += parseFloat(
-        this.auth.currentUser.performances[key]
-      );
-    }
+  retrieveClients(): void {
+    this.auth.getAllClients().subscribe((data: any) => {
+      this.clients = data;
+      this.initalizeInputs();
+    });
   }
-  displayGraph() {}
 
   sortKeysAndValuesPayments(time: number) {
     const sortedKeys = Object.keys(this.auth.currentUser.dailyReimbursement)

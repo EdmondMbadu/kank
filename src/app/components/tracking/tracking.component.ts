@@ -22,10 +22,10 @@ export class TrackingComponent {
 
   totalPerfomance: number = 0;
   linkPaths: string[] = [
-    '/daily-payments',
-    '/daily-lendings',
-    '/pay-today',
-    '/not-paid-today',
+    '/client-info',
+    '/add-expense',
+    '/add-reserve',
+    '/client-info',
   ];
   summary: string[] = [
     'Epargne Clients',
