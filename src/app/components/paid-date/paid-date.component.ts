@@ -18,13 +18,7 @@ export class PaidDateComponent {
   todayPayments: Client[] = [];
   numberOfPeople: number = 0;
   searchControl = new FormControl();
-  frenchPaymentDays: { [key: string]: string } = {
-    Monday: 'Lundi',
-    Tuesday: 'Mardi',
-    Wednesday: 'Mercredi',
-    Thursday: 'Jeudi',
-    Friday: 'Vendredi',
-  };
+
   today = this.time.todaysDateMonthDayYear();
   filteredItems?: Filtered[];
   trackingIds: string[] = [];
@@ -38,7 +32,6 @@ export class PaidDateComponent {
   }
 
   ngOnInit(): void {
-    this.frenchPaymentDays['Monday'] = 'Lundi';
     this.searchControl.valueChanges
       .pipe(
         debounceTime(300),
@@ -60,8 +53,6 @@ export class PaidDateComponent {
   addIds() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;
-      this.clients![i].frenchPaymentDay =
-        this.frenchPaymentDays[`${this.clients![i].paymentDay}`];
     }
   }
 

@@ -14,6 +14,7 @@ export class User {
   expenses?: { [key: string]: string } = {};
   projectedRevenue?: string;
   reserveAmount?: string;
+  reserveAmountDollar?: string;
   reserve?: { [key: string]: string } = {};
   fees?: string;
   totalDebtLeft?: string;

@@ -73,6 +73,7 @@ export class NotPaidComponent implements OnInit {
       this.retrieveEmployees();
     });
   }
+
   addId() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;

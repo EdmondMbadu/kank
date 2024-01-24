@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { Client } from '../models/client';
 import { TimeService } from './time.service';
 import { Avatar, Employee } from '../models/employee';
+import { ComputationService } from './computation.service';
 
 @Injectable({
   providedIn: 'root',
@@ -19,7 +20,8 @@ export class DataService {
   constructor(
     private afs: AngularFirestore,
     private auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private compute: ComputationService
   ) {}
 
   clientWithdrawFromSavings(client: Client, amount: string) {
@@ -163,13 +165,21 @@ export class DataService {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
+    let amountInDollars = this.compute
+      .convertCongoleseFrancToUsDollars(amount)
+      .toString();
     const data = {
       reserveAmount: (
         Number(this.auth.currentUser.reserveAmount) + Number(amount)
       ).toString(),
+      reserveAmountDollar: (
+        Number(this.auth.currentUser.reserveAmountDollar) +
+        Number(amountInDollars)
+      ).toString(),
       moneyInHands: (
         Number(this.auth.currentUser.moneyInHands) - Number(amount)
       ).toString(),
+
       reserve: { [this.time.todaysDate()]: amount },
     };
 

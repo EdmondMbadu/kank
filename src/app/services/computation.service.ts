@@ -13,7 +13,15 @@ export class ComputationService {
     let input = Number(value);
     if (isNaN(input)) return '';
 
-    let dollars = Math.floor(input * 0.00037);
+    let dollars = Math.ceil(input * 0.00037);
+
+    return dollars;
+  }
+  convertUsDollarsToCongoleseFranc(value: string) {
+    let input = Number(value);
+    if (isNaN(input)) return '';
+
+    let dollars = Math.floor(input * 2700);
 
     return dollars;
   }
@@ -97,5 +105,42 @@ export class ComputationService {
   roundNumber(num: any) {
     let rounded: any = Math.round(num * 10) / 10;
     return rounded;
+  }
+  findTotalCurrentMonth(dailyReimbursement: { [key: string]: string }) {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+    const currentYear = currentDate.getFullYear();
+    let total = 0;
+    for (const [date, amount] of Object.entries(dailyReimbursement)) {
+      const [month, day, year] = date.split('-').map(Number);
+      if (month === currentMonth && year === currentYear) {
+        total += parseInt(amount as string, 10);
+      }
+    }
+    return total.toString();
+  }
+  getMonthNameFrench(monthNumber: number) {
+    const monthNamesInFrench = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+
+    // Check if the month number is valid (1-12)
+    if (monthNumber < 1 || monthNumber > 12) {
+      return 'Invalid month number';
+    }
+
+    // Subtract 1 to convert to 0-indexed array
+    return monthNamesInFrench[monthNumber - 1];
   }
 }

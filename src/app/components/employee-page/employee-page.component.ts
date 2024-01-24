@@ -12,10 +12,20 @@ import { TimeService } from 'src/app/services/time.service';
   styleUrls: ['./employee-page.component.css'],
 })
 export class EmployeePageComponent implements OnInit {
+  currentDate = new Date();
+  currentMonth = this.currentDate.getMonth() + 1;
+  day = this.currentDate.getDate();
+  month = this.compute.getMonthNameFrench(this.currentMonth);
+  year = this.currentDate.getFullYear();
+  monthYear = `${this.month} ${this.year}`;
   id: any = '';
   employees: Employee[] = [];
   employee: Employee = {};
   averageToday: string = '';
+  totalPointsMonth: string = '';
+  averagePointsMonth: string = '';
+  performancePercentageMonth: string = '';
+  performancePercentageTotal: string = '';
   totalToday: string = '';
   today: string = this.time.todaysDateMonthDayYear();
   recentPerformanceDates: string[] = [];
@@ -49,18 +59,43 @@ export class EmployeePageComponent implements OnInit {
       this.updatePerformanceGraphics();
       let result = this.performance.findAverageAndTotal(this.employee);
       this.employee.averagePoints = `${result[0]} / ${result[1]}`;
-      this.maxRange = Object.keys(this.employee.dailyPoints!).length;
-      this.employee.letterGrade = this.performance.findLetterGrade(
-        result[0] / result[1]
+      this.performancePercentageTotal = this.computePerformancePercentage(
+        result[0].toString(),
+        result[1].toString()
       );
+      this.maxRange = Object.keys(this.employee.dailyPoints!).length;
 
       this.averageToday = this.employee!.dailyPoints![this.today];
       this.totalToday = this.employee.totalDailyPoints![this.today];
-      let rounded = this.compute.roundNumber(
-        (Number(this.averageToday) * 100) / Number(this.totalToday)
+      this.employee.performancePercantage = this.computePerformancePercentage(
+        this.averageToday,
+        this.totalToday
       );
-      this.employee.performancePercantage = rounded.toString();
+      this.averagePointsMonth = this.compute.findTotalCurrentMonth(
+        this.employee.dailyPoints!
+      );
+      this.totalPointsMonth = this.compute.findTotalCurrentMonth(
+        this.employee.totalDailyPoints!
+      );
+      this.performancePercentageMonth = this.computePerformancePercentage(
+        this.averagePointsMonth,
+        this.totalPointsMonth
+      );
     });
+  }
+  computePerformancePercentage(average: string, total: string) {
+    let result = '';
+    if (
+      (average === '0' || average === undefined) &&
+      (total === '0' || total === undefined)
+    ) {
+    } else {
+      let rounded = this.compute.roundNumber(
+        (Number(average) * 100) / Number(total)
+      );
+      result = rounded.toString();
+    }
+    return result;
   }
   sortKeysAndValuesPerformance(time: number) {
     const sortedKeys = Object.keys(this.employee.dailyPoints!)
@@ -93,7 +128,7 @@ export class EmployeePageComponent implements OnInit {
   updatePerformanceGraphics() {
     let sorted = this.sortKeysAndValuesPerformance(5);
     this.recentPerformanceDates = sorted[0];
-    console.log(' the sorted values are', sorted);
+    // console.log(' the sorted values are', sorted);
     this.recentPerformanceNumbers = this.compute.convertToNumbers(sorted[1]);
     const color = this.compute.findColor(sorted[1]);
 

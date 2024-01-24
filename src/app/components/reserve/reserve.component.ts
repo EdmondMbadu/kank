@@ -34,6 +34,12 @@ export class ReserveComponent {
       alert('Enter a valid number!');
       return;
     } else {
+      let conf = confirm(
+        ` Vous ajouter dans la reserve ${this.reserveAmount} FC. Voulez-vous quand même continuer ?`
+      );
+      if (!conf) {
+        return;
+      }
       this.data.updateUserInfoForAddToReserve(this.reserveAmount);
       this.router.navigate(['/home']);
     }

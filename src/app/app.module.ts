@@ -46,6 +46,7 @@ import { BenefitComponent } from './components/benefit/benefit.component';
 import { TrackingComponent } from './components/tracking/tracking.component';
 import { TodayComponent } from './components/today/today.component';
 import { RetraceComponent } from './components/retrace/retrace.component';
+import { TrackingMonthComponent } from './components/tracking-month/tracking-month.component';
 
 @NgModule({
   declarations: [
@@ -80,6 +81,7 @@ import { RetraceComponent } from './components/retrace/retrace.component';
     TrackingComponent,
     TodayComponent,
     RetraceComponent,
+    TrackingMonthComponent,
   ],
   imports: [
     BrowserModule,

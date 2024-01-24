@@ -48,7 +48,9 @@ export class TrackingComponent {
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${this.auth.currentUser.expensesAmount}`,
-      ` ${this.auth.currentUser.reserveAmount}`,
+      ` ${this.compute.convertUsDollarsToCongoleseFranc(
+        this.auth.currentUser.reserveAmountDollar
+      )}`,
 
       ` ${this.auth.currentUser.moneyInHands}`,
     ];
@@ -61,9 +63,7 @@ export class TrackingComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.expensesAmount
       )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.reserveAmount
-      )}`,
+      ` ${this.auth.currentUser.reserveAmountDollar}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.moneyInHands
       )}`,

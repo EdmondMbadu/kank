@@ -124,6 +124,7 @@ export class PerformanceService {
   }
 
   calculateTotalClientsForEachAgent(clients: Client[]) {
+    console.log('clients that should pay today', clients);
     // Create a hash table for quick lookup of client-agent relationships
 
     let clientAgentMap = new Map();
@@ -184,6 +185,7 @@ export class PerformanceService {
     for (let client of this.clients!) {
       if (
         client.paymentDay === day &&
+        Number(client.debtLeft) > 0 &&
         this.clientStartedMorethanOneWeekAgo(client)
       ) {
         this.shouldPayToday.push(client);

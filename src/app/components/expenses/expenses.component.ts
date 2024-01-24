@@ -37,6 +37,12 @@ export class ExpensesComponent {
       alert('Enter a valid number!');
       return;
     } else {
+      let conf = confirm(
+        ` Vous ajouter dans la depense ${this.expenseAmount} FC pour la  raison de ${this.expenseReason}. Voulez-vous quand même continuer ?`
+      );
+      if (!conf) {
+        return;
+      }
       this.data.updateUserInfoForAddExpense(
         this.expenseAmount,
         this.expenseReason
