@@ -278,9 +278,33 @@ export class ComputationService {
           columnGap: 20,
         },
       };
-      pdfMake.createPdf(dd).open();
+      let browser = this.getBrowserName();
+      if (browser === 'Safari') {
+        pdfMake.createPdf(dd).download();
+      } else {
+        pdfMake.createPdf(dd).open();
+      }
     } catch (error) {
       console.log('Error generating invoice', error);
+    }
+  }
+  getBrowserName() {
+    const userAgent = navigator.userAgent;
+
+    if (userAgent.match(/chrome|chromium|crios/i)) {
+      return 'Chrome';
+    } else if (userAgent.match(/firefox|fxios/i)) {
+      return 'Firefox';
+    } else if (userAgent.match(/safari/i)) {
+      return 'Safari';
+    } else if (userAgent.match(/opr\//i)) {
+      return 'Opera';
+    } else if (userAgent.match(/edg/i)) {
+      return 'Edge';
+    } else if (userAgent.match(/msie|trident/i)) {
+      return 'Internet Explorer';
+    } else {
+      return 'Unknown';
     }
   }
 }
