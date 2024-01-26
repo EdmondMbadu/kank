@@ -7,9 +7,12 @@ export class Employee {
   middleName?: string;
   role?: string;
   dailyPoints?: { [key: string]: string } = {};
+  payments?: { [key: string]: string } = {};
+  paymentsPicturePath?: string[];
   totalDailyPoints?: { [key: string]: string } = {};
   averagePoints?: string;
   totalPoints?: string;
+  salaryPaid?: string;
   currentTotalPoints?: number;
   phoneNumber?: string;
   sex?: string;

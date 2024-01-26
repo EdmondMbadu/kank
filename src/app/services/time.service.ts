@@ -387,4 +387,28 @@ export class TimeService {
     const yearsDiff = Math.floor(monthsDiff / 12);
     return `${yearsDiff} year${yearsDiff > 1 ? 's' : ''} ago`;
   }
+
+  getTodaysDateInFrench() {
+    const monthNamesInFrench = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+
+    const today = new Date();
+    const day = today.getDate();
+    const monthIndex = today.getMonth();
+    const year = today.getFullYear();
+
+    return `${day} ${monthNamesInFrench[monthIndex]} ${year}`;
+  }
 }

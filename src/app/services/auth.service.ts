@@ -220,6 +220,7 @@ export class AuthService {
       sex: employee.sex,
       dateOfBirth: employee.dateOfBirth,
       status: employee.status,
+      paymentsPicturePath: [],
       role: employee.role,
       clients: [],
       dailyStatus: {},

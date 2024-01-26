@@ -23,6 +23,7 @@ export class PerformanceService {
   haveNotPaidToday: Client[] = [];
   paidToday: Client[] = [];
   today = this.time.todaysDateMonthDayYear();
+
   filteredItems?: Client[];
   todaysLending?: Client[] = [];
   public performance: string = '0';

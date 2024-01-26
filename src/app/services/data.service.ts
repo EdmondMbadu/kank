@@ -23,7 +23,7 @@ export class DataService {
     private time: TimeService,
     private compute: ComputationService
   ) {}
-
+  todayFull = this.time.todaysDate();
   clientWithdrawFromSavings(client: Client, amount: string) {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`
@@ -209,6 +209,31 @@ export class DataService {
     );
     const data = {
       profilePicture: avatar,
+    };
+    return employeeRef.set(data, { merge: true });
+  }
+  updateEmployeePaymentPictureData(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+    console.log(
+      'current picture path being added to database',
+      employee.paymentsPicturePath
+    );
+    const data = {
+      paymentsPicturePath: employee.paymentsPicturePath,
+    };
+    return employeeRef.set(data, { merge: true });
+  }
+  addPaymentToEmployee(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    const data = {
+      payments: {
+        [this.todayFull]: `${employee.salaryPaid}`,
+      },
     };
     return employeeRef.set(data, { merge: true });
   }
