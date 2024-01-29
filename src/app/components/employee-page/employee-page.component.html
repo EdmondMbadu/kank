@@ -109,7 +109,7 @@
                     <select id="payments" [(ngModel)]="graphicPerformanceTimeRange"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="updatePerformanceGraphics()">
                     <option [ngValue]="5">Semaine</option>
                     <option [ngValue]="20">Mois</option>
-                    <option [ngValue]="30">Max</option>
+                    <option [ngValue]="maxRange">Max</option>
                     </select>
 
                     <!-- <h1 class="mt-4">Emprunts Total: {{totalLendingGraphics| number:'1.0-0'}}</h1>

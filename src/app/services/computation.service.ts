@@ -123,6 +123,38 @@ export class ComputationService {
     }
     return total.toString();
   }
+  findTotalCurrentMonthAllDailyPointsEmployees(employees: Employee[]) {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+    const currentYear = currentDate.getFullYear();
+    let total = 0;
+    for (let e of employees) {
+      for (const [date, amount] of Object.entries(e.dailyPoints!)) {
+        const [month, day, year] = date.split('-').map(Number);
+        if (month === currentMonth && year === currentYear) {
+          total += parseInt(amount as string, 10);
+        }
+      }
+    }
+
+    return total.toString();
+  }
+  findTotalCurrentMonthAllTotalDailyPointsEmployees(employees: Employee[]) {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+    const currentYear = currentDate.getFullYear();
+    let total = 0;
+    for (let e of employees) {
+      for (const [date, amount] of Object.entries(e.totalDailyPoints!)) {
+        const [month, day, year] = date.split('-').map(Number);
+        if (month === currentMonth && year === currentYear) {
+          total += parseInt(amount as string, 10);
+        }
+      }
+    }
+
+    return total.toString();
+  }
   getMonthNameFrench(monthNumber: number) {
     const monthNamesInFrench = [
       'Janvier',

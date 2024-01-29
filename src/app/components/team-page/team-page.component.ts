@@ -110,14 +110,28 @@ export class TeamPageComponent implements OnInit {
       this.employees[i].age = this.time
         .calculateAge(this.employees[i].dateOfBirth!)
         .toString();
-      let result = this.performance.findAverageAndTotal(this.employees[i]);
 
-      this.employees[i].averagePoints = `${result[0]} / ${result[1]}`;
-      this.employees[i].letterGrade = this.performance.findLetterGrade(
-        result[0] / result[1]
-      );
-      let rounded = this.compute.roundNumber((result[0] * 100) / result[1]);
-      this.employees[i].performancePercantage = rounded.toString();
+      if (this.employees[i].role === 'Manager') {
+        let result = this.performance.findAverageAndTotalAllEmployee(
+          this.employees
+        );
+
+        this.employees[i].averagePoints = `${result[0]} / ${result[1]}`;
+        this.employees[i].letterGrade = this.performance.findLetterGrade(
+          result[0] / result[1]
+        );
+        let rounded = this.compute.roundNumber((result[0] * 100) / result[1]);
+        this.employees[i].performancePercantage = rounded.toString();
+      } else {
+        let result = this.performance.findAverageAndTotal(this.employees[i]);
+
+        this.employees[i].averagePoints = `${result[0]} / ${result[1]}`;
+        this.employees[i].letterGrade = this.performance.findLetterGrade(
+          result[0] / result[1]
+        );
+        let rounded = this.compute.roundNumber((result[0] * 100) / result[1]);
+        this.employees[i].performancePercantage = rounded.toString();
+      }
     }
   }
   onImageClick(index: number): void {
@@ -201,4 +215,6 @@ export class TeamPageComponent implements OnInit {
       });
     this.toggleEditEmployee(index);
   }
+
+  updatePerformance() {}
 }

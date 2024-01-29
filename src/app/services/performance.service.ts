@@ -260,6 +260,40 @@ export class PerformanceService {
     }
     return [average, total];
   }
+  findAverageTotalToday(employees: Employee[]) {
+    let total = 0;
+    for (let e of employees) {
+      let current = Number(e.dailyPoints![this.today]);
+      if (!isNaN(current)) {
+        total += current;
+      }
+    }
+    return isNaN(total) ? '' : total.toString();
+  }
+  findTotalToday(employees: Employee[]) {
+    let total = 0;
+    for (let e of employees) {
+      let current = Number(e.totalDailyPoints![this.today]);
+      if (!isNaN(current)) {
+        total += current;
+      }
+    }
+    return isNaN(total) ? '' : total.toString();
+  }
+  findAverageAndTotalAllEmployee(employees: Employee[]) {
+    let average = 0,
+      total = 0;
+
+    for (let e of employees) {
+      for (let key in e.dailyPoints) {
+        average += Number(e.dailyPoints[key]);
+        total += Number(e.totalDailyPoints![key]);
+      }
+    }
+
+    return [average, total];
+  }
+
   findLetterGrade(num: number) {
     if (num >= 0.9) {
       return 'A';
