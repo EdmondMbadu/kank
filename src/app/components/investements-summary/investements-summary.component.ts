@@ -95,6 +95,7 @@ export class InvestementsSummaryComponent implements OnInit {
     '../../../assets/img/invest.svg',
     '../../../assets/img/debt.png',
     '../../../assets/img/revenue.svg',
+    '../../../assets/img/total-income.png',
   ];
 
   summary: string[] = [
@@ -102,6 +103,7 @@ export class InvestementsSummaryComponent implements OnInit {
     'Argent Investi',
     'Prêt Restant',
     'Benefice Réel',
+    "Chiffre D'Affaire",
   ];
   summaryContent: string[] = [];
   sContent: string[] = [];
@@ -111,7 +113,11 @@ export class InvestementsSummaryComponent implements OnInit {
       Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)
     ).toString();
-
+    let totalIncome = (
+      Number(this.auth.currentUser.reserveAmount) +
+      Number(this.auth.currentUser.moneyInHands) +
+      Number(this.auth.currentUser.totalDebtLeft)
+    ).toString();
     this.summaryContent = [
       `${
         this.auth.currentUser.numberOfClients
@@ -119,6 +125,7 @@ export class InvestementsSummaryComponent implements OnInit {
       ` ${this.auth.currentUser.amountInvested}`,
       ` ${this.auth.currentUser.totalDebtLeft}`,
       `${realBenefit}`,
+      `${totalIncome}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -130,6 +137,7 @@ export class InvestementsSummaryComponent implements OnInit {
         this.auth.currentUser.totalDebtLeft
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
     ];
   }
   findClientsWithDebts() {
