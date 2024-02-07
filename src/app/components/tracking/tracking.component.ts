@@ -25,13 +25,15 @@ export class TrackingComponent {
     '/client-info',
     '/add-expense',
     '/add-reserve',
-    '/client-info',
+    '/client-info-current',
+    '/client-info-current',
   ];
   summary: string[] = [
     'Epargne Clients',
     'Depenses',
     'Reserve',
     'Argent en Main',
+    'Benefice Réel',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -40,11 +42,16 @@ export class TrackingComponent {
     '../../../assets/img/expense.svg',
     '../../../assets/img/reserve.svg',
     '../../../assets/img/salary.png',
+    '../../../assets/img/revenue.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
+    let realBenefit = (
+      Number(this.auth.currentUser.totalDebtLeft) -
+      Number(this.auth.currentUser.amountInvested)
+    ).toString();
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${this.auth.currentUser.expensesAmount}`,
@@ -53,6 +60,7 @@ export class TrackingComponent {
       )}`,
 
       ` ${this.auth.currentUser.moneyInHands}`,
+      `${realBenefit}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -67,6 +75,7 @@ export class TrackingComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.moneyInHands
       )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
     ];
   }
 }

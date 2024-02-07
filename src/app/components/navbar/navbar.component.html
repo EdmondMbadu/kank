@@ -11,7 +11,7 @@
               <h1 *ngIf="currentHome" class=" {{current}}"></h1>
 
             </div>
-            <div routerLink="/client-info" class="hidden md:block">
+            <div routerLink="/client-info-current" class="hidden md:block">
               <img src="../../../assets/img/file.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
               <h1 *ngIf="currentClientInfo" class=" {{current}}"></h1>
             </div>
@@ -38,12 +38,12 @@
 
         <div *ngIf="hide ==false" class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu"  >
           <div class="py-1" >
-            <a routerLink="/home"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Depart</a>
-            <a routerLink="/client-info"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Info Client</a>
-            <a routerLink="/new-client"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Nouveau Client</a>
-            <a routerLink="/team-page"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a>
-            <a routerLink="/tracking"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Trésorerie</a>
-            <a routerLink="/today"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Activités Du Jour</a>
+            <a routerLink="/home"  class="block px-4 py-2 text-xl hover:bg-slate-100 text-blue-500" role="menuitem" tabindex="-1" id="menu-item-0">Depart</a>
+            <a routerLink="/client-info-current"  class=" block px-4 py-2 text-xl hover:bg-slate-100 text-blue-500" role="menuitem" tabindex="-1" id="menu-item-0">Info Client</a>
+            <a routerLink="/new-client"  class=" block px-4 py-2 text-xl hover:bg-slate-100 text-blue-500" role="menuitem" tabindex="-1" id="menu-item-0">Nouveau Client</a>
+            <a routerLink="/team-page"  class=" block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a>
+            <a routerLink="/tracking"  class=" block px-4 py-2 text-xl hover:bg-slate-100 text-blue-500" role="menuitem" tabindex="-1" id="menu-item-0">Trésorerie</a>
+            <a routerLink="/today"  class=" block px-4 py-2 text-xl hover:bg-slate-100 text-blue-500" role="menuitem" tabindex="-1" id="menu-item-0">Activités Du Jour</a>
             <a routerLink="/tracking-month"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Activités Du Mois</a>
             <a routerLink="/retrace"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Retracer Les Activités </a>
             <a routerLink="/benefit"  class="text-gray-700 block px-4 py-2 text-sm hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Bénéfice & Performance</a>

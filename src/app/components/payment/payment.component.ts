@@ -63,6 +63,9 @@ export class PaymentComponent {
   }
 
   makePayment() {
+    console.log('client id', this.client.uid);
+    console.log('payment amount', Number(this.paymentAmount));
+    console.log('debt left', Number(this.client.debtLeft));
     if (this.paymentAmount === '' || this.savingsAmount === '') {
       alert('Remplissez toutes les données');
       return;

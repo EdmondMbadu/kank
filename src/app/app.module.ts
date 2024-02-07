@@ -47,6 +47,7 @@ import { TrackingComponent } from './components/tracking/tracking.component';
 import { TodayComponent } from './components/today/today.component';
 import { RetraceComponent } from './components/retrace/retrace.component';
 import { TrackingMonthComponent } from './components/tracking-month/tracking-month.component';
+import { ClientInfoCurrentComponent } from './components/client-info-current/client-info-current.component';
 
 @NgModule({
   declarations: [
@@ -82,6 +83,7 @@ import { TrackingMonthComponent } from './components/tracking-month/tracking-mon
     TodayComponent,
     RetraceComponent,
     TrackingMonthComponent,
+    ClientInfoCurrentComponent,
   ],
   imports: [
     BrowserModule,

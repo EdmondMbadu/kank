@@ -79,14 +79,14 @@ export class PerformanceService {
   }
   callEachEmployeeToUpdatePerformancePerSubmission() {
     for (let em of this.employees!) {
-      console.log('current employee daily points', em.dailyPoints![this.today]);
-      console.log(
-        'current employee  total points',
-        em.totalDailyPoints![this.today]
-      );
+      // console.log('current employee daily points', em.dailyPoints![this.today]);
+      // console.log(
+      //   'current employee  total points',
+      //   em.totalDailyPoints![this.today]
+      // );
       // if both the daily and total poitns are 0, do not update the employe performance points
       if (em.dailyPoints![this.today] === '0' && em.currentTotalPoints === 0) {
-        console.log('entering here');
+        // console.log('entering here');
       } else {
         this.UpdateEachEmployeePerformancePerSubmission(em);
       }
@@ -125,7 +125,7 @@ export class PerformanceService {
   }
 
   calculateTotalClientsForEachAgent(clients: Client[]) {
-    console.log('clients that should pay today', clients);
+    // console.log('clients that should pay today', clients);
     // Create a hash table for quick lookup of client-agent relationships
 
     let clientAgentMap = new Map();

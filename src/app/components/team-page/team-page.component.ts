@@ -4,6 +4,7 @@ import {
   AngularFireUploadTask,
 } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
+import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
@@ -216,5 +217,9 @@ export class TeamPageComponent implements OnInit {
     this.toggleEditEmployee(index);
   }
 
-  updatePerformance() {}
+  updatePerformance() {
+    let dummyClient = new Client();
+    this.performance.updateUserPerformance(dummyClient);
+    this.router.navigate(['/home']);
+  }
 }

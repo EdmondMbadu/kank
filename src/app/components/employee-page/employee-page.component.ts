@@ -42,7 +42,7 @@ export class EmployeePageComponent implements OnInit {
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
   graphicPerformanceTimeRange: number = 5;
-  maxRange: number = 30;
+  maxRange: number = this.auth.currentUser.performances.length;
 
   totalPoints: string = '';
   baseSalary: string = '';

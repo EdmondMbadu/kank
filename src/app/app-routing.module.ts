@@ -31,6 +31,7 @@ import { TrackingComponent } from './components/tracking/tracking.component';
 import { TodayComponent } from './components/today/today.component';
 import { RetraceComponent } from './components/retrace/retrace.component';
 import { TrackingMonthComponent } from './components/tracking-month/tracking-month.component';
+import { ClientInfoCurrentComponent } from './components/client-info-current/client-info-current.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -65,6 +66,7 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   { path: 'client-info', component: ClientInfoComponent },
+  { path: 'client-info-current', component: ClientInfoCurrentComponent },
   { path: 'new-client', component: NewClientComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
   { path: 'add-investment', component: AmountInvestedComponent },

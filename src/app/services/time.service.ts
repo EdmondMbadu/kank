@@ -18,6 +18,15 @@ export class TimeService {
     const endDate = this.getDateInFiveWeeks(startDate);
     return [startDate, endDate];
   }
+  computeDateRange2Months() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const startDate = `${month}-${day}-${year}`;
+    const endDate = this.getDateInNineWeeks(startDate);
+    return [startDate, endDate];
+  }
 
   todaysDate(): string {
     const now = new Date();
@@ -107,6 +116,27 @@ export class TimeService {
 
     // Add 35 days to the date
     date.setDate(date.getDate() + 35);
+
+    // Get the new date components
+    const newYear = date.getFullYear();
+    const newMonth = date.getMonth() + 1; // Convert back to one-indexed
+    const newDay = date.getDate();
+
+    // Format the new date as a string
+    return `${newMonth}-${newDay}-${newYear}`;
+  }
+  getDateInNineWeeks(inputDate: string) {
+    // Parse the input date
+    let input = inputDate.split('-');
+    let month = parseInt(input[0], 10) - 1; // Months are zero-indexed in JavaScript
+    let day = parseInt(input[1], 10);
+    let year = parseInt(input[2], 10);
+
+    // Create a Date object
+    const date = new Date(year, month, day);
+
+    // Add 35 days to the date
+    date.setDate(date.getDate() + 63);
 
     // Get the new date components
     const newYear = date.getFullYear();

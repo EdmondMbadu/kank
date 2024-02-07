@@ -234,11 +234,13 @@ export class NewClientComponent implements OnInit {
     this.client.paymentDay = this.paymentDay;
   }
   displayRate() {
+    let result = this.time.computeDateRange();
     if (this.payRange === '' || this.loanAmount === '') {
       return;
     }
     this.rateDisplay = true;
     if (this.payRange == '8') {
+      result = this.time.computeDateRange2Months();
       this.interestRate = '40';
     } else {
       this.interestRate = '20';
@@ -247,7 +249,7 @@ export class NewClientComponent implements OnInit {
       this.interestRate,
       this.loanAmount
     );
-    let result = this.time.computeDateRange();
+
     this.debtCycleStartDate = result[0];
     this.debtCycleEndDate = result[1];
     this.amountToPayDisplay = true;

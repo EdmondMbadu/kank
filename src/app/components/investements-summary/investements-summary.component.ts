@@ -60,6 +60,7 @@ export class InvestementsSummaryComponent implements OnInit {
   };
 
   maxRange = this.auth.currentUser.dailyReimbursement.length;
+  maxRangePerformance = this.auth.currentUser.performances.length;
   totalPayGraphics: number = 0;
   totalLendingGraphics: number = 0;
   today = this.time.todaysDateMonthDayYear();
@@ -86,23 +87,25 @@ export class InvestementsSummaryComponent implements OnInit {
 
   linkPath: string[] = [
     '/client-info',
+    '/client-info-current',
     '/add-investment',
     '/client-info',
     '/client-info',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
+    '../../../assets/img/people.svg',
     '../../../assets/img/invest.svg',
     '../../../assets/img/debt.png',
-    '../../../assets/img/revenue.svg',
     '../../../assets/img/total-income.png',
   ];
 
   summary: string[] = [
-    'Nombres des Clients',
+    'Nombres des Clients Total',
+    'Nombres des Clients Actuel',
     'Argent Investi',
     'Prêt Restant',
-    'Benefice Réel',
+
     "Chiffre D'Affaire",
   ];
   summaryContent: string[] = [];
@@ -119,16 +122,16 @@ export class InvestementsSummaryComponent implements OnInit {
       Number(this.auth.currentUser.totalDebtLeft)
     ).toString();
     this.summaryContent = [
-      `${
-        this.auth.currentUser.numberOfClients
-      } Total -  ${this.findClientsWithDebts()} Actuel`,
+      `${this.auth.currentUser.numberOfClients}`,
+      `${this.findClientsWithDebts()}`,
       ` ${this.auth.currentUser.amountInvested}`,
       ` ${this.auth.currentUser.totalDebtLeft}`,
-      `${realBenefit}`,
+
       `${totalIncome}`,
     ];
 
     this.valuesConvertedToDollars = [
+      ``,
       ``,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.amountInvested
@@ -136,7 +139,6 @@ export class InvestementsSummaryComponent implements OnInit {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.totalDebtLeft
       )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
     ];
   }
