@@ -44,16 +44,24 @@ export class WithdrawSavingsComponent implements OnInit {
   }
   makePayment() {
     if (this.savingsWithdrawn === '') {
-      alert('FIll all fields');
+      alert('emplissez toutes les données');
       return;
     } else if (Number.isNaN(Number(this.savingsWithdrawn))) {
-      alert('Incorrect input. Enter a number');
+      alert('Entrée incorrecte. Entrez un numéro');
       return;
     } else if (Number(this.savingsWithdrawn) > Number(this.client.savings)) {
-      alert('Not Enough Money!');
+      alert(
+        "Vous n'avez pas suffisament d'argent pour effectuer cette transaction!"
+      );
       return;
     } else if (Number(this.savingsWithdrawn) <= 0) {
-      alert('Withraw a valid amount!');
+      alert('Entrez un nombre valid positifs');
+      return;
+    }
+    let conf = confirm(
+      ` Vous allez retrancher ${this.savingsWithdrawn} FC dans votre compte D'epargnes. Voulez-vous quand même continuer ?`
+    );
+    if (!conf) {
       return;
     } else {
       this.client.savings = (
