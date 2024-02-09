@@ -90,6 +90,12 @@ export class NewClientComponent implements OnInit {
       );
       return;
     } else {
+      let conf = confirm(
+        `Vous allez emprunté ${this.loanAmount} FC a ${this.firstName} ${this.middleName} ${this.lastName}. Voulez-vous quand même continuer ?`
+      );
+      if (!conf) {
+        return;
+      }
       this.setNewClientValues();
       let employee = this.findAgentWithId(this.client.agent!);
       this.auth.addNewClient(this.client).then(
