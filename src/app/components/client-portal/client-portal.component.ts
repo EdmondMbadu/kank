@@ -52,14 +52,21 @@ export class ClientPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      console.log('the client uid is', this.client.uid);
       this.minimumPayment();
 
       this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined);
       this.debtStart = this.time.formatDateString(
         this.client.debtCycleStartDate
       );
-      this.debtEnd = this.time.formatDateString(this.client.debtCycleEndDate);
+      this.debtEnd = this.time.formatDateString(this.endDate());
     });
+  }
+
+  endDate() {
+    return Number(this.client.paymentPeriodRange) === 8
+      ? this.time.getDateInNineWeeks(this.client.debtCycleStartDate!)
+      : this.time.getDateInFiveWeeks(this.client.debtCycleStartDate!);
   }
 
   minimumPayment() {

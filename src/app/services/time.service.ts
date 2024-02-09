@@ -115,7 +115,7 @@ export class TimeService {
     const date = new Date(year, month, day);
 
     // Add 35 days to the date
-    date.setDate(date.getDate() + 35);
+    date.setDate(date.getDate() + 28);
 
     // Get the new date components
     const newYear = date.getFullYear();
@@ -136,7 +136,7 @@ export class TimeService {
     const date = new Date(year, month, day);
 
     // Add 35 days to the date
-    date.setDate(date.getDate() + 63);
+    date.setDate(date.getDate() + 56);
 
     // Get the new date components
     const newYear = date.getFullYear();
