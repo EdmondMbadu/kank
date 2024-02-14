@@ -52,7 +52,6 @@ export class ClientPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      console.log('the client uid is', this.client.uid);
       this.minimumPayment();
 
       this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined);
