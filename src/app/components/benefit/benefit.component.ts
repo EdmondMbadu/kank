@@ -24,8 +24,8 @@ export class BenefitComponent {
   linkPaths: string[] = [
     '/team-page',
     '/team-page',
-    '/client-info',
-    '/client-info',
+    '/client-info-current',
+    '/client-info-current',
   ];
   summary: string[] = [
     "Performance D'Aujourdhui",

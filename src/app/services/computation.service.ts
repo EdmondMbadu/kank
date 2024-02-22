@@ -110,14 +110,47 @@ export class ComputationService {
     let rounded: any = Math.round(num * 10) / 10;
     return rounded;
   }
+
+  filterClientsWithoutDebtFollowedByEmployee(
+    allclients: Client[],
+    employee: Employee
+  ) {
+    // Filter clients with debt left from the entire client list
+    const clientsWithDebt = allclients.filter(
+      (client: any) => client.debtLeft > 0
+    );
+
+    // Filter employees who have clients with debt left
+    const filteredClients = employee.clients!.filter((uid: string) => {
+      const client = clientsWithDebt.find((client) => client.uid === uid);
+      return client !== undefined;
+    });
+
+    return filteredClients;
+  }
   findTotalCurrentMonth(dailyReimbursement: { [key: string]: string }) {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
     const currentYear = currentDate.getFullYear();
+    // console.log('the current month and  year are', currentMonth, currentYear);
     let total = 0;
     for (const [date, amount] of Object.entries(dailyReimbursement)) {
       const [month, day, year] = date.split('-').map(Number);
       if (month === currentMonth && year === currentYear) {
+        total += parseInt(amount as string, 10);
+      }
+    }
+    return total.toString();
+  }
+  findTotalGiventMonth(
+    dailyReimbursement: { [key: string]: string },
+    givnMonth: number,
+    givenYear: number
+  ) {
+    let total = 0;
+    for (const [date, amount] of Object.entries(dailyReimbursement)) {
+      const [month, day, year] = date.split('-').map(Number);
+      if (month === givnMonth && year === givenYear) {
         total += parseInt(amount as string, 10);
       }
     }

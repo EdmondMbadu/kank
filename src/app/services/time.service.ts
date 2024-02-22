@@ -27,7 +27,20 @@ export class TimeService {
     const endDate = this.getDateInNineWeeks(startDate);
     return [startDate, endDate];
   }
-
+  monthFrenchNames = [
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre',
+  ];
   todaysDate(): string {
     const now = new Date();
     const year = now.getFullYear();

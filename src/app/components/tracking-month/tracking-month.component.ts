@@ -13,22 +13,27 @@ export class TrackingMonthComponent {
   constructor(
     private router: Router,
     public auth: AuthService,
-    private time: TimeService,
+    public time: TimeService,
     private compute: ComputationService
   ) {}
   ngOnInit() {
     this.initalizeInputs();
   }
+
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
+  givenMonth: number = this.currentMonth;
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
+  givenYear = this.year;
+  yearsList: number[] = [2023, 2024];
+  monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   monthYear = `${this.month} ${this.year}`;
   totalPerfomance: number = 0;
   linkPaths: string[] = [
     '/paid-date',
     '/lending-date',
-    '/client-info',
+    '/client-info-current',
     '/add-expense',
     '/add-reserve',
   ];
@@ -40,11 +45,11 @@ export class TrackingMonthComponent {
     'Reserve Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
-  currentMonthTotalPaymentAmount: string = '';
-  currentMonthTotalBenefitAmount: string = '';
-  currentMonthTotalLendingAmount: string = '';
-  currentMonthTotalExpenseAmount: string = '';
-  currentMonthTotalReserveAmount: string = '';
+  givenMonthTotalPaymentAmount: string = '';
+  givenMonthTotalBenefitAmount: string = '';
+  givenMonthTotalLendingAmount: string = '';
+  givenMonthTotalExpenseAmount: string = '';
+  givenMonthTotalReserveAmount: string = '';
   imagePaths: string[] = [
     '../../../assets/img/audit.png',
     '../../../assets/img/lending-date.png',
@@ -56,43 +61,55 @@ export class TrackingMonthComponent {
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
-    this.currentMonthTotalPaymentAmount = this.compute.findTotalCurrentMonth(
-      this.auth.currentUser.dailyReimbursement
+    this.givenMonthTotalPaymentAmount = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.dailyReimbursement,
+      this.givenMonth,
+      this.givenYear
     );
-    this.currentMonthTotalBenefitAmount = Math.ceil(
-      Number(this.currentMonthTotalPaymentAmount) * 0.285
+
+    this.givenMonthTotalBenefitAmount = Math.ceil(
+      Number(this.givenMonthTotalPaymentAmount) * 0.285
     ).toString();
-    this.currentMonthTotalLendingAmount = this.compute.findTotalCurrentMonth(
-      this.auth.currentUser.dailyLending
+
+    this.givenMonthTotalLendingAmount = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.dailyLending,
+      this.givenMonth,
+      this.givenYear
     );
-    this.currentMonthTotalExpenseAmount = this.compute.findTotalCurrentMonth(
-      this.auth.currentUser.expenses
+
+    this.givenMonthTotalExpenseAmount = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.expenses,
+      this.givenMonth,
+      this.givenYear
     );
-    this.currentMonthTotalReserveAmount = this.compute.findTotalCurrentMonth(
-      this.auth.currentUser.reserve
+
+    this.givenMonthTotalReserveAmount = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.reserve,
+      this.givenMonth,
+      this.givenYear
     );
     this.summaryContent = [
-      `${this.currentMonthTotalPaymentAmount}`,
-      `${this.currentMonthTotalLendingAmount}`,
-      `${this.currentMonthTotalBenefitAmount}`,
-      `${this.currentMonthTotalExpenseAmount}`,
-      `${this.currentMonthTotalReserveAmount}`,
+      `${this.givenMonthTotalPaymentAmount}`,
+      `${this.givenMonthTotalLendingAmount}`,
+      `${this.givenMonthTotalBenefitAmount}`,
+      `${this.givenMonthTotalExpenseAmount}`,
+      `${this.givenMonthTotalReserveAmount}`,
     ];
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
-        this.currentMonthTotalPaymentAmount
+        this.givenMonthTotalPaymentAmount
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
-        this.currentMonthTotalLendingAmount
+        this.givenMonthTotalLendingAmount
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
-        this.currentMonthTotalBenefitAmount
+        this.givenMonthTotalBenefitAmount
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
-        this.currentMonthTotalExpenseAmount
+        this.givenMonthTotalExpenseAmount
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
-        this.currentMonthTotalReserveAmount
+        this.givenMonthTotalReserveAmount
       )}`,
     ];
   }

@@ -22,7 +22,7 @@ export class TrackingComponent {
 
   totalPerfomance: number = 0;
   linkPaths: string[] = [
-    '/client-info',
+    '/client-info-current',
     '/add-expense',
     '/add-reserve',
     '/client-info-current',

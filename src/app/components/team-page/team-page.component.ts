@@ -30,11 +30,13 @@ export class TeamPageComponent implements OnInit {
   displayEditEmployees: boolean[] = [];
 
   ngOnInit(): void {
-    this.retrieveEmployees();
+    this.retreiveClients();
   }
   url: string = '';
   task?: AngularFireUploadTask;
   employees: Employee[] = [];
+  allClients: Client[] = [];
+
   employee: Employee = {};
   firstName: string = '';
   lastName: string = '';
@@ -60,8 +62,13 @@ export class TeamPageComponent implements OnInit {
       this.employees = data;
       this.displayEditEmployees = new Array(this.employees.length).fill(false);
       this.addIdsToEmployees();
-      // this.filteredItems = data;
-      // this.addIdToFilterItems();
+    });
+  }
+
+  retreiveClients(): void {
+    this.auth.getAllClients().subscribe((data: any) => {
+      this.allClients = data;
+      this.retrieveEmployees();
     });
   }
   addNewEmployee() {
@@ -111,6 +118,12 @@ export class TeamPageComponent implements OnInit {
       this.employees[i].age = this.time
         .calculateAge(this.employees[i].dateOfBirth!)
         .toString();
+
+      this.employees[i].currentClients =
+        this.compute.filterClientsWithoutDebtFollowedByEmployee(
+          this.allClients,
+          this.employees[i]
+        );
 
       if (this.employees[i].role === 'Manager') {
         let result = this.performance.findAverageAndTotalAllEmployee(

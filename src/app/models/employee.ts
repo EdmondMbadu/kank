@@ -24,6 +24,8 @@ export class Employee {
   profilePicture?: Avatar;
   dateLeft?: string;
   clients?: string[];
+  currentClients?: string[];
+  clientsFinishedPaying?: number;
   dailyStatus?: { [key: string]: string };
 }
 export class Avatar {
