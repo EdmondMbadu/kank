@@ -16,12 +16,14 @@ import { Timestamp } from 'firebase/firestore';
 import { TimeService } from './time.service';
 import { ComputationService } from './computation.service';
 import { Employee } from '../models/employee';
+import { Card } from '../models/card';
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   user$: Observable<any>;
   clientsRef$: Observable<any>;
+  cardsRefs: Observable<any>;
   employeesRef$: Observable<any>;
   email?: Observable<any>;
   currentUser: any = {};
@@ -59,6 +61,15 @@ export class AuthService {
       })
     );
 
+    this.cardsRefs = this.fireauth.authState.pipe(
+      switchMap((user) => {
+        if (user) {
+          return this.afs.collection(`users/${user.uid}/cards/`).valueChanges();
+        } else {
+          return of(null);
+        }
+      })
+    );
     this.employeesRef$ = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
@@ -78,6 +89,9 @@ export class AuthService {
   }
   getAllEmployees(): Observable<Employee> {
     return this.employeesRef$;
+  }
+  getAllClientsCard(): Observable<Card> {
+    return this.cardsRefs;
   }
 
   getCurrentUser() {
@@ -156,8 +170,13 @@ export class AuthService {
       reserveAmount: '0',
       reserve: {},
       fees: '0',
+      moneyInHands: '0',
+      totalDebtLeft: '0',
+      cardsMoney: '0',
       dailyLending: {},
       dailyReimbursement: {},
+      dailyCardReturns: {},
+      dailyCardPayments: {},
     };
     return userRef.set(data, { merge: true });
   }
@@ -203,6 +222,35 @@ export class AuthService {
       `users/${this.currentUser.uid}/clients/${data.uid}`
     );
     return clientRef.set(data, { merge: true });
+  }
+
+  addNewClientCard(card: Card) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+
+    const data = {
+      uid: this.afs.createId().toString(),
+      firstName: card.firstName,
+      lastName: card.lastName,
+      middleName: card.middleName,
+      phoneNumber: card.phoneNumber,
+      homeAddress: card.homeAddress,
+      businessAddress: card.businessAddress,
+      cardCycle: '1',
+      profession: card.profession,
+      amountPaid: card.amountPaidToday,
+      amountToPay: card.amountToPay,
+      dateJoined: `${month}-${day}-${year}`,
+      numberOfPaymentsMade: '1',
+      payments: card.payments,
+    };
+    this.clientId = data.uid;
+    const cardtRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.currentUser.uid}/cards/${data.uid}`
+    );
+    return cardtRef.set(data, { merge: true });
   }
 
   addNewEmployee(employee: Employee) {

@@ -12,6 +12,7 @@ import { Client } from '../models/client';
 import { TimeService } from './time.service';
 import { Avatar, Employee } from '../models/employee';
 import { ComputationService } from './computation.service';
+import { Card } from '../models/card';
 
 @Injectable({
   providedIn: 'root',
@@ -56,6 +57,29 @@ export class DataService {
     };
     this.updateUserInfoForClientPayment(client, savings, date, payment);
     return clientRef.set(data, { merge: true });
+  }
+  clientCardPayment(clientCard: Card) {
+    const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
+    );
+    const data = {
+      amountPaid: clientCard.amountPaid,
+      numberOfPaymentsMade: clientCard.numberOfPaymentsMade,
+      payments: clientCard.payments,
+    };
+    return clientCardRef.set(data, { merge: true });
+  }
+  clientCardReturnMoney(clientCard: Card) {
+    const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
+    );
+    const data = {
+      amountPaid: clientCard.amountPaid,
+      withdrawal: clientCard.withdrawal,
+      clientCardStatus: 'ended',
+      payments: {},
+    };
+    return clientCardRef.set(data, { merge: true });
   }
 
   updateClientInfo(client: Client) {
@@ -238,6 +262,40 @@ export class DataService {
     return employeeRef.set(data, { merge: true });
   }
 
+  updateUserInfoForClientCardPayment(deposit: string) {
+    let date = this.time.todaysDateMonthDayYear();
+    let depot: any = this.computeDailyCardPayments(date, deposit);
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+
+    const data = {
+      cardsMoney: (
+        Number(this.auth.currentUser.cardsMoney) + Number(deposit)
+      ).toString(),
+      dailyCardPayments: {
+        [date]: `${depot}`,
+      },
+    };
+    return userRef.set(data, { merge: true });
+  }
+  updateUserInfoForClientCardReturnMoney(amountToGiveBack: string) {
+    let date = this.time.todaysDateMonthDayYear();
+    let depot: any = this.computeDailyCardReturns(date, amountToGiveBack);
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+
+    const data = {
+      cardsMoney: (
+        Number(this.auth.currentUser.cardsMoney) - Number(amountToGiveBack)
+      ).toString(),
+      dailyCardReturns: {
+        [date]: `${depot}`,
+      },
+    };
+    return userRef.set(data, { merge: true });
+  }
   updateUserInfoForClientPayment(
     client: Client,
     savings: string,
@@ -360,6 +418,30 @@ export class DataService {
 
     return userRef.set(data, { merge: true });
   }
+  updateUserInfoForNewCardClient(card: Card) {
+    let date = this.time.todaysDateMonthDayYear();
+    let depot: any = this.computeDailyCardPayments(date, card.amountToPay!);
+    let cMoney =
+      this.auth.currentUser.cardsMoney === undefined
+        ? '0'
+        : this.auth.currentUser.cardsMoney;
+    let cClients =
+      this.auth.currentUser.numberOfCardClients === undefined
+        ? '0'
+        : this.auth.currentUser.numberOfCardClients;
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+
+    const data = {
+      numberOfCardClients: (Number(cClients) + 1).toString(),
+      dailyCardPayments: { [date]: `${depot}` },
+      cardsMoney: (Number(cMoney) + Number(card.amountPaidToday)).toString(),
+    };
+
+    return userRef.set(data, { merge: true });
+  }
+
   computeAmountToPay(interestRate: string, loanAmount: string) {
     const amount = (
       (1 + Number(interestRate) * 0.01) *
@@ -380,6 +462,34 @@ export class DataService {
     }
     return reimburse;
   }
+  computeDailyCardPayments(date: string, payment: string) {
+    let deposit: any = '';
+    if (
+      this.auth.currentUser.dailyCardPayments === undefined ||
+      this.auth.currentUser.dailyCardPayments[`${date}`] === undefined
+    ) {
+      deposit = payment;
+    } else {
+      deposit =
+        Number(this.auth.currentUser.dailyCardPayments[`${date}`]) +
+        Number(payment);
+    }
+    return deposit;
+  }
+  computeDailyCardReturns(date: string, payment: string) {
+    let pReturn: any = '';
+    if (
+      this.auth.currentUser.dailyCardReturns === undefined ||
+      this.auth.currentUser.dailyCardReturns[`${date}`] === undefined
+    ) {
+      pReturn = payment;
+    } else {
+      pReturn =
+        Number(this.auth.currentUser.dailyCardReturns[`${date}`]) +
+        Number(payment);
+    }
+    return pReturn;
+  }
 
   computeDailyLending(client: Client, date: string) {
     let lending: any = '';
@@ -393,23 +503,16 @@ export class DataService {
     return lending;
   }
 
-  numbersValid(a: string, b: string, c: string, d: string): boolean {
-    if (
-      isNaN(Number(a)) ||
-      isNaN(Number(b)) ||
-      isNaN(Number(c)) ||
-      isNaN(Number(d))
-    ) {
-      return false;
-    } else if (
-      Number(a) < 0 ||
-      Number(b) < 0 ||
-      Number(c) < 0 ||
-      Number(d) < 0
-    ) {
-      return false;
-    } else {
-      return true;
+  numbersValid(...args: string[]): boolean {
+    // Check if any of the arguments is not a number or is a negative number
+    for (const arg of args) {
+      const num = Number(arg);
+      if (isNaN(num) || num < 0) {
+        return false;
+      }
     }
+
+    // If none of the arguments is invalid, return true
+    return true;
   }
 }

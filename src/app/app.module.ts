@@ -48,6 +48,12 @@ import { TodayComponent } from './components/today/today.component';
 import { RetraceComponent } from './components/retrace/retrace.component';
 import { TrackingMonthComponent } from './components/tracking-month/tracking-month.component';
 import { ClientInfoCurrentComponent } from './components/client-info-current/client-info-current.component';
+import { NewCardComponent } from './components/new-card/new-card.component';
+import { ClientInfoCardComponent } from './components/client-info-card/client-info-card.component';
+import { ClientPortalCardComponent } from './components/client-portal-card/client-portal-card.component';
+import { PaymentCardComponent } from './components/payment-card/payment-card.component';
+import { PaymentActivityCardComponent } from './components/payment-activity-card/payment-activity-card.component';
+import { ReturnClientCardComponent } from './components/return-client-card/return-client-card.component';
 
 @NgModule({
   declarations: [
@@ -84,6 +90,12 @@ import { ClientInfoCurrentComponent } from './components/client-info-current/cli
     RetraceComponent,
     TrackingMonthComponent,
     ClientInfoCurrentComponent,
+    NewCardComponent,
+    ClientInfoCardComponent,
+    ClientPortalCardComponent,
+    PaymentCardComponent,
+    PaymentActivityCardComponent,
+    ReturnClientCardComponent,
   ],
   imports: [
     BrowserModule,

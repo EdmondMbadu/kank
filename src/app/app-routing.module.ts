@@ -32,6 +32,12 @@ import { TodayComponent } from './components/today/today.component';
 import { RetraceComponent } from './components/retrace/retrace.component';
 import { TrackingMonthComponent } from './components/tracking-month/tracking-month.component';
 import { ClientInfoCurrentComponent } from './components/client-info-current/client-info-current.component';
+import { NewCardComponent } from './components/new-card/new-card.component';
+import { ClientInfoCardComponent } from './components/client-info-card/client-info-card.component';
+import { ClientPortalCardComponent } from './components/client-portal-card/client-portal-card.component';
+import { PaymentCardComponent } from './components/payment-card/payment-card.component';
+import { PaymentActivityCardComponent } from './components/payment-activity-card/payment-activity-card.component';
+import { ReturnClientCardComponent } from './components/return-client-card/return-client-card.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -67,14 +73,26 @@ const routes: Routes = [
   },
   { path: 'client-info', component: ClientInfoComponent },
   { path: 'client-info-current', component: ClientInfoCurrentComponent },
+  { path: 'client-info-card', component: ClientInfoCardComponent },
   { path: 'new-client', component: NewClientComponent },
+  { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
+  { path: 'client-portal-card/:id', component: ClientPortalCardComponent },
   { path: 'add-investment', component: AmountInvestedComponent },
   { path: 'add-expense', component: ExpensesComponent },
   { path: 'add-reserve', component: ReserveComponent },
   { path: 'payment/:id', component: PaymentComponent },
+  { path: 'payment-card/:id', component: PaymentCardComponent },
   { path: 'withdraw-savings/:id', component: WithdrawSavingsComponent },
   { path: 'payment-activity/:id', component: PaymentActivityComponent },
+  {
+    path: 'payment-activity-card/:id',
+    component: PaymentActivityCardComponent,
+  },
+  {
+    path: 'return-client-card/:id',
+    component: ReturnClientCardComponent,
+  },
   { path: 'debt-cycle/:id', component: DebtCycleComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'create-account', component: CreateAccountComponent },

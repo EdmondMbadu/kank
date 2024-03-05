@@ -1,0 +1,85 @@
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+
+<div class="flex container mx-auto justify-center m-12">
+    <h1 class=" md:block mx-2 text-2xl text-center md:text-4xl mr-10 ">Profile Du Client De Carte  <span class="text-red-400"> {{status}}</span></h1>
+
+    <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/update-client-info',id ]">Mettre à jour Info Client</button> -->
+    <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="delete()">Supprimer Client</button> -->
+</div>
+
+<div id="fullWidthTabContent" class=" rounded-lg  dark:border-gray-600">
+    <div class=" mx-4 lg:mx-60 p-4 bg-white rounded-lg md:p-8 border-2 shadow-lg border-gray-200 dark:bg-gray-800" id="stats" role="tabpanel" aria-labelledby="stats-tab">
+        <dl class="grid  max-w-screen-xl grid-cols-2 text-gray-900 gap-8 p-4 mx-auto sm:grid-cols-3 xl:grid-cols-3 dark:text-white sm:p-8">
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center"> {{clientCard.firstName}} {{clientCard.lastName}} {{clientCard.middleName}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Membre Depuis {{clientCard.dateJoined?.replaceAll('-','/')}}</dd>
+            </div>
+           
+            <div class="flex flex-col items-center justify-center" >
+                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center"> ({{clientCard.phoneNumber| slice:0:3}}) - {{clientCard.phoneNumber| slice:3:6}} - {{clientCard.phoneNumber| slice:6:10}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Numero Telphone</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center" >
+                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center">{{clientCard.businessAddress}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Adress Business</dd>
+            </div>
+          
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold"> {{clientCard.amountPaid | number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Percu (FC)</dd>
+            </div>
+
+          
+
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{clientCard.amountToPay| number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montain A Payer (FC)</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{amountToGiveClient| number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montain A Remettre Client (FC)</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{clientCard.cardCycle}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Cycle De Carte (FC)</dd>
+            </div>
+           
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{clientCard.numberOfPaymentsMade}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Nombre De Paiement Percu</dd>
+            </div>
+           
+           
+            
+
+
+            
+            <div class="flex flex-col items-center justify-center" >
+                <dt class="mb-2 text-xl text-center md:text-2xl font-extrabold">{{clientCard.homeAddress}}</dt>
+                <dd class="text-gray-500 text-center  dark:text-gray-400">Adress Domicile</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center" >
+                <dt class="mb-2 text-xl md:text-2xl text-center font-extrabold">{{clientCard.profession}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Profession</dd>
+            </div>
+           
+         
+          
+            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-whit  rounded-full text-sm w-3/4 px-5 py-2.5 " (click)="addMoney()">Effectuer Un Dépôt</button>
+
+            
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity-card',id ]">Details De Dépôts</button>
+
+        </dl>
+    </div>
+    <div class="flex container flex-col md:flex-row mx-auto justify-center">
+        <div  class="flex container mx-auto justify-center">
+            <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="payClient()"  >Payer le Client</button>
+          
+        </div>
+    <div  class="flex container  mx-auto justify-center">
+        <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="startNewCardCycle()" >Nouveau Cycle De Carte</button>
+      
+    </div>
+   
+</div>
