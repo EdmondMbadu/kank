@@ -53,9 +53,11 @@ export class TrackingComponent {
       Number(this.auth.currentUser.amountInvested)
     ).toString();
 
-    let enMain =
-      Number(this.auth.currentUser.moneyInHands) +
-      Number(this.auth.currentUser.cardsMoney);
+    let cardM =
+      this.auth.currentUser.cardsMoney === undefined
+        ? '0'
+        : this.auth.currentUser.cardsMoney;
+    let enMain = Number(this.auth.currentUser.moneyInHands) + Number(cardM);
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${this.auth.currentUser.expensesAmount}`,
