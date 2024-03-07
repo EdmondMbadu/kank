@@ -12,6 +12,8 @@ export class NavbarComponent {
   hide: boolean = true;
   @Input() email = '';
   @Input() path = '';
+  creditDropDown: boolean = false;
+  cardDropDown: boolean = false;
   @Input() firstName = '';
   @Input() currentHome: boolean = false;
   @Input() currentClientInfo: boolean = false;
@@ -29,6 +31,12 @@ export class NavbarComponent {
     }
   }
 
+  toggleCreditDropDown() {
+    this.creditDropDown = !this.creditDropDown;
+  }
+  toggleCardDropDown() {
+    this.cardDropDown = !this.cardDropDown;
+  }
   logOut() {
     this.auth.logout();
   }

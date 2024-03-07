@@ -14,14 +14,8 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class ClientPortalCardComponent {
   clientCard = new Card();
-  minPay = '';
-
-  agent?: Employee = { firstName: '-' };
 
   id: any = '';
-  paymentDate = '';
-  debtStart = '';
-  debtEnd = '';
   amountToGiveClient: string = '';
   status: string = 'En Cours';
 
@@ -79,37 +73,11 @@ export class ClientPortalCardComponent {
     }
   }
   startNewCardCycle() {
-    // if (this.client.savings === '0') {
-    //   alert("Vous n'avez pas d'argent !");
-    //   return;
-    // } else {
-    //   this.router.navigate(['/withdraw-savings/' + this.id]);
-    // }
+    if (this.clientCard.clientCardStatus !== 'ended') {
+      alert("Finissez d'abord ce cycle avant d'entamer en nouveau Cycle");
+      return;
+    } else {
+      this.router.navigate(['/card-cycle/' + this.id]);
+    }
   }
-
-  // delete() {
-  //   let result = confirm('Êtes-vous sûr de vouloir supprimer ce client?');
-  //   if (!result) {
-  //     return;
-  //   }
-  //   this.auth
-  //     .deleteClient(this.client)
-  //     .then(() => {
-  //       alert('Client supprimé avec succès !');
-  //       this.router.navigate(['/client-info/']);
-  //     })
-  //     .catch((error) => {
-  //       alert('Error deleting client: ');
-  //     });
-
-  //   this.auth
-  //     .UpdateUserInfoForDeletedClient(this.client)
-  //     .then(() => {
-  //       console.log('updated user info');
-  //     })
-  //     .catch((error) => {
-  //       alert('Error deleting client: ');
-  //     });
-
-  // }
 }

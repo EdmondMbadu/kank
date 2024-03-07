@@ -38,6 +38,10 @@ import { ClientPortalCardComponent } from './components/client-portal-card/clien
 import { PaymentCardComponent } from './components/payment-card/payment-card.component';
 import { PaymentActivityCardComponent } from './components/payment-activity-card/payment-activity-card.component';
 import { ReturnClientCardComponent } from './components/return-client-card/return-client-card.component';
+import { CardCycleComponent } from './components/card-cycle/card-cycle.component';
+import { SummaryCardComponent } from './card/summary-card/summary-card.component';
+import { TodayCardComponent } from './card/today-card/today-card.component';
+import { TrackingCardMonthComponent } from './card/tracking-card-month/tracking-card-month.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -62,8 +66,18 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'tracking-card-month',
+    component: TrackingCardMonthComponent,
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'today',
     component: TodayComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'today-card',
+    component: TodayCardComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -72,6 +86,7 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   { path: 'client-info', component: ClientInfoComponent },
+  { path: 'summary-card', component: SummaryCardComponent },
   { path: 'client-info-current', component: ClientInfoCurrentComponent },
   { path: 'client-info-card', component: ClientInfoCardComponent },
   { path: 'new-client', component: NewClientComponent },
@@ -93,7 +108,9 @@ const routes: Routes = [
     path: 'return-client-card/:id',
     component: ReturnClientCardComponent,
   },
+
   { path: 'debt-cycle/:id', component: DebtCycleComponent },
+  { path: 'card-cycle/:id', component: CardCycleComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'create-account', component: CreateAccountComponent },
   { path: 'verify-email', component: VerifyEmailComponent },

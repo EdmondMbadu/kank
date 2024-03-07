@@ -54,6 +54,10 @@ import { ClientPortalCardComponent } from './components/client-portal-card/clien
 import { PaymentCardComponent } from './components/payment-card/payment-card.component';
 import { PaymentActivityCardComponent } from './components/payment-activity-card/payment-activity-card.component';
 import { ReturnClientCardComponent } from './components/return-client-card/return-client-card.component';
+import { CardCycleComponent } from './components/card-cycle/card-cycle.component';
+import { SummaryCardComponent } from './card/summary-card/summary-card.component';
+import { TodayCardComponent } from './card/today-card/today-card.component';
+import { TrackingCardMonthComponent } from './card/tracking-card-month/tracking-card-month.component';
 
 @NgModule({
   declarations: [
@@ -96,6 +100,10 @@ import { ReturnClientCardComponent } from './components/return-client-card/retur
     PaymentCardComponent,
     PaymentActivityCardComponent,
     ReturnClientCardComponent,
+    CardCycleComponent,
+    SummaryCardComponent,
+    TodayCardComponent,
+    TrackingCardMonthComponent,
   ],
   imports: [
     BrowserModule,

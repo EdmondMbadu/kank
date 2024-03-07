@@ -52,6 +52,10 @@ export class TrackingComponent {
       Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)
     ).toString();
+
+    let enMain =
+      Number(this.auth.currentUser.moneyInHands) +
+      Number(this.auth.currentUser.cardsMoney);
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${this.auth.currentUser.expensesAmount}`,
@@ -59,7 +63,7 @@ export class TrackingComponent {
         this.auth.currentUser.reserveAmountDollar
       )}`,
 
-      ` ${this.auth.currentUser.moneyInHands}`,
+      ` ${enMain}`,
       `${realBenefit}`,
     ];
 
@@ -72,9 +76,7 @@ export class TrackingComponent {
         this.auth.currentUser.expensesAmount
       )}`,
       ` ${this.auth.currentUser.reserveAmountDollar}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.moneyInHands
-      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
       `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
     ];
   }

@@ -421,6 +421,7 @@ export class DataService {
   updateUserInfoForNewCardClient(card: Card) {
     let date = this.time.todaysDateMonthDayYear();
     let depot: any = this.computeDailyCardPayments(date, card.amountToPay!);
+    let benefit: any = this.computeDailyCardBenefits(date, card.amountToPay!);
     let cMoney =
       this.auth.currentUser.cardsMoney === undefined
         ? '0'
@@ -436,7 +437,31 @@ export class DataService {
     const data = {
       numberOfCardClients: (Number(cClients) + 1).toString(),
       dailyCardPayments: { [date]: `${depot}` },
+      dailyCardBenefits: { [date]: `${benefit}` },
       cardsMoney: (Number(cMoney) + Number(card.amountPaidToday)).toString(),
+    };
+
+    return userRef.set(data, { merge: true });
+  }
+
+  updateUserInfoForNewCardCycleClient(card: Card) {
+    let date = this.time.todaysDateMonthDayYear();
+    let depot: any = this.computeDailyCardPayments(date, card.amountToPay!);
+    let benefit: any = this.computeDailyCardBenefits(date, card.amountToPay!);
+    let cMoney =
+      this.auth.currentUser.cardsMoney === undefined
+        ? '0'
+        : this.auth.currentUser.cardsMoney;
+
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+    console.log('cmoney, ', cMoney);
+    console.log('amount paid today', card.amountToPay);
+    const data = {
+      dailyCardPayments: { [date]: `${depot}` },
+      cardsMoney: (Number(cMoney) + Number(card.amountToPay)).toString(),
+      dailyCardBenefits: { [date]: `${benefit}` },
     };
 
     return userRef.set(data, { merge: true });
@@ -475,6 +500,20 @@ export class DataService {
         Number(payment);
     }
     return deposit;
+  }
+  computeDailyCardBenefits(date: string, payment: string) {
+    let benefit: any = '';
+    if (
+      this.auth.currentUser.dailyCardBenefits === undefined ||
+      this.auth.currentUser.dailyCardBenefits[`${date}`] === undefined
+    ) {
+      benefit = payment;
+    } else {
+      benefit =
+        Number(this.auth.currentUser.dailyCardBenefits[`${date}`]) +
+        Number(payment);
+    }
+    return benefit;
   }
   computeDailyCardReturns(date: string, payment: string) {
     let pReturn: any = '';

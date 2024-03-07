@@ -247,10 +247,37 @@ export class AuthService {
       payments: card.payments,
     };
     this.clientId = data.uid;
-    const cardtRef: AngularFirestoreDocument<Client> = this.afs.doc(
+    const cardtRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.currentUser.uid}/cards/${data.uid}`
     );
     return cardtRef.set(data, { merge: true });
+  }
+
+  startNewCardCycle(card: Card) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const data = {
+      firstName: card.firstName,
+      lastName: card.lastName,
+      middleName: card.middleName,
+      phoneNumber: card.phoneNumber,
+      homeAddress: card.homeAddress,
+      businessAddress: card.businessAddress,
+      cardCycle: card.cardCycle,
+      profession: card.profession,
+      amountPaid: card.amountPaidToday,
+      amountToPay: card.amountToPay,
+      clientCardStatus: '',
+      cardCycleStartDate: `${month}-${day}-${year}`,
+      numberOfPaymentsMade: '1',
+      payments: card.payments,
+    };
+    const cardRef: AngularFirestoreDocument<Card> = this.afs.doc(
+      `users/${this.currentUser.uid}/cards/${card.uid}`
+    );
+    return cardRef.set(data, { merge: true });
   }
 
   addNewEmployee(employee: Employee) {

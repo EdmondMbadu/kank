@@ -24,4 +24,5 @@ export class User {
   dailyReimbursement?: { [key: string]: string } = {};
   dailyCardPayments?: { [key: string]: string } = {};
   dailyCardReturns?: { [key: string]: string } = {};
+  dailyCardBenefits?: { [key: string]: string } = {};
 }
