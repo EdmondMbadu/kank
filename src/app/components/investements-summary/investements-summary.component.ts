@@ -111,6 +111,10 @@ export class InvestementsSummaryComponent implements OnInit {
   summaryContent: string[] = [];
   sContent: string[] = [];
   initalizeInputs() {
+    let cardM =
+      this.auth.currentUser.cardsMoney === undefined
+        ? '0'
+        : this.auth.currentUser.cardsMoney;
     this.currentClients = [];
     let realBenefit = (
       Number(this.auth.currentUser.totalDebtLeft) -
@@ -119,7 +123,8 @@ export class InvestementsSummaryComponent implements OnInit {
     let totalIncome = (
       Number(this.auth.currentUser.reserveAmount) +
       Number(this.auth.currentUser.moneyInHands) +
-      Number(this.auth.currentUser.totalDebtLeft)
+      Number(this.auth.currentUser.totalDebtLeft) +
+      Number(cardM)
     ).toString();
     this.summaryContent = [
       `${this.auth.currentUser.numberOfClients}`,
