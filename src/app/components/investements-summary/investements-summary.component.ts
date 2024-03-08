@@ -200,7 +200,7 @@ export class InvestementsSummaryComponent implements OnInit {
   convertToDollars(array: any) {
     let result: number[] = [];
     for (let a of array) {
-      result.push(Math.floor(Number(a) * 0.0004));
+      result.push(Math.floor(Number(a) * 0.00036));
     }
 
     return result;
