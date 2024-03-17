@@ -34,6 +34,12 @@ export class AmountInvestedComponent implements OnInit {
       alert('Enter a valid number!');
       return;
     } else {
+      let conf = confirm(
+        ` Vous ajouter un montant de ${this.investmentAddAmount} FC pour l'investissement. Voulez-vous quand même continuer ?`
+      );
+      if (!conf) {
+        return;
+      }
       this.data.updateUserInfoForAddInvestment(this.investmentAddAmount);
       this.router.navigate(['/home']);
     }

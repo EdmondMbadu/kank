@@ -110,27 +110,41 @@ export class InvestementsSummaryComponent implements OnInit {
   ];
   summaryContent: string[] = [];
   sContent: string[] = [];
+
   initalizeInputs() {
+    let reserve =
+      this.auth.currentUser.reserveAmount === undefined
+        ? '0'
+        : this.auth.currentUser.reserveAmount;
+    let moneyHand =
+      this.auth.currentUser.moneyInHands === undefined
+        ? '0'
+        : this.auth.currentUser.moneyInHands;
+    let invested =
+      this.auth.currentUser.amountInvested === undefined
+        ? '0'
+        : this.auth.currentUser.amountInvested;
+    let debtTotal =
+      this.auth.currentUser.totalDebtLeft === undefined
+        ? '0'
+        : this.auth.currentUser.totalDebtLeft;
     let cardM =
       this.auth.currentUser.cardsMoney === undefined
         ? '0'
         : this.auth.currentUser.cardsMoney;
     this.currentClients = [];
-    let realBenefit = (
-      Number(this.auth.currentUser.totalDebtLeft) -
-      Number(this.auth.currentUser.amountInvested)
-    ).toString();
+    let realBenefit = (Number(debtTotal) - Number(invested)).toString();
     let totalIncome = (
-      Number(this.auth.currentUser.reserveAmount) +
-      Number(this.auth.currentUser.moneyInHands) +
-      Number(this.auth.currentUser.totalDebtLeft) +
+      Number(reserve) +
+      Number(moneyHand) +
+      Number(debtTotal) +
       Number(cardM)
     ).toString();
     this.summaryContent = [
       `${this.auth.currentUser.numberOfClients}`,
       `${this.findClientsWithDebts()}`,
-      ` ${this.auth.currentUser.amountInvested}`,
-      ` ${this.auth.currentUser.totalDebtLeft}`,
+      ` ${invested}`,
+      ` ${debtTotal}`,
 
       `${totalIncome}`,
     ];
@@ -138,12 +152,8 @@ export class InvestementsSummaryComponent implements OnInit {
     this.valuesConvertedToDollars = [
       ``,
       ``,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.amountInvested
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.totalDebtLeft
-      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
     ];
   }
