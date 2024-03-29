@@ -30,8 +30,8 @@ export class TodayComponent {
     '/not-paid-today',
     '/daily-payments',
     '/daily-lendings',
-    '/add-reserve',
     '/client-info-current',
+    '/add-reserve',
   ];
   summary: string[] = [
     "N'ont pas Payé Aujourdhui",
