@@ -4,6 +4,8 @@ import * as pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TimeService } from './time.service';
 import { Employee } from '../models/employee';
+import { User, UserDailyField } from '../models/user';
+import { AuthService } from './auth.service';
 (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 @Injectable({
   providedIn: 'root',
@@ -12,12 +14,12 @@ export class ComputationService {
   constructor(private time: TimeService) {}
   colorPositive: string = '#008080';
   colorNegative: string = '#ff0000';
-
+  today = this.time.todaysDateMonthDayYear();
   convertCongoleseFrancToUsDollars(value: string) {
     let input = Number(value);
     if (isNaN(input)) return '';
 
-    let dollars = Math.ceil(input * 0.00037);
+    let dollars = Math.ceil(input * 0.00036);
 
     return dollars;
   }
@@ -25,7 +27,7 @@ export class ComputationService {
     let input = Number(value);
     if (isNaN(input)) return '';
 
-    let dollars = Math.floor(input * 2700);
+    let dollars = Math.floor(input * 2800);
 
     return dollars;
   }
@@ -142,6 +144,29 @@ export class ComputationService {
     }
     return total.toString();
   }
+  findTotalForToday(reserve: { [key: string]: string }) {
+    // Compute today's date in "M-D-YYYY" format without leading zeros
+    const today = new Date();
+    const dateString = `${
+      today.getMonth() + 1
+    }-${today.getDate()}-${today.getFullYear()}`;
+
+    let totalForToday = 0;
+
+    // Iterate over each entry in the 'reserve' field
+    Object.entries(reserve).forEach(([key, value]) => {
+      // Extract the date part of the key (assuming format is M-D-YYYY-HH-MM-SS)
+      const keyDate = key.split('-').slice(0, 3).join('-');
+      // Check if the date part matches today's date
+      if (keyDate === dateString) {
+        // Sum the values for today's date
+        totalForToday += parseInt(value, 10);
+      }
+    });
+
+    return totalForToday;
+  }
+
   findTotalGiventMonth(
     dailyReimbursement: { [key: string]: string },
     givnMonth: number,
@@ -154,6 +179,28 @@ export class ComputationService {
         total += parseInt(amount as string, 10);
       }
     }
+    return total.toString();
+  }
+  findTotalGivenMonthForAllUsers(
+    users: User[],
+    field: UserDailyField,
+    givenMonth: number,
+    givenYear: number
+  ): string {
+    let total = 0;
+
+    users.forEach((user) => {
+      const dailyData = user[field];
+      if (dailyData) {
+        for (const [date, amount] of Object.entries(dailyData)) {
+          const [month, , year] = date.split('-').map(Number); // Destructuring to ignore day
+          if (month === givenMonth && year === givenYear) {
+            total += parseInt(amount, 10);
+          }
+        }
+      }
+    });
+
     return total.toString();
   }
   findTotalCurrentMonthAllDailyPointsEmployees(employees: Employee[]) {
@@ -371,5 +418,40 @@ export class ComputationService {
     } else {
       return 'Unknown';
     }
+  }
+
+  findTotalAllUsersGivenField(users: User[], field: keyof User) {
+    let total = 0;
+    users.forEach((user) => {
+      total += Number(user[field]);
+    });
+
+    return total;
+  }
+
+  findTodayTotalResultsGivenField(users: User[], field: UserDailyField) {
+    let total = 0;
+    const today = this.today; // Assuming this is defined somewhere appropriately
+
+    users.forEach((user) => {
+      const fieldData = user[field];
+      if (fieldData) {
+        const todayValue = fieldData[today];
+        if (todayValue) {
+          total += Number(todayValue);
+        }
+      }
+    });
+
+    return total;
+  }
+  filterOutElements(summary: string[], index: number) {
+    // fliter out elements
+
+    summary = summary.filter((element, num) => {
+      return num < index;
+    });
+
+    return summary;
   }
 }

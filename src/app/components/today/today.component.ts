@@ -21,24 +21,33 @@ export class TodayComponent {
   }
   dailyLending: string = '0';
   dailyPayment: string = '0';
+  dailyFees: string = '0';
+  dailyReserve: string = '0';
 
   totalPerfomance: number = 0;
+
   linkPaths: string[] = [
+    '/not-paid-today',
     '/daily-payments',
     '/daily-lendings',
-    '/not-paid-today',
+    '/add-reserve',
+    '/client-info-current',
   ];
   summary: string[] = [
+    "N'ont pas Payé Aujourdhui",
     'Paiement Du Jour',
     'Emprunt Du Jour',
-    "N'ont pas Payé Aujourdhui",
+    'Frais De Membre Du Jour',
+    'Reserve Du Jour',
   ];
   valuesConvertedToDollars: string[] = [];
 
   imagePaths: string[] = [
+    '../../../assets/img/late-payment.png',
     '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-payment.png',
-    '../../../assets/img/late-payment.png',
+    '../../../assets/img/member.svg',
+    '../../../assets/img/reserve.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -46,15 +55,32 @@ export class TodayComponent {
   initalizeInputs() {
     this.dailyLending = this.auth.currentUser.dailyLending[this.today];
     this.dailyPayment = this.auth.currentUser.dailyReimbursement[this.today];
+    this.dailyFees = this.auth.currentUser.feesData[this.today];
+    this.dailyReserve = this.compute
+      .findTotalForToday(this.auth.currentUser.reserve)
+      .toString();
+
     this.dailyLending =
       this.dailyLending === undefined ? '0' : this.dailyLending;
     this.dailyPayment =
       this.dailyPayment === undefined ? '0' : this.dailyPayment;
-    this.summaryContent = [` ${this.dailyPayment}`, ` ${this.dailyLending}`];
+    this.dailyFees = this.dailyFees === undefined ? '0' : this.dailyFees;
+    this.dailyReserve =
+      this.dailyReserve === undefined ? '0' : this.dailyReserve;
+    this.summaryContent = [
+      ``,
+      ` ${this.dailyPayment}`,
+      ` ${this.dailyLending}`,
+      ` ${this.dailyFees}`,
+      ` ${this.dailyReserve}`,
+    ];
 
     this.valuesConvertedToDollars = [
+      ``,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFees)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
     ];
   }
 }

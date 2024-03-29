@@ -1,23 +1,30 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-today-card',
-  templateUrl: './today-card.component.html',
-  styleUrls: ['./today-card.component.css'],
+  selector: 'app-today-card-central',
+  templateUrl: './today-card-central.component.html',
+  styleUrls: ['./today-card-central.component.css'],
 })
-export class TodayCardComponent {
+export class TodayCardCentralComponent {
   constructor(
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
     private compute: ComputationService
   ) {}
-  ngOnInit() {
-    this.initalizeInputs();
+  allUsers: User[] = [];
+  ngOnInit(): void {
+    if (this.auth.isAdmin) {
+      this.auth.getAllUsersInfo().subscribe((data) => {
+        this.allUsers = data;
+        this.initalizeInputs();
+      });
+    }
   }
   dailyCardPayments: string = '0';
   dailyCardReturns: string = '0';
@@ -40,11 +47,15 @@ export class TodayCardComponent {
   today: string = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
-    this.dailyCardPayments =
-      this.auth.currentUser.dailyCardPayments[this.today];
-    this.dailyCardReturns = this.auth.currentUser.dailyCardReturns[this.today];
-    this.dailyCardBenefits =
-      this.auth.currentUser.dailyCardBenefits[this.today];
+    this.dailyCardPayments = this.compute
+      .findTodayTotalResultsGivenField(this.allUsers, 'dailyCardPayments')
+      .toString();
+    this.dailyCardReturns = this.compute
+      .findTodayTotalResultsGivenField(this.allUsers, 'dailyCardReturns')
+      .toString();
+    this.dailyCardBenefits = this.compute
+      .findTodayTotalResultsGivenField(this.allUsers, 'dailyCardBenefits')
+      .toString();
     this.dailyCardPayments =
       this.dailyCardPayments === undefined ? '0' : this.dailyCardPayments;
     this.dailyCardReturns =

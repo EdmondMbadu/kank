@@ -2,7 +2,7 @@
 <!-- Sign On -->
 
 <div class="">
-<section class="container flex flex-col md:flex-row justify-center items-center px-6 mx-auto">
+<section class="container flex flex-col md:flex-row justify-center items-center px-6 mx-auto ">
     <div class=" flex-col w-[22rem] shadow-md  my-6 h-[25rem] border border-green-950 rounded-lg " style="background-image: url(../../../assets/img/african-woman.jpg)">
       <label class="block my-28 mx-8">
   
@@ -12,6 +12,8 @@
 
         <p routerLink="/forgot-password" class="p-2  hover:underline ">Mot De passe Oublié?</p>
       </label> 
+   
+     
      
     </div>
     <div class="flex-col items-center text-center  md:1-1/2">
@@ -28,8 +30,11 @@
     </div>
   
   </section>
+  <div class=" flex container flex-col mx-auto w-40">
+    <input type="word" name="word" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Mot secret" required [(ngModel)]="word" />
+  </div>
 
-  <div class="flex container mx-auto mt-12 justify-center">
+  <div class="flex container mx-auto mt-4 justify-center">
 
 
     <div class="grid gap-4">

@@ -169,10 +169,14 @@ export class DataService {
   }
 
   updateUserInfoForAddInvestment(amount: string) {
+    let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
     const data = {
+      amountInvestedDollars: (
+        Number(this.auth.currentUser.amountInvestedDollars) + Number(dollar)
+      ).toString(),
       amountInvested: (
         Number(this.auth.currentUser.amountInvested) + Number(amount)
       ).toString(),
@@ -180,6 +184,7 @@ export class DataService {
         Number(this.auth.currentUser.moneyInHands) + Number(amount)
       ).toString(),
       investments: { [this.time.todaysDate()]: amount },
+      investmentsDollar: { [this.time.todaysDate()]: dollar.toString() },
     };
 
     return userRef.set(data, { merge: true });
@@ -189,22 +194,20 @@ export class DataService {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
-    let amountInDollars = this.compute
-      .convertCongoleseFrancToUsDollars(amount)
-      .toString();
+    let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
     const data = {
       reserveAmount: (
         Number(this.auth.currentUser.reserveAmount) + Number(amount)
       ).toString(),
       reserveAmountDollar: (
-        Number(this.auth.currentUser.reserveAmountDollar) +
-        Number(amountInDollars)
+        Number(this.auth.currentUser.reserveAmountDollar) + Number(dollar)
       ).toString(),
       moneyInHands: (
         Number(this.auth.currentUser.moneyInHands) - Number(amount)
       ).toString(),
 
       reserve: { [this.time.todaysDate()]: amount },
+      reserveinDollar: { [this.time.todaysDate()]: dollar.toString() },
     };
 
     return userRef.set(data, { merge: true });
@@ -345,6 +348,7 @@ export class DataService {
     date: string
   ) {
     let dailyLending: any = this.computeDailyLending(client, date);
+    let dailyFees: any = this.computeDailyFees(client, date);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
@@ -372,6 +376,7 @@ export class DataService {
         Number(client.amountToPay)
       ).toString(),
       dailyLending: { [date]: `${dailyLending}` },
+      feesData: { [date]: `${dailyFees}` },
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
       ).toString(),
@@ -381,6 +386,7 @@ export class DataService {
 
   updateUserInfoForNewClient(client: Client, date: string) {
     let dailyLending: any = this.computeDailyLending(client, date);
+    let dailyFees: any = this.computeDailyFees(client, date);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
@@ -411,6 +417,7 @@ export class DataService {
         Number(client.amountToPay)
       ).toString(),
       dailyLending: { [date]: `${dailyLending}` },
+      feesData: { [date]: `${dailyFees}` },
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
       ).toString(),
@@ -540,6 +547,18 @@ export class DataService {
         Number(client.loanAmount);
     }
     return lending;
+  }
+  computeDailyFees(client: Client, date: string) {
+    let fees: any = '';
+    if (this.auth.currentUser.feesData[`${date}`] === undefined) {
+      fees = Number(client.membershipFee) + Number(client.applicationFee);
+    } else {
+      fees =
+        Number(this.auth.currentUser.feesData[`${date}`]) +
+        Number(client.membershipFee) +
+        Number(client.applicationFee);
+    }
+    return fees;
   }
 
   numbersValid(...args: string[]): boolean {

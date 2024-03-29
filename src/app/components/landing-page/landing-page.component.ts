@@ -11,7 +11,13 @@ import { DataService } from 'src/app/services/data.service';
 export class LandingPageComponent {
   email: string = '';
   password: string = '';
-  ngOnInit() {}
+  word: string = '';
+  ngOnInit() {
+    this.email = '';
+    this.password = '';
+    this.word = '';
+    console.log('all fields', this.word);
+  }
   constructor(private auth: AuthService) {}
 
   SignOn() {
@@ -19,6 +25,6 @@ export class LandingPageComponent {
       alert('FIll all fields');
       return;
     }
-    this.auth.SignOn(this.email, this.password);
+    this.auth.SignOn(this.email, this.password, this.word);
   }
 }

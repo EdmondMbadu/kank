@@ -42,12 +42,24 @@ import { CardCycleComponent } from './components/card-cycle/card-cycle.component
 import { SummaryCardComponent } from './card/summary-card/summary-card.component';
 import { TodayCardComponent } from './card/today-card/today-card.component';
 import { TrackingCardMonthComponent } from './card/tracking-card-month/tracking-card-month.component';
+import { HomeCentralComponent } from './central/home-central/home-central.component';
+import { TrackingCentralComponent } from './central/tracking-central/tracking-central.component';
+import { TodayCentralComponent } from './central/today-central/today-central.component';
+import { TrackingMonthCentralComponent } from './central/tracking-month-central/tracking-month-central.component';
+import { TodayCardCentralComponent } from './central/today-card-central/today-card-central.component';
+import { TrackingCardMonthCentralComponent } from './central/tracking-card-month-central/tracking-card-month-central.component';
+import { SummaryCardCentralComponent } from './central/summary-card-central/summary-card-central.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
   {
     path: 'home',
     component: InvestementsSummaryComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'home-central',
+    component: HomeCentralComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -61,8 +73,18 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'tracking-central',
+    component: TrackingCentralComponent,
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'tracking-month',
     component: TrackingMonthComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'tracking-month-central',
+    component: TrackingMonthCentralComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -71,13 +93,28 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'tracking-card-month-central',
+    component: TrackingCardMonthCentralComponent,
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'today',
     component: TodayComponent,
     canActivate: [AuthGuard],
   },
   {
+    path: 'today-central',
+    component: TodayCentralComponent,
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'today-card',
     component: TodayCardComponent,
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'today-card-central',
+    component: TodayCardCentralComponent,
     canActivate: [AuthGuard],
   },
   {
@@ -87,6 +124,7 @@ const routes: Routes = [
   },
   { path: 'client-info', component: ClientInfoComponent },
   { path: 'summary-card', component: SummaryCardComponent },
+  { path: 'summary-card-central', component: SummaryCardCentralComponent },
   { path: 'client-info-current', component: ClientInfoCurrentComponent },
   { path: 'client-info-card', component: ClientInfoCardComponent },
   { path: 'new-client', component: NewClientComponent },

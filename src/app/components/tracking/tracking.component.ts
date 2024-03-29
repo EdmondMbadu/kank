@@ -24,15 +24,15 @@ export class TrackingComponent {
   linkPaths: string[] = [
     '/client-info-current',
     '/add-expense',
-    '/add-reserve',
     '/client-info-current',
+    '/add-reserve',
     '/client-info-current',
   ];
   summary: string[] = [
     'Epargne Clients',
     'Depenses',
-    'Reserve',
     'Argent en Main',
+    'Reserve',
     'Benefice Réel',
   ];
   valuesConvertedToDollars: string[] = [];
@@ -40,8 +40,9 @@ export class TrackingComponent {
   imagePaths: string[] = [
     '../../../assets/img/saving.svg',
     '../../../assets/img/expense.svg',
-    '../../../assets/img/reserve.svg',
     '../../../assets/img/salary.png',
+    '../../../assets/img/reserve.svg',
+
     '../../../assets/img/revenue.svg',
   ];
 
@@ -61,11 +62,11 @@ export class TrackingComponent {
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${this.auth.currentUser.expensesAmount}`,
+      ` ${enMain}`,
       ` ${this.compute.convertUsDollarsToCongoleseFranc(
         this.auth.currentUser.reserveAmountDollar
       )}`,
 
-      ` ${enMain}`,
       `${realBenefit}`,
     ];
 
@@ -77,9 +78,17 @@ export class TrackingComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.expensesAmount
       )}`,
-      ` ${this.auth.currentUser.reserveAmountDollar}`,
       `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
+      ` ${this.auth.currentUser.reserveAmountDollar}`,
+
       `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
     ];
+
+    if (
+      this.auth.currentUser.admin === undefined ||
+      this.auth.currentUser.admin === 'false'
+    ) {
+      this.summary = this.compute.filterOutElements(this.summary, 3);
+    }
   }
 }

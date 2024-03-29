@@ -45,11 +45,6 @@ export class BenefitComponent {
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
-    let realBenefit = (
-      Number(this.auth.currentUser.totalDebtLeft) -
-      Number(this.auth.currentUser.amountInvested)
-    ).toString();
-
     let bWithoutExpenses = this.BenefitsWithoutExpenses();
 
     let performance =
@@ -75,6 +70,13 @@ export class BenefitComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(bWithoutExpenses)}`,
     ];
+
+    if (
+      this.auth.currentUser.admin === undefined ||
+      this.auth.currentUser.admin === 'false'
+    ) {
+      this.summary = this.compute.filterOutElements(this.summary, 2);
+    }
   }
 
   BenefitsWithoutExpenses(): string {

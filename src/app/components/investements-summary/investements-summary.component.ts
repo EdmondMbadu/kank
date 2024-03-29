@@ -21,6 +21,9 @@ export class InvestementsSummaryComponent implements OnInit {
   clients?: Client[];
   currentClients?: Client[] = [];
   ngOnInit() {
+    if (this.auth.isAdmninistrator) {
+      this.auth.makeAdmin();
+    }
     this.retrieveClients();
 
     this.updatePaymentGraphics();
@@ -47,7 +50,7 @@ export class InvestementsSummaryComponent implements OnInit {
   public graph2 = {
     data: [{}],
     layout: {
-      title: 'Paiment Journalier en $',
+      title: 'Emprunts Journalier en $',
       barmode: 'stack',
     },
   };
@@ -112,51 +115,61 @@ export class InvestementsSummaryComponent implements OnInit {
   sContent: string[] = [];
 
   initalizeInputs() {
-    let reserve =
-      this.auth.currentUser.reserveAmount === undefined
-        ? '0'
-        : this.auth.currentUser.reserveAmount;
-    let moneyHand =
-      this.auth.currentUser.moneyInHands === undefined
-        ? '0'
-        : this.auth.currentUser.moneyInHands;
-    let invested =
-      this.auth.currentUser.amountInvested === undefined
-        ? '0'
-        : this.auth.currentUser.amountInvested;
-    let debtTotal =
-      this.auth.currentUser.totalDebtLeft === undefined
-        ? '0'
-        : this.auth.currentUser.totalDebtLeft;
-    let cardM =
-      this.auth.currentUser.cardsMoney === undefined
-        ? '0'
-        : this.auth.currentUser.cardsMoney;
-    this.currentClients = [];
-    let realBenefit = (Number(debtTotal) - Number(invested)).toString();
-    let totalIncome = (
-      Number(reserve) +
-      Number(moneyHand) +
-      Number(debtTotal) +
-      Number(cardM)
-    ).toString();
-    this.summaryContent = [
-      `${this.auth.currentUser.numberOfClients}`,
-      `${this.findClientsWithDebts()}`,
-      ` ${invested}`,
-      ` ${debtTotal}`,
+    if (this.auth.currentUser) {
+      let reserve =
+        this.auth.currentUser.reserveAmount === undefined
+          ? '0'
+          : this.auth.currentUser.reserveAmount;
+      let moneyHand =
+        this.auth.currentUser.moneyInHands === undefined
+          ? '0'
+          : this.auth.currentUser.moneyInHands;
+      let invested =
+        this.auth.currentUser.amountInvested === undefined
+          ? '0'
+          : this.auth.currentUser.amountInvested;
+      let debtTotal =
+        this.auth.currentUser.totalDebtLeft === undefined
+          ? '0'
+          : this.auth.currentUser.totalDebtLeft;
+      let cardM =
+        this.auth.currentUser.cardsMoney === undefined
+          ? '0'
+          : this.auth.currentUser.cardsMoney;
+      this.currentClients = [];
+      let realBenefit = (Number(debtTotal) - Number(invested)).toString();
+      let totalIncome = (
+        Number(reserve) +
+        Number(moneyHand) +
+        Number(debtTotal) +
+        Number(cardM)
+      ).toString();
+      this.summaryContent = [
+        `${this.auth.currentUser.numberOfClients}`,
+        `${this.findClientsWithDebts()}`,
+        ` ${invested}`,
+        ` ${debtTotal}`,
 
-      `${totalIncome}`,
-    ];
+        `${totalIncome}`,
+      ];
 
-    this.valuesConvertedToDollars = [
-      ``,
-      ``,
-      `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
-    ];
+      this.valuesConvertedToDollars = [
+        ``,
+        ``,
+        `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
+        `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
+        `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
+      ];
+
+      if (
+        this.auth.currentUser.admin === undefined ||
+        this.auth.currentUser.admin === 'false'
+      ) {
+        this.summary = this.compute.filterOutElements(this.summary, 2);
+      }
+    }
   }
+
   findClientsWithDebts() {
     this.clients?.forEach((client) => {
       if (Number(client.debtLeft) > 0) {
@@ -317,7 +330,7 @@ export class InvestementsSummaryComponent implements OnInit {
         },
       ],
       layout: {
-        title: 'Paiment en $',
+        title: 'Emprunts en $',
         barmode: 'stack',
       },
     };

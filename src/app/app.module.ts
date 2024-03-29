@@ -58,6 +58,13 @@ import { CardCycleComponent } from './components/card-cycle/card-cycle.component
 import { SummaryCardComponent } from './card/summary-card/summary-card.component';
 import { TodayCardComponent } from './card/today-card/today-card.component';
 import { TrackingCardMonthComponent } from './card/tracking-card-month/tracking-card-month.component';
+import { HomeCentralComponent } from './central/home-central/home-central.component';
+import { TrackingCentralComponent } from './central/tracking-central/tracking-central.component';
+import { TodayCentralComponent } from './central/today-central/today-central.component';
+import { TrackingMonthCentralComponent } from './central/tracking-month-central/tracking-month-central.component';
+import { TodayCardCentralComponent } from './central/today-card-central/today-card-central.component';
+import { TrackingCardMonthCentralComponent } from './central/tracking-card-month-central/tracking-card-month-central.component';
+import { SummaryCardCentralComponent } from './central/summary-card-central/summary-card-central.component';
 
 @NgModule({
   declarations: [
@@ -104,6 +111,14 @@ import { TrackingCardMonthComponent } from './card/tracking-card-month/tracking-
     SummaryCardComponent,
     TodayCardComponent,
     TrackingCardMonthComponent,
+    HomeCentralComponent,
+    HomeCentralComponent,
+    TrackingCentralComponent,
+    TodayCentralComponent,
+    TrackingMonthCentralComponent,
+    TodayCardCentralComponent,
+    TrackingCardMonthCentralComponent,
+    SummaryCardCentralComponent,
   ],
   imports: [
     BrowserModule,
@@ -116,8 +131,6 @@ import { TrackingCardMonthComponent } from './card/tracking-card-month/tracking-
     AngularFireStorageModule,
     CommonModule,
     PlotlyModule,
-    // provideFirebaseApp(() => initializeApp(environment.firebase)),
-    // provideAuth(() => getAuth()),
   ],
   providers: [],
   bootstrap: [AppComponent],

@@ -1,23 +1,30 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-tracking-month',
-  templateUrl: './tracking-month.component.html',
-  styleUrls: ['./tracking-month.component.css'],
+  selector: 'app-tracking-month-central',
+  templateUrl: './tracking-month-central.component.html',
+  styleUrls: ['./tracking-month-central.component.css'],
 })
-export class TrackingMonthComponent {
+export class TrackingMonthCentralComponent {
   constructor(
     private router: Router,
     public auth: AuthService,
     public time: TimeService,
     private compute: ComputationService
   ) {}
-  ngOnInit() {
-    this.initalizeInputs();
+  allUsers: User[] = [];
+  ngOnInit(): void {
+    if (this.auth.isAdmin) {
+      this.auth.getAllUsersInfo().subscribe((data) => {
+        this.allUsers = data;
+        this.initalizeInputs();
+      });
+    }
   }
 
   currentDate = new Date();
@@ -38,12 +45,11 @@ export class TrackingMonthComponent {
     '/add-reserve',
   ];
   summary: string[] = [
-    'Paiment Du Mois',
+    'Paiment Du Mois Central',
     'Emprunts Du Mois',
     'Benefice Du Mois ',
     'Depense Du Mois',
     'Reserve Du Mois',
-    'Frais De Membre Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
   givenMonthTotalPaymentAmount: string = '';
@@ -51,59 +57,58 @@ export class TrackingMonthComponent {
   givenMonthTotalLendingAmount: string = '';
   givenMonthTotalExpenseAmount: string = '';
   givenMonthTotalReserveAmount: string = '';
-  givenMonthTotalFeesAmount: string = '';
   imagePaths: string[] = [
     '../../../assets/img/audit.png',
     '../../../assets/img/lending-date.png',
     '../../../assets/img/benefit.svg',
     '../../../assets/img/expense.svg',
     '../../../assets/img/reserve.svg',
-    '../../../assets/img/member.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
-    this.givenMonthTotalPaymentAmount = this.compute.findTotalGiventMonth(
-      this.auth.currentUser.dailyReimbursement,
-      this.givenMonth,
-      this.givenYear
-    );
+    this.givenMonthTotalPaymentAmount =
+      this.compute.findTotalGivenMonthForAllUsers(
+        this.allUsers,
+        'dailyReimbursement',
+        this.givenMonth,
+        this.givenYear
+      );
 
     this.givenMonthTotalBenefitAmount = Math.ceil(
       Number(this.givenMonthTotalPaymentAmount) * 0.285
     ).toString();
 
-    this.givenMonthTotalLendingAmount = this.compute.findTotalGiventMonth(
-      this.auth.currentUser.dailyLending,
-      this.givenMonth,
-      this.givenYear
-    );
+    this.givenMonthTotalLendingAmount =
+      this.compute.findTotalGivenMonthForAllUsers(
+        this.allUsers,
+        'dailyLending',
+        this.givenMonth,
+        this.givenYear
+      );
+    this.givenMonthTotalExpenseAmount =
+      this.compute.findTotalGivenMonthForAllUsers(
+        this.allUsers,
+        'expenses',
+        this.givenMonth,
+        this.givenYear
+      );
 
-    this.givenMonthTotalExpenseAmount = this.compute.findTotalGiventMonth(
-      this.auth.currentUser.expenses,
-      this.givenMonth,
-      this.givenYear
-    );
+    this.givenMonthTotalReserveAmount =
+      this.compute.findTotalGivenMonthForAllUsers(
+        this.allUsers,
+        'reserve',
+        this.givenMonth,
+        this.givenYear
+      );
 
-    // the reserve amount per month is an approximation
-    this.givenMonthTotalReserveAmount = this.compute.findTotalGiventMonth(
-      this.auth.currentUser.reserve,
-      this.givenMonth,
-      this.givenYear
-    );
-    this.givenMonthTotalFeesAmount = this.compute.findTotalGiventMonth(
-      this.auth.currentUser.feesData,
-      this.givenMonth,
-      this.givenYear
-    );
     this.summaryContent = [
       `${this.givenMonthTotalPaymentAmount}`,
       `${this.givenMonthTotalLendingAmount}`,
       `${this.givenMonthTotalBenefitAmount}`,
       `${this.givenMonthTotalExpenseAmount}`,
       `${this.givenMonthTotalReserveAmount}`,
-      `${this.givenMonthTotalFeesAmount}`,
     ];
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
@@ -120,9 +125,6 @@ export class TrackingMonthComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalReserveAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalFeesAmount
       )}`,
     ];
   }

@@ -32,8 +32,7 @@ export class PaymentActivityComponent implements OnInit {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      // this.payments = Object.values(this.client.payments!);
-      // this.paymentDates = Object.keys(this.client.payments!);
+
       let paymentsArray = Object.entries(this.client.payments!);
       paymentsArray =
         this.compute.sortArrayByDateDescendingOrder(paymentsArray);

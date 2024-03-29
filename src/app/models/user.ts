@@ -6,8 +6,10 @@ export class User {
   numberOfClients?: string;
   numberOfCardClients?: string;
   amountInvested?: string;
+  amountInvestedDollars?: string;
   moneyInHands?: string;
   investments?: { [key: string]: string } = {};
+  investmentsDollar?: { [key: string]: string } = {};
   performances?: { [key: string]: string } = {};
   amountLended?: string;
   clientsSavings?: string;
@@ -17,12 +19,26 @@ export class User {
   reserveAmount?: string;
   reserveAmountDollar?: string;
   reserve?: { [key: string]: string } = {};
+  reserveinDollar?: { [key: string]: string } = {};
   fees?: string;
+  feesData?: { [key: string]: string } = {};
+  mode?: string;
+  roles?: string[] = ['user'];
   cardsMoney?: string;
   totalDebtLeft?: string;
+  admin?: string;
   dailyLending?: { [key: string]: string } = {};
   dailyReimbursement?: { [key: string]: string } = {};
   dailyCardPayments?: { [key: string]: string } = {};
   dailyCardReturns?: { [key: string]: string } = {};
   dailyCardBenefits?: { [key: string]: string } = {};
 }
+
+export type UserDailyField =
+  | 'dailyLending'
+  | 'dailyReimbursement'
+  | 'dailyCardPayments'
+  | 'dailyCardReturns'
+  | 'dailyCardBenefits'
+  | 'expenses'
+  | 'reserve';

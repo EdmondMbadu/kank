@@ -63,9 +63,6 @@ export class SummaryCardComponent implements OnInit {
     this.valuesConvertedToDollars = [
       ``,
       ``,
-      // `${this.compute.convertCongoleseFrancToUsDollars(
-      //   this.auth.currentUser.cardsMoney
-      // )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         clientCardSavings.toString()
       )}`,
@@ -90,10 +87,8 @@ export class SummaryCardComponent implements OnInit {
   findMoneyToReturnToClients() {
     let total = 0;
     this.currentClientsCard.forEach((client) => {
-      console.log('client', client.firstName);
       total += Number(client.amountPaid) - Number(client.amountToPay);
     });
-    console.log('total', total);
     return total;
   }
 }

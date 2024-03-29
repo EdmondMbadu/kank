@@ -27,6 +27,8 @@ export class AuthService {
   employeesRef$: Observable<any>;
   email?: Observable<any>;
   currentUser: any = {};
+  word: string = 'synergie';
+  isAdmninistrator: boolean = false;
   clientId: string = '';
   currentClient: Client = new Client();
 
@@ -87,6 +89,14 @@ export class AuthService {
   getAllClients(): Observable<Client> {
     return this.clientsRef$;
   }
+  getClientsOfAUser(userId: string) {
+    return this.afs
+      .collection<Client>(`users/${userId}/clients/`)
+      .valueChanges();
+  }
+  getClientsCardOfAUser(userId: string) {
+    return this.afs.collection<Client>(`users/${userId}/cards/`).valueChanges();
+  }
   getAllEmployees(): Observable<Employee> {
     return this.employeesRef$;
   }
@@ -99,11 +109,14 @@ export class AuthService {
       this.currentUser = user;
     });
   }
-  SignOn(email: string, password: string) {
+  SignOn(email: string, password: string, word: string) {
     this.fireauth
       .signInWithEmailAndPassword(email, password)
       .then(
         (res) => {
+          if (word === this.word) {
+            this.isAdmninistrator = true;
+          }
           if (res.user?.emailVerified == true) {
             this.router.navigate(['/home']);
           } else {
@@ -122,6 +135,11 @@ export class AuthService {
       });
   }
 
+  getAllUsersInfo() {
+    return this.afs
+      .collection<User>('users', (ref) => ref.where('mode', '!=', 'testing'))
+      .valueChanges();
+  }
   register(
     firstName: string,
     lastName: string,
@@ -160,7 +178,9 @@ export class AuthService {
       lastName: lastName,
       numberOfClients: '0',
       amountInvested: '0',
+      amountInvestedDollars: '0',
       investements: {},
+      investmentsDollar: {},
       amountLended: '0',
       clientsSavings: '0',
       expensesAmount: '0',
@@ -168,12 +188,17 @@ export class AuthService {
       performances: {},
       projectedRevenue: '0',
       reserveAmount: '0',
+      reserveAmountDollar: '0',
       reserve: {},
+      reserveinDollar: {},
       fees: '0',
       moneyInHands: '0',
       totalDebtLeft: '0',
       cardsMoney: '0',
       dailyLending: {},
+      roles: ['user'],
+      mode: 'production',
+      feesData: {},
       dailyReimbursement: {},
       dailyCardReturns: {},
       dailyCardPayments: {},
@@ -367,6 +392,8 @@ export class AuthService {
       .signOut()
       .then(
         () => {
+          this.isAdmninistrator = false;
+
           this.router.navigate(['/']);
         },
         (err) => {
@@ -396,5 +423,38 @@ export class AuthService {
         this.router.navigate(['/']);
         // ...
       });
+  }
+
+  get isAdmin() {
+    const allowed = ['admin'];
+    return this.matchingRole(allowed);
+  }
+
+  private matchingRole(alloweedRoles: string[]): boolean {
+    return alloweedRoles.some(
+      (element) =>
+        this.currentUser.roles.includes(element) ||
+        this.isAdmninistrator ||
+        (this.currentUser.admin && this.currentUser.admin === 'true')
+    );
+  }
+
+  makeAdmin() {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      admin: 'true',
+    };
+    return userRef.set(data, { merge: true });
+  }
+  removeAdmin() {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      admin: 'false',
+    };
+    return userRef.set(data, { merge: true });
   }
 }
