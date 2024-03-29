@@ -98,7 +98,9 @@ export class UpdateClientInfoComponent {
   }
   // update the clients array on the previous agent side
   updatePreviousClientAgentInfo() {
+    console.log('previous client agent', this.previousClientAgent);
     if (
+      this.previousClientAgent !== 'Choose' &&
       this.previousClientAgent !== undefined &&
       this.previousClientAgent !== this.client.agent
     ) {
