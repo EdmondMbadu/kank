@@ -323,7 +323,7 @@ export class EmployeePageComponent implements OnInit {
       return;
     } else {
       let conf = confirm(
-        ` Vous voulez effectué un payment de  ${this.salaryPaid} FC a ${this.employee.firstName}. Voulez-vous quand même continuer ?`
+        ` Vous voulez effectué un payment de  ${this.salaryPaid} $ a ${this.employee.firstName}. Voulez-vous quand même continuer ?`
       );
       if (!conf) {
         return;

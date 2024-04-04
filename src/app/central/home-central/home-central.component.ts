@@ -18,15 +18,18 @@ export class HomeCentralComponent implements OnInit {
     private time: TimeService,
     private compute: ComputationService
   ) {}
-
+  isFetchingClients = false;
   currentClients: Array<Client[]> = [];
   allUsers: User[] = [];
   ngOnInit(): void {
     this.allClients = [];
+    this.isFetchingClients = false;
     if (this.auth.isAdmin) {
       this.auth.getAllUsersInfo().subscribe((data) => {
+        let test = this.isFetchingClients;
         this.allUsers = data;
         this.getAllClients();
+        console.log('entering here is fetching', test);
       });
     }
   }
@@ -37,25 +40,20 @@ export class HomeCentralComponent implements OnInit {
   elements: number = 10;
 
   getAllClients() {
-    // Temporary array to hold all fetched clients before filtering
+    if (this.isFetchingClients) return;
+    this.isFetchingClients = true;
+
     let tempClients: Client[] = [];
     this.allClients = [];
-
-    // Counter to keep track of completed requests
     let completedRequests = 0;
-
+    console.log('hello here', this.allUsers);
     this.allUsers.forEach((user) => {
       this.auth.getClientsOfAUser(user.uid!).subscribe((clients) => {
-        // Concatenate all clients into the temporary array
         tempClients = tempClients.concat(clients);
-
-        // Increment counter to track completed requests
         completedRequests++;
-
-        // Once all requests are completed, proceed to filter and initialize inputs
         if (completedRequests === this.allUsers.length) {
-          // Now tempClients contains all clients, but there may be duplicates
           this.filterAndInitializeClients(tempClients);
+          this.isFetchingClients = false;
         }
       });
     });

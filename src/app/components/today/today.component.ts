@@ -23,6 +23,7 @@ export class TodayComponent {
   dailyPayment: string = '0';
   dailyFees: string = '0';
   dailyReserve: string = '0';
+  dailyInvestment: string = '0';
 
   totalPerfomance: number = 0;
 
@@ -32,6 +33,7 @@ export class TodayComponent {
     '/daily-lendings',
     '/client-info-current',
     '/add-reserve',
+    '/add-investment',
   ];
   summary: string[] = [
     "N'ont pas Payé Aujourdhui",
@@ -39,6 +41,7 @@ export class TodayComponent {
     'Emprunt Du Jour',
     'Frais De Membre Du Jour',
     'Reserve Du Jour',
+    'Entrée Du Jour',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -48,6 +51,7 @@ export class TodayComponent {
     '../../../assets/img/daily-payment.png',
     '../../../assets/img/member.svg',
     '../../../assets/img/reserve.svg',
+    '../../../assets/img/invest.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -60,6 +64,9 @@ export class TodayComponent {
       .findTotalForToday(this.auth.currentUser.reserve)
       .toString();
 
+    this.dailyInvestment = this.compute
+      .findTotalForToday(this.auth.currentUser.investments)
+      .toString();
     this.dailyLending =
       this.dailyLending === undefined ? '0' : this.dailyLending;
     this.dailyPayment =
@@ -67,12 +74,15 @@ export class TodayComponent {
     this.dailyFees = this.dailyFees === undefined ? '0' : this.dailyFees;
     this.dailyReserve =
       this.dailyReserve === undefined ? '0' : this.dailyReserve;
+    this.dailyInvestment =
+      this.dailyInvestment === undefined ? '0' : this.dailyInvestment;
     this.summaryContent = [
       ``,
       ` ${this.dailyPayment}`,
       ` ${this.dailyLending}`,
       ` ${this.dailyFees}`,
       ` ${this.dailyReserve}`,
+      `${this.dailyInvestment}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -81,6 +91,7 @@ export class TodayComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFees)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestment)}`,
     ];
   }
 }
