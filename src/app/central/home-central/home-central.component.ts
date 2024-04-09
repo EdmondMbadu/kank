@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription, take } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
@@ -22,22 +23,16 @@ export class HomeCentralComponent implements OnInit {
   currentClients: Array<Client[]> = [];
   allUsers: User[] = [];
   ngOnInit(): void {
-    this.allClients = [];
-    this.isFetchingClients = false;
-    if (this.auth.isAdmin) {
-      this.auth.getAllUsersInfo().subscribe((data) => {
-        let test = this.isFetchingClients;
-        this.allUsers = data;
-        this.getAllClients();
-        console.log('entering here is fetching', test);
-      });
-    }
+    this.auth.getAllUsersInfo().subscribe((data) => {
+      this.allUsers = data;
+      // this is really weird. maybe some apsect of angular. but it works for now
+      if (this.allUsers.length > 1) this.getAllClients();
+    });
   }
+
   allClients?: Client[];
   allCurrentClients?: Client[] = [];
   valuesConvertedToDollars: string[] = [];
-
-  elements: number = 10;
 
   getAllClients() {
     if (this.isFetchingClients) return;
@@ -46,7 +41,6 @@ export class HomeCentralComponent implements OnInit {
     let tempClients: Client[] = [];
     this.allClients = [];
     let completedRequests = 0;
-    console.log('hello here', this.allUsers);
     this.allUsers.forEach((user) => {
       this.auth.getClientsOfAUser(user.uid!).subscribe((clients) => {
         tempClients = tempClients.concat(clients);
