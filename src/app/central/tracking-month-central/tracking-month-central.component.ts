@@ -52,7 +52,7 @@ export class TrackingMonthCentralComponent {
     'Depense Du Mois',
     'Reserve Du Mois',
     'Frais De Membre Du Mois',
-    'Entrée Du Mois',
+    'Investissement Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
   givenMonthTotalPaymentAmount: string = '';
