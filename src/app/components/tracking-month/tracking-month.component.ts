@@ -36,6 +36,7 @@ export class TrackingMonthComponent {
     '/client-info-current',
     '/add-expense',
     '/add-reserve',
+    '/add-investment',
   ];
   summary: string[] = [
     'Paiment Du Mois',
@@ -44,6 +45,7 @@ export class TrackingMonthComponent {
     'Depense Du Mois',
     'Reserve Du Mois',
     'Frais De Membre Du Mois',
+    'Entrée Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
   givenMonthTotalPaymentAmount: string = '';
@@ -52,6 +54,7 @@ export class TrackingMonthComponent {
   givenMonthTotalExpenseAmount: string = '';
   givenMonthTotalReserveAmount: string = '';
   givenMonthTotalFeesAmount: string = '';
+  givenMonthTotalInvestmentAmount: string = '';
   imagePaths: string[] = [
     '../../../assets/img/audit.png',
     '../../../assets/img/lending-date.png',
@@ -59,6 +62,7 @@ export class TrackingMonthComponent {
     '../../../assets/img/expense.svg',
     '../../../assets/img/reserve.svg',
     '../../../assets/img/member.svg',
+    '../../../assets/img/invest.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -97,6 +101,11 @@ export class TrackingMonthComponent {
       this.givenMonth,
       this.givenYear
     );
+    this.givenMonthTotalInvestmentAmount = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.investments,
+      this.givenMonth,
+      this.givenYear
+    );
     this.summaryContent = [
       `${this.givenMonthTotalPaymentAmount}`,
       `${this.givenMonthTotalLendingAmount}`,
@@ -104,6 +113,7 @@ export class TrackingMonthComponent {
       `${this.givenMonthTotalExpenseAmount}`,
       `${this.givenMonthTotalReserveAmount}`,
       `${this.givenMonthTotalFeesAmount}`,
+      `${this.givenMonthTotalInvestmentAmount}`,
     ];
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
@@ -123,6 +133,9 @@ export class TrackingMonthComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalFeesAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalInvestmentAmount
       )}`,
     ];
   }
