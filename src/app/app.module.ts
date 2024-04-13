@@ -65,6 +65,11 @@ import { TrackingMonthCentralComponent } from './central/tracking-month-central/
 import { TodayCardCentralComponent } from './central/today-card-central/today-card-central.component';
 import { TrackingCardMonthCentralComponent } from './central/tracking-card-month-central/tracking-card-month-central.component';
 import { SummaryCardCentralComponent } from './central/summary-card-central/summary-card-central.component';
+import { RegisterClientComponent } from './components/register-client/register-client.component';
+import { InfoRegisterComponent } from './components/info-register/info-register.component';
+// import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
+import { TransformRegisterClientComponent } from './components/transform-register-client/transform-register-client.component';
+import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
 
 @NgModule({
   declarations: [
@@ -119,6 +124,11 @@ import { SummaryCardCentralComponent } from './central/summary-card-central/summ
     TodayCardCentralComponent,
     TrackingCardMonthCentralComponent,
     SummaryCardCentralComponent,
+    RegisterClientComponent,
+    InfoRegisterComponent,
+    RegiserPortalComponent,
+    // RegiserPortalComponent,
+    TransformRegisterClientComponent,
   ],
   imports: [
     BrowserModule,

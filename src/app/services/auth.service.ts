@@ -248,6 +248,36 @@ export class AuthService {
     );
     return clientRef.set(data, { merge: true });
   }
+  registerNewClient(client: Client) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const data = {
+      uid: this.afs.createId().toString(),
+      firstName: client.firstName,
+      lastName: client.lastName,
+      middleName: client.middleName,
+      phoneNumber: client.phoneNumber,
+      businessCapital: client.businessCapital,
+      homeAddress: client.homeAddress,
+      businessAddress: client.businessAddress,
+      membershipFee: client.membershipFee,
+      applicationFee: client.applicationFee,
+      savings: client.savings,
+      creditScore: '50',
+      type: 'register',
+      profession: client.profession,
+      dateJoined: `${month}-${day}-${year}`,
+      payments: {},
+      clients: [],
+    };
+    this.clientId = data.uid;
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.currentUser.uid}/clients/${data.uid}`
+    );
+    return clientRef.set(data, { merge: true });
+  }
 
   addNewClientCard(card: Card) {
     const now = new Date();

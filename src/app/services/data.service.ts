@@ -168,6 +168,38 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
 
+  transformRegisterClientToFullClient(client: Client) {
+    const data = {
+      firstName: client.firstName,
+      lastName: client.lastName,
+      middleName: client.middleName,
+      phoneNumber: client.phoneNumber,
+      businessCapital: client.businessCapital,
+      homeAddress: client.homeAddress,
+      businessAddress: client.businessAddress,
+      debtCycle: '1',
+      loanAmount: client.loanAmount,
+      creditScore: client.creditScore,
+      amountToPay: client.amountToPay,
+      interestRate: client.interestRate,
+      debtCycleStartDate: client.debtCycleStartDate,
+      debtCycleEndDate: client.debtCycleEndDate,
+      paymentPeriodRange: client.paymentPeriodRange,
+      profession: client.profession,
+      agent: client.agent,
+      amountPaid: '0',
+      numberOfPaymentsMissed: '0',
+      numberOfPaymentsMade: '0',
+      payments: {},
+      type: '',
+      debtLeft: client.amountToPay,
+    };
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+    return clientRef.set(data, { merge: true });
+  }
+
   updateUserInfoForAddInvestment(amount: string) {
     let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
@@ -384,6 +416,31 @@ export class DataService {
     return userRef.set(data, { merge: true });
   }
 
+  updateUserInforForRegisterClientToFullClient(client: Client, date: string) {
+    let dailyLending: any = this.computeDailyLending(client, date);
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+    const data = {
+      amountLended: (
+        Number(this.auth.currentUser.amountLended) + Number(client.loanAmount!)
+      ).toString(),
+
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) - Number(client.loanAmount)
+      ).toString(),
+      projectedRevenue: (
+        Number(this.auth.currentUser.projectedRevenue) +
+        Number(client.amountToPay)
+      ).toString(),
+      dailyLending: { [date]: `${dailyLending}` },
+      totalDebtLeft: (
+        Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
+      ).toString(),
+    };
+    return userRef.set(data, { merge: true });
+  }
+
   updateUserInfoForNewClient(client: Client, date: string) {
     let dailyLending: any = this.computeDailyLending(client, date);
     let dailyFees: any = this.computeDailyFees(client, date);
@@ -425,6 +482,48 @@ export class DataService {
 
     return userRef.set(data, { merge: true });
   }
+
+  updateUserInfoForRegisterClient(client: Client, date: string) {
+    // let dailyLending: any = this.computeDailyLending(client, date);
+    let dailyFees: any = this.computeDailyFees(client, date);
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+    const data = {
+      numberOfClients: (
+        Number(this.auth.currentUser.numberOfClients) + 1
+      ).toString(),
+      // amountLended: (
+      //   Number(this.auth.currentUser.amountLended) + Number(client.loanAmount!)
+      // ).toString(),
+      clientsSavings: (
+        Number(this.auth.currentUser.clientsSavings) + Number(client.savings)
+      ).toString(),
+      fees: (
+        Number(this.auth.currentUser.fees) +
+        Number(client.membershipFee) +
+        Number(client.applicationFee)
+      ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) +
+        Number(client.membershipFee) +
+        Number(client.savings) +
+        Number(client.applicationFee)
+      ).toString(),
+      // projectedRevenue: (
+      //   Number(this.auth.currentUser.projectedRevenue) +
+      //   Number(client.amountToPay)
+      // ).toString(),
+      // dailyLending: { [date]: `${dailyLending}` },
+      feesData: { [date]: `${dailyFees}` },
+      // totalDebtLeft: (
+      //   Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
+      // ).toString(),
+    };
+
+    return userRef.set(data, { merge: true });
+  }
+
   updateUserInfoForNewCardClient(card: Card) {
     let date = this.time.todaysDateMonthDayYear();
     let depot: any = this.computeDailyCardPayments(date, card.amountToPay!);

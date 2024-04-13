@@ -31,8 +31,10 @@ export class Client {
   interestRate?: string;
   agent?: string;
   amountToPay?: string;
+  loanAmountPending?: string;
   paymentPeriodRange?: string;
   debtCycleStartDate?: string;
   debtCycleEndDate?: string;
   employee?: Employee;
+  type?: string;
 }

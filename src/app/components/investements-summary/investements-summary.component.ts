@@ -20,6 +20,7 @@ export class InvestementsSummaryComponent implements OnInit {
   ) {}
   clients?: Client[];
   currentClients?: Client[] = [];
+  currentClientsRegistered?: Client[] = [];
   ngOnInit() {
     if (this.auth.isAdmninistrator) {
       this.auth.makeAdmin();
@@ -91,11 +92,13 @@ export class InvestementsSummaryComponent implements OnInit {
   linkPath: string[] = [
     '/client-info',
     '/client-info-current',
+    '/info-register',
     '/add-investment',
     '/client-info-current',
     '/client-info-current',
   ];
   imagePaths: string[] = [
+    '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
     '../../../assets/img/invest.svg',
@@ -106,6 +109,7 @@ export class InvestementsSummaryComponent implements OnInit {
   summary: string[] = [
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
+    'Nombres des Clients Enregistré',
     'Argent Investi',
     'Prêt Restant',
 
@@ -147,6 +151,7 @@ export class InvestementsSummaryComponent implements OnInit {
       this.summaryContent = [
         `${this.auth.currentUser.numberOfClients}`,
         `${this.findClientsWithDebts()}`,
+        `${this.currentClientsRegistered?.length}`,
         ` ${invested}`,
         ` ${debtTotal}`,
 
@@ -154,6 +159,7 @@ export class InvestementsSummaryComponent implements OnInit {
       ];
 
       this.valuesConvertedToDollars = [
+        ``,
         ``,
         ``,
         `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
@@ -165,7 +171,7 @@ export class InvestementsSummaryComponent implements OnInit {
         this.auth.currentUser.admin === undefined ||
         this.auth.currentUser.admin === 'false'
       ) {
-        this.summary = this.compute.filterOutElements(this.summary, 2);
+        this.summary = this.compute.filterOutElements(this.summary, 3);
       }
     }
   }
@@ -174,6 +180,8 @@ export class InvestementsSummaryComponent implements OnInit {
     this.clients?.forEach((client) => {
       if (Number(client.debtLeft) > 0) {
         this.currentClients!.push(client);
+      } else if (client.type !== undefined && client.type === 'register') {
+        this.currentClientsRegistered?.push(client);
       }
     });
     return this.currentClients?.length;

@@ -33,6 +33,7 @@ export class TrackingMonthCentralComponent {
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
   givenYear = this.year;
+  givenDay: number = this.currentDate.getDate();
   yearsList: number[] = [2023, 2024];
   monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   monthYear = `${this.month} ${this.year}`;

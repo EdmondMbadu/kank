@@ -203,6 +203,7 @@ export class ComputationService {
 
     return total.toString();
   }
+
   findTotalCurrentMonthAllDailyPointsEmployees(employees: Employee[]) {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
@@ -429,22 +430,31 @@ export class ComputationService {
     return total;
   }
 
-  findTodayTotalResultsGivenField(users: User[], field: UserDailyField) {
+  findTodayTotalResultsGivenField(
+    users: User[],
+    field: UserDailyField
+  ): string {
     let total = 0;
-    const today = this.today; // Assuming this is defined somewhere appropriately
+    const today = this.time.todaysDateMonthDayYear(); // Get today's date in the correct format
 
     users.forEach((user) => {
-      const fieldData = user[field];
-      if (fieldData) {
-        const todayValue = fieldData[today];
-        if (todayValue) {
-          total += Number(todayValue);
-        }
+      const dailyData = user[field];
+      if (dailyData) {
+        Object.entries(dailyData).forEach(([date, amount]) => {
+          // Normalize the date to ignore the time component if present
+          const normalizedDate = date.split('-').slice(0, 3).join('-');
+          if (normalizedDate === today) {
+            // Check if the amount contains a colon indicating additional text
+            const numericAmount = amount.split(':')[0]; // Assumes the amount is before the colon if it exists
+            total += parseInt(numericAmount, 10);
+          }
+        });
       }
     });
 
-    return total;
+    return total.toString();
   }
+
   filterOutElements(summary: string[], index: number) {
     // fliter out elements
 

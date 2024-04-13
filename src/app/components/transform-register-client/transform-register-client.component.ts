@@ -8,23 +8,21 @@ import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-debt-cycle',
-  templateUrl: './debt-cycle.component.html',
-  styleUrls: ['./debt-cycle.component.css'],
+  selector: 'app-transform-register-client',
+  templateUrl: './transform-register-client.component.html',
+  styleUrls: ['./transform-register-client.component.css'],
 })
-export class DebtCycleComponent implements OnInit {
+export class TransformRegisterClientComponent implements OnInit {
   rateDisplay: boolean = false;
   id: any = '';
   employees: Employee[] = [];
   amountToPayDisplay: boolean = false;
   debtCycleDisplay: boolean = false;
   client = new Client();
-  applicationFee: string = '';
-  memberShipFee: string = '';
-  savings: string = '';
+
   loanAmount: string = '';
   payRange: string = '';
-  middleName: string = '';
+
   interestRate: string = '';
   amountToPay: string = '';
   debtCycleStartDate: string = '';
@@ -62,31 +60,6 @@ export class DebtCycleComponent implements OnInit {
     });
   }
 
-  displayApplicationFeeOtherAmount() {
-    if (this.applicationFee === 'Autre Montant') {
-      this.applicationFeeOtherDisplay = true;
-      this.applicationFee = '';
-    } else {
-      this.applicationFeeOtherDisplay = false;
-    }
-  }
-  displaymemberShipFeeOtherAmount() {
-    if (this.memberShipFee === 'Autre Montant') {
-      this.memberShipFeeOtherDisplay = true;
-      this.memberShipFee = '';
-    } else {
-      this.memberShipFeeOtherDisplay = false;
-    }
-  }
-  displaySavingsOtherAmount() {
-    if (this.savings === 'Autre Montant') {
-      this.savingsOtherDisplay = true;
-      this.savings = '';
-    } else {
-      this.savingsOtherDisplay = false;
-    }
-  }
-
   displayLoanOtherAmount() {
     if (this.loanAmount === 'Autre Montant') {
       this.loanAmountOtherDisplay = true;
@@ -97,18 +70,9 @@ export class DebtCycleComponent implements OnInit {
   }
 
   initiateClientNewDebtCycle() {
-    let inputValid = this.data.numbersValid(
-      this.loanAmount,
-      this.savings,
-      this.applicationFee,
-      this.memberShipFee
-    );
+    let inputValid = this.data.numbersValid(this.loanAmount);
     if (
       this.loanAmount === '' ||
-      this.applicationFee === '' ||
-      this.middleName === '' ||
-      this.memberShipFee === '' ||
-      this.savings === '' ||
       this.amountToPay === '' ||
       this.interestRate === '' ||
       this.payRange === '' ||
@@ -125,14 +89,14 @@ export class DebtCycleComponent implements OnInit {
       return;
     } else {
       let conf = confirm(
-        `Vous allez emprunté ${this.loanAmount} FC a ${this.client.firstName} ${this.client.lastName}. Voulez-vous quand même continuer ?`
+        `Vous allez emprunté ${this.loanAmount} FC a ${this.client.firstName} ${this.client.middleName} ${this.client.lastName}. Voulez-vous quand même continuer ?`
       );
       if (!conf) {
         return;
       }
       this.setClientNewDebtCycleValues();
       this.data
-        .initiateNewDebtCycle(this.client)
+        .transformRegisterClientToFullClient(this.client)
 
         .then(
           (res: any) => {
@@ -157,7 +121,7 @@ export class DebtCycleComponent implements OnInit {
 
       let date = this.time.todaysDateMonthDayYear();
       this.data
-        .updateUserInfoForClientNewDebtCycle(this.client, this.savings, date)
+        .updateUserInforForRegisterClientToFullClient(this.client, date)
         .then(
           (res: any) => {
             console.log('Informations utilisateur mises à jour avec succès');
@@ -206,21 +170,12 @@ export class DebtCycleComponent implements OnInit {
     this.payRange = '';
     this.debtCycleStartDate = '';
     this.debtCycleEndDate = '';
-    this.applicationFee = '';
-    this.memberShipFee = '';
-    this.savings = '';
+
     this.loanAmount = '';
     this.amountToPay = '';
     this.interestRate = '';
-    this.middleName = '';
   }
   setClientNewDebtCycleValues() {
-    this.client.savings = (
-      Number(this.client.savings) + Number(this.savings)
-    ).toString();
-    this.client.applicationFee = this.applicationFee;
-    this.client.middleName = this.middleName;
-    this.client.membershipFee = this.memberShipFee;
     this.client.amountToPay = this.amountToPay;
     this.client.loanAmount = this.loanAmount;
     this.client.paymentPeriodRange = this.payRange;

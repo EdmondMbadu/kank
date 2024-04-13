@@ -49,6 +49,10 @@ import { TrackingMonthCentralComponent } from './central/tracking-month-central/
 import { TodayCardCentralComponent } from './central/today-card-central/today-card-central.component';
 import { TrackingCardMonthCentralComponent } from './central/tracking-card-month-central/tracking-card-month-central.component';
 import { SummaryCardCentralComponent } from './central/summary-card-central/summary-card-central.component';
+import { RegisterClientComponent } from './components/register-client/register-client.component';
+import { InfoRegisterComponent } from './components/info-register/info-register.component';
+import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
+import { TransformRegisterClientComponent } from './components/transform-register-client/transform-register-client.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -123,13 +127,16 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   { path: 'client-info', component: ClientInfoComponent },
+  { path: 'info-register', component: InfoRegisterComponent },
   { path: 'summary-card', component: SummaryCardComponent },
   { path: 'summary-card-central', component: SummaryCardCentralComponent },
   { path: 'client-info-current', component: ClientInfoCurrentComponent },
   { path: 'client-info-card', component: ClientInfoCardComponent },
   { path: 'new-client', component: NewClientComponent },
+  { path: 'register-client', component: RegisterClientComponent },
   { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
+  { path: 'register-portal/:id', component: RegiserPortalComponent },
   { path: 'client-portal-card/:id', component: ClientPortalCardComponent },
   { path: 'add-investment', component: AmountInvestedComponent },
   { path: 'add-expense', component: ExpensesComponent },
@@ -148,6 +155,10 @@ const routes: Routes = [
   },
 
   { path: 'debt-cycle/:id', component: DebtCycleComponent },
+  {
+    path: 'transform-register-client/:id',
+    component: TransformRegisterClientComponent,
+  },
   { path: 'card-cycle/:id', component: CardCycleComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'create-account', component: CreateAccountComponent },

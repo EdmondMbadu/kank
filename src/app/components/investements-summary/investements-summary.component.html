@@ -15,9 +15,9 @@
             <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
             
             <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" *ngIf="i>1"> FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" *ngIf="i>1 "> $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
-            <h2 class="font-bold  text-lg text-green-700 text-center" *ngIf="i<=1 ">  {{summaryContent[i] }}</h2>
+            <h2 class="font-bold text-lg text-green-700 text-center" *ngIf="i>2"> FC {{summaryContent[i] | number:'1.0-0'}} </h2>
+            <h2 class="font-bold text-lg text-yellow-900 text-center" *ngIf="i>2 "> $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
+            <h2 class="font-bold  text-lg text-green-700 text-center" *ngIf="i<=2 ">  {{summaryContent[i] }}</h2>
         </a>
     </div>
     

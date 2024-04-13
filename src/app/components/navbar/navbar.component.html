@@ -114,18 +114,25 @@
                 </svg></button>
                 <div *ngIf="creditDropDown"  id="doubleDropdown" class="z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
                   <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="doubleDropdownButton">
-                    <li>
+                    <!-- <li>
                       <a routerLink="/home"   class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Résumé</a>
-                    </li>
+                    </li> -->
                     <li>
                       <a routerLink="/client-info-current"   class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Info Client</a>
+                    </li>
+                    <li>
+                      <a routerLink="/info-register" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Info Client Enregistrer</a>
                     </li>
                     <li>
                       <a routerLink="/new-client"  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Nouveau Client</a>
                     </li>
                     <li>
+                      <a routerLink="/register-client" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Enregistrer Client</a>
+                    </li>
+                    <li>
                       <a routerLink="/today" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Jour</a>
                     </li>
+                   
                     <li>
                       <a *ngIf="this.auth.currentUser.admin==='true'" routerLink="/tracking-month" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Mois</a>
                     </li>
@@ -133,7 +140,7 @@
                       <a routerLink="/retrace" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Retracer  Activités</a>
                     </li>
                     <li>
-                      <a  routerLink="/benefit"  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Bénéfice & Performance</a>
+                      <a *ngIf="this.auth.currentUser.admin==='true'"  routerLink="/benefit"  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Bénéfice & Performance</a>
                     </li>
                   </ul>
               </div>
