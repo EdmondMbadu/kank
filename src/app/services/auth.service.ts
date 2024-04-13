@@ -397,6 +397,29 @@ export class AuthService {
     };
     return userRef.set(data, { merge: true });
   }
+  UpdateUserInfoForDeletedRegisterClient(client: Client) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    let total: number =
+      Number(client.savings) +
+      Number(client.applicationFee) +
+      Number(client.membershipFee);
+    const data = {
+      numberOfClients: (
+        Number(this.currentUser.numberOfClients) - 1
+      ).toString(),
+      moneyInHands: (Number(this.currentUser.moneyInHands) - total).toString(),
+      clientsSavings: (
+        Number(this.currentUser.clientsSavings) - Number(client.savings)
+      ).toString(),
+      fees: (
+        Number(this.currentUser.fees) -
+        (Number(client.applicationFee) + Number(client.membershipFee))
+      ).toString(),
+    };
+    return userRef.set(data, { merge: true });
+  }
 
   sendEmailForVerification(user: any) {
     user

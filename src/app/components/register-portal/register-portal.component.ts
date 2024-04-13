@@ -75,7 +75,7 @@ export class RegiserPortalComponent {
       });
 
     this.auth
-      .UpdateUserInfoForDeletedClient(this.client)
+      .UpdateUserInfoForDeletedRegisterClient(this.client)
       .then(() => {
         console.log('updated user info');
       })
