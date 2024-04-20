@@ -22,6 +22,7 @@ export class PerformanceService {
   shouldPayToday: Client[] = [];
   haveNotPaidToday: Client[] = [];
   paidToday: Client[] = [];
+  clientPaymentAmount: string = '0';
   today = this.time.todaysDateMonthDayYear();
 
   filteredItems?: Client[];
@@ -41,6 +42,7 @@ export class PerformanceService {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
+      this.clientPaymentAmount = '0';
     });
   }
 
@@ -55,10 +57,10 @@ export class PerformanceService {
     });
   }
 
-  updateUserPerformance(client: Client) {
+  updateUserPerformance(client: Client, paymentAmount: string = '0') {
     this.retrieveClients();
     this.computePerformance();
-
+    this.clientPaymentAmount = paymentAmount;
     this.calculateTotalClientsForEachAgent(this.shouldPayToday);
 
     this.updateEmployeesPointsForToday(client);
@@ -108,6 +110,15 @@ export class PerformanceService {
   }
 
   updateEmployeesPointsForToday(client: Client) {
+    const minpay =
+      Number(client.amountToPay) / Number(client.paymentPeriodRange);
+    let num = Number(this.clientPaymentAmount) / Number(minpay);
+
+    let rounded = this.roundFloorToDecimal(num);
+    // if (num === 0) {
+    //   console.log('new client rounding to 1 for more points');
+    //   rounded = 1;
+    // }
     for (let em of this.employees!) {
       em.dailyPoints![`${this.today}`] =
         em.dailyPoints![`${this.today}`] === undefined
@@ -118,7 +129,7 @@ export class PerformanceService {
         client.debtCycleStartDate !== this.today
       ) {
         em.dailyPoints![`${this.today}`] = (
-          Number(em.dailyPoints![`${this.today}`]) + 1
+          Number(em.dailyPoints![`${this.today}`]) + rounded
         ).toString();
       }
     }
@@ -305,5 +316,17 @@ export class PerformanceService {
       return 'D';
     }
     return 'F';
+  }
+
+  roundFloorToDecimal(number: number, decimals: number = 1): number {
+    // Factor calculation with type assertion for clarity
+    const factor = Math.pow(10, decimals);
+    const multiplied = number * factor;
+
+    // Round down using Math.floor()
+    const rounded = Math.floor(multiplied);
+
+    // Divide by the factor to get the result with one decimal
+    return rounded / factor;
   }
 }

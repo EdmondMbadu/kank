@@ -131,7 +131,7 @@ export class PaymentComponent {
     this.data
       .clientPayment(this.client, this.savingsAmount, date, this.paymentAmount)
       .then(() => {
-        this.performance.updateUserPerformance(this.client);
+        this.performance.updateUserPerformance(this.client, this.paymentAmount);
       });
     this.router.navigate(['/client-portal/' + this.id]);
   }
