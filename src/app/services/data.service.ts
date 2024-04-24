@@ -182,6 +182,7 @@ export class DataService {
       creditScore: client.creditScore,
       amountToPay: client.amountToPay,
       interestRate: client.interestRate,
+      paymentDay: client.paymentDay,
       debtCycleStartDate: client.debtCycleStartDate,
       debtCycleEndDate: client.debtCycleEndDate,
       paymentPeriodRange: client.paymentPeriodRange,
@@ -194,6 +195,7 @@ export class DataService {
       type: '',
       debtLeft: client.amountToPay,
     };
+
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`
     );

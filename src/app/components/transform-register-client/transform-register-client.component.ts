@@ -95,6 +95,8 @@ export class TransformRegisterClientComponent implements OnInit {
         return;
       }
       this.setClientNewDebtCycleValues();
+      let employee = this.findAgentWithId(this.client.agent!);
+
       this.data
         .transformRegisterClientToFullClient(this.client)
 
@@ -108,6 +110,16 @@ export class TransformRegisterClientComponent implements OnInit {
             );
           }
         )
+        .then(() => {
+          if (this.client.uid !== undefined) {
+            employee?.clients?.push(this.client.uid);
+            console.log(
+              'entering here, agent clients after update',
+              employee!.clients
+            );
+          }
+          this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
+        })
         .then(() => {
           this.performance
             .updateUserPerformance(this.client)
