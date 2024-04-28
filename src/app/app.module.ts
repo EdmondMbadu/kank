@@ -70,6 +70,7 @@ import { InfoRegisterComponent } from './components/info-register/info-register.
 // import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
 import { TransformRegisterClientComponent } from './components/transform-register-client/transform-register-client.component';
 import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
+import { RemoveCardComponent } from './card/remove-card/remove-card.component';
 
 @NgModule({
   declarations: [
@@ -129,6 +130,7 @@ import { RegiserPortalComponent } from './components/register-portal/register-po
     RegiserPortalComponent,
     // RegiserPortalComponent,
     TransformRegisterClientComponent,
+    RemoveCardComponent,
   ],
   imports: [
     BrowserModule,

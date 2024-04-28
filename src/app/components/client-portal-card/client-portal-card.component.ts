@@ -80,4 +80,18 @@ export class ClientPortalCardComponent {
       this.router.navigate(['/card-cycle/' + this.id]);
     }
   }
+
+  removeFromCard() {
+    if (this.status !== 'En Cours') {
+      alert(`Ce cycle est terminé, commencez un nouveau cycle.`);
+      return;
+    } else if (this.clientCard.amountPaid === this.clientCard.amountToPay) {
+      alert(
+        `Vous devez payer plus que le montant initial pour soustraire un montant`
+      );
+      return;
+    } else {
+      this.router.navigate(['/remove-card/' + this.id]);
+    }
+  }
 }

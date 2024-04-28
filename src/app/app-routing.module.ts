@@ -53,6 +53,7 @@ import { RegisterClientComponent } from './components/register-client/register-c
 import { InfoRegisterComponent } from './components/info-register/info-register.component';
 import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
 import { TransformRegisterClientComponent } from './components/transform-register-client/transform-register-client.component';
+import { RemoveCardComponent } from './card/remove-card/remove-card.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -143,6 +144,7 @@ const routes: Routes = [
   { path: 'add-reserve', component: ReserveComponent },
   { path: 'payment/:id', component: PaymentComponent },
   { path: 'payment-card/:id', component: PaymentCardComponent },
+  { path: 'remove-card/:id', component: RemoveCardComponent },
   { path: 'withdraw-savings/:id', component: WithdrawSavingsComponent },
   { path: 'payment-activity/:id', component: PaymentActivityComponent },
   {
