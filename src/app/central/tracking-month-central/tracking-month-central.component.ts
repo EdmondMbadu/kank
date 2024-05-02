@@ -72,7 +72,11 @@ export class TrackingMonthCentralComponent {
     '../../../assets/img/member.svg',
     '../../../assets/img/invest.svg',
   ];
-
+  sortedReserveMonth: {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] = [];
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
@@ -125,6 +129,13 @@ export class TrackingMonthCentralComponent {
         this.givenYear
       );
 
+    this.sortedReserveMonth =
+      this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+        this.allUsers,
+        'reserve',
+        this.givenMonth,
+        this.givenYear
+      );
     this.summaryContent = [
       `${this.givenMonthTotalPaymentAmount}`,
       `${this.givenMonthTotalLendingAmount}`,

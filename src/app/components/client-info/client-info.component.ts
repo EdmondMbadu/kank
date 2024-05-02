@@ -43,7 +43,8 @@ export class ClientInfoComponent implements OnInit {
     let total = 0;
     for (let i = 0; i < this.filteredItems!.length; i++) {
       this.filteredItems![i].trackingId = `${i}`;
-      total += Number(this.filteredItems![i].debtLeft);
+      if (this.filteredItems![i].debtLeft !== undefined)
+        total += Number(this.filteredItems![i].debtLeft);
     }
     console.log('The total debt left is', total);
   }

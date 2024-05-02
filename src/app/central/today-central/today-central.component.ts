@@ -32,6 +32,11 @@ export class TodayCentralComponent {
   dailyReserve: string = '0';
   dailyInvestement: string = '0';
 
+  sortedReserveToday: {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] = [];
   totalPerfomance: number = 0;
   linkPaths: string[] = ['/daily-payments', '/daily-lendings', '/add-expense'];
   summary: string[] = [
@@ -74,6 +79,11 @@ export class TodayCentralComponent {
     this.dailyInvestement =
       this.dailyInvestement === undefined ? '0' : this.dailyInvestement;
 
+    this.sortedReserveToday =
+      this.compute.findTodayTotalResultsGivenFieldSortedDescending(
+        this.allUsers,
+        'reserve'
+      );
     this.summaryContent = [
       ` ${this.dailyPayment}`,
       ` ${this.dailyLending}`,

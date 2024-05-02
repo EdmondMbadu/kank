@@ -204,6 +204,54 @@ export class ComputationService {
     return total.toString();
   }
 
+  findTotalGivenMonthForAllUsersSortedDescending(
+    users: User[],
+    field: UserDailyField,
+    givenMonth: number,
+    givenYear: number
+  ): {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] {
+    const results: {
+      firstName: string;
+      totalReserve: number;
+      totalReserveInDollars: string;
+    }[] = [];
+
+    users.forEach((user) => {
+      let userTotal = 0;
+      const dailyData = user[field];
+      if (dailyData) {
+        for (const [date, amount] of Object.entries(dailyData)) {
+          const [month, , year] = date.split('-').map(Number); // Extract month and year
+          if (month === givenMonth && year === givenYear) {
+            userTotal += parseInt(amount, 10); // Summing up the amounts for the given month and year
+          }
+        }
+      }
+      if (userTotal > 0) {
+        let userTotalInDollars = this.convertCongoleseFrancToUsDollars(
+          userTotal.toString()
+        );
+        userTotalInDollars = userTotalInDollars.toString();
+        results.push({
+          firstName: user.firstName!,
+          totalReserve: userTotal,
+          totalReserveInDollars: userTotalInDollars,
+        });
+      }
+    });
+
+    // Sort by reserve amount in dollars in descending order
+    results.sort(
+      (a, b) =>
+        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
+    );
+    return results;
+  }
+
   findTotalCurrentMonthAllDailyPointsEmployees(employees: Employee[]) {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
@@ -453,6 +501,53 @@ export class ComputationService {
     });
 
     return total.toString();
+  }
+
+  findTodayTotalResultsGivenFieldSortedDescending(
+    users: User[],
+    field: UserDailyField
+  ): {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] {
+    const today = this.time.todaysDateMonthDayYear(); // Get today's date in the correct format
+    const results: {
+      firstName: string;
+      totalReserve: number;
+      totalReserveInDollars: string;
+    }[] = [];
+
+    users.forEach((user) => {
+      const dailyData = user[field];
+      let totalReserve = 0;
+      if (dailyData) {
+        Object.entries(dailyData).forEach(([date, amount]) => {
+          const normalizedDate = date.split('-').slice(0, 3).join('-'); // Normalize the date
+          if (normalizedDate === today) {
+            totalReserve += parseInt(amount.split(':')[0], 10); // Sum up today's reserves
+          }
+        });
+      }
+      if (totalReserve > 0) {
+        let totalReserveInDollars = this.convertCongoleseFrancToUsDollars(
+          totalReserve.toString()
+        );
+        (totalReserveInDollars = totalReserveInDollars.toString()),
+          results.push({
+            firstName: user.firstName!,
+            totalReserve,
+            totalReserveInDollars,
+          }); // Add to results if there's any reserve today
+      }
+    });
+
+    // Sort by reserve amount in descending order
+    results.sort(
+      (a, b) =>
+        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
+    );
+    return results;
   }
 
   filterOutElements(summary: string[], index: number) {
