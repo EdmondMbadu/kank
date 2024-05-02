@@ -73,9 +73,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let s of sortedReserveMonth" class="bg-white dark:bg-gray-800">
+                    <tr *ngFor="let s of sortedReserveMonth; let i=index" class="bg-white dark:bg-gray-800">
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                        {{s.firstName}}
+                       {{i+1}}.  {{s.firstName}}
                         </th>
                         <td class="px-6 py-4">
                         {{s.totalReserve | number:'1.0-0'}} FC
