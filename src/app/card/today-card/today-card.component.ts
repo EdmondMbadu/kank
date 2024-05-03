@@ -23,7 +23,11 @@ export class TodayCardComponent {
   dailyCardReturns: string = '0';
   dailyCardBenefits: string = '0';
 
-  linkPaths: string[] = ['/client-info-card', '/client-info-card'];
+  linkPaths: string[] = [
+    '/client-info-card',
+    '/client-info-card',
+    '/client-info-card',
+  ];
   summary: string[] = [
     'Paiement Carte Du Jour',
     'Retrait Carte Du Jour',

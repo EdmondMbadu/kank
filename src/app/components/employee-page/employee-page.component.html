@@ -209,7 +209,7 @@
     <div class="flow-root">
             <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
                 <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let p of paymentAmounts; let i=index">
-                    <a [href]="employee.paymentsPicturePath![i]"target="_blank">
+                    <a [href]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]"target="_blank">
                     <div class="flex items-center space-x-4">
                      <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
                          <span class="font-medium text-gray-600 dark:text-gray-300">{{this.auth.currentUser.firstName?.substring(0,2)}}</span>
@@ -224,9 +224,10 @@
                      </div>
                   
                         <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
+                            
                          $ {{paymentAmounts[i] | number:'1.0-0'}}
                         </div>
-                        <img [src]="employee.paymentsPicturePath![i]" class="w-12" alt="">
+                        <img [src]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]" class="w-12" alt="">
                     </div>
                     </a>
                 </li>

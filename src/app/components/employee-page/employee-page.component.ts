@@ -24,6 +24,7 @@ export class EmployeePageComponent implements OnInit {
   day = this.currentDate.getDate();
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
+  j: number = 1;
   monthYear = `${this.month} ${this.year}`;
   id: any = '';
   invoiceNum: string = '';
