@@ -25,6 +25,7 @@ export class PayTodayComponent implements OnInit {
     Wednesday: 'Mercredi',
     Thursday: 'Jeudi',
     Friday: 'Vendredi',
+    Saturday: 'Samedi',
   };
   today = this.time.todaysDateMonthDayYear();
   filteredItems?: Client[];
