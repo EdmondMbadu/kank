@@ -177,6 +177,7 @@ export class InvestementsSummaryComponent implements OnInit {
   }
 
   findClientsWithDebts() {
+    this.currentClientsRegistered = [];
     this.clients?.forEach((client) => {
       if (Number(client.debtLeft) > 0) {
         this.currentClients!.push(client);
