@@ -70,6 +70,10 @@ export class NotPaidComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+      // filter out clients that have not debt( registered) or have finished their debts.
+      this.clients = data.filter(
+        (client: Client) => Number(client.debtLeft) > 0
+      );
       this.retrieveEmployees();
     });
   }
