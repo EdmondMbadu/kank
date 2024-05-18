@@ -401,7 +401,7 @@ export class DataService {
       moneyInHands: (
         Number(this.auth.currentUser.moneyInHands) +
         Number(client.membershipFee) +
-        Number(client.savings) +
+        Number(savings) +
         Number(client.applicationFee) -
         Number(client.loanAmount)
       ).toString(),
