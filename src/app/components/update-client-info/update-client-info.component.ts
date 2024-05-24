@@ -77,6 +77,7 @@ export class UpdateClientInfoComponent {
       return;
     } else {
       this.findAgent();
+      console.log(' the client itself', this.client);
       console.log('client agent during', this.client.agent);
       console.log('agent clients before', this.agent?.clients);
       this.updateAgentClients();
@@ -90,6 +91,7 @@ export class UpdateClientInfoComponent {
   updateAgentClients() {
     if (
       this.client!.agent !== undefined &&
+      this.agent?.clients !== undefined &&
       !this.agent!.clients!.includes(this.client.uid!)
     ) {
       this.agent?.clients?.push(this.client.uid!);
@@ -105,6 +107,7 @@ export class UpdateClientInfoComponent {
       this.previousClientAgent !== this.client.agent
     ) {
       let employee = this.findAgentWithId(this.previousClientAgent);
+      console.log('the employee', employee);
       employee!.clients = employee?.clients?.filter(
         (element) => element !== this.client.uid
       );

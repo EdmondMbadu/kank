@@ -53,6 +53,9 @@ export class LendingDateComponent {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+      // this.clients = this.clients!.filter((client) => {
+      //   client.debtLeft !== undefined && Number(client.debtLeft) > 0;
+      // });
       this.addIds();
       this.filterPayments();
     });
@@ -91,7 +94,10 @@ export class LendingDateComponent {
 
   getClientsByDate(date: string) {
     return this.clients!.filter((client) => {
-      return client.debtCycleStartDate!.startsWith(date);
+      return (
+        client.debtCycleStartDate !== undefined &&
+        client.debtCycleStartDate!.startsWith(date)
+      );
     }).map((client) => {
       return {
         firstName: client.firstName,
