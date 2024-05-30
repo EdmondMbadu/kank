@@ -130,15 +130,19 @@ export class ComputationService {
 
     return filteredClients;
   }
-  findTotalCurrentMonth(dailyReimbursement: { [key: string]: string }) {
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
-    const currentYear = currentDate.getFullYear();
-    // console.log('the current month and  year are', currentMonth, currentYear);
+
+  findTotalForMonth(
+    dailyReimbursement: { [key: string]: string },
+    month: string,
+    year: string
+  ) {
+    const targetMonth = parseInt(month, 10);
+    const targetYear = parseInt(year, 10);
+
     let total = 0;
     for (const [date, amount] of Object.entries(dailyReimbursement)) {
       const [month, day, year] = date.split('-').map(Number);
-      if (month === currentMonth && year === currentYear) {
+      if (month === targetMonth && year === targetYear) {
         total += parseInt(amount as string, 10);
       }
     }
@@ -252,32 +256,45 @@ export class ComputationService {
     return results;
   }
 
-  findTotalCurrentMonthAllDailyPointsEmployees(employees: Employee[]) {
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
-    const currentYear = currentDate.getFullYear();
+  findTotalForMonthAllDailyPointsEmployees(
+    employees: Employee[],
+    month: string,
+    year: string
+  ) {
+    const targetMonth = parseInt(month, 10);
+    const targetYear = parseInt(year, 10);
+
     let total = 0;
     for (let e of employees) {
-      for (const [date, amount] of Object.entries(e.dailyPoints!)) {
-        const [month, day, year] = date.split('-').map(Number);
-        if (month === currentMonth && year === currentYear) {
-          total += parseInt(amount as string, 10);
+      if (e.dailyPoints) {
+        for (const [date, amount] of Object.entries(e.dailyPoints)) {
+          const [month, day, year] = date.split('-').map(Number);
+          if (month === targetMonth && year === targetYear) {
+            total += parseInt(amount, 10);
+          }
         }
       }
     }
 
     return total.toString();
   }
-  findTotalCurrentMonthAllTotalDailyPointsEmployees(employees: Employee[]) {
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
-    const currentYear = currentDate.getFullYear();
+
+  findTotalForMonthAllTotalDailyPointsEmployees(
+    employees: Employee[],
+    month: string,
+    year: string
+  ) {
+    const targetMonth = parseInt(month, 10);
+    const targetYear = parseInt(year, 10);
+
     let total = 0;
     for (let e of employees) {
-      for (const [date, amount] of Object.entries(e.totalDailyPoints!)) {
-        const [month, day, year] = date.split('-').map(Number);
-        if (month === currentMonth && year === currentYear) {
-          total += parseInt(amount as string, 10);
+      if (e.dailyPoints) {
+        for (const [date, amount] of Object.entries(e.totalDailyPoints!)) {
+          const [month, day, year] = date.split('-').map(Number);
+          if (month === targetMonth && year === targetYear) {
+            total += parseInt(amount, 10);
+          }
         }
       }
     }

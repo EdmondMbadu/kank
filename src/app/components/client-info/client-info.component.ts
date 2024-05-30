@@ -43,10 +43,19 @@ export class ClientInfoComponent implements OnInit {
     let total = 0;
     for (let i = 0; i < this.filteredItems!.length; i++) {
       this.filteredItems![i].trackingId = `${i}`;
-      if (this.filteredItems![i].debtLeft !== undefined)
+      if (
+        this.filteredItems![i].debtLeft !== undefined &&
+        this.filteredItems![i].debtLeft !== NaN.toString()
+      ) {
         total += Number(this.filteredItems![i].debtLeft);
+      }
+
+      // this is to spot clients that goes to Nan for one reason or another
+      if (this.filteredItems![i].debtLeft === NaN.toString()) {
+        console.log('the client with NaN is ', this.filteredItems![i]);
+      }
     }
-    console.log('The total debt left is', total);
+    console.log('The total debt left is for everyone', total);
   }
   search(value: string) {
     if (value) {

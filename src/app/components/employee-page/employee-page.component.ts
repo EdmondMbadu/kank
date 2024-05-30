@@ -21,9 +21,13 @@ export class EmployeePageComponent implements OnInit {
   displayMakePayment: boolean = false;
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
-  day = this.currentDate.getDate();
+  givenMonth: number = this.currentMonth;
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
+  givenYear = this.year;
+  monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
+  day = this.currentDate.getDate();
+  yearsList: number[] = this.time.yearsList;
   j: number = 1;
   monthYear = `${this.month} ${this.year}`;
   id: any = '';
@@ -54,7 +58,7 @@ export class EmployeePageComponent implements OnInit {
     private router: Router,
     private data: DataService,
     public auth: AuthService,
-    private time: TimeService,
+    public time: TimeService,
     private compute: ComputationService,
     private performance: PerformanceService,
     public activatedRoute: ActivatedRoute,
@@ -78,6 +82,18 @@ export class EmployeePageComponent implements OnInit {
       this.employees = data;
       this.employee = data[this.id];
       this.getAllPayments();
+      let num1 = this.compute.findTotalForMonth(
+        this.employee.dailyPoints!,
+        '4',
+        '2024'
+      );
+
+      let num2 = this.compute.findTotalForMonth(
+        this.employee.totalDailyPoints!,
+        '05',
+        '2024'
+      );
+      let perf = this.computePerformancePercentage(num1, num2);
 
       this.maxRange = Object.keys(this.employee.dailyPoints!).length;
       if (this.employee.role === 'Manager') {
@@ -93,13 +109,19 @@ export class EmployeePageComponent implements OnInit {
           this.employees
         );
         this.totalToday = this.performance.findTotalToday(this.employees);
+
         this.averagePointsMonth =
-          this.compute.findTotalCurrentMonthAllDailyPointsEmployees(
-            this.employees
+          this.compute.findTotalForMonthAllDailyPointsEmployees(
+            this.employees,
+            this.givenMonth.toString(),
+            this.givenYear.toString()
           );
+
         this.totalPointsMonth =
-          this.compute.findTotalCurrentMonthAllTotalDailyPointsEmployees(
-            this.employees
+          this.compute.findTotalForMonthAllTotalDailyPointsEmployees(
+            this.employees,
+            this.givenMonth.toString(),
+            this.givenYear.toString()
           );
       } else {
         let result = this.performance.findAverageAndTotal(this.employee);
@@ -113,11 +135,16 @@ export class EmployeePageComponent implements OnInit {
         this.averageToday = this.employee!.dailyPoints![this.today];
         this.totalToday = this.employee.totalDailyPoints![this.today];
 
-        this.averagePointsMonth = this.compute.findTotalCurrentMonth(
-          this.employee.dailyPoints!
+        this.averagePointsMonth = this.compute.findTotalForMonth(
+          this.employee.dailyPoints!,
+          this.givenMonth.toString(),
+          this.givenYear.toString()
         );
-        this.totalPointsMonth = this.compute.findTotalCurrentMonth(
-          this.employee.totalDailyPoints!
+
+        this.totalPointsMonth = this.compute.findTotalForMonth(
+          this.employee.totalDailyPoints!,
+          this.givenMonth.toString(),
+          this.givenYear.toString()
         );
       }
       this.employee.performancePercantage = this.computePerformancePercentage(
@@ -128,7 +155,8 @@ export class EmployeePageComponent implements OnInit {
         this.averagePointsMonth,
         this.totalPointsMonth
       );
-      this.computeThisMonthSalary();
+
+      // this.computeThisMonthSalary();
 
       this.updatePerformanceGraphics();
     });
@@ -180,49 +208,6 @@ export class EmployeePageComponent implements OnInit {
     return new Date(year, month - 1, day);
   }
 
-  computeThisMonthSalary() {
-    if (this.employee.role === 'Manager') {
-      this.baseSalary = '270000';
-      this.totalBonusSalary = '0';
-      if (
-        Number(this.performancePercentageMonth) >= 70 &&
-        Number(this.performancePercentageMonth) < 80
-      ) {
-        this.totalBonusSalary = '30000';
-      } else if (
-        Number(this.performancePercentageMonth) >= 80 &&
-        Number(this.performancePercentageMonth) < 90
-      ) {
-        this.totalBonusSalary = '50000';
-      } else if (Number(this.performancePercentageMonth) >= 90) {
-        this.totalBonusSalary = '100000';
-      }
-
-      this.salaryThisMonth = (
-        Number(this.baseSalary) + Number(this.totalBonusSalary)
-      ).toString();
-    } else {
-      this.baseSalary = '170000';
-      this.totalBonusSalary = '0';
-      if (
-        Number(this.performancePercentageMonth) >= 70 &&
-        Number(this.performancePercentageMonth) < 80
-      ) {
-        this.totalBonusSalary = '20000';
-      } else if (
-        Number(this.performancePercentageMonth) >= 80 &&
-        Number(this.performancePercentageMonth) < 90
-      ) {
-        this.totalBonusSalary = '40000';
-      } else if (Number(this.performancePercentageMonth) >= 90) {
-        this.totalBonusSalary = '80000';
-      }
-
-      this.salaryThisMonth = (
-        Number(this.baseSalary) + Number(this.totalBonusSalary)
-      ).toString();
-    }
-  }
   getAllPayments() {
     if (this.employee.payments !== undefined) {
       let currentPayments = this.compute.sortArrayByDateDescendingOrder(
