@@ -54,6 +54,7 @@ import { InfoRegisterComponent } from './components/info-register/info-register.
 import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
 import { TransformRegisterClientComponent } from './components/transform-register-client/transform-register-client.component';
 import { RemoveCardComponent } from './card/remove-card/remove-card.component';
+import { CertificateComponent } from './components/certificate/certificate.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -174,6 +175,7 @@ const routes: Routes = [
   { path: 'not-paid-today', component: NotPaidTodayComponent },
   { path: 'not-paid', component: NotPaidComponent },
   { path: 'team-page', component: TeamPageComponent },
+  { path: 'certificate', component: CertificateComponent },
   { path: 'employee-page/:id', component: EmployeePageComponent },
 ];
 
