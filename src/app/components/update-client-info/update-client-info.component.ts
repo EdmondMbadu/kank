@@ -71,7 +71,8 @@ export class UpdateClientInfoComponent {
       this.client.businessAddress === '' ||
       this.client.profession === '' ||
       this.client.paymentDay === '' ||
-      this.client.agent === undefined
+      this.client.agent === undefined ||
+      this.client.agent === 'Choose'
     ) {
       alert('Completer toutes les données');
       return;
