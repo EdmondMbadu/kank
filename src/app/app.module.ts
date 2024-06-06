@@ -72,6 +72,7 @@ import { TransformRegisterClientComponent } from './components/transform-registe
 import { RegiserPortalComponent } from './components/register-portal/register-portal.component';
 import { RemoveCardComponent } from './card/remove-card/remove-card.component';
 import { CertificateComponent } from './components/certificate/certificate.component';
+import { TeamRankingMonthComponent } from './central/team-ranking-month/team-ranking-month.component';
 
 @NgModule({
   declarations: [
@@ -133,6 +134,7 @@ import { CertificateComponent } from './components/certificate/certificate.compo
     TransformRegisterClientComponent,
     RemoveCardComponent,
     CertificateComponent,
+    TeamRankingMonthComponent,
   ],
   imports: [
     BrowserModule,

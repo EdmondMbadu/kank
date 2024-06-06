@@ -455,4 +455,10 @@ export class TimeService {
 
     return `${day} ${monthNamesInFrench[monthIndex]} ${year}`;
   }
+  toDate(dateString: string) {
+    const [month, day, year] = dateString
+      .split('-')
+      .map((part: any) => parseInt(part, 10));
+    return new Date(year, month - 1, day);
+  }
 }

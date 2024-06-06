@@ -55,6 +55,7 @@ import { RegiserPortalComponent } from './components/register-portal/register-po
 import { TransformRegisterClientComponent } from './components/transform-register-client/transform-register-client.component';
 import { RemoveCardComponent } from './card/remove-card/remove-card.component';
 import { CertificateComponent } from './components/certificate/certificate.component';
+import { TeamRankingMonthComponent } from './central/team-ranking-month/team-ranking-month.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -175,6 +176,7 @@ const routes: Routes = [
   { path: 'not-paid-today', component: NotPaidTodayComponent },
   { path: 'not-paid', component: NotPaidComponent },
   { path: 'team-page', component: TeamPageComponent },
+  { path: 'team-ranking-month', component: TeamRankingMonthComponent },
   { path: 'certificate', component: CertificateComponent },
   { path: 'employee-page/:id', component: EmployeePageComponent },
 ];

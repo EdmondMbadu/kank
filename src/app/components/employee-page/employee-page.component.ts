@@ -82,18 +82,6 @@ export class EmployeePageComponent implements OnInit {
       this.employees = data;
       this.employee = data[this.id];
       this.getAllPayments();
-      let num1 = this.compute.findTotalForMonth(
-        this.employee.dailyPoints!,
-        '4',
-        '2024'
-      );
-
-      let num2 = this.compute.findTotalForMonth(
-        this.employee.totalDailyPoints!,
-        '05',
-        '2024'
-      );
-      let perf = this.computePerformancePercentage(num1, num2);
 
       this.maxRange = Object.keys(this.employee.dailyPoints!).length;
       if (this.employee.role === 'Manager') {
@@ -177,7 +165,7 @@ export class EmployeePageComponent implements OnInit {
   }
   sortKeysAndValuesPerformance(time: number) {
     const sortedKeys = Object.keys(this.employee.dailyPoints!)
-      .sort((a, b) => +this.toDate(a) - +this.toDate(b))
+      .sort((a, b) => +this.time.toDate(a) - +this.time.toDate(b))
       .slice(-time);
 
     // to allow for infinity ( when the totalpoint is 0, yet the dailypoint is not zero), add one where the value of total is zero
@@ -200,12 +188,6 @@ export class EmployeePageComponent implements OnInit {
   toggleMakePayment() {
     this.displayMakePayment = !this.displayMakePayment;
     this.currentDownloadUrl = '';
-  }
-  toDate(dateString: string) {
-    const [month, day, year] = dateString
-      .split('-')
-      .map((part: any) => parseInt(part, 10));
-    return new Date(year, month - 1, day);
   }
 
   getAllPayments() {

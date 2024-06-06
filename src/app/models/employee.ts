@@ -18,6 +18,7 @@ export class Employee {
   sex?: string;
   letterGrade?: string;
   performancePercantage?: string;
+  performancePercentageMonth?: string;
   dateOfBirth?: string;
   dateJoined?: string;
   status?: string;

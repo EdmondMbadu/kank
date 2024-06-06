@@ -100,6 +100,20 @@ export class AuthService {
   getAllEmployees(): Observable<Employee> {
     return this.employeesRef$;
   }
+  getAllEmployeesGivenUser(myuser: User): Observable<Employee> {
+    let employeesRef$: Observable<any> = this.fireauth.authState.pipe(
+      switchMap((user) => {
+        if (myuser) {
+          return this.afs
+            .collection(`users/${myuser.uid}/employees/`)
+            .valueChanges();
+        } else {
+          return of(null);
+        }
+      })
+    );
+    return employeesRef$;
+  }
   getAllClientsCard(): Observable<Card> {
     return this.cardsRefs;
   }
