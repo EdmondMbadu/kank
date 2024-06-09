@@ -335,7 +335,7 @@ export class ComputationService {
       reader.readAsDataURL(blob);
     });
   }
-  async generateInvoice(employee: Employee) {
+  async generateInvoice(employee: Employee, text = 'Paiement') {
     let invoiceNum = employee.payments
       ? (Object.keys(employee.payments!).length + 1).toString()
       : '1';
@@ -353,7 +353,7 @@ export class ComputationService {
             width: 75,
             style: 'logo',
           },
-          { text: 'Paiement', style: 'invoiceTitle' },
+          { text: `${text}`, style: 'invoiceTitle' },
           {
             columns: [
               {

@@ -318,4 +318,7 @@ export class EmployeePageComponent implements OnInit {
   generateInvoice() {
     this.compute.generateInvoice(this.employee);
   }
+  generateInvoiceBonus() {
+    this.compute.generateInvoice(this.employee, 'Bonus');
+  }
 }
