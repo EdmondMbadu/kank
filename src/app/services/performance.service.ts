@@ -115,10 +115,10 @@ export class PerformanceService {
     let num = Number(this.clientPaymentAmount) / Number(minpay);
 
     let rounded = this.roundFloorToDecimal(num);
-    // if (num === 0) {
-    //   console.log('new client rounding to 1 for more points');
-    //   rounded = 1;
-    // }
+    // this was added because if a client, paid twice the min amount,
+    // it would be as if two people paid. increasing the performance of employees artificially
+    rounded = Math.min(1, rounded);
+
     for (let em of this.employees!) {
       em.dailyPoints![`${this.today}`] =
         em.dailyPoints![`${this.today}`] === undefined

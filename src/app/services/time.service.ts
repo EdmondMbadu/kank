@@ -355,7 +355,7 @@ export class TimeService {
 
     // Filter clients
     return clients.filter((client) => {
-      if (Number(client.debtLeft) === 0) {
+      if (Number(client.debtLeft) <= 0) {
         return false;
       }
 
@@ -378,6 +378,7 @@ export class TimeService {
       );
     });
   }
+
   calculateAge(birthDateString: string) {
     var today = new Date();
     var birthDate = new Date(birthDateString);

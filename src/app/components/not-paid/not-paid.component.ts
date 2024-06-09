@@ -62,6 +62,7 @@ export class NotPaidComponent implements OnInit {
       this.totalGivenDate = this.compute.computeExpectedPerDate(
         this.haveNotPaid
       );
+      console.log('have not paid given interval here', this.haveNotPaid);
       this.numberofPeopleWhodidNotPay = this.haveNotPaid.length;
     } else {
       alert('Les dates ne sont pas valides. Entrez des date valides.');
@@ -71,9 +72,7 @@ export class NotPaidComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
       // filter out clients that have not debt( registered) or have finished their debts.
-      this.clients = data.filter(
-        (client: Client) => Number(client.debtLeft) > 0
-      );
+
       this.retrieveEmployees();
     });
   }
@@ -86,6 +85,9 @@ export class NotPaidComponent implements OnInit {
       );
       this.clients![i].employee = emp;
     }
+    this.clients = this.clients!.filter(
+      (client: Client) => Number(client.debtLeft) > 0
+    );
   }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
