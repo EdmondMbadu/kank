@@ -532,6 +532,7 @@ export class ComputationService {
     const results: {
       firstName: string;
       totalReserve: number;
+      tReserve: string;
       totalReserveInDollars: string;
     }[] = [];
 
@@ -550,20 +551,19 @@ export class ComputationService {
         let totalReserveInDollars = this.convertCongoleseFrancToUsDollars(
           totalReserve.toString()
         );
-        (totalReserveInDollars = totalReserveInDollars.toString()),
-          results.push({
-            firstName: user.firstName!,
-            totalReserve,
-            totalReserveInDollars,
-          }); // Add to results if there's any reserve today
+        let tReserve = totalReserve.toString();
+        totalReserveInDollars = totalReserveInDollars.toString();
+        results.push({
+          firstName: user.firstName!,
+          tReserve,
+          totalReserve,
+          totalReserveInDollars,
+        }); // Add to results if there's any reserve today
       }
     });
 
     // Sort by reserve amount in descending order
-    results.sort(
-      (a, b) =>
-        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
-    );
+    results.sort((a, b) => parseInt(b.tReserve) - parseInt(a.tReserve));
     return results;
   }
 
