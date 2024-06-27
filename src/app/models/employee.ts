@@ -37,3 +37,15 @@ export class Avatar {
   CVDownloadURL?: string;
   CVSize?: string;
 }
+
+export class Certificate {
+  month?: string;
+  year?: string;
+  bestTeam?: string;
+  bestEmployee?: string;
+  bestEmployeePerformance?: string;
+  bestTeamCertificatePath?: string;
+  bestTeamCertificateDownloadUrl?: string;
+  bestEmployeeCertificatePath?: string;
+  bestEmployeeCertificateDownloadUrl?: string;
+}

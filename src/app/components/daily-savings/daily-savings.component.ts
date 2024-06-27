@@ -55,7 +55,11 @@ export class DailySavingsComponent implements OnInit {
     });
   }
   addIdToFilterItems() {
-    for (let i = 0; i < this.clients!.length; i++) {
+    for (
+      let i = 0;
+      this.clients !== undefined && i < this.clients!.length;
+      i++
+    ) {
       this.clients![i].trackingId = `${i}`;
       let emp = this.employees.find(
         (element) => element.uid === this.clients![i].agent

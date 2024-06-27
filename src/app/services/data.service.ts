@@ -10,7 +10,7 @@ import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthService } from './auth.service';
 import { Client } from '../models/client';
 import { TimeService } from './time.service';
-import { Avatar, Employee } from '../models/employee';
+import { Avatar, Certificate, Employee } from '../models/employee';
 import { ComputationService } from './computation.service';
 import { Card } from '../models/card';
 
@@ -281,6 +281,16 @@ export class DataService {
       profilePicture: avatar,
     };
     return employeeRef.set(data, { merge: true });
+  }
+
+  addCertificateData(certificate: Certificate[], certificateId: string) {
+    const certificateref: AngularFirestoreDocument<any> = this.afs.doc(
+      `certificate/${certificateId}`
+    );
+    const data = {
+      certificate: certificate,
+    };
+    return certificateref.set(data, { merge: true });
   }
 
   updateEmployeePaymentPictureData(employee: Employee) {

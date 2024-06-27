@@ -2,18 +2,46 @@
 
 <div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row space-x-4">
 
-    <div class="flex flex-col container mx-auto m-6 justify-center text-center">
-        <h2 class="text-2xl md:text-4xl mr-10">Meilleur Équipe et Employé Mai 2024</h2>
+    <div class="flex flex-col container mx-auto m-2 justify-center text-center">
+        <h2 class="text-2xl md:text-4xl mx-auto">Meilleur Équipe et Employé {{time.monthFrenchNames[givenMonth]}} {{givenYear}}</h2>
        
      </div>
+     <div class="flex flex-row m-2 container mx-auto justify-center text-center">
+        <button *ngIf="auth.isAdmin" type="submit" (click)="toggleDisplayAddTeam()"  class=" text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Ajouter</button>
+    </div>
+     <div class="flex container mx-auto justify-center text-center space-x-8">
+
+        <div class="mb-6 ">
+
+            <select  id="payments" [(ngModel)]="givenMonth"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="updateSelection()" >
+            <option *ngFor=" let month of  monthsList" [ngValue]="month">{{time.monthFrenchNames[month]}}</option>
+           
+   
+            </select>
+        </div>
+
+        <div class="mb-6 ">
+
+            <select id="payments" [(ngModel)]="givenYear"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "  (change)="updateSelection()">
+            <option  *ngFor=" let year of yearsList" [ngValue]="year">{{year}}</option>
+          
+
+            </select>
+        </div>
+      
+        
+        
+
+    </div>
+
 
         <div class="max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-            <a target="_blank" href="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/certificates%2Fbest-team-may.png?alt=media&token=0ce34a72-bb00-407b-893f-c52511d0bd0e">
-                <img class="rounded-t-lg " src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/certificates%2Fbest-team-may.png?alt=media&token=0ce34a72-bb00-407b-893f-c52511d0bd0e" alt="" />
+            <a *ngIf="selectedTeamAndEmployee!==undefined && selectedTeamAndEmployee.bestTeam!==undefined" target="_blank" href="{{selectedTeamAndEmployee.bestTeamCertificateDownloadUrl}}" target="_blank" href="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/certificates%2Fbest-team-may.png?alt=media&token=0ce34a72-bb00-407b-893f-c52511d0bd0e">
+                <img class="rounded-t-lg " src="{{selectedTeamAndEmployee.bestTeamCertificateDownloadUrl}}" alt="" />
             </a>
             <div class="p-5">
-                <a >
-                    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleur Équipe De Mai 2024: PUMBU</h5>
+                <a *ngIf="selectedTeamAndEmployee!==undefined && selectedTeamAndEmployee.bestTeam !==undefined"  >
+                    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleur Équipe De {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: {{selectedTeamAndEmployee.bestTeam}}</h5>
                 </a>
                 <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Perfomance </p>
                 <!-- <a href="#" class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
@@ -26,14 +54,14 @@
         </div>
 
         <div class="max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-            <a target="_blank" href="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/certificates%2Fbest-employe-may.png?alt=media&token=811d3a88-7c8a-46ab-919c-1c84fc83859b">
-                <img class="rounded-t-lg " src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/certificates%2Fbest-employe-may.png?alt=media&token=811d3a88-7c8a-46ab-919c-1c84fc83859b" alt="" />
+            <a *ngIf="selectedTeamAndEmployee!==undefined && selectedTeamAndEmployee.bestEmployee!==undefined" target="_blank" href="{{selectedTeamAndEmployee.bestTeamCertificateDownloadUrl}}">
+                <img *ngIf="selectedTeamAndEmployee!==undefined && selectedTeamAndEmployee.bestEmployee!==undefined"  class="rounded-t-lg " src="{{selectedTeamAndEmployee.bestEmployeeCertificateDownloadUrl}}" alt="" />
             </a>
             <div class="p-5">
                 <a >
-                    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleur Employé De Mai 2024: Helene Tsimba</h5>
+                    <h5 *ngIf="selectedTeamAndEmployee!==undefined && selectedTeamAndEmployee.bestEmployee!==undefined"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleur Employé De {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: {{selectedTeamAndEmployee.bestEmployee}}</h5>
                 </a>
-                <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Performance : 95%</p>
+                <p *ngIf="selectedTeamAndEmployee!==undefined && selectedTeamAndEmployee.bestEmployee!==undefined"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">Performance : {{selectedTeamAndEmployee.bestEmployeePerformance}}</p>
                 <!-- <a href="#" class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                     Read more
                     <svg class="rtl:rotate-180 w-3.5 h-3.5 ms-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
@@ -45,3 +73,86 @@
 
 </div>
 
+
+<div *ngIf="displayAddTeam" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6">
+    <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
+        <!-- Modal content -->
+        <div class="relative p-4 bg-white rounded-lg shadow  sm:p-5">
+            <!-- Modal header -->
+            <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5">
+                <h3 class="text-lg font-semibold text-gray-900 ">
+                    Ajouter Meilleur Équipe et Employé
+                </h3>
+                <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center " data-modal-toggle="defaultModal" (click)="toggleDisplayAddTeam()">
+                    <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <!-- Modal body -->
+            <div>
+                <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                    <div>
+                        <label for="lastName" class="block mb-2 text-sm font-medium text-gray-900">Mois</label>
+                        <input type="text" name="lastName" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Janvier" required=""[(ngModel)]="certificate.month">
+                    </div>
+                    <div>
+                        <label for="middleName" class="block mb-2 text-sm font-medium text-gray-900 "> Année</label>
+                        <input type="text" name="middleName" id="middlename" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 " [(ngModel)]="certificate.year" placeholder="2024" required="">
+                    </div>
+                    <div>
+                        <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleur Équipe </label>
+                        <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestTeam" placeholder="Pumbu" required="">
+                    </div>
+                    <div>
+                        <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleur  Employé</label>
+                        <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestEmployee" placeholder="Helene Tsimba" required="">
+                    </div>
+                    <div>
+                        <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleur  Employé Performance (%)</label>
+                        <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestEmployeePerformance" placeholder="95" required="">
+                    </div>
+                  
+                    
+                   
+                    <!-- <div >
+                        <input type="file" id="getTeam" style="display:none" (change)="startUploadCBestTeamData($any($event.target).files)">
+                        <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="onTeamClick()"> Certificat Équipe </button>
+                    </div> -->
+                    <div class="mb-4">
+                        <h1 class="mb-4">Attacher l'Image de Meilleur Équipe  </h1>
+                    <input type="file" id="getTeam" style="display:none" (change)="startUploadCBestTeamData($any($event.target).files)">
+                    <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
+                    <img *ngIf="teamDocDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onTeamClick()" src="../../../assets/img/file.png" alt="file">
+                    <img *ngIf="teamDocDownloadUrl!==''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onTeamClick()" [src]="teamDocDownloadUrl" alt="file">
+                   
+                    <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
+                
+                </div>
+                    <!-- <div >
+                        <input type="file" id="getEmploye" style="display:none" (change)="startUploadCBestEmployeeData($any($event.target).files)">
+                        <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="onEmployeClick()"> Certificat  Employé</button>
+                    </div> -->
+
+                    <div class="mb-4">
+                        <h1 class="mb-4">Attacher l'Image de Meilleur Employé </h1>
+                    <input type="file" id="getEmploye" style="display:none" (change)="startUploadCBestEmployeeData($any($event.target).files)">
+                    <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
+                    <img *ngIf="employeeDocDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onEmployeClick()" src="../../../assets/img/file.png" alt="file">
+                    <img *ngIf="employeeDocDownloadUrl!==''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onEmployeClick()" [src]="employeeDocDownloadUrl" alt="file">
+                   
+                    <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
+                
+                </div>
+                    
+                   
+                </div>
+                <div class="flex flex-row mx-auto justify-center space-x-4">
+                    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleDisplayAddTeam()">Annuler</button>
+                    <button type="submit" (click)="updateData()" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " >Ajouter</button>
+                
+                </div>
+              
+            </div>
+        </div>
+    </div>
+</div>

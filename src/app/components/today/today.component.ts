@@ -100,6 +100,7 @@ export class TodayComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFees)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestment)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailySaving)}`,
     ];
   }
 }

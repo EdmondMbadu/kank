@@ -94,6 +94,9 @@ export class AuthService {
       .collection<Client>(`users/${userId}/clients/`)
       .valueChanges();
   }
+  getCertificateInfo() {
+    return this.afs.collection<Client>(`certificate/`).valueChanges();
+  }
   getClientsCardOfAUser(userId: string) {
     return this.afs.collection<Client>(`users/${userId}/cards/`).valueChanges();
   }
