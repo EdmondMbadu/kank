@@ -1,18 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-daily-payments',
-  templateUrl: './daily-payments.component.html',
-  styleUrls: ['./daily-payments.component.css'],
+  selector: 'app-daily-savings',
+  templateUrl: './daily-savings.component.html',
+  styleUrls: ['./daily-savings.component.css'],
 })
-export class DailyPaymentsComponent implements OnInit {
+export class DailySavingsComponent implements OnInit {
   clients?: Client[];
   employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
@@ -69,19 +69,26 @@ export class DailyPaymentsComponent implements OnInit {
     this.dailyPaymentsNames = [];
     this.trackingIds = [];
     for (let client of this.clients!) {
-      const filteredDict = Object.fromEntries(
-        Object.entries(client.payments!).filter(([key, value]) =>
-          key.startsWith(this.today)
-        )
-      );
-      const filteredValues = Object.values(filteredDict);
-      if (filteredValues.length !== 0) {
-        this.fillDailyPayment(client, filteredValues);
+      if (client.savingsPayments !== undefined) {
+        const filteredDict = Object.fromEntries(
+          Object.entries(client.savingsPayments!).filter(([key, value]) =>
+            key.startsWith(this.today)
+          )
+        );
+        // console.log('all current clients', filteredDict);
+        const filterdKeys = Object.keys(filteredDict);
+        // console.log('all keys', filterdKeys);
+        const filteredValues = Object.values(filteredDict);
+        // console.log('all values', filteredValues);
+        if (filteredValues.length !== 0) {
+          this.fillDailyPayment(client, filteredValues, filterdKeys);
+        }
       }
     }
   }
 
-  fillDailyPayment(client: Client, values: string[]) {
+  fillDailyPayment(client: Client, values: string[], keys: string[]) {
+    let i = 0;
     for (let v of values) {
       let middleName = client.middleName === undefined ? '' : client.middleName;
       let filt = {
@@ -89,15 +96,39 @@ export class DailyPaymentsComponent implements OnInit {
         lastName: client.lastName,
         middleName: middleName,
         amount: v,
+        time: keys[i++],
         employee: client.employee,
         trackingId: client.trackingId,
       };
 
-      if (Number(v) > 0) {
+      if (Number(v) !== 0) {
         this.dailyPayments?.push(filt);
         this.dailyPaymentsCopy?.push(filt);
       }
     }
+
+    // sort them
+    this.dailyPayments!.sort(
+      (a, b) =>
+        this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
+    );
+    this.dailyPaymentsCopy!.sort(
+      (a, b) =>
+        this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
+    );
+    // console.log('All payments', this.dailyPayments);
+  }
+  parseDate(timeStr: any) {
+    const parts = timeStr.split('-');
+    // The parts array will have the format [month, day, year, hour, minute, second]
+    return new Date(
+      parts[2],
+      parts[0] - 1,
+      parts[1],
+      parts[3],
+      parts[4],
+      parts[5]
+    );
   }
   search(value: string) {
     if (value) {
@@ -121,6 +152,7 @@ export class Filtered {
   lastName?: string;
   middleName?: string;
   date?: string;
+  time?: string;
   amount?: string;
   employee?: Employee;
   trackingId?: string;

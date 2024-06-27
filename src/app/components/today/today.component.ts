@@ -24,6 +24,7 @@ export class TodayComponent {
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
+  dailySaving: string = '0';
 
   totalPerfomance: number = 0;
 
@@ -34,6 +35,7 @@ export class TodayComponent {
     '/client-info-current',
     '/add-reserve',
     '/add-investment',
+    '/daily-savings',
   ];
   summary: string[] = [
     "N'ont pas Payé Aujourdhui",
@@ -42,6 +44,7 @@ export class TodayComponent {
     'Frais De Membre Du Jour',
     'Reserve Du Jour',
     'Entrée Du Jour',
+    'Epargne Du Jour',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -52,12 +55,14 @@ export class TodayComponent {
     '../../../assets/img/member.svg',
     '../../../assets/img/reserve.svg',
     '../../../assets/img/invest.svg',
+    '../../../assets/img/saving.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
     this.dailyLending = this.auth.currentUser.dailyLending[this.today];
+    this.dailySaving = this.auth.currentUser.dailySaving[this.today];
     this.dailyPayment = this.auth.currentUser.dailyReimbursement[this.today];
     this.dailyFees = this.auth.currentUser.feesData[this.today];
     this.dailyReserve = this.compute
@@ -67,6 +72,7 @@ export class TodayComponent {
     this.dailyInvestment = this.compute
       .findTotalForToday(this.auth.currentUser.investments)
       .toString();
+
     this.dailyLending =
       this.dailyLending === undefined ? '0' : this.dailyLending;
     this.dailyPayment =
@@ -76,6 +82,7 @@ export class TodayComponent {
       this.dailyReserve === undefined ? '0' : this.dailyReserve;
     this.dailyInvestment =
       this.dailyInvestment === undefined ? '0' : this.dailyInvestment;
+    this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
     this.summaryContent = [
       ``,
       ` ${this.dailyPayment}`,
@@ -83,6 +90,7 @@ export class TodayComponent {
       ` ${this.dailyFees}`,
       ` ${this.dailyReserve}`,
       `${this.dailyInvestment}`,
+      `${this.dailySaving}`,
     ];
 
     this.valuesConvertedToDollars = [

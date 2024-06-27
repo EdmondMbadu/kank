@@ -53,6 +53,9 @@ export class ClientPortalComponent {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
       this.minimumPayment();
+      this.client.frenchPaymentDay = this.time.translateDayInFrench(
+        this.client.paymentDay!
+      );
 
       this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined);
       this.debtStart = this.time.formatDateString(

@@ -154,6 +154,10 @@ export class TeamPageComponent implements OnInit {
     ) as HTMLInputElement;
     fileInput.click();
   }
+  onCVClick(): void {
+    const fileInput = document.getElementById('getCV') as HTMLInputElement;
+    fileInput.click();
+  }
 
   async startUpload(event: FileList, emp: Employee) {
     console.log('current employee', emp);
@@ -185,6 +189,42 @@ export class TeamPageComponent implements OnInit {
       path: path,
       downloadURL: this.url,
       size: uploadTask.totalBytes.toString(),
+    };
+    this.data.updateEmployeePictureData(emp, avatar);
+    this.router.navigate(['/home']);
+  }
+
+  async startUploadCV(event: FileList, emp: Employee) {
+    console.log('current employee', emp);
+    const file = event?.item(0);
+    console.log(' current file data', file);
+
+    if (file?.type !== 'application/pdf') {
+      alert('Unsupported file type. Please upload a PDF.');
+      return;
+    }
+
+    // the size cannot be greater than 20mb
+    if (file?.size >= 20000000) {
+      alert(
+        "L'image est trop grande. La Taille maximale du fichier est de 20MB"
+      );
+      return;
+    }
+    const path = `avatar/${emp.firstName}-${emp.lastName}-CV`;
+
+    // the main task
+    console.log('the path', path);
+
+    // this.task = await this.storage.upload(path, file);
+    const uploadTask = await this.storage.upload(path, file);
+    this.url = await uploadTask.ref.getDownloadURL();
+    uploadTask.totalBytes;
+    // console.log('the download url', this.url);
+    const avatar = {
+      CV: path,
+      CVDownloadURL: this.url,
+      CVSize: uploadTask.totalBytes.toString(),
     };
     this.data.updateEmployeePictureData(emp, avatar);
     this.router.navigate(['/home']);

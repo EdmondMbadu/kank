@@ -8,7 +8,15 @@ import { Client } from '../models/client';
 })
 export class TimeService {
   constructor() {}
-
+  englishToFrenchDay: { [key: string]: string } = {
+    Sunday: 'Dimanche',
+    Monday: 'Lundi',
+    Tuesday: 'Mardi',
+    Wednesday: 'Mercredi',
+    Thursday: 'Jeudi',
+    Friday: 'Vendredi',
+    Saturday: 'Samedi',
+  };
   computeDateRange() {
     const now = new Date();
     const year = now.getFullYear();
@@ -461,5 +469,9 @@ export class TimeService {
       .split('-')
       .map((part: any) => parseInt(part, 10));
     return new Date(year, month - 1, day);
+  }
+  translateDayInFrench(day: string) {
+    let response = this.englishToFrenchDay[day];
+    return response !== undefined ? response : '';
   }
 }

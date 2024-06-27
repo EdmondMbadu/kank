@@ -28,6 +28,7 @@ export class User {
   totalDebtLeft?: string;
   admin?: string;
   dailyLending?: { [key: string]: string } = {};
+  dailySaving?: { [key: string]: string } = {};
   dailyReimbursement?: { [key: string]: string } = {};
   dailyCardPayments?: { [key: string]: string } = {};
   dailyCardReturns?: { [key: string]: string } = {};
@@ -40,6 +41,7 @@ export type UserDailyField =
   | 'dailyCardPayments'
   | 'dailyCardReturns'
   | 'dailyCardBenefits'
+  | 'dailySaving'
   | 'expenses'
   | 'reserve'
   | 'feesData'

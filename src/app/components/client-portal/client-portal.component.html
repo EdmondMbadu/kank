@@ -75,17 +75,36 @@
                 <dd class="text-gray-500 text-center dark:text-gray-400">Profession</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.paymentDay}} {{paymentDate}}</dt>
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Jour De Paiment </dd>
+            </div>
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Credit Score</dd>
+            </div> -->
+           
+            
+        
+            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
+            <!-- <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button> -->
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity',id ]">Details De Paiement</button>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
             </div>
+        <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Credit Score</dd>
+            </div>
             
-         
-          
-            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-whit  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/saving-activity',id ]">Details D'Epargne</button>
 
-            
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity',id ]">Details De Paiments</button>
-
+        
+           
         </dl>
     </div>
     <div class="flex container flex-col md:flex-row mx-auto justify-center">

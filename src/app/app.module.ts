@@ -73,6 +73,8 @@ import { RegiserPortalComponent } from './components/register-portal/register-po
 import { RemoveCardComponent } from './card/remove-card/remove-card.component';
 import { CertificateComponent } from './components/certificate/certificate.component';
 import { TeamRankingMonthComponent } from './central/team-ranking-month/team-ranking-month.component';
+import { SavingActivityComponent } from './components/saving-activity/saving-activity.component';
+import { DailySavingsComponent } from './components/daily-savings/daily-savings.component';
 
 @NgModule({
   declarations: [
@@ -135,6 +137,8 @@ import { TeamRankingMonthComponent } from './central/team-ranking-month/team-ran
     RemoveCardComponent,
     CertificateComponent,
     TeamRankingMonthComponent,
+    SavingActivityComponent,
+    DailySavingsComponent,
   ],
   imports: [
     BrowserModule,

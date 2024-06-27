@@ -56,6 +56,8 @@ import { TransformRegisterClientComponent } from './components/transform-registe
 import { RemoveCardComponent } from './card/remove-card/remove-card.component';
 import { CertificateComponent } from './components/certificate/certificate.component';
 import { TeamRankingMonthComponent } from './central/team-ranking-month/team-ranking-month.component';
+import { SavingActivityComponent } from './components/saving-activity/saving-activity.component';
+import { DailySavingsComponent } from './components/daily-savings/daily-savings.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -149,6 +151,7 @@ const routes: Routes = [
   { path: 'remove-card/:id', component: RemoveCardComponent },
   { path: 'withdraw-savings/:id', component: WithdrawSavingsComponent },
   { path: 'payment-activity/:id', component: PaymentActivityComponent },
+  { path: 'saving-activity/:id', component: SavingActivityComponent },
   {
     path: 'payment-activity-card/:id',
     component: PaymentActivityCardComponent,
@@ -170,6 +173,7 @@ const routes: Routes = [
   { path: 'update-client-info/:id', component: UpdateClientInfoComponent },
   { path: 'daily-payments', component: DailyPaymentsComponent },
   { path: 'daily-lendings', component: DailyLendingsComponent },
+  { path: 'daily-savings', component: DailySavingsComponent },
   { path: 'pay-today', component: PayTodayComponent },
   { path: 'paid-date', component: PaidDateComponent },
   { path: 'lending-date', component: LendingDateComponent },

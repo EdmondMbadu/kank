@@ -215,9 +215,11 @@ export class DebtCycleComponent implements OnInit {
     this.middleName = '';
   }
   setClientNewDebtCycleValues() {
+    this.client.savingsPayments = {};
     this.client.savings = (
       Number(this.client.savings) + Number(this.savings)
     ).toString();
+    this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
     this.client.applicationFee = this.applicationFee;
     this.client.middleName = this.middleName;
     this.client.membershipFee = this.memberShipFee;

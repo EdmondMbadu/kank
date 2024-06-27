@@ -33,6 +33,7 @@ export class DataService {
       savings: client.savings,
       savingsPayments: client.savingsPayments,
     };
+
     this.updateUserInfoForClientSavingsWithdrawal(client, amount);
     return clientRef.set(data, { merge: true });
   }
@@ -160,12 +161,20 @@ export class DataService {
       numberOfPaymentsMissed: '0',
       numberOfPaymentsMade: '0',
       payments: {},
+
       debtLeft: client.amountToPay,
     };
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`
     );
-    return clientRef.set(data, { merge: true });
+    return clientRef
+      .set(data, { merge: true })
+      .then(() => {
+        // Explicitly set `savingsPayments` to ensure it is not merged
+        clientRef.update({ savingsPayments: client.savingsPayments });
+      })
+      .catch((error) => console.error('Failed to update client data:', error));
+    // return clientRef.set(data, { merge: true });
   }
 
   transformRegisterClientToFullClient(client: Client) {
@@ -273,6 +282,7 @@ export class DataService {
     };
     return employeeRef.set(data, { merge: true });
   }
+
   updateEmployeePaymentPictureData(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
@@ -340,6 +350,7 @@ export class DataService {
     payment: string
   ) {
     let reimburse: any = this.computeDailyReimbursement(date, payment);
+    let save: any = this.computeDailySaving(date, savings);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
@@ -350,6 +361,9 @@ export class DataService {
       ).toString(),
       dailyReimbursement: {
         [date]: `${reimburse}`,
+      },
+      dailySaving: {
+        [date]: `${save}`,
       },
       moneyInHands: (
         Number(this.auth.currentUser.moneyInHands) +
@@ -366,6 +380,9 @@ export class DataService {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
+    let date = this.time.todaysDateMonthDayYear();
+    // sdd tje minus to mark withdrawal
+    let save: any = this.computeDailySaving(date, `-${withdrawal}`);
     const data = {
       clientsSavings: (
         Number(this.auth.currentUser.clientsSavings) - Number(withdrawal)
@@ -373,6 +390,9 @@ export class DataService {
       moneyInHands: (
         Number(this.auth.currentUser.moneyInHands) - Number(withdrawal)
       ).toString(),
+      dailySaving: {
+        [date]: `${save}`,
+      },
     };
     return userRef.set(data, { merge: true });
   }
@@ -383,6 +403,7 @@ export class DataService {
   ) {
     let dailyLending: any = this.computeDailyLending(client, date);
     let dailyFees: any = this.computeDailyFees(client, date);
+    let save: any = this.computeDailySaving(date, savings);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
@@ -410,6 +431,9 @@ export class DataService {
         Number(client.amountToPay)
       ).toString(),
       dailyLending: { [date]: `${dailyLending}` },
+      dailySaving: {
+        [date]: `${save}`,
+      },
       feesData: { [date]: `${dailyFees}` },
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
@@ -446,6 +470,7 @@ export class DataService {
   updateUserInfoForNewClient(client: Client, date: string) {
     let dailyLending: any = this.computeDailyLending(client, date);
     let dailyFees: any = this.computeDailyFees(client, date);
+    let save: any = this.computeDailySaving(date, client.savings!);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
@@ -476,6 +501,9 @@ export class DataService {
         Number(client.amountToPay)
       ).toString(),
       dailyLending: { [date]: `${dailyLending}` },
+      dailySaving: {
+        [date]: `${save}`,
+      },
       feesData: { [date]: `${dailyFees}` },
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
@@ -488,6 +516,7 @@ export class DataService {
   updateUserInfoForRegisterClient(client: Client, date: string) {
     // let dailyLending: any = this.computeDailyLending(client, date);
     let dailyFees: any = this.computeDailyFees(client, date);
+    let save: any = this.computeDailySaving(date, client.savings!);
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
@@ -512,6 +541,9 @@ export class DataService {
         Number(client.savings) +
         Number(client.applicationFee)
       ).toString(),
+      dailySaving: {
+        [date]: `${save}`,
+      },
       // projectedRevenue: (
       //   Number(this.auth.currentUser.projectedRevenue) +
       //   Number(client.amountToPay)
@@ -594,6 +626,16 @@ export class DataService {
         Number(payment);
     }
     return reimburse;
+  }
+  computeDailySaving(date: string, saving: string) {
+    let save: any = '';
+    if (this.auth.currentUser.dailySaving[`${date}`] === undefined) {
+      save = saving;
+    } else {
+      save =
+        Number(this.auth.currentUser.dailySaving[`${date}`]) + Number(saving);
+    }
+    return save;
   }
   computeDailyCardPayments(date: string, payment: string) {
     let deposit: any = '';

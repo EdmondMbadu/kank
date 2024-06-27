@@ -33,4 +33,7 @@ export class Avatar {
   path?: string;
   size?: string;
   downloadURL?: string;
+  CV?: string;
+  CVDownloadURL?: string;
+  CVSize?: string;
 }

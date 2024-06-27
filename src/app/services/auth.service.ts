@@ -28,7 +28,7 @@ export class AuthService {
   email?: Observable<any>;
   currentUser: any = {};
   word: string = 'synergie';
-  isAdmninistrator: boolean = false;
+  public isAdmninistrator: boolean = false;
   clientId: string = '';
   currentClient: Client = new Client();
 
@@ -214,6 +214,7 @@ export class AuthService {
       mode: 'production',
       feesData: {},
       dailyReimbursement: {},
+      dailySaving: {},
       dailyCardReturns: {},
       dailyCardPayments: {},
     };
@@ -238,6 +239,7 @@ export class AuthService {
       membershipFee: client.membershipFee,
       applicationFee: client.applicationFee,
       savings: client.savings,
+      savingsPayments: client.savingsPayments,
       loanAmount: client.loanAmount,
       creditScore: '50',
       agent: client.agent,
@@ -279,6 +281,7 @@ export class AuthService {
       membershipFee: client.membershipFee,
       applicationFee: client.applicationFee,
       savings: client.savings,
+      savingsPayments: client.savingsPayments,
       creditScore: '50',
       type: 'register',
       profession: client.profession,
