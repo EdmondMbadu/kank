@@ -22,16 +22,13 @@ export class CertificateComponent implements OnInit {
     private compute: ComputationService
   ) {}
 
-  selectedTeamAndEmployee: Certificate = {};
+  selectedBest: Certificate = {};
   best: any = {};
   url: string = '';
   certificateId: string = '';
   certificates: Certificate[] = [];
   months?: number[] = [];
 
-  currentDownloadUrl: string = '';
-  employeeDocDownloadUrl: string = '';
-  teamDocDownloadUrl: string = '';
   years: string[] = [];
   // note that currentMonth and currentYear, here means the previous one
   currentDate = new Date();
@@ -54,6 +51,8 @@ export class CertificateComponent implements OnInit {
     bestTeamCertificateDownloadUrl: '',
     bestEmployeeCertificatePath: '',
     bestEmployeeCertificateDownloadUrl: '',
+    bestManagerCertificatePath: '',
+    bestManagerCertificateDownloadUrl: '',
   };
   displayAddTeam: boolean = false;
   ngOnInit(): void {
@@ -80,7 +79,7 @@ export class CertificateComponent implements OnInit {
   }
 
   updateSelection() {
-    this.selectedTeamAndEmployee = this.selectTeamAndEmployeeByMonthAndYear(
+    this.selectedBest = this.selectTeamAndEmployeeByMonthAndYear(
       this.certificates,
       this.time.monthFrenchNames[this.givenMonth],
       this.givenYear.toString()
@@ -92,36 +91,36 @@ export class CertificateComponent implements OnInit {
       this.givenMonth,
       this.givenYear
     );
-    console.log('The selection is', this.selectedTeamAndEmployee);
+    console.log('The selection is', this.selectedBest);
   }
-  async startUploadCBestTeamData(event: FileList) {
-    const file = event?.item(0);
-    console.log(' current file data', file);
+  // async startUploadCBestTeamData(event: FileList) {
+  //   const file = event?.item(0);
+  //   console.log(' current file data', file);
 
-    if (file?.type.split('/')[0] !== 'image') {
-      alert('Unsupported file type. Please upload an image.');
-      return;
-    }
+  //   if (file?.type.split('/')[0] !== 'image') {
+  //     alert('Unsupported file type. Please upload an image.');
+  //     return;
+  //   }
 
-    // the size cannot be greater than 20mb
-    if (file?.size >= 20000000) {
-      alert(
-        "L'image est trop grande. La Taille maximale du fichier est de 20MB"
-      );
-      return;
-    }
-    const path = `certificates/team-${this.certificate.month}-${this.certificate.year}`;
+  //   // the size cannot be greater than 20mb
+  //   if (file?.size >= 20000000) {
+  //     alert(
+  //       "L'image est trop grande. La Taille maximale du fichier est de 20MB"
+  //     );
+  //     return;
+  //   }
+  //   const path = `certificates/team-${this.certificate.month}-${this.certificate.year}`;
 
-    // the main task
-    console.log('the path', path);
+  //   // the main task
+  //   console.log('the path', path);
 
-    const uploadTask = await this.storage.upload(path, file);
-    this.teamDocDownloadUrl = await uploadTask.ref.getDownloadURL();
-    uploadTask.totalBytes;
+  //   const uploadTask = await this.storage.upload(path, file);
+  //   this.certificate.bestTeamCertificateDownloadUrl =
+  //     await uploadTask.ref.getDownloadURL();
+  //   uploadTask.totalBytes;
 
-    this.certificate.bestTeamCertificatePath = path;
-    this.certificate.bestTeamCertificateDownloadUrl = this.teamDocDownloadUrl;
-  }
+  //   this.certificate.bestTeamCertificatePath = path;
+  // }
 
   selectTeamAndEmployeeByMonthAndYear(
     certificate: Certificate[],
@@ -134,7 +133,8 @@ export class CertificateComponent implements OnInit {
     return selectedObject!;
   }
 
-  async startUploadCBestEmployeeData(event: FileList) {
+  async startUploadCertificate(event: FileList, id: string) {
+    let prefix = id.replace(/^get/, '');
     const file = event?.item(0);
     console.log(' current file data', file);
 
@@ -150,26 +150,34 @@ export class CertificateComponent implements OnInit {
       );
       return;
     }
-    const path = `certificates/employee-${this.certificate.month}-${this.certificate.year}`;
+    const path = `certificates/Best-${prefix}-${this.certificate.month}-${this.certificate.year}`;
 
     // the main task
     console.log('the path', path);
 
     const uploadTask = await this.storage.upload(path, file);
-    this.employeeDocDownloadUrl = await uploadTask.ref.getDownloadURL();
-    uploadTask.totalBytes;
 
-    this.certificate.bestEmployeeCertificatePath = path;
-    this.certificate.bestEmployeeCertificateDownloadUrl =
-      this.employeeDocDownloadUrl;
-  }
+    if (id === 'getEmploye') {
+      this.certificate.bestEmployeeCertificateDownloadUrl =
+        await uploadTask.ref.getDownloadURL();
 
-  onTeamClick(): void {
-    const fileInput = document.getElementById('getTeam') as HTMLInputElement;
-    fileInput.click();
+      this.certificate.bestEmployeeCertificatePath = path;
+    } else if (id === 'getTeam') {
+      this.certificate.bestTeamCertificateDownloadUrl =
+        await uploadTask.ref.getDownloadURL();
+      uploadTask.totalBytes;
+
+      this.certificate.bestTeamCertificatePath = path;
+    } else {
+      this.certificate.bestManagerCertificateDownloadUrl =
+        await uploadTask.ref.getDownloadURL();
+      uploadTask.totalBytes;
+
+      this.certificate.bestManagerCertificatePath = path;
+    }
   }
-  onEmployeClick(): void {
-    const fileInput = document.getElementById('getEmploye') as HTMLInputElement;
+  onClick(id: string) {
+    const fileInput = document.getElementById(id) as HTMLInputElement;
     fileInput.click();
   }
 

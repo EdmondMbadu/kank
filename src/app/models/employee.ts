@@ -43,9 +43,12 @@ export class Certificate {
   year?: string;
   bestTeam?: string;
   bestEmployee?: string;
+  bestManager?: string;
   bestEmployeePerformance?: string;
   bestTeamCertificatePath?: string;
   bestTeamCertificateDownloadUrl?: string;
   bestEmployeeCertificatePath?: string;
   bestEmployeeCertificateDownloadUrl?: string;
+  bestManagerCertificatePath?: string;
+  bestManagerCertificateDownloadUrl?: string;
 }
