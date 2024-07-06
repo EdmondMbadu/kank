@@ -87,13 +87,15 @@ export class DailyPaymentsComponent implements OnInit {
       );
 
       const filteredValues = Object.values(filteredDict);
+      const filteredKeys = Object.keys(filteredDict);
       if (filteredValues.length !== 0) {
-        this.fillDailyPayment(client, filteredValues);
+        this.fillDailyPayment(client, filteredValues, filteredKeys);
       }
     }
   }
 
-  fillDailyPayment(client: Client, values: string[]) {
+  fillDailyPayment(client: Client, values: string[], keys: string[]) {
+    let i = 0;
     for (let v of values) {
       let middleName = client.middleName === undefined ? '' : client.middleName;
       let filt = {
@@ -101,6 +103,7 @@ export class DailyPaymentsComponent implements OnInit {
         lastName: client.lastName,
         middleName: middleName,
         amount: v,
+        time: keys[i++],
         employee: client.employee,
         trackingId: client.trackingId,
       };
@@ -110,6 +113,18 @@ export class DailyPaymentsComponent implements OnInit {
         this.dailyPaymentsCopy?.push(filt);
       }
     }
+
+    // Sort them
+    this.dailyPayments!.sort(
+      (a, b) =>
+        this.time.parseDate(b.time).getTime() -
+        this.time.parseDate(a.time).getTime()
+    );
+    this.dailyPaymentsCopy!.sort(
+      (a, b) =>
+        this.time.parseDate(b.time).getTime() -
+        this.time.parseDate(a.time).getTime()
+    );
   }
   search(value: string) {
     if (value) {
@@ -134,6 +149,7 @@ export class Filtered {
   middleName?: string;
   date?: string;
   amount?: string;
+  time?: string;
   employee?: Employee;
   trackingId?: string;
 }

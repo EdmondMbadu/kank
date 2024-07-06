@@ -71,6 +71,18 @@ export class TimeService {
     let date = `${month}-${day}-${year}`;
     return date;
   }
+  parseDate(timeStr: any) {
+    const parts = timeStr.split('-');
+    // The parts array will have the format [month, day, year, hour, minute, second]
+    return new Date(
+      parts[2],
+      parts[0] - 1,
+      parts[1],
+      parts[3],
+      parts[4],
+      parts[5]
+    );
+  }
   convertDateToMonthDayYear(dateStr: string) {
     // Split the input date string by the hyphen
     const [year, month, day] = dateStr.split('-');

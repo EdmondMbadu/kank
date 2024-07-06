@@ -71,20 +71,29 @@ export class DailySavingsComponent implements OnInit {
   extractTodayPayments() {
     this.trackingIds = [];
     for (let client of this.clients!) {
-      if (client.savingsPayments !== undefined) {
-        const filteredDict = Object.fromEntries(
-          Object.entries(client.savingsPayments!).filter(([key, value]) =>
-            key.startsWith(this.today)
-          )
-        );
-        // console.log('all current clients', filteredDict);
-        const filterdKeys = Object.keys(filteredDict);
-        // console.log('all keys', filterdKeys);
-        const filteredValues = Object.values(filteredDict);
-        // console.log('all values', filteredValues);
-        if (filteredValues.length !== 0) {
-          this.fillDailyPayment(client, filteredValues, filterdKeys);
-        }
+      // Ensure client.savingsPayments and client.previousSavingsPayments are not undefined or null
+      const savingsPaymentsEntries = client.savingsPayments
+        ? Object.entries(client.savingsPayments)
+        : [];
+      const previousSavingsPaymentsEntries = client.previousSavingsPayments
+        ? Object.entries(client.previousSavingsPayments)
+        : [];
+
+      // Combine entries from both savingsPayments and previousSavingsPayments
+      const combinedEntries = [
+        ...savingsPaymentsEntries,
+        ...previousSavingsPaymentsEntries,
+      ];
+
+      // Filter the combined entries
+      const filteredDict = Object.fromEntries(
+        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
+      );
+
+      const filteredKeys = Object.keys(filteredDict);
+      const filteredValues = Object.values(filteredDict);
+      if (filteredValues.length !== 0) {
+        this.fillDailyPayment(client, filteredValues, filteredKeys);
       }
     }
   }
@@ -109,29 +118,19 @@ export class DailySavingsComponent implements OnInit {
       }
     }
 
-    // sort them
+    // Sort them
     this.dailyPayments!.sort(
       (a, b) =>
-        this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
+        this.time.parseDate(b.time).getTime() -
+        this.time.parseDate(a.time).getTime()
     );
     this.dailyPaymentsCopy!.sort(
       (a, b) =>
-        this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
-    );
-    // console.log('All payments', this.dailyPayments);
-  }
-  parseDate(timeStr: any) {
-    const parts = timeStr.split('-');
-    // The parts array will have the format [month, day, year, hour, minute, second]
-    return new Date(
-      parts[2],
-      parts[0] - 1,
-      parts[1],
-      parts[3],
-      parts[4],
-      parts[5]
+        this.time.parseDate(b.time).getTime() -
+        this.time.parseDate(a.time).getTime()
     );
   }
+
   search(value: string) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
