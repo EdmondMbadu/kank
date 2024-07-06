@@ -231,6 +231,8 @@ export class DataService {
       type: 'register',
       numberOfPaymentsMissed: '0',
       numberOfPaymentsMade: '0',
+      previousPayments: client.previousPayments,
+      previousSavingsPayments: client.previousSavingsPayments,
       payments: {},
       amountToPay: '0',
       debtLeft: '0',

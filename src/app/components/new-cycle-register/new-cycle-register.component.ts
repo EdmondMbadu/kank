@@ -196,7 +196,10 @@ export class NewCycleRegisterComponent implements OnInit {
   }
   setClientNewDebtCycleValues() {
     this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
+    this.client.previousSavingsPayments = { ...this.client.savingsPayments };
+    this.client.previousPayments = { ...this.client.payments };
     this.client.savingsPayments = {};
+
     this.client.savings = (
       Number(this.client.savings) + Number(this.savings)
     ).toString();

@@ -29,6 +29,8 @@ export class Client {
   numberOfPaymentsMissed?: string;
   numberOfPaymentsMade?: string;
   payments?: { [key: string]: string } = {};
+  previousPayments?: { [key: string]: string } = {};
+  previousSavingsPayments?: { [key: string]: string } = {};
   savingsPayments?: { [key: string]: string } = {};
   interestRate?: string;
   agent?: string;

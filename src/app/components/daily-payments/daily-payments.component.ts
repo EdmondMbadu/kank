@@ -70,11 +70,22 @@ export class DailyPaymentsComponent implements OnInit {
     this.dailyPaymentsNames = [];
     this.trackingIds = [];
     for (let client of this.clients!) {
+      // Ensure client.payments and client.previousPayments are not undefined or null
+      const paymentsEntries = client.payments
+        ? Object.entries(client.payments)
+        : [];
+      const previousPaymentsEntries = client.previousPayments
+        ? Object.entries(client.previousPayments)
+        : [];
+
+      // Combine entries from both payments and previousPayments
+      const combinedEntries = [...paymentsEntries, ...previousPaymentsEntries];
+
+      // Filter the combined entries
       const filteredDict = Object.fromEntries(
-        Object.entries(client.payments!).filter(([key, value]) =>
-          key.startsWith(this.today)
-        )
+        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
       );
+
       const filteredValues = Object.values(filteredDict);
       if (filteredValues.length !== 0) {
         this.fillDailyPayment(client, filteredValues);
