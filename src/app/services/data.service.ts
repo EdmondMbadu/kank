@@ -545,7 +545,7 @@ export class DataService {
     );
     let date = this.time.todaysDateMonthDayYear();
     // sdd tje minus to mark withdrawal
-    let save: any = this.computeDailySaving(date, `${withdrawal}`);
+    let save: any = this.computeDailySavingReturn(date, `${withdrawal}`);
     const data = {
       clientsSavings: (
         Number(this.auth.currentUser.clientsSavings) - Number(withdrawal)
@@ -610,6 +610,7 @@ export class DataService {
     savings: string,
     date: string
   ) {
+    console.log(' the savings being added', savings);
     let dailyFees: any = this.computeDailyFees(client, date);
     let save: any = this.computeDailySaving(date, savings);
     let request: any = this.computeDailyMoneyRequests(
@@ -851,6 +852,16 @@ export class DataService {
     return reimburse;
   }
   computeDailySaving(date: string, saving: string) {
+    let save: any = '';
+    if (this.auth.currentUser.dailySaving[`${date}`] === undefined) {
+      save = saving;
+    } else {
+      save =
+        Number(this.auth.currentUser.dailySaving[`${date}`]) + Number(saving);
+    }
+    return save;
+  }
+  computeDailySavingReturn(date: string, saving: string) {
     let save: any = '';
     if (this.auth.currentUser.dailySavingReturns[`${date}`] === undefined) {
       save = saving;
