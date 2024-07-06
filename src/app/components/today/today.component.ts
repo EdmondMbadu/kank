@@ -25,6 +25,9 @@ export class TodayComponent {
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
   dailySaving: string = '0';
+  dailySavingReturns: string = '0';
+  dailyMoneyRequests: string = '0';
+  tomorrowMoneyRequests: string = '0';
 
   totalPerfomance: number = 0;
 
@@ -32,10 +35,13 @@ export class TodayComponent {
     '/not-paid-today',
     '/daily-payments',
     '/daily-lendings',
-    '/client-info-current',
+    '/daily-fees',
     '/add-reserve',
     '/add-investment',
     '/daily-savings',
+    '/daily-savings-returns',
+    '/request-today',
+    '/request-tomorrow',
   ];
   summary: string[] = [
     "N'ont pas Payé Aujourdhui",
@@ -45,6 +51,9 @@ export class TodayComponent {
     'Reserve Du Jour',
     'Entrée Du Jour',
     'Epargne Du Jour',
+    'Retrait Epargne Du Jour',
+    'Argent Demandé Pour Aujourdhui',
+    'Argent Demandé Pour Demain',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -56,13 +65,23 @@ export class TodayComponent {
     '../../../assets/img/reserve.svg',
     '../../../assets/img/invest.svg',
     '../../../assets/img/saving.svg',
+    '../../../assets/img/saving.svg',
+    '../../../assets/img/request-money.png',
+    '../../../assets/img/request-money.png',
   ];
 
   today = this.time.todaysDateMonthDayYear();
+  tomorrow = this.time.getTomorrowsDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
     this.dailyLending = this.auth.currentUser.dailyLending[this.today];
     this.dailySaving = this.auth.currentUser.dailySaving[this.today];
+    this.dailySavingReturns =
+      this.auth.currentUser.dailySavingReturns[this.today];
+    this.dailyMoneyRequests =
+      this.auth.currentUser.dailyMoneyRequests[this.today];
+    this.tomorrowMoneyRequests =
+      this.auth.currentUser.dailyMoneyRequests[this.tomorrow];
     this.dailyPayment = this.auth.currentUser.dailyReimbursement[this.today];
     this.dailyFees = this.auth.currentUser.feesData[this.today];
     this.dailyReserve = this.compute
@@ -83,6 +102,14 @@ export class TodayComponent {
     this.dailyInvestment =
       this.dailyInvestment === undefined ? '0' : this.dailyInvestment;
     this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
+    this.dailySavingReturns =
+      this.dailySavingReturns === undefined ? '0' : this.dailySavingReturns;
+    this.dailyMoneyRequests =
+      this.dailyMoneyRequests === undefined ? '0' : this.dailyMoneyRequests;
+    this.tomorrowMoneyRequests =
+      this.tomorrowMoneyRequests === undefined
+        ? '0'
+        : this.tomorrowMoneyRequests;
     this.summaryContent = [
       ``,
       ` ${this.dailyPayment}`,
@@ -91,6 +118,11 @@ export class TodayComponent {
       ` ${this.dailyReserve}`,
       `${this.dailyInvestment}`,
       `${this.dailySaving}`,
+      `${this.dailySavingReturns}`,
+      '',
+      '',
+      // `${this.dailyMoneyRequests}`,
+      // `${this.tomorrowMoneyRequests}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -101,6 +133,17 @@ export class TodayComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestment)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailySaving)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.dailySavingReturns
+      )}`,
+      ``,
+      ``,
+      // `${this.compute.convertCongoleseFrancToUsDollars(
+      //   this.dailyMoneyRequests
+      // )}`,
+      // `${this.compute.convertCongoleseFrancToUsDollars(
+      //   this.tomorrowMoneyRequests
+      // )}`,
     ];
   }
 }

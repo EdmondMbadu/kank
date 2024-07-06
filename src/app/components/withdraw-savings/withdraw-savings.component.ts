@@ -35,7 +35,7 @@ export class WithdrawSavingsComponent implements OnInit {
     });
   }
   displaySavingsOtherAmount() {
-    if (this.savingsWithdrawn === 'Other Amount') {
+    if (this.savingsWithdrawn === 'Autre Montant') {
       this.savingsOtherAmount = true;
       this.savingsWithdrawn = '';
     } else {

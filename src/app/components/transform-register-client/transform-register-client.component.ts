@@ -51,6 +51,9 @@ export class TransformRegisterClientComponent implements OnInit {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      if (this.client.loanAmount != undefined) {
+        this.loanAmount = this.client.loanAmount;
+      }
     });
   }
 
@@ -111,11 +114,10 @@ export class TransformRegisterClientComponent implements OnInit {
           }
         )
         .then(() => {
-          if (this.client.uid !== undefined) {
+          if (this.client.uid !== undefined && employee !== null) {
             employee?.clients?.push(this.client.uid);
-            console.log(
-              'entering here, agent clients after update',
-              employee!.clients
+            employee?.clients!.filter(
+              (item, index) => employee!.clients!.indexOf(item) === index
             );
           }
           this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
@@ -188,6 +190,8 @@ export class TransformRegisterClientComponent implements OnInit {
     this.interestRate = '';
   }
   setClientNewDebtCycleValues() {
+    this.client.debtCycle =
+      this.client.debtCycle === undefined ? '1' : this.client.debtCycle;
     this.client.amountToPay = this.amountToPay;
     this.client.loanAmount = this.loanAmount;
     this.client.paymentPeriodRange = this.payRange;

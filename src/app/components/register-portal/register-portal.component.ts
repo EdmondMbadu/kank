@@ -20,6 +20,7 @@ export class RegiserPortalComponent {
   id: any = '';
   paymentDate = '';
   debtStart = '';
+  requestDate = '';
   debtEnd = '';
   constructor(
     public auth: AuthService,
@@ -37,6 +38,11 @@ export class RegiserPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      this.client.debtCycle =
+        this.client.debtCycle === undefined ? '1' : this.client.debtCycle;
+      this.requestDate = this.time.convertDateToDayMonthYear(
+        this.client.requestDate!
+      );
     });
   }
 

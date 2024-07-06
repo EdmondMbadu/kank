@@ -218,8 +218,10 @@ export class AuthService {
       feesData: {},
       dailyReimbursement: {},
       dailySaving: {},
+      dailySavingReturns: {},
       dailyCardReturns: {},
       dailyCardPayments: {},
+      dailyMoneyRequests: {},
     };
     return userRef.set(data, { merge: true });
   }
@@ -285,8 +287,15 @@ export class AuthService {
       applicationFee: client.applicationFee,
       savings: client.savings,
       savingsPayments: client.savingsPayments,
+      applicationFeePayments: client.applicationFeePayments,
+      membershipFeePayments: client.membershipFeePayments,
       creditScore: '50',
       type: 'register',
+      loanAmount: client.loanAmount,
+      requestAmount: client.requestAmount,
+      requestStatus: 'pending',
+      requestType: 'lending',
+      requestDate: client.requestDate,
       profession: client.profession,
       dateJoined: `${month}-${day}-${year}`,
       payments: {},

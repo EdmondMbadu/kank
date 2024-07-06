@@ -44,19 +44,32 @@
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.applicationFee| number:'1.0-0'}} </dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Frais De Dossier Payé </dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Frais De Dossier Payé (FC)</dd>
             </div>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.membershipFee | number:'1.0-0'}} </dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Frais De D'ahesion Payé </dd>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Frais D'ahesion Payé (FC)</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.requestAmount| number:'1.0-0'}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Demandé (FC) </dd>
             </div>
             
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.debtCycle| number:'1.0-0'}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Cycle De Dette </dd>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{requestDate}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Date De Remettre L'argent Au Client </dd>
+            </div>
          
           
         
         </dl>
     </div>
     <div class="flex container flex-col md:flex-row mx-auto justify-center ">
+        <a type="submit" class="text-white bg-green-700 hover:bg-green-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"  [routerLink]="['/request-update',id ]">Demande de Mise à Jour</a>
     <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="delete()">Supprimer Client</button>
    
 </div>

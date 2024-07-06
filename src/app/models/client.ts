@@ -17,7 +17,9 @@ export class Client {
   businessAddress?: string;
   debtCycle?: string;
   membershipFee?: string;
+  membershipFeePayments?: { [key: string]: string } = {};
   applicationFee?: string;
+  applicationFeePayments?: { [key: string]: string } = {};
   savings?: string;
   loanAmount?: string;
   creditScore?: string;
@@ -37,4 +39,8 @@ export class Client {
   debtCycleEndDate?: string;
   employee?: Employee;
   type?: string;
+  requestAmount?: string;
+  requestStatus?: string;
+  requestDate?: string;
+  requestType?: string;
 }

@@ -2,6 +2,7 @@ export class Card {
   uid?: string;
   name?: string;
   firstName?: string;
+  trackingId?: string;
   lastName?: string;
   middleName?: string;
   profession?: string;
@@ -16,6 +17,10 @@ export class Card {
   payments?: { [key: string]: string } = {};
   withdrawal?: { [key: string]: string } = {};
   amountToPay?: string;
+  requestAmount?: string;
+  requestStatus?: string;
+  requestDate?: string;
+  requestType?: string;
   amountPaidToday?: string;
   paymentPeriodRange?: string;
   cardCycleStartDate?: string;

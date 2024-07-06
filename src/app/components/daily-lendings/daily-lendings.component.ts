@@ -14,6 +14,7 @@ import { TimeService } from 'src/app/services/time.service';
 export class DailyLendingsComponent implements OnInit {
   clients?: Client[];
   today = this.time.todaysDateMonthDayYear();
+  todayFrench = this.time.convertDateToDayMonthYear(this.today);
   filteredItems?: Client[] = [];
   filteredItemsCopy?: Client[] = [];
   searchControl = new FormControl();

@@ -64,6 +64,18 @@ export class ClientPortalCardComponent {
       this.router.navigate(['/return-client-card/' + this.id]);
     }
   }
+  requestMoney() {
+    if (
+      Number(this.clientCard.amountPaid) <= Number(this.clientCard.amountToPay)
+    ) {
+      alert(
+        `Vous devez versez au moins 2 fois le montant de ${this.clientCard.amountToPay} FC pour être payé. Vous n'avez versez qu'une seule fois.`
+      );
+      return;
+    } else {
+      this.router.navigate(['/request-client-card/' + this.id]);
+    }
+  }
   addMoney() {
     if (this.status !== 'En Cours') {
       alert(`Ce cycle est terminé, commencez un nouveau cycle.`);

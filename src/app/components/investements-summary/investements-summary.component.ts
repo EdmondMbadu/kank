@@ -22,7 +22,8 @@ export class InvestementsSummaryComponent implements OnInit {
   currentClients?: Client[] = [];
   currentClientsRegistered?: Client[] = [];
   ngOnInit() {
-    if (this.auth.isAdmninistrator) {
+    // do this only once
+    if (this.auth.isAdmninistrator && this.auth.currentUser.admin !== 'true') {
       this.auth.makeAdmin();
     }
     this.retrieveClients();
@@ -178,6 +179,7 @@ export class InvestementsSummaryComponent implements OnInit {
 
   findClientsWithDebts() {
     this.currentClientsRegistered = [];
+    this.currentClients = [];
     this.clients?.forEach((client) => {
       if (Number(client.debtLeft) > 0) {
         this.currentClients!.push(client);

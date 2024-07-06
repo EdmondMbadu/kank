@@ -33,8 +33,8 @@ import { RetraceComponent } from './components/retrace/retrace.component';
 import { TrackingMonthComponent } from './components/tracking-month/tracking-month.component';
 import { ClientInfoCurrentComponent } from './components/client-info-current/client-info-current.component';
 import { NewCardComponent } from './components/new-card/new-card.component';
-import { ClientInfoCardComponent } from './components/client-info-card/client-info-card.component';
-import { ClientPortalCardComponent } from './components/client-portal-card/client-portal-card.component';
+import { ClientInfoCardComponent } from './card/client-info-card/client-info-card.component';
+import { ClientPortalCardComponent } from './card/client-portal-card/client-portal-card.component';
 import { PaymentCardComponent } from './components/payment-card/payment-card.component';
 import { PaymentActivityCardComponent } from './components/payment-activity-card/payment-activity-card.component';
 import { ReturnClientCardComponent } from './components/return-client-card/return-client-card.component';
@@ -58,6 +58,14 @@ import { CertificateComponent } from './components/certificate/certificate.compo
 import { TeamRankingMonthComponent } from './central/team-ranking-month/team-ranking-month.component';
 import { SavingActivityComponent } from './components/saving-activity/saving-activity.component';
 import { DailySavingsComponent } from './components/daily-savings/daily-savings.component';
+import { NewCycleRegisterComponent } from './components/new-cycle-register/new-cycle-register.component';
+import { RequestTomorrowComponent } from './components/request-tomorrow/request-tomorrow.component';
+import { RequestSavingsWithdrawComponent } from './components/request-savings-withdraw/request-savings-withdraw.component';
+import { RequestClientCardComponent } from './card/request-client-card/request-client-card.component';
+import { RequestTodayComponent } from './components/request-today/request-today.component';
+import { RequestUpdateComponent } from './components/request-update/request-update.component';
+import { DailyFeesComponent } from './components/daily-fees/daily-fees.component';
+import { DailySavingsReturnsComponent } from './components/daily-savings-returns/daily-savings-returns.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -139,6 +147,7 @@ const routes: Routes = [
   { path: 'client-info-card', component: ClientInfoCardComponent },
   { path: 'new-client', component: NewClientComponent },
   { path: 'register-client', component: RegisterClientComponent },
+  { path: 'new-cycle-register/:id', component: NewCycleRegisterComponent },
   { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
   { path: 'register-portal/:id', component: RegiserPortalComponent },
@@ -150,6 +159,10 @@ const routes: Routes = [
   { path: 'payment-card/:id', component: PaymentCardComponent },
   { path: 'remove-card/:id', component: RemoveCardComponent },
   { path: 'withdraw-savings/:id', component: WithdrawSavingsComponent },
+  {
+    path: 'request-savings-withdraw/:id',
+    component: RequestSavingsWithdrawComponent,
+  },
   { path: 'payment-activity/:id', component: PaymentActivityComponent },
   { path: 'saving-activity/:id', component: SavingActivityComponent },
   {
@@ -160,8 +173,12 @@ const routes: Routes = [
     path: 'return-client-card/:id',
     component: ReturnClientCardComponent,
   },
-
+  {
+    path: 'request-client-card/:id',
+    component: RequestClientCardComponent,
+  },
   { path: 'debt-cycle/:id', component: DebtCycleComponent },
+  { path: 'request-update/:id', component: RequestUpdateComponent },
   {
     path: 'transform-register-client/:id',
     component: TransformRegisterClientComponent,
@@ -174,6 +191,10 @@ const routes: Routes = [
   { path: 'daily-payments', component: DailyPaymentsComponent },
   { path: 'daily-lendings', component: DailyLendingsComponent },
   { path: 'daily-savings', component: DailySavingsComponent },
+  { path: 'daily-savings-returns', component: DailySavingsReturnsComponent },
+  { path: 'daily-fees', component: DailyFeesComponent },
+  { path: 'request-tomorrow', component: RequestTomorrowComponent },
+  { path: 'request-today', component: RequestTodayComponent },
   { path: 'pay-today', component: PayTodayComponent },
   { path: 'paid-date', component: PaidDateComponent },
   { path: 'lending-date', component: LendingDateComponent },

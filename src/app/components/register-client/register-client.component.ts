@@ -36,14 +36,20 @@ export class RegisterClientComponent implements OnInit {
   phoneNumber: string = '';
   applicactionFee: string = '';
   memberShipFee: string = '';
+  loanAmount: string = '';
   savings: string = '';
+  requestDate: string = '';
 
   applicationFeeOtherDisplay: boolean = false;
+  loanAmountOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
   savingsOtherDisplay: boolean = false;
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
+    let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
+      this.requestDate
+    );
     let inputValid = this.data.numbersValid(
       this.savings,
       this.applicactionFee,
@@ -60,7 +66,8 @@ export class RegisterClientComponent implements OnInit {
       this.phoneNumber === '' ||
       this.applicactionFee === '' ||
       this.memberShipFee === '' ||
-      this.savings === ''
+      this.savings === '' ||
+      this.requestDate === ''
     ) {
       alert('Completer tous les données');
       return;
@@ -68,6 +75,12 @@ export class RegisterClientComponent implements OnInit {
       alert(
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
+      return;
+    } else if (!checkDate) {
+      alert(`Assurez-vous que la date de Donner L'argent au client\n
+        - Est Dans L'intervalle D'Une Semaine\n
+        - N'est Pas Aujourdhui ou au Passé
+        `);
       return;
     } else {
       let conf = confirm(
@@ -128,6 +141,14 @@ export class RegisterClientComponent implements OnInit {
       this.savingsOtherDisplay = false;
     }
   }
+  displayLoanOtherAmount() {
+    if (this.loanAmount === 'Autre Montant') {
+      this.loanAmountOtherDisplay = true;
+      this.loanAmount = '';
+    } else {
+      this.loanAmountOtherDisplay = false;
+    }
+  }
 
   resetFields() {
     this.client = new Client();
@@ -144,6 +165,7 @@ export class RegisterClientComponent implements OnInit {
     this.savings = '';
   }
   setNewClientValues() {
+    this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
     this.client.firstName = this.firstName;
     this.client.lastName = this.lastName;
     this.client.middleName = this.middleName;
@@ -155,6 +177,15 @@ export class RegisterClientComponent implements OnInit {
     this.client.applicationFee = this.applicactionFee;
     this.client.membershipFee = this.memberShipFee;
     this.client.savings = this.savings;
+    this.client.loanAmount = this.loanAmount;
+    this.client.requestAmount = this.loanAmount;
+    this.client.requestDate = this.requestDate;
     this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
+    this.client.applicationFeePayments = {
+      [this.time.todaysDate()]: this.applicactionFee,
+    };
+    this.client.membershipFeePayments = {
+      [this.time.todaysDate()]: this.memberShipFee,
+    };
   }
 }

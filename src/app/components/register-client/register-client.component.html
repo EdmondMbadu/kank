@@ -100,11 +100,31 @@
     <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Epargnes Autre Montant</label>
     <input type="text" [(ngModel)]="savings"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
 </div> 
+<div class="mb-6">
+    <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant Demandé</label>
+    <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
+    <option selected>Choose</option>
+    <option [ngValue]="100000">FC 100,000</option>
+    <option [ngValue]="200000">FC 200,000</option>
+    <option [ngValue]="300000">FC 300,000</option>
+    <option [ngValue]="500000">FC 500,000</option>
+    <option [ngValue]="">Autre Montant </option>
+    </select>
+</div>
+<div *ngIf="loanAmountOtherDisplay" class="mb-6">
+    <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
+    <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+</div> 
+<div class="">
+    <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900">Date De Donner L'Argent au Client</label>
+    <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023" required>
+  
+</div>
 
 
    
 <button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>
-    <button class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="addNewClient()">Soumettre</button>
+    <button class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="addNewClient()">Soumettre</button>
 </div>
 
 

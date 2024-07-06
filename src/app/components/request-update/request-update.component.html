@@ -1,0 +1,177 @@
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<div class=" container flex  mx-auto my-6 justify-center">
+    <h1 class="text-xl md:text-4xl  mr-2 px-4">Mise à Jour Demande Pour {{client.firstName}} {{client.lastName}}</h1>
+    <button type="submit" class=" mr-4 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-16 sm:w-auto px-2.5 md:px-5 py-2.5 text-center " routerLink="/client-info">Client Info</button>
+</div>
+
+<div class="flex container justify-center mx-auto">
+
+<div class="border-2 shadow border-green-800 p-12 rounded-lg">
+    <div class="grid gap-6 mb-6 md:grid-cols-2">
+     
+        <div>
+            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Nom</label>
+            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" [(ngModel)]="client.lastName" required>
+        </div>   
+        <div>
+            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
+            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName" required>
+        </div> 
+         
+    </div>
+    <div class="grid gap-6 mb-6 md:grid-cols-2">
+        <div>
+            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Prenom</label>
+            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required [(ngModel)]="client.firstName">
+        </div>
+   
+       
+   
+        <div>
+            <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
+            <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="client.phoneNumber">
+
+
+        </div>
+
+</div>
+    <div class="grid gap-6 mb-6 md:grid-cols-2">
+        <div>
+            <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
+            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required [(ngModel)]="client.profession">
+        </div>
+        <div>
+            <label for="bcapital" class="block mb-2 text-sm font-medium text-gray-900 "> Captial (FC)</label>
+            <input type="text" id="bcapital" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="50000" required [(ngModel)]="client.businessCapital">
+        </div>   
+         
+    </div>
+    <div class="mb-6">
+        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 "> Addresse Domicile</label>
+        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.homeAddress">
+    </div> 
+    <div class="mb-6">
+        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Address Business</label>
+        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.businessAddress">
+    </div> 
+
+    <!-- <div class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
+        <select id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <option selected>Choose</option>
+        <option [ngValue]="'Monday'">Lundi</option>
+        <option [ngValue]="'Tuesday'">Mardi</option>
+        <option [ngValue]="'Wednesday'">Mercredi</option>
+        <option [ngValue]="'Thursday'">Jeudi</option>
+        <option [ngValue]="'Friday'">Vendredi</option>
+        <option [ngValue]="'Saturday'">Samedi</option>
+        </select>
+    </div> -->
+
+    <!-- <div class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Agent</label>
+        <select id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <option selected>Choose</option>
+            <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
+     
+       
+        </select>
+    </div> -->
+    
+
+
+    <div class="mb-6">
+        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
+        <select id="applicationFee" [(ngModel)]="applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
+        <option selected>Choose</option>
+        <option [ngValue]="0">FC 0</option>
+        <option [ngValue]="5000">FC 5000</option>
+        <option [ngValue]="10000">FC 10,000</option>
+        <option [ngValue]="20000">FC 20,000</option>
+        <option [ngValue]="30000">FC 30,000</option>
+        <option [ngValue]="">Autre Montant </option>
+        </select>
+    </div>
+    <div *ngIf="applicationFeeOtherDisplay" class="mb-6">
+        <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
+        <input type="text" [(ngModel)]="applicationFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+    </div> 
+    <div class="mb-6">
+        <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
+        <select id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaymemberShipFeeOtherAmount()">
+        <option selected>Choose</option>
+        <option [ngValue]="0">FC 0</option>
+        <option [ngValue]="5000">FC 5000</option>
+        <option [ngValue]="10000">FC 10,000</option>
+        <option [ngValue]="20000">FC 20,000</option>
+        <option [ngValue]="30000">FC 30,000</option>
+        <option [ngValue]="">Autre Montant </option>
+        </select>
+    </div>
+    <div *ngIf="memberShipFeeOtherDisplay" class="mb-6">
+        <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais D'Adhesion Autre Montant</label>
+        <input type="text" [(ngModel)]="memberShipFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+    </div> 
+
+    
+    
+    <div class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant Demandé</label>
+        <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
+        <option selected>Choose</option>
+        <option [ngValue]="100000">FC 100,000</option>
+        <option [ngValue]="200000">FC 200,000</option>
+        <option [ngValue]="300000">FC 300,000</option>
+        <option [ngValue]="500000">FC 500,000</option>
+        <option [ngValue]="">Autre Montant </option>
+        </select>
+    </div>
+    <div *ngIf="loanAmountOtherDisplay" class="mb-6">
+        <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
+        <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+    </div> 
+
+<!-- <div class="mb-6">
+    <label for="payRange" class="block mb-2 text-sm font-medium text-gray-700">Cycle De Paiment</label> 
+    <select id="payRange"[(ngModel)]="payRange"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayRate()">
+    <option selected>Choose</option>
+    <option [ngValue]="4">4 Semains (1 mois) </option>
+    <option [ngValue]="8">8 Semaines ( 2 mois)</option>
+
+    </select>
+</div> -->
+<!-- 
+<div  *ngIf="rateDisplay" class="mb-6">
+    <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Taux D'interet</label> 
+    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="interestRate" required  [(ngModel)]="interestRate">
+
+  
+</div> -->
+<!-- <div  *ngIf="amountToPayDisplay" class="mb-6">
+    <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Montant A Payer</label> 
+    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="amountToPay">  
+</div> -->
+<!-- <div  *ngIf="debtCycleDisplay" class="mb-6">
+    <label for="debtCycle" class="block mb-2 text-sm font-medium text-red-700">Period De Cycle De Paiment</label> 
+    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="debtCycleStartDate+' to '+debtCycleEndDate">  
+</div> -->
+
+<div class="">
+    <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900">Date De Donner L'Argent au Client</label>
+    <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023" required>
+  
+</div>
+
+
+   <div class="flex flex-col md:flex-row">
+    <button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>
+    <button class="text-white m-4  bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center"(click)="registerClientNewDebtCycle()">Soumettre</button>
+   </div>
+
+</div>
+
+
+</div>
+
+
+

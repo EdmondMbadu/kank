@@ -1,7 +1,7 @@
 
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Emprunt Du Jour {{today.replaceAll('-','/')}}</h2>
+   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Emprunt Du Jour {{todayFrench.replaceAll('-','/')}}</h2>
    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
 
 

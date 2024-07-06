@@ -64,6 +64,7 @@ export class InfoRegisterComponent implements OnInit {
     }
   }
   findClientsWithDebts() {
+    this.currentRegisterClients = [];
     this.clients?.forEach((client) => {
       if (client.type !== undefined && client.type === 'register') {
         this.currentRegisterClients!.push(client);

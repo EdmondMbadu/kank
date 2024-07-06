@@ -25,10 +25,12 @@ export class User {
   mode?: string;
   roles?: string[] = ['user'];
   cardsMoney?: string;
+  dailyMoneyRequests?: { [key: string]: string } = {};
   totalDebtLeft?: string;
   admin?: string;
   dailyLending?: { [key: string]: string } = {};
   dailySaving?: { [key: string]: string } = {};
+  dailySavingReturns?: { [key: string]: string } = {};
   dailyReimbursement?: { [key: string]: string } = {};
   dailyCardPayments?: { [key: string]: string } = {};
   dailyCardReturns?: { [key: string]: string } = {};

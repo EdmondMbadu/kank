@@ -34,6 +34,7 @@ export class ClientInfoCurrentComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+      this.currentClients = [];
       this.findClientsWithDebts();
       this.filteredItems = this.currentClients;
       this.addIdToFilterItems();
@@ -64,6 +65,7 @@ export class ClientInfoCurrentComponent implements OnInit {
     }
   }
   findClientsWithDebts() {
+    this.currentClients = [];
     this.clients?.forEach((client) => {
       if (Number(client.debtLeft) > 0) {
         this.currentClients!.push(client);

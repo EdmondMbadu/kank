@@ -16,6 +16,7 @@ export class DailyPaymentsComponent implements OnInit {
   clients?: Client[];
   employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
+  todayFrench = this.time.convertDateToDayMonthYear(this.today);
   dailyPayments?: Filtered[] = [];
   dailyPaymentsCopy?: Filtered[] = [];
   dailyPaymentsNames: string[] = [];

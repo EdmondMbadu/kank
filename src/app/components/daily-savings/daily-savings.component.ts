@@ -16,10 +16,10 @@ export class DailySavingsComponent implements OnInit {
   clients?: Client[];
   employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
+  todayFrench = this.time.convertDateToDayMonthYear(this.today);
   dailyPayments?: Filtered[] = [];
   dailyPaymentsCopy?: Filtered[] = [];
-  dailyPaymentsNames: string[] = [];
-  dailyPamentsAmount: string[] = [];
+
   trackingIds: string[] = [];
   searchControl = new FormControl();
   constructor(
@@ -69,8 +69,6 @@ export class DailySavingsComponent implements OnInit {
   }
 
   extractTodayPayments() {
-    this.dailyPamentsAmount = [];
-    this.dailyPaymentsNames = [];
     this.trackingIds = [];
     for (let client of this.clients!) {
       if (client.savingsPayments !== undefined) {
@@ -105,7 +103,7 @@ export class DailySavingsComponent implements OnInit {
         trackingId: client.trackingId,
       };
 
-      if (Number(v) !== 0) {
+      if (Number(v) > 0) {
         this.dailyPayments?.push(filt);
         this.dailyPaymentsCopy?.push(filt);
       }

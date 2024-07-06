@@ -48,6 +48,9 @@ export class NotPaidComponent implements OnInit {
     this.validStartDate = this.time.isDateInRange(this.startDate);
     this.validEndDate = this.time.isDateInRange(this.endDate);
 
+    console.log('start date', this.startDate);
+    console.log('valid start date', this.validStartDate);
+
     if (
       this.validStartDate &&
       this.validEndDate &&

@@ -71,6 +71,63 @@ export class TimeService {
     let date = `${month}-${day}-${year}`;
     return date;
   }
+  convertDateToMonthDayYear(dateStr: string) {
+    // Split the input date string by the hyphen
+    const [year, month, day] = dateStr.split('-');
+    // remove leading zeros
+    const newMonth = parseInt(month, 10);
+    const newDay = parseInt(day, 10);
+
+    // Return the date in MM-DD-YYYY format
+    return `${newMonth}-${newDay}-${year}`;
+  }
+  getTomorrowsDateMonthDayYear() {
+    const currentDate = new Date();
+
+    // Get tomorrow's date
+    currentDate.setDate(currentDate.getDate() + 1);
+
+    // Extract the month, day, and year
+    const month = currentDate.getMonth() + 1; // getMonth() is zero-based
+    const day = currentDate.getDate();
+    const year = currentDate.getFullYear();
+
+    // Return the formatted date string
+    return `${month}-${day}-${year}`;
+  }
+
+  // Example u
+
+  validateDateWithInOneWeekNotPastOrToday(dateStr: string) {
+    // Get the current date
+    const currentDate: any = new Date();
+
+    // Create a date object from the input date string
+    const inputDate: any = new Date(dateStr);
+
+    // Calculate the difference in milliseconds
+    const diffTime = inputDate - currentDate;
+
+    // Convert the difference to days
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+    console.log('diff days', diffDays);
+
+    // Check if the difference is within one week and the date is in the future
+    // the minus is for practical consideration since the actual data gives us numbers
+    // between -1 and 0 for future considerations
+    if (diffDays > -1 && diffDays <= 7) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  convertDateToDayMonthYear(dateStr: string) {
+    // Split the input date string by the hyphen
+    const [month, day, year] = dateStr.split('-');
+
+    // Return the date in MM-DD-YYYY format
+    return `${day}-${month}-${year}`;
+  }
 
   nextPaymentDate(dateJoined: any) {
     const targetDay = new Date(dateJoined).getDay();

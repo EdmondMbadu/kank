@@ -49,8 +49,8 @@ import { RetraceComponent } from './components/retrace/retrace.component';
 import { TrackingMonthComponent } from './components/tracking-month/tracking-month.component';
 import { ClientInfoCurrentComponent } from './components/client-info-current/client-info-current.component';
 import { NewCardComponent } from './components/new-card/new-card.component';
-import { ClientInfoCardComponent } from './components/client-info-card/client-info-card.component';
-import { ClientPortalCardComponent } from './components/client-portal-card/client-portal-card.component';
+import { ClientInfoCardComponent } from './card/client-info-card/client-info-card.component';
+import { ClientPortalCardComponent } from './card/client-portal-card/client-portal-card.component';
 import { PaymentCardComponent } from './components/payment-card/payment-card.component';
 import { PaymentActivityCardComponent } from './components/payment-activity-card/payment-activity-card.component';
 import { ReturnClientCardComponent } from './components/return-client-card/return-client-card.component';
@@ -75,6 +75,14 @@ import { CertificateComponent } from './components/certificate/certificate.compo
 import { TeamRankingMonthComponent } from './central/team-ranking-month/team-ranking-month.component';
 import { SavingActivityComponent } from './components/saving-activity/saving-activity.component';
 import { DailySavingsComponent } from './components/daily-savings/daily-savings.component';
+import { NewCycleRegisterComponent } from './components/new-cycle-register/new-cycle-register.component';
+import { RequestTomorrowComponent } from './components/request-tomorrow/request-tomorrow.component';
+import { RequestSavingsWithdrawComponent } from './components/request-savings-withdraw/request-savings-withdraw.component';
+import { RequestClientCardComponent } from './card/request-client-card/request-client-card.component';
+import { RequestTodayComponent } from './components/request-today/request-today.component';
+import { RequestUpdateComponent } from './components/request-update/request-update.component';
+import { DailyFeesComponent } from './components/daily-fees/daily-fees.component';
+import { DailySavingsReturnsComponent } from './components/daily-savings-returns/daily-savings-returns.component';
 
 @NgModule({
   declarations: [
@@ -139,6 +147,14 @@ import { DailySavingsComponent } from './components/daily-savings/daily-savings.
     TeamRankingMonthComponent,
     SavingActivityComponent,
     DailySavingsComponent,
+    NewCycleRegisterComponent,
+    RequestTomorrowComponent,
+    RequestSavingsWithdrawComponent,
+    RequestClientCardComponent,
+    RequestTodayComponent,
+    RequestUpdateComponent,
+    DailyFeesComponent,
+    DailySavingsReturnsComponent,
   ],
   imports: [
     BrowserModule,

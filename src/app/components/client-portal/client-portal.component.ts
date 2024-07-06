@@ -84,15 +84,23 @@ export class ClientPortalComponent {
       );
       return;
     } else {
-      this.router.navigate(['/debt-cycle/' + this.id]);
+      this.router.navigate(['/new-cycle-register/' + this.id]);
     }
   }
   withDrawFromSavings() {
     if (this.client.savings === '0') {
-      alert("Vous n'avez pas d'argent !");
+      alert("Vous n'avez pas d'argent d'epargnes!");
       return;
     } else {
       this.router.navigate(['/withdraw-savings/' + this.id]);
+    }
+  }
+  requestWithDrawFromSavings() {
+    if (this.client.savings === '0') {
+      alert("Vous n'avez pas d'argent d'epargnes!");
+      return;
+    } else {
+      this.router.navigate(['/request-savings-withdraw/' + this.id]);
     }
   }
 
