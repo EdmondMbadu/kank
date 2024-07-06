@@ -71,20 +71,29 @@ export class DailySavingsReturnsComponent implements OnInit {
   extractTodayPayments() {
     this.trackingIds = [];
     for (let client of this.clients!) {
-      if (client.savingsPayments !== undefined) {
-        const filteredDict = Object.fromEntries(
-          Object.entries(client.savingsPayments!).filter(([key, value]) =>
-            key.startsWith(this.today)
-          )
-        );
-        // console.log('all current clients', filteredDict);
-        const filterdKeys = Object.keys(filteredDict);
-        // console.log('all keys', filterdKeys);
-        const filteredValues = Object.values(filteredDict);
-        // console.log('all values', filteredValues);
-        if (filteredValues.length !== 0) {
-          this.fillDailyPayment(client, filteredValues, filterdKeys);
-        }
+      // Ensure client.savingsPayments and client.previousSavingsPayments are not undefined or null
+      const savingsPaymentsEntries = client.savingsPayments
+        ? Object.entries(client.savingsPayments)
+        : [];
+      const previousSavingsPaymentsEntries = client.previousSavingsPayments
+        ? Object.entries(client.previousSavingsPayments)
+        : [];
+
+      // Combine entries from both savingsPayments and previousSavingsPayments
+      const combinedEntries = [
+        ...savingsPaymentsEntries,
+        ...previousSavingsPaymentsEntries,
+      ];
+
+      // Filter the combined entries
+      const filteredDict = Object.fromEntries(
+        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
+      );
+
+      const filteredKeys = Object.keys(filteredDict);
+      const filteredValues = Object.values(filteredDict);
+      if (filteredValues.length !== 0) {
+        this.fillDailyPayment(client, filteredValues, filteredKeys);
       }
     }
   }
