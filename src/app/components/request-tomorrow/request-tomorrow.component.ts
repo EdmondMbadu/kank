@@ -113,7 +113,6 @@ export class RequestTomorrowComponent implements OnInit {
     this.trackingIds = [];
     this.clientsRequestLending = [];
     this.clientsRequestSavings = [];
-    this.total = '0';
     for (let client of this.clients!) {
       if (
         client.requestStatus !== undefined &&
