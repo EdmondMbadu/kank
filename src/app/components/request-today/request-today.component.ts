@@ -24,7 +24,10 @@ export class RequestTodayComponent implements OnInit {
   clientsRequestLending: Client[] = [];
   clientsRequestSavings: Client[] = [];
   clientsRequestCard: Card[] = [];
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
+  requestDate: string = this.time.convertToYearMonthDay(this.today);
+  requestDateRigthFormat: string = this.today;
 
   trackingIds: string[] = [];
   searchControl = new FormControl();
@@ -111,6 +114,18 @@ export class RequestTodayComponent implements OnInit {
     }
   }
 
+  otherDate() {
+    console.log('date', this.requestDate);
+    this.requestDateRigthFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateRigthFormat
+    );
+    this.retrieveClients();
+    this.retrieveClientsCard();
+  }
+
   extractTodayPayments() {
     this.trackingIds = [];
     this.clientsRequestLending = [];
@@ -120,7 +135,7 @@ export class RequestTodayComponent implements OnInit {
       if (
         client.requestStatus !== undefined &&
         client.requestType === 'lending' &&
-        client.requestDate === this.today
+        client.requestDate === this.requestDateRigthFormat
       ) {
         this.clientsRequestLending.push(client);
         this.total = (
@@ -129,7 +144,7 @@ export class RequestTodayComponent implements OnInit {
       } else if (
         client.requestStatus !== undefined &&
         client.requestType === 'savings' &&
-        client.requestDate === this.today
+        client.requestDate === this.requestDateRigthFormat
       ) {
         this.clientsRequestSavings.push(client);
         this.total = (
@@ -146,7 +161,7 @@ export class RequestTodayComponent implements OnInit {
       if (
         client.requestStatus !== undefined &&
         client.requestType === 'card' &&
-        client.requestDate === this.today
+        client.requestDate === this.requestDateRigthFormat
       ) {
         this.clientsRequestCard.push(client);
         console.log('card request amount', client.requestAmount);

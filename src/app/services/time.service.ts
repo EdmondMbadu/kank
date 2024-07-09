@@ -83,6 +83,17 @@ export class TimeService {
       parts[5]
     );
   }
+
+  convertToYearMonthDay(dateStr: string) {
+    // Split the input date string by the hyphen
+    const [year, month, day] = dateStr.split('-');
+    // remove leading zeros
+    const newMonth = parseInt(month, 10);
+    const newDay = parseInt(day, 10);
+
+    // Return the date in MM-DD-YYYY format
+    return `${year}-${newMonth}-${newDay}`;
+  }
   convertDateToMonthDayYear(dateStr: string) {
     // Split the input date string by the hyphen
     const [year, month, day] = dateStr.split('-');
