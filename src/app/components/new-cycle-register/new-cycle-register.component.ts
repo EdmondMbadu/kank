@@ -49,6 +49,8 @@ export class NewCycleRegisterComponent implements OnInit {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      this.middleName =
+        this.client.middleName !== undefined ? this.client.middleName : '';
     });
   }
 
@@ -144,17 +146,17 @@ export class NewCycleRegisterComponent implements OnInit {
               "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
             );
           }
-        )
-        .then(() => {
-          this.performance
-            .updateUserPerformance(this.client)
-            .then((res: any) => {
-              console.log('updated user info performance');
-            })
-            .catch((err: any) => {
-              console.log('error while updating performance');
-            });
-        });
+        );
+      // .then(() => {
+      //   this.performance
+      //     .updateUserPerformance(this.client)
+      //     .then((res: any) => {
+      //       console.log('updated user info performance');
+      //     })
+      //     .catch((err: any) => {
+      //       console.log('error while updating performance');
+      //     });
+      // });
 
       let date = this.time.todaysDateMonthDayYear();
       this.data
