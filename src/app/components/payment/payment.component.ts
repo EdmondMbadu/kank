@@ -154,6 +154,7 @@ export class PaymentComponent {
     } else if (!this.time.isGivenDateLessOrEqual(dateX, today)) {
       creditScore = (Number(this.client.creditScore) - 5).toString();
     }
+    creditScore = Math.min(Number(creditScore), 100).toString();
 
     return creditScore;
   }
