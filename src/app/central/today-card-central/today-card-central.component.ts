@@ -48,13 +48,25 @@ export class TodayCardCentralComponent {
   summaryContent: string[] = [];
   initalizeInputs() {
     this.dailyCardPayments = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'dailyCardPayments')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyCardPayments',
+        this.today
+      )
       .toString();
     this.dailyCardReturns = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'dailyCardReturns')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyCardReturns',
+        this.today
+      )
       .toString();
     this.dailyCardBenefits = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'dailyCardBenefits')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyCardBenefits',
+        this.today
+      )
       .toString();
     this.dailyCardPayments =
       this.dailyCardPayments === undefined ? '0' : this.dailyCardPayments;

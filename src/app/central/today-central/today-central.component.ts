@@ -32,6 +32,7 @@ export class TodayCentralComponent {
   dailyReserve: string = '0';
   dailyInvestement: string = '0';
   dailySaving: string = '0';
+  dailySavingReturns = '0';
 
   sortedReserveToday: {
     firstName: string;
@@ -46,6 +47,7 @@ export class TodayCentralComponent {
     'Reserve Du Jour',
     'Entrée Du Jour',
     'Epargne Du Jour',
+    'Retrait Epargne Du Jour',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -55,25 +57,56 @@ export class TodayCentralComponent {
     '../../../assets/img/reserve.svg',
     '../../../assets/img/invest.svg',
     '../../../assets/img/saving.svg',
+    '../../../assets/img/saving.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
+  requestDate: string = '';
+  requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
   initalizeInputs() {
     this.dailyLending = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'dailyLending')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyLending',
+        this.requestDateCorrectFormat
+      )
       .toString();
     this.dailyPayment = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'dailyReimbursement')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyReimbursement',
+        this.requestDateCorrectFormat
+      )
       .toString();
     this.dailyReserve = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'reserve')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'reserve',
+        this.requestDateCorrectFormat
+      )
       .toString();
     this.dailyInvestement = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'investments')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'investments',
+        this.requestDateCorrectFormat
+      )
       .toString();
     this.dailySaving = this.compute
-      .findTodayTotalResultsGivenField(this.allUsers, 'dailySaving')
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailySaving',
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dailySavingReturns = this.compute
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailySavingReturns',
+        this.requestDateCorrectFormat
+      )
       .toString();
 
     this.dailyLending =
@@ -88,6 +121,7 @@ export class TodayCentralComponent {
 
     this.sortedReserveToday =
       this.compute.findTodayTotalResultsGivenFieldSortedDescending(
+        this.requestDateCorrectFormat,
         this.allUsers,
         'reserve'
       );
@@ -97,6 +131,7 @@ export class TodayCentralComponent {
       `${this.dailyReserve}`,
       `${this.dailyInvestement}`,
       `${this.dailySaving}`,
+      `${this.dailySavingReturns}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -105,6 +140,20 @@ export class TodayCentralComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestement)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailySaving)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.dailySavingReturns
+      )}`,
     ];
+  }
+
+  findDailyActivitiesCentralAmount() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+
+    this.initalizeInputs();
   }
 }

@@ -5,6 +5,7 @@ import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { map } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-client-info',
@@ -15,7 +16,11 @@ export class ClientInfoComponent implements OnInit {
   clients?: Client[];
   filteredItems?: Client[];
   searchControl = new FormControl();
-  constructor(private router: Router, public auth: AuthService) {
+  constructor(
+    private router: Router,
+    public auth: AuthService,
+    public data: DataService
+  ) {
     this.retrieveClients();
   }
   debts: string[] = [];
@@ -72,5 +77,9 @@ export class ClientInfoComponent implements OnInit {
     } else {
       return of(this.clients);
     }
+  }
+
+  batchCreditScoreUpdate() {
+    this.data.updateClientCreditScoreBulk(this.clients!);
   }
 }

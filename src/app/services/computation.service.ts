@@ -497,10 +497,11 @@ export class ComputationService {
 
   findTodayTotalResultsGivenField(
     users: User[],
-    field: UserDailyField
+    field: UserDailyField,
+    requestDate: string
   ): string {
     let total = 0;
-    const today = this.time.todaysDateMonthDayYear(); // Get today's date in the correct format
+    // const today = this.time.todaysDateMonthDayYear(); // Get today's date in the correct format
 
     users.forEach((user) => {
       const dailyData = user[field];
@@ -508,7 +509,7 @@ export class ComputationService {
         Object.entries(dailyData).forEach(([date, amount]) => {
           // Normalize the date to ignore the time component if present
           const normalizedDate = date.split('-').slice(0, 3).join('-');
-          if (normalizedDate === today) {
+          if (normalizedDate === requestDate) {
             // Check if the amount contains a colon indicating additional text
             const numericAmount = amount.split(':')[0]; // Assumes the amount is before the colon if it exists
             total += parseInt(numericAmount, 10);
@@ -521,14 +522,16 @@ export class ComputationService {
   }
 
   findTodayTotalResultsGivenFieldSortedDescending(
+    requestDate: string,
     users: User[],
+
     field: UserDailyField
   ): {
     firstName: string;
     totalReserve: number;
     totalReserveInDollars: string;
   }[] {
-    const today = this.time.todaysDateMonthDayYear(); // Get today's date in the correct format
+    // const today = this.time.todaysDateMonthDayYear(); // Get today's date in the correct format
     const results: {
       firstName: string;
       totalReserve: number;
@@ -542,7 +545,7 @@ export class ComputationService {
       if (dailyData) {
         Object.entries(dailyData).forEach(([date, amount]) => {
           const normalizedDate = date.split('-').slice(0, 3).join('-'); // Normalize the date
-          if (normalizedDate === today) {
+          if (normalizedDate === requestDate) {
             totalReserve += parseInt(amount.split(':')[0], 10); // Sum up today's reserves
           }
         });

@@ -2,9 +2,17 @@
 
 <!-- investements -->
 
-    <div class="flex container mx-auto m-12 justify-center">
-        <h1 class="text-2xl md:text-4xl mr-10">Activités Du Jour</h1>
+    <div class="flex container mx-auto m-6 justify-center">
+        <h1 class="text-2xl md:text-4xl mr-10 ml-4">Activités Du Jour {{frenchDate}}</h1>
         <button  type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info-current">Info Clients</button>
+    </div>
+    <div class="flex container mx-auto justify-center mb-2">    
+        <div class="">
+        <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label>
+        <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" placeholder="11-2-2023" required>
+        <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="findDailyActivitiesAmount()">Chercher</button>
+        </div>
+       
     </div>
 
 

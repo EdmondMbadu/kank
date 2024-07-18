@@ -13,6 +13,7 @@ import { TimeService } from './time.service';
 import { Avatar, Certificate, Employee } from '../models/employee';
 import { ComputationService } from './computation.service';
 import { Card } from '../models/card';
+import { WriteBatch } from 'firebase/firestore';
 
 @Injectable({
   providedIn: 'root',
@@ -455,6 +456,7 @@ export class DataService {
     };
     return userRef.set(data, { merge: true });
   }
+
   updateUserInfoForClientCardReturnMoney(amountToGiveBack: string) {
     let date = this.time.todaysDateMonthDayYear();
     let depot: any = this.computeDailyCardReturns(date, amountToGiveBack);
@@ -540,6 +542,29 @@ export class DataService {
       },
     };
     return userRef.set(data, { merge: true });
+  }
+
+  updateClientCreditScoreBulk(clients: Client[]) {
+    const batch: any = this.afs.firestore.batch();
+
+    clients.forEach((client) => {
+      const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+        `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+      );
+      const data = {
+        creditScore: '50',
+      };
+      batch.set(clientRef.ref, data, { merge: true });
+    });
+
+    return batch
+      .commit()
+      .then(() => {
+        console.log('Batch update successful');
+      })
+      .catch((error: any) => {
+        console.error('Batch update failed: ', error);
+      });
   }
   updateUserInfoForClientSavingsWithdrawal(client: Client, withdrawal: string) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(

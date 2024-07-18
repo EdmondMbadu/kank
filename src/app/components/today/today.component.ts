@@ -19,6 +19,7 @@ export class TodayComponent {
   ngOnInit() {
     this.initalizeInputs();
   }
+
   dailyLending: string = '0';
   dailyPayment: string = '0';
   dailyFees: string = '0';
@@ -72,18 +73,25 @@ export class TodayComponent {
 
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
+  requestDate: string = '';
+  requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
   initalizeInputs() {
-    this.dailyLending = this.auth.currentUser.dailyLending[this.today];
-    this.dailySaving = this.auth.currentUser.dailySaving[this.today];
+    this.dailyLending =
+      this.auth.currentUser.dailyLending[this.requestDateCorrectFormat];
+    this.dailySaving =
+      this.auth.currentUser.dailySaving[this.requestDateCorrectFormat];
     this.dailySavingReturns =
-      this.auth.currentUser.dailySavingReturns[this.today];
+      this.auth.currentUser.dailySavingReturns[this.requestDateCorrectFormat];
     this.dailyMoneyRequests =
-      this.auth.currentUser.dailyMoneyRequests[this.today];
+      this.auth.currentUser.dailyMoneyRequests[this.requestDateCorrectFormat];
     this.tomorrowMoneyRequests =
       this.auth.currentUser.dailyMoneyRequests[this.tomorrow];
-    this.dailyPayment = this.auth.currentUser.dailyReimbursement[this.today];
-    this.dailyFees = this.auth.currentUser.feesData[this.today];
+    this.dailyPayment =
+      this.auth.currentUser.dailyReimbursement[this.requestDateCorrectFormat];
+    this.dailyFees =
+      this.auth.currentUser.feesData[this.requestDateCorrectFormat];
     this.dailyReserve = this.compute
       .findTotalForToday(this.auth.currentUser.reserve)
       .toString();
@@ -145,5 +153,16 @@ export class TodayComponent {
       //   this.tomorrowMoneyRequests
       // )}`,
     ];
+  }
+
+  findDailyActivitiesAmount() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+
+    this.initalizeInputs();
   }
 }

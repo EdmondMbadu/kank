@@ -55,10 +55,12 @@ export class TrackingMonthCentralComponent {
     'Frais De Membre Du Mois',
     'Investissement Du Mois',
     'Epargne Du Mois',
+    'Retrait Epargne Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
   givenMonthTotalPaymentAmount: string = '';
   givenMonthTotalSavingAmount: string = '';
+  givenMonthTotalSavingReturnsAmount: string = '';
   givenMonthTotalBenefitAmount: string = '';
   givenMonthTotalLendingAmount: string = '';
   givenMonthTotalExpenseAmount: string = '';
@@ -73,6 +75,7 @@ export class TrackingMonthCentralComponent {
     '../../../assets/img/reserve.svg',
     '../../../assets/img/member.svg',
     '../../../assets/img/invest.svg',
+    '../../../assets/img/saving.svg',
     '../../../assets/img/saving.svg',
   ];
   sortedReserveMonth: {
@@ -138,6 +141,13 @@ export class TrackingMonthCentralComponent {
         this.givenMonth,
         this.givenYear
       );
+    this.givenMonthTotalSavingReturnsAmount =
+      this.compute.findTotalGivenMonthForAllUsers(
+        this.allUsers,
+        'dailySavingReturns',
+        this.givenMonth,
+        this.givenYear
+      );
 
     this.sortedReserveMonth =
       this.compute.findTotalGivenMonthForAllUsersSortedDescending(
@@ -155,6 +165,7 @@ export class TrackingMonthCentralComponent {
       `${this.givenMonthTotalFeesAmount}`,
       `${this.givenMonthTotalInvestmentAmount}`,
       `${this.givenMonthTotalSavingAmount}`,
+      `${this.givenMonthTotalSavingReturnsAmount}`,
     ];
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
@@ -180,6 +191,9 @@ export class TrackingMonthCentralComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalSavingAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalSavingReturnsAmount
       )}`,
     ];
   }

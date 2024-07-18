@@ -41,6 +41,7 @@ export class PaymentComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+
       this.minPayment = this.compute.minimumPayment(this.client);
       this.numberOfPaymentToday = this.howManyTimesPaidToday();
     });
@@ -105,9 +106,7 @@ export class PaymentComponent {
       this.client.numberOfPaymentsMade = (
         Number(this.client.numberOfPaymentsMade) + 1
       ).toString();
-      this.client.creditScore = (
-        Number(this.client.creditScore) + this.computeCreditScore()
-      ).toString();
+
       this.client.numberOfPaymentsMissed = Math.max(
         0,
         this.time.weeksSince(this.client.dateJoined!) -
@@ -126,6 +125,8 @@ export class PaymentComponent {
       this.client.debtLeft = (
         Number(this.client.amountToPay) - Number(this.client.amountPaid)
       ).toString();
+
+      this.client.creditScore = this.computeCreditScore();
     }
     let date = this.time.todaysDateMonthDayYear();
     this.data
@@ -137,10 +138,24 @@ export class PaymentComponent {
   }
 
   computeCreditScore() {
-    const weeksElapsed = this.time.weeksSince(this.client.dateJoined!);
-    const creditScore =
-      Number(this.client.numberOfPaymentsMade) * 5 - weeksElapsed * 5;
-    return Math.min(creditScore, 100);
+    let dateX = '';
+    let creditScore = '';
+    if (this.client.debtLeft !== '0') {
+      return this.client.creditScore;
+    }
+    if (Number(this.client.paymentPeriodRange) === 4) {
+      dateX = this.time.getDateInFiveWeeks(this.client.debtCycleStartDate!);
+    } else if (Number(this.client.paymentPeriodRange) === 8) {
+      dateX = this.time.getDateInNineWeeks(this.client.debtCycleStartDate!);
+    }
+    let today = this.time.todaysDateMonthDayYear();
+    if (this.time.isGivenDateLessOrEqual(dateX, today)) {
+      creditScore = (Number(this.client.creditScore) + 5).toString();
+    } else if (!this.time.isGivenDateLessOrEqual(dateX, today)) {
+      creditScore = (Number(this.client.creditScore) - 5).toString();
+    }
+
+    return creditScore;
   }
 
   howManyTimesPaidToday() {

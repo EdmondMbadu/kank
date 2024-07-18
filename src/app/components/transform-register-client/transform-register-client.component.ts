@@ -173,9 +173,17 @@ export class TransformRegisterClientComponent implements OnInit {
       this.interestRate,
       this.loanAmount
     );
+
     let result = this.time.computeDateRange();
     this.debtCycleStartDate = result[0];
-    this.debtCycleEndDate = result[1];
+    if (this.payRange == '4') {
+      this.debtCycleEndDate = this.time.getDateInFiveWeeks(result[0]);
+    } else if (this.payRange == '8') {
+      this.debtCycleEndDate = this.time.getDateInNineWeeks(result[0]);
+    }
+
+    // this.debtCycleStartDate = result[0];
+    // this.debtCycleEndDate = this.time.getDateInNineWeeks(result[0]);
     this.amountToPayDisplay = true;
     this.debtCycleDisplay = true;
   }

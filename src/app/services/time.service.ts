@@ -149,7 +149,7 @@ export class TimeService {
     const [month, day, year] = dateStr.split('-');
 
     // Return the date in MM-DD-YYYY format
-    return `${day}-${month}-${year}`;
+    return `${day}/${month}/${year}`;
   }
 
   nextPaymentDate(dateJoined: any) {
@@ -553,5 +553,17 @@ export class TimeService {
   translateDayInFrench(day: string) {
     let response = this.englishToFrenchDay[day];
     return response !== undefined ? response : '';
+  }
+  isGivenDateLessOrEqual(dateX: string, today: string) {
+    // Split the dates into components
+    const [monthX, dayX, yearX] = dateX.split('-').map(Number);
+    const [monthToday, dayToday, yearToday] = today.split('-').map(Number);
+
+    // Create Date objects for comparison
+    const dateObjectX = new Date(yearX, monthX - 1, dayX);
+    const dateObjectToday = new Date(yearToday, monthToday - 1, dayToday);
+
+    // Compare the dates
+    return dateObjectToday <= dateObjectX;
   }
 }

@@ -44,6 +44,7 @@ export type UserDailyField =
   | 'dailyCardReturns'
   | 'dailyCardBenefits'
   | 'dailySaving'
+  | 'dailySavingReturns'
   | 'expenses'
   | 'reserve'
   | 'feesData'
