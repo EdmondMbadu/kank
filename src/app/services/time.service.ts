@@ -566,4 +566,24 @@ export class TimeService {
     // Compare the dates
     return dateObjectToday <= dateObjectX;
   }
+
+  weeksElapsed(dateX: string, today: string) {
+    // Split the dates into components
+    const [monthX, dayX, yearX] = dateX.split('-').map(Number);
+    const [monthToday, dayToday, yearToday] = today.split('-').map(Number);
+
+    // Create Date objects
+    const dateObjectX: any = new Date(yearX, monthX - 1, dayX);
+    const dateObjectToday: any = new Date(yearToday, monthToday - 1, dayToday);
+
+    // Calculate the difference in milliseconds
+    const diffInMs = Math.abs(dateObjectX - dateObjectToday);
+
+    // Convert milliseconds to weeks
+    const msInWeek = 1000 * 60 * 60 * 24 * 7;
+    // const weeksElapsed = diffInMs / msInWeek;
+    const weeksElapsed = Math.floor(diffInMs / msInWeek);
+
+    return weeksElapsed;
+  }
 }
