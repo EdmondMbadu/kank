@@ -149,8 +149,10 @@ export class PaymentComponent {
       dateX = this.time.getDateInNineWeeks(this.client.debtCycleStartDate!);
     }
     let today = this.time.todaysDateMonthDayYear();
+    // +5 for finishing the payment anytime early or on the date
     if (this.time.isGivenDateLessOrEqual(dateX, today)) {
       creditScore = (Number(this.client.creditScore) + 5).toString();
+      // -2 every week you are late
     } else if (!this.time.isGivenDateLessOrEqual(dateX, today)) {
       let elapsed = this.time.weeksElapsed(dateX, today);
 

@@ -9,8 +9,8 @@
     <div class="flex container mx-auto justify-center mb-2">    
         <div class="">
         <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label>
-        <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" placeholder="11-2-2023" required>
-        <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="findDailyActivitiesAmount()">Chercher</button>
+        <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" (change)="findDailyActivitiesAmount()" placeholder="11-2-2023" required>
+        <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="findDailyActivitiesAmount()">Chercher</button> -->
         </div>
        
     </div>
