@@ -398,6 +398,14 @@ export class TimeService {
     return endDate >= startDate;
   }
 
+  getTodaysDateYearMonthDay(): string {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   getDatesInRange(start: string, end: string) {
     const parseDate = (dateStr: string) => {
       const [year, month, day] = dateStr.split('-').map(Number);

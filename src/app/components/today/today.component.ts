@@ -74,7 +74,7 @@ export class TodayComponent {
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
-  requestDate: string = '';
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
   initalizeInputs() {
