@@ -26,7 +26,7 @@ export class RequestTodayComponent implements OnInit {
   clientsRequestCard: Card[] = [];
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
-  requestDate: string = this.time.convertToYearMonthDay(this.today);
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateRigthFormat: string = this.today;
 
   trackingIds: string[] = [];
@@ -115,7 +115,6 @@ export class RequestTodayComponent implements OnInit {
   }
 
   otherDate() {
-    console.log('date', this.requestDate);
     this.requestDateRigthFormat = this.time.convertDateToMonthDayYear(
       this.requestDate
     );
