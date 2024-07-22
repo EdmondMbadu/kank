@@ -162,6 +162,7 @@ export class PerformanceService {
   extractTodayPayments() {
     this.paidToday = [];
 
+    if (this.clients?.length === 0) return;
     for (let client of this.clients!) {
       const filteredDict = Object.fromEntries(
         Object.entries(client.payments!).filter(([key, value]) =>

@@ -116,7 +116,7 @@ export class TransformRegisterClientComponent implements OnInit {
         .then(() => {
           if (this.client.uid !== undefined && employee !== null) {
             employee?.clients?.push(this.client.uid);
-            employee?.clients!.filter(
+            employee.clients = employee?.clients!.filter(
               (item, index) => employee!.clients!.indexOf(item) === index
             );
           }

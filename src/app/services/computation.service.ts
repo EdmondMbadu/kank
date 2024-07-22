@@ -117,13 +117,12 @@ export class ComputationService {
     allclients: Client[],
     employee: Employee
   ) {
-    // Filter clients with debt left from the entire client list
     const clientsWithDebt = allclients.filter(
       (client: any) => client.debtLeft > 0
     );
 
     // Filter employees who have clients with debt left
-    const filteredClients = employee.clients!.filter((uid: string) => {
+    const filteredClients = employee.clients?.filter((uid: string) => {
       const client = clientsWithDebt.find((client) => client.uid === uid);
       return client !== undefined;
     });

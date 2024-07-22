@@ -513,6 +513,7 @@ export class AuthService {
   }
 
   private matchingRole(alloweedRoles: string[]): boolean {
+    if ((this, this.currentUser.roles === undefined)) return false;
     return alloweedRoles.some(
       (element) =>
         this.currentUser.roles.includes(element) ||
