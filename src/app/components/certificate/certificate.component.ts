@@ -84,43 +84,7 @@ export class CertificateComponent implements OnInit {
       this.time.monthFrenchNames[this.givenMonth],
       this.givenYear.toString()
     );
-    console.log(
-      'here is the data complete first ',
-      this.certificates,
-      this.time.monthFrenchNames[this.givenMonth],
-      this.givenMonth,
-      this.givenYear
-    );
-    console.log('The selection is', this.selectedBest);
   }
-  // async startUploadCBestTeamData(event: FileList) {
-  //   const file = event?.item(0);
-  //   console.log(' current file data', file);
-
-  //   if (file?.type.split('/')[0] !== 'image') {
-  //     alert('Unsupported file type. Please upload an image.');
-  //     return;
-  //   }
-
-  //   // the size cannot be greater than 20mb
-  //   if (file?.size >= 20000000) {
-  //     alert(
-  //       "L'image est trop grande. La Taille maximale du fichier est de 20MB"
-  //     );
-  //     return;
-  //   }
-  //   const path = `certificates/team-${this.certificate.month}-${this.certificate.year}`;
-
-  //   // the main task
-  //   console.log('the path', path);
-
-  //   const uploadTask = await this.storage.upload(path, file);
-  //   this.certificate.bestTeamCertificateDownloadUrl =
-  //     await uploadTask.ref.getDownloadURL();
-  //   uploadTask.totalBytes;
-
-  //   this.certificate.bestTeamCertificatePath = path;
-  // }
 
   selectTeamAndEmployeeByMonthAndYear(
     certificate: Certificate[],

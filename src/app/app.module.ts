@@ -83,6 +83,8 @@ import { RequestTodayComponent } from './components/request-today/request-today.
 import { RequestUpdateComponent } from './components/request-update/request-update.component';
 import { DailyFeesComponent } from './components/daily-fees/daily-fees.component';
 import { DailySavingsReturnsComponent } from './components/daily-savings-returns/daily-savings-returns.component';
+import { GestionDayComponent } from './gestion/gestion-day/gestion-day.component';
+import { GestionMonthComponent } from './gestion/gestion-month/gestion-month.component';
 
 @NgModule({
   declarations: [
@@ -155,6 +157,8 @@ import { DailySavingsReturnsComponent } from './components/daily-savings-returns
     RequestUpdateComponent,
     DailyFeesComponent,
     DailySavingsReturnsComponent,
+    GestionDayComponent,
+    GestionMonthComponent,
   ],
   imports: [
     BrowserModule,
