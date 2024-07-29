@@ -117,6 +117,7 @@ export class ComputationService {
     allclients: Client[],
     employee: Employee
   ) {
+    if (allclients === null) return;
     const clientsWithDebt = allclients.filter(
       (client: any) => client.debtLeft > 0
     );

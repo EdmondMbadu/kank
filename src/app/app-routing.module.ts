@@ -66,6 +66,8 @@ import { RequestTodayComponent } from './components/request-today/request-today.
 import { RequestUpdateComponent } from './components/request-update/request-update.component';
 import { DailyFeesComponent } from './components/daily-fees/daily-fees.component';
 import { DailySavingsReturnsComponent } from './components/daily-savings-returns/daily-savings-returns.component';
+import { GestionDayComponent } from './gestion/gestion-day/gestion-day.component';
+import { GestionMonthComponent } from './gestion/gestion-month/gestion-month.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -196,6 +198,8 @@ const routes: Routes = [
   { path: 'request-tomorrow', component: RequestTomorrowComponent },
   { path: 'request-today', component: RequestTodayComponent },
   { path: 'pay-today', component: PayTodayComponent },
+  { path: 'gestion-today', component: GestionDayComponent },
+  { path: 'gestion-month', component: GestionMonthComponent },
   { path: 'paid-date', component: PaidDateComponent },
   { path: 'lending-date', component: LendingDateComponent },
   { path: 'not-paid-today', component: NotPaidTodayComponent },

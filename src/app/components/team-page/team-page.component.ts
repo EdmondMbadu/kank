@@ -60,7 +60,12 @@ export class TeamPageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
-      this.displayEditEmployees = new Array(this.employees.length).fill(false);
+      if (this.employees !== null) {
+        this.displayEditEmployees = new Array(this.employees.length).fill(
+          false
+        );
+      }
+
       this.addIdsToEmployees();
     });
   }
@@ -113,6 +118,9 @@ export class TeamPageComponent implements OnInit {
     this.toggleAddNewEmployee();
   }
   addIdsToEmployees() {
+    // let commonElements = this.employees[0].clients!.filter((item) =>
+    //   this.employees[1].clients!.includes(item)
+    // );
     // console.log('common elements', commonElements);
     for (let i = 0; i < this.employees.length; i++) {
       this.employees[i].trackingId = `${i}`;

@@ -17,6 +17,7 @@ export class NavbarComponent {
   centralDropDown: boolean = false;
   centralCreditDropDown: boolean = false;
   centralCardDropDown: boolean = false;
+  gestionDropDown: boolean = false;
   @Input() firstName = '';
   @Input() currentHome: boolean = false;
   @Input() currentClientInfo: boolean = false;
@@ -35,6 +36,9 @@ export class NavbarComponent {
 
   toggleCreditDropDown() {
     this.creditDropDown = !this.creditDropDown;
+  }
+  toggleGestionDropDown() {
+    this.gestionDropDown = !this.gestionDropDown;
   }
   toggleCardDropDown() {
     this.cardDropDown = !this.cardDropDown;
