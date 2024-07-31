@@ -26,6 +26,12 @@ export class InvestementsSummaryComponent implements OnInit {
     if (this.auth.isAdmninistrator && this.auth.currentUser.admin !== 'true') {
       this.auth.makeAdmin();
     }
+    if (
+      this.auth.isDistributoring &&
+      this.auth.currentUser.distributor !== 'true'
+    ) {
+      this.auth.makeDistributor();
+    }
     this.retrieveClients();
 
     this.updatePaymentGraphics();

@@ -85,6 +85,12 @@ import { DailyFeesComponent } from './components/daily-fees/daily-fees.component
 import { DailySavingsReturnsComponent } from './components/daily-savings-returns/daily-savings-returns.component';
 import { GestionDayComponent } from './gestion/gestion-day/gestion-day.component';
 import { GestionMonthComponent } from './gestion/gestion-month/gestion-month.component';
+import { GestionReserveComponent } from './gestion/gestion-reserve/gestion-reserve.component';
+import { GestionExpenseComponent } from './gestion/gestion-expense/gestion-expense.component';
+import { GestionServedComponent } from './gestion/gestion-served/gestion-served.component';
+import { GestionBankComponent } from './gestion/gestion-bank/gestion-bank.component';
+import { GestionLossComponent } from './gestion/gestion-loss/gestion-loss.component';
+import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion-investment.component';
 
 @NgModule({
   declarations: [
@@ -159,6 +165,12 @@ import { GestionMonthComponent } from './gestion/gestion-month/gestion-month.com
     DailySavingsReturnsComponent,
     GestionDayComponent,
     GestionMonthComponent,
+    GestionReserveComponent,
+    GestionExpenseComponent,
+    GestionServedComponent,
+    GestionBankComponent,
+    GestionLossComponent,
+    GestionInvestmentComponent,
   ],
   imports: [
     BrowserModule,

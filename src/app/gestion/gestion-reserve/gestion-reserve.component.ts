@@ -1,21 +1,23 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { Management } from 'src/app/models/management';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-reserve',
-  templateUrl: './reserve.component.html',
-  styleUrls: ['./reserve.component.css'],
+  selector: 'app-gestion-reserve',
+  templateUrl: './gestion-reserve.component.html',
+  styleUrls: ['./gestion-reserve.component.css'],
 })
-export class ReserveComponent {
+export class GestionReserveComponent {
   reserveAmount: string = '';
-  reserve: string[] = [];
+  reserve: any = [];
   reserveAmounts: string[] = [];
   reserveDates: string[] = [];
   currentUser: any = {};
+  managementInfo?: Management = {};
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -23,7 +25,10 @@ export class ReserveComponent {
     private compute: ComputationService,
     private time: TimeService
   ) {
-    this.getCurrentUser();
+    this.auth.getManagementInfo().subscribe((data) => {
+      this.managementInfo = data[0];
+      this.getCurrentReserve();
+    });
   }
 
   async addToReserve() {
@@ -41,14 +46,11 @@ export class ReserveComponent {
         return;
       }
       try {
-        const userInfo = await this.data.updateUserInfoForAddToReserve(
-          this.reserveAmount
-        );
         const updateManagement =
           await this.data.updateManagementInfoForAddToReserve(
             this.reserveAmount
           );
-        this.router.navigate(['/home']);
+        this.router.navigate(['/gestion-today']);
       } catch (err: any) {
         alert("Une erreur s'est produite lors de l'initialization, Réessayez");
         console.log('error ocorred while entering reserve amount', err);
@@ -56,18 +58,15 @@ export class ReserveComponent {
       }
     }
   }
-  getCurrentUser() {
-    this.auth.user$.subscribe((user) => {
-      this.currentUser = user;
-      this.reserve = this.currentUser.reserve;
+  getCurrentReserve() {
+    this.reserve = this.managementInfo!.reserve;
 
-      let currentreserve = this.compute.sortArrayByDateDescendingOrder(
-        Object.entries(this.currentUser.reserve)
-      );
-      this.reserveAmounts = currentreserve.map((entry) => entry[1]);
-      this.reserveDates = currentreserve.map((entry) =>
-        this.time.convertTimeFormat(entry[0])
-      );
-    });
+    let currentreserve = this.compute.sortArrayByDateDescendingOrder(
+      Object.entries(this.managementInfo!.reserve!)
+    );
+    this.reserveAmounts = currentreserve.map((entry) => entry[1]);
+    this.reserveDates = currentreserve.map((entry) =>
+      this.time.convertTimeFormat(entry[0])
+    );
   }
 }

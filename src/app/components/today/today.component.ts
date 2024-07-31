@@ -93,11 +93,17 @@ export class TodayComponent {
     this.dailyFees =
       this.auth.currentUser.feesData[this.requestDateCorrectFormat];
     this.dailyReserve = this.compute
-      .findTotalForToday(this.auth.currentUser.reserve)
+      .findTotalForToday(
+        this.auth.currentUser.reserve,
+        this.requestDateCorrectFormat
+      )
       .toString();
 
     this.dailyInvestment = this.compute
-      .findTotalForToday(this.auth.currentUser.investments)
+      .findTotalForToday(
+        this.auth.currentUser.investments,
+        this.requestDateCorrectFormat
+      )
       .toString();
 
     this.dailyLending =

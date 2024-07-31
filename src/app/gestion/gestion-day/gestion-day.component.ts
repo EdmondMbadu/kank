@@ -21,59 +21,51 @@ export class GestionDayComponent implements OnInit {
   ngOnInit(): void {
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
-      console.log('hello', this.managementInfo);
+      this.initalizeInputs();
     });
   }
 
-  dailyLending: string = '0';
-  dailyPayment: string = '0';
-  dailyFees: string = '0';
+  dailyExpense: string = '0';
+  dailyBankFranc: string = '0';
+  dailyBankDollar: string = '0';
+  dailyServed: string = '0';
+  dailyLoss: string = '0';
+  dollarLoss: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
-  dailySaving: string = '0';
-  dailySavingReturns: string = '0';
-  dailyMoneyRequests: string = '0';
-  tomorrowMoneyRequests: string = '0';
+
+  moneyInHands: string = '0';
 
   totalPerfomance: number = 0;
 
   linkPaths: string[] = [
-    '/not-paid-today',
-    '/daily-payments',
-    '/daily-lendings',
-    '/daily-fees',
-    '/add-reserve',
-    '/add-investment',
-    '/daily-savings',
-    '/daily-savings-returns',
-    '/request-today',
-    '/request-tomorrow',
+    '/gestion-reserve',
+    '/gestion-today',
+    '/gestion-expenses',
+    '/gestion-served',
+    '/gestion-bank',
+    '/gestion-loss',
+    '/gestion-investment',
   ];
   summary: string[] = [
-    "N'ont pas Payé Aujourdhui",
-    'Paiement Du Jour',
-    'Emprunt Du Jour',
-    'Frais De Membre Du Jour',
     'Reserve Du Jour',
-    'Entrée Du Jour',
-    'Epargne Du Jour',
-    'Retrait Epargne Du Jour',
-    'Argent Demandé Pour Aujourdhui',
-    'Argent Demandé Pour Demain',
+    'Argent En Main',
+    'Depense Du Jour',
+    'Argent A Servir',
+    'Argent En Banque Du Jour',
+    'Perte Du Jour',
+    'Investissement Du Jour',
   ];
   valuesConvertedToDollars: string[] = [];
 
   imagePaths: string[] = [
-    '../../../assets/img/late-payment.png',
-    '../../../assets/img/daily-reimbursement.png',
-    '../../../assets/img/daily-payment.png',
-    '../../../assets/img/member.svg',
     '../../../assets/img/reserve.svg',
+    '../../../assets/img/salary.png',
+    '../../../assets/img/expense.svg',
+    '../../../assets/img/serve-money.png',
+    '../../../assets/img/bank.png',
+    '../../../assets/img/loss.png',
     '../../../assets/img/invest.svg',
-    '../../../assets/img/saving.svg',
-    '../../../assets/img/saving.svg',
-    '../../../assets/img/request-money.png',
-    '../../../assets/img/request-money.png',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -83,80 +75,97 @@ export class GestionDayComponent implements OnInit {
   requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
   initalizeInputs() {
-    this.dailyLending =
-      this.auth.currentUser.dailyLending[this.requestDateCorrectFormat];
-    this.dailySaving =
-      this.auth.currentUser.dailySaving[this.requestDateCorrectFormat];
-    this.dailySavingReturns =
-      this.auth.currentUser.dailySavingReturns[this.requestDateCorrectFormat];
-    this.dailyMoneyRequests =
-      this.auth.currentUser.dailyMoneyRequests[this.requestDateCorrectFormat];
-    this.tomorrowMoneyRequests =
-      this.auth.currentUser.dailyMoneyRequests[this.tomorrow];
-    this.dailyPayment =
-      this.auth.currentUser.dailyReimbursement[this.requestDateCorrectFormat];
-    this.dailyFees =
-      this.auth.currentUser.feesData[this.requestDateCorrectFormat];
+    console.log('management info', this.managementInfo);
+
     this.dailyReserve = this.compute
-      .findTotalForToday(this.auth.currentUser.reserve)
+      .findTotalForToday(
+        this.managementInfo?.reserve!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dailyExpense = this.compute
+      .findTotalForToday(
+        this.managementInfo?.expenses!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dailyServed = this.compute
+      .findTotalForToday(
+        this.managementInfo?.moneyGiven!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dollarLoss = this.compute
+      .findTotalForToday(
+        this.managementInfo?.dollarTransferLoss!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dailyBankFranc = this.compute
+      .findTotalForToday(
+        this.managementInfo?.bankDepositFrancs!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dailyBankDollar = this.compute
+      .findTotalForToday(
+        this.managementInfo?.bankDepositDollars!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dailyLoss = this.compute
+      .findTotalForToday(
+        this.managementInfo?.exchangeLoss!,
+        this.requestDateCorrectFormat
+      )
       .toString();
 
     this.dailyInvestment = this.compute
-      .findTotalForToday(this.auth.currentUser.investments)
+      .findTotalForToday(
+        this.managementInfo?.investment!,
+        this.requestDateCorrectFormat
+      )
       .toString();
 
-    this.dailyLending =
-      this.dailyLending === undefined ? '0' : this.dailyLending;
-    this.dailyPayment =
-      this.dailyPayment === undefined ? '0' : this.dailyPayment;
-    this.dailyFees = this.dailyFees === undefined ? '0' : this.dailyFees;
-    this.dailyReserve =
-      this.dailyReserve === undefined ? '0' : this.dailyReserve;
+    this.dailyBankFranc =
+      this.dailyBankFranc === undefined ? '0' : this.dailyBankFranc;
     this.dailyInvestment =
       this.dailyInvestment === undefined ? '0' : this.dailyInvestment;
-    this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
-    this.dailySavingReturns =
-      this.dailySavingReturns === undefined ? '0' : this.dailySavingReturns;
-    this.dailyMoneyRequests =
-      this.dailyMoneyRequests === undefined ? '0' : this.dailyMoneyRequests;
-    this.tomorrowMoneyRequests =
-      this.tomorrowMoneyRequests === undefined
+    this.dollarLoss = this.dollarLoss === undefined ? '0' : this.dollarLoss;
+    this.dailyBankDollar =
+      this.dailyBankDollar === undefined ? '0' : this.dailyBankDollar;
+    this.dailyReserve =
+      this.dailyReserve === undefined ? '0' : this.dailyReserve;
+    this.dailyExpense =
+      this.dailyExpense === undefined ? '0' : this.dailyExpense;
+    this.dailyLoss = this.dailyLoss === undefined ? '0' : this.dailyLoss;
+    this.dailyServed = this.dailyServed === undefined ? '0' : this.dailyServed;
+    this.moneyInHands =
+      this.managementInfo?.moneyInHands === undefined
         ? '0'
-        : this.tomorrowMoneyRequests;
+        : this.managementInfo?.moneyInHands;
+    let dloss = (
+      Number(this.compute.convertUsDollarsToCongoleseFranc(this.dollarLoss)) +
+      Number(this.dailyLoss)
+    ).toString();
     this.summaryContent = [
-      ``,
-      ` ${this.dailyPayment}`,
-      ` ${this.dailyLending}`,
-      ` ${this.dailyFees}`,
       ` ${this.dailyReserve}`,
+      `${this.moneyInHands}`,
+      `${this.dailyExpense}`,
+      `${this.dailyServed}`,
+      `${this.dailyBankFranc}`,
+      `${dloss}`,
       `${this.dailyInvestment}`,
-      `${this.dailySaving}`,
-      `${this.dailySavingReturns}`,
-      '',
-      '',
-      // `${this.dailyMoneyRequests}`,
-      // `${this.tomorrowMoneyRequests}`,
     ];
 
     this.valuesConvertedToDollars = [
-      ``,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFees)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.moneyInHands)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyServed)}`,
+      `${this.dailyBankDollar}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(dloss)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestment)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.dailySaving)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.dailySavingReturns
-      )}`,
-      ``,
-      ``,
-      // `${this.compute.convertCongoleseFrancToUsDollars(
-      //   this.dailyMoneyRequests
-      // )}`,
-      // `${this.compute.convertCongoleseFrancToUsDollars(
-      //   this.tomorrowMoneyRequests
-      // )}`,
     ];
   }
 
@@ -164,6 +173,7 @@ export class GestionDayComponent implements OnInit {
     this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.requestDate
     );
+    console.log('date', this.requestDateCorrectFormat);
     this.frenchDate = this.time.convertDateToDayMonthYear(
       this.requestDateCorrectFormat
     );

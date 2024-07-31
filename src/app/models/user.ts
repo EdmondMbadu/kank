@@ -28,6 +28,7 @@ export class User {
   dailyMoneyRequests?: { [key: string]: string } = {};
   totalDebtLeft?: string;
   admin?: string;
+  distributor?: string;
   dailyLending?: { [key: string]: string } = {};
   dailySaving?: { [key: string]: string } = {};
   dailySavingReturns?: { [key: string]: string } = {};

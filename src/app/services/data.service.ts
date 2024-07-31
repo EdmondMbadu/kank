@@ -14,6 +14,7 @@ import { Avatar, Certificate, Employee } from '../models/employee';
 import { ComputationService } from './computation.service';
 import { Card } from '../models/card';
 import { WriteBatch } from 'firebase/firestore';
+import { Management } from '../models/management';
 
 @Injectable({
   providedIn: 'root',
@@ -375,6 +376,94 @@ export class DataService {
 
     return userRef.set(data, { merge: true });
   }
+
+  updateManagementInfoForAddToReserve(amount: string) {
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const data = {
+      moneyInHands: (
+        Number(this.auth.managementInfo.moneyInHands) + Number(amount)
+      ).toString(),
+
+      reserve: { [this.time.todaysDate()]: amount },
+    };
+
+    return managementRef.set(data, { merge: true });
+  }
+
+  updateManagementInfoForAddToInvestment(amount: string) {
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const data = {
+      moneyInHands: (
+        Number(this.auth.managementInfo.moneyInHands) + Number(amount)
+      ).toString(),
+
+      investment: { [this.time.todaysDate()]: amount },
+    };
+
+    return managementRef.set(data, { merge: true });
+  }
+
+  updateManagementInfoForMoneyGiven(amount: string) {
+    console.log('data from management', this.auth.managementInfo);
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const data = {
+      moneyInHands: (
+        Number(this.auth.managementInfo.moneyInHands) - Number(amount)
+      ).toString(),
+
+      moneyGiven: { [this.time.todaysDate()]: amount },
+    };
+
+    return managementRef.set(data, { merge: true });
+  }
+  updateManagementInfoToAddMoneyInTheBank(
+    amountFrancs: string,
+    amountDollars: string,
+    loss: string
+  ) {
+    console.log('data from management', this.auth.managementInfo);
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const data = {
+      moneyInHands: (
+        Number(this.auth.managementInfo.moneyInHands) - Number(amountFrancs)
+      ).toString(),
+
+      bankDepositDollars: { [this.time.todaysDate()]: amountDollars },
+      bankDepositFrancs: { [this.time.todaysDate()]: amountFrancs },
+      dollarTransferLoss: { [this.time.todaysDate()]: loss },
+    };
+
+    return managementRef.set(data, { merge: true });
+  }
+  updateManagementInfoForMoneyLoss(amount: string) {
+    console.log('data from management', this.auth.managementInfo);
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const data = {
+      moneyInHands: (
+        Number(this.auth.managementInfo.moneyInHands) - Number(amount)
+      ).toString(),
+
+      exchangeLoss: { [this.time.todaysDate()]: amount },
+    };
+
+    return managementRef.set(data, { merge: true });
+  }
+
   updateUserInfoForAddExpense(amount: string, reason: string) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
@@ -385,6 +474,20 @@ export class DataService {
       ).toString(),
       moneyInHands: (
         Number(this.auth.currentUser.moneyInHands) - Number(amount)
+      ).toString(),
+
+      expenses: { [this.time.todaysDate()]: `${amount}:${reason}` },
+    };
+
+    return userRef.set(data, { merge: true });
+  }
+  updateManagementInfoForAddExpense(amount: string, reason: string) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    const data = {
+      moneyInHands: (
+        Number(this.auth.managementInfo.moneyInHands) - Number(amount)
       ).toString(),
 
       expenses: { [this.time.todaysDate()]: `${amount}:${reason}` },

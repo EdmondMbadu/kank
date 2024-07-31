@@ -148,12 +148,12 @@ export class ComputationService {
     }
     return total.toString();
   }
-  findTotalForToday(reserve: { [key: string]: string }) {
+  findTotalForToday(reserve: { [key: string]: string }, dateString: string) {
     // Compute today's date in "M-D-YYYY" format without leading zeros
     const today = new Date();
-    const dateString = `${
-      today.getMonth() + 1
-    }-${today.getDate()}-${today.getFullYear()}`;
+    // const dateString = `${
+    //   today.getMonth() + 1
+    // }-${today.getDate()}-${today.getFullYear()}`;
 
     let totalForToday = 0;
 
@@ -176,6 +176,7 @@ export class ComputationService {
     givnMonth: number,
     givenYear: number
   ) {
+    // if (dailyReimbursement === null || dailyReimbursement === undefined) return;
     let total = 0;
     for (const [date, amount] of Object.entries(dailyReimbursement)) {
       const [month, day, year] = date.split('-').map(Number);

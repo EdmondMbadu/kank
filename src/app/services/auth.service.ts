@@ -28,8 +28,11 @@ export class AuthService {
   employeesRef$: Observable<any>;
   email?: Observable<any>;
   currentUser: any = {};
+  managementInfo: any = {};
   word: string = 'synergie';
+  distributor: string = 'plan';
   public isAdmninistrator: boolean = false;
+  public isDistributoring: boolean = false;
   clientId: string = '';
   currentClient: Client = new Client();
 
@@ -84,7 +87,18 @@ export class AuthService {
         }
       })
     );
+
+    // this.managementRef$ = this.fireauth.authState.pipe(
+    //   switchMap((user) => {
+    //     if (user) {
+    //       return this.afs.collection(`users/${user.uid}/cards/`).valueChanges();
+    //     } else {
+    //       return of(null);
+    //     }
+    //   })
+    // );
     this.getCurrentUser();
+    this.getManagementInfoData();
   }
   ngOnInit() {}
   getAllClients(): Observable<Client> {
@@ -103,6 +117,11 @@ export class AuthService {
   }
   getClientsCardOfAUser(userId: string) {
     return this.afs.collection<Client>(`users/${userId}/cards/`).valueChanges();
+  }
+  getManagementInfoData() {
+    this.getManagementInfo().subscribe((data) => {
+      this.managementInfo = data[0];
+    });
   }
   getAllEmployees(): Observable<Employee> {
     return this.employeesRef$;
@@ -137,6 +156,9 @@ export class AuthService {
         (res) => {
           if (word === this.word) {
             this.isAdmninistrator = true;
+          }
+          if (word === this.distributor) {
+            this.isDistributoring = true;
           }
           if (res.user?.emailVerified == true) {
             this.router.navigate(['/home']);
@@ -479,6 +501,7 @@ export class AuthService {
       .then(
         () => {
           this.isAdmninistrator = false;
+          this.isDistributoring = false;
 
           this.router.navigate(['/']);
         },
@@ -515,6 +538,10 @@ export class AuthService {
     const allowed = ['admin'];
     return this.matchingRole(allowed);
   }
+  get isDistributor() {
+    const allowed = ['distributor'];
+    return this.matchingRoleDistributor(allowed);
+  }
 
   private matchingRole(alloweedRoles: string[]): boolean {
     if ((this, this.currentUser.roles === undefined)) return false;
@@ -523,6 +550,16 @@ export class AuthService {
         this.currentUser.roles.includes(element) ||
         this.isAdmninistrator ||
         (this.currentUser.admin && this.currentUser.admin === 'true')
+    );
+  }
+  private matchingRoleDistributor(alloweedRoles: string[]): boolean {
+    if ((this, this.currentUser.roles === undefined)) return false;
+    return alloweedRoles.some(
+      (element) =>
+        this.currentUser.roles.includes(element) ||
+        this.isDistributoring ||
+        (this.currentUser.distributor &&
+          this.currentUser.distributor === 'true')
     );
   }
 
@@ -535,12 +572,32 @@ export class AuthService {
     };
     return userRef.set(data, { merge: true });
   }
+  makeDistributor() {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      distributor: 'true',
+    };
+    return userRef.set(data, { merge: true });
+  }
+
   removeAdmin() {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.currentUser.uid}`
     );
     const data = {
       admin: 'false',
+    };
+    return userRef.set(data, { merge: true });
+  }
+
+  removeDistributor() {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      distributor: 'false',
     };
     return userRef.set(data, { merge: true });
   }

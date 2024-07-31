@@ -32,6 +32,59 @@ export class TeamPageComponent implements OnInit {
   ngOnInit(): void {
     this.retreiveClients();
   }
+  salaries: any[] = [
+    [
+      { people: '60' },
+      { role: 'Manager', base: '80$', a: '15$', b: '25$', c: '45$', d: '55$' },
+      {
+        role: 'Agent Margeting',
+        base: '70$',
+        a: '10$',
+        b: '20$',
+        c: '40$',
+        d: '50$',
+      },
+    ],
+    [
+      { people: '100' },
+      {
+        role: 'Manager',
+        base: '80$',
+        a: '60$',
+        b: '80$',
+        c: '100$',
+        d: '110$',
+      },
+      {
+        role: 'Agent Margeting',
+        base: '70$',
+        a: '50$',
+        b: '70$',
+        c: '90$',
+        d: '100$',
+      },
+    ],
+    [
+      { people: '160' },
+      {
+        role: 'Manager',
+        base: '80$',
+        a: '110$',
+        b: '130$',
+        c: '150$',
+        d: '160$',
+      },
+      {
+        role: 'Agent Margeting',
+        base: '70$',
+        a: '100$',
+        b: '120$',
+        c: '140$',
+        d: '150$',
+      },
+    ],
+  ];
+
   url: string = '';
   task?: AngularFireUploadTask;
   employees: Employee[] = [];

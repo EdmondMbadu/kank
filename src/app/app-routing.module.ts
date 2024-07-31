@@ -68,6 +68,12 @@ import { DailyFeesComponent } from './components/daily-fees/daily-fees.component
 import { DailySavingsReturnsComponent } from './components/daily-savings-returns/daily-savings-returns.component';
 import { GestionDayComponent } from './gestion/gestion-day/gestion-day.component';
 import { GestionMonthComponent } from './gestion/gestion-month/gestion-month.component';
+import { GestionReserveComponent } from './gestion/gestion-reserve/gestion-reserve.component';
+import { GestionServedComponent } from './gestion/gestion-served/gestion-served.component';
+import { GestionExpenseComponent } from './gestion/gestion-expense/gestion-expense.component';
+import { GestionBankComponent } from './gestion/gestion-bank/gestion-bank.component';
+import { GestionLossComponent } from './gestion/gestion-loss/gestion-loss.component';
+import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion-investment.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -199,6 +205,12 @@ const routes: Routes = [
   { path: 'request-today', component: RequestTodayComponent },
   { path: 'pay-today', component: PayTodayComponent },
   { path: 'gestion-today', component: GestionDayComponent },
+  { path: 'gestion-reserve', component: GestionReserveComponent },
+  { path: 'gestion-served', component: GestionServedComponent },
+  { path: 'gestion-expenses', component: GestionExpenseComponent },
+  { path: 'gestion-bank', component: GestionBankComponent },
+  { path: 'gestion-loss', component: GestionLossComponent },
+  { path: 'gestion-investment', component: GestionInvestmentComponent },
   { path: 'gestion-month', component: GestionMonthComponent },
   { path: 'paid-date', component: PaidDateComponent },
   { path: 'lending-date', component: LendingDateComponent },

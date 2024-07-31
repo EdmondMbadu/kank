@@ -144,7 +144,74 @@
 
          
         </div>
-      </div>  
+      </div> 
+      
+      <div class="relative min-w-md flex flex-col overflow-x-auto mb-6 " >
+        <h1 class="text-xl  font-semibold text-center mx-4 mb-4 "> *Note: 3 fois une performance de 50% du mois ou moins durant l'année, nécessite un limogeage.
+            Pour plus d'informations <a class="text-blue-400 underline" target="_blank" href="https://docs.google.com/document/d/1Qgen3QRTMvdZbomRGv4YmOTLAqPPGXwEXLVBfwSMAe0/edit?usp=sharing">voir ici</a> 
+        </h1>
+      </div>
+
+    <div class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl" *ngFor="let group of salaries">
+        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Montant de Paiement et Bonus({{ group[0].people }}+ clients)</h1>
+        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-6 py-3 rounded-s-lg">
+                  Role 
+                    </th>
+                    <th scope="col" class=" py-3 px-6">
+                       Base
+                        </th>
+                   
+                    <th scope="col" class=" px-6 py-3">
+                     Bonus 70-79%
+                      </th>
+                      <th scope="col" class=" px-6 py-3">
+                        Bonus 80-89%
+                         </th>
+                         <th scope="col" class=" px-6 py-3">
+                            Bonus 90-99%
+                             </th>
+                             <th scope="col" class=" px-6 py-3">
+                                Bonus 100%
+                                 </th>
+                    
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let role of group.slice(1); " class="bg-white dark:bg-gray-800">
+                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                      {{role.role}}
+                    </th>
+                    <td class="px-6 py-4">
+                        {{role.base}} 
+                      </td>
+                    <td class="px-6 py-4">
+                      {{role.a}} 
+                    </td>
+                    <td class="px-6 py-4">
+                        {{role.b}} 
+                      </td>
+                      <td class="px-6 py-4">
+                        {{role.c}} 
+                      </td>
+                      <td class="px-6 py-4">
+                        {{role.d}} 
+                      </td>
+                </tr>
+                
+                
+            </tbody>
+            <tfoot>
+               
+            </tfoot>
+            
+          
+        </table>
+    </div>
+
+    
     </div>
   </section>
 
