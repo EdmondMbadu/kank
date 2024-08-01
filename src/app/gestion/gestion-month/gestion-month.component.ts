@@ -157,7 +157,6 @@ export class GestionMonthComponent {
       )}`,
       `${this.givenMonthTotalBankAmountDollar}`,
       `${this.compute.convertCongoleseFrancToUsDollars(totalLoss)}`,
-      `${this.givenMonthTotalBankAmountDollar}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalInvestmentAmount
       )}`,
