@@ -19,6 +19,11 @@ export class EmployeePageComponent implements OnInit {
   salaryPaid: string = '';
   currentDownloadUrl: string = '';
   displayMakePayment: boolean = false;
+  displayAttendance: boolean = false;
+  attendance: string = '';
+  // today = this.time.todaysDateMonthDayYear();
+
+  attendanceComplete: boolean = true;
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
@@ -44,6 +49,7 @@ export class EmployeePageComponent implements OnInit {
   performancePercentageTotal: string = '';
   totalToday: string = '';
   today: string = this.time.todaysDateMonthDayYear();
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
   graphicPerformanceTimeRange: number = 5;
@@ -73,7 +79,7 @@ export class EmployeePageComponent implements OnInit {
     data: [{}],
     layout: {
       title: 'Performance Points',
-      barmode: 'stack',
+      barmode: 'bar',
     },
   };
 
@@ -145,6 +151,14 @@ export class EmployeePageComponent implements OnInit {
       );
 
       // this.computeThisMonthSalary();
+      if (
+        this.employee.attendance !== undefined &&
+        this.employee.attendance[this.today] !== undefined
+      ) {
+        console.log('hello', this.employee.attendance[this.today]);
+        this.attendanceComplete = false;
+      }
+      this.generateAttendanceTable(this.givenMonth, this.givenYear);
 
       this.updatePerformanceGraphics();
     });
@@ -320,5 +334,84 @@ export class EmployeePageComponent implements OnInit {
   }
   generateInvoiceBonus() {
     this.compute.generateInvoice(this.employee, 'Bonus');
+  }
+
+  generateAttendanceTable(month: number, year: number) {
+    const dict = this.employee.attendance;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const firstDayIndex = new Date(year, month - 1, 1).getDay();
+    const tableBody = document.getElementById('attendance-body');
+    tableBody!.innerHTML = '';
+
+    let date = 1;
+    for (let i = 0; i < 6; i++) {
+      // maximum 6 rows to cover all days
+      const row = document.createElement('tr');
+
+      for (let j = 0; j < 7; j++) {
+        const cell = document.createElement('td');
+        if (i === 0 && j < firstDayIndex) {
+          cell.classList.add('not-filled');
+          cell.innerHTML = '';
+        } else if (date > daysInMonth) {
+          cell.classList.add('bg-gray-200');
+          cell.classList.add('p-16');
+          // cell.classList.add('not-filled');
+
+          cell.innerHTML = '';
+        } else {
+          const dateStr = `${month}-${date}-${year}`;
+          if (dict !== undefined && dict![dateStr] === 'P') {
+            cell.classList.add('bg-green-600');
+            cell.classList.add('border');
+            cell.classList.add('border-black');
+            cell.classList.add('text-white');
+            cell.innerHTML = `${date}<br>Present`;
+          } else if (dict !== undefined && dict![dateStr] === 'A') {
+            cell.classList.add('bg-red-600');
+            cell.classList.add('border');
+            cell.classList.add('border-black');
+            cell.classList.add('text-white');
+            cell.innerHTML = `${date}<br>Absent`;
+          } else {
+            cell.classList.add('border');
+            cell.classList.add('border-black');
+            cell.classList.add('p-4');
+            cell.innerHTML = date.toString();
+          }
+          date++;
+        }
+        row.appendChild(cell);
+      }
+
+      tableBody!.appendChild(row);
+
+      if (date > daysInMonth) {
+        break;
+      }
+    }
+  }
+  toggleAttendance() {
+    this.displayAttendance = !this.displayAttendance;
+  }
+
+  async addAttendance() {
+    if (this.attendance === '') {
+      alert('Remplissez la presence, Réessayez');
+      return;
+    }
+    try {
+      let val: any = { [this.time.todaysDateMonthDayYear()]: this.attendance };
+      const value = await this.data.updateEmployeeAttendance(
+        val,
+        this.employee.uid!
+      );
+      // alert('Remplis avec succès!');
+    } catch (err) {
+      alert("Une erreur s'est produite lors de l'attendance, Réessayez");
+      return;
+    }
+    this.attendance = '';
+    this.toggleAttendance();
   }
 }

@@ -121,17 +121,17 @@ export class TransformRegisterClientComponent implements OnInit {
             );
           }
           this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
-        })
-        .then(() => {
-          this.performance
-            .updateUserPerformance(this.client)
-            .then((res: any) => {
-              console.log('updated user info performance');
-            })
-            .catch((err: any) => {
-              console.log('error while updating performance');
-            });
         });
+      // .then(() => {
+      //   this.performance
+      //     .updateUserPerformance(this.client)
+      //     .then((res: any) => {
+      //       console.log('updated user info performance');
+      //     })
+      //     .catch((err: any) => {
+      //       console.log('error while updating performance');
+      //     });
+      // });
 
       let date = this.time.todaysDateMonthDayYear();
       this.data

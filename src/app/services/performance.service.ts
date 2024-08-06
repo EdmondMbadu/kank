@@ -79,6 +79,7 @@ export class PerformanceService {
 
     return userRef.set(data, { merge: true });
   }
+
   callEachEmployeeToUpdatePerformancePerSubmission() {
     for (let em of this.employees!) {
       // console.log('current employee daily points', em.dailyPoints![this.today]);

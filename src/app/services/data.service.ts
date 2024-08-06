@@ -505,6 +505,15 @@ export class DataService {
     };
     return employeeRef.set(data, { merge: true });
   }
+  updateEmployeeAttendance(attendance: any, employeeId: string) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employeeId}`
+    );
+    const data = {
+      attendance: attendance,
+    };
+    return employeeRef.set(data, { merge: true });
+  }
 
   addCertificateData(certificate: Certificate[], certificateId: string) {
     const certificateref: AngularFirestoreDocument<any> = this.afs.doc(

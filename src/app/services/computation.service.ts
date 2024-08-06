@@ -14,12 +14,14 @@ export class ComputationService {
   constructor(private time: TimeService) {}
   colorPositive: string = '#008080';
   colorNegative: string = '#ff0000';
+  rateFranc: number = 0.00036;
+  rateDollar: number = 2800;
   today = this.time.todaysDateMonthDayYear();
   convertCongoleseFrancToUsDollars(value: string) {
     let input = Number(value);
     if (isNaN(input)) return '';
 
-    let dollars = Math.ceil(input * 0.00036);
+    let dollars = Math.ceil(input * this.rateFranc);
 
     return dollars;
   }
@@ -27,7 +29,7 @@ export class ComputationService {
     let input = Number(value);
     if (isNaN(input)) return '';
 
-    let dollars = Math.floor(input * 2800);
+    let dollars = Math.floor(input * this.rateDollar);
 
     return dollars;
   }
@@ -185,6 +187,14 @@ export class ComputationService {
       }
     }
     return total.toString();
+  }
+  convertToDollarsArray(array: any) {
+    let result: number[] = [];
+    for (let a of array) {
+      result.push(Math.floor(Number(a) * this.rateFranc));
+    }
+
+    return result;
   }
   findTotalGivenMonthForAllUsers(
     users: User[],

@@ -74,7 +74,7 @@
     </div>
     <div class="flex container flex-col md:flex-row mx-auto justify-center ">
         <a type="submit" class="text-white bg-green-700 hover:bg-green-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"  [routerLink]="['/request-update',id ]">Demande de Mise à Jour</a>
-    <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="delete()">Supprimer Client</button>
+    <button *ngIf="client.debtCycle==='1'" type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="delete()">Supprimer Client</button>
    
 </div>
 

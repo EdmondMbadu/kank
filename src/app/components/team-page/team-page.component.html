@@ -44,7 +44,7 @@
                    
                     <button *ngIf="auth.isAdmin" type="submit" (click)="toggleEditEmployee(i)" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mr-4">Modifier</button>
                     <button type="submit" [routerLink]="['/employee-page',em.trackingId]" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Details</button>
-                
+                   
                 </a>
                 <div *ngIf="displayEditEmployees[i]" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6">
                     <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
@@ -314,3 +314,4 @@
         </div>
     </div>
 </div>
+

@@ -237,19 +237,12 @@ export class InvestementsSummaryComponent implements OnInit {
     return new Date(year, month - 1, day);
   }
 
-  convertToDollars(array: any) {
-    let result: number[] = [];
-    for (let a of array) {
-      result.push(Math.floor(Number(a) * 0.00036));
-    }
-
-    return result;
-  }
-
   updatePaymentGraphics() {
     let sorted = this.sortKeysAndValuesPayments(this.graphicTimeRangePayment);
     this.recentReimbursementDates = sorted[0];
-    this.recentReimbursementAmounts = this.convertToDollars(sorted[1]);
+    this.recentReimbursementAmounts = this.compute.convertToDollarsArray(
+      sorted[1]
+    );
     const color1 = this.compute.findColor(sorted[1]);
     this.graph = {
       data: [
@@ -330,7 +323,7 @@ export class InvestementsSummaryComponent implements OnInit {
   updateLendingGraphics() {
     let sorted = this.sortKeysAndValuesLending(this.graphicTimeRangeLending);
     this.recentLendingDates = sorted[0];
-    this.recentLendingAmounts = this.convertToDollars(sorted[1]);
+    this.recentLendingAmounts = this.compute.convertToDollarsArray(sorted[1]);
     const color2 = this.compute.findColor(sorted[1]);
     this.graph2 = {
       data: [

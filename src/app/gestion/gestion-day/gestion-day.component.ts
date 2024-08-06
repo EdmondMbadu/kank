@@ -22,9 +22,16 @@ export class GestionDayComponent implements OnInit {
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
       this.initalizeInputs();
+      this.updateReserveGraphics();
     });
   }
-
+  week: number = 5;
+  month: number = 20;
+  day: number = 1;
+  graphicsRange: number = this.week;
+  maxRange = 0;
+  recentReserveDates: string[] = [];
+  recentReserveAmounts: number[] = [];
   dailyExpense: string = '0';
   dailyBankFranc: string = '0';
   dailyBankDollar: string = '0';
@@ -33,6 +40,13 @@ export class GestionDayComponent implements OnInit {
   dollarLoss: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
+  public graph = {
+    data: [{}],
+    layout: {
+      title: 'Paiment Journalier en $',
+      barmode: 'stack',
+    },
+  };
 
   moneyInHands: string = '0';
 
@@ -127,6 +141,9 @@ export class GestionDayComponent implements OnInit {
       )
       .toString();
 
+    if (this.auth.managementInfo.reserve !== undefined)
+      this.maxRange = this.auth.managementInfo.reserve.length;
+
     this.dailyBankFranc =
       this.dailyBankFranc === undefined ? '0' : this.dailyBankFranc;
     this.dailyInvestment =
@@ -179,5 +196,53 @@ export class GestionDayComponent implements OnInit {
     );
 
     this.initalizeInputs();
+  }
+  updateReserveGraphics() {
+    let sorted = this.sortKeysAndValuesReserve(this.graphicsRange);
+    this.recentReserveDates = sorted[0];
+    this.recentReserveAmounts = this.compute.convertToDollarsArray(sorted[1]);
+    const color1 = this.compute.findColor(sorted[1]);
+    this.graph = {
+      data: [
+        {
+          x: this.recentReserveDates,
+          y: this.recentReserveAmounts,
+          type: 'scatter',
+          mode: 'lines',
+          marker: { color: 'rgb(0,76,153)' },
+          line: {
+            color: color1,
+            // width: 1200,
+          },
+        },
+      ],
+      layout: {
+        title: 'Paiment en $',
+        barmode: 'stack',
+      },
+    };
+  }
+  sortKeysAndValuesReserve(time: number): [string[], string[]] {
+    const dailyReimbursement = this.auth.managementInfo.reserve;
+
+    // Aggregating values by day
+    const aggregatedData: { [key: string]: number } = {};
+    for (const [key, value] of Object.entries(dailyReimbursement)) {
+      const day = key.split('-').slice(0, 3).join('-'); // Extracting the date part
+      const numericValue = parseFloat(value as string); // Type assertion
+      if (aggregatedData[day]) {
+        aggregatedData[day] += numericValue;
+      } else {
+        aggregatedData[day] = numericValue;
+      }
+    }
+
+    // Sorting and slicing
+    const sortedKeys = Object.keys(aggregatedData)
+      .sort((a, b) => +new Date(a) - +new Date(b))
+      .slice(-time);
+    const values = sortedKeys.map((key) => aggregatedData[key].toString());
+
+    return [sortedKeys, values];
   }
 }

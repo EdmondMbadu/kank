@@ -1,0 +1,36 @@
+.attendance-table {
+    border-collapse: collapse;
+    width: 100%;
+    text-align: center;
+}
+
+.attendance-table th, .attendance-table td {
+    padding: 15px;
+    border: 1px solid #ddd;
+}
+
+.attendance-table th {
+    background-color: #f2f2f2;
+}
+
+.attendance-table td {
+    width: 60px;
+    height: 60px;
+    vertical-align: middle;
+    text-transform: capitalize;
+}
+
+.present {
+    background-color: #4caf50; /* Green color for present */
+    color: white;
+}
+
+.absent {
+    background-color: #f44336; /* Red color for absent */
+    color: white;
+}
+
+.not-filled {
+    background-color: #ddd; /* Grey color for not yet filled */
+    color: black;
+}

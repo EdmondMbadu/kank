@@ -28,6 +28,7 @@ export class Employee {
   currentClients?: string[];
   clientsFinishedPaying?: number;
   dailyStatus?: { [key: string]: string };
+  attendance?: { [key: string]: string };
 }
 export class Avatar {
   path?: string;

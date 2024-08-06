@@ -84,6 +84,9 @@ export class TeamPageComponent implements OnInit {
       },
     ],
   ];
+  today = this.time.todaysDateMonthDayYear();
+  tomorrow = this.time.getTomorrowsDateMonthDayYear();
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
 
   url: string = '';
   task?: AngularFireUploadTask;
@@ -100,7 +103,7 @@ export class TeamPageComponent implements OnInit {
   sex: string = '';
   dateJoined: string = '';
   status: string = '';
-
+  attendance: string = '';
   displayAddNewEmployee: boolean = false;
   displayEditEmployee: boolean = false;
 
