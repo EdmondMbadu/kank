@@ -23,15 +23,19 @@ export class GestionDayComponent implements OnInit {
       this.managementInfo = data[0];
       this.initalizeInputs();
       this.updateReserveGraphics();
+      this.updateServeGraphics();
     });
   }
   week: number = 5;
   month: number = 20;
   day: number = 1;
   graphicsRange: number = this.week;
+  graphicsRangeServe: number = this.week;
   maxRange = 0;
   recentReserveDates: string[] = [];
   recentReserveAmounts: number[] = [];
+  recentServeDates: string[] = [];
+  recentServeAmounts: number[] = [];
   dailyExpense: string = '0';
   dailyBankFranc: string = '0';
   dailyBankDollar: string = '0';
@@ -43,7 +47,14 @@ export class GestionDayComponent implements OnInit {
   public graph = {
     data: [{}],
     layout: {
-      title: 'Paiment Journalier en $',
+      title: 'Reserve Journalier en $',
+      barmode: 'stack',
+    },
+  };
+  public graphServe = {
+    data: [{}],
+    layout: {
+      title: 'Argent A Servir Journalier en $',
       barmode: 'stack',
     },
   };
@@ -217,13 +228,63 @@ export class GestionDayComponent implements OnInit {
         },
       ],
       layout: {
-        title: 'Paiment en $',
+        title: 'Reserve en $',
+        barmode: 'stack',
+      },
+    };
+  }
+
+  updateServeGraphics() {
+    let sorted = this.sortKeysAndValuesServe(this.graphicsRangeServe);
+    this.recentServeDates = sorted[0];
+    this.recentServeAmounts = this.compute.convertToDollarsArray(sorted[1]);
+    const color1 = this.compute.findColor(sorted[1]);
+    this.graphServe = {
+      data: [
+        {
+          x: this.recentServeDates,
+          y: this.recentServeAmounts,
+          type: 'scatter',
+          mode: 'lines',
+          marker: { color: 'rgb(0,76,153)' },
+          line: {
+            color: color1,
+            // width: 1200,
+          },
+        },
+      ],
+      layout: {
+        title: 'Argent A Servir en $',
         barmode: 'stack',
       },
     };
   }
   sortKeysAndValuesReserve(time: number): [string[], string[]] {
     const dailyReimbursement = this.auth.managementInfo.reserve;
+
+    // Aggregating values by day
+    const aggregatedData: { [key: string]: number } = {};
+    for (const [key, value] of Object.entries(dailyReimbursement)) {
+      const day = key.split('-').slice(0, 3).join('-'); // Extracting the date part
+      const numericValue = parseFloat(value as string); // Type assertion
+      if (aggregatedData[day]) {
+        aggregatedData[day] += numericValue;
+      } else {
+        aggregatedData[day] = numericValue;
+      }
+    }
+
+    // Sorting and slicing
+    const sortedKeys = Object.keys(aggregatedData)
+      .sort((a, b) => +new Date(a) - +new Date(b))
+      .slice(-time);
+    const values = sortedKeys.map((key) => aggregatedData[key].toString());
+
+    return [sortedKeys, values];
+  }
+
+  sortKeysAndValuesServe(time: number) {
+    const dailyReimbursement = this.auth.managementInfo.moneyGiven;
 
     // Aggregating values by day
     const aggregatedData: { [key: string]: number } = {};
