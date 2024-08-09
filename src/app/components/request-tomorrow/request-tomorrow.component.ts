@@ -23,7 +23,7 @@ export class RequestTomorrowComponent implements OnInit {
   clientsRequestSavings: Client[] = [];
   clientsRequestCard: Card[] = [];
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
-  total: string = '';
+  total: string = '0';
 
   trackingIds: string[] = [];
   searchControl = new FormControl();
@@ -33,10 +33,7 @@ export class RequestTomorrowComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService
-  ) {
-    this.retrieveClients();
-    this.retrieveClientsCard();
-  }
+  ) {}
   ngOnInit(): void {
     this.searchControl.valueChanges
       .pipe(
@@ -65,6 +62,8 @@ export class RequestTomorrowComponent implements OnInit {
       .subscribe((results) => {
         this.clientsRequestCard = results;
       });
+    this.retrieveClients();
+    this.retrieveClientsCard();
   }
 
   retrieveClients(): void {
@@ -113,6 +112,7 @@ export class RequestTomorrowComponent implements OnInit {
     this.trackingIds = [];
     this.clientsRequestLending = [];
     this.clientsRequestSavings = [];
+    console.log('here request saving and lending');
     for (let client of this.clients!) {
       if (
         client.requestStatus !== undefined &&
@@ -138,8 +138,9 @@ export class RequestTomorrowComponent implements OnInit {
   }
   extractTCardRequestTomorrow() {
     this.trackingIds = [];
-    this.clientsRequestLending = [];
     this.clientsRequestCard = [];
+    console.log('here request card');
+
     for (let client of this.cards!) {
       if (
         client.requestStatus !== undefined &&
