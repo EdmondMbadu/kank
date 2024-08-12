@@ -22,8 +22,8 @@ export class GestionDayComponent implements OnInit {
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
       this.initalizeInputs();
-      this.updateReserveGraphics();
-      this.updateServeGraphics();
+      this.updateReserveGraphics(this.graphicsRange);
+      this.updateServeGraphics(this.graphicsRangeServe);
     });
   }
   week: number = 5;
@@ -208,8 +208,8 @@ export class GestionDayComponent implements OnInit {
 
     this.initalizeInputs();
   }
-  updateReserveGraphics() {
-    let sorted = this.sortKeysAndValuesReserve(this.graphicsRange);
+  updateReserveGraphics(time: number) {
+    let sorted = this.sortKeysAndValuesReserve(time);
     this.recentReserveDates = sorted[0];
     this.recentReserveAmounts = this.compute.convertToDollarsArray(sorted[1]);
     const color1 = this.compute.findColor(sorted[1]);
@@ -234,8 +234,8 @@ export class GestionDayComponent implements OnInit {
     };
   }
 
-  updateServeGraphics() {
-    let sorted = this.sortKeysAndValuesServe(this.graphicsRangeServe);
+  updateServeGraphics(time: number) {
+    let sorted = this.sortKeysAndValuesServe(time);
     this.recentServeDates = sorted[0];
     this.recentServeAmounts = this.compute.convertToDollarsArray(sorted[1]);
     const color1 = this.compute.findColor(sorted[1]);

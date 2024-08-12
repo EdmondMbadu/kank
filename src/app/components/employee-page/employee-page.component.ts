@@ -160,7 +160,7 @@ export class EmployeePageComponent implements OnInit {
       }
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
 
-      this.updatePerformanceGraphics();
+      this.updatePerformanceGraphics(this.graphicPerformanceTimeRange);
     });
   }
   computePerformancePercentage(average: string, total: string) {
@@ -215,10 +215,8 @@ export class EmployeePageComponent implements OnInit {
       );
     }
   }
-  updatePerformanceGraphics() {
-    let sorted = this.sortKeysAndValuesPerformance(
-      this.graphicPerformanceTimeRange
-    );
+  updatePerformanceGraphics(time: number) {
+    let sorted = this.sortKeysAndValuesPerformance(time);
     this.recentPerformanceDates = sorted[0];
     // console.log(' the sorted values are', sorted);
     this.recentPerformanceNumbers = this.compute.convertToNumbers(sorted[1]);

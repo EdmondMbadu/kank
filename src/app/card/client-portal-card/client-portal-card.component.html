@@ -72,22 +72,37 @@
 
         </dl>
     </div>
-    <div class="flex container flex-col md:flex-row mx-auto justify-center">
-        <div  class="flex container mx-auto justify-center">
-            <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="payClient()"  >Retrait Total</button>
-          
+    <div class="flex container flex-col s  md:flex-row justify-center my-6 sm:mx-1 md:mx-auto rounded-md shadow-sm" role="group">
+        <button  (click)="payClient()"type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border-l border-t border-b border-gray-900  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+            Retrait Total
+        </button>
+        <button (click)="requestMoney()" *ngIf="this.auth.isAdmin" type="button" class="px-4 py-4 text-md font-medium text-gray-100   bg-green-700 hover:bg-green-800 border border-gray-900 rounded-s-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+            Demander
+        </button>
+        
+        <button (click)="removeFromCard()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  border border-gray-900  bg-green-700 hover:bg-green-800 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+            Retrait Partielle
+        </button>
+        <button (click)="startNewCardCycle()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border border-gray-900 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+            Nouveau Cycle De Carte
+        </button>
+      </div>
+    <!-- <div class="flex container flex-col md:flex-row mx-auto justify-center">
+            <div  class="flex container mx-auto justify-center">
+                <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="payClient()"  >Retrait Total</button>
+            
+            </div>
+            <div  class="flex container mx-auto justify-center">
+                <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="requestMoney()"  >Demander</button>
+            
+            </div>
+            <div  class="flex container mx-auto justify-center">
+                <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="removeFromCard()"  >Retrait Partielle</button>
+            
+            </div>
+        <div  class="flex container  mx-auto justify-center">
+            <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="startNewCardCycle()" >Nouveau Cycle De Carte</button>
+        
         </div>
-        <div  class="flex container mx-auto justify-center">
-            <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="requestMoney()"  >Demander</button>
-          
-        </div>
-        <div  class="flex container mx-auto justify-center">
-            <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="removeFromCard()"  >Retrait Partielle</button>
-          
-        </div>
-    <div  class="flex container  mx-auto justify-center">
-        <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="startNewCardCycle()" >Nouveau Cycle De Carte</button>
-      
-    </div>
    
-</div>
+    </div> -->

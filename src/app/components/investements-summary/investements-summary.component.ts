@@ -34,9 +34,9 @@ export class InvestementsSummaryComponent implements OnInit {
     }
     this.retrieveClients();
 
-    this.updatePaymentGraphics();
-    this.updateLendingGraphics();
-    this.updatePerformanceGraphics();
+    this.updatePaymentGraphics(this.graphicPerformanceTimeRange);
+    this.updateLendingGraphics(this.graphicTimeRangeLending);
+    this.updatePerformanceGraphics(this.graphicPerformanceTimeRange);
     this.updatePieGrahics();
   }
   public graphPie = {
@@ -237,8 +237,8 @@ export class InvestementsSummaryComponent implements OnInit {
     return new Date(year, month - 1, day);
   }
 
-  updatePaymentGraphics() {
-    let sorted = this.sortKeysAndValuesPayments(this.graphicTimeRangePayment);
+  updatePaymentGraphics(time: number) {
+    let sorted = this.sortKeysAndValuesPayments(time);
     this.recentReimbursementDates = sorted[0];
     this.recentReimbursementAmounts = this.compute.convertToDollarsArray(
       sorted[1]
@@ -264,10 +264,8 @@ export class InvestementsSummaryComponent implements OnInit {
       },
     };
   }
-  updatePerformanceGraphics() {
-    let sorted = this.sortKeysAndValuesPerformance(
-      this.graphicPerformanceTimeRange
-    );
+  updatePerformanceGraphics(time: number) {
+    let sorted = this.sortKeysAndValuesPerformance(time);
     this.recentPerformanceDates = sorted[0];
     this.recentPerformanceNumbers = this.compute.convertToNumbers(sorted[1]);
     const color = this.compute.findColor(sorted[1]);
@@ -320,8 +318,8 @@ export class InvestementsSummaryComponent implements OnInit {
     };
   }
 
-  updateLendingGraphics() {
-    let sorted = this.sortKeysAndValuesLending(this.graphicTimeRangeLending);
+  updateLendingGraphics(time: number) {
+    let sorted = this.sortKeysAndValuesLending(time);
     this.recentLendingDates = sorted[0];
     this.recentLendingAmounts = this.compute.convertToDollarsArray(sorted[1]);
     const color2 = this.compute.findColor(sorted[1]);

@@ -178,7 +178,7 @@
 
 
    <div class="flex flex-col md:flex-row">
-    <button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>
+    <button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
     <button class="text-white m-4  bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center"(click)="registerClientNewDebtCycle()">Soumettre</button>
    </div>
 

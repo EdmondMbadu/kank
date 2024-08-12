@@ -174,10 +174,10 @@ export class TeamPageComponent implements OnInit {
     this.toggleAddNewEmployee();
   }
   addIdsToEmployees() {
-    // let commonElements = this.employees[0].clients!.filter((item) =>
-    //   this.employees[1].clients!.includes(item)
-    // );
-    // console.log('common elements', commonElements);
+    let commonElements = this.employees[0].clients!.filter((item) =>
+      this.employees[1].clients!.includes(item)
+    );
+    console.log('common elements', commonElements);
     for (let i = 0; i < this.employees.length; i++) {
       this.employees[i].trackingId = `${i}`;
       this.employees[i].age = this.time
