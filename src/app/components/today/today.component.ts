@@ -29,6 +29,7 @@ export class TodayComponent {
   dailySavingReturns: string = '0';
   dailyMoneyRequests: string = '0';
   tomorrowMoneyRequests: string = '0';
+  dailyExpense: string = '0';
 
   totalPerfomance: number = 0;
 
@@ -55,6 +56,7 @@ export class TodayComponent {
     'Retrait Epargne Du Jour',
     'Argent Demandé Pour Aujourdhui',
     'Argent Demandé Pour Demain',
+    'Depense Du Jour',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -69,6 +71,7 @@ export class TodayComponent {
     '../../../assets/img/saving.svg',
     '../../../assets/img/request-money.png',
     '../../../assets/img/request-money.png',
+    '../../../assets/img/expense.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -98,6 +101,12 @@ export class TodayComponent {
         this.requestDateCorrectFormat
       )
       .toString();
+    this.dailyExpense = this.compute
+      .findTotalForToday(
+        this.auth.currentUser.expenses,
+        this.requestDateCorrectFormat
+      )
+      .toString();
 
     this.dailyInvestment = this.compute
       .findTotalForToday(
@@ -118,6 +127,8 @@ export class TodayComponent {
     this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
     this.dailySavingReturns =
       this.dailySavingReturns === undefined ? '0' : this.dailySavingReturns;
+    this.dailyExpense =
+      this.dailyExpense === undefined ? '0' : this.dailyExpense;
     this.dailyMoneyRequests =
       this.dailyMoneyRequests === undefined ? '0' : this.dailyMoneyRequests;
     this.tomorrowMoneyRequests =
@@ -135,7 +146,7 @@ export class TodayComponent {
       `${this.dailySavingReturns}`,
       '',
       '',
-      // `${this.dailyMoneyRequests}`,
+      `${this.dailyExpense}`,
       // `${this.tomorrowMoneyRequests}`,
     ];
 
@@ -152,6 +163,7 @@ export class TodayComponent {
       )}`,
       ``,
       ``,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
       // `${this.compute.convertCongoleseFrancToUsDollars(
       //   this.dailyMoneyRequests
       // )}`,

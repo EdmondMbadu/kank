@@ -21,9 +21,25 @@ export class GestionMonthComponent {
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
       this.initalizeInputs();
+      this.updateReserveGraphics(this.graphicsRange);
     });
   }
+  week: number = 4;
+  mTime = 8;
+  day: number = 1;
+  graphicsRange: number = this.week;
+  graphicsRangeServe: number = this.week;
+  maxRange = 0;
+  public graph = {
+    data: [{}],
+    layout: {
+      title: 'Reserve Journalier en $',
+      barmode: 'stack',
+    },
+  };
   managementInfo?: Management = {};
+  recentReserveDates: string[] = [];
+  recentReserveAmounts: number[] = [];
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
@@ -161,5 +177,67 @@ export class GestionMonthComponent {
         this.givenMonthTotalInvestmentAmount
       )}`,
     ];
+  }
+
+  updateReserveGraphics(time: number) {
+    let sorted = this.sortKeysAndValuesReserve(time);
+
+    this.recentReserveDates = sorted[0];
+    this.recentReserveAmounts = this.compute.convertToDollarsArray(sorted[1]);
+    const color1 = this.compute.findColor(sorted[1]);
+    this.graph = {
+      data: [
+        {
+          x: this.recentReserveDates,
+          y: this.recentReserveAmounts,
+          type: 'bar',
+          mode: 'lines',
+          marker: { color: color1 },
+          line: {
+            color: 'rgb(34, 139, 34)',
+            // width: 1200,
+          },
+        },
+      ],
+      layout: {
+        title: 'Reserve en $',
+        barmode: 'stack',
+      },
+    };
+  }
+
+  sortKeysAndValuesReserve(time: number): [string[], string[]] {
+    const dailyReimbursement = this.auth.managementInfo.reserve;
+
+    // Aggregating values by month (MM-YYYY)
+    const aggregatedData: { [key: string]: number } = {};
+    for (const [key, value] of Object.entries(dailyReimbursement)) {
+      const [month, day, year] = key.split('-');
+      const monthYear = `${month}-${year}`; // Create MM-YYYY format
+
+      const numericValue = parseFloat(value as string); // Convert value to number
+      if (aggregatedData[monthYear]) {
+        aggregatedData[monthYear] += numericValue; // Aggregate values
+      } else {
+        aggregatedData[monthYear] = numericValue; // Initialize if not present
+      }
+    }
+
+    // Sorting the keys in chronological order and limiting the results to the last `time` months
+    const sortedKeys = Object.keys(aggregatedData)
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split('-');
+        const [monthB, yearB] = b.split('-');
+        return (
+          new Date(`${yearA}-${monthA}-01`).getTime() -
+          new Date(`${yearB}-${monthB}-01`).getTime()
+        );
+      })
+      .slice(-time);
+
+    // Mapping the sorted keys to their corresponding values
+    const values = sortedKeys.map((key) => aggregatedData[key].toString());
+
+    return [sortedKeys, values];
   }
 }
