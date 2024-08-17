@@ -223,6 +223,7 @@ export class GestionDayComponent implements OnInit {
           marker: { color: 'rgb(0,76,153)' },
           line: {
             color: color1,
+            shape: 'spline',
             // width: 1200,
           },
         },
@@ -249,6 +250,7 @@ export class GestionDayComponent implements OnInit {
           marker: { color: 'rgb(0,76,153)' },
           line: {
             color: color1,
+            shape: 'spline',
             // width: 1200,
           },
         },

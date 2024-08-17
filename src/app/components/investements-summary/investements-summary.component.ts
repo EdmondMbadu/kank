@@ -55,6 +55,25 @@ export class InvestementsSummaryComponent implements OnInit {
       barmode: 'stack',
     },
   };
+  // public graph = {
+  //   data: [{}],
+  //   layout: {
+  //     title: 'Paiment Journalier en $',
+  //     xaxis: {
+  //       title: 'Date',
+  //       type: 'date', // Ensures the x-axis is treated as a time series
+  //       tickformat: '%Y-%m-%d',
+  //     },
+  //     yaxis: {
+  //       title: 'Date',
+
+  //       tickprefix: '$',
+  //     },
+  //     barmode: 'stack',
+  //     showlegend: false, // Optional: Hide legend for a cleaner look
+  //     hovermode: 'x unified',
+  //   },
+  // };
   public graph2 = {
     data: [{}],
     layout: {
@@ -254,6 +273,7 @@ export class InvestementsSummaryComponent implements OnInit {
           marker: { color: 'rgb(0,76,153)' },
           line: {
             color: color1,
+            shape: 'spline',
             // width: 1200,
           },
         },
@@ -280,6 +300,7 @@ export class InvestementsSummaryComponent implements OnInit {
           marker: { color: 'rgb(0,76,153)' },
           line: {
             color: color,
+            shape: 'spline',
             // width: 1200,
           },
         },
@@ -333,6 +354,7 @@ export class InvestementsSummaryComponent implements OnInit {
           marker: { color: 'rgb(0,153,0)' },
           line: {
             color: color2,
+            shape: 'spline',
             // width: 1200,
           },
         },

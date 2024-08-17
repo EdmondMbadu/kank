@@ -232,6 +232,7 @@ export class EmployeePageComponent implements OnInit {
           marker: { color: 'rgb(0,76,153)' },
           line: {
             color: color,
+            shape: 'spline',
             // width: 1200,
           },
         },
