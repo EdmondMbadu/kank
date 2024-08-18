@@ -44,6 +44,7 @@ export class TodayComponent {
     '/daily-savings-returns',
     '/request-today',
     '/request-tomorrow',
+    '/add-expense',
   ];
   summary: string[] = [
     "N'ont pas Payé Aujourdhui",
