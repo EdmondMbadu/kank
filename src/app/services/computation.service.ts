@@ -152,6 +152,11 @@ export class ComputationService {
   }
   findTotalForToday(reserve: { [key: string]: string }, dateString: string) {
     // Compute today's date in "M-D-YYYY" format without leading zeros
+
+    if (!reserve || !dateString) {
+      return 0; // Return 0 or handle the error as needed
+    }
+
     const today = new Date();
     // const dateString = `${
     //   today.getMonth() + 1
