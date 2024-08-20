@@ -32,6 +32,7 @@ export class TeamPageComponent implements OnInit {
   ngOnInit(): void {
     this.retreiveClients();
   }
+
   salaries: any[] = [
     [
       { people: '60' },
@@ -83,7 +84,27 @@ export class TeamPageComponent implements OnInit {
         d: '150$',
       },
     ],
+    [
+      { people: '200' },
+      {
+        role: 'Manager',
+        base: '80$',
+        a: '160$',
+        b: '180$',
+        c: '200$',
+        d: '220$',
+      },
+      {
+        role: 'Agent Margeting',
+        base: '70$',
+        a: '150$',
+        b: '170$',
+        c: '190$',
+        d: '210$',
+      },
+    ],
   ];
+
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
