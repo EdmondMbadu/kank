@@ -65,6 +65,7 @@ export class TrackingMonthCentralComponent {
   givenMonthTotalLendingAmount: string = '';
   givenMonthTotalExpenseAmount: string = '';
   givenMonthTotalReserveAmount: string = '';
+  givenMonthTotalReserveAmountDollars: string = '';
   givenMonthTotalFeesAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
   imagePaths: string[] = [
@@ -156,6 +157,11 @@ export class TrackingMonthCentralComponent {
         this.givenMonth,
         this.givenYear
       );
+
+    this.givenMonthTotalReserveAmountDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.givenMonthTotalReserveAmount)
+      .toString();
+
     this.summaryContent = [
       `${this.givenMonthTotalPaymentAmount}`,
       `${this.givenMonthTotalLendingAmount}`,

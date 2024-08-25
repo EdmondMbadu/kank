@@ -30,6 +30,7 @@ export class TodayCentralComponent {
   dailyLending: string = '0';
   dailyPayment: string = '0';
   dailyReserve: string = '0';
+  dailyReserveDollars: string = '0';
   dailyInvestement: string = '0';
   dailySaving: string = '0';
   dailySavingReturns = '0';
@@ -118,6 +119,10 @@ export class TodayCentralComponent {
     this.dailyInvestement =
       this.dailyInvestement === undefined ? '0' : this.dailyInvestement;
     this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
+
+    this.dailyReserveDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.dailyReserve)
+      .toString();
 
     this.sortedReserveToday =
       this.compute.findTodayTotalResultsGivenFieldSortedDescending(
