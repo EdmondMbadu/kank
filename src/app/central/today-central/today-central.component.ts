@@ -27,6 +27,7 @@ export class TodayCentralComponent {
       });
     }
   }
+  tomorrow = this.time.getTomorrowsDateMonthDayYear();
   dailyLending: string = '0';
   dailyPayment: string = '0';
   dailyReserve: string = '0';
@@ -34,8 +35,15 @@ export class TodayCentralComponent {
   dailyInvestement: string = '0';
   dailySaving: string = '0';
   dailySavingReturns = '0';
+  dailyRequest: string = '0';
+  dailyRequestDollars: string = '0';
 
   sortedReserveToday: {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] = [];
+  sortedRequestedTomorrow: {
     firstName: string;
     totalReserve: number;
     totalReserveInDollars: string;
@@ -74,6 +82,8 @@ export class TodayCentralComponent {
         this.requestDateCorrectFormat
       )
       .toString();
+
+    console.log('the date today', this.requestDateCorrectFormat);
     this.dailyPayment = this.compute
       .findTodayTotalResultsGivenField(
         this.allUsers,
@@ -86,6 +96,15 @@ export class TodayCentralComponent {
         this.allUsers,
         'reserve',
         this.requestDateCorrectFormat
+      )
+      .toString();
+    let tomorrow = this.findNextDay(this.requestDateCorrectFormat);
+    console.log('the data tomorrow', tomorrow);
+    this.dailyRequest = this.compute
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyMoneyRequests',
+        tomorrow
       )
       .toString();
     this.dailyInvestement = this.compute
@@ -119,9 +138,13 @@ export class TodayCentralComponent {
     this.dailyInvestement =
       this.dailyInvestement === undefined ? '0' : this.dailyInvestement;
     this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
-
+    this.dailyRequest =
+      this.dailyRequest === undefined ? '0' : this.dailyRequest;
     this.dailyReserveDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyReserve)
+      .toString();
+    this.dailyRequestDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.dailyRequest)
       .toString();
 
     this.sortedReserveToday =
@@ -129,6 +152,12 @@ export class TodayCentralComponent {
         this.requestDateCorrectFormat,
         this.allUsers,
         'reserve'
+      );
+    this.sortedRequestedTomorrow =
+      this.compute.findTodayTotalResultsGivenFieldSortedDescending(
+        tomorrow,
+        this.allUsers,
+        'dailyMoneyRequests'
       );
     this.summaryContent = [
       ` ${this.dailyPayment}`,
@@ -160,5 +189,20 @@ export class TodayCentralComponent {
     );
 
     this.initalizeInputs();
+  }
+  findNextDay(dateStr: string) {
+    // Parse the date string into a Date object
+    const [month, day, year] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+
+    // Add one day to the date
+    date.setDate(date.getDate() + 1);
+
+    // Get the day, month, and year without leading zeros
+    const nextDay = date.getDate();
+    const nextMonth = date.getMonth() + 1;
+    const nextYear = date.getFullYear();
+
+    return `${nextMonth}-${nextDay}-${nextYear}`;
   }
 }
