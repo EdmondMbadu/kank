@@ -32,7 +32,7 @@
                         </select>
                     </div>
             
-                    <div class="mb-6 ">
+                    <div class="mb-3">
 
                         <select id="payments" [(ngModel)]="givenYear"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "  (change)="retrieveEmployees()">
                         <option  *ngFor="let year of yearsList" [ngValue]="year">{{year}}</option>
@@ -44,6 +44,20 @@
                     
             
                 </div>
+                <div class=" container  flex mx-auto shadow-xl  flex-col md:justify-center md:flex-row  ">
+
+                    <div class="flex flex-col ">
+                     
+                        <div class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto m-12">
+                            <plotly-plot [data]="graphMonthPerformance.data" [layout]="graphMonthPerformance.layout"></plotly-plot>
+                          </div>
+                        
+                    </div>
+        
+            
+                </div>
+
+
                 <div class="relative overflow-x-auto mb-6 shadow-xl">
                     <div class="container ">
                         <table class="attendance-table">
@@ -149,17 +163,6 @@
                         Max
                     </button>
                   </div>
-                <!-- <div class="mb-6">
-            
-                    <label for="payments" class=" block mb-2 text-md font-medium text-gray-900 m-2">Intervalle De Temps</label>
-                    <select id="payments" [(ngModel)]="graphicPerformanceTimeRange"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="updatePerformanceGraphics()">
-                    <option [ngValue]="5">Semaine</option>
-                    <option [ngValue]="20">Mois</option>
-                    <option [ngValue]="maxRange">Max</option>
-                    </select>
-
-                  
-                </div> -->
                 <plotly-plot [data]="graphPerformance.data" [layout]="graphPerformance.layout"></plotly-plot>
 
             </div>

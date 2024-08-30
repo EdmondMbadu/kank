@@ -82,7 +82,25 @@ export class EmployeePageComponent implements OnInit {
       barmode: 'bar',
     },
   };
-
+  public graphMonthPerformance = {
+    data: [
+      {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: 270,
+        title: { text: 'Speed' },
+        type: 'indicator',
+        mode: 'gauge+number',
+        gauge: {
+          axis: { range: [0, 100], tickcolor: 'blue' }, // Color of the ticks (optional)
+          bar: { color: 'blue' }, // Single color for the gauge bar (needle)
+        },
+      },
+    ],
+    layout: {
+      margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
+      responsive: true, // Make the chart responsive
+    },
+  };
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
@@ -240,6 +258,32 @@ export class EmployeePageComponent implements OnInit {
       layout: {
         title: 'Performance Points',
         barmode: 'stack',
+      },
+    };
+    let gaugeColor =
+      Number(this.performancePercentageMonth) < 60 ? 'red' : 'green';
+
+    this.graphMonthPerformance = {
+      data: [
+        {
+          domain: { x: [0, 1], y: [0, 1] },
+          value: Number(this.performancePercentageMonth),
+          title: {
+            text: `Performance ${
+              this.time.monthFrenchNames[this.givenMonth - 1]
+            } %`,
+          },
+          type: 'indicator',
+          mode: 'gauge+number',
+          gauge: {
+            axis: { range: [0, 100], tickcolor: gaugeColor }, // Color of the ticks (optional)
+            bar: { color: gaugeColor }, // Single color for the gauge bar (needle)
+          },
+        },
+      ],
+      layout: {
+        margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
+        responsive: true, // Make the chart responsive
       },
     };
   }
