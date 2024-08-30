@@ -97,7 +97,7 @@ export class EmployeePageComponent implements OnInit {
       },
     ],
     layout: {
-      margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
+      margin: { t: 0, b: 0, l: 0, r: 0 }, // Adjust margins
       responsive: true, // Make the chart responsive
     },
   };
