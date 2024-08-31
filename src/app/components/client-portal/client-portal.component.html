@@ -110,21 +110,6 @@
 
 
 
-
-<!-- <div class="flex container flex-col md:flex-row justify-center my-6 mx-8" role="group">
-    <button (click)="delete()" *ngIf="this.auth.isAdmin"  type="button" class="px-4 py-4 text-md font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white">
-        Delete Client
-    </button>
-    <button (click)="startNewDebtCycle()" type="button" class="px-4 py-4 text-md font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white">
-        Enregistrement Nouveau Cycle
-    </button>
-    <button (click)="requestWithDrawFromSavings()" type="button" class="px-4 py-4 text-md font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white">
-        Demander Retrait  D'Argent Epargne
-    </button>
-    <button (click)="withDrawFromSavings()"  type="button" class="px-4 py-4 text-md font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white">
-        Retrait D'Argent Epargne
-    </button>
-  </div> -->
   
 
 <div class="flex container flex-col s  md:flex-row justify-center my-6 sm:mx-1 md:mx-auto rounded-md shadow-sm" role="group">
@@ -144,22 +129,15 @@
   </div>
   
 
-  
-    <!-- <div class="flex container flex-col md:flex-row mx-auto justify-center">
-        <div *ngIf="this.auth.isAdmin"  class="flex container  mx-auto justify-center">
-            <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="delete()" >Delete Client</button>
-          
-        </div>
-    <div  class="flex container  mx-auto justify-center">
-        <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="startNewDebtCycle()" >Enregistrement Nouveau Cycle</button>
-      
+  <div class=" container  flex mx-auto shadow-xl  flex-col md:justify-center md:flex-row  ">
+
+    <div class="flex flex-col ">
+     
+        <div class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-0 mb-2">
+            <plotly-plot [data]="graphCredit.data" [layout]="graphCredit.layout"></plotly-plot>
+          </div>
+        
     </div>
-    <div  class="flex container  mx-auto justify-center">
-        <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="requestWithDrawFromSavings()" >Demander Retrait  D'Argent Epargne</button>
-      
-    </div>
-    <div  class="flex container mx-auto justify-center">
-        <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="withDrawFromSavings()"  >Retrait D'Argent Epargne</button>
-      
-    </div>
-</div> -->
+
+
+</div>
