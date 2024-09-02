@@ -109,7 +109,7 @@
                 <div *ngIf="gestionDropDown">
                   <a  routerLink="/gestion-today"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Gestion Du Jour</a>
 
-                  <a  routerLink="/gestion-month"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Gestion Du Mois</a>
+                  <a *ngIf="auth.isAdmin "  routerLink="/gestion-month"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Gestion Du Mois</a>
                  
     
                 </div>
