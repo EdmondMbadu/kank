@@ -48,9 +48,8 @@ export class NavbarComponent {
   }
   async logOut() {
     try {
-      let remove = await this.auth.removeAdmin();
-      let removeDistributor = await this.auth.removeDistributor();
-
+      // let remove = await this.auth.removeAdmin();
+      // let removeDistributor = await this.auth.removeDistributor();
       let logout = await this.auth.logout();
     } catch (error) {
       console.log('An Error Occured while loggint out', error);

@@ -23,15 +23,15 @@ export class InvestementsSummaryComponent implements OnInit {
   currentClientsRegistered?: Client[] = [];
   ngOnInit() {
     // do this only once
-    if (this.auth.isAdmninistrator && this.auth.currentUser.admin !== 'true') {
-      this.auth.makeAdmin();
-    }
-    if (
-      this.auth.isDistributoring &&
-      this.auth.currentUser.distributor !== 'true'
-    ) {
-      this.auth.makeDistributor();
-    }
+    // if (this.auth.isAdmninistrator && this.auth.currentUser.admin !== 'true') {
+    //   this.auth.makeAdmin();
+    // }
+    // if (
+    //   this.auth.isDistributoring &&
+    //   this.auth.currentUser.distributor !== 'true'
+    // ) {
+    //   this.auth.makeDistributor();
+    // }
     this.retrieveClients();
 
     this.updatePaymentGraphics(this.graphicPerformanceTimeRange);
@@ -193,10 +193,7 @@ export class InvestementsSummaryComponent implements OnInit {
         `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
       ];
 
-      if (
-        this.auth.currentUser.admin === undefined ||
-        this.auth.currentUser.admin === 'false'
-      ) {
+      if (!this.auth.isAdmninistrator) {
         this.summary = this.compute.filterOutElements(this.summary, 3);
       }
     }
