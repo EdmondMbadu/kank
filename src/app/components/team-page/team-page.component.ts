@@ -38,7 +38,7 @@ export class TeamPageComponent implements OnInit {
       { people: '60' },
       { role: 'Manager', base: '80$', a: '15$', b: '25$', c: '45$', d: '55$' },
       {
-        role: 'Agent Margeting',
+        role: 'Agent Marketing',
         base: '70$',
         a: '10$',
         b: '20$',
@@ -57,7 +57,7 @@ export class TeamPageComponent implements OnInit {
         d: '110$',
       },
       {
-        role: 'Agent Margeting',
+        role: 'Agent Marketing',
         base: '70$',
         a: '50$',
         b: '70$',
@@ -76,7 +76,7 @@ export class TeamPageComponent implements OnInit {
         d: '160$',
       },
       {
-        role: 'Agent Margeting',
+        role: 'Agent Marketing',
         base: '70$',
         a: '100$',
         b: '120$',
@@ -95,7 +95,7 @@ export class TeamPageComponent implements OnInit {
         d: '220$',
       },
       {
-        role: 'Agent Margeting',
+        role: 'Agent Marketing',
         base: '70$',
         a: '150$',
         b: '170$',
