@@ -16,7 +16,7 @@ export class InvestementsSummaryComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    public compute: ComputationService
   ) {}
   clients?: Client[];
   currentClients?: Client[] = [];

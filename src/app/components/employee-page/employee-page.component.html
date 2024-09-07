@@ -81,8 +81,8 @@
 
                 </div>
             
-                <button *ngIf="auth.isAdmin"  type="submit" (click)="toggleMakePayment()"  class="md:ml-52 ml-32 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Paiement</button>
-                <button *ngIf="auth.isAdmin || auth.isDistributor"  type="submit" (click)="toggleAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Présence</button>
+                <button *ngIf="this.auth.isAdmninistrator"  type="submit" (click)="toggleMakePayment()"  class="md:ml-52 ml-32 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Paiement</button>
+                <button *ngIf="this.auth.isAdmninistrator || auth.isDistributor"  type="submit" (click)="toggleAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Présence</button>
                 <!-- <h1 class="mb-4 text-3xl font-extrabold leading-tight text-gray-900 lg:mb-6 lg:text-4xl ">Graphs</h1> -->
             </header>
 
@@ -129,7 +129,7 @@
                     </tr>
                     
                 </tbody>
-                <tfoot>
+                <tfoot *ngIf="this.auth.isAdmninistrator">
                     <tr class="font-semibold text-gray-900 dark:text-white">
                         <th scope="row" class="px-6 py-3 text-base"></th>
                         <td class="py-4">

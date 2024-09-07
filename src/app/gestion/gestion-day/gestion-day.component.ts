@@ -16,7 +16,7 @@ export class GestionDayComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    public compute: ComputationService
   ) {}
   ngOnInit(): void {
     this.auth.getManagementInfo().subscribe((data) => {

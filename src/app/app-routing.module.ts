@@ -74,6 +74,7 @@ import { GestionExpenseComponent } from './gestion/gestion-expense/gestion-expen
 import { GestionBankComponent } from './gestion/gestion-bank/gestion-bank.component';
 import { GestionLossComponent } from './gestion/gestion-loss/gestion-loss.component';
 import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion-investment.component';
+import { TutorialComponent } from './components/tutorial/tutorial.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -219,6 +220,7 @@ const routes: Routes = [
   { path: 'team-page', component: TeamPageComponent },
   { path: 'team-ranking-month', component: TeamRankingMonthComponent },
   { path: 'certificate', component: CertificateComponent },
+  { path: 'tutorial', component: TutorialComponent },
   { path: 'employee-page/:id', component: EmployeePageComponent },
 ];
 

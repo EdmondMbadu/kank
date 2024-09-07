@@ -15,7 +15,7 @@ export class GestionMonthComponent {
     private router: Router,
     public auth: AuthService,
     public time: TimeService,
-    private compute: ComputationService
+    public compute: ComputationService
   ) {}
   ngOnInit() {
     this.auth.getManagementInfo().subscribe((data) => {
@@ -24,7 +24,7 @@ export class GestionMonthComponent {
       this.updateReserveGraphics(this.graphicsRange);
     });
   }
-  week: number = 4;
+  week: number = 6;
   mTime = 8;
   day: number = 1;
   graphicsRange: number = this.week;

@@ -19,10 +19,10 @@
               <img src="../../../assets/img/new-client.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
               <h1 *ngIf="currentNewClient" class=" {{current}}"></h1>
             </div>
-            <div routerLink="/new-card" class="hidden md:block">
+            <!-- <div routerLink="/new-card" class="hidden md:block">
               <img src="../../../assets/img/card.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
               <h1 *ngIf="currentNewClientCard" class=" {{current}}"></h1>
-            </div>
+            </div> -->
             <div routerLink="/team-page" class="hidden md:block">
               <img src="../../../assets/img/staff.png" class="w-14  hover:w-16 hover:h-16 h-14 mr-4" alt="">
               <h1 *ngIf="currentEmployeePage" class=" {{current}}"></h1>
@@ -185,7 +185,7 @@
             <a routerLink="/team-page"  class=" block px-4 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a>
             <a routerLink="/tracking"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Trésorerie</a>
             <a routerLink="/certificate"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Certificats</a>
-
+            <!-- <a routerLink="/tutorial"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Tutoriels & Autres</a> -->
             
             <a (click)="logOut()"  class="text-gray-700 block px-4 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-1">
               Se Déconnecter</a>

@@ -16,6 +16,8 @@ export class ComputationService {
   colorNegative: string = '#ff0000';
   rateFranc: number = 0.00036;
   rateDollar: number = 2800;
+  week: number = 6;
+  month: number = 26;
   today = this.time.todaysDateMonthDayYear();
   convertCongoleseFrancToUsDollars(value: string) {
     let input = Number(value);

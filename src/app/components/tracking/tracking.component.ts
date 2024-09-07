@@ -23,15 +23,17 @@ export class TrackingComponent {
   totalPerfomance: number = 0;
   linkPaths: string[] = [
     '/client-info-current',
-    '/add-expense',
     '/client-info-current',
+    '/add-expense',
+
     '/add-reserve',
     '/client-info-current',
   ];
   summary: string[] = [
     'Epargne Clients',
-    'Depenses',
     'Argent en Main',
+    'Depenses',
+
     'Reserve',
     'Benefice Réel',
   ];
@@ -39,8 +41,9 @@ export class TrackingComponent {
 
   imagePaths: string[] = [
     '../../../assets/img/saving.svg',
-    '../../../assets/img/expense.svg',
     '../../../assets/img/salary.png',
+    '../../../assets/img/expense.svg',
+
     '../../../assets/img/reserve.svg',
 
     '../../../assets/img/revenue.svg',
@@ -61,8 +64,9 @@ export class TrackingComponent {
     let enMain = Number(this.auth.currentUser.moneyInHands) + Number(cardM);
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
-      ` ${this.auth.currentUser.expensesAmount}`,
       ` ${enMain}`,
+      ` ${this.auth.currentUser.expensesAmount}`,
+
       ` ${this.compute.convertUsDollarsToCongoleseFranc(
         this.auth.currentUser.reserveAmountDollar
       )}`,
@@ -74,21 +78,19 @@ export class TrackingComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.clientsSavings
       )}`,
-
+      `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.expensesAmount
       )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
+
       ` ${this.auth.currentUser.reserveAmountDollar}`,
 
       `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
     ];
 
-    if (
-      this.auth.currentUser.admin === undefined ||
-      this.auth.currentUser.admin === 'false'
-    ) {
-      this.summary = this.compute.filterOutElements(this.summary, 3);
+    // only show the first two
+    if (!this.auth.isAdmninistrator) {
+      this.summary = this.compute.filterOutElements(this.summary, 2);
     }
   }
 }
