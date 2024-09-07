@@ -24,7 +24,7 @@ export class GestionMonthComponent {
       this.updateReserveGraphics(this.graphicsRange);
     });
   }
-  week: number = 6;
+  week: number = 4;
   mTime = 8;
   day: number = 1;
   graphicsRange: number = this.week;

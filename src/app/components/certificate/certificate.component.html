@@ -2,7 +2,7 @@
 
 <div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row space-x-4">
 
-    <div class="flex flex-col container mx-auto m-2 justify-center text-center">
+    <div class="flex flex-col container mx-auto m-4 justify-center text-center">
         <h2 class="text-2xl md:text-4xl mx-auto px-6">Les Meilleurs De {{time.monthFrenchNames[givenMonth]}} {{givenYear}}</h2>
        
      </div>
@@ -36,9 +36,7 @@
 
    
 
-  
-
-        <div class="max-w-xl h-min bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+        <div class="max-w-xl  bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
             <a *ngIf="selectedBest!==undefined && selectedBest.bestTeam!==undefined"  href="{{selectedBest.bestTeamCertificateDownloadUrl}}" target="_blank" >
                 <img class="rounded-t-lg " src="{{selectedBest.bestTeamCertificateDownloadUrl}}" alt="" />
             </a>
@@ -51,7 +49,7 @@
             </div>
         </div>
 
-        <div class="max-w-xl h-min  bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+        <div class="max-w-xl container  bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
             <a *ngIf="selectedBest!==undefined && selectedBest.bestEmployee!==undefined" target="_blank" href="{{selectedBest.bestTeamCertificateDownloadUrl}}">
                 <img *ngIf="selectedBest!==undefined && selectedBest.bestEmployee!==undefined"  class="rounded-t-lg " src="{{selectedBest.bestEmployeeCertificateDownloadUrl}}" alt="" />
             </a>
@@ -64,7 +62,7 @@
             </div>
         </div>
 
-        <div class="max-w-xl h-min bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 ">
+        <div class="container max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 ">
             <a *ngIf="selectedBest!==undefined && selectedBest.bestManager!==undefined" target="_blank" href="{{selectedBest.bestManagerCertificateDownloadUrl}}">
                 <img *ngIf="selectedBest!==undefined && selectedBest.bestManager!==undefined"  class="rounded-t-lg " src="{{selectedBest.bestManagerCertificateDownloadUrl}}" alt="" />
             </a>
@@ -75,9 +73,14 @@
                
             </div>
         </div>
+
+    </div>
+  
+
+      
     
 
-</div>
+
 
 
 <div *ngIf="displayAddTeam" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6">
