@@ -248,6 +248,7 @@ export class AuthService {
       dailyCardReturns: {},
       dailyCardPayments: {},
       dailyMoneyRequests: {},
+      monthBudget: '',
     };
     return userRef.set(data, { merge: true });
   }
@@ -449,6 +450,15 @@ export class AuthService {
       totalDebtLeft: (
         Number(this.currentUser.totalDebtLeft) - Number(client.debtLeft)
       ).toString(),
+    };
+    return userRef.set(data, { merge: true });
+  }
+  setMonthBudget(monthBudget: string) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      monthBudget: monthBudget,
     };
     return userRef.set(data, { merge: true });
   }

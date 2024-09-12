@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/services/computation.service';
+import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -14,7 +15,8 @@ export class TrackingComponent {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private data: DataService
   ) {}
   ngOnInit() {
     this.initalizeInputs();
@@ -32,6 +34,7 @@ export class TrackingComponent {
   summary: string[] = [
     'Epargne Clients',
     'Argent en Main',
+    'Budget Emprunts Du Mois',
     'Depenses',
 
     'Reserve',
@@ -42,6 +45,8 @@ export class TrackingComponent {
   imagePaths: string[] = [
     '../../../assets/img/saving.svg',
     '../../../assets/img/salary.png',
+    '../../../assets/img/budget.png',
+
     '../../../assets/img/expense.svg',
 
     '../../../assets/img/reserve.svg',
@@ -50,12 +55,19 @@ export class TrackingComponent {
   ];
 
   today = this.time.todaysDateMonthDayYear();
+
+  monthBudget: string = '';
+  amountBudget: string = '';
   summaryContent: string[] = [];
   initalizeInputs() {
     let realBenefit = (
       Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)
     ).toString();
+    this.monthBudget =
+      this.auth.currentUser.monthBudget === ''
+        ? '0'
+        : this.auth.currentUser.monthBudget;
 
     let cardM =
       this.auth.currentUser.cardsMoney === undefined
@@ -65,6 +77,7 @@ export class TrackingComponent {
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${enMain}`,
+      `${this.monthBudget}`,
       ` ${this.auth.currentUser.expensesAmount}`,
 
       ` ${this.compute.convertUsDollarsToCongoleseFranc(
@@ -79,6 +92,7 @@ export class TrackingComponent {
         this.auth.currentUser.clientsSavings
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.monthBudget)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.expensesAmount
       )}`,
@@ -92,5 +106,25 @@ export class TrackingComponent {
     if (!this.auth.isAdmninistrator) {
       this.summary = this.compute.filterOutElements(this.summary, 2);
     }
+  }
+
+  async setMonthBudget() {
+    if (!this.isNumber(this.amountBudget)) {
+      alert('Enter a valid number');
+      return;
+    }
+    try {
+      const clientCardPayment = await this.auth.setMonthBudget(
+        this.amountBudget
+      );
+      this.monthBudget = this.amountBudget;
+      this.initalizeInputs();
+    } catch (err) {
+      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+      return;
+    }
+  }
+  isNumber(value: string): boolean {
+    return !isNaN(Number(value));
   }
 }

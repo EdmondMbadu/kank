@@ -140,6 +140,7 @@ export class TransformRegisterClientComponent implements OnInit {
           (res: any) => {
             console.log('Informations utilisateur mises à jour avec succès');
           },
+
           (err: any) => {
             alert(
               "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"

@@ -18,6 +18,8 @@ export class NavbarComponent {
   centralCreditDropDown: boolean = false;
   centralCardDropDown: boolean = false;
   gestionDropDown: boolean = false;
+
+  employeeInfo: boolean = false;
   @Input() firstName = '';
   @Input() currentHome: boolean = false;
   @Input() currentClientInfo: boolean = false;
@@ -32,6 +34,10 @@ export class NavbarComponent {
     } else {
       this.hide = true;
     }
+  }
+
+  toggle(property: 'employeeInfo') {
+    this[property] = !this[property];
   }
 
   toggleCreditDropDown() {

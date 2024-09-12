@@ -91,6 +91,7 @@ export class DataService {
     };
     return clientCardRef.set(data, { merge: true });
   }
+
   clientCardReturnMoney(clientCard: Card) {
     const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
@@ -826,6 +827,9 @@ export class DataService {
       dailyLending: { [date]: `${dailyLending}` },
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
+      ).toString(),
+      monthBudget: (
+        Number(this.auth.currentUser.monthBudget) - Number(client.loanAmount)
       ).toString(),
     };
     return userRef.set(data, { merge: true });

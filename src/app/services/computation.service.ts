@@ -35,6 +35,77 @@ export class ComputationService {
 
     return dollars;
   }
+  salaries: any[] = [
+    [
+      { people: '60' },
+      { role: 'Manager', base: '80$', a: '15$', b: '25$', c: '45$', d: '55$' },
+      {
+        role: 'Agent Marketing',
+        base: '70$',
+        a: '10$',
+        b: '20$',
+        c: '40$',
+        d: '50$',
+      },
+    ],
+    [
+      { people: '100' },
+      {
+        role: 'Manager',
+        base: '80$',
+        a: '60$',
+        b: '80$',
+        c: '100$',
+        d: '110$',
+      },
+      {
+        role: 'Agent Marketing',
+        base: '70$',
+        a: '50$',
+        b: '70$',
+        c: '90$',
+        d: '100$',
+      },
+    ],
+    [
+      { people: '160' },
+      {
+        role: 'Manager',
+        base: '80$',
+        a: '110$',
+        b: '130$',
+        c: '150$',
+        d: '160$',
+      },
+      {
+        role: 'Agent Marketing',
+        base: '70$',
+        a: '100$',
+        b: '120$',
+        c: '140$',
+        d: '150$',
+      },
+    ],
+    [
+      { people: '200' },
+      {
+        role: 'Manager',
+        base: '80$',
+        a: '160$',
+        b: '180$',
+        c: '200$',
+        d: '220$',
+      },
+      {
+        role: 'Agent Marketing',
+        base: '70$',
+        a: '150$',
+        b: '170$',
+        c: '190$',
+        d: '210$',
+      },
+    ],
+  ];
   minimumPayment(client: Client) {
     const pay = Number(client.amountToPay) / Number(client.paymentPeriodRange);
     return pay.toString();
@@ -612,5 +683,124 @@ export class ComputationService {
     });
 
     return summary;
+  }
+  getBonus(
+    people: number,
+    percentage: number,
+    role: 'Manager' | 'Agent Marketing' | string
+  ): number {
+    // Define the salary array
+    const salaries: any[] = [
+      [
+        { people: '60' },
+        {
+          role: 'Manager',
+          base: '80$',
+          bonus70_79: '15$',
+          bonus80_89: '25$',
+          bonus90_99: '45$',
+          bonus100: '55$',
+        },
+        {
+          role: 'Agent Marketing',
+          base: '70$',
+          bonus70_79: '10$',
+          bonus80_89: '20$',
+          bonus90_99: '40$',
+          bonus100: '50$',
+        },
+      ],
+      [
+        { people: '100' },
+        {
+          role: 'Manager',
+          base: '80$',
+          bonus70_79: '60$',
+          bonus80_89: '80$',
+          bonus90_99: '100$',
+          bonus100: '110$',
+        },
+        {
+          role: 'Agent Marketing',
+          base: '70$',
+          bonus70_79: '50$',
+          bonus80_89: '70$',
+          bonus90_99: '90$',
+          bonus100: '100$',
+        },
+      ],
+      [
+        { people: '160' },
+        {
+          role: 'Manager',
+          base: '80$',
+          bonus70_79: '110$',
+          bonus80_89: '130$',
+          bonus90_99: '150$',
+          bonus100: '160$',
+        },
+        {
+          role: 'Agent Marketing',
+          base: '70$',
+          bonus70_79: '100$',
+          bonus80_89: '120$',
+          bonus90_99: '140$',
+          bonus100: '150$',
+        },
+      ],
+      [
+        { people: '200' },
+        {
+          role: 'Manager',
+          base: '80$',
+          bonus70_79: '160$',
+          bonus80_89: '180$',
+          bonus90_99: '200$',
+          bonus100: '220$',
+        },
+        {
+          role: 'Agent Marketing',
+          base: '70$',
+          bonus70_79: '150$',
+          bonus80_89: '170$',
+          bonus90_99: '190$',
+          bonus100: '210$',
+        },
+      ],
+    ];
+
+    // Step 1: If the number of people is below 60, return 0
+    if (people < 60 || percentage < 70) {
+      return 0;
+    }
+
+    // Step 2: Find the appropriate salary bracket based on the number of people
+    let selectedBracket;
+    if (people >= 200) {
+      selectedBracket = salaries[3];
+    } else if (people >= 160) {
+      selectedBracket = salaries[2];
+    } else if (people >= 100) {
+      selectedBracket = salaries[1];
+    } else if (people >= 60) {
+      selectedBracket = salaries[0];
+    }
+
+    // Step 3: Find the role (Manager or Agent Marketing) within the selected bracket
+    const roleData = selectedBracket.find((item: any) => item.role === role);
+
+    // Step 4: Determine the bonus based on the percentage
+    let bonus = 0;
+    if (percentage >= 100) {
+      bonus = parseInt(roleData.bonus100.replace('$', ''), 10);
+    } else if (percentage >= 90) {
+      bonus = parseInt(roleData.bonus90_99.replace('$', ''), 10);
+    } else if (percentage >= 80) {
+      bonus = parseInt(roleData.bonus80_89.replace('$', ''), 10);
+    } else if (percentage >= 70) {
+      bonus = parseInt(roleData.bonus70_79.replace('$', ''), 10);
+    }
+
+    return bonus;
   }
 }
