@@ -1,4 +1,4 @@
-<div class="dark:bg-slate-900 min-h-screen  min-w-max ">
+
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
 <div class="flex container mx-auto m-4 justify-center dark:text-white">
@@ -31,7 +31,7 @@
     <p class="text-gray-500 dark:text-gray-400 mx-4">Track work across the enterprise through an open, collaborative platform. Link issues across Jira and ingest data from other software development tools, so your IT support and operations teams have richer contextual information to rapidly respond to requests, incidents, and changes.</p> -->
     <div class="my-6"></div>
 
-    <div id="accordion-nested-parent" data-accordion="collapse">
+    <div  id="accordion-nested-parent" data-accordion="collapse">
         <h2 id="accordion-collapse-heading-1">
           <button (click)="toggle('system')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-1" aria-expanded="true" aria-controls="accordion-collapse-body-1">
             <span>Comment Utiliser Le Système?</span>
@@ -41,7 +41,7 @@
           </button>
         </h2>
         <div *ngIf="system" id="accordion-collapse-body-1"  aria-labelledby="accordion-collapse-heading-1">
-          <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
+          <div class="p-5  border border-b-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
             <p class="mb-2 text-gray-500 dark:text-gray-400">Voici des vidéos expliquant comment utiliser le système. Ceci est un résumé. Pour plus d'informations et questions pertinentes, envoyez-moi un message ou appelez-moi sur <a class="text-blue-500 underline" href="https://wa.me/12156877614" target="_blank"> WhatsApp (+12156877614)</a>.
             </p>
            
@@ -452,5 +452,4 @@
       
 </div>
 
-</div>
-  
+
