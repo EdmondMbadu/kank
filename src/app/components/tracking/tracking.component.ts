@@ -26,6 +26,7 @@ export class TrackingComponent {
   linkPaths: string[] = [
     '/client-info-current',
     '/client-info-current',
+    '/tracking',
     '/add-expense',
 
     '/add-reserve',
@@ -104,7 +105,7 @@ export class TrackingComponent {
 
     // only show the first two
     if (!this.auth.isAdmninistrator) {
-      this.summary = this.compute.filterOutElements(this.summary, 2);
+      this.summary = this.compute.filterOutElements(this.summary, 3);
     }
   }
 

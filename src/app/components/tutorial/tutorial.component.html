@@ -1,11 +1,12 @@
+<div class="dark:bg-slate-900 min-h-screen  min-w-max ">
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
-<div class="flex container mx-auto m-4 justify-center">
+<div class="flex container mx-auto m-4 justify-center dark:text-white">
     <h1 class="text-3xl md:text-4xl mr-10">Apercu & Tutoriels</h1>
     
    
 </div>
-<div class="container  justify-center mx-auto   md:flex-row">
+<div class="container  justify-center mx-auto   md:flex-row dark:text-white">
 
 <figure class="max-w-screen-md mx-auto text-center">
     <svg class="w-10 h-10 mx-auto mb-3 text-gray-400 dark:text-gray-600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 14">
@@ -291,7 +292,7 @@
           
          
             
-            <!-- <div class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl" *ngFor="let group of compute.salaries">
+            <div class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl" *ngFor="let group of compute.salaries">
               <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Montant de Paiement et Bonus({{ group[0].people }}+ clients)</h1>
               <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
                   <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
@@ -348,7 +349,7 @@
                   
                 
               </table>
-          </div> -->
+          </div>
       
           </div>
         </div>
@@ -426,14 +427,12 @@
             <div class="p-5 border border-gray-200 dark:border-gray-700">
                   
               <div class="relative min-w-3xl flex flex-col overflow-x-auto mb-6 " >
-                <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-800">Informations générales sur le prêt</h2>
-                    <ul class="space-y-1 text-gray-500 list-disc list-inside dark:text-gray-400">
+                <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">Informations générales sur le prêt</h2>
+                    <ul class="space-y-1 text-gray-500 list-disc list-inside dark:text-gray-100">
                         <li>
-                            Si vous avez moins de 60 personnes, vous pouvez continuellement obtenir plus de personnes pour prêter de l'argent.
+                          Le budget pour prêter de l'argent sera déterminé sous la Trésorerie-> le Budget Emprunts Du Mois. Suivez ce montant de près, si le montant atteint 0, vous pouvez demander plus, mais vous ne pouvez pas accepter de nouveaux emprunteurs jusqu'à ce que des fonds supplémentaires soient alloués à votre budget.
                         </li>
-                        <li>
-                            Lorsque vous atteignez 60 personnes, vous ne pouvez prêter à de nouvelles personnes que si le  Manager a une performance de 70 % ou plus.
-                        </li>
+                        
                         
                     </ul>
                 <h1 class="text-xl  font-semibold text-center mx-4 mt-4 mb-4 "> *Note: 3 fois une performance de moins de 50% durant l'année, nécessite une réévaluation.
@@ -453,4 +452,5 @@
       
 </div>
 
+</div>
   
