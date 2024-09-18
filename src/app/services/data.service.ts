@@ -482,6 +482,21 @@ export class DataService {
 
     return userRef.set(data, { merge: true });
   }
+
+  updateUserInfoForAddLoss(amount: string, reason: string) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+    const data = {
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) - Number(amount)
+      ).toString(),
+
+      losses: { [this.time.todaysDate()]: `${amount}:${reason}` },
+    };
+
+    return userRef.set(data, { merge: true });
+  }
   updateManagementInfoForAddExpense(amount: string, reason: string) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `management/${this.auth.managementInfo.id}`

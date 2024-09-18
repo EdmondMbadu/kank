@@ -90,6 +90,13 @@ export class TransformRegisterClientComponent implements OnInit {
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
       return;
+    } else if (
+      Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget)
+    ) {
+      alert(
+        `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${this.auth.currentUser.monthBudget} FC`
+      );
+      return;
     } else {
       let conf = confirm(
         `Vous allez emprunté ${this.loanAmount} FC a ${this.client.firstName} ${this.client.middleName} ${this.client.lastName}. Voulez-vous quand même continuer ?`

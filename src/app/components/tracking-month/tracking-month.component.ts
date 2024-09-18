@@ -37,6 +37,7 @@ export class TrackingMonthComponent {
     '/add-expense',
     '/add-reserve',
     '/add-investment',
+    '/add-loss',
   ];
   summary: string[] = [
     'Paiment Du Mois',
@@ -46,6 +47,7 @@ export class TrackingMonthComponent {
     'Reserve Du Mois',
     'Frais De Membre Du Mois',
     'Investissement Du Mois',
+    'Perte Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
   givenMonthTotalPaymentAmount: string = '';
@@ -55,6 +57,7 @@ export class TrackingMonthComponent {
   givenMonthTotalReserveAmount: string = '';
   givenMonthTotalFeesAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
+  givenMonthTotalLossAmount: string = '';
   imagePaths: string[] = [
     '../../../assets/img/audit.png',
     '../../../assets/img/lending-date.png',
@@ -63,6 +66,7 @@ export class TrackingMonthComponent {
     '../../../assets/img/reserve.svg',
     '../../../assets/img/member.svg',
     '../../../assets/img/invest.svg',
+    '../../../assets/img/loss.png',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -86,6 +90,11 @@ export class TrackingMonthComponent {
 
     this.givenMonthTotalExpenseAmount = this.compute.findTotalGiventMonth(
       this.auth.currentUser.expenses,
+      this.givenMonth,
+      this.givenYear
+    );
+    this.givenMonthTotalLossAmount = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.losses,
       this.givenMonth,
       this.givenYear
     );
@@ -114,6 +123,7 @@ export class TrackingMonthComponent {
       `${this.givenMonthTotalReserveAmount}`,
       `${this.givenMonthTotalFeesAmount}`,
       `${this.givenMonthTotalInvestmentAmount}`,
+      `${this.givenMonthTotalLossAmount}`,
     ];
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
@@ -136,6 +146,9 @@ export class TrackingMonthComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalInvestmentAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalLossAmount
       )}`,
     ];
   }

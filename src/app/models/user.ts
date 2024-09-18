@@ -15,6 +15,7 @@ export class User {
   clientsSavings?: string;
   expensesAmount?: string;
   expenses?: { [key: string]: string } = {};
+  losses?: { [key: string]: string } = {};
   projectedRevenue?: string;
   reserveAmount?: string;
   reserveAmountDollar?: string;

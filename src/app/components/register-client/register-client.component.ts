@@ -76,6 +76,13 @@ export class RegisterClientComponent implements OnInit {
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
       return;
+    } else if (
+      Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget)
+    ) {
+      alert(
+        `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${this.auth.currentUser.monthBudget} FC`
+      );
+      return;
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
         - Est Dans L'intervalle D'Une Semaine\n

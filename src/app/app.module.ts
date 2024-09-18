@@ -92,6 +92,7 @@ import { GestionBankComponent } from './gestion/gestion-bank/gestion-bank.compon
 import { GestionLossComponent } from './gestion/gestion-loss/gestion-loss.component';
 import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion-investment.component';
 import { TutorialComponent } from './components/tutorial/tutorial.component';
+import { LossesComponent } from './components/losses/losses.component';
 
 @NgModule({
   declarations: [
@@ -173,6 +174,7 @@ import { TutorialComponent } from './components/tutorial/tutorial.component';
     GestionLossComponent,
     GestionInvestmentComponent,
     TutorialComponent,
+    LossesComponent,
   ],
   imports: [
     BrowserModule,

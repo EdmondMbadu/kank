@@ -126,6 +126,13 @@ export class NewCycleRegisterComponent implements OnInit {
         - N'est Pas Aujourdhui ou au Passé
         `);
       return;
+    } else if (
+      Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget)
+    ) {
+      alert(
+        `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${this.auth.currentUser.monthBudget} FC.`
+      );
+      return;
     } else {
       let conf = confirm(
         `Vous allez enregistré ${this.client.firstName} ${this.client.lastName} pour un nouveau cycle. Voulez-vous quand même continuer?`

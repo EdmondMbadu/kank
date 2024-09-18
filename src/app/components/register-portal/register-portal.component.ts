@@ -61,7 +61,9 @@ export class RegiserPortalComponent {
       this.client = data[Number(this.id)];
       this.setGraphCredit();
       this.client.debtCycle =
-        this.client.debtCycle === undefined ? '1' : this.client.debtCycle;
+        this.client.debtCycle === undefined || this.client.debtCycle === '0'
+          ? '1'
+          : this.client.debtCycle;
       this.requestDate = this.time.convertDateToDayMonthYear(
         this.client.requestDate!
       );
