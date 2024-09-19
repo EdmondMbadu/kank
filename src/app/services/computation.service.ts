@@ -273,6 +273,7 @@ export class ComputationService {
     givenYear: number
   ) {
     // if (dailyReimbursement === null || dailyReimbursement === undefined) return;
+    if (!dailyReimbursement) return '0'; // Return "0" or any other appropriate value if input is null/undefined.
     let total = 0;
     for (const [date, amount] of Object.entries(dailyReimbursement)) {
       const [month, day, year] = date.split('-').map(Number);
