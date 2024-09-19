@@ -44,10 +44,14 @@ export class ReserveComponent {
         const userInfo = await this.data.updateUserInfoForAddToReserve(
           this.reserveAmount
         );
-        const updateManagement =
-          await this.data.updateManagementInfoForAddToReserve(
-            this.reserveAmount
-          );
+        // the testing platform to not count here as well
+        if (this.auth.currentUser.mode !== 'testing') {
+          const updateManagement =
+            await this.data.updateManagementInfoForAddToReserve(
+              this.reserveAmount
+            );
+        }
+
         this.router.navigate(['/home']);
       } catch (err: any) {
         alert("Une erreur s'est produite lors de l'initialization, Réessayez");
