@@ -76,6 +76,7 @@ import { GestionLossComponent } from './gestion/gestion-loss/gestion-loss.compon
 import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion-investment.component';
 import { TutorialComponent } from './components/tutorial/tutorial.component';
 import { LossesComponent } from './components/losses/losses.component';
+import { DailyReturnsComponent } from './components/daily-returns/daily-returns.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -203,6 +204,7 @@ const routes: Routes = [
   { path: 'daily-lendings', component: DailyLendingsComponent },
   { path: 'daily-savings', component: DailySavingsComponent },
   { path: 'daily-savings-returns', component: DailySavingsReturnsComponent },
+  { path: 'daily-returns', component: DailyReturnsComponent },
   { path: 'daily-fees', component: DailyFeesComponent },
   { path: 'request-tomorrow', component: RequestTomorrowComponent },
   { path: 'request-today', component: RequestTodayComponent },

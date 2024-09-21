@@ -248,6 +248,7 @@ export class AuthService {
       dailyCardReturns: {},
       dailyCardPayments: {},
       dailyMoneyRequests: {},
+      dailyFeesReturns: {},
       monthBudget: '',
     };
     return userRef.set(data, { merge: true });
@@ -332,6 +333,32 @@ export class AuthService {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.currentUser.uid}/clients/${data.uid}`
     );
+    return clientRef.set(data, { merge: true });
+  }
+
+  cancelClientRegistration(client: Client) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.currentUser.uid}/clients/${client.uid}`
+    );
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const data = {
+      membershipFee: '0',
+      applicationFee: '0',
+      savings: '0',
+      savingsPayments: client.savingsPayments,
+      applicationFeePayments: client.applicationFeePayments,
+      membershipFeePayments: client.membershipFeePayments,
+      type: '',
+      debtCycle: (Number(client.debtCycle) - 1).toString(),
+      loanAmount: '0',
+      requestAmount: '',
+      requestStatus: '',
+      requestType: '',
+      requestDate: '',
+    };
     return clientRef.set(data, { merge: true });
   }
 

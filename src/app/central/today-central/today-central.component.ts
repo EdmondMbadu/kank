@@ -37,6 +37,7 @@ export class TodayCentralComponent {
   dailySavingReturns = '0';
   dailyRequest: string = '0';
   dailyRequestDollars: string = '0';
+  dailyExpense: string = '0';
 
   sortedReserveToday: {
     firstName: string;
@@ -57,6 +58,7 @@ export class TodayCentralComponent {
     'Entrée Du Jour',
     'Epargne Du Jour',
     'Retrait Epargne Du Jour',
+    'Depense Du Jour',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -67,6 +69,7 @@ export class TodayCentralComponent {
     '../../../assets/img/invest.svg',
     '../../../assets/img/saving.svg',
     '../../../assets/img/saving.svg',
+    '../../../assets/img/expense.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -129,6 +132,14 @@ export class TodayCentralComponent {
       )
       .toString();
 
+    this.dailyExpense = this.compute
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'expenses',
+        this.requestDateCorrectFormat
+      )
+      .toString();
+
     this.dailyLending =
       this.dailyLending === undefined ? '0' : this.dailyLending;
     this.dailyPayment =
@@ -140,6 +151,8 @@ export class TodayCentralComponent {
     this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
     this.dailyRequest =
       this.dailyRequest === undefined ? '0' : this.dailyRequest;
+    this.dailyExpense =
+      this.dailyExpense === undefined ? '0' : this.dailyExpense;
     this.dailyReserveDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyReserve)
       .toString();
@@ -166,6 +179,7 @@ export class TodayCentralComponent {
       `${this.dailyInvestement}`,
       `${this.dailySaving}`,
       `${this.dailySavingReturns}`,
+      `${this.dailyExpense}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -177,6 +191,7 @@ export class TodayCentralComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.dailySavingReturns
       )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
     ];
   }
 

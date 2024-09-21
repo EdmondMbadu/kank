@@ -1,8 +1,8 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
 <div class="flex container mx-auto justify-center m-12">
-    <h1 class=" md:block text-2xl text-center md:text-4xl mr-10 ">Profile Du Client Enregistrer</h1>
-    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/transform-register-client',id ]">Transformer en Client Complet</button>
+    <h1 class=" md:block text-2xl text-center md:text-4xl mr-4 ml-4 ">Profile Du Client Enregistrer</h1>
+    <button *ngIf="client.type==='register'" type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mr-4" [routerLink]="['/transform-register-client',id ]">Transformer en Client Complet</button>
     <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="delete()">Supprimer Client</button> -->
 </div>
 
@@ -74,7 +74,7 @@
     </div>
     <div class="flex container flex-col md:flex-row mx-auto justify-center ">
         <a type="submit" class="text-white bg-green-700 hover:bg-green-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"  [routerLink]="['/request-update',id ]">Demande de Mise à Jour</a>
-    <button *ngIf="client.debtCycle==='1'" type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="delete()">Supprimer Client</button>
+    <button *ngIf="client.type==='register'"  type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="cancelRegistration()">Annuler Enregistrement</button>
    
 </div>
 

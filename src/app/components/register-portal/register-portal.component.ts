@@ -89,29 +89,77 @@ export class RegiserPortalComponent {
     }
   }
 
-  delete() {
-    let result = confirm('Êtes-vous sûr de vouloir supprimer ce client?');
+  // delete() {
+  //   let result = confirm('Êtes-vous sûr de vouloir supprimer ce client?');
+  //   if (!result) {
+  //     return;
+  //   }
+  //   this.auth
+  //     .deleteClient(this.client)
+  //     .then(() => {
+  //       alert('Client supprimé avec succès !');
+  //       this.router.navigate(['/client-info/']);
+  //     })
+  //     .catch((error) => {
+  //       alert('Error deleting client: ');
+  //     });
+
+  //   this.auth
+  //     .UpdateUserInfoForDeletedRegisterClient(this.client)
+  //     .then(() => {
+  //       console.log('updated user info');
+  //     })
+  //     .catch((error) => {
+  //       alert('Error deleting client: ');
+  //     });
+  // }
+
+  async cancelRegistration() {
+    let total =
+      Number(this.client.savings) +
+      Number(this.client.membershipFee) +
+      Number(this.client.applicationFee);
+    let result = confirm(
+      `Êtes-vous sûr de vouloir annuler l'enregistrement?. Cela entraînera le retour de tout l'argent aux clients pour un total de ${total} FC`
+    );
     if (!result) {
       return;
     }
-    this.auth
-      .deleteClient(this.client)
-      .then(() => {
-        alert('Client supprimé avec succès !');
-        this.router.navigate(['/client-info/']);
-      })
-      .catch((error) => {
-        alert('Error deleting client: ');
-      });
 
-    this.auth
-      .UpdateUserInfoForDeletedRegisterClient(this.client)
-      .then(() => {
-        console.log('updated user info');
-      })
-      .catch((error) => {
-        alert('Error deleting client: ');
-      });
+    try {
+      this.client.applicationFeePayments = {
+        [this.time.todaysDate()]:
+          Number(this.client.applicationFee) > 0
+            ? `-${this.client.applicationFee}`
+            : `${this.client.applicationFee}`,
+      };
+
+      this.client.membershipFeePayments = {
+        [this.time.todaysDate()]:
+          Number(this.client.membershipFee) > 0
+            ? `-${this.client.membershipFee}`
+            : `${this.client.membershipFee}`,
+      };
+      this.client.savingsPayments = {
+        [this.time.todaysDate()]:
+          Number(this.client.savings) > 0
+            ? `-${this.client.savings}`
+            : `${this.client.savings}`,
+      };
+      const updateUser =
+        await this.data.UpdateUserInfoForCancelingdRegisteredClient(
+          this.client
+        );
+      const clientCancel = await this.auth.cancelClientRegistration(
+        this.client
+      );
+
+      this.router.navigate(['/client-info-current/']);
+    } catch (err) {
+      console.log('error occured while cancelling registration', err);
+      alert("Une erreur s'est de l'annulation de l'enregistrement, Réessayez");
+      return;
+    }
   }
   setGraphCredit() {
     let num = Number(this.client.creditScore);

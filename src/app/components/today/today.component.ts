@@ -27,6 +27,7 @@ export class TodayComponent {
   dailyInvestment: string = '0';
   dailySaving: string = '0';
   dailySavingReturns: string = '0';
+  dailyFeesReturns: string = '0';
   dailyMoneyRequests: string = '0';
   tomorrowMoneyRequests: string = '0';
   dailyExpense: string = '0';
@@ -43,6 +44,7 @@ export class TodayComponent {
     '/add-investment',
     '/daily-savings',
     '/daily-savings-returns',
+    '/daily-returns',
     '/request-today',
     '/request-tomorrow',
     '/add-expense',
@@ -57,6 +59,7 @@ export class TodayComponent {
     'Entrée Du Jour',
     'Epargne Du Jour',
     'Retrait Epargne Du Jour',
+    `Retrait Frais De Membre Du Jour`,
     'Argent Demandé Pour Aujourdhui',
     'Argent Demandé Pour Demain',
     'Depense Du Jour',
@@ -73,6 +76,7 @@ export class TodayComponent {
     '../../../assets/img/invest.svg',
     '../../../assets/img/saving.svg',
     '../../../assets/img/saving.svg',
+    '../../../assets/img/return.png',
     '../../../assets/img/request-money.png',
     '../../../assets/img/request-money.png',
     '../../../assets/img/expense.svg',
@@ -85,21 +89,37 @@ export class TodayComponent {
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
+
   initalizeInputs() {
+    console.log('the date ', this.requestDateCorrectFormat);
     this.dailyLending =
-      this.auth.currentUser.dailyLending[this.requestDateCorrectFormat];
+      this.auth.currentUser?.dailyLending?.[this.requestDateCorrectFormat] ??
+      '0';
     this.dailySaving =
-      this.auth.currentUser.dailySaving[this.requestDateCorrectFormat];
+      this.auth.currentUser?.dailySaving?.[this.requestDateCorrectFormat] ??
+      '0';
     this.dailySavingReturns =
-      this.auth.currentUser.dailySavingReturns[this.requestDateCorrectFormat];
+      this.auth.currentUser?.dailySavingReturns?.[
+        this.requestDateCorrectFormat
+      ] ?? '0';
+    this.dailyFeesReturns =
+      this.auth.currentUser?.dailyFeesReturns?.[
+        this.requestDateCorrectFormat
+      ] ?? '0';
+
+    console.log('fees returns', this.dailyFeesReturns);
     this.dailyMoneyRequests =
-      this.auth.currentUser.dailyMoneyRequests[this.requestDateCorrectFormat];
+      this.auth.currentUser?.dailyMoneyRequests?.[
+        this.requestDateCorrectFormat
+      ] ?? '0';
     this.tomorrowMoneyRequests =
-      this.auth.currentUser.dailyMoneyRequests[this.tomorrow];
+      this.auth.currentUser?.dailyMoneyRequests?.[this.tomorrow] ?? '0';
     this.dailyPayment =
-      this.auth.currentUser.dailyReimbursement[this.requestDateCorrectFormat];
+      this.auth.currentUser?.dailyReimbursement?.[
+        this.requestDateCorrectFormat
+      ] ?? '0';
     this.dailyFees =
-      this.auth.currentUser.feesData[this.requestDateCorrectFormat];
+      this.auth.currentUser?.feesData?.[this.requestDateCorrectFormat] ?? '0';
     this.dailyReserve = this.compute
       .findTotalForToday(
         this.auth.currentUser.reserve,
@@ -126,22 +146,6 @@ export class TodayComponent {
       )
       .toString();
 
-    this.dailyLending =
-      this.dailyLending === undefined ? '0' : this.dailyLending;
-    this.dailyPayment =
-      this.dailyPayment === undefined ? '0' : this.dailyPayment;
-    this.dailyFees = this.dailyFees === undefined ? '0' : this.dailyFees;
-    this.dailyReserve =
-      this.dailyReserve === undefined ? '0' : this.dailyReserve;
-    this.dailyInvestment =
-      this.dailyInvestment === undefined ? '0' : this.dailyInvestment;
-    this.dailySaving = this.dailySaving === undefined ? '0' : this.dailySaving;
-    this.dailySavingReturns =
-      this.dailySavingReturns === undefined ? '0' : this.dailySavingReturns;
-    this.dailyExpense =
-      this.dailyExpense === undefined ? '0' : this.dailyExpense;
-
-    this.dailyLoss = this.dailyLoss === undefined ? '0' : this.dailyLoss;
     this.dailyMoneyRequests =
       this.dailyMoneyRequests === undefined ? '0' : this.dailyMoneyRequests;
     this.tomorrowMoneyRequests =
@@ -157,6 +161,7 @@ export class TodayComponent {
       `${this.dailyInvestment}`,
       `${this.dailySaving}`,
       `${this.dailySavingReturns}`,
+      `${this.dailyFeesReturns}`,
       '',
       '',
       `${this.dailyExpense}`,
@@ -175,6 +180,7 @@ export class TodayComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.dailySavingReturns
       )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFeesReturns)}`,
       ``,
       ``,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,

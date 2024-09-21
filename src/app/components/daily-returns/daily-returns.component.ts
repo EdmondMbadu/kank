@@ -8,11 +8,11 @@ import { AuthService } from 'src/app/services/auth.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-daily-fees',
-  templateUrl: './daily-fees.component.html',
-  styleUrls: ['./daily-fees.component.css'],
+  selector: 'app-daily-returns',
+  templateUrl: './daily-returns.component.html',
+  styleUrls: ['./daily-returns.component.css'],
 })
-export class DailyFeesComponent implements OnInit {
+export class DailyReturnsComponent implements OnInit {
   clients?: Client[];
   employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
@@ -84,29 +84,14 @@ export class DailyFeesComponent implements OnInit {
   //           key.startsWith(this.today)
   //         )
   //       );
-  //       if (
-  //         filteredDict &&
-  //         Object.keys(filteredDict).length > 0 &&
-  //         filteredDictMembership &&
-  //         Object.keys(filteredDictMembership).length > 0
-  //       ) {
-  //         console.log(
-  //           'all current clients',
-  //           filteredDict,
-  //           filteredDictMembership,
-  //           client.firstName,
-  //           client.lastName
-  //         );
-
-  //         const filterdKeys = Object.keys(filteredDict);
-  //         const filterdKeysMembership = Object.keys(filteredDictMembership);
-  //         // console.log('all keys', filterdKeys);
-  //         const filteredValues = Object.values(filteredDict);
-  //         const filteredValuesMembership = Object.values(
-  //           filteredDictMembership
-  //         );
-  //         // console.log('all values', filteredValues);
-  //         // if (filteredValues.length !== 0) {
+  //       // console.log('all current clients', filteredDict);
+  //       const filterdKeys = Object.keys(filteredDict);
+  //       const filterdKeysMembership = Object.keys(filteredDictMembership);
+  //       // console.log('all keys', filterdKeys);
+  //       const filteredValues = Object.values(filteredDict);
+  //       const filteredValuesMembership = Object.values(filteredDictMembership);
+  //       // console.log('all values', filteredValues);
+  //       if (filteredValues.length !== 0) {
   //         this.fillDailyApplicationFeePayment(
   //           client,
   //           filteredValues,
@@ -117,7 +102,6 @@ export class DailyFeesComponent implements OnInit {
   //           filteredValuesMembership,
   //           filterdKeysMembership
   //         );
-  //         // }
   //       }
   //     }
   //   }
@@ -141,7 +125,7 @@ export class DailyFeesComponent implements OnInit {
   //       trackingId: client.trackingId,
   //     };
 
-  //     if (Number(v) >= 0) {
+  //     if (Number(v) <= 0) {
   //       this.applicationFeePayments?.push(filt);
   //       this.applicationFeePaymentsCopy?.push(filt);
   //     }
@@ -177,7 +161,7 @@ export class DailyFeesComponent implements OnInit {
   //       trackingId: client.trackingId,
   //     };
 
-  //     if (Number(v) >= 0) {
+  //     if (Number(v) <= 0) {
   //       this.membershipFeePayments?.push(filt);
   //       this.membershipFeePaymentsCopy?.push(filt);
   //     }
@@ -223,7 +207,7 @@ export class DailyFeesComponent implements OnInit {
           const appFeeValue = Number(appFee || 0);
           const memFeeValue = Number(memFee || 0);
 
-          if (appFeeValue >= 0 && memFeeValue >= 0) {
+          if (appFeeValue <= 0 && memFeeValue <= 0) {
             // Both fees are positive, include in the output
             let middleName =
               client.middleName === undefined ? '' : client.middleName;

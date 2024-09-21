@@ -93,6 +93,7 @@ import { GestionLossComponent } from './gestion/gestion-loss/gestion-loss.compon
 import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion-investment.component';
 import { TutorialComponent } from './components/tutorial/tutorial.component';
 import { LossesComponent } from './components/losses/losses.component';
+import { DailyReturnsComponent } from './components/daily-returns/daily-returns.component';
 
 @NgModule({
   declarations: [
@@ -175,6 +176,7 @@ import { LossesComponent } from './components/losses/losses.component';
     GestionInvestmentComponent,
     TutorialComponent,
     LossesComponent,
+    DailyReturnsComponent,
   ],
   imports: [
     BrowserModule,

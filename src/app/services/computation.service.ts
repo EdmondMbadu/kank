@@ -14,8 +14,8 @@ export class ComputationService {
   constructor(private time: TimeService) {}
   colorPositive: string = '#008080';
   colorNegative: string = '#ff0000';
-  rateFranc: number = 0.00036;
-  rateDollar: number = 2800;
+  rateFranc: number = 0.00034;
+  rateDollar: number = 2900;
   week: number = 6;
   month: number = 26;
   today = this.time.todaysDateMonthDayYear();
@@ -52,7 +52,7 @@ export class ComputationService {
       { people: '100' },
       {
         role: 'Manager',
-        base: '80$',
+        base: '100$',
         a: '60$',
         b: '80$',
         c: '100$',
@@ -60,7 +60,7 @@ export class ComputationService {
       },
       {
         role: 'Agent Marketing',
-        base: '70$',
+        base: '90$',
         a: '50$',
         b: '70$',
         c: '90$',
@@ -71,7 +71,7 @@ export class ComputationService {
       { people: '160' },
       {
         role: 'Manager',
-        base: '80$',
+        base: '120$',
         a: '110$',
         b: '130$',
         c: '150$',
@@ -79,7 +79,7 @@ export class ComputationService {
       },
       {
         role: 'Agent Marketing',
-        base: '70$',
+        base: '110$',
         a: '100$',
         b: '120$',
         c: '140$',
@@ -90,7 +90,7 @@ export class ComputationService {
       { people: '200' },
       {
         role: 'Manager',
-        base: '80$',
+        base: '140$',
         a: '160$',
         b: '180$',
         c: '200$',
@@ -98,7 +98,7 @@ export class ComputationService {
       },
       {
         role: 'Agent Marketing',
-        base: '70$',
+        base: '130$',
         a: '150$',
         b: '170$',
         c: '190$',
@@ -715,7 +715,7 @@ export class ComputationService {
         { people: '100' },
         {
           role: 'Manager',
-          base: '80$',
+          base: '100$',
           bonus70_79: '60$',
           bonus80_89: '80$',
           bonus90_99: '100$',
@@ -723,7 +723,7 @@ export class ComputationService {
         },
         {
           role: 'Agent Marketing',
-          base: '70$',
+          base: '90$',
           bonus70_79: '50$',
           bonus80_89: '70$',
           bonus90_99: '90$',
@@ -734,7 +734,7 @@ export class ComputationService {
         { people: '160' },
         {
           role: 'Manager',
-          base: '80$',
+          base: '120$',
           bonus70_79: '110$',
           bonus80_89: '130$',
           bonus90_99: '150$',
@@ -742,7 +742,7 @@ export class ComputationService {
         },
         {
           role: 'Agent Marketing',
-          base: '70$',
+          base: '110$',
           bonus70_79: '100$',
           bonus80_89: '120$',
           bonus90_99: '140$',
@@ -753,7 +753,7 @@ export class ComputationService {
         { people: '200' },
         {
           role: 'Manager',
-          base: '80$',
+          base: '140$',
           bonus70_79: '160$',
           bonus80_89: '180$',
           bonus90_99: '200$',
@@ -761,7 +761,7 @@ export class ComputationService {
         },
         {
           role: 'Agent Marketing',
-          base: '70$',
+          base: '130$',
           bonus70_79: '150$',
           bonus80_89: '170$',
           bonus90_99: '190$',

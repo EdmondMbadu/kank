@@ -45,9 +45,10 @@ export class TrackingMonthCentralComponent {
     '/add-expense',
     '/add-reserve',
     '/add-invest',
+    '/',
   ];
   summary: string[] = [
-    'Paiment Du Mois Central',
+    'Paiment Du Mois ',
     'Emprunts Du Mois',
     'Benefice Du Mois ',
     'Depense Du Mois',
@@ -56,6 +57,7 @@ export class TrackingMonthCentralComponent {
     'Investissement Du Mois',
     'Epargne Du Mois',
     'Retrait Epargne Du Mois',
+    'Budget Emprunts Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
   givenMonthTotalPaymentAmount: string = '';
@@ -68,6 +70,7 @@ export class TrackingMonthCentralComponent {
   givenMonthTotalReserveAmountDollars: string = '';
   givenMonthTotalFeesAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
+  givenMonthBudget: string = '';
   imagePaths: string[] = [
     '../../../assets/img/audit.png',
     '../../../assets/img/lending-date.png',
@@ -78,6 +81,7 @@ export class TrackingMonthCentralComponent {
     '../../../assets/img/invest.svg',
     '../../../assets/img/saving.svg',
     '../../../assets/img/saving.svg',
+    '../../../assets/img/budget.png',
   ];
   sortedReserveMonth: {
     firstName: string;
@@ -94,6 +98,9 @@ export class TrackingMonthCentralComponent {
         this.givenMonth,
         this.givenYear
       );
+    this.givenMonthBudget = this.allUsers
+      .reduce((acc, user) => Number(acc) + Number(user.monthBudget), 0)
+      .toString();
 
     this.givenMonthTotalBenefitAmount = Math.ceil(
       Number(this.givenMonthTotalPaymentAmount) * 0.285
@@ -172,6 +179,7 @@ export class TrackingMonthCentralComponent {
       `${this.givenMonthTotalInvestmentAmount}`,
       `${this.givenMonthTotalSavingAmount}`,
       `${this.givenMonthTotalSavingReturnsAmount}`,
+      `${this.givenMonthBudget}`,
     ];
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
@@ -201,6 +209,7 @@ export class TrackingMonthCentralComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalSavingReturnsAmount
       )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.givenMonthBudget)}`,
     ];
   }
 }
