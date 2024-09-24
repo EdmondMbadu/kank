@@ -53,4 +53,5 @@ export type UserDailyField =
   | 'reserve'
   | 'feesData'
   | 'investments'
-  | 'dailyMoneyRequests';
+  | 'dailyMoneyRequests'
+  | 'dailyFeesReturns';

@@ -38,6 +38,7 @@ export class TodayCentralComponent {
   dailyRequest: string = '0';
   dailyRequestDollars: string = '0';
   dailyExpense: string = '0';
+  dailyFeesReturns: string = '0';
 
   sortedReserveToday: {
     firstName: string;
@@ -59,6 +60,7 @@ export class TodayCentralComponent {
     'Epargne Du Jour',
     'Retrait Epargne Du Jour',
     'Depense Du Jour',
+    `Retrait Frais De Membre Du Jour`,
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -70,6 +72,7 @@ export class TodayCentralComponent {
     '../../../assets/img/saving.svg',
     '../../../assets/img/saving.svg',
     '../../../assets/img/expense.svg',
+    '../../../assets/img/return.png',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -131,6 +134,13 @@ export class TodayCentralComponent {
         this.requestDateCorrectFormat
       )
       .toString();
+    this.dailyFeesReturns = this.compute
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyFeesReturns',
+        this.requestDateCorrectFormat
+      )
+      .toString();
 
     this.dailyExpense = this.compute
       .findTodayTotalResultsGivenField(
@@ -153,6 +163,8 @@ export class TodayCentralComponent {
       this.dailyRequest === undefined ? '0' : this.dailyRequest;
     this.dailyExpense =
       this.dailyExpense === undefined ? '0' : this.dailyExpense;
+    this.dailyFeesReturns =
+      this.dailyFeesReturns === undefined ? '0' : this.dailyFeesReturns;
     this.dailyReserveDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyReserve)
       .toString();
@@ -180,6 +192,7 @@ export class TodayCentralComponent {
       `${this.dailySaving}`,
       `${this.dailySavingReturns}`,
       `${this.dailyExpense}`,
+      `${this.dailyFeesReturns}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -192,6 +205,7 @@ export class TodayCentralComponent {
         this.dailySavingReturns
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFeesReturns)}`,
     ];
   }
 
