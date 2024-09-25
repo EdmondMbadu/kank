@@ -151,6 +151,10 @@ export class GestionMonthComponent {
         )
       )
     ).toString();
+    let lossRatio =
+      Math.floor(
+        (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 1000
+      ) / 1000;
     this.summaryContent = [
       `${this.givenMonthTotalReserveAmount}`,
       `${this.moneyInHands}`,

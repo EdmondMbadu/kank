@@ -290,7 +290,64 @@
             </div>
           </section>
           
-         
+          <div *ngIf="this.auth.isDistributor" class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl" >
+            <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Montant de Paiement et Bonus 15+$K Managaire Gestion</h1>
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 rounded-s-lg">
+                      Role 
+                        </th>
+                        <th scope="col" class=" py-3 px-6">
+                           Base
+                            </th>
+                       
+                        <th scope="col" class=" px-6 py-3">
+                         Bonus 1.6-2%
+                          </th>
+                          <th scope="col" class=" px-6 py-3">
+                            Bonus 1.1-1.5%
+                             </th>
+                             <th scope="col" class=" px-6 py-3">
+                                Bonus 0.6-1%
+                                 </th>
+                                 <th scope="col" class=" px-6 py-3">
+                                    Bonus 0-0.5%
+                                     </th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr  class="bg-white dark:bg-gray-800">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                          Manager Gestion
+                        </th>
+                        <td class="px-6 py-4">
+                           140$ 
+                          </td>
+                        <td class="px-6 py-4">
+                         20$
+                        </td>
+                        <td class="px-6 py-4">
+                           40$
+                          </td>
+                          <td class="px-6 py-4">
+                         60$
+                          </td>
+                          <td class="px-6 py-4">
+                           80$
+                          </td>
+                    </tr>
+                    
+                    
+                </tbody>
+                <tfoot>
+                   
+                </tfoot>
+                
+              
+            </table>
+        </div>
             
             <div class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl" *ngFor="let group of compute.salaries">
               <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Montant de Paiement et Bonus({{ group[0].people }}+ clients)</h1>

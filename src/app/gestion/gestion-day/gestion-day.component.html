@@ -21,10 +21,15 @@
     <div class="flex-col w-60  m-6 " *ngFor="let s of summary; let i = index;  ">
         <a routerLink="{{linkPaths[i]}}" class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
             <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
-            
+           
             <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" > FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" > $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
+            <div *ngIf="i==0">
+                <h2 *ngIf="lossRatio<=2" class="font-bold text-lg text-green-700 text-center" >  {{summaryContent[i]}} %</h2>
+                <h2 *ngIf="lossRatio>2" class="font-bold text-lg text-red-700 text-center" >  {{summaryContent[i]}} %</h2>
+            </div>
+           
+            <h2 *ngIf="i!=0" class="font-bold text-lg text-green-700 text-center" > FC {{summaryContent[i] | number:'1.0-0'}} </h2>
+            <h2 *ngIf="i!=0"class="font-bold text-lg text-yellow-900 text-center" > $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
          
         </a>
     </div>

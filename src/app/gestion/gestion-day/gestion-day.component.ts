@@ -31,6 +31,11 @@ export class GestionDayComponent implements OnInit {
   day: number = 1;
   graphicsRange: number = this.week;
   graphicsRangeServe: number = this.week;
+  currentDate = new Date();
+  currentMonth = this.currentDate.getMonth() + 1;
+  givenMonth: number = this.currentMonth;
+  year = this.currentDate.getFullYear();
+  givenYear = this.year;
   maxRange = 0;
   recentReserveDates: string[] = [];
   recentReserveAmounts: number[] = [];
@@ -65,6 +70,7 @@ export class GestionDayComponent implements OnInit {
 
   linkPaths: string[] = [
     '/gestion-reserve',
+    '/gestion-reserve',
     '/gestion-today',
     '/gestion-expenses',
     '/gestion-served',
@@ -73,6 +79,7 @@ export class GestionDayComponent implements OnInit {
     '/gestion-investment',
   ];
   summary: string[] = [
+    'Pourcentage Perte Du Mois',
     'Reserve Du Jour',
     'Argent En Main',
     'Depense Du Jour',
@@ -84,6 +91,7 @@ export class GestionDayComponent implements OnInit {
   valuesConvertedToDollars: string[] = [];
 
   imagePaths: string[] = [
+    '../../../assets/img/loss-ratio.png',
     '../../../assets/img/reserve.svg',
     '../../../assets/img/salary.png',
     '../../../assets/img/expense.svg',
@@ -99,9 +107,39 @@ export class GestionDayComponent implements OnInit {
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
+  givenMonthTotalLossAmount: string = '';
+  givenMonthTotalLossAmountDollar: string = '';
+  givenMonthTotalReserveAmount: string = '';
+  lossRatio: number = 0;
   initalizeInputs() {
-    console.log('management info', this.managementInfo);
-
+    // this is to compute the loss ratio of the month which will serve for bonus for rebecca
+    this.givenMonthTotalReserveAmount = this.compute.findTotalGiventMonth(
+      this.managementInfo?.reserve!,
+      this.givenMonth,
+      this.givenYear
+    );
+    this.givenMonthTotalLossAmount = this.compute.findTotalGiventMonth(
+      this.managementInfo?.exchangeLoss!,
+      this.givenMonth,
+      this.givenYear
+    );
+    this.givenMonthTotalLossAmountDollar = this.compute.findTotalGiventMonth(
+      this.managementInfo?.dollarTransferLoss!,
+      this.givenMonth,
+      this.givenYear
+    );
+    let totalLoss = (
+      Number(this.givenMonthTotalLossAmount) +
+      Number(
+        this.compute.convertUsDollarsToCongoleseFranc(
+          this.givenMonthTotalLossAmountDollar
+        )
+      )
+    ).toString();
+    this.lossRatio =
+      Math.floor(
+        (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 1000
+      ) / 10;
     this.dailyReserve = this.compute
       .findTotalForToday(
         this.managementInfo?.reserve!,
@@ -177,6 +215,7 @@ export class GestionDayComponent implements OnInit {
       Number(this.dailyLoss)
     ).toString();
     this.summaryContent = [
+      `${this.lossRatio}`,
       ` ${this.dailyReserve}`,
       `${this.moneyInHands}`,
       `${this.dailyExpense}`,
@@ -187,6 +226,7 @@ export class GestionDayComponent implements OnInit {
     ];
 
     this.valuesConvertedToDollars = [
+      ``,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.moneyInHands)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
