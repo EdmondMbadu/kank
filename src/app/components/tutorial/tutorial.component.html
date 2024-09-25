@@ -290,8 +290,8 @@
             </div>
           </section>
           
-          <div *ngIf="this.auth.isDistributor" class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl" >
-            <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Montant de Paiement et Bonus $15K+ Managaire Gestion</h1>
+          <div *ngIf="this.auth.isDistributor || this.auth.isAdmninistrator" class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl" >
+            <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Montant de Paiement et Bonus $15K+ Manager Gestion</h1>
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
