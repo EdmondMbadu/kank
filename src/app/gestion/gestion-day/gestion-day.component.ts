@@ -137,9 +137,9 @@ export class GestionDayComponent implements OnInit {
       )
     ).toString();
     this.lossRatio =
-      Math.floor(
-        (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 1000
-      ) / 10;
+      Math.ceil(
+        (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 10000
+      ) / 100;
     this.dailyReserve = this.compute
       .findTotalForToday(
         this.managementInfo?.reserve!,
