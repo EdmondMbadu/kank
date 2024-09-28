@@ -27,11 +27,14 @@ export class TransformRegisterClientComponent implements OnInit {
   amountToPay: string = '';
   debtCycleStartDate: string = '';
   debtCycleEndDate: string = '';
+  allClients: Client[] = [];
 
   applicationFeeOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
   savingsOtherDisplay: boolean = false;
   loanAmountOtherDisplay: boolean = false;
+  clientsWithDebts: Client[] = [];
+  agentClientMap: any = {};
 
   constructor(
     public auth: AuthService,
@@ -50,7 +53,9 @@ export class TransformRegisterClientComponent implements OnInit {
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
+      this.allClients = data;
       this.client = data[Number(this.id)];
+      this.findClientsWithDebts();
       if (this.client.loanAmount != undefined) {
         this.loanAmount = this.client.loanAmount;
       }
@@ -128,17 +133,20 @@ export class TransformRegisterClientComponent implements OnInit {
             );
           }
           this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
+        })
+        // this probably redundant, but it works. I did not want to reqwrite the logic clean.
+        // It probably needs to be rewrritten for a clean flow.
+        .then(() => {
+          try {
+            this.findClientsWithDebts();
+            this.resetClientsAndEmployees();
+          } catch (error) {
+            console.log(
+              'An error ocurred while resetting the data for employees',
+              error
+            );
+          }
         });
-      // .then(() => {
-      //   this.performance
-      //     .updateUserPerformance(this.client)
-      //     .then((res: any) => {
-      //       console.log('updated user info performance');
-      //     })
-      //     .catch((err: any) => {
-      //       console.log('error while updating performance');
-      //     });
-      // });
 
       let date = this.time.todaysDateMonthDayYear();
       this.data
@@ -159,6 +167,45 @@ export class TransformRegisterClientComponent implements OnInit {
       return;
     }
   }
+
+  findClientsWithDebts() {
+    this.clientsWithDebts = this.allClients.filter((data) => {
+      return Number(data.debtLeft) > 0;
+    });
+    this.agentClientMap = this.getAgentsWithClients();
+    // console.log(' all clients with debts', this.clientsWithDebts);
+    console.log('agent with clients table', this.agentClientMap);
+  }
+
+  async resetClientsAndEmployees() {
+    try {
+      let reset = await this.data.updateEmployeeInfoBulk(this.agentClientMap);
+    } catch (error) {
+      console.log(
+        'An error occured while reseting employees info in bulk',
+        error
+      );
+    }
+  }
+  getAgentsWithClients() {
+    const agentClientMap: any = {};
+
+    this.clientsWithDebts.forEach((client) => {
+      const agent = client.agent;
+      const uid = client.uid;
+
+      // If the agent is not in the dictionary, add it with an empty array
+      if (!agentClientMap[agent!]) {
+        agentClientMap[agent!] = [];
+      }
+
+      // Add the client's UID to the agent's list
+      agentClientMap[agent!].push(uid);
+    });
+
+    return agentClientMap;
+  }
+
   findAgentWithId(id: string) {
     for (let em of this.employees) {
       if (em.uid === id) {

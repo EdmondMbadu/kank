@@ -152,6 +152,25 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
+  updateEmployeeInfoBulk(agentClientMap: { [agentId: string]: string[] }) {
+    const batch: any = this.afs.firestore.batch();
+
+    Object.keys(agentClientMap).forEach((agentId) => {
+      const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+        `users/${this.auth.currentUser.uid}/employees/${agentId}`
+      );
+
+      const data = {
+        clients: agentClientMap[agentId],
+      };
+
+      // Use .set with { mergeFields: ['clients'] } to update only the clients array
+      batch.set(employeeRef.ref, data, { mergeFields: ['clients'] });
+    });
+
+    // Commit the batch
+    return batch.commit();
+  }
 
   updateEmployeeInfo(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(

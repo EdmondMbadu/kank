@@ -33,78 +33,6 @@ export class TeamPageComponent implements OnInit {
     this.retreiveClients();
   }
 
-  salaries: any[] = [
-    [
-      { people: '60' },
-      { role: 'Manager', base: '80$', a: '15$', b: '25$', c: '45$', d: '55$' },
-      {
-        role: 'Agent Marketing',
-        base: '70$',
-        a: '10$',
-        b: '20$',
-        c: '40$',
-        d: '50$',
-      },
-    ],
-    [
-      { people: '100' },
-      {
-        role: 'Manager',
-        base: '80$',
-        a: '60$',
-        b: '80$',
-        c: '100$',
-        d: '110$',
-      },
-      {
-        role: 'Agent Marketing',
-        base: '70$',
-        a: '50$',
-        b: '70$',
-        c: '90$',
-        d: '100$',
-      },
-    ],
-    [
-      { people: '160' },
-      {
-        role: 'Manager',
-        base: '80$',
-        a: '110$',
-        b: '130$',
-        c: '150$',
-        d: '160$',
-      },
-      {
-        role: 'Agent Marketing',
-        base: '70$',
-        a: '100$',
-        b: '120$',
-        c: '140$',
-        d: '150$',
-      },
-    ],
-    [
-      { people: '200' },
-      {
-        role: 'Manager',
-        base: '80$',
-        a: '160$',
-        b: '180$',
-        c: '200$',
-        d: '220$',
-      },
-      {
-        role: 'Agent Marketing',
-        base: '70$',
-        a: '150$',
-        b: '170$',
-        c: '190$',
-        d: '210$',
-      },
-    ],
-  ];
-
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
@@ -113,6 +41,7 @@ export class TeamPageComponent implements OnInit {
   task?: AngularFireUploadTask;
   employees: Employee[] = [];
   allClients: Client[] = [];
+  clientsWithDebts: Client[] = [];
 
   employee: Employee = {};
   firstName: string = '';
@@ -127,6 +56,7 @@ export class TeamPageComponent implements OnInit {
   attendance: string = '';
   displayAddNewEmployee: boolean = false;
   displayEditEmployee: boolean = false;
+  agentClientMap: any = {};
 
   toggleAddNewEmployee() {
     this.displayAddNewEmployee = !this.displayAddNewEmployee;
@@ -150,6 +80,7 @@ export class TeamPageComponent implements OnInit {
   retreiveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.allClients = data;
+      this.findClientsWithDebts();
       this.retrieveEmployees();
     });
   }
@@ -198,7 +129,7 @@ export class TeamPageComponent implements OnInit {
     let commonElements = this.employees[0].clients!.filter((item) =>
       this.employees[1].clients!.includes(item)
     );
-    console.log('common elements', commonElements);
+    // console.log('common elements', commonElements);
     for (let i = 0; i < this.employees.length; i++) {
       this.employees[i].trackingId = `${i}`;
       this.employees[i].age = this.time
@@ -234,6 +165,46 @@ export class TeamPageComponent implements OnInit {
       }
     }
   }
+
+  findClientsWithDebts() {
+    this.clientsWithDebts = this.allClients.filter((data) => {
+      return Number(data.debtLeft) > 0;
+    });
+    this.agentClientMap = this.getAgentsWithClients();
+    // console.log(' all clients with debts', this.clientsWithDebts);
+    console.log('agent with clients table', this.agentClientMap);
+  }
+
+  async resetClientsAndEmployees() {
+    try {
+      let reset = await this.data.updateEmployeeInfoBulk(this.agentClientMap);
+      this.router.navigate(['/home']);
+    } catch (error) {
+      console.log(
+        'An error occured while reseting employees info in bulk',
+        error
+      );
+    }
+  }
+  getAgentsWithClients() {
+    const agentClientMap: any = {};
+
+    this.clientsWithDebts.forEach((client) => {
+      const agent = client.agent;
+      const uid = client.uid;
+
+      // If the agent is not in the dictionary, add it with an empty array
+      if (!agentClientMap[agent!]) {
+        agentClientMap[agent!] = [];
+      }
+
+      // Add the client's UID to the agent's list
+      agentClientMap[agent!].push(uid);
+    });
+
+    return agentClientMap;
+  }
+
   onImageClick(index: number): void {
     const fileInput = document.getElementById(
       'getFile' + index
