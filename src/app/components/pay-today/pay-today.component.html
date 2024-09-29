@@ -1,9 +1,76 @@
 
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Clients & Jour De Payment</h2>
+   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Retracer Les Activités Avec Critères Sélectionnés</h2>
    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
 </div>
+<div class="flex flex-wrap container mx-auto m-6 justify-center  rounded-md shadow-sm max-w-xl">
+    <button
+  [ngClass]="getButtonClasses('paymentDay')"
+  (click)="setSerachCriteria('paymentDay')"
+  aria-current="page">
+  Jour De Paiment
+</button>
+
+<button
+  [ngClass]="getButtonClasses('creditScore')"
+  (click)="setSerachCriteria('creditScore')">
+  Score Credit
+</button>
+
+<button
+  [ngClass]="getButtonClasses('loanAmount')"
+  (click)="setSerachCriteria('loanAmount')">
+  Montant Emprunté
+</button>
+<button
+  [ngClass]="getButtonClasses('loanAmountMore')"
+  (click)="setSerachCriteria('loanAmountMore')">
+  Montant Emprunté Ou Plus
+</button>
+
+<button
+  [ngClass]="getButtonClasses('debtLeft')"
+  (click)="setSerachCriteria('debtLeft')">
+  Montant Restant
+</button>
+<button
+  [ngClass]="getButtonClasses('debtLeftMore')"
+  (click)="setSerachCriteria('debtLeftMore')">
+  Montant Restant Ou Plus
+</button>
+
+<button
+  [ngClass]="getButtonClasses('amountPaid')"
+  (click)="setSerachCriteria('amountPaid')">
+  Montant Percu
+</button>
+
+<button
+  [ngClass]="getButtonClasses('agent')"
+  (click)="setSerachCriteria('agent')">
+  Agent
+</button>
+
+<button
+  [ngClass]="getButtonClasses('debtCycleStartDate')"
+  (click)="setSerachCriteria('debtCycleStartDate')">
+  Cycle De Dette Debut Mois
+</button>
+<!-- <button
+  [ngClass]="getButtonClasses('debtCycleStartDateMore')"
+  (click)="setSerachCriteria('debtCycleStartDateMore')">
+  Cycle De Dette Debut Mois Ou Plus
+</button> -->
+
+<button
+  [ngClass]="getButtonClasses('debtCycle')"
+  (click)="setSerachCriteria('debtCycle')">
+  # Cycle De Dette
+</button>
+
+
+  </div>
 <div class="flex container mx-auto justify-center mb-2">
     <h2 class="text-center text-2xl font-bold ">{{numberOfPeople}} clients - Total Par Date: {{totalGivenDate | number:'1.0-0'}} FC</h2>
 </div>

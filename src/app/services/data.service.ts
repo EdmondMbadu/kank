@@ -761,6 +761,10 @@ export class DataService {
       dailySavingReturns: {
         [date]: `${save}`,
       },
+      monthBudgetPending: (
+        Number(this.auth.currentUser.monthBudgetPending) -
+        Number(client.requestAmount)
+      ).toString(),
       dailyFeesReturns: {
         [date]: `${Total}`,
       },
@@ -851,6 +855,11 @@ export class DataService {
       dailyMoneyRequests: {
         [client.requestDate!]: `${request}`,
       },
+      monthBudgetPending: (
+        Number(this.auth.currentUser.monthBudgetPending) +
+        Number(client.requestAmount)
+      ).toString(),
+
       feesData: { [date]: `${dailyFees}` },
     };
     return userRef.set(data, { merge: true });
@@ -900,6 +909,10 @@ export class DataService {
       ).toString(),
       monthBudget: (
         Number(this.auth.currentUser.monthBudget) - Number(client.loanAmount)
+      ).toString(),
+      monthBudgetPending: (
+        Number(this.auth.currentUser.monthBudgetPending) -
+        Number(client.requestAmount)
       ).toString(),
     };
     return userRef.set(data, { merge: true });
@@ -987,6 +1000,10 @@ export class DataService {
       dailyMoneyRequests: {
         [client.requestDate!]: `${request}`,
       },
+      monthBudgetPending: (
+        Number(this.auth.currentUser.monthBudgetPending) +
+        Number(client.requestAmount)
+      ).toString(),
 
       // dailyLending: { [date]: `${dailyLending}` },
       feesData: { [date]: `${dailyFees}` },

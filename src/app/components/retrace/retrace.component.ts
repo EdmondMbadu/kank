@@ -30,7 +30,7 @@ export class RetraceComponent {
     '/not-paid',
   ];
   summary: string[] = [
-    'Clients & Jour De Paiement',
+    'Retracer Par Selection',
     'Retracer Les Paiements',
     'Retracer Les Emprunts ',
     "N'ont pas Payé",

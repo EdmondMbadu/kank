@@ -77,10 +77,15 @@ export class RegisterClientComponent implements OnInit {
       );
       return;
     } else if (
-      Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget)
+      Number(this.loanAmount) >
+      Number(this.auth.currentUser.monthBudget) -
+        Number(this.auth.currentUser.monthBudgetPending)
     ) {
+      let diff =
+        Number(this.auth.currentUser.monthBudget) -
+        Number(this.auth.currentUser.monthBudgetPending);
       alert(
-        `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${this.auth.currentUser.monthBudget} FC`
+        `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${diff} FC`
       );
       return;
     } else if (!checkDate) {

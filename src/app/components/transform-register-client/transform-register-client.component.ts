@@ -133,20 +133,20 @@ export class TransformRegisterClientComponent implements OnInit {
             );
           }
           this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
-        })
-        // this probably redundant, but it works. I did not want to reqwrite the logic clean.
-        // It probably needs to be rewrritten for a clean flow.
-        .then(() => {
-          try {
-            this.findClientsWithDebts();
-            this.resetClientsAndEmployees();
-          } catch (error) {
-            console.log(
-              'An error ocurred while resetting the data for employees',
-              error
-            );
-          }
         });
+      // this probably redundant, but it works. I did not want to reqwrite the logic clean.
+      // It probably needs to be rewrritten for a clean flow.
+      // .then(() => {
+      //   try {
+      //     this.findClientsWithDebts();
+      //     this.resetClientsAndEmployees();
+      //   } catch (error) {
+      //     console.log(
+      //       'An error ocurred while resetting the data for employees',
+      //       error
+      //     );
+      //   }
+      // });
 
       let date = this.time.todaysDateMonthDayYear();
       this.data

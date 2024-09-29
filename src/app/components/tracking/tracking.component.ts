@@ -36,6 +36,7 @@ export class TrackingComponent {
     'Epargne Clients',
     'Argent en Main',
     'Budget Emprunts Du Mois',
+    'Budget Emprunts Du Mois En Attente',
     'Depenses',
 
     'Reserve',
@@ -46,6 +47,7 @@ export class TrackingComponent {
   imagePaths: string[] = [
     '../../../assets/img/saving.svg',
     '../../../assets/img/salary.png',
+    '../../../assets/img/budget.png',
     '../../../assets/img/budget.png',
 
     '../../../assets/img/expense.svg',
@@ -59,6 +61,7 @@ export class TrackingComponent {
 
   monthBudget: string = '';
   amountBudget: string = '';
+  amountBudgetPending: string = '';
   summaryContent: string[] = [];
   initalizeInputs() {
     let realBenefit = (
@@ -69,7 +72,10 @@ export class TrackingComponent {
       this.auth.currentUser.monthBudget === ''
         ? '0'
         : this.auth.currentUser.monthBudget;
-
+    this.amountBudgetPending =
+      this.auth.currentUser.monthBudgetPending === ''
+        ? '0'
+        : this.auth.currentUser.monthBudgetPending;
     let cardM =
       this.auth.currentUser.cardsMoney === undefined
         ? '0'
@@ -79,6 +85,7 @@ export class TrackingComponent {
       ` ${this.auth.currentUser.clientsSavings}`,
       ` ${enMain}`,
       `${this.monthBudget}`,
+      `${this.amountBudgetPending}`,
       ` ${this.auth.currentUser.expensesAmount}`,
 
       ` ${this.compute.convertUsDollarsToCongoleseFranc(
@@ -94,6 +101,9 @@ export class TrackingComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.monthBudget)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.amountBudgetPending
+      )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.auth.currentUser.expensesAmount
       )}`,
@@ -119,6 +129,21 @@ export class TrackingComponent {
         this.amountBudget
       );
       this.monthBudget = this.amountBudget;
+      this.initalizeInputs();
+    } catch (err) {
+      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+      return;
+    }
+  }
+  async setMonthBudgetPending() {
+    if (!this.isNumber(this.amountBudgetPending)) {
+      alert('Enter a valid number');
+      return;
+    }
+    try {
+      const clientCardPayment = await this.auth.setMonthBudgetPending(
+        this.amountBudgetPending
+      );
       this.initalizeInputs();
     } catch (err) {
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");

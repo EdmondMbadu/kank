@@ -129,7 +129,7 @@ export class TeamPageComponent implements OnInit {
     let commonElements = this.employees[0].clients!.filter((item) =>
       this.employees[1].clients!.includes(item)
     );
-    // console.log('common elements', commonElements);
+    console.log('common elements', commonElements);
     for (let i = 0; i < this.employees.length; i++) {
       this.employees[i].trackingId = `${i}`;
       this.employees[i].age = this.time
@@ -171,8 +171,6 @@ export class TeamPageComponent implements OnInit {
       return Number(data.debtLeft) > 0;
     });
     this.agentClientMap = this.getAgentsWithClients();
-    // console.log(' all clients with debts', this.clientsWithDebts);
-    console.log('agent with clients table', this.agentClientMap);
   }
 
   async resetClientsAndEmployees() {

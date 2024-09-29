@@ -14,8 +14,10 @@ import { TimeService } from 'src/app/services/time.service';
   styleUrls: ['./pay-today.component.css'],
 })
 export class PayTodayComponent implements OnInit {
-  clients?: Client[];
+  clients?: Client[] = [];
+  clientsWithDebts: Client[] = [];
   employees: Employee[] = [];
+  selectedField: string = 'paymentDay';
   totalGivenDate: number = 0;
   numberOfPeople: number = 0;
   searchControl = new FormControl();
@@ -38,6 +40,7 @@ export class PayTodayComponent implements OnInit {
   ) {
     this.retrieveClients();
   }
+  searchCriteria: string = 'paymentDay';
 
   ngOnInit(): void {
     this.searchControl.valueChanges
@@ -54,6 +57,7 @@ export class PayTodayComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+      this.findClientsWithDebts();
       this.retrieveEmployees();
       this.filteredItems = data;
     });
@@ -61,8 +65,25 @@ export class PayTodayComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
+      console.log('employees', this.employees);
       this.addIds();
     });
+  }
+  findClientsWithDebts() {
+    this.clientsWithDebts = this.clients!.filter((data) => {
+      return Number(data.debtLeft) > 0;
+    });
+  }
+  getButtonClasses(field: string): string {
+    const baseClasses =
+      'px-4 py-2 text-sm  bg-white border border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500';
+
+    const selectedClasses =
+      field === this.selectedField
+        ? 'text-blue-700 dark:text-blue-700 font-bold'
+        : 'text-gray-900 dark:text-white';
+
+    return `${baseClasses} ${selectedClasses}`;
   }
   addIds() {
     for (let i = 0; i < this.clients!.length; i++) {
@@ -76,15 +97,92 @@ export class PayTodayComponent implements OnInit {
     }
   }
 
-  search(value: string) {
+  setSerachCriteria(criteria: string) {
+    this.searchCriteria = criteria;
+    this.selectedField = criteria;
+  }
+  getAgentUidByName(name: string) {
+    name = name.toLowerCase();
+    const foundAgent = this.employees.find(
+      (employee) =>
+        employee.firstName?.toLowerCase().includes(name) ||
+        employee.lastName?.toLowerCase().includes(name) ||
+        employee.middleName?.toLowerCase().includes(name)
+    );
+    return foundAgent ? foundAgent.uid : null;
+  }
+  // search(value: string) {
+  //   if (value) {
+  //     const lowerCaseValue = value.toLowerCase();
+  //     let current = this.clients!.filter(
+  //       (client) =>
+  //         client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
+  //         (client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue) &&
+  //           Number(client.amountToPay) - Number(client.amountPaid) > 0)
+  //     );
+  //     this.totalGivenDate = this.compute.computeExpectedPerDate(current);
+  //     this.numberOfPeople = current.length;
+  //     return of(current);
+  //   } else {
+  //     this.totalGivenDate = this.compute.computeExpectedPerDate([]);
+  //     this.numberOfPeople = 0;
+  //     return of(this.clients);
+  //   }
+  // }
+  search(value: string, field: string = this.searchCriteria) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
-      let current = this.clients!.filter(
-        (client) =>
-          client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
-          (client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue) &&
-            Number(client.amountToPay) - Number(client.amountPaid) > 0)
-      );
+
+      let current = this.clientsWithDebts!.filter((client) => {
+        // Switch to handle different fields for filtering
+        switch (field) {
+          case 'paymentDay':
+            return (
+              client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
+              client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
+            );
+          case 'creditScore':
+            return client.creditScore?.toString() === lowerCaseValue;
+          case 'loanAmount':
+            return client.loanAmount?.toString() === lowerCaseValue;
+          case 'loanAmountMore':
+            return (
+              Number(client.loanAmount?.toString()) >= Number(lowerCaseValue)
+            );
+          case 'debtCycle':
+            return client.debtCycle?.toString() === lowerCaseValue;
+          case 'debtLeft':
+            return client.debtLeft?.toString() === lowerCaseValue;
+          case 'debtLeftMore':
+            return (
+              Number(client.debtLeft?.toString()) >= Number(lowerCaseValue)
+            );
+          case 'amountPaid':
+            return client.amountPaid?.toString().includes(lowerCaseValue);
+          // Add more cases for other fields as needed
+          case 'agent':
+            // Get the agent uid using the helper function
+            const agentUid = this.getAgentUidByName(value);
+            return client.agent?.toString().includes(agentUid!);
+          case 'debtCycleStartDate':
+            if (client.debtCycleStartDate) {
+              const [month, , year] = client.debtCycleStartDate.split('-');
+              const [searchMonth, searchYear] = lowerCaseValue.split('-');
+              return month === searchMonth && year === searchYear;
+            }
+            return false;
+          // case 'debtCycleStartDateMore':
+          //   if (client.debtCycleStartDate) {
+          //     const [month, , year] = client.debtCycleStartDate.split('-');
+          //     const [searchMonth, searchYear] = lowerCaseValue.split('-');
+          //     return month >= searchMonth && year === searchYear;
+          //   }
+          //   return false;
+          default:
+            return false;
+        }
+      });
+
       this.totalGivenDate = this.compute.computeExpectedPerDate(current);
       this.numberOfPeople = current.length;
       return of(current);
