@@ -67,6 +67,9 @@ export class TeamPageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
+      // this.employees = this.employees.filter((data) => {
+      //   return data.status === 'Travaille';
+      // });
       if (this.employees !== null) {
         this.displayEditEmployees = new Array(this.employees.length).fill(
           false

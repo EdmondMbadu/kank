@@ -35,37 +35,36 @@
        
         <div class="grid gap-8 mb-6 lg:mb-16 md:grid-cols-2" >
         <div *ngFor="let em of allEmployees; let i=index">
-            <h1 class="font-bold text-2xl m-3">{{i+1}}</h1>
-            <div class="items-center bg-gray-50 rounded-lg shadow sm:flex" >
-                <div>
-                
-                    <input type="file" [id]="'getFile'+ i" style="display:none" >
-                    <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
-                    <img *ngIf="em.profilePicture===undefined" class="w-full rounded-lg sm:rounded-none sm:rounded-l-lg "  src="../../../assets/img/user.png" alt="Bonnie Avatar">
-                    <img *ngIf="em.profilePicture!==undefined" class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg " [src]="em.profilePicture.downloadURL" alt="Bonnie Avatar">
-                    <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
-                
-                </div>
-             
-                <a  class="p-5" >
-                    <h3 class="text-xl font-bold tracking-tight text-gray-900 " [routerLink]="['/employee-page',em.trackingId]">
-                       {{em.firstName}} {{em.middleName}} {{em.lastName}}
-                    </h3>
-                    <h1 class="text-gray-500   mt-2">Role: {{em.role}}</h1>
-                    <p class="mt-1 mb-1 font-light text-gray-500">Status: <span class=""> {{em.status}}</span></p>
-
-                    <p class="mt-1 mb-1 font-bold text-gray-500 ">Pourcentage Du Mois: <span class=""> {{em.performancePercentageMonth}} %</span></p>
-
-                    <p class="mt-1 mb-1 font-light text-gray-500 ">Sex: <span class=""> {{em.sex}}</span></p>
-
-                    <p class="mt-1 mb-1 font-light text-gray-500 ">Debut de Travaille: <span class=""> {{em.dateJoined}}</span></p>
-                    <p class="mt-1 mb-3 font-light text-gray-500 ">Telephone: <span class="">{{em.phoneNumber}}</span></p>
-                    <a type="submit"  target="_blank" *ngIf="em.profilePicture && em.profilePicture.CV !==undefined" href="{{em.profilePicture.CVDownloadURL}}"  class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">CV</a>
+                <h1 class="font-bold text-2xl m-3">{{i+1}}</h1>
+                <div class="items-center bg-gray-50 rounded-lg shadow sm:flex" >
+                    <div>
                     
-                </a>
-     
-            </div> 
+                        <input type="file" [id]="'getFile'+ i" style="display:none" >
+                        <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
+                        <img *ngIf="em.profilePicture===undefined" class="w-full rounded-lg sm:rounded-none sm:rounded-l-lg "  src="../../../assets/img/user.png" alt="Bonnie Avatar">
+                        <img *ngIf="em.profilePicture!==undefined" class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg " [src]="em.profilePicture.downloadURL" alt="Bonnie Avatar">
+                        <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
+                    
+                    </div>
+                
+                    <a  class="p-5" >
+                        <h3 class="text-xl font-bold tracking-tight text-gray-900 " [routerLink]="['/employee-page',em.trackingId]">
+                        {{em.firstName}} {{em.middleName}} {{em.lastName}}
+                        </h3>
+                        <h1 class="text-gray-500   mt-2">Role: {{em.role}}</h1>
+                        <p class="mt-1 mb-1 font-light text-gray-500">Status: <span class=""> {{em.status}}</span></p>
 
+                        <p class="mt-1 mb-1 font-bold text-gray-500 ">Pourcentage Du Mois: <span class=""> {{em.performancePercentageMonth}} %</span></p>
+
+                        <p class="mt-1 mb-1 font-light text-gray-500 ">Sex: <span class=""> {{em.sex}}</span></p>
+
+                        <p class="mt-1 mb-1 font-light text-gray-500 ">Debut de Travaille: <span class=""> {{em.dateJoined}}</span></p>
+                        <p class="mt-1 mb-3 font-light text-gray-500 ">Telephone: <span class="">{{em.phoneNumber}}</span></p>
+                        <a type="submit"  target="_blank" *ngIf="em.profilePicture && em.profilePicture.CV !==undefined" href="{{em.profilePicture.CVDownloadURL}}"  class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">CV</a>
+                        
+                    </a>
+        
+                </div>
          
         </div>
       </div>  

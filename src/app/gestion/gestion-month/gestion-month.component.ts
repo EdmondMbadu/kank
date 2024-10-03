@@ -60,6 +60,7 @@ export class GestionMonthComponent {
     '/gestion-investment',
   ];
   summary: string[] = [
+    'Pourcentage Perte Du Mois',
     'Reserve Du Mois',
     'Argent En Main',
     'Depense Du Mois',
@@ -81,6 +82,7 @@ export class GestionMonthComponent {
   givenMonthTotalInvestmentAmount: string = '';
 
   imagePaths: string[] = [
+    '../../../assets/img/loss-ratio.png',
     '../../../assets/img/reserve.svg',
     '../../../assets/img/salary.png',
     '../../../assets/img/expense.svg',
@@ -92,6 +94,7 @@ export class GestionMonthComponent {
 
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
+  lossRatio: number = 0;
   initalizeInputs() {
     this.givenMonthTotalReserveAmount = this.compute.findTotalGiventMonth(
       this.managementInfo?.reserve!,
@@ -151,11 +154,12 @@ export class GestionMonthComponent {
         )
       )
     ).toString();
-    let lossRatio =
-      Math.floor(
-        (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 1000
-      ) / 1000;
+    this.lossRatio =
+      Math.ceil(
+        (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 10000
+      ) / 100;
     this.summaryContent = [
+      `${this.lossRatio}`,
       `${this.givenMonthTotalReserveAmount}`,
       `${this.moneyInHands}`,
       `${this.givenMonthTotalExpenseAmount}`,
@@ -165,6 +169,7 @@ export class GestionMonthComponent {
       `${this.givenMonthTotalInvestmentAmount}`,
     ];
     this.valuesConvertedToDollars = [
+      ``,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalReserveAmount
       )}`,

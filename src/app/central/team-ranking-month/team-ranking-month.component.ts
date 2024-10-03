@@ -66,6 +66,7 @@ export class TeamRankingMonthComponent {
       this.auth.getAllEmployeesGivenUser(user).subscribe((employees) => {
         tempEmployees = tempEmployees.concat(employees);
         this.currentEmployees = employees;
+
         this.currentEmployees.forEach((em: any) => {
           this.computePerformances(employees, em);
         });
@@ -108,6 +109,9 @@ export class TeamRankingMonthComponent {
         ? parseFloat(b.performancePercentageMonth)
         : 0;
       return bPerformance - aPerformance;
+    });
+    this.allEmployees = this.allEmployees.filter((data) => {
+      return data.status === 'Travaille';
     });
   }
 

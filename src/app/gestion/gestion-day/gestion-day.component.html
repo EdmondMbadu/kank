@@ -70,16 +70,6 @@
                 Max
             </button>
           </div>
-       
-        <!-- <div class="mb-6">
-  
-        <label for="payments" class=" block mb-2 text-md font-medium text-gray-900 m-2">Intervalle De Temps</label>
-        <select id="payments" [(ngModel)]="graphicsRangeServe"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="updateServeGraphics()">
-        <option [ngValue]="5">Semaine</option>
-        <option [ngValue]="20">Mois</option>
-        <option [ngValue]="maxRange">Max</option>
-        </select>
-        </div> -->
         <plotly-plot [data]="graphServe.data" [layout]="graphServe.layout"></plotly-plot>
 
     </div>
