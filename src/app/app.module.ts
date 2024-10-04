@@ -94,6 +94,8 @@ import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion
 import { TutorialComponent } from './components/tutorial/tutorial.component';
 import { LossesComponent } from './components/losses/losses.component';
 import { DailyReturnsComponent } from './components/daily-returns/daily-returns.component';
+import { DailyCardPaymentsComponent } from './card/daily-card-payments/daily-card-payments.component';
+import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-returns.component';
 
 @NgModule({
   declarations: [
@@ -177,6 +179,8 @@ import { DailyReturnsComponent } from './components/daily-returns/daily-returns.
     TutorialComponent,
     LossesComponent,
     DailyReturnsComponent,
+    DailyCardPaymentsComponent,
+    DailyCardReturnsComponent,
   ],
   imports: [
     BrowserModule,

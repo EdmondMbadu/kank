@@ -1,19 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
+import { Card } from 'src/app/models/card';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-daily-payments',
-  templateUrl: './daily-payments.component.html',
-  styleUrls: ['./daily-payments.component.css'],
+  selector: 'app-daily-card-returns',
+  templateUrl: './daily-card-returns.component.html',
+  styleUrls: ['./daily-card-returns.component.css'],
 })
-export class DailyPaymentsComponent implements OnInit {
-  clients?: Client[];
+export class DailyCardReturnsComponent implements OnInit {
+  clients?: Card[];
   employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
   todayFrench = this.time.convertDateToDayMonthYear(this.today);
@@ -43,25 +44,16 @@ export class DailyPaymentsComponent implements OnInit {
   }
 
   retrieveClients(): void {
-    this.auth.getAllClients().subscribe((data: any) => {
+    this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clients = data;
-      this.retrieveEmployees();
-    });
-  }
-  retrieveEmployees(): void {
-    this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
       this.addIdToFilterItems();
       this.extractTodayPayments();
     });
   }
+
   addIdToFilterItems() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;
-      let emp = this.employees.find(
-        (element) => element.uid === this.clients![i].agent
-      );
-      this.clients![i].employee = emp;
     }
   }
 
@@ -71,15 +63,12 @@ export class DailyPaymentsComponent implements OnInit {
     this.trackingIds = [];
     for (let client of this.clients!) {
       // Ensure client.payments and client.previousPayments are not undefined or null
-      const paymentsEntries = client.payments
-        ? Object.entries(client.payments)
-        : [];
-      const previousPaymentsEntries = client.previousPayments
-        ? Object.entries(client.previousPayments)
+      const paymentsEntries = client.withdrawal
+        ? Object.entries(client.withdrawal)
         : [];
 
       // Combine entries from both payments and previousPayments
-      const combinedEntries = [...paymentsEntries, ...previousPaymentsEntries];
+      const combinedEntries = [...paymentsEntries];
 
       // Filter the combined entries
       const filteredDict = Object.fromEntries(

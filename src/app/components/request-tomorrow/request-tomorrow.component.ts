@@ -17,13 +17,17 @@ export class RequestTomorrowComponent implements OnInit {
   clients?: Client[];
   cards: Card[] = [];
   employees: Employee[] = [];
-  today = this.time.todaysDateMonthDayYear();
+  tomorrow = this.time.getTomorrowsDateMonthDayYear();
+  total: string = '';
+  totalCard: string = '';
 
   clientsRequestLending: Client[] = [];
   clientsRequestSavings: Client[] = [];
   clientsRequestCard: Card[] = [];
-  tomorrow = this.time.getTomorrowsDateMonthDayYear();
-  total: string = '0';
+  frenchDate = this.time.convertDateToDayMonthYear(this.tomorrow);
+  // tomorrow = this.time.getTomorrowsDateMonthDayYear();
+  requestDate: string = this.time.getTomorrowsDateYearMonthDay();
+  requestDateRigthFormat: string = this.tomorrow;
 
   trackingIds: string[] = [];
   searchControl = new FormControl();
@@ -33,7 +37,10 @@ export class RequestTomorrowComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService
-  ) {}
+  ) {
+    this.retrieveClients();
+    this.retrieveClientsCard();
+  }
   ngOnInit(): void {
     this.searchControl.valueChanges
       .pipe(
@@ -62,8 +69,6 @@ export class RequestTomorrowComponent implements OnInit {
       .subscribe((results) => {
         this.clientsRequestCard = results;
       });
-    this.retrieveClients();
-    this.retrieveClientsCard();
   }
 
   retrieveClients(): void {
@@ -76,15 +81,16 @@ export class RequestTomorrowComponent implements OnInit {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.cards = data;
       this.addIdToFilterItemsCard();
-      this.extractTCardRequestTomorrow();
+      this.extractTCard();
     });
   }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
       this.addIdToFilterItems();
-      this.extractTClientRequestTomorrow();
-      // this.extractTCardRequestTomorrow();
+      this.extractTomorrowRequests();
+      // a little weird. angular is really with the flow
+      this.extractTCard();
     });
   }
   addIdToFilterItemsCard() {
@@ -108,46 +114,56 @@ export class RequestTomorrowComponent implements OnInit {
     }
   }
 
-  extractTClientRequestTomorrow() {
+  otherDate() {
+    this.requestDateRigthFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateRigthFormat
+    );
+    this.retrieveClients();
+    this.retrieveClientsCard();
+  }
+
+  extractTomorrowRequests() {
     this.trackingIds = [];
     this.clientsRequestLending = [];
     this.clientsRequestSavings = [];
-    console.log('here request saving and lending');
+    this.total = '0';
     for (let client of this.clients!) {
       if (
         client.requestStatus !== undefined &&
         client.requestType === 'lending' &&
-        client.requestDate === this.tomorrow
+        client.requestDate === this.requestDateRigthFormat
       ) {
+        this.clientsRequestLending.push(client);
         this.total = (
           Number(this.total) + Number(client.requestAmount)
         ).toString();
-        this.clientsRequestLending.push(client);
-      }
-      if (
+      } else if (
         client.requestStatus !== undefined &&
         client.requestType === 'savings' &&
-        client.requestDate === this.tomorrow
+        client.requestDate === this.requestDateRigthFormat
       ) {
+        this.clientsRequestSavings.push(client);
         this.total = (
           Number(this.total) + Number(client.requestAmount)
         ).toString();
-        this.clientsRequestSavings.push(client);
       }
     }
   }
-  extractTCardRequestTomorrow() {
+  extractTCard() {
     this.trackingIds = [];
+    // this.clientsRequestLending = [];
     this.clientsRequestCard = [];
-    console.log('here request card');
-
     for (let client of this.cards!) {
       if (
         client.requestStatus !== undefined &&
         client.requestType === 'card' &&
-        client.requestDate === this.tomorrow
+        client.requestDate === this.requestDateRigthFormat
       ) {
         this.clientsRequestCard.push(client);
+        console.log('card request amount', client.requestAmount);
         this.total = (
           Number(this.total) + Number(client.requestAmount)
         ).toString();

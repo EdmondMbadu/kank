@@ -77,6 +77,8 @@ import { GestionInvestmentComponent } from './gestion/gestion-investment/gestion
 import { TutorialComponent } from './components/tutorial/tutorial.component';
 import { LossesComponent } from './components/losses/losses.component';
 import { DailyReturnsComponent } from './components/daily-returns/daily-returns.component';
+import { DailyCardPaymentsComponent } from './card/daily-card-payments/daily-card-payments.component';
+import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-returns.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -201,9 +203,11 @@ const routes: Routes = [
   { path: 'verify-email', component: VerifyEmailComponent },
   { path: 'update-client-info/:id', component: UpdateClientInfoComponent },
   { path: 'daily-payments', component: DailyPaymentsComponent },
+  { path: 'daily-card-payments', component: DailyCardPaymentsComponent },
   { path: 'daily-lendings', component: DailyLendingsComponent },
   { path: 'daily-savings', component: DailySavingsComponent },
   { path: 'daily-savings-returns', component: DailySavingsReturnsComponent },
+  { path: 'daily-card-returns', component: DailyCardReturnsComponent },
   { path: 'daily-returns', component: DailyReturnsComponent },
   { path: 'daily-fees', component: DailyFeesComponent },
   { path: 'request-tomorrow', component: RequestTomorrowComponent },

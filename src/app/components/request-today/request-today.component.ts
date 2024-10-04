@@ -88,7 +88,7 @@ export class RequestTodayComponent implements OnInit {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
       this.addIdToFilterItems();
-      this.extractTodayPayments();
+      this.extractTodayRequests();
       // a little weird. angular is really with the flow
       this.extractTCard();
     });
@@ -125,7 +125,7 @@ export class RequestTodayComponent implements OnInit {
     this.retrieveClientsCard();
   }
 
-  extractTodayPayments() {
+  extractTodayRequests() {
     this.trackingIds = [];
     this.clientsRequestLending = [];
     this.clientsRequestSavings = [];

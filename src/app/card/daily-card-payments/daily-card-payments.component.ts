@@ -1,18 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
-  selector: 'app-daily-payments',
-  templateUrl: './daily-payments.component.html',
-  styleUrls: ['./daily-payments.component.css'],
+  selector: 'app-daily-card-payments',
+  templateUrl: './daily-card-payments.component.html',
+  styleUrls: ['./daily-card-payments.component.css'],
 })
-export class DailyPaymentsComponent implements OnInit {
+export class DailyCardPaymentsComponent implements OnInit {
   clients?: Client[];
   employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
@@ -43,18 +43,13 @@ export class DailyPaymentsComponent implements OnInit {
   }
 
   retrieveClients(): void {
-    this.auth.getAllClients().subscribe((data: any) => {
+    this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clients = data;
-      this.retrieveEmployees();
-    });
-  }
-  retrieveEmployees(): void {
-    this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
       this.addIdToFilterItems();
       this.extractTodayPayments();
     });
   }
+
   addIdToFilterItems() {
     for (let i = 0; i < this.clients!.length; i++) {
       this.clients![i].trackingId = `${i}`;
