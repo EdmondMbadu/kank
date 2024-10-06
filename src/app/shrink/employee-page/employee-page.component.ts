@@ -8,7 +8,7 @@ import { TimeService } from 'src/app/services/time.service';
 
 import { DataService } from 'src/app/services/data.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
-import heic2any from 'heic2any';
+// import heic2any from 'heic2any';
 
 @Component({
   selector: 'app-employee-page',
@@ -315,6 +315,7 @@ export class EmployeePageComponent implements OnInit {
     // Check if the image is HEIC format and convert it
     if (file?.type === 'image/heic') {
       try {
+        const heic2any = (await import('heic2any')).default;
         const convertedBlob: any = await heic2any({
           blob: file,
           toType: 'image/png',
