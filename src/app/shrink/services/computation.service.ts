@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Client } from '../../models/client';
-import * as pdfMake from 'pdfmake/build/pdfmake';
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+// import * as pdfMake from 'pdfmake/build/pdfmake';
+// import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TimeService } from '../../services/time.service';
 import { Employee } from '../../models/employee';
 import { User, UserDailyField } from '../../models/user';
 import { AuthService } from '../../services/auth.service';
-(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
+// (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 @Injectable({
   providedIn: 'root',
 })
@@ -562,6 +562,21 @@ export class ComputationService {
           columnGap: 20,
         },
       };
+      // Dynamic imports with type assertions
+      const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
+      const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+
+      const pdfMake = pdfMakeModule?.default || pdfMakeModule;
+      const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
+
+      // Set the virtual file system
+      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+
+      // Verify that 'Roboto-Medium.ttf' exists
+      if (!pdfMake.vfs['Roboto-Medium.ttf']) {
+        console.error('Roboto-Medium.ttf not found in pdfMake.vfs');
+      }
+
       let browser = this.getBrowserName();
       if (browser === 'Safari') {
         pdfMake.createPdf(dd).download();
