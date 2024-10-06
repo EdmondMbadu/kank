@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
-import { ComputationService } from 'src/app/services/computation.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({

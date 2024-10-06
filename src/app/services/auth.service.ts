@@ -14,7 +14,7 @@ import { User } from '../models/user';
 import { Client } from '../models/client';
 import { Timestamp } from 'firebase/firestore';
 import { TimeService } from './time.service';
-import { ComputationService } from './computation.service';
+import { ComputationService } from '../shrink/services/computation.service';
 import { Employee } from '../models/employee';
 import { Card } from '../models/card';
 import { Management } from '../models/management';

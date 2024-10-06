@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Card } from 'src/app/models/card';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
-import { ComputationService } from 'src/app/services/computation.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({

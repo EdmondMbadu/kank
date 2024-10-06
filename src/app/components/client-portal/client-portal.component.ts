@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
-import { ComputationService } from 'src/app/services/computation.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 

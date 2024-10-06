@@ -11,7 +11,7 @@ import { AuthService } from './auth.service';
 import { Client } from '../models/client';
 import { TimeService } from './time.service';
 import { Avatar, Certificate, Employee } from '../models/employee';
-import { ComputationService } from './computation.service';
+import { ComputationService } from '../shrink/services/computation.service';
 import { Card } from '../models/card';
 import { WriteBatch } from 'firebase/firestore';
 import { Management } from '../models/management';

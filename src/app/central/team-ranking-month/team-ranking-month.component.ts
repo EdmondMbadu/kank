@@ -5,7 +5,7 @@ import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
-import { ComputationService } from 'src/app/services/computation.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 

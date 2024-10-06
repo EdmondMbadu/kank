@@ -3,7 +3,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import { Certificate } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
-import { ComputationService } from 'src/app/services/computation.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 

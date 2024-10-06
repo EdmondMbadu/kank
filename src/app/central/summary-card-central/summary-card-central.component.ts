@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { Card } from 'src/app/models/card';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
-import { ComputationService } from 'src/app/services/computation.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({

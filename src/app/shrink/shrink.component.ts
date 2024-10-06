@@ -4,7 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import heic2any from 'heic2any';
 import { Employee } from '../models/employee';
 import { AuthService } from '../services/auth.service';
-import { ComputationService } from '../services/computation.service';
+import { ComputationService } from './services/computation.service';
 import { DataService } from '../services/data.service';
 import { PerformanceService } from '../services/performance.service';
 import { TimeService } from '../services/time.service';

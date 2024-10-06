@@ -4,7 +4,7 @@ import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
-import { ComputationService } from 'src/app/services/computation.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({

@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
-import { Client } from '../models/client';
+import { Client } from '../../models/client';
 import * as pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
-import { TimeService } from './time.service';
-import { Employee } from '../models/employee';
-import { User, UserDailyField } from '../models/user';
-import { AuthService } from './auth.service';
+import { TimeService } from '../../services/time.service';
+import { Employee } from '../../models/employee';
+import { User, UserDailyField } from '../../models/user';
+import { AuthService } from '../../services/auth.service';
 (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 @Injectable({
   providedIn: 'root',
