@@ -55,4 +55,5 @@ export type UserDailyField =
   | 'feesData'
   | 'investments'
   | 'dailyMoneyRequests'
-  | 'dailyFeesReturns';
+  | 'dailyFeesReturns'
+  | 'losses';

@@ -53,7 +53,7 @@
     </div>
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
-        <select id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <select [disabled]="!this.auth.isAdmin"  id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
         <option selected>Choose</option>
         <option [ngValue]="'Monday'">Lundi</option>
         <option [ngValue]="'Tuesday'">Mardi</option>

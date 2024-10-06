@@ -41,7 +41,7 @@ import { NotPaidTodayComponent } from './components/not-paid-today/not-paid-toda
 import { LendingDateComponent } from './components/lending-date/lending-date.component';
 import { NotPaidComponent } from './components/not-paid/not-paid.component';
 import { TeamPageComponent } from './components/team-page/team-page.component';
-import { EmployeePageComponent } from './components/employee-page/employee-page.component';
+import { EmployeePageComponent } from './shrink/employee-page/employee-page.component';
 import { BenefitComponent } from './components/benefit/benefit.component';
 import { TrackingComponent } from './components/tracking/tracking.component';
 import { TodayComponent } from './components/today/today.component';
@@ -96,11 +96,12 @@ import { LossesComponent } from './components/losses/losses.component';
 import { DailyReturnsComponent } from './components/daily-returns/daily-returns.component';
 import { DailyCardPaymentsComponent } from './card/daily-card-payments/daily-card-payments.component';
 import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-returns.component';
+import { SharedModule } from './shared/shared.module';
 
 @NgModule({
   declarations: [
     AppComponent,
-    NavbarComponent,
+    // NavbarComponent,
     LandingPageComponent,
     InvestementsSummaryComponent,
     ClientInfoComponent,
@@ -125,7 +126,7 @@ import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-
     LendingDateComponent,
     NotPaidComponent,
     TeamPageComponent,
-    EmployeePageComponent,
+    // EmployeePageComponent,
     BenefitComponent,
     TrackingComponent,
     TodayComponent,
@@ -193,6 +194,7 @@ import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-
     AngularFireStorageModule,
     CommonModule,
     PlotlyModule,
+    SharedModule,
   ],
   providers: [],
   bootstrap: [AppComponent],

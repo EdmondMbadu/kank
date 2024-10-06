@@ -65,7 +65,11 @@ export class TutorialComponent {
     this[property] = !this[property];
   }
   computeBonus() {
-    this.base = this.findBase(Number(this.numberOfPeople), this.agentRole);
+    this.base = this.findBase(
+      Number(this.numberOfPeople),
+      this.agentRole,
+      this.percentage
+    );
 
     this.bonus = this.compute.getBonus(
       Number(this.numberOfPeople),
@@ -74,9 +78,11 @@ export class TutorialComponent {
     );
   }
 
-  findBase(people: number, agentRole: string): number {
+  findBase(people: number, agentRole: string, percentage: number): number {
     let base = 0;
     if (people < 100) {
+      base = 80;
+    } else if (percentage < 50) {
       base = 80;
     } else if (people >= 100 && people < 160) {
       base = 100;

@@ -25,7 +25,7 @@ import { NotPaidTodayComponent } from './components/not-paid-today/not-paid-toda
 import { LendingDateComponent } from './components/lending-date/lending-date.component';
 import { NotPaidComponent } from './components/not-paid/not-paid.component';
 import { TeamPageComponent } from './components/team-page/team-page.component';
-import { EmployeePageComponent } from './components/employee-page/employee-page.component';
+// import { EmployeePageComponent } from './shrink/employee-page/employee-page.component';
 import { BenefitComponent } from './components/benefit/benefit.component';
 import { TrackingComponent } from './components/tracking/tracking.component';
 import { TodayComponent } from './components/today/today.component';
@@ -229,7 +229,12 @@ const routes: Routes = [
   { path: 'team-ranking-month', component: TeamRankingMonthComponent },
   { path: 'certificate', component: CertificateComponent },
   { path: 'tutorial', component: TutorialComponent },
-  { path: 'employee-page/:id', component: EmployeePageComponent },
+  // { path: 'employee-page/:id', component: EmployeePageComponent },
+  {
+    path: 'employee-page',
+    loadChildren: () =>
+      import('./shrink/shrink.module').then((m) => m.ShrinkModule),
+  },
 ];
 
 @NgModule({

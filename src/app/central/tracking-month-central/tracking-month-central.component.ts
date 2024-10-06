@@ -46,6 +46,7 @@ export class TrackingMonthCentralComponent {
     '/add-reserve',
     '/add-invest',
     '/',
+    '/',
   ];
   summary: string[] = [
     'Paiment Du Mois ',
@@ -57,6 +58,7 @@ export class TrackingMonthCentralComponent {
     'Investissement Du Mois',
     'Epargne Du Mois',
     'Retrait Epargne Du Mois',
+    'Perte Du Mois',
     'Budget Emprunts Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
@@ -71,6 +73,7 @@ export class TrackingMonthCentralComponent {
   givenMonthTotalFeesAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
   givenMonthBudget: string = '';
+  givenMonthTotalLoss: string = '';
   imagePaths: string[] = [
     '../../../assets/img/audit.png',
     '../../../assets/img/lending-date.png',
@@ -81,6 +84,7 @@ export class TrackingMonthCentralComponent {
     '../../../assets/img/invest.svg',
     '../../../assets/img/saving.svg',
     '../../../assets/img/saving.svg',
+    '../../../assets/img/loss.png',
     '../../../assets/img/budget.png',
   ];
   sortedReserveMonth: {
@@ -164,6 +168,12 @@ export class TrackingMonthCentralComponent {
         this.givenMonth,
         this.givenYear
       );
+    this.givenMonthTotalLoss = this.compute.findTotalGivenMonthForAllUsers(
+      this.allUsers,
+      'losses',
+      this.givenMonth,
+      this.givenYear
+    );
 
     this.givenMonthTotalReserveAmountDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.givenMonthTotalReserveAmount)
@@ -179,6 +189,7 @@ export class TrackingMonthCentralComponent {
       `${this.givenMonthTotalInvestmentAmount}`,
       `${this.givenMonthTotalSavingAmount}`,
       `${this.givenMonthTotalSavingReturnsAmount}`,
+      `${this.givenMonthTotalLoss}`,
       `${this.givenMonthBudget}`,
     ];
     this.valuesConvertedToDollars = [
@@ -208,6 +219,9 @@ export class TrackingMonthCentralComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalSavingReturnsAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalLoss
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.givenMonthBudget)}`,
     ];
