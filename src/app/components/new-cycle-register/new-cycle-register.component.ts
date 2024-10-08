@@ -146,6 +146,7 @@ export class NewCycleRegisterComponent implements OnInit {
         return;
       }
       this.setClientNewDebtCycleValues();
+
       this.data
         .registerNewDebtCycle(this.client)
 
@@ -211,7 +212,11 @@ export class NewCycleRegisterComponent implements OnInit {
   setClientNewDebtCycleValues() {
     this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
     this.client.previousSavingsPayments = { ...this.client.savingsPayments };
-    this.client.previousPayments = { ...this.client.payments };
+    // I want to keep the whole history of payments.
+    this.client.previousPayments = {
+      ...this.client.previousPayments,
+      ...this.client.payments,
+    };
     this.client.savingsPayments = {};
 
     this.client.savings = (
