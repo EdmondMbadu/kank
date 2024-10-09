@@ -325,8 +325,8 @@ export class PerformanceService {
     const factor = Math.pow(10, decimals);
     const multiplied = number * factor;
 
-    // Round down using Math.floor()
-    const rounded = Math.floor(multiplied);
+    // Round up using Math.floor()
+    const rounded = Math.ceil(multiplied);
 
     // Divide by the factor to get the result with one decimal
     return rounded / factor;
