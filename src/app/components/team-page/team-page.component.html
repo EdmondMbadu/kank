@@ -15,7 +15,7 @@
        
         <div class="grid gap-8 mb-6 lg:mb-16 md:grid-cols-2" >
         <div *ngFor="let em of employees; let i=index" >
-            <div *ngIf="em.status==='Travaille' || this.auth.isAdmninistrator ">
+            <div >
                 <div   class="items-center bg-gray-50 rounded-lg shadow sm:flex" >
                     <div>
                     
@@ -67,6 +67,7 @@
                                         <div>
                                             <label for="lastName" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
                                             <input type="text" name="lastName" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Nkokori" required=""[(ngModel)]="employees[i].lastName">
+                                        
                                         </div>
                                         <div>
                                             <label for="middleName" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>

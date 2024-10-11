@@ -67,9 +67,9 @@ export class TeamPageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
-      // this.employees = this.employees.filter((data) => {
-      //   return data.status === 'Travaille';
-      // });
+
+      console.log('employees', this.employees);
+
       if (this.employees !== null) {
         this.displayEditEmployees = new Array(this.employees.length).fill(
           false
@@ -129,11 +129,13 @@ export class TeamPageComponent implements OnInit {
     this.toggleAddNewEmployee();
   }
   addIdsToEmployees() {
-    let commonElements = this.employees[0].clients!.filter((item) =>
-      this.employees[1].clients!.includes(item)
-    );
-    console.log('common elements', commonElements);
+    // let commonElements = this.employees[0].clients!.filter((item) =>
+    //   this.employees[1].clients!.includes(item)
+    // );
+    // console.log('common elements', commonElements);
+
     for (let i = 0; i < this.employees.length; i++) {
+      console.log(' here I am employee ', this.employees[i]);
       this.employees[i].trackingId = `${i}`;
       this.employees[i].age = this.time
         .calculateAge(this.employees[i].dateOfBirth!)
@@ -166,6 +168,11 @@ export class TeamPageComponent implements OnInit {
         let rounded = this.compute.roundNumber((result[0] * 100) / result[1]);
         this.employees[i].performancePercantage = rounded.toString();
       }
+    }
+    if (!this.auth.isAdmninistrator) {
+      this.employees = this.employees.filter((emp) => {
+        return emp.status === 'Travaille';
+      });
     }
   }
 

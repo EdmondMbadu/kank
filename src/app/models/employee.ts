@@ -29,6 +29,17 @@ export class Employee {
   clientsFinishedPaying?: number;
   dailyStatus?: { [key: string]: string };
   attendance?: { [key: string]: string };
+  monthToBePaid?: string;
+  checkVisible?: string;
+  bonusAmount?: string;
+  bonusPercentage?: string;
+  bestTeamBonusAmount?: string;
+  bestEmployeeBonusAmount?: string;
+  bestManagerBonusAmount?: string;
+  thisMonthPaymentAmount?: string;
+  totalPayments?: string;
+  bonusCheckUrl?: string;
+  paymentCode?: string;
 }
 export class Avatar {
   path?: string;

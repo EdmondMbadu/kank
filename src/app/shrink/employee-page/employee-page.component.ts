@@ -23,10 +23,16 @@ export class EmployeePageComponent implements OnInit {
   attendance: string = '';
   // today = this.time.todaysDateMonthDayYear();
 
+  displayBonus: boolean = false;
+  displayCode: boolean = false;
+  displaySetCode: boolean = false;
+  code: string = '';
+
   attendanceComplete: boolean = true;
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
+  lastMonth: number = this.currentMonth - 1;
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
   givenYear = this.year;
@@ -54,6 +60,16 @@ export class EmployeePageComponent implements OnInit {
   recentPerformanceNumbers: number[] = [];
   graphicPerformanceTimeRange: number = 5;
   maxRange: number = 0;
+  bonusPercentage: number = 0;
+  checkVisible: string = 'false';
+  bonusMonth: number = 0;
+  bonusAmount: number = 0;
+  bestTeamBonusAmount: number = 0;
+  bestEmployeeBonusAmount: number = 0;
+  bestManagerBonusAmount: number = 0;
+  thisMonthPaymentAmount: number = 0;
+  totalBonusAmount: number = 0;
+  paymentCode: string = '';
 
   totalPoints: string = '';
   baseSalary: string = '';
@@ -101,12 +117,58 @@ export class EmployeePageComponent implements OnInit {
       responsive: true, // Make the chart responsive
     },
   };
+  toggleBonus() {
+    this.displayBonus = !this.displayBonus;
+  }
+  toggleCode() {
+    this.displayCode = !this.displayCode;
+  }
+  toggleSetCode() {
+    this.displaySetCode = !this.displaySetCode;
+  }
 
+  setEmployeeBonusAmounts() {
+    this.bonusPercentage = this.employee.bonusPercentage
+      ? parseFloat(this.employee.bonusPercentage)
+      : 0;
+    this.bonusAmount = this.employee.bonusAmount
+      ? parseFloat(this.employee.bonusAmount)
+      : 0;
+    this.bestTeamBonusAmount = this.employee.bestTeamBonusAmount
+      ? parseFloat(this.employee.bestTeamBonusAmount)
+      : 0;
+    this.bestEmployeeBonusAmount = this.employee.bestEmployeeBonusAmount
+      ? parseFloat(this.employee.bestEmployeeBonusAmount)
+      : 0;
+    this.bestManagerBonusAmount = this.employee.bestManagerBonusAmount
+      ? parseFloat(this.employee.bestManagerBonusAmount)
+      : 0;
+    this.thisMonthPaymentAmount = this.employee.thisMonthPaymentAmount
+      ? parseFloat(this.employee.thisMonthPaymentAmount)
+      : 0;
+    this.checkVisible = this.employee.checkVisible
+      ? this.employee.checkVisible
+      : 'false';
+    this.paymentCode = this.employee.paymentCode
+      ? this.employee.paymentCode
+      : '';
+  }
+
+  computeTotalBonusAmount() {
+    this.totalBonusAmount =
+      this.bonusAmount +
+      this.bestTeamBonusAmount +
+      this.bestEmployeeBonusAmount +
+      this.bestManagerBonusAmount;
+    this.employee.totalPayments = this.totalBonusAmount.toString();
+  }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
       this.employee = data[this.id];
       this.getAllPayments();
+      this.setEmployeeBonusAmounts();
+      this.computeTotalBonusAmount();
 
       this.maxRange = Object.keys(this.employee.dailyPoints!).length;
       if (this.employee.role === 'Manager') {
@@ -174,13 +236,22 @@ export class EmployeePageComponent implements OnInit {
         this.employee.attendance !== undefined &&
         this.employee.attendance[this.today] !== undefined
       ) {
-        console.log('hello', this.employee.attendance[this.today]);
+        // console.log('hello', this.employee.attendance[this.today]);
         this.attendanceComplete = false;
       }
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
 
       this.updatePerformanceGraphics(this.graphicPerformanceTimeRange);
     });
+  }
+
+  toggleBonusIfCodeCorrect() {
+    if (this.code === this.paymentCode) {
+      this.toggleBonus();
+      this.toggleCode();
+    } else {
+      alert('Code incorrect. Essayez encore');
+    }
   }
   computePerformancePercentage(average: string, total: string) {
     let result = '';
@@ -221,6 +292,16 @@ export class EmployeePageComponent implements OnInit {
   toggleMakePayment() {
     this.displayMakePayment = !this.displayMakePayment;
     this.currentDownloadUrl = '';
+  }
+  async setCode() {
+    try {
+      this.employee.paymentCode = this.code;
+      await this.data.updateEmployeePaymentCode(this.employee);
+      this.toggleSetCode();
+    } catch (error) {
+      console.error('Error setting payment code:', error);
+      // You might want to show an error message to the user here
+    }
   }
 
   getAllPayments() {
@@ -440,6 +521,92 @@ export class EmployeePageComponent implements OnInit {
   toggleAttendance() {
     this.displayAttendance = !this.displayAttendance;
   }
+  async updateEmployeeBonusInfoAndSignCheck() {
+    // Update bonus amounts
+    this.employee.bonusPercentage = this.bonusPercentage.toString();
+    this.employee.bonusAmount = this.bonusAmount.toString();
+    this.employee.bestTeamBonusAmount = this.bestTeamBonusAmount.toString();
+    this.employee.bestEmployeeBonusAmount =
+      this.bestEmployeeBonusAmount.toString();
+    this.employee.bestManagerBonusAmount =
+      this.bestManagerBonusAmount.toString();
+
+    try {
+      await this.data.updateEmployeeBonusInfo(this.employee);
+      this.computeTotalBonusAmount(); // Recalculate total bonus after update
+      await this.data.toggleEmployeeCheckVisibility(this.employee);
+
+      // Generate the bonus check and get the Blob
+      const blob: any = await this.compute.generateBonusCheck(this.employee);
+
+      // Upload the Blob to Firebase Storage
+      await this.uploadBonusCheck(blob, this.employee);
+
+      alert('Bonus Signé avec Succès');
+    } catch (err) {
+      alert(
+        "Une erreur s'est produite lors de la modification de l'employé. Essayez encore."
+      );
+      console.error(err);
+    } finally {
+      this.toggleBonus();
+    }
+  }
+  async updateEmployeeBonusInfo() {
+    // Update bonus amounts
+    this.employee.bonusPercentage = this.bonusPercentage.toString();
+    this.employee.bonusAmount = this.bonusAmount.toString();
+    this.employee.bestTeamBonusAmount = this.bestTeamBonusAmount.toString();
+    this.employee.bestEmployeeBonusAmount =
+      this.bestEmployeeBonusAmount.toString();
+    this.employee.bestManagerBonusAmount =
+      this.bestManagerBonusAmount.toString();
+
+    try {
+      await this.data.updateEmployeeBonusInfo(this.employee);
+      this.computeTotalBonusAmount();
+    } catch (err) {
+      alert(
+        "Une erreur s'est produite lors de la modification de l'employé. Essayez encore."
+      );
+      console.error(err);
+    } finally {
+      this.toggleBonus();
+    }
+  }
+  async uploadBonusCheck(blob: Blob, employee: Employee) {
+    const timestamp = new Date().getTime();
+    const path = `invoice/${employee.firstName}-${employee.lastName}-${timestamp}.pdf`;
+
+    try {
+      // Upload the PDF blob to Firebase Storage
+      const uploadTask = await this.storage.upload(path, blob);
+
+      // Get the download URL of the uploaded PDF
+      const url = await uploadTask.ref.getDownloadURL();
+      console.log('Invoice uploaded successfully. Download URL:', url);
+
+      // Initialize paymentsPicturePath if it's undefined
+      if (!this.employee.paymentsPicturePath) {
+        this.employee.paymentsPicturePath = [];
+      }
+
+      this.employee.paymentsPicturePath.push(url);
+      console.log('the url of the bonus check is', url);
+      console.log(
+        'payemtnpicture path of the employee is',
+        this.employee.paymentsPicturePath
+      );
+      await this.data.updateEmployeePaymentPictureData(this.employee);
+      this.employee.salaryPaid = this.totalBonusAmount.toString();
+      await this.data.addPaymentToEmployee(this.employee);
+
+      // Optionally, update the employee's record with the invoice URL
+      // await this.data.updateEmployeeBonusCheckUrl(employee, url);
+    } catch (error) {
+      console.error('Error uploading invoice:', error);
+    }
+  }
 
   async addAttendance() {
     if (this.attendance === '') {
@@ -459,5 +626,19 @@ export class EmployeePageComponent implements OnInit {
     }
     this.attendance = '';
     this.toggleAttendance();
+  }
+
+  async toggleCheckVisibility() {
+    try {
+      await this.data.toggleEmployeeCheckVisibility(this.employee);
+      // Optionally, you can add a success message here
+      console.log('Check visibility toggled successfully');
+    } catch (error) {
+      console.error('Error toggling check visibility:', error);
+      // Optionally, you can show an alert or handle the error in some way
+      alert(
+        'An error occurred while toggling check visibility. Please try again.'
+      );
+    }
   }
 }

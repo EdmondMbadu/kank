@@ -191,6 +191,51 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
+  updateEmployeeBonusInfo(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    const data = {
+      bonusAmount: employee.bonusAmount,
+      bonusPercentage: employee.bonusPercentage,
+      bestTeamBonusAmount: employee.bestTeamBonusAmount,
+      bestEmployeeBonusAmount: employee.bestEmployeeBonusAmount,
+      bestManagerBonusAmount: employee.bestManagerBonusAmount,
+    };
+
+    return employeeRef.set(data, { merge: true });
+  }
+  toggleEmployeeCheckVisibility(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    // Toggle the checkVisible value, handling undefined case
+    let newVisibility: string;
+    if (employee.checkVisible === undefined) {
+      newVisibility = 'false';
+    } else {
+      newVisibility = employee.checkVisible === 'true' ? 'false' : 'true';
+    }
+
+    const data = {
+      checkVisible: newVisibility,
+    };
+
+    return employeeRef.set(data, { merge: true });
+  }
+  async updateEmployeeBonusCheckUrl(employee: Employee, url: string) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    const data = {
+      bonusCheckUrl: url,
+    };
+
+    return employeeRef.set(data, { merge: true });
+  }
 
   initiateNewDebtCycle(client: Client) {
     const data = {
@@ -582,6 +627,17 @@ export class DataService {
       payments: {
         [this.todayFull]: `${employee.salaryPaid}`,
       },
+    };
+    return employeeRef.set(data, { merge: true });
+  }
+  updateEmployeePaymentCode(employee: Employee) {
+    // Implement the logic to update the employee's payment code
+    // For example, you might send a request to a server
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+    const data = {
+      paymentCode: employee.paymentCode,
     };
     return employeeRef.set(data, { merge: true });
   }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { booleanAttribute, Injectable } from '@angular/core';
 import { Client } from '../../models/client';
 // import * as pdfMake from 'pdfmake/build/pdfmake';
 // import * as pdfFonts from 'pdfmake/build/vfs_fonts';
@@ -6,12 +6,13 @@ import { TimeService } from '../../services/time.service';
 import { Employee } from '../../models/employee';
 import { User, UserDailyField } from '../../models/user';
 import { AuthService } from '../../services/auth.service';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
 // (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 @Injectable({
   providedIn: 'root',
 })
 export class ComputationService {
-  constructor(private time: TimeService) {}
+  constructor(private time: TimeService, private storage: AngularFireStorage) {}
   colorPositive: string = '#008080';
   colorNegative: string = '#ff0000';
   rateFranc: number = 0.00034;
@@ -500,7 +501,12 @@ export class ComputationService {
                 width: '*',
                 text: [
                   { text: 'Remuneration:\n', bold: true, fontSize: 14 },
-                  // 'FC 1,725.00\n'
+                  {
+                    text: `$ ${employee.totalPayments}`,
+                    fontSize: 15,
+                    italics: true,
+                    bold: true,
+                  },
                 ],
                 alignment: 'right',
               },
@@ -512,12 +518,20 @@ export class ComputationService {
               widths: ['*', 'auto', 'auto', 'auto'],
               body: [
                 [
-                  { text: 'Nom', style: 'tableHeader' },
+                  { text: '', style: 'tableHeader' },
                   { text: 'Signature', style: 'tableHeader' },
                   { text: '', style: 'tableHeader' },
                   { text: '', style: 'tableHeader' },
                 ],
-                ['', '', '', ''],
+                [
+                  '',
+                  {
+                    text: `${employee.firstName} ${employee.middleName} ${employee.lastName}`,
+                    style: 'signatureStyle',
+                  },
+                  '',
+                  '',
+                ],
               ],
             },
             layout: 'lightHorizontalLines',
@@ -532,6 +546,7 @@ export class ComputationService {
           logo: {
             margin: [0, 0, 0, 0],
           },
+
           invoiceTitle: {
             fontSize: 22,
             bold: true,
@@ -556,6 +571,13 @@ export class ComputationService {
           totals: {
             bold: true,
             margin: [0, 30, 0, 0],
+          },
+          signatureStyle: {
+            italics: true,
+            fontSize: 14,
+            bold: true,
+            color: 'black',
+            // Use a monospaced font for a signature-like appearance
           },
         },
         defaultStyle: {
@@ -587,6 +609,184 @@ export class ComputationService {
       console.log('Error generating invoice', error);
     }
   }
+
+  async generateBonusCheck(employee: Employee, text = 'Paiement') {
+    let invoiceNum = employee.payments
+      ? (Object.keys(employee.payments!).length + 1).toString()
+      : '1';
+
+    let dateFrench = this.time.getTodaysDateInFrench();
+    const imageUrl = '../../../assets/img/gervais.png';
+    try {
+      const base64Image = await this.fetchImageAsBase64(imageUrl);
+      let dd: any = {
+        content: [
+          { text: 'Fondation Gervais.', style: 'header' },
+          {
+            image: base64Image,
+
+            width: 75,
+            style: 'logo',
+          },
+          { text: `${text}`, style: 'invoiceTitle' },
+          {
+            columns: [
+              {
+                text: [
+                  { text: 'Fondation Gervais\n', style: 'companyTitle' },
+                  '9 Avenue Nations-Unis, Maman Mobutu \n',
+                  'Mon-Ngafula\n',
+                  'RDC, Kinshasa\n',
+                ],
+              },
+              {
+                text: [
+                  { text: 'Facture #', bold: true },
+                  `${invoiceNum}\n`,
+
+                  { text: 'Date: ', bold: true },
+                  `${dateFrench}`,
+
+                  // { text: 'Payment Terms: ', bold: true }, 'Net 45\n',
+                  // { text: 'Due Date: ', bold: true }, 'Jan 15, 2024\n'
+                ],
+                alignment: 'right',
+              },
+            ],
+          },
+          {
+            style: 'section',
+            columns: [
+              {
+                width: 'auto',
+                text: [
+                  { text: 'Payé à:\n', bold: true },
+                  `${employee.firstName} ${employee.middleName} ${employee.lastName}\n`,
+                  // 'Ketsia Kiabani Bamu\n',
+                ],
+              },
+              {
+                width: '*',
+                text: [
+                  { text: 'Remuneration:\n', bold: true, fontSize: 14 },
+                  {
+                    text: `$ ${employee.totalPayments}`,
+                    fontSize: 15,
+                    italics: true,
+                    bold: true,
+                  },
+                ],
+                alignment: 'right',
+              },
+            ],
+          },
+          {
+            style: 'itemsTable',
+            table: {
+              widths: ['*', 'auto', 'auto', 'auto'],
+              body: [
+                [
+                  { text: '', style: 'tableHeader' },
+                  { text: 'Signature', style: 'tableHeader' },
+                  { text: '', style: 'tableHeader' },
+                  { text: '', style: 'tableHeader' },
+                ],
+                [
+                  '',
+                  {
+                    text: `${employee.firstName} ${employee.middleName} ${employee.lastName}`,
+                    style: 'signatureStyle',
+                  },
+                  '',
+                  '',
+                ],
+              ],
+            },
+            layout: 'lightHorizontalLines',
+          },
+        ],
+        styles: {
+          header: {
+            fontSize: 10,
+            bold: true,
+            margin: [0, 0, 0, 10],
+          },
+          logo: {
+            margin: [0, 0, 0, 0],
+          },
+
+          invoiceTitle: {
+            fontSize: 22,
+            bold: true,
+            alignment: 'right',
+            margin: [0, 0, 0, 10],
+          },
+          companyTitle: {
+            fontSize: 14,
+            bold: true,
+          },
+          section: {
+            margin: [0, 5, 0, 15],
+          },
+          itemsTable: {
+            margin: [0, 5, 0, 15],
+          },
+          tableHeader: {
+            bold: true,
+            fontSize: 13,
+            color: 'black',
+          },
+          totals: {
+            bold: true,
+            margin: [0, 30, 0, 0],
+          },
+          signatureStyle: {
+            italics: true,
+            fontSize: 14,
+            bold: true,
+            color: 'black',
+            // Use a monospaced font for a signature-like appearance
+          },
+        },
+        defaultStyle: {
+          columnGap: 20,
+        },
+      };
+      // Dynamic imports with type assertions
+      const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
+      const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+
+      const pdfMake = pdfMakeModule?.default || pdfMakeModule;
+      const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
+
+      // Set the virtual file system
+      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+
+      // Verify that 'Roboto-Medium.ttf' exists
+      if (!pdfMake.vfs['Roboto-Medium.ttf']) {
+        console.error('Roboto-Medium.ttf not found in pdfMake.vfs');
+      }
+      const pdfDocGenerator = pdfMake.createPdf(dd);
+
+      // Generate PDF as a Blob
+      return new Promise<Blob>((resolve, reject) => {
+        pdfDocGenerator.getBlob(
+          (blob: Blob) => {
+            resolve(blob);
+          },
+          (error: any) => {
+            console.error('Error generating PDF Blob:', error);
+            reject(error);
+          }
+        );
+      });
+    } catch (error) {
+      console.error('Error generating bonus check:', error);
+      // Throw the error to ensure the function returns a rejected Promise
+      throw error;
+    }
+  }
+
   getBrowserName() {
     const userAgent = navigator.userAgent;
 

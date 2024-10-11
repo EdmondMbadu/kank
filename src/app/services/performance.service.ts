@@ -120,6 +120,9 @@ export class PerformanceService {
     // it would be as if two people paid. increasing the performance of employees artificially
     rounded = Math.min(1, rounded);
 
+    // actually, if a client paid twice their amount, increase the performance of employees
+    // rounded = Math.max(1, rounded); // we will see if this is a good idea
+
     for (let em of this.employees!) {
       em.dailyPoints![`${this.today}`] =
         em.dailyPoints![`${this.today}`] === undefined
