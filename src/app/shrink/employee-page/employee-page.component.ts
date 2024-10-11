@@ -537,7 +537,10 @@ export class EmployeePageComponent implements OnInit {
       await this.data.toggleEmployeeCheckVisibility(this.employee);
 
       // Generate the bonus check and get the Blob
-      const blob: any = await this.compute.generateBonusCheck(this.employee);
+      const blob: any = await this.compute.generateBonusCheck(
+        this.employee,
+        'Bonus'
+      );
 
       // Upload the Blob to Firebase Storage
       await this.uploadBonusCheck(blob, this.employee);
