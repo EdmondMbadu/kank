@@ -31,7 +31,9 @@ export class Employee {
   attendance?: { [key: string]: string };
   monthToBePaid?: string;
   checkVisible?: string;
+  paymentCheckVisible?: string;
   bonusAmount?: string;
+  paymentAmount?: string;
   bonusPercentage?: string;
   bestTeamBonusAmount?: string;
   bestEmployeeBonusAmount?: string;

@@ -24,6 +24,7 @@ export class EmployeePageComponent implements OnInit {
   // today = this.time.todaysDateMonthDayYear();
 
   displayBonus: boolean = false;
+  displayPayment: boolean = false;
   displayCode: boolean = false;
   displaySetCode: boolean = false;
   code: string = '';
@@ -62,6 +63,7 @@ export class EmployeePageComponent implements OnInit {
   maxRange: number = 0;
   bonusPercentage: number = 0;
   checkVisible: string = 'false';
+  paymentCheckVisible: string = 'false';
   bonusMonth: number = 0;
   bonusAmount: number = 0;
   bestTeamBonusAmount: number = 0;
@@ -70,6 +72,8 @@ export class EmployeePageComponent implements OnInit {
   thisMonthPaymentAmount: number = 0;
   totalBonusAmount: number = 0;
   paymentCode: string = '';
+
+  paymentAmount: number = 0;
 
   totalPoints: string = '';
   baseSalary: string = '';
@@ -120,6 +124,9 @@ export class EmployeePageComponent implements OnInit {
   toggleBonus() {
     this.displayBonus = !this.displayBonus;
   }
+  togglePayment() {
+    this.displayPayment = !this.displayPayment;
+  }
   toggleCode() {
     this.displayCode = !this.displayCode;
   }
@@ -149,9 +156,15 @@ export class EmployeePageComponent implements OnInit {
     this.checkVisible = this.employee.checkVisible
       ? this.employee.checkVisible
       : 'false';
+    this.paymentCheckVisible = this.employee.paymentCheckVisible
+      ? this.employee.paymentCheckVisible
+      : 'false';
     this.paymentCode = this.employee.paymentCode
       ? this.employee.paymentCode
       : '';
+    this.paymentAmount = this.employee.paymentAmount
+      ? parseFloat(this.employee.paymentAmount)
+      : 0;
   }
 
   computeTotalBonusAmount() {
@@ -246,8 +259,14 @@ export class EmployeePageComponent implements OnInit {
   }
 
   toggleBonusIfCodeCorrect() {
-    if (this.code === this.paymentCode) {
+    if (this.code === this.paymentCode && this.checkVisible === 'true') {
       this.toggleBonus();
+      this.toggleCode();
+    } else if (
+      this.code === this.paymentCode &&
+      this.paymentCheckVisible === 'true'
+    ) {
+      this.togglePayment();
       this.toggleCode();
     } else {
       alert('Code incorrect. Essayez encore');
@@ -555,6 +574,37 @@ export class EmployeePageComponent implements OnInit {
       this.toggleBonus();
     }
   }
+  async updateEmployeePaymentInfo() {
+    this.employee.paymentAmount = this.paymentAmount.toString();
+    try {
+      await this.data.updateEmployeePaymentInfo(this.employee);
+    } catch (err) {
+      alert(err);
+    } finally {
+      this.togglePayment();
+    }
+  }
+  async updateEmployeePaymentInfoAndSignCheck() {
+    this.employee.paymentAmount = this.paymentAmount.toString();
+    try {
+      await this.data.updateEmployeePaymentInfo(this.employee);
+      await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
+      // Generate the bonus check and get the Blob
+      const blob: any = await this.compute.generateBonusCheck(
+        this.employee,
+        'Paiement'
+      );
+
+      // Upload the Blob to Firebase Storage
+      await this.uploadBonusCheck(blob, this.employee, 'Paiement');
+
+      alert('Paiment Signé avec Succès');
+    } catch (err) {
+      alert(err);
+    } finally {
+      this.togglePayment();
+    }
+  }
   async updateEmployeeBonusInfo() {
     // Update bonus amounts
     this.employee.bonusPercentage = this.bonusPercentage.toString();
@@ -577,7 +627,7 @@ export class EmployeePageComponent implements OnInit {
       this.toggleBonus();
     }
   }
-  async uploadBonusCheck(blob: Blob, employee: Employee) {
+  async uploadBonusCheck(blob: Blob, employee: Employee, total = 'bonus') {
     const timestamp = new Date().getTime();
     const path = `invoice/${employee.firstName}-${employee.lastName}-${timestamp}.pdf`;
 
@@ -601,7 +651,13 @@ export class EmployeePageComponent implements OnInit {
         this.employee.paymentsPicturePath
       );
       await this.data.updateEmployeePaymentPictureData(this.employee);
-      this.employee.salaryPaid = this.totalBonusAmount.toString();
+
+      // I did not want to make a new function for this. so i just added a parameter to this function
+      if (total === 'bonus') {
+        this.employee.salaryPaid = this.totalBonusAmount.toString();
+      } else {
+        this.employee.salaryPaid = this.paymentAmount.toString();
+      }
       await this.data.addPaymentToEmployee(this.employee);
 
       // Optionally, update the employee's record with the invoice URL
@@ -641,6 +697,17 @@ export class EmployeePageComponent implements OnInit {
       // Optionally, you can show an alert or handle the error in some way
       alert(
         'An error occurred while toggling check visibility. Please try again.'
+      );
+    }
+  }
+  async togglePaymentCheckVisibility() {
+    try {
+      await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
+      console.log('Payment check visibility toggled successfully');
+    } catch (error) {
+      console.error('Error toggling payment check visibility:', error);
+      alert(
+        'An error occurred while toggling payment check visibility. Please try again.'
       );
     }
   }

@@ -206,6 +206,18 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
+  updateEmployeePaymentInfo(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    const data = {
+      paymentAmount: employee.paymentAmount,
+    };
+
+    return employeeRef.set(data, { merge: true });
+  }
+
   toggleEmployeeCheckVisibility(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
@@ -214,13 +226,31 @@ export class DataService {
     // Toggle the checkVisible value, handling undefined case
     let newVisibility: string;
     if (employee.checkVisible === undefined) {
-      newVisibility = 'false';
+      newVisibility = 'true';
     } else {
       newVisibility = employee.checkVisible === 'true' ? 'false' : 'true';
     }
 
     const data = {
       checkVisible: newVisibility,
+    };
+
+    return employeeRef.set(data, { merge: true });
+  }
+  toggleEmployeePaymentCheckVisibility(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+    let newVisibility: string;
+    if (employee.paymentCheckVisible === undefined) {
+      newVisibility = 'true';
+    } else {
+      newVisibility =
+        employee.paymentCheckVisible === 'true' ? 'false' : 'true';
+    }
+
+    const data = {
+      paymentCheckVisible: newVisibility,
     };
 
     return employeeRef.set(data, { merge: true });
