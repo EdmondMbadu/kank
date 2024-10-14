@@ -1,0 +1,143 @@
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+
+<div class="flex container mx-auto justify-center m-12">
+    <h1 class="hidden md:block text-2xl text-center md:text-4xl mr-10 ">Profile Du Client Epargne</h1>
+    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/update-client-info',id ]">Mettre à jour Info Client</button>
+    <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="delete()">Supprimer Client</button> -->
+</div>
+
+<div id="fullWidthTabContent" class=" rounded-lg  dark:border-gray-600">
+    <div class=" mx-4 lg:mx-60 p-4 bg-white rounded-lg md:p-8 border-2 shadow-lg border-gray-200 dark:bg-gray-800" id="stats" role="tabpanel" aria-labelledby="stats-tab">
+        <dl class="grid  max-w-screen-xl grid-cols-2 text-gray-900 gap-8 p-4 mx-auto sm:grid-cols-3 xl:grid-cols-3 dark:text-white sm:p-8">
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center"> {{client.firstName}} {{client.lastName}} {{client.middleName}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Membre Depuis {{client.dateJoined?.replaceAll('-','/')}}</dd>
+            </div>
+           
+            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
+                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center"> ({{client.phoneNumber| slice:0:3}}) - {{client.phoneNumber| slice:3:6}} - {{client.phoneNumber| slice:6:10}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Numero Telphone</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
+                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center">{{client.businessAddress}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Adress Business</dd>
+            </div>
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.loanAmount| number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Emprunté(FC)</dd>
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold"> {{client.amountPaid | number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Percu (FC)</dd>
+            </div> -->
+
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.debtLeft| number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Restant (FC)</dd>
+            </div> -->
+
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.amountToPay| number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montain A Payer (FC)</dd>
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-2xl text-center font-bold"> {{ debtStart}} - {{debtEnd}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Cycle de Debt: {{client.paymentPeriodRange}} semaines</dd>
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.numberOfPaymentsMade}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Nombre De Paiement Percu</dd>
+            </div> -->
+            <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.savings | number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Epargnes (FC)</dd>
+            </div>
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center">{{agent?.firstName}} {{agent?.middleName}} {{agent?.lastName}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Agent</dd>
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{minPay | number:'1.0-0'}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Paiement Minimum (FC)</dd>
+            </div> -->
+
+
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.debtCycle}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Cycle De Dette</dd>
+            </div> -->
+            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
+                <dt class="mb-2 text-xl text-center md:text-2xl font-extrabold">{{client.homeAddress}}</dt>
+                <dd class="text-gray-500 text-center  dark:text-gray-400">Adress Domicile</dd>
+            </div>
+            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
+                <dt class="mb-2 text-xl md:text-2xl text-center font-extrabold">{{client.profession}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Profession</dd>
+            </div>
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Jour De Paiment </dd>
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
+            </div> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Credit Score</dd>
+            </div> -->
+           
+            
+        
+            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
+            <!-- <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button> -->
+            <!-- <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity',id ]">Details De Paiement</button> -->
+            <!-- <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
+            </div> -->
+        <div class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400"> Score Credit</dd>
+            </div>
+            
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/saving-activity',id ]">Details D'Epargne</button>
+
+        
+           
+        </dl>
+    </div>
+
+
+
+  
+
+<div class="flex container flex-col s  md:flex-row justify-center my-6 sm:mx-1 md:mx-auto rounded-md shadow-sm" role="group">
+    <button  (click)="startNewDebtCycle()"type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border-l border-t border-b border-gray-900  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+        Enregistrement Nouveau Cycle
+    </button>
+    <button (click)="delete()" *ngIf="this.auth.isAdmin" type="button" class="px-4 py-4 text-md font-medium text-gray-100   bg-green-700 hover:bg-green-800 border border-gray-900 rounded-s-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+        Delete Client
+    </button>
+    
+    <button (click)="requestWithDrawFromSavings()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  border border-gray-900  bg-green-700 hover:bg-green-800 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+        Demander Retrait  D'Argent Epargne
+    </button>
+    <button (click)="withDrawFromSavings()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border border-gray-900 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+        Retrait D'Argent Epargne
+    </button>
+  </div>
+  
+
+  <div class=" container  flex mx-auto shadow-xl  flex-col md:justify-center md:flex-row  ">
+
+    <div class="flex flex-col ">
+     
+        <div class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-0 mb-2">
+            <plotly-plot [data]="graphCredit.data" [layout]="graphCredit.layout"></plotly-plot>
+          </div>
+        
+    </div>
+
+
+</div>

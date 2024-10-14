@@ -127,6 +127,14 @@ export class NewCycleRegisterComponent implements OnInit {
         `);
       return;
     } else if (
+      Number(this.applicationFee) < 5000 &&
+      Number(this.memberShipFee) < 5000
+    ) {
+      alert(
+        "Les frais d'inscription ou d'adhesion doit etre minimum 5000 FC pour le nouveau cycle."
+      );
+      return;
+    } else if (
       Number(this.loanAmount) >
       Number(this.auth.currentUser.monthBudget) -
         Number(this.auth.currentUser.monthBudgetPending)

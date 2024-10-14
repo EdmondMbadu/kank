@@ -37,13 +37,13 @@ export class NewClientComponent implements OnInit {
   businessAddress: string = '';
   phoneNumber: string = '';
   applicactionFee: string = '';
-  memberShipFee: string = '';
+  memberShipFee: string = '0';
   savings: string = '';
-  loanAmount: string = '';
+  loanAmount: string = '0';
   agent: string = '';
   payRange: string = '';
   interestRate: string = '';
-  amountToPay: string = '';
+  amountToPay: string = '0';
   debtCycleStartDate: string = '';
   debtCycleEndDate: string = '';
   paymentDay: string = '';
@@ -67,20 +67,20 @@ export class NewClientComponent implements OnInit {
       this.middleName === '' ||
       this.profession === '' ||
       this.businessAddress === '' ||
-      this.agent === '' ||
       this.bussinessCapital === '' ||
       this.homeAddress === '' ||
       this.phoneNumber === '' ||
       this.applicactionFee === '' ||
       this.memberShipFee === '' ||
       this.savings === '' ||
-      this.loanAmount === '' ||
-      this.payRange === '' ||
-      this.debtCycleStartDate === '' ||
-      this.debtCycleEndDate === '' ||
-      this.interestRate === '' ||
-      this.amountToPay === '' ||
-      this.paymentDay === ''
+      this.loanAmount === ''
+      // this.payRange === '' ||
+      // this.debtCycleStartDate === '' ||
+      // this.debtCycleEndDate === '' ||
+      // this.interestRate === '' ||
+      // this.amountToPay === '' ||
+      // this.paymentDay === '' ||
+      // this.agent === ''
     ) {
       alert('Completer tous les données');
       return;
@@ -91,7 +91,7 @@ export class NewClientComponent implements OnInit {
       return;
     } else {
       let conf = confirm(
-        `Vous allez emprunté ${this.loanAmount} FC a ${this.firstName} ${this.middleName} ${this.lastName}. Voulez-vous quand même continuer ?`
+        `Vous allez enrgistré  ${this.firstName} ${this.middleName} ${this.lastName} avec un epargne de ${this.savings} FC. Voulez-vous quand même continuer ?`
       );
       if (!conf) {
         return;

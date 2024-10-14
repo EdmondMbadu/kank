@@ -118,12 +118,14 @@ export class InvestementsSummaryComponent implements OnInit {
   linkPath: string[] = [
     '/client-info',
     '/client-info-current',
+    // '/client-info-savings',
     '/info-register',
     '/add-investment',
     '/client-info-current',
     '/client-info-current',
   ];
   imagePaths: string[] = [
+    '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
@@ -135,7 +137,9 @@ export class InvestementsSummaryComponent implements OnInit {
   summary: string[] = [
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
+    // 'Nombres des Clients Epargnes',
     'Nombres des Clients Enregistré',
+
     'Argent Investi',
     'Prêt Restant',
 
@@ -177,6 +181,7 @@ export class InvestementsSummaryComponent implements OnInit {
       this.summaryContent = [
         `${this.auth.currentUser.numberOfClients}`,
         `${this.findClientsWithDebts()}`,
+        // `${this.findClientsWithoutDebtsButWithSavings()}`,
         `${this.currentClientsRegistered?.length}`,
         ` ${invested}`,
         ` ${debtTotal}`,
@@ -187,6 +192,7 @@ export class InvestementsSummaryComponent implements OnInit {
       this.valuesConvertedToDollars = [
         ``,
         ``,
+        // ``,
         ``,
         `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
         `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
@@ -207,6 +213,19 @@ export class InvestementsSummaryComponent implements OnInit {
         this.currentClients!.push(client);
       } else if (client.type !== undefined && client.type === 'register') {
         this.currentClientsRegistered?.push(client);
+      }
+    });
+    return this.currentClients?.length;
+  }
+  findClientsWithoutDebtsButWithSavings() {
+    this.currentClients = [];
+    this.clients?.forEach((client) => {
+      if (
+        Number(client.debtLeft) === 0 &&
+        Number(client.savings) > 0 &&
+        client.type !== 'register'
+      ) {
+        this.currentClients!.push(client);
       }
     });
     return this.currentClients?.length;

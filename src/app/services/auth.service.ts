@@ -269,7 +269,7 @@ export class AuthService {
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
       businessAddress: client.businessAddress,
-      debtCycle: '1',
+      debtCycle: '0',
       membershipFee: client.membershipFee,
       applicationFee: client.applicationFee,
       savings: client.savings,

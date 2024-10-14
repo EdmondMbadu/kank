@@ -88,6 +88,12 @@ export class RegisterClientComponent implements OnInit {
         `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${diff} FC`
       );
       return;
+    } else if (
+      Number(this.applicactionFee) < 5000 &&
+      Number(this.memberShipFee) < 5000
+    ) {
+      alert("Les frais d'inscription ou d'adhesion doit etre minimum 5000 FC.");
+      return;
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
         - Est Dans L'intervalle D'Une Semaine\n

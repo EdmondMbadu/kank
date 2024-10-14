@@ -79,6 +79,8 @@ import { LossesComponent } from './components/losses/losses.component';
 import { DailyReturnsComponent } from './components/daily-returns/daily-returns.component';
 import { DailyCardPaymentsComponent } from './card/daily-card-payments/daily-card-payments.component';
 import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-returns.component';
+import { ClientInfoSavingsComponent } from './components/client-info-savings/client-info-savings.component';
+import { ClientPortalSavingsComponent } from './components/client-portal-savings/client-portal-savings.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -157,12 +159,17 @@ const routes: Routes = [
   { path: 'summary-card', component: SummaryCardComponent },
   { path: 'summary-card-central', component: SummaryCardCentralComponent },
   { path: 'client-info-current', component: ClientInfoCurrentComponent },
+  { path: 'client-info-savings', component: ClientInfoSavingsComponent },
   { path: 'client-info-card', component: ClientInfoCardComponent },
   { path: 'new-client', component: NewClientComponent },
   { path: 'register-client', component: RegisterClientComponent },
   { path: 'new-cycle-register/:id', component: NewCycleRegisterComponent },
   { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
+  {
+    path: 'client-portal-savings/:id',
+    component: ClientPortalSavingsComponent,
+  },
   { path: 'register-portal/:id', component: RegiserPortalComponent },
   { path: 'client-portal-card/:id', component: ClientPortalCardComponent },
   { path: 'add-investment', component: AmountInvestedComponent },
