@@ -99,6 +99,7 @@ import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-
 import { SharedModule } from './shared/shared.module';
 import { ClientInfoSavingsComponent } from './components/client-info-savings/client-info-savings.component';
 import { ClientPortalSavingsComponent } from './components/client-portal-savings/client-portal-savings.component';
+import { PaymentSavingsComponent } from './components/payment-savings/payment-savings.component';
 
 @NgModule({
   declarations: [
@@ -186,6 +187,7 @@ import { ClientPortalSavingsComponent } from './components/client-portal-savings
     DailyCardReturnsComponent,
     ClientInfoSavingsComponent,
     ClientPortalSavingsComponent,
+    PaymentSavingsComponent,
   ],
   imports: [
     BrowserModule,

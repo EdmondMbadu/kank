@@ -20,9 +20,7 @@ export class NewClientComponent implements OnInit {
     private time: TimeService,
     private performance: PerformanceService
   ) {}
-  ngOnInit() {
-    this.retrieveEmployees();
-  }
+  ngOnInit() {}
   employees: Employee[] = [];
   rateDisplay: boolean = false;
   amountToPayDisplay: boolean = false;
@@ -38,7 +36,7 @@ export class NewClientComponent implements OnInit {
   phoneNumber: string = '';
   applicactionFee: string = '';
   memberShipFee: string = '0';
-  savings: string = '';
+  savings: string = '0';
   loanAmount: string = '0';
   agent: string = '';
   payRange: string = '';
@@ -53,7 +51,7 @@ export class NewClientComponent implements OnInit {
   savingsOtherDisplay: boolean = false;
   loanAmountOtherDisplay: boolean = false;
 
-  addNewClient() {
+  async addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
     let inputValid = this.data.numbersValid(
       this.loanAmount,
@@ -61,6 +59,7 @@ export class NewClientComponent implements OnInit {
       this.applicactionFee,
       this.memberShipFee
     );
+
     if (
       this.firstName === '' ||
       this.lastName === '' ||
@@ -89,6 +88,16 @@ export class NewClientComponent implements OnInit {
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
       return;
+    } else if (Number(this.applicactionFee) < 5000) {
+      alert(
+        'Assurez-vous que le montant du dossier est supérieur ou égal à 5000 FC'
+      );
+      return;
+    } else if (Number(this.savings) <= 0) {
+      alert(
+        "Assurez-vous que le montant de l'epargnes est plus grand que 0 FC"
+      );
+      return;
     } else {
       let conf = confirm(
         `Vous allez enrgistré  ${this.firstName} ${this.middleName} ${this.lastName} avec un epargne de ${this.savings} FC. Voulez-vous quand même continuer ?`
@@ -97,69 +106,35 @@ export class NewClientComponent implements OnInit {
         return;
       }
       this.setNewClientValues();
-      let employee = this.findAgentWithId(this.client.agent!);
-      this.auth.addNewClient(this.client).then(
-        (res: any) => {
-          this.router.navigate(['client-info']);
-        },
-        (err: any) => {
-          alert(
-            "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client!"
-          );
-        }
-      );
-      this.data
-        .updateUserInfoForNewClient(this.client, date)
-        .then(
-          (res: any) => {
-            console.log('Informations utilisateur mises à jour avec succès');
-          },
-          (err: any) => {
-            alert(
-              "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client"
-            );
-          }
-        )
-        .then(() => {
-          if (this.auth.clientId !== undefined) {
-            employee?.clients?.push(this.auth.clientId);
-            console.log(
-              'entering here, agent clients after update',
-              employee!.clients
-            );
-          }
-          this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
-        })
-        .then(() => {
-          this.performance.updateUserPerformance(this.client);
-        });
+
+      try {
+        await this.auth.addNewClient(this.client);
+        await this.data.updateUserInfoForNewClient(this.client, date);
+        console.log('Informations utilisateur mises à jour avec succès');
+        this.router.navigate(['client-info-savings']);
+      } catch (error) {
+        console.error('Error:', error);
+        alert("Quelque chose s'est mal passé. Reessayez");
+      }
+      // .then(() => {
+      //   if (this.auth.clientId !== undefined) {
+      //     employee?.clients?.push(this.auth.clientId);
+      //     console.log(
+      //       'entering here, agent clients after update',
+      //       employee!.clients
+      //     );
+      //   }
+      //   this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
+      // })
+      // .then(() => {
+      //   this.performance.updateUserPerformance(this.client);
+      // });
 
       this.resetFields();
       return;
     }
   }
-  findAgentWithId(id: string) {
-    for (let em of this.employees) {
-      if (em.uid === id) {
-        return em;
-      }
-    }
-    return null;
-  }
-  retrieveEmployees(): void {
-    this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
-    });
-  }
-  updateAgentClients(agent: Employee) {
-    console.log('printing it here', agent.clients!.includes(this.client.uid!));
-    console.log('here is the client', this.client);
-    if (this.client!.agent !== undefined) {
-      agent?.clients?.push(this.client.uid!);
-      console.log('entering here, agent clients now', agent.clients);
-    }
-    return agent;
-  }
+
   displayApplicationFeeOtherAmount() {
     if (this.applicactionFee === 'Autre Montant') {
       this.applicationFeeOtherDisplay = true;
@@ -168,29 +143,13 @@ export class NewClientComponent implements OnInit {
       this.applicationFeeOtherDisplay = false;
     }
   }
-  displaymemberShipFeeOtherAmount() {
-    if (this.memberShipFee === 'Autre Montant') {
-      this.memberShipFeeOtherDisplay = true;
-      this.memberShipFee = '';
-    } else {
-      this.memberShipFeeOtherDisplay = false;
-    }
-  }
+
   displaySavingsOtherAmount() {
     if (this.savings === 'Autre Montant') {
       this.savingsOtherDisplay = true;
       this.savings = '';
     } else {
       this.savingsOtherDisplay = false;
-    }
-  }
-
-  displayLoanOtherAmount() {
-    if (this.loanAmount === 'Autre Montant') {
-      this.loanAmountOtherDisplay = true;
-      this.loanAmount = '';
-    } else {
-      this.loanAmountOtherDisplay = false;
     }
   }
 
@@ -238,27 +197,11 @@ export class NewClientComponent implements OnInit {
     this.client.debtCycleEndDate = this.debtCycleEndDate;
     this.client.debtLeft = this.amountToPay;
     this.client.paymentDay = this.paymentDay;
-  }
-  displayRate() {
-    let result = this.time.computeDateRange();
-    if (this.payRange === '' || this.loanAmount === '') {
-      return;
-    }
-    this.rateDisplay = true;
-    if (this.payRange == '8') {
-      result = this.time.computeDateRange2Months();
-      this.interestRate = '40';
-    } else {
-      this.interestRate = '20';
-    }
-    this.amountToPay = this.data.computeAmountToPay(
-      this.interestRate,
-      this.loanAmount
-    );
-
-    this.debtCycleStartDate = result[0];
-    this.debtCycleEndDate = result[1];
-    this.amountToPayDisplay = true;
-    this.debtCycleDisplay = true;
+    this.client.applicationFeePayments = {
+      [this.time.todaysDate()]: this.applicactionFee,
+    };
+    this.client.membershipFeePayments = {
+      [this.time.todaysDate()]: this.memberShipFee,
+    };
   }
 }

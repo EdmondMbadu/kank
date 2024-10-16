@@ -1,6 +1,6 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl mr-4">Paiement Par {{client.firstName}} {{client.lastName}}</h1>
+    <h1 class="text-xl md:text-3xl mr-4">Depot D'Epargnes De {{client.firstName}} {{client.lastName}}</h1>
 </div>
 
 <div class="flex container justify-center mx-auto">
@@ -28,24 +28,12 @@
 
 
 
-<div class="mb-6">
-    <label for="payment" class="block mb-2 text-sm font-medium text-red-700">Montant De Paiement</label>
-    <select id="payment" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="paymentAmount"(change)="displayPaymentOtherAmount()"selected>
-    <option [ngValue]=minPayment>FC {{minPayment}}</option>
-
-    <option [ngValue]="">Autre Montant </option>
-    </select>
-</div>
-<div *ngIf="paymentOtherAmount" class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Payment Autre Montant</label>
-    <input type="text" [(ngModel)]="paymentAmount"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
-</div> 
 
 
    
 
-<button class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
-    <button  (click)="makePayment()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumettre</button>
+<button class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal-savings',id ]">Annuler</button>
+    <button  (click)="makeDeposit()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumettre</button>
    
 </div>
 

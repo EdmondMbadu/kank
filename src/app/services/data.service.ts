@@ -80,6 +80,17 @@ export class DataService {
     this.updateUserInfoForClientPayment(client, savings, date, payment);
     return clientRef.set(data, { merge: true });
   }
+  clientDeposit(client: Client, savings: string, date: string) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+    const data = {
+      savings: client.savings,
+      savingsPayments: client.savingsPayments,
+    };
+    this.updateUserInfoForClientDeposit(client, savings, date);
+    return clientRef.set(data, { merge: true });
+  }
   clientCardPayment(clientCard: Card) {
     const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
@@ -757,6 +768,31 @@ export class DataService {
     };
     return userRef.set(data, { merge: true });
   }
+  updateUserInfoForClientDeposit(
+    client: Client,
+    savings: string,
+    date: string
+  ) {
+    let save: any = this.computeDailySaving(date, savings);
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+
+    const data = {
+      clientsSavings: (
+        Number(this.auth.currentUser.clientsSavings) + Number(savings)
+      ).toString(),
+
+      dailySaving: {
+        [date]: `${save}`,
+      },
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) + Number(savings)
+      ).toString(),
+    };
+    return userRef.set(data, { merge: true });
+  }
+
   updateUserInfoForClientRequestSavingsWithdrawal(
     client: Client,
     withdrawal: string
@@ -1045,6 +1081,44 @@ export class DataService {
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
       ).toString(),
+    };
+
+    return userRef.set(data, { merge: true });
+  }
+
+  updateUserInfoForNewClientSavings(client: Client, date: string) {
+    let dailyFees: any = this.computeDailyFees(client, date);
+    let save: any = this.computeDailySaving(date, client.savings!);
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+    const data = {
+      numberOfClients: (
+        Number(this.auth.currentUser.numberOfClients) + 1
+      ).toString(),
+
+      clientsSavings: (
+        Number(this.auth.currentUser.clientsSavings) + Number(client.savings)
+      ).toString(),
+      fees: (
+        Number(this.auth.currentUser.fees) +
+        Number(client.membershipFee) +
+        Number(client.applicationFee)
+      ).toString(),
+      moneyInHands: (
+        Number(this.auth.currentUser.moneyInHands) +
+        Number(client.membershipFee) +
+        Number(client.savings) +
+        Number(client.applicationFee)
+      ).toString(),
+      projectedRevenue: (
+        Number(this.auth.currentUser.projectedRevenue) +
+        Number(client.amountToPay)
+      ).toString(),
+      dailySaving: {
+        [date]: `${save}`,
+      },
+      feesData: { [date]: `${dailyFees}` },
     };
 
     return userRef.set(data, { merge: true });

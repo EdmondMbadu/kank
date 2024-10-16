@@ -118,7 +118,7 @@ export class InvestementsSummaryComponent implements OnInit {
   linkPath: string[] = [
     '/client-info',
     '/client-info-current',
-    // '/client-info-savings',
+    '/client-info-savings',
     '/info-register',
     '/add-investment',
     '/client-info-current',
@@ -137,7 +137,7 @@ export class InvestementsSummaryComponent implements OnInit {
   summary: string[] = [
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
-    // 'Nombres des Clients Epargnes',
+    'Nombres des Clients Epargnes',
     'Nombres des Clients Enregistré',
 
     'Argent Investi',
@@ -181,7 +181,7 @@ export class InvestementsSummaryComponent implements OnInit {
       this.summaryContent = [
         `${this.auth.currentUser.numberOfClients}`,
         `${this.findClientsWithDebts()}`,
-        // `${this.findClientsWithoutDebtsButWithSavings()}`,
+        `${this.findClientsWithoutDebtsButWithSavings()}`,
         `${this.currentClientsRegistered?.length}`,
         ` ${invested}`,
         ` ${debtTotal}`,
@@ -192,7 +192,7 @@ export class InvestementsSummaryComponent implements OnInit {
       this.valuesConvertedToDollars = [
         ``,
         ``,
-        // ``,
+        ``,
         ``,
         `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
         `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
@@ -200,7 +200,7 @@ export class InvestementsSummaryComponent implements OnInit {
       ];
 
       if (!this.auth.isAdmninistrator) {
-        this.summary = this.compute.filterOutElements(this.summary, 3);
+        this.summary = this.compute.filterOutElements(this.summary, 4);
       }
     }
   }

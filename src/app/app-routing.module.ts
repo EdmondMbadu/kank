@@ -81,6 +81,7 @@ import { DailyCardPaymentsComponent } from './card/daily-card-payments/daily-car
 import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-returns.component';
 import { ClientInfoSavingsComponent } from './components/client-info-savings/client-info-savings.component';
 import { ClientPortalSavingsComponent } from './components/client-portal-savings/client-portal-savings.component';
+import { PaymentSavingsComponent } from './components/payment-savings/payment-savings.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -177,6 +178,7 @@ const routes: Routes = [
   { path: 'add-loss', component: LossesComponent },
   { path: 'add-reserve', component: ReserveComponent },
   { path: 'payment/:id', component: PaymentComponent },
+  { path: 'payment-savings/:id', component: PaymentSavingsComponent },
   { path: 'payment-card/:id', component: PaymentCardComponent },
   { path: 'remove-card/:id', component: RemoveCardComponent },
   { path: 'withdraw-savings/:id', component: WithdrawSavingsComponent },

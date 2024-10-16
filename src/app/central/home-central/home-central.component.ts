@@ -32,6 +32,8 @@ export class HomeCentralComponent implements OnInit {
 
   allClients?: Client[];
   allCurrentClients?: Client[] = [];
+  allClientsWithoutDebtsButWithSavings?: Client[] = [];
+  savingsWithoutDebtsButWithSavings: number = 0;
   valuesConvertedToDollars: string[] = [];
 
   getAllClients() {
@@ -76,27 +78,33 @@ export class HomeCentralComponent implements OnInit {
     '/add-investment',
     '/client-info-current',
     '/client-info-current',
+    '/client-info-current',
   ];
   imagePaths: string[] = [
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
+    '../../../assets/img/saving.svg',
     '../../../assets/img/invest.svg',
     '../../../assets/img/debt.png',
     '../../../assets/img/total-income.png',
+    '../../../assets/img/saving.svg',
   ];
 
   summary: string[] = [
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
+    'Clients Epargnes Sans Credit',
     'Argent Investi',
     'Prêt Restant',
 
     "Chiffre D'Affaire",
+    'Montant Epargnes Sans Credit',
   ];
   summaryContent: string[] = [];
   sContent: string[] = [];
 
   initalizeInputs() {
+    this.findClientsWithoutDebtsButWithSavings();
     let reserve = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'reserveAmount')
       .toString();
@@ -123,18 +131,25 @@ export class HomeCentralComponent implements OnInit {
     this.summaryContent = [
       `${this.findNumberOfAllClients()}`,
       `${this.findClientsWithDebts()}`,
+      `${this.findClientsWithoutDebtsButWithSavings()}`,
       ` ${invested}`,
       ` ${debtTotal}`,
 
       `${totalIncome}`,
+      `${this.savingsWithoutDebtsButWithSavings.toString()}`,
     ];
 
     this.valuesConvertedToDollars = [
       ``,
       ``,
+      ``,
       `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
+
       `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.savingsWithoutDebtsButWithSavings!.toString()
+      )}`,
     ];
   }
   findNumberOfAllClients() {
@@ -153,5 +168,21 @@ export class HomeCentralComponent implements OnInit {
       }
     });
     return this.allCurrentClients?.length;
+  }
+
+  // find clients with debts =0 and savings > 10
+  findClientsWithoutDebtsButWithSavings() {
+    this.savingsWithoutDebtsButWithSavings = 0;
+    let total = 0;
+    this.allClientsWithoutDebtsButWithSavings = [];
+    this.allClients?.forEach((client) => {
+      if (Number(client.debtLeft) === 0 && Number(client.savings) > 0) {
+        total += Number(client.savings);
+        this.allClientsWithoutDebtsButWithSavings!.push(client);
+        console.log(client.savings);
+      }
+    });
+    this.savingsWithoutDebtsButWithSavings = total;
+    return this.allClientsWithoutDebtsButWithSavings?.length;
   }
 }
