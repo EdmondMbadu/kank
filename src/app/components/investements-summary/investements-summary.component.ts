@@ -137,7 +137,7 @@ export class InvestementsSummaryComponent implements OnInit {
   summary: string[] = [
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
-    'Nombres des Clients Epargnes',
+    'Nombres des Clients Epargnes Sans Credit',
     'Nombres des Clients Enregistré',
 
     'Argent Investi',
