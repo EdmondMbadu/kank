@@ -21,6 +21,7 @@ export class Card {
   requestStatus?: string;
   requestDate?: string;
   requestType?: string;
+  dateOfRequest?: string;
   amountPaidToday?: string;
   paymentPeriodRange?: string;
   cardCycleStartDate?: string;

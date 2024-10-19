@@ -82,7 +82,7 @@ export class RequestClientCardComponent {
       this.requestAmount = this.amountToReturnToClient;
       this.clientCard.requestAmount = this.amountToReturnToClient;
       this.clientCard.requestDate = this.requestDate;
-
+      this.clientCard.dateOfRequest = this.time.todaysDate();
       const clientCardPayment = await this.data.clientCardRequestReturnMoney(
         this.clientCard
       );

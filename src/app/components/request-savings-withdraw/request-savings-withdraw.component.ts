@@ -85,6 +85,7 @@ export class RequestSavingsWithdrawComponent implements OnInit {
       this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
       this.client.requestDate = this.requestDate;
       this.client.requestAmount = this.requestAmount;
+      this.client.dateOfRequest = this.time.todaysDate();
 
       this.data.clientRequestSavingsWithdrawal(this.client, this.requestAmount);
       this.router.navigate(['/client-portal/' + this.id]);

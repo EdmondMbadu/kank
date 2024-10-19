@@ -98,6 +98,11 @@ export class RequestTodayComponent implements OnInit {
     for (let i = 0; i < this.cards!.length; i++) {
       this.cards![i].trackingId = `${i}`;
       // total += Number(this.cards![i].debtLeft);
+      if (this.cards![i].dateOfRequest) {
+        this.cards![i].dateOfRequest = this.time.convertDateToDesiredFormat(
+          this.cards![i].dateOfRequest!
+        );
+      }
     }
   }
   addIdToFilterItems() {
@@ -111,6 +116,11 @@ export class RequestTodayComponent implements OnInit {
         (element) => element.uid === this.clients![i].agent
       );
       this.clients![i].employee = emp;
+      if (this.clients![i].dateOfRequest) {
+        this.clients![i].dateOfRequest = this.time.convertDateToDesiredFormat(
+          this.clients![i].dateOfRequest!
+        );
+      }
     }
   }
 

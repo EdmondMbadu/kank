@@ -45,4 +45,5 @@ export class Client {
   requestStatus?: string;
   requestDate?: string;
   requestType?: string;
+  dateOfRequest?: string;
 }

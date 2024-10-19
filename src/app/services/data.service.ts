@@ -53,6 +53,7 @@ export class DataService {
       requestStatus: 'pending',
       requestDate: client.requestDate,
       requestType: 'savings',
+      dateOfRequest: client.dateOfRequest,
     };
 
     this.updateUserInfoForClientRequestSavingsWithdrawal(client, amount);
@@ -128,6 +129,7 @@ export class DataService {
       requestStatus: 'pending',
       requestDate: clientCard.requestDate,
       requestType: 'card',
+      dateOfRequest: clientCard.dateOfRequest,
     };
     return clientCardRef.set(data, { merge: true });
   }
@@ -386,6 +388,7 @@ export class DataService {
       requestStatus: 'pending',
       requestType: 'lending',
       requestDate: client.requestDate,
+      dateOfRequest: client.dateOfRequest,
     };
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`

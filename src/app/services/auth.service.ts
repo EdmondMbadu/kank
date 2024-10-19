@@ -326,6 +326,7 @@ export class AuthService {
       requestType: 'lending',
       requestDate: client.requestDate,
       profession: client.profession,
+      dateOfRequest: client.dateOfRequest,
       dateJoined: `${month}-${day}-${year}`,
       payments: {},
       clients: [],

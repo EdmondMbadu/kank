@@ -198,6 +198,7 @@ export class RegisterClientComponent implements OnInit {
     this.client.loanAmount = this.loanAmount;
     this.client.requestAmount = this.loanAmount;
     this.client.requestDate = this.requestDate;
+    this.client.dateOfRequest = this.time.todaysDate();
     this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
     this.client.applicationFeePayments = {
       [this.time.todaysDate()]: this.applicactionFee,

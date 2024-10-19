@@ -53,9 +53,13 @@
                            <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
                            {{c.firstName}}  {{c.lastName}} {{c.middleName}}
                            </p>
-                           <p class="text-sm text-gray-500 truncate dark:text-gray-400">
+                           <!-- <p class="text-sm text-gray-500 truncate dark:text-gray-400">
                             Agent: {{c.employee?.firstName}} {{c.employee?.lastName}}
-                           <!-- {{paymentDates[i].replaceAll('-','/').substring(0,9)}} -->
+                            
+                    
+                           </p> -->
+                           <p *ngIf="c.dateOfRequest" class="text-sm text-gray-500  dark:text-gray-400">
+                            Demandé le {{c.dateOfRequest}}
                            </p>
                        </div>
                        <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
@@ -102,10 +106,13 @@
                             <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
                             {{c.firstName}}  {{c.lastName}} {{c.middleName}}
                             </p>
-                            <p class="text-sm text-gray-500 truncate dark:text-gray-400">
+                            <!-- <p class="text-sm text-gray-500 truncate dark:text-gray-400">
                              Agent: {{c.employee?.firstName}} {{c.employee?.lastName}}
-                            <!-- {{paymentDates[i].replaceAll('-','/').substring(0,9)}} -->
-                            </p>
+                      
+                            </p> -->
+                            <p *ngIf="c.dateOfRequest" class="text-sm text-gray-500  dark:text-gray-400">
+                                Demandé le {{c.dateOfRequest}}
+                               </p>
                         </div>
                         <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
                             FC {{c.requestAmount| number:'1.0-0'}}
@@ -158,10 +165,14 @@
                              Agent: {{c.employee?.firstName}} {{c.employee?.lastName}} -->
                             <!-- {{paymentDates[i].replaceAll('-','/').substring(0,9)}} -->
                             <!-- </p> -->
+                            <p *ngIf="c.dateOfRequest" class="text-sm text-gray-500  dark:text-gray-400">
+                                Demandé le {{c.dateOfRequest}}
+                               </p>
                         </div>
                         <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
                             FC {{c.requestAmount| number:'1.0-0'}}
                         </div>
+                       
                     </div>
                 </li>
             </ul>
