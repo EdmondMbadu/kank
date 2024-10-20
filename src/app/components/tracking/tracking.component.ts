@@ -36,7 +36,7 @@ export class TrackingComponent {
     'Epargne Clients',
     'Argent en Main',
     'Budget Emprunts Du Mois',
-    'Budget Emprunts Du Mois En Attente',
+    'Budget Emprunts Du Mois En Cours',
     'Depenses',
 
     'Reserve',
@@ -115,7 +115,7 @@ export class TrackingComponent {
 
     // only show the first two
     if (!this.auth.isAdmninistrator) {
-      this.summary = this.compute.filterOutElements(this.summary, 3);
+      this.summary = this.compute.filterOutElements(this.summary, 4);
     }
   }
 

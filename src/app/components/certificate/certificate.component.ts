@@ -40,6 +40,7 @@ export class CertificateComponent implements OnInit {
   monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   yearsList: number[] = this.time.yearsList;
   year = this.currentDate.getFullYear();
+  preposition: string = 'De';
 
   certificate: Certificate = {
     month: '',
@@ -84,6 +85,24 @@ export class CertificateComponent implements OnInit {
       this.time.monthFrenchNames[this.givenMonth],
       this.givenYear.toString()
     );
+    this.findPrepositionStartWithVowelOrConsonant(
+      this.time.monthFrenchNames[this.givenMonth]
+    );
+  }
+  findPrepositionStartWithVowelOrConsonant(str: string) {
+    if (!str) {
+      this.preposition = 'De';
+    }
+
+    const firstChar = str.charAt(0).toLowerCase();
+
+    if (/[aeiou]/.test(firstChar)) {
+      this.preposition = "D'";
+    } else if (/[a-z]/.test(firstChar)) {
+      this.preposition = 'De';
+    } else {
+      this.preposition = 'De';
+    }
   }
 
   selectTeamAndEmployeeByMonthAndYear(
