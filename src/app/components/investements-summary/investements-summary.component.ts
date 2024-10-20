@@ -5,6 +5,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { PlotlyModule } from 'angular-plotly.js';
 
 @Component({
   selector: 'app-investements-summary',
@@ -21,17 +22,7 @@ export class InvestementsSummaryComponent implements OnInit {
   clients?: Client[];
   currentClients?: Client[] = [];
   currentClientsRegistered?: Client[] = [];
-  ngOnInit() {
-    // do this only once
-    // if (this.auth.isAdmninistrator && this.auth.currentUser.admin !== 'true') {
-    //   this.auth.makeAdmin();
-    // }
-    // if (
-    //   this.auth.isDistributoring &&
-    //   this.auth.currentUser.distributor !== 'true'
-    // ) {
-    //   this.auth.makeDistributor();
-    // }
+  async ngOnInit() {
     this.retrieveClients();
 
     this.updatePaymentGraphics(this.graphicPerformanceTimeRange);

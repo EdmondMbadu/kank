@@ -15,6 +15,7 @@
           "options": {
             "allowedCommonJsDependencies": [
               "plotly.js-dist-min",
+              "plotly.js-finance-dist-min",
               "heic2any",
               "pdfmake/build/pdfmake",
               "pdfmake/build/vfs_fonts"

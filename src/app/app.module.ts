@@ -6,7 +6,10 @@ import { AngularFireStorageModule } from '@angular/fire/compat/storage';
 // import { provideFirebaseApp, getApp, initializeApp } from '@angular/fire/app';
 // import { provideAuth, getAuth } from '@angular/fire/auth';
 
-import * as PlotlyJS from 'plotly.js-dist-min';
+// import * as PlotlyJS from 'plotly.js-dist-min';
+// PlotlyModule.plotlyjs = PlotlyJS;
+// @ts-ignore
+import * as PlotlyJS from 'plotly.js-finance-dist-min';
 PlotlyModule.plotlyjs = PlotlyJS;
 
 import { AppRoutingModule } from './app-routing.module';
@@ -206,3 +209,6 @@ import { PaymentSavingsComponent } from './components/payment-savings/payment-sa
   bootstrap: [AppComponent],
 })
 export class AppModule {}
+function loadPlotly() {
+  throw new Error('Function not implemented.');
+}
