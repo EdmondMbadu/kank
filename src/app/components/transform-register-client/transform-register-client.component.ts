@@ -95,6 +95,9 @@ export class TransformRegisterClientComponent implements OnInit {
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
       return;
+    } else if (this.client.agent === 'Choose') {
+      alert('Assurez-vous que vous avez choisis un Agent.');
+      return;
     } else if (
       Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget)
     ) {
