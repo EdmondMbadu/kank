@@ -74,6 +74,7 @@ export class EmployeePageComponent implements OnInit {
   paymentCode: string = '';
 
   paymentAmount: number = 0;
+  preposition: string = '';
 
   totalPoints: string = '';
   baseSalary: string = '';
@@ -182,6 +183,9 @@ export class EmployeePageComponent implements OnInit {
       this.getAllPayments();
       this.setEmployeeBonusAmounts();
       this.computeTotalBonusAmount();
+      this.preposition = this.time.findPrepositionStartWithVowelOrConsonant(
+        this.time.monthFrenchNames[this.givenMonth - 1]
+      );
 
       this.maxRange = Object.keys(this.employee.dailyPoints!).length;
       if (this.employee.role === 'Manager') {

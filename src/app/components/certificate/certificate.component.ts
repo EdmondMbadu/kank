@@ -85,24 +85,9 @@ export class CertificateComponent implements OnInit {
       this.time.monthFrenchNames[this.givenMonth],
       this.givenYear.toString()
     );
-    this.findPrepositionStartWithVowelOrConsonant(
+    this.preposition = this.time.findPrepositionStartWithVowelOrConsonant(
       this.time.monthFrenchNames[this.givenMonth]
     );
-  }
-  findPrepositionStartWithVowelOrConsonant(str: string) {
-    if (!str) {
-      this.preposition = 'De';
-    }
-
-    const firstChar = str.charAt(0).toLowerCase();
-
-    if (/[aeiou]/.test(firstChar)) {
-      this.preposition = "D'";
-    } else if (/[a-z]/.test(firstChar)) {
-      this.preposition = 'De';
-    } else {
-      this.preposition = 'De';
-    }
   }
 
   selectTeamAndEmployeeByMonthAndYear(

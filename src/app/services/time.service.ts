@@ -71,6 +71,21 @@ export class TimeService {
     let date = `${month}-${day}-${year}`;
     return date;
   }
+  findPrepositionStartWithVowelOrConsonant(str: string) {
+    if (!str) {
+      return 'De';
+    }
+
+    const firstChar = str.charAt(0).toLowerCase();
+
+    if (/[aeiou]/.test(firstChar)) {
+      return "D'";
+    } else if (/[a-z]/.test(firstChar)) {
+      return 'De';
+    } else {
+      return 'De';
+    }
+  }
   parseDate(timeStr: any) {
     const parts = timeStr.split('-');
     // The parts array will have the format [month, day, year, hour, minute, second]
