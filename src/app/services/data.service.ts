@@ -350,6 +350,7 @@ export class DataService {
       requestStatus: 'pending',
       requestType: 'lending',
       requestDate: client.requestDate,
+      dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,
       membershipFeePayments: client.membershipFeePayments,
     };
