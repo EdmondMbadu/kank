@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, computed, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
@@ -176,6 +176,9 @@ export class EmployeePageComponent implements OnInit {
       this.bestManagerBonusAmount;
     this.employee.totalPayments = this.totalBonusAmount.toString();
   }
+  computeTotalPayment() {
+    this.employee.totalPayments = this.employee.paymentAmount;
+  }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
@@ -337,6 +340,10 @@ export class EmployeePageComponent implements OnInit {
         this.time.convertTimeFormat(entry[0])
       );
     }
+  }
+  togglePaymentCheckVisible() {
+    this.paymentCheckVisible =
+      this.paymentCheckVisible === 'true' ? 'false' : 'true';
   }
   updatePerformanceGraphics(time: number) {
     let sorted = this.sortKeysAndValuesPerformance(time);
@@ -593,6 +600,10 @@ export class EmployeePageComponent implements OnInit {
     try {
       await this.data.updateEmployeePaymentInfo(this.employee);
       await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
+      // the total payment in this case is
+      console.log('the payment is ', this.employee.paymentAmount);
+      this.employee.totalPayments = this.employee.paymentAmount;
+      this.togglePaymentCheckVisible();
       // Generate the bonus check and get the Blob
       const blob: any = await this.compute.generateBonusCheck(
         this.employee,
