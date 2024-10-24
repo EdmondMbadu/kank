@@ -39,6 +39,7 @@ export class TeamRankingMonthComponent {
   currentEmployees: any = [];
   currentClients: Client[] = [];
   total: string = '0';
+  totalHouse: string = '0';
   allUsers: User[] = [];
   ngOnInit(): void {
     this.auth.getAllUsersInfo().subscribe((data) => {
@@ -60,11 +61,14 @@ export class TeamRankingMonthComponent {
     this.allEmployees = [];
     let completedRequests = 0;
     this.allUsers.forEach((user) => {
-      // this.currentClients = [];
-      if (this.auth.currentUser.housePayment)
-        this.total = (
-          Number(user.housePayment) + Number(this.total)
+      if (user.housePayment)
+        this.totalHouse = (
+          Number(user.housePayment) + Number(this.totalHouse)
         ).toString();
+    });
+    console.log('sum for house paumeyts', this.totalHouse);
+    this.allUsers.forEach((user) => {
+      this.currentClients = [];
 
       this.currentEmployees = [];
 
@@ -88,6 +92,7 @@ export class TeamRankingMonthComponent {
         }
       });
     });
+    this.total = (Number(this.total) + Number(this.totalHouse)).toString();
   }
   filterAndInitializeEmployees(
     allEmployees: Employee[],
