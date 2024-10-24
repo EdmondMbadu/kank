@@ -35,6 +35,11 @@
         <input [(ngModel)]="amountBudgetPending" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
         <button (click)="setMonthBudgetPending()" type="button" class="text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 my-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Confirmer</button>
     </div>
+    <div class="max-w-sm mx-auto">
+        <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Entrer Le Montant de Loyer</label>
+        <input [(ngModel)]="housePayment" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
+        <button (click)="setMonthHousePayment()" type="button" class="text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 my-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Confirmer</button>
+    </div>
     
     
 

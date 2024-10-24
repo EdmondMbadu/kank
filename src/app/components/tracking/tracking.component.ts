@@ -23,6 +23,7 @@ export class TrackingComponent {
   }
 
   totalPerfomance: number = 0;
+  housePayment: string = '';
   linkPaths: string[] = [
     '/client-info-current',
     '/client-info-current',
@@ -76,6 +77,9 @@ export class TrackingComponent {
       this.auth.currentUser.monthBudgetPending === ''
         ? '0'
         : this.auth.currentUser.monthBudgetPending;
+    this.housePayment = this.auth.currentUser.housePayment
+      ? this.auth.currentUser.housePayment
+      : '0';
     let cardM =
       this.auth.currentUser.cardsMoney === undefined
         ? '0'
@@ -135,6 +139,7 @@ export class TrackingComponent {
       return;
     }
   }
+
   async setMonthBudgetPending() {
     if (!this.isNumber(this.amountBudgetPending)) {
       alert('Enter a valid number');
@@ -143,6 +148,22 @@ export class TrackingComponent {
     try {
       const clientCardPayment = await this.auth.setMonthBudgetPending(
         this.amountBudgetPending
+      );
+      this.initalizeInputs();
+    } catch (err) {
+      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+      return;
+    }
+  }
+
+  async setMonthHousePayment() {
+    if (!this.isNumber(this.housePayment)) {
+      alert('Enter a valid number');
+      return;
+    }
+    try {
+      const clientCardPayment = await this.auth.setMonthHousePayment(
+        this.housePayment
       );
       this.initalizeInputs();
     } catch (err) {

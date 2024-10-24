@@ -491,6 +491,15 @@ export class AuthService {
     };
     return userRef.set(data, { merge: true });
   }
+  setMonthHousePayment(housePayment: string) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+    const data = {
+      housePayment: housePayment,
+    };
+    return userRef.set(data, { merge: true });
+  }
   setMonthBudgetPending(monthBudget: string) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.currentUser.uid}`

@@ -40,6 +40,7 @@ export class User {
   dailyCardBenefits?: { [key: string]: string } = {};
   monthBudget?: string;
   monthBudgetPending?: string;
+  housePayment?: string;
 }
 
 export type UserDailyField =

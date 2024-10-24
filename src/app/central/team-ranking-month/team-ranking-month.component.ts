@@ -38,6 +38,7 @@ export class TeamRankingMonthComponent {
   isFetchingClients = false;
   currentEmployees: any = [];
   currentClients: Client[] = [];
+  total: string = '0';
   allUsers: User[] = [];
   ngOnInit(): void {
     this.auth.getAllUsersInfo().subscribe((data) => {
@@ -60,6 +61,10 @@ export class TeamRankingMonthComponent {
     let completedRequests = 0;
     this.allUsers.forEach((user) => {
       // this.currentClients = [];
+      if (this.auth.currentUser.housePayment)
+        this.total = (
+          Number(user.housePayment) + Number(this.total)
+        ).toString();
 
       this.currentEmployees = [];
 
@@ -69,6 +74,10 @@ export class TeamRankingMonthComponent {
 
         this.currentEmployees.forEach((em: any) => {
           this.computePerformances(employees, em);
+          if (em.paymentAmount)
+            this.total = (
+              Number(em.paymentAmount) + Number(this.total)
+            ).toString();
         });
 
         // this.currentEmployees = employees;
