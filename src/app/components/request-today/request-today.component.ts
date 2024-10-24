@@ -74,7 +74,11 @@ export class RequestTodayComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
-      this.retrieveEmployees();
+      this.extractTodayRequests();
+      this.addIdToFilterItems();
+
+      // a little weird. angular is really with the flow
+      this.extractTCard();
     });
   }
   retrieveClientsCard(): void {
@@ -84,15 +88,7 @@ export class RequestTodayComponent implements OnInit {
       this.extractTCard();
     });
   }
-  retrieveEmployees(): void {
-    this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
-      this.addIdToFilterItems();
-      this.extractTodayRequests();
-      // a little weird. angular is really with the flow
-      this.extractTCard();
-    });
-  }
+
   addIdToFilterItemsCard() {
     let total = 0;
     for (let i = 0; i < this.cards!.length; i++) {
@@ -161,6 +157,22 @@ export class RequestTodayComponent implements OnInit {
         ).toString();
       }
     }
+    this.clientsRequestLending.sort((a, b) => {
+      if (a.dateOfRequest && b.dateOfRequest) {
+        const dateA = this.time.parseDate(a.dateOfRequest).getTime();
+        const dateB = this.time.parseDate(b.dateOfRequest).getTime();
+        return dateB - dateA;
+      }
+      return 0; // If dates are missing, leave the order unchanged
+    });
+    this.clientsRequestSavings.sort((a, b) => {
+      if (a.dateOfRequest && b.dateOfRequest) {
+        const dateA = this.time.parseDate(a.dateOfRequest).getTime();
+        const dateB = this.time.parseDate(b.dateOfRequest).getTime();
+        return dateB - dateA;
+      }
+      return 0; // If dates are missing, leave the order unchanged
+    });
   }
   extractTCard() {
     this.trackingIds = [];
@@ -179,6 +191,15 @@ export class RequestTodayComponent implements OnInit {
         ).toString();
       }
     }
+    // sort by decreasing order
+    this.clientsRequestCard.sort((a, b) => {
+      if (a.dateOfRequest && b.dateOfRequest) {
+        const dateA = this.time.parseDate(a.dateOfRequest).getTime();
+        const dateB = this.time.parseDate(b.dateOfRequest).getTime();
+        return dateB - dateA;
+      }
+      return 0; // If dates are missing, leave the order unchanged
+    });
   }
 
   search(value: string) {
