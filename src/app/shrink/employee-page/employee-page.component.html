@@ -407,7 +407,7 @@
         <div class="mt-6 grow sm:mt-8 lg:mt-0">
             
             <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
-                <h2 class="font-bold  "> {{employee.firstName}}  {{employee.lastName}} Paiement {{time.monthFrenchNames[lastMonth-1]}} {{year}}</h2>
+                <h2 class="font-bold  "> {{employee.firstName}}  {{employee.lastName}} Paiement {{time.monthFrenchNames[lastMonth]}} {{year}}</h2>
               <div class="space-y-2">
                 <dl *ngIf="paymentAmount!==0 || this.auth.isAdmninistrator" class="flex items-center justify-between gap-4">
                   <dt class="text-base font-normal text-gray-500 dark:text-gray-400">Paiement </dt>
