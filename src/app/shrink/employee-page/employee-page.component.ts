@@ -600,14 +600,13 @@ export class EmployeePageComponent implements OnInit {
     try {
       await this.data.updateEmployeePaymentInfo(this.employee);
       await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
-      // the total payment in this case is
-      console.log('the payment is ', this.employee.paymentAmount);
       this.employee.totalPayments = this.employee.paymentAmount;
       this.togglePaymentCheckVisible();
       // Generate the bonus check and get the Blob
-      const blob: any = await this.compute.generateBonusCheck(
+      const blob: any = await this.compute.generatePaymentCheck(
         this.employee,
-        'Paiement'
+        'Paiement',
+        this.paymentAmount.toString()
       );
 
       // Upload the Blob to Firebase Storage
