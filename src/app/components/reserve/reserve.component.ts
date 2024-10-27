@@ -28,10 +28,10 @@ export class ReserveComponent {
 
   async addToReserve() {
     if (this.reserveAmount === '') {
-      alert('Fill all fields!');
+      alert('Remplissez toutes les données!');
       return;
     } else if (isNaN(Number(this.reserveAmount))) {
-      alert('Enter a valid number!');
+      alert('Entrez un nombre valide!');
       return;
     } else {
       let conf = confirm(

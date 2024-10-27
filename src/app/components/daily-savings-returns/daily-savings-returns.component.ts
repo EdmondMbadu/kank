@@ -5,6 +5,7 @@ import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -20,12 +21,19 @@ export class DailySavingsReturnsComponent implements OnInit {
   dailyPayments?: Filtered[] = [];
   dailyPaymentsCopy?: Filtered[] = [];
 
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
+  requestDateCorrectFormat = this.today;
+  numberOfPeople: string = '0';
+  totalGivenDate: string = '0';
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
+
   trackingIds: string[] = [];
   searchControl = new FormControl();
   constructor(
     private router: Router,
     public auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private data: DataService
   ) {
     this.retrieveClients();
   }
@@ -51,7 +59,7 @@ export class DailySavingsReturnsComponent implements OnInit {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
       this.addIdToFilterItems();
-      this.extractTodayPayments();
+      this.extractTodaySavingReturns();
     });
   }
   addIdToFilterItems() {
@@ -68,7 +76,7 @@ export class DailySavingsReturnsComponent implements OnInit {
     }
   }
 
-  extractTodayPayments() {
+  extractTodaySavingReturns() {
     this.trackingIds = [];
     for (let client of this.clients!) {
       // Ensure client.savingsPayments and client.previousSavingsPayments are not undefined or null
@@ -87,18 +95,20 @@ export class DailySavingsReturnsComponent implements OnInit {
 
       // Filter the combined entries
       const filteredDict = Object.fromEntries(
-        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
+        combinedEntries.filter(([key, value]) =>
+          key.startsWith(this.requestDateCorrectFormat)
+        )
       );
 
       const filteredKeys = Object.keys(filteredDict);
       const filteredValues = Object.values(filteredDict);
       if (filteredValues.length !== 0) {
-        this.fillDailyPayment(client, filteredValues, filteredKeys);
+        this.fillDailySavingReturns(client, filteredValues, filteredKeys);
       }
     }
   }
 
-  fillDailyPayment(client: Client, values: string[], keys: string[]) {
+  fillDailySavingReturns(client: Client, values: string[], keys: string[]) {
     let i = 0;
     for (let v of values) {
       let middleName = client.middleName === undefined ? '' : client.middleName;
@@ -115,8 +125,16 @@ export class DailySavingsReturnsComponent implements OnInit {
       if (Number(v) < 0) {
         this.dailyPayments?.push(filt);
         this.dailyPaymentsCopy?.push(filt);
+        this.totalGivenDate = (
+          Number(this.totalGivenDate) - Number(v)
+        ).toString();
       }
     }
+    this.dailyPayments = this.data.removeDuplicates(this.dailyPayments!);
+    this.dailyPaymentsCopy = this.data.removeDuplicates(
+      this.dailyPaymentsCopy!
+    );
+    this.numberOfPeople = this.dailyPayments!.length.toString();
 
     // sort them
     this.dailyPayments!.sort(
@@ -155,6 +173,21 @@ export class DailySavingsReturnsComponent implements OnInit {
     } else {
       return of(this.dailyPaymentsCopy);
     }
+  }
+  findDailySavingReturns() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+    // Reinitialize daily payments and related properties
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+    this.totalGivenDate = '0'; // Assuming it's a string representation of the total amount
+    this.numberOfPeople = '0';
+
+    this.extractTodaySavingReturns();
   }
 }
 

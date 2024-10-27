@@ -35,10 +35,10 @@ export class AmountInvestedComponent implements OnInit {
   ngOnInit(): void {}
   addInvestment() {
     if (this.investmentAddAmount === '') {
-      alert('Fill all fields!');
+      alert('Remplissez toutes les données!');
       return;
     } else if (isNaN(Number(this.investmentAddAmount))) {
-      alert('Enter a valid number!');
+      alert('Entrez un nombre valide!');
       return;
     } else {
       let conf = confirm(

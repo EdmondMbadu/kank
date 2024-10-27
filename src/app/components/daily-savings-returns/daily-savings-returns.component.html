@@ -1,10 +1,21 @@
 
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Retrait Epargne Du Jour {{todayFrench.replaceAll('-','/')}}</h2>
+   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Retrait Epargne Du Jour {{frenchDate}}</h2>
    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
 
 
+</div>
+<div class="flex container mx-auto justify-center mb-2">    
+    <div class="">
+    <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->
+    <input [(ngModel)]="requestDate"   type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" (change)="findDailySavingReturns()"  required>
+    <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="findDailyActivitiesAmount()">Chercher</button> -->
+    </div>
+   
+</div>
+<div class="flex container mx-auto justify-center mb-2">
+    <h2 class="text-center text-2xl font-bold ">{{numberOfPeople}} clients - Total: {{totalGivenDate | number:'1.0-0'}} FC</h2>
 </div>
 <div class="flex container mx-auto  justify-center">
    <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">

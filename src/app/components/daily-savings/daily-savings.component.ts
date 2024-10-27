@@ -5,6 +5,7 @@ import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -20,12 +21,19 @@ export class DailySavingsComponent implements OnInit {
   dailyPayments?: Filtered[] = [];
   dailyPaymentsCopy?: Filtered[] = [];
 
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
+  requestDateCorrectFormat = this.today;
+  numberOfPeople: string = '0';
+  totalGivenDate: string = '0';
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
+
   trackingIds: string[] = [];
   searchControl = new FormControl();
   constructor(
     private router: Router,
     public auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private data: DataService
   ) {
     this.retrieveClients();
   }
@@ -87,18 +95,20 @@ export class DailySavingsComponent implements OnInit {
 
       // Filter the combined entries
       const filteredDict = Object.fromEntries(
-        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
+        combinedEntries.filter(([key, value]) =>
+          key.startsWith(this.requestDateCorrectFormat)
+        )
       );
 
       const filteredKeys = Object.keys(filteredDict);
       const filteredValues = Object.values(filteredDict);
       if (filteredValues.length !== 0) {
-        this.fillDailyPayment(client, filteredValues, filteredKeys);
+        this.fillDailySavings(client, filteredValues, filteredKeys);
       }
     }
   }
 
-  fillDailyPayment(client: Client, values: string[], keys: string[]) {
+  fillDailySavings(client: Client, values: string[], keys: string[]) {
     let i = 0;
     for (let v of values) {
       let middleName = client.middleName === undefined ? '' : client.middleName;
@@ -108,6 +118,7 @@ export class DailySavingsComponent implements OnInit {
         middleName: middleName,
         amount: v,
         time: keys[i++],
+        timeFormatted: this.time.convertDateToDesiredFormat(keys[i - 1]),
         employee: client.employee,
         trackingId: client.trackingId,
       };
@@ -115,8 +126,16 @@ export class DailySavingsComponent implements OnInit {
       if (Number(v) > 0) {
         this.dailyPayments?.push(filt);
         this.dailyPaymentsCopy?.push(filt);
+        this.totalGivenDate = (
+          Number(v) + Number(this.totalGivenDate)
+        ).toString();
       }
     }
+    this.dailyPayments = this.data.removeDuplicates(this.dailyPayments!);
+    this.dailyPaymentsCopy = this.data.removeDuplicates(
+      this.dailyPaymentsCopy!
+    );
+    this.numberOfPeople = this.dailyPayments!.length.toString();
 
     // Sort them
     this.dailyPayments!.sort(
@@ -146,6 +165,22 @@ export class DailySavingsComponent implements OnInit {
       return of(this.dailyPaymentsCopy);
     }
   }
+
+  findDailySavings() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+    // Reinitialize daily payments and related properties
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+    this.totalGivenDate = '0'; // Assuming it's a string representation of the total amount
+    this.numberOfPeople = '0';
+
+    this.extractTodayPayments();
+  }
 }
 
 export class Filtered {
@@ -154,6 +189,7 @@ export class Filtered {
   middleName?: string;
   date?: string;
   time?: string;
+  timeFormatted?: string;
   amount?: string;
   employee?: Employee;
   trackingId?: string;

@@ -5,6 +5,7 @@ import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
 @Component({
@@ -23,10 +24,16 @@ export class DailyPaymentsComponent implements OnInit {
   dailyPamentsAmount: string[] = [];
   trackingIds: string[] = [];
   searchControl = new FormControl();
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
+  requestDateCorrectFormat = this.today;
+  numberOfPeople: string = '0';
+  totalGivenDate: string = '0';
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
   constructor(
     private router: Router,
     public auth: AuthService,
-    private time: TimeService
+    private time: TimeService,
+    private data: DataService
   ) {
     this.retrieveClients();
   }
@@ -68,6 +75,8 @@ export class DailyPaymentsComponent implements OnInit {
   extractTodayPayments() {
     this.dailyPamentsAmount = [];
     this.dailyPaymentsNames = [];
+    this.totalGivenDate = '0';
+    this.numberOfPeople = '0';
     this.trackingIds = [];
     for (let client of this.clients!) {
       // Ensure client.payments and client.previousPayments are not undefined or null
@@ -83,7 +92,9 @@ export class DailyPaymentsComponent implements OnInit {
 
       // Filter the combined entries
       const filteredDict = Object.fromEntries(
-        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
+        combinedEntries.filter(([key, value]) =>
+          key.startsWith(this.requestDateCorrectFormat)
+        )
       );
 
       const filteredValues = Object.values(filteredDict);
@@ -96,6 +107,7 @@ export class DailyPaymentsComponent implements OnInit {
 
   fillDailyPayment(client: Client, values: string[], keys: string[]) {
     let i = 0;
+
     for (let v of values) {
       let middleName = client.middleName === undefined ? '' : client.middleName;
       let filt = {
@@ -111,9 +123,20 @@ export class DailyPaymentsComponent implements OnInit {
 
       if (Number(v) > 0) {
         this.dailyPayments?.push(filt);
+        this.totalGivenDate = (
+          Number(v) + Number(this.totalGivenDate)
+        ).toString();
+
         this.dailyPaymentsCopy?.push(filt);
       }
     }
+
+    // Remove duplicates
+    this.dailyPayments = this.data.removeDuplicates(this.dailyPayments!);
+    this.dailyPaymentsCopy = this.data.removeDuplicates(
+      this.dailyPaymentsCopy!
+    );
+    this.numberOfPeople = this.dailyPayments!.length.toString();
 
     // Sort them
     this.dailyPayments!.sort(
@@ -141,6 +164,22 @@ export class DailyPaymentsComponent implements OnInit {
     } else {
       return of(this.dailyPaymentsCopy);
     }
+  }
+  findDailyPayments() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+    // Reinitialize daily payments and related properties
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+    this.totalGivenDate = '0'; // Assuming it's a string representation of the total amount
+    this.numberOfPeople = '0';
+
+    this.extractTodayPayments();
+    // this.initalizeInputs();
   }
 }
 

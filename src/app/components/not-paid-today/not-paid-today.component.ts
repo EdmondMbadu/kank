@@ -26,6 +26,10 @@ export class NotPaidTodayComponent {
   dailyPamentsAmount: string[] = [];
   trackingIds: string[] = [];
   searchControl = new FormControl();
+
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
+  requestDateCorrectFormat = this.today;
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -75,7 +79,7 @@ export class NotPaidTodayComponent {
     for (let client of this.clients!) {
       const filteredDict = Object.fromEntries(
         Object.entries(client.payments!).filter(([key, value]) =>
-          key.startsWith(this.today)
+          key.startsWith(this.requestDateCorrectFormat)
         )
       );
       const filteredValues = Object.values(filteredDict);
@@ -91,7 +95,7 @@ export class NotPaidTodayComponent {
       if (
         this.paidToday.indexOf(c) === -1 &&
         Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
-        !c.debtCycleStartDate?.startsWith(this.today) &&
+        !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
         this.didClientStartThisWeek(c)
       ) {
         c.minPayment = (
@@ -110,7 +114,7 @@ export class NotPaidTodayComponent {
   }
   filterPayments() {
     this.shouldPayToday = [];
-    let day = this.time.getDayOfWeek(this.today);
+    let day = this.time.getDayOfWeek(this.requestDateCorrectFormat);
     for (let client of this.clients!) {
       if (client.paymentDay === day) {
         this.shouldPayToday.push(client);
@@ -138,5 +142,17 @@ export class NotPaidTodayComponent {
     }
 
     return true;
+  }
+  findDailyDidNotPay() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+    this.totalGivenDate = 0; // Assuming it's a string representation of the total amount
+    this.numberOfPeople = 0;
+
+    this.retrieveClients();
   }
 }

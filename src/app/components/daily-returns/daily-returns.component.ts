@@ -22,6 +22,12 @@ export class DailyReturnsComponent implements OnInit {
   applicationFeePaymentsCopy?: Filtered[] = [];
   membershipFeePaymentsCopy?: Filtered[] = [];
 
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
+  requestDateCorrectFormat = this.today;
+  numberOfPeople: string = '0';
+  totalGivenDate: string = '0';
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
+
   trackingIds: string[] = [];
   searchControl = new FormControl();
   constructor(
@@ -70,115 +76,6 @@ export class DailyReturnsComponent implements OnInit {
     }
   }
 
-  // extractTodayApplicationFeePayments() {
-  //   this.trackingIds = [];
-  //   for (let client of this.clients!) {
-  //     if (client.applicationFeePayments !== undefined) {
-  //       const filteredDict = Object.fromEntries(
-  //         Object.entries(client.applicationFeePayments!).filter(
-  //           ([key, value]) => key.startsWith(this.today)
-  //         )
-  //       );
-  //       const filteredDictMembership = Object.fromEntries(
-  //         Object.entries(client.membershipFeePayments!).filter(([key, value]) =>
-  //           key.startsWith(this.today)
-  //         )
-  //       );
-  //       // console.log('all current clients', filteredDict);
-  //       const filterdKeys = Object.keys(filteredDict);
-  //       const filterdKeysMembership = Object.keys(filteredDictMembership);
-  //       // console.log('all keys', filterdKeys);
-  //       const filteredValues = Object.values(filteredDict);
-  //       const filteredValuesMembership = Object.values(filteredDictMembership);
-  //       // console.log('all values', filteredValues);
-  //       if (filteredValues.length !== 0) {
-  //         this.fillDailyApplicationFeePayment(
-  //           client,
-  //           filteredValues,
-  //           filterdKeys
-  //         );
-  //         this.fillDailyMembershipFeePayment(
-  //           client,
-  //           filteredValuesMembership,
-  //           filterdKeysMembership
-  //         );
-  //       }
-  //     }
-  //   }
-  // }
-
-  // fillDailyApplicationFeePayment(
-  //   client: Client,
-  //   values: string[],
-  //   keys: string[]
-  // ) {
-  //   let i = 0;
-  //   for (let v of values) {
-  //     let middleName = client.middleName === undefined ? '' : client.middleName;
-  //     let filt = {
-  //       firstName: client.firstName,
-  //       lastName: client.lastName,
-  //       middleName: middleName,
-  //       amount: v,
-  //       time: keys[i++],
-  //       employee: client.employee,
-  //       trackingId: client.trackingId,
-  //     };
-
-  //     if (Number(v) <= 0) {
-  //       this.applicationFeePayments?.push(filt);
-  //       this.applicationFeePaymentsCopy?.push(filt);
-  //     }
-  //   }
-
-  //   // sort them
-  //   this.applicationFeePayments!.sort(
-  //     (a, b) =>
-  //       this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
-  //   );
-  //   this.applicationFeePayments!.sort(
-  //     (a, b) =>
-  //       this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
-  //   );
-  //   // console.log('All payments', this.dailyPayments);
-  // }
-
-  // fillDailyMembershipFeePayment(
-  //   client: Client,
-  //   values: string[],
-  //   keys: string[]
-  // ) {
-  //   let i = 0;
-  //   for (let v of values) {
-  //     let middleName = client.middleName === undefined ? '' : client.middleName;
-  //     let filt = {
-  //       firstName: client.firstName,
-  //       lastName: client.lastName,
-  //       middleName: middleName,
-  //       amount: v,
-  //       time: keys[i++],
-  //       employee: client.employee,
-  //       trackingId: client.trackingId,
-  //     };
-
-  //     if (Number(v) <= 0) {
-  //       this.membershipFeePayments?.push(filt);
-  //       this.membershipFeePaymentsCopy?.push(filt);
-  //     }
-  //   }
-
-  //   // sort them
-  //   this.membershipFeePayments!.sort(
-  //     (a, b) =>
-  //       this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
-  //   );
-  //   this.applicationFeePayments!.sort(
-  //     (a, b) =>
-  //       this.parseDate(b.time).getTime() - this.parseDate(a.time).getTime()
-  //   );
-  //   // console.log('All payments', this.dailyPayments);
-  // }
-
   extractTodayApplicationFeePayments() {
     this.trackingIds = [];
     for (let client of this.clients!) {
@@ -188,10 +85,14 @@ export class DailyReturnsComponent implements OnInit {
       ) {
         const filteredAppFees = Object.entries(
           client.applicationFeePayments || {}
-        ).filter(([key, value]) => key.startsWith(this.today));
+        ).filter(([key, value]) =>
+          key.startsWith(this.requestDateCorrectFormat)
+        );
         const filteredMemFees = Object.entries(
           client.membershipFeePayments || {}
-        ).filter(([key, value]) => key.startsWith(this.today));
+        ).filter(([key, value]) =>
+          key.startsWith(this.requestDateCorrectFormat)
+        );
 
         const timesSet = new Set<string>();
         for (const [key, value] of filteredAppFees) {
@@ -232,12 +133,19 @@ export class DailyReturnsComponent implements OnInit {
               employee: client.employee,
               trackingId: client.trackingId,
             };
+
             this.membershipFeePayments?.push(filtMemFee);
             this.membershipFeePaymentsCopy?.push(filtMemFee);
+            this.totalGivenDate = (
+              Number(memFeeValue) +
+              Number(appFeeValue) +
+              Number(this.totalGivenDate)
+            ).toString();
           }
         }
       }
     }
+    this.numberOfPeople = this.membershipFeePayments.length.toString();
 
     // sort them
     this.applicationFeePayments!.sort(
@@ -276,6 +184,23 @@ export class DailyReturnsComponent implements OnInit {
     } else {
       return of(this.applicationFeePaymentsCopy);
     }
+  }
+  findDailyFeeReturns() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+    // Reinitialize daily payments and related properties
+
+    this.totalGivenDate = '0'; // Assuming it's a string representation of the total amount
+    this.numberOfPeople = '0';
+    this.membershipFeePayments = [];
+    this.membershipFeePaymentsCopy = [];
+    this.applicationFeePayments = [];
+    this.applicationFeePaymentsCopy = [];
+    this.extractTodayApplicationFeePayments();
   }
 }
 

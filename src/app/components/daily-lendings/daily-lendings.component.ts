@@ -17,6 +17,11 @@ export class DailyLendingsComponent implements OnInit {
   todayFrench = this.time.convertDateToDayMonthYear(this.today);
   filteredItems?: Client[] = [];
   filteredItemsCopy?: Client[] = [];
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
+  requestDateCorrectFormat = this.today;
+  numberOfPeople: string = '0';
+  totalGivenDate: string = '0';
+  frenchDate = this.time.convertDateToDayMonthYear(this.today);
   searchControl = new FormControl();
   constructor(
     private router: Router,
@@ -69,10 +74,29 @@ export class DailyLendingsComponent implements OnInit {
   extractTodayLendings() {
     this.filteredItems = [];
     for (let client of this.clients!) {
-      if (client.debtCycleStartDate === this.today) {
+      if (client.debtCycleStartDate === this.requestDateCorrectFormat) {
         this.filteredItems!.push(client);
         this.filteredItemsCopy?.push(client);
+        this.totalGivenDate = (
+          Number(client.loanAmount) + Number(this.totalGivenDate)
+        ).toString();
       }
     }
+    this.numberOfPeople = this.filteredItems.length.toString();
+  }
+  findDailyLending() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+    // Reinitialize daily payments and related properties
+
+    this.totalGivenDate = '0'; // Assuming it's a string representation of the total amount
+    this.numberOfPeople = '0';
+    this.filteredItems = [];
+    this.filteredItemsCopy = [];
+    this.extractTodayLendings();
   }
 }

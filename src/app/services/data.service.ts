@@ -1367,4 +1367,17 @@ export class DataService {
     // If none of the arguments is invalid, return true
     return true;
   }
+  removeDuplicates(payments: any[]): any[] {
+    const uniquePayments = payments.filter(
+      (value, index, self) =>
+        index ===
+        self.findIndex(
+          (t) =>
+            t.trackingId === value.trackingId &&
+            t.amount === value.amount &&
+            t.time === value.time
+        )
+    );
+    return uniquePayments;
+  }
 }
