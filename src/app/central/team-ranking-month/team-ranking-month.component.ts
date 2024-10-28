@@ -60,6 +60,8 @@ export class TeamRankingMonthComponent {
     let tempEmployees: Employee[] = [];
     this.allEmployees = [];
     let completedRequests = 0;
+    this.total = '0';
+    this.totalHouse = '0';
     this.allUsers.forEach((user) => {
       if (user.housePayment)
         this.totalHouse = (
@@ -82,6 +84,8 @@ export class TeamRankingMonthComponent {
             this.total = (
               Number(em.paymentAmount) + Number(this.total)
             ).toString();
+          // Assign location
+          em.tempLocationHolder = user.firstName;
         });
 
         // this.currentEmployees = employees;

@@ -42,6 +42,7 @@ export class Employee {
   totalPayments?: string;
   bonusCheckUrl?: string;
   paymentCode?: string;
+  tempLocationHolder?: string;
 }
 export class Avatar {
   path?: string;
