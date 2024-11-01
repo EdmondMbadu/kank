@@ -530,6 +530,12 @@ export class EmployeePageComponent implements OnInit {
             cell.classList.add('border-black');
             cell.classList.add('text-white');
             cell.innerHTML = `${date}<br>Absent`;
+          } else if (dict !== undefined && dict![dateStr] === 'L') {
+            cell.classList.add('bg-orange-600');
+            cell.classList.add('border');
+            cell.classList.add('border-black');
+            cell.classList.add('text-white');
+            cell.innerHTML = `${date}<br>Retard`;
           } else {
             cell.classList.add('border');
             cell.classList.add('border-black');
