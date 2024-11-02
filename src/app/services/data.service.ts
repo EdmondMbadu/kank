@@ -630,6 +630,15 @@ export class DataService {
     };
     return employeeRef.set(data, { merge: true });
   }
+  updateClientPictureData(client: Client, avatar: Avatar) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+    const data = {
+      profilePicture: avatar,
+    };
+    return employeeRef.set(data, { merge: true });
+  }
   updateEmployeeAttendance(attendance: any, employeeId: string) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employeeId}`

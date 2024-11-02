@@ -1,4 +1,4 @@
-import { Employee } from './employee';
+import { Avatar, Employee } from './employee';
 
 export class Client {
   uid?: string;
@@ -46,4 +46,5 @@ export class Client {
   requestDate?: string;
   requestType?: string;
   dateOfRequest?: string;
+  profilePicture?: Avatar;
 }

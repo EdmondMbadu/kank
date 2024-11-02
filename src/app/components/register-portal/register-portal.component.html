@@ -5,6 +5,21 @@
     <button *ngIf="client.type==='register'" type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mr-4" [routerLink]="['/transform-register-client',id ]">Transformer en Client Complet</button>
     <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="delete()">Supprimer Client</button> -->
 </div>
+<div *ngIf="!client?.profilePicture" class="flex container mx-auto justify-center">
+    
+    <input type="file" [id]="'putPicture'" style="display:none" (change)="startUpload($any($event.target).files)">
+    <button (click)="onImageClick('putPicture')" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Ajouter Photo Du Client</button>
+</div>
+<div *ngIf="client?.profilePicture" class="flex container mx-auto justify-center">
+    <div *ngIf="client?.profilePicture?.downloadURL" >
+        <input type="file" [id]="'changePicture'" style="display:none" (change)="startUpload($any($event.target).files)">
+        <a (click)="onImageClick('changePicture')">  <img [src]="client.profilePicture!.downloadURL" class="h-64 md:h-80 mb-4" alt="">
+   
+        </a>
+      
+    </div>
+
+</div>
 
 <div id="fullWidthTabContent" class=" rounded-lg  dark:border-gray-600">
     <div class=" mx-4 lg:mx-60 p-4 bg-white rounded-lg md:p-8 border-2 shadow-lg border-gray-200 dark:bg-gray-800" id="stats" role="tabpanel" aria-labelledby="stats-tab">

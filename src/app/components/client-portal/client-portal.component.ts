@@ -6,6 +6,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
 
 @Component({
   selector: 'app-client-portal',
@@ -17,6 +18,7 @@ export class ClientPortalComponent {
   minPay = '';
   employees: Employee[] = [];
   agent?: Employee = { firstName: '-' };
+  url: string = '';
   public graphCredit = {
     data: [
       {
@@ -47,7 +49,8 @@ export class ClientPortalComponent {
     private router: Router,
     private time: TimeService,
     private data: DataService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private storage: AngularFireStorage
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -73,7 +76,7 @@ export class ClientPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      console.log('client  ', this.client.uid);
+      // console.log('client  ', this.client);
       this.minimumPayment();
       this.client.frenchPaymentDay = this.time.translateDayInFrench(
         this.client.paymentDay!
@@ -188,5 +191,47 @@ export class ClientPortalComponent {
     this.data
       .updateEmployeeInfoForClientAgentAssignment(this.agent!)
       .then(() => console.log('agent clients list updated succesfully.'));
+  }
+  async startUpload(event: FileList) {
+    // console.log('current employee', this.client);
+    const file = event?.item(0);
+    // console.log(' current file data', file);
+
+    if (file?.type.split('/')[0] !== 'image') {
+      console.log('unsupported file type');
+      return;
+    }
+    // the size cannot be greater than 10mb
+    if (file?.size >= 20000000) {
+      alert(
+        "L'image est trop grande. La Taille maximale du fichier est de 10MB"
+      );
+      return;
+    }
+    const path = `clients-avatar/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}`;
+
+    // the main task
+    console.log('the path', path);
+
+    // this.task = await this.storage.upload(path, file);
+    const uploadTask = await this.storage.upload(path, file);
+    this.url = await uploadTask.ref.getDownloadURL();
+    uploadTask.totalBytes;
+    // console.log('the download url', this.url);
+    const avatar = {
+      path: path,
+      downloadURL: this.url,
+      size: uploadTask.totalBytes.toString(),
+    };
+    try {
+      await this.data.updateClientPictureData(this.client, avatar);
+    } catch (error) {
+      console.error('Error updating employee picture:', error);
+    }
+    // this.router.navigate(['/home']);
+  }
+  onImageClick(id: string): void {
+    const fileInput = document.getElementById(id) as HTMLInputElement;
+    fileInput.click();
   }
 }

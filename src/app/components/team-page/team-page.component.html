@@ -21,8 +21,8 @@
                     
                         <input type="file" [id]="'getFile'+ i" style="display:none" (change)="startUpload($any($event.target).files, em)">
                         <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
-                        <img *ngIf="em.profilePicture===undefined" class="w-full rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onImageClick(i)" src="../../../assets/img/user.png" alt="Bonnie Avatar">
-                        <img *ngIf="em.profilePicture!==undefined" class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onImageClick(i)" [src]="em.profilePicture.downloadURL" alt="Bonnie Avatar">
+                        <img *ngIf="em.profilePicture===undefined" class="w-full rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onImageClick(i)" src="../../../assets/img/user.png" alt="{{em.firstName}}">
+                        <img *ngIf="em.profilePicture!==undefined" class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onImageClick(i)" [src]="em.profilePicture.downloadURL" alt="{{em.firstName}}">
                         <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
                     
                     </div>
