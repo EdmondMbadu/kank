@@ -20,6 +20,7 @@ export class RequestTomorrowComponent implements OnInit {
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   total: string = '';
   totalCard: string = '';
+  track: number = 0;
 
   clientsRequestLending: Client[] = [];
   clientsRequestSavings: Client[] = [];
@@ -79,7 +80,7 @@ export class RequestTomorrowComponent implements OnInit {
       this.addIdToFilterItems();
 
       // a little weird. angular is really with the flow
-      this.extractTCard();
+      // this.extractTCard();
     });
   }
   retrieveClientsCard(): void {
@@ -178,6 +179,9 @@ export class RequestTomorrowComponent implements OnInit {
   extractTCard() {
     this.trackingIds = [];
     // this.clientsRequestLending = [];
+    let partialTotal = 0;
+    // this.total = '0';
+    this.track++;
     this.clientsRequestCard = [];
     for (let client of this.cards!) {
       if (
@@ -187,9 +191,7 @@ export class RequestTomorrowComponent implements OnInit {
       ) {
         this.clientsRequestCard.push(client);
         console.log('card request amount', client.requestAmount);
-        this.total = (
-          Number(this.total) + Number(client.requestAmount)
-        ).toString();
+        partialTotal += Number(client.requestAmount);
       }
     }
     // sort by decreasing order
@@ -201,6 +203,13 @@ export class RequestTomorrowComponent implements OnInit {
       }
       return 0; // If dates are missing, leave the order unchanged
     });
+    console.log(
+      'This total, partial total, track',
+      this.total,
+      partialTotal,
+      this.track
+    );
+    this.total = (Number(this.total) + partialTotal).toString();
   }
 
   search(value: string) {
