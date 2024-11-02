@@ -78,7 +78,7 @@ export class RequestTodayComponent implements OnInit {
       this.addIdToFilterItems();
 
       // a little weird. angular is really with the flow
-      this.extractTCard();
+      // this.extractTCard();
     });
   }
   retrieveClientsCard(): void {
