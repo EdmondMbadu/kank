@@ -29,7 +29,7 @@ export class EmployeePageComponent implements OnInit {
 
   currentLat: number = 0;
   currentLng: number = 0;
-  radius = 5; //Set your desired radius in meters
+  radius = 1; //Set your desired radius in meters
 
   displayBonus: boolean = false;
   displayPayment: boolean = false;
