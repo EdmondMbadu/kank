@@ -23,6 +23,14 @@ export class EmployeePageComponent implements OnInit {
   attendance: string = '';
   // today = this.time.todaysDateMonthDayYear();
 
+  withinRadius: boolean | null = null;
+  errorMessage: string | null = null;
+  locationSet: boolean = false;
+
+  currentLat: number = 0;
+  currentLng: number = 0;
+  radius = 5; //Set your desired radius in meters
+
   displayBonus: boolean = false;
   displayPayment: boolean = false;
   displayCode: boolean = false;
@@ -730,5 +738,48 @@ export class EmployeePageComponent implements OnInit {
         'An error occurred while toggling payment check visibility. Please try again.'
       );
     }
+  }
+  // Method to set the current location as the workplace
+  setLocation(): void {
+    this.compute
+      .getLocation()
+      .then((position) => {
+        this.currentLat = position.coords.latitude;
+        this.currentLng = position.coords.longitude;
+        this.locationSet = true;
+        this.errorMessage = null; // Clear any previous error
+        console.log(
+          `Location set: Latitude ${this.currentLat}, Longitude ${this.currentLng}`
+        );
+      })
+      .catch((error) => {
+        this.errorMessage = error.message;
+        this.locationSet = false;
+      });
+  }
+  // Method to check if the user is within the set radius
+  checkPresence(): void {
+    if (!this.currentLat || !this.currentLng) {
+      this.errorMessage = 'Location not set. Please set location first.';
+      return;
+    }
+
+    this.compute
+      .getLocation()
+      .then((position) => {
+        const { latitude, longitude } = position.coords;
+        this.withinRadius = this.compute.checkWithinRadius(
+          latitude,
+          longitude,
+          this.currentLat,
+          this.currentLng,
+          this.radius
+        );
+        this.errorMessage = null; // Clear any previous error
+      })
+      .catch((error) => {
+        this.errorMessage = error.message;
+        this.withinRadius = null;
+      });
   }
 }

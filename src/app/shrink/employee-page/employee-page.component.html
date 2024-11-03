@@ -233,6 +233,29 @@
         </div>
     </div>
 </div>
+<div *ngIf="this.auth.isAdmninistrator" class="mt-6 flex flex-col container mx-auto  justify-center ">
+
+         
+    <!-- src/app/presence-check/presence-check.component.html -->
+    <button (click)="setLocation()" type="button" class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Set Current Location as Workplace</button>
+    <!-- <button class="text-black" (click)="setLocation()">Set Current Location as Workplace</button> -->
+
+    <div *ngIf="locationSet">
+    <p>Location set: Latitude {{ currentLat }}, Longitude {{ currentLng }}</p>
+   
+    </div>
+    <button class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800" (click)="checkPresence()">Check Presence within Radius</button>
+
+    <div *ngIf="withinRadius === true">
+    <p>You are within the allowed radius. Presence confirmed!</p>
+    </div>
+    <div *ngIf="withinRadius === false">
+    <p>You are outside the allowed radius.</p>
+    </div>
+    <div *ngIf="errorMessage">
+    <p>Error: {{ errorMessage }}</p>
+    </div>
+ </div>
 
 
 
@@ -260,6 +283,7 @@
                     <span class="sr-only">Chercher</span>
                 </button>
             </div>
+            
     </div>
     <div *ngIf="code===paymentCode" class="flow-root">
             <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -288,7 +312,9 @@
                 </li>
             </ul>
     </div>
+    
     </div>
+    
   
 
 
@@ -465,7 +491,10 @@
   
             
           </div>
+                
         </div>
+               
+
     </div>
 
     <div *ngIf="displaySetCode" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-10 z-50 p-4 flex pb-6">
