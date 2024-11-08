@@ -790,7 +790,8 @@ export class EmployeePageComponent implements OnInit {
   // Method to check if the user is within the set radius
   checkPresence(): void {
     if (!this.currentLat || !this.currentLng) {
-      this.errorMessage = 'Location not set. Please set location first.';
+      this.errorMessage =
+        "Emplacement du travail non défini. Veuillez d'abord définir l'emplacement.";
       return;
     }
 

@@ -238,7 +238,7 @@
 
          
     <!-- src/app/presence-check/presence-check.component.html -->
-    <button (click)="setLocation()" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Set Current Location as Workplace</button>
+    <button (click)="setLocation()" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Définir l'emplacement actuel comme lieu de travail</button>
     <!-- <button class="text-black" (click)="setLocation()">Set Current Location as Workplace</button> -->
     <div *ngIf="this.auth.isAdmninistrator" class="max-w-sm mx-auto">
         <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Set The Radius</label>
@@ -255,14 +255,15 @@
    
    
     </div>
-    <button *ngIf="this.auth.isAdmninistrator" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 " (click)="checkPresence()">Check Presence within Radius</button>
+    <button *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 " (click)="checkPresence()">
+        Vérifiez si vous êtes sur le lieu de travail</button>
 
     <div class="my-3" *ngIf="withinRadius === true">
-    <p>Vous êtes à moins de {{radius}}, du rayon autorisé. Présence confirmée ! À l'heure</p>
+    <p>Vous êtes au lieu du travail {{radius}}, du rayon autorisé. Présence confirmée ! À l'heure</p>
     <p>{{onTime}}</p>
     </div>
     <div class="my-3" *ngIf="withinRadius === false">
-    <p>You are outside the allowed radius.</p>
+    <p>Vous êtes en dehors du lieu de travail</p>
     <p>{{onTime}}</p>
     </div>
     <div class="my-3" *ngIf="errorMessage">
