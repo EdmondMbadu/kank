@@ -47,4 +47,5 @@ export class Client {
   requestType?: string;
   dateOfRequest?: string;
   profilePicture?: Avatar;
+  vitalStatus?: string;
 }

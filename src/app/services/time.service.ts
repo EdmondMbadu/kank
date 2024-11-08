@@ -618,4 +618,18 @@ export class TimeService {
 
     return weeksElapsed;
   }
+  isEmployeeOnTime(limitHour: number, limitMinute: number): boolean {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // Check if the current time is after the limit
+    if (
+      currentHour > limitHour ||
+      (currentHour === limitHour && currentMinute > limitMinute)
+    ) {
+      return false; // Late
+    }
+    return true; // On time
+  }
 }

@@ -8,6 +8,7 @@ import { TimeService } from 'src/app/services/time.service';
 
 import { DataService } from 'src/app/services/data.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { LocationCoordinates } from 'src/app/models/user';
 // import heic2any from 'heic2any';
 
 @Component({
@@ -23,13 +24,19 @@ export class EmployeePageComponent implements OnInit {
   attendance: string = '';
   // today = this.time.todaysDateMonthDayYear();
 
+  limitHour: number = 9;
+  limitMinutes: number = 0;
+  onTime: string = '';
+
+  locationCoordinate: LocationCoordinates = {};
+
   withinRadius: boolean | null = null;
   errorMessage: string | null = null;
   locationSet: boolean = false;
 
   currentLat: number = 0;
   currentLng: number = 0;
-  radius = 1; //Set your desired radius in meters
+  radius = 20; //Set your desired radius in meters
 
   displayBonus: boolean = false;
   displayPayment: boolean = false;
@@ -190,6 +197,12 @@ export class EmployeePageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
+      // set location coordinates
+      if (this.auth.currentUser.locationCoordinates) {
+        this.locationCoordinate = this.auth.currentUser.locationCoordinates;
+        this.currentLat = Number(this.locationCoordinate.lattitude);
+        this.currentLng = Number(this.locationCoordinate.longitude);
+      }
       this.employee = data[this.id];
       this.getAllPayments();
       this.setEmployeeBonusAmounts();
@@ -695,7 +708,7 @@ export class EmployeePageComponent implements OnInit {
     }
   }
 
-  async addAttendance() {
+  async addAttendance(toggle = true) {
     if (this.attendance === '') {
       alert('Remplissez la presence, Réessayez');
       return;
@@ -712,7 +725,9 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
     this.attendance = '';
-    this.toggleAttendance();
+    if (toggle) {
+      this.toggleAttendance();
+    }
   }
 
   async toggleCheckVisibility() {
@@ -747,7 +762,22 @@ export class EmployeePageComponent implements OnInit {
         this.currentLat = position.coords.latitude;
         this.currentLng = position.coords.longitude;
         this.locationSet = true;
+        if (this.locationSet) {
+          alert("l'emplacement a été défini!");
+        }
         this.errorMessage = null; // Clear any previous error
+        const loc: LocationCoordinates = {
+          longitude: this.currentLng.toString(),
+          lattitude: this.currentLat.toString(),
+        };
+        try {
+          // add location to the database
+          const setL = this.data.setLocation(loc);
+        } catch (error) {
+          alert("Une erreur s'est produite. Veuillez réessayer.");
+          console.error('Error setting location:', error);
+          this.errorMessage = 'Failed to set location. Please try again.';
+        }
         console.log(
           `Location set: Latitude ${this.currentLat}, Longitude ${this.currentLng}`
         );
@@ -775,11 +805,59 @@ export class EmployeePageComponent implements OnInit {
           this.currentLng,
           this.radius
         );
+        this.onTime = this.time.isEmployeeOnTime(
+          this.limitHour,
+          this.limitMinutes
+        )
+          ? "A L'heure"
+          : 'En Retard';
+
         this.errorMessage = null; // Clear any previous error
       })
       .catch((error) => {
         this.errorMessage = error.message;
         this.withinRadius = null;
       });
+  }
+  async determineAttendance() {
+    let currentAttendance = 'A';
+    console.log('Entering determine attendance', this.withinRadius);
+    if (this.time.isEmployeeOnTime(this.limitHour, this.limitMinutes)) {
+      currentAttendance = 'P';
+    } else {
+      currentAttendance = 'L';
+    }
+    await this.compute
+      .getLocation()
+      .then((position) => {
+        const { latitude, longitude } = position.coords;
+        this.withinRadius = this.compute.checkWithinRadius(
+          latitude,
+          longitude,
+          this.currentLat,
+          this.currentLng,
+          this.radius
+        );
+
+        this.errorMessage = null; // Clear any previous error
+      })
+      .then(() => {
+        if (!this.withinRadius) {
+          alert(
+            "Vous n'êtes pas sur le lieu de travail. Réessayez quand vous l'êtes"
+          );
+          return;
+        }
+        if (this.withinRadius) {
+          this.attendance = currentAttendance;
+          this.addAttendance(false);
+        }
+      })
+      .catch((error) => {
+        this.errorMessage = error.message;
+        this.withinRadius = null;
+      });
+
+    console.log('Entering determine attendance', this.withinRadius);
   }
 }

@@ -1249,6 +1249,7 @@ export class ComputationService {
       targetLat,
       targetLng
     );
+    console.log('distance ', distance);
     return distance <= radius;
   }
 }

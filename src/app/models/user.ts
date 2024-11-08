@@ -41,6 +41,11 @@ export class User {
   monthBudget?: string;
   monthBudgetPending?: string;
   housePayment?: string;
+  locationCoordinates?: LocationCoordinates;
+}
+export class LocationCoordinates {
+  longitude?: string;
+  lattitude?: string;
 }
 
 export type UserDailyField =

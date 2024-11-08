@@ -4,7 +4,7 @@ import {
   AngularFirestoreCollection,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore/';
-import { User } from '../models/user';
+import { LocationCoordinates, User } from '../models/user';
 import { Observable } from 'rxjs';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthService } from './auth.service';
@@ -1388,5 +1388,14 @@ export class DataService {
         )
     );
     return uniquePayments;
+  }
+  setLocation(location: LocationCoordinates) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}`
+    );
+    const data = {
+      locationCoordinates: location,
+    };
+    return userRef.set(data, { merge: true });
   }
 }
