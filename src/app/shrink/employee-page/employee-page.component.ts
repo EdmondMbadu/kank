@@ -189,7 +189,9 @@ export class EmployeePageComponent implements OnInit {
       this.bestTeamBonusAmount +
       this.bestEmployeeBonusAmount +
       this.bestManagerBonusAmount;
+
     this.employee.totalPayments = this.totalBonusAmount.toString();
+    this.employee.totalBonusThisMonth = this.totalBonusAmount.toString();
   }
   computeTotalPayment() {
     this.employee.totalPayments = this.employee.paymentAmount;
@@ -610,8 +612,9 @@ export class EmployeePageComponent implements OnInit {
       this.bestManagerBonusAmount.toString();
 
     try {
-      await this.data.updateEmployeeBonusInfo(this.employee);
       this.computeTotalBonusAmount(); // Recalculate total bonus after update
+      await this.data.updateEmployeeBonusInfo(this.employee);
+
       await this.data.toggleEmployeeCheckVisibility(this.employee);
 
       // Generate the bonus check and get the Blob
@@ -678,8 +681,9 @@ export class EmployeePageComponent implements OnInit {
       this.bestManagerBonusAmount.toString();
 
     try {
-      await this.data.updateEmployeeBonusInfo(this.employee);
       this.computeTotalBonusAmount();
+      await this.data.updateEmployeeBonusInfo(this.employee);
+      // this.computeTotalBonusAmount();
     } catch (err) {
       alert(
         "Une erreur s'est produite lors de la modification de l'employé. Essayez encore."

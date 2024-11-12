@@ -27,6 +27,7 @@ export class TeamRankingMonthComponent {
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
   totalPointsMonth: string = '';
+  totalBonus: string = '';
   yearsList: number[] = this.time.yearsList;
   constructor(
     private router: Router,
@@ -62,6 +63,7 @@ export class TeamRankingMonthComponent {
     let completedRequests = 0;
     this.total = '0';
     this.totalHouse = '0';
+    this.totalBonus = '0';
     this.allUsers.forEach((user) => {
       if (user.housePayment)
         this.totalHouse = (
@@ -80,10 +82,17 @@ export class TeamRankingMonthComponent {
 
         this.currentEmployees.forEach((em: any) => {
           this.computePerformances(employees, em);
-          if (em.paymentAmount)
+          if (em.paymentAmount) {
             this.total = (
               Number(em.paymentAmount) + Number(this.total)
             ).toString();
+          }
+          if (em.totalBonusThisMonth) {
+            this.totalBonus = (
+              Number(em.totalBonusThisMonth) + Number(this.totalBonus)
+            ).toString();
+          }
+
           // Assign location
           em.tempLocationHolder = user.firstName;
         });

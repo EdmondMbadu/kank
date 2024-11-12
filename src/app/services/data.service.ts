@@ -215,6 +215,7 @@ export class DataService {
       bestTeamBonusAmount: employee.bestTeamBonusAmount,
       bestEmployeeBonusAmount: employee.bestEmployeeBonusAmount,
       bestManagerBonusAmount: employee.bestManagerBonusAmount,
+      totalBonusThisMonth: employee.totalBonusThisMonth,
     };
 
     return employeeRef.set(data, { merge: true });
