@@ -515,7 +515,7 @@ export class EmployeePageComponent implements OnInit {
   }
 
   generateAttendanceTable(month: number, year: number) {
-    const dict = this.employee.attendance;
+    const dict: any = this.employee.attendance;
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayIndex = new Date(year, month - 1, 1).getDay();
     const tableBody = document.getElementById('attendance-body');
@@ -534,33 +534,53 @@ export class EmployeePageComponent implements OnInit {
         } else if (date > daysInMonth) {
           cell.classList.add('bg-gray-200');
           cell.classList.add('p-16');
-          // cell.classList.add('not-filled');
-
           cell.innerHTML = '';
         } else {
           const dateStr = `${month}-${date}-${year}`;
-          if (dict !== undefined && dict![dateStr] === 'P') {
-            cell.classList.add('bg-green-600');
-            cell.classList.add('border');
-            cell.classList.add('border-black');
-            cell.classList.add('text-white');
-            cell.innerHTML = `${date}<br>Present`;
-          } else if (dict !== undefined && dict![dateStr] === 'A') {
-            cell.classList.add('bg-red-600');
-            cell.classList.add('border');
-            cell.classList.add('border-black');
-            cell.classList.add('text-white');
-            cell.innerHTML = `${date}<br>Absent`;
-          } else if (dict !== undefined && dict![dateStr] === 'L') {
-            cell.classList.add('bg-orange-600');
-            cell.classList.add('border');
-            cell.classList.add('border-black');
-            cell.classList.add('text-white');
-            cell.innerHTML = `${date}<br>Retard`;
+
+          // Find matching attendance entry based on date only
+          const matchedKey = Object.keys(dict).find((key) =>
+            key.startsWith(dateStr)
+          );
+          const attendance = matchedKey ? dict[matchedKey] : undefined;
+
+          if (attendance) {
+            // Extract hours and minutes from the key if available
+            const time = matchedKey!.split('-').slice(3, 5).join(':'); // "18:54" format
+
+            if (attendance === 'P') {
+              cell.classList.add(
+                'bg-green-600',
+                'border',
+                'border-black',
+                'text-white'
+              );
+              cell.innerHTML = `${date}<br>Present${
+                time ? `<br><span class="small-time">${time}</span>` : ''
+              }`;
+            } else if (attendance === 'A') {
+              cell.classList.add(
+                'bg-red-600',
+                'border',
+                'border-black',
+                'text-white'
+              );
+              cell.innerHTML = `${date}<br>Absent${
+                time ? `<br><span class="small-time">${time}</span>` : ''
+              }`;
+            } else if (attendance === 'L') {
+              cell.classList.add(
+                'bg-orange-600',
+                'border',
+                'border-black',
+                'text-white'
+              );
+              cell.innerHTML = `${date}<br>Retard${
+                time ? `<br><span class="small-time">${time}</span>` : ''
+              }`;
+            }
           } else {
-            cell.classList.add('border');
-            cell.classList.add('border-black');
-            cell.classList.add('p-4');
+            cell.classList.add('border', 'border-black', 'p-4');
             cell.innerHTML = date.toString();
           }
           date++;
@@ -575,6 +595,7 @@ export class EmployeePageComponent implements OnInit {
       }
     }
   }
+
   toggleAttendance() {
     this.displayAttendance = !this.displayAttendance;
   }
@@ -714,7 +735,7 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
     try {
-      let val: any = { [this.time.todaysDateMonthDayYear()]: this.attendance };
+      let val: any = { [this.time.todaysDate()]: this.attendance };
       const value = await this.data.updateEmployeeAttendance(
         val,
         this.employee.uid!
@@ -734,7 +755,7 @@ export class EmployeePageComponent implements OnInit {
     try {
       await this.data.toggleEmployeeCheckVisibility(this.employee);
       // Optionally, you can add a success message here
-      console.log('Check visibility toggled successfully');
+      // console.log('Check visibility toggled successfully');
     } catch (error) {
       console.error('Error toggling check visibility:', error);
       // Optionally, you can show an alert or handle the error in some way
@@ -746,7 +767,7 @@ export class EmployeePageComponent implements OnInit {
   async togglePaymentCheckVisibility() {
     try {
       await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
-      console.log('Payment check visibility toggled successfully');
+      // console.log('Payment check visibility toggled successfully');
     } catch (error) {
       console.error('Error toggling payment check visibility:', error);
       alert(
@@ -821,6 +842,12 @@ export class EmployeePageComponent implements OnInit {
       });
   }
   async determineAttendance() {
+    let conf = confirm(
+      ` Etes-vous sûr de vouloir marquer votre présence pour aujourd'hui ?`
+    );
+    if (!conf) {
+      return;
+    }
     let currentAttendance = 'A';
     console.log('Entering determine attendance', this.withinRadius);
     if (this.time.isEmployeeOnTime(this.limitHour, this.limitMinutes)) {
@@ -858,7 +885,5 @@ export class EmployeePageComponent implements OnInit {
         this.errorMessage = error.message;
         this.withinRadius = null;
       });
-
-    console.log('Entering determine attendance', this.withinRadius);
   }
 }
