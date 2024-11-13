@@ -152,6 +152,11 @@ export class ClientPortalComponent {
     if (this.client.savings === '0') {
       alert("Vous n'avez pas d'argent d'epargnes!");
       return;
+    } else if (Number(this.client.debtLeft) > 0) {
+      alert(
+        'Vous devez d’abord finir votre dette avant de demander votre épargne!'
+      );
+      return;
     } else {
       this.router.navigate(['/request-savings-withdraw/' + this.id]);
     }
