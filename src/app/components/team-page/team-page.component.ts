@@ -174,6 +174,11 @@ export class TeamPageComponent implements OnInit {
         return emp.status === 'Travaille';
       });
     }
+    if (!this.auth.isAdmninistrator && !this.auth.isDistributor) {
+      this.employees = this.employees.filter((emp) => {
+        return emp.role === 'Manager' || emp.role === 'Agent';
+      });
+    }
   }
 
   findClientsWithDebts() {
