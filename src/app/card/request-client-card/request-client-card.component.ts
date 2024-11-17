@@ -88,7 +88,8 @@ export class RequestClientCardComponent {
       );
       const updateUser =
         await this.data.updateUserInfoForClientCardRequestReturnMoney(
-          amountToReturn
+          amountToReturn,
+          this.clientCard
         );
       this.router.navigate(['/client-portal-card/' + this.id]);
     } catch (err) {

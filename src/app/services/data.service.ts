@@ -733,18 +733,21 @@ export class DataService {
     return userRef.set(data, { merge: true });
   }
 
-  updateUserInfoForClientCardRequestReturnMoney(amountToGiveBack: string) {
+  updateUserInfoForClientCardRequestReturnMoney(
+    amountToGiveBack: string,
+    client: Card
+  ) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
     );
     let request: any = this.computeDailyMoneyRequests(
-      this.tomorrow,
+      client.requestDate!,
       amountToGiveBack
     );
 
     const data = {
       dailyMoneyRequests: {
-        [this.tomorrow]: `${request}`,
+        [client.requestDate!]: `${request}`,
       },
     };
     return userRef.set(data, { merge: true });
@@ -815,13 +818,13 @@ export class DataService {
       `users/${this.auth.currentUser.uid}`
     );
     let request: any = this.computeDailyMoneyRequests(
-      this.tomorrow,
+      client.requestDate!,
       withdrawal
     );
 
     const data = {
       dailyMoneyRequests: {
-        [this.tomorrow]: `${request}`,
+        [client.requestDate!]: `${request}`,
       },
     };
     return userRef.set(data, { merge: true });
