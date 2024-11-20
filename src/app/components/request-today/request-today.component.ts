@@ -76,9 +76,6 @@ export class RequestTodayComponent implements OnInit {
       this.clients = data;
       this.extractTodayRequests();
       this.addIdToFilterItems();
-
-      // a little weird. angular is really with the flow
-      // this.extractTCard();
     });
   }
   retrieveClientsCard(): void {
@@ -185,7 +182,6 @@ export class RequestTodayComponent implements OnInit {
         client.requestDate === this.requestDateRigthFormat
       ) {
         this.clientsRequestCard.push(client);
-        console.log('card request amount', client.requestAmount);
         this.total = (
           Number(this.total) + Number(client.requestAmount)
         ).toString();

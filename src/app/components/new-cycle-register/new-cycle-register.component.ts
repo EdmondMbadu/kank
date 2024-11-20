@@ -110,7 +110,6 @@ export class NewCycleRegisterComponent implements OnInit {
       this.middleName === '' ||
       this.memberShipFee === '' ||
       this.savings === '' ||
-      this.client.agent === '' ||
       this.requestDate === ''
     ) {
       alert('Completer tous les données');

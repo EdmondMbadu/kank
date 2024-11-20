@@ -78,9 +78,6 @@ export class RequestTomorrowComponent implements OnInit {
       this.clients = data;
       this.extractTomorrowRequests();
       this.addIdToFilterItems();
-
-      // a little weird. angular is really with the flow
-      // this.extractTCard();
     });
   }
   retrieveClientsCard(): void {
@@ -190,7 +187,6 @@ export class RequestTomorrowComponent implements OnInit {
         client.requestDate === this.requestDateRigthFormat
       ) {
         this.clientsRequestCard.push(client);
-        console.log('card request amount', client.requestAmount);
         partialTotal += Number(client.requestAmount);
       }
     }
@@ -203,12 +199,6 @@ export class RequestTomorrowComponent implements OnInit {
       }
       return 0; // If dates are missing, leave the order unchanged
     });
-    console.log(
-      'This total, partial total, track',
-      this.total,
-      partialTotal,
-      this.track
-    );
     this.total = (Number(this.total) + partialTotal).toString();
   }
 
