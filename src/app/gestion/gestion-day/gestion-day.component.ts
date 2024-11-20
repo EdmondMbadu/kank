@@ -1,9 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { Management } from 'src/app/models/management';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { User } from 'src/app/models/user';
+import { Client } from 'src/app/models/client';
+import { Card } from 'src/app/models/card';
 
 @Component({
   selector: 'app-gestion-day',
@@ -24,6 +29,15 @@ export class GestionDayComponent implements OnInit {
       this.initalizeInputs();
       this.updateReserveGraphics(this.graphicsRange);
       this.updateServeGraphics(this.graphicsRangeServe);
+    });
+    // get all clients to find what is needed for tomorrow
+    this.auth.getAllUsersInfo().subscribe((data) => {
+      this.allUsers = data;
+      // this is really weird. maybe some apsect of angular. but it works for now
+      if (this.allUsers.length > 1) {
+        this.getAllClients();
+        // this.getAllClientsCard();
+      }
     });
   }
   week: number = 5;
@@ -49,6 +63,14 @@ export class GestionDayComponent implements OnInit {
   dollarLoss: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
+  total: string = '';
+  totalCard: string = '';
+  track: number = 0;
+
+  clientsRequestLending: Client[] = [];
+  clientsRequestSavings: Client[] = [];
+  clientsRequestCard: Card[] = [];
+  cards: Card[] = [];
   public graph = {
     data: [{}],
     layout: {
@@ -101,11 +123,117 @@ export class GestionDayComponent implements OnInit {
     '../../../assets/img/invest.svg',
   ];
 
+  isFetchingClients = false;
+  currentClients: Array<Client[]> = [];
+  allUsers: User[] = [];
+  allClients?: Client[];
+  allCurrentClients?: Client[] = [];
+  allClientsCard?: Card[];
+  userRequestTotals: Array<{
+    firstName: string;
+
+    total: number;
+    totalInDollar: number;
+    trackingId: string;
+  }> = [];
+  overallTotal: number = 0;
+  overallTotalInDollars: number = 0;
+  getAllClients() {
+    if (this.isFetchingClients) return;
+    this.isFetchingClients = true;
+
+    console.log('entering getAllClients');
+    // Initialize userRequestTotals and overallTotal
+
+    // Initialize userRequestTotals and overallTotal
+    this.userRequestTotals = [];
+    this.overallTotal = 0;
+
+    let completedRequests = 0;
+    this.allUsers.forEach((user) => {
+      // For each user, fetch both clients and cards
+      forkJoin({
+        clients: this.auth.getClientsOfAUser(user.uid!).pipe(take(1)),
+        cards: this.auth.getClientsCardOfAUser(user.uid!).pipe(take(1)),
+      }).subscribe(
+        ({ clients, cards }) => {
+          let userTotal = 0;
+
+          // Process clients
+          for (let client of clients) {
+            if (
+              client.requestStatus !== undefined &&
+              (client.requestType === 'lending' ||
+                client.requestType === 'savings') &&
+              client.requestDate === this.requestDateRigthFormat
+            ) {
+              userTotal += Number(client.requestAmount);
+            }
+          }
+
+          // Process cards
+          for (let card of cards) {
+            if (
+              card.requestStatus !== undefined &&
+              card.requestType === 'card' &&
+              card.requestDate === this.requestDateRigthFormat
+            ) {
+              userTotal += Number(card.requestAmount);
+            }
+          }
+
+          // Store user data and total in the array
+          this.userRequestTotals.push({
+            firstName: user.firstName!,
+
+            total: userTotal,
+            totalInDollar: Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                userTotal.toString()
+              )
+            ),
+            trackingId: user.uid!,
+          });
+
+          // Add to the overall total
+          this.overallTotal += userTotal;
+
+          completedRequests++;
+          if (completedRequests === this.allUsers.length) {
+            // All users have been processed
+            this.userRequestTotals = this.userRequestTotals.filter((client) => {
+              return client.total > 0;
+            });
+            this.userRequestTotals.sort((a, b) => {
+              return b.total - a.total;
+            });
+
+            this.overallTotalInDollars = Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                this.overallTotal.toString()
+              )
+            );
+            this.isFetchingClients = false;
+            // Now you can use this.userRequestTotals and this.overallTotal in your template
+          }
+        },
+        (error) => {
+          console.error('Error fetching data for user:', user.firstName, error);
+          completedRequests++;
+          if (completedRequests === this.allUsers.length) {
+            this.isFetchingClients = false;
+          }
+        }
+      );
+    });
+  }
+
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
+  requestDateRigthFormat: string = this.tomorrow;
   summaryContent: string[] = [];
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalLossAmountDollar: string = '';
@@ -347,5 +475,15 @@ export class GestionDayComponent implements OnInit {
     const values = sortedKeys.map((key) => aggregatedData[key].toString());
 
     return [sortedKeys, values];
+  }
+
+  otherDate() {
+    this.requestDateRigthFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateRigthFormat
+    );
+    this.getAllClients();
   }
 }

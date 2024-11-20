@@ -23,11 +23,11 @@ export class SummaryCardCentralComponent {
   ngOnInit(): void {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
-      this.getAllClients();
+      this.getAllClientsCard();
     });
   }
 
-  getAllClients() {
+  getAllClientsCard() {
     // Temporary array to hold all fetched clients before filtering
     let tempClients: Card[] = [];
     this.allClientsCard = [];
@@ -46,12 +46,12 @@ export class SummaryCardCentralComponent {
         // Once all requests are completed, proceed to filter and initialize inputs
         if (completedRequests === this.allUsers.length) {
           // Now tempClients contains all clients, but there may be duplicates
-          this.filterAndInitializeClients(tempClients);
+          this.filterAndInitializeClientsCard(tempClients);
         }
       });
     });
   }
-  filterAndInitializeClients(allClients: Card[]) {
+  filterAndInitializeClientsCard(allClients: Card[]) {
     // Use a Map or Set to ensure uniqueness. Here, a Map is used to easily access clients by their ID.
     let uniqueClients = new Map<string, Card>();
     this.allClientsCard = [];
