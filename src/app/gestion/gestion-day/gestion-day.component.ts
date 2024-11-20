@@ -232,8 +232,10 @@ export class GestionDayComponent implements OnInit {
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   requestDate: string = this.time.getTodaysDateYearMonthDay();
+  requestDateTomorrow: string = this.time.getTomorrowsDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   requestDateRigthFormat: string = this.tomorrow;
+  frenchDateTomorrow = this.time.convertDateToDayMonthYear(this.tomorrow);
   summaryContent: string[] = [];
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalLossAmountDollar: string = '';
@@ -479,9 +481,9 @@ export class GestionDayComponent implements OnInit {
 
   otherDate() {
     this.requestDateRigthFormat = this.time.convertDateToMonthDayYear(
-      this.requestDate
+      this.requestDateTomorrow
     );
-    this.frenchDate = this.time.convertDateToDayMonthYear(
+    this.frenchDateTomorrow = this.time.convertDateToDayMonthYear(
       this.requestDateRigthFormat
     );
     this.getAllClients();

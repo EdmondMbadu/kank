@@ -40,14 +40,14 @@
 <div class="flex container mx-auto justify-center mb-2">    
     <div class="">
     <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->
-    <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" (change)="otherDate()" required>
+    <input [(ngModel)]="requestDateTomorrow" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" (change)="otherDate()" required>
     <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="otherDate()">Chercher</button> -->
     </div>
    
 </div>
 <div class="container  flex flex-wrap  items-center justify-center  mx-auto md:flex-row">
     <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl ">
-        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Argent Demandé  Demain {{requestDateRigthFormat}}</h1>
+        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Argent Demandé  Demain {{frenchDateTomorrow}}</h1>
         <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
             <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
