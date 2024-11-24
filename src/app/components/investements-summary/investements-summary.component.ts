@@ -372,4 +372,11 @@ export class InvestementsSummaryComponent implements OnInit {
       },
     };
   }
+  isValidNumber(value: any): boolean {
+    return value !== undefined && value !== null && !isNaN(value);
+  }
+
+  getValidNumber(value: any): number {
+    return this.isValidNumber(value) ? value : 0;
+  }
 }

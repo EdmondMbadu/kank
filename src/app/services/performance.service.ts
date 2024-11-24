@@ -167,15 +167,17 @@ export class PerformanceService {
     this.paidToday = [];
 
     if (this.clients?.length === 0) return;
-    for (let client of this.clients!) {
-      const filteredDict = Object.fromEntries(
-        Object.entries(client.payments!).filter(([key, value]) =>
-          key.startsWith(this.today)
-        )
-      );
-      const filteredValues = Object.values(filteredDict);
-      if (filteredValues.length !== 0) {
-        this.paidToday.push(client);
+    if (this.clients && Array.isArray(this.clients)) {
+      for (let client of this.clients!) {
+        const filteredDict = Object.fromEntries(
+          Object.entries(client.payments!).filter(([key, value]) =>
+            key.startsWith(this.today)
+          )
+        );
+        const filteredValues = Object.values(filteredDict);
+        if (filteredValues.length !== 0) {
+          this.paidToday.push(client);
+        }
       }
     }
   }
@@ -199,13 +201,15 @@ export class PerformanceService {
   filterPayments() {
     this.shouldPayToday = [];
     let day = this.time.getDayOfWeek(this.today);
-    for (let client of this.clients!) {
-      if (
-        client.paymentDay === day &&
-        Number(client.debtLeft) > 0 &&
-        this.clientStartedMorethanOneWeekAgo(client)
-      ) {
-        this.shouldPayToday.push(client);
+    if (this.clients && Array.isArray(this.clients)) {
+      for (let client of this.clients) {
+        if (
+          client.paymentDay === day &&
+          Number(client.debtLeft) > 0 &&
+          this.clientStartedMorethanOneWeekAgo(client)
+        ) {
+          this.shouldPayToday.push(client);
+        }
       }
     }
   }
@@ -236,9 +240,11 @@ export class PerformanceService {
 
   extractTodayLendings() {
     this.todaysLending = [];
-    for (let client of this.clients!) {
-      if (client.debtCycleStartDate === this.today) {
-        this.todaysLending?.push(client);
+    if (this.clients && Array.isArray(this.clients)) {
+      for (let client of this.clients!) {
+        if (client.debtCycleStartDate === this.today) {
+          this.todaysLending?.push(client);
+        }
       }
     }
   }

@@ -67,9 +67,6 @@ export class TeamPageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
-
-      console.log('employees', this.employees);
-
       if (this.employees !== null) {
         this.displayEditEmployees = new Array(this.employees.length).fill(
           false
@@ -134,8 +131,8 @@ export class TeamPageComponent implements OnInit {
     // );
     // console.log('common elements', commonElements);
 
-    for (let i = 0; i < this.employees.length; i++) {
-      console.log(' here I am employee ', this.employees[i]);
+    for (let i = 0; this.employees && i < this.employees.length; i++) {
+      // console.log(' here I am employee ', this.employees[i]);
       this.employees[i].trackingId = `${i}`;
       this.employees[i].age = this.time
         .calculateAge(this.employees[i].dateOfBirth!)
@@ -170,22 +167,28 @@ export class TeamPageComponent implements OnInit {
       }
     }
     if (!this.auth.isAdmninistrator) {
-      this.employees = this.employees.filter((emp) => {
-        return emp.status === 'Travaille';
-      });
+      if (this.employees) {
+        this.employees = this.employees.filter((emp) => {
+          return emp?.status === 'Travaille';
+        });
+      }
     }
     if (!this.auth.isAdmninistrator && !this.auth.isDistributor) {
-      this.employees = this.employees.filter((emp) => {
-        return emp.role === 'Manager' || emp.role === 'Agent';
-      });
+      if (this.employees) {
+        this.employees = this.employees.filter((emp) => {
+          return emp.role === 'Manager' || emp.role === 'Agent';
+        });
+      }
     }
   }
 
   findClientsWithDebts() {
-    this.clientsWithDebts = this.allClients.filter((data) => {
-      return Number(data.debtLeft) > 0;
-    });
-    this.agentClientMap = this.getAgentsWithClients();
+    if (this.allClients) {
+      this.clientsWithDebts = this.allClients.filter((data) => {
+        return Number(data.debtLeft) > 0;
+      });
+      this.agentClientMap = this.getAgentsWithClients();
+    }
   }
 
   async resetClientsAndEmployees() {

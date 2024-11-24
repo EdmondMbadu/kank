@@ -516,8 +516,90 @@ export class EmployeePageComponent implements OnInit {
     this.compute.generateInvoice(this.employee, 'Bonus');
   }
 
+  // generateAttendanceTable(month: number, year: number) {
+  //   const dict: any = this.employee.attendance;
+  //   const daysInMonth = new Date(year, month, 0).getDate();
+  //   const firstDayIndex = new Date(year, month - 1, 1).getDay();
+  //   const tableBody = document.getElementById('attendance-body');
+  //   tableBody!.innerHTML = '';
+
+  //   let date = 1;
+  //   for (let i = 0; i < 6; i++) {
+  //     // maximum 6 rows to cover all days
+  //     const row = document.createElement('tr');
+
+  //     for (let j = 0; j < 7; j++) {
+  //       const cell = document.createElement('td');
+  //       if (i === 0 && j < firstDayIndex) {
+  //         cell.classList.add('not-filled');
+  //         cell.innerHTML = '';
+  //       } else if (date > daysInMonth) {
+  //         cell.classList.add('bg-gray-200');
+  //         cell.classList.add('p-16');
+  //         cell.innerHTML = '';
+  //       } else {
+  //         const dateStr = `${month}-${date}-${year}`;
+
+  //         // Find matching attendance entry based on date only
+  //         const matchedKey = Object.keys(dict).find((key) =>
+  //           key.startsWith(dateStr)
+  //         );
+  //         const attendance = matchedKey && dict ? dict[matchedKey] : undefined;
+
+  //         if (attendance) {
+  //           // Extract hours and minutes from the key if available
+  //           const time = matchedKey!.split('-').slice(3, 5).join(':'); // "18:54" format
+
+  //           if (attendance === 'P') {
+  //             cell.classList.add(
+  //               'bg-green-600',
+  //               'border',
+  //               'border-black',
+  //               'text-white'
+  //             );
+  //             cell.innerHTML = `${date}<br>Present${
+  //               time ? `<br><span class="small-time">${time}</span>` : ''
+  //             }`;
+  //           } else if (attendance === 'A') {
+  //             cell.classList.add(
+  //               'bg-red-600',
+  //               'border',
+  //               'border-black',
+  //               'text-white'
+  //             );
+  //             cell.innerHTML = `${date}<br>Absent${
+  //               time ? `<br><span class="small-time">${time}</span>` : ''
+  //             }`;
+  //           } else if (attendance === 'L') {
+  //             cell.classList.add(
+  //               'bg-orange-600',
+  //               'border',
+  //               'border-black',
+  //               'text-white'
+  //             );
+  //             cell.innerHTML = `${date}<br>Retard${
+  //               time ? `<br><span class="small-time">${time}</span>` : ''
+  //             }`;
+  //           }
+  //         } else {
+  //           cell.classList.add('border', 'border-black', 'p-4');
+  //           cell.innerHTML = date.toString();
+  //         }
+  //         date++;
+  //       }
+  //       row.appendChild(cell);
+  //     }
+
+  //     tableBody!.appendChild(row);
+
+  //     if (date > daysInMonth) {
+  //       break;
+  //     }
+  //   }
+  // }
+
   generateAttendanceTable(month: number, year: number) {
-    const dict: any = this.employee.attendance;
+    const dict: any = this.employee?.attendance || {}; // Use an empty object if attendance is null or undefined.
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayIndex = new Date(year, month - 1, 1).getDay();
     const tableBody = document.getElementById('attendance-body');
@@ -525,26 +607,28 @@ export class EmployeePageComponent implements OnInit {
 
     let date = 1;
     for (let i = 0; i < 6; i++) {
-      // maximum 6 rows to cover all days
+      // Maximum 6 rows to cover all days
       const row = document.createElement('tr');
 
       for (let j = 0; j < 7; j++) {
         const cell = document.createElement('td');
         if (i === 0 && j < firstDayIndex) {
+          // Add empty cells for days before the 1st of the month
           cell.classList.add('not-filled');
           cell.innerHTML = '';
         } else if (date > daysInMonth) {
+          // Add empty cells for days after the last day of the month
           cell.classList.add('bg-gray-200');
           cell.classList.add('p-16');
           cell.innerHTML = '';
         } else {
           const dateStr = `${month}-${date}-${year}`;
 
-          // Find matching attendance entry based on date only
+          // Check for matching attendance data
           const matchedKey = Object.keys(dict).find((key) =>
             key.startsWith(dateStr)
           );
-          const attendance = matchedKey ? dict[matchedKey] : undefined;
+          const attendance = matchedKey && dict ? dict[matchedKey] : undefined;
 
           if (attendance) {
             // Extract hours and minutes from the key if available
@@ -577,11 +661,12 @@ export class EmployeePageComponent implements OnInit {
                 'border-black',
                 'text-white'
               );
-              cell.innerHTML = `${date}<br>Retard${
+              cell.innerHTML = `${date}<br>Late${
                 time ? `<br><span class="small-time">${time}</span>` : ''
               }`;
             }
           } else {
+            // Default cell styling for days with no attendance data
             cell.classList.add('border', 'border-black', 'p-4');
             cell.innerHTML = date.toString();
           }

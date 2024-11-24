@@ -179,7 +179,7 @@ export class HomeCentralComponent implements OnInit {
       if (Number(client.debtLeft) === 0 && Number(client.savings) > 0) {
         total += Number(client.savings);
         this.allClientsWithoutDebtsButWithSavings!.push(client);
-        console.log(client.savings);
+        // console.log(client.savings);
       }
     });
     this.savingsWithoutDebtsButWithSavings = total;
