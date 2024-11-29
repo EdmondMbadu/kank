@@ -14,7 +14,47 @@
         </div>
        
     </div>
+    <div class="container  flex flex-wrap  items-center justify-center  mx-auto md:flex-row">
 
+        <div class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl">
+            <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Reserve</h1>
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <!-- <th scope="col" class="px-6 py-3 rounded-s-lg">
+                            Équipe
+                        </th> -->
+                        <th scope="col" class=" py-3 px-6">
+                        Reserve Attendue Du Jour
+                        </th>
+                        <th scope="col" class=" px-6 py-3">
+                            Reserve Du Jour
+                        </th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr  class="bg-white dark:bg-gray-800">
+                        <!-- <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        {{i+1}}.  {{s.firstName}}
+                        </th> -->
+                        <td class="px-6 py-4">
+                        {{expectedReserve | number:'1.0-0'}} FC -> {{expectedReserveInDollars | number:'1.0-0'}} $
+                        </td>
+                        <td class="px-6 py-4">
+                            {{dailyReserve | number:'1.0-0'}} FC ->  {{compute.convertCongoleseFrancToUsDollars(dailyReserve)| number:'1.0-0'}} $
+                        </td>
+                        
+                    </tr>
+                    
+                    
+                </tbody>
+                
+                
+            
+            </table>
+        </div>
+    </div>
 
 <div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
 

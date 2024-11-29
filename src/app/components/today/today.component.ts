@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { Client } from 'src/app/models/client';
 
 @Component({
   selector: 'app-today',
@@ -14,11 +15,18 @@ export class TodayComponent {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    public compute: ComputationService
   ) {}
   ngOnInit() {
     this.initalizeInputs();
+    this.auth.getAllClients().subscribe((data: any) => {
+      this.clients = data;
+
+      this.findClientsWithDebts();
+    });
   }
+  clients?: Client[] = [];
+  clientsWithDebts: Client[] = [];
 
   dailyLending: string = '0';
   dailyPayment: string = '0';
@@ -32,6 +40,8 @@ export class TodayComponent {
   tomorrowMoneyRequests: string = '0';
   dailyExpense: string = '0';
   dailyLoss: string = '0';
+  expectedReserve: string = '0';
+  expectedReserveInDollars: string = '0';
 
   totalPerfomance: number = 0;
 
@@ -88,6 +98,7 @@ export class TodayComponent {
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
+  day: string = new Date().toLocaleString('en-US', { weekday: 'long' });
   summaryContent: string[] = [];
 
   initalizeInputs() {
@@ -203,5 +214,25 @@ export class TodayComponent {
     );
 
     this.initalizeInputs();
+  }
+  findClientsWithDebts() {
+    let total = 0;
+    console.log(' today', this.day);
+
+    // Filter clients who have debt and whose payment day matches today
+    this.clientsWithDebts = this.clients!.filter((data) => {
+      return Number(data.debtLeft) > 0 && data.paymentDay === this.day;
+    });
+    console.log('clients with debts for today', this.clientsWithDebts);
+
+    // Calculate the total debt for these clients
+    this.expectedReserve = this.compute
+      .computeExpectedPerDate(this.clientsWithDebts)
+      .toString();
+    this.expectedReserveInDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.expectedReserve)
+      .toString();
+
+    console.log(`Total debt for clients with payments due today: ${total}`);
   }
 }

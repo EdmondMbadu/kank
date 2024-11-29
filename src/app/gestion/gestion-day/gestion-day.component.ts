@@ -43,6 +43,7 @@ export class GestionDayComponent implements OnInit {
   week: number = 5;
   month: number = 20;
   day: number = 1;
+  theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
   graphicsRange: number = this.week;
   graphicsRangeServe: number = this.week;
   currentDate = new Date();
@@ -125,6 +126,7 @@ export class GestionDayComponent implements OnInit {
 
   isFetchingClients = false;
   currentClients: Array<Client[]> = [];
+  currentClientsReserve: Client[] = [];
   allUsers: User[] = [];
   allClients?: Client[];
   allCurrentClients?: Client[] = [];
@@ -136,8 +138,17 @@ export class GestionDayComponent implements OnInit {
     totalInDollar: number;
     trackingId: string;
   }> = [];
+  reserveTotals: Array<{
+    firstName: string;
+
+    total: number;
+    totalInDollar: number;
+    trackingId: string;
+  }> = [];
   overallTotal: number = 0;
+  overallTotalReserve: number = 0;
   overallTotalInDollars: number = 0;
+  overallTotalReserveInDollars: number = 0;
   getAllClients() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -158,6 +169,7 @@ export class GestionDayComponent implements OnInit {
       }).subscribe(
         ({ clients, cards }) => {
           let userTotal = 0;
+          let reserveTotal = 0;
 
           // Process clients
           for (let client of clients) {
@@ -170,6 +182,12 @@ export class GestionDayComponent implements OnInit {
               userTotal += Number(client.requestAmount);
             }
           }
+          this.currentClientsReserve = clients.filter((data) => {
+            return Number(data.debtLeft) > 0 && data.paymentDay === this.theDay;
+          });
+          reserveTotal = this.compute.computeExpectedPerDate(
+            this.currentClientsReserve
+          );
 
           // Process cards
           for (let card of cards) {
@@ -194,9 +212,21 @@ export class GestionDayComponent implements OnInit {
             ),
             trackingId: user.uid!,
           });
+          this.reserveTotals.push({
+            firstName: user.firstName!,
+
+            total: reserveTotal,
+            totalInDollar: Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                reserveTotal.toString()
+              )
+            ),
+            trackingId: user.uid!,
+          });
 
           // Add to the overall total
           this.overallTotal += userTotal;
+          this.overallTotalReserve += reserveTotal;
 
           completedRequests++;
           if (completedRequests === this.allUsers.length) {
@@ -204,13 +234,24 @@ export class GestionDayComponent implements OnInit {
             this.userRequestTotals = this.userRequestTotals.filter((client) => {
               return client.total > 0;
             });
+            this.reserveTotals = this.reserveTotals.filter((client) => {
+              return client.total > 0;
+            });
             this.userRequestTotals.sort((a, b) => {
+              return b.total - a.total;
+            });
+            this.reserveTotals.sort((a, b) => {
               return b.total - a.total;
             });
 
             this.overallTotalInDollars = Number(
               this.compute.convertCongoleseFrancToUsDollars(
                 this.overallTotal.toString()
+              )
+            );
+            this.overallTotalReserveInDollars = Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                this.overallTotalReserve.toString()
               )
             );
             this.isFetchingClients = false;

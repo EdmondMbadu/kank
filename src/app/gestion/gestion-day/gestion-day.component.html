@@ -91,6 +91,51 @@
         
         </table>
     </div>
+    <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl ">
+        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Reserve Attendu </h1>
+        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-6 py-3 rounded-s-lg">
+                        Équipe
+                    </th>
+                    <th scope="col" class=" py-3 px-6">
+                        Reserve Attendu (FC)
+                    </th>
+                    <th scope="col" class=" px-6 py-3">
+                        Reserve Attendu($)
+                    </th>
+                    
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let s of  reserveTotals; let i=index" class="bg-white dark:bg-gray-800">
+                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    {{i+1}}.  {{s.firstName}}
+                    </th>
+                    <td class="px-6 py-4">
+                    {{s.total | number:'1.0-0'}} FC
+                    </td>
+                    <td class="px-6 py-4">
+                        {{s.totalInDollar | number:'1.0-0'}} $
+                    </td>
+                    
+                </tr>
+                
+                
+            </tbody>
+            <tfoot>
+                <tr class="font-semibold ">
+                    <th scope="row" class="px-6 py-3 text-base">Total</th>
+                    <td class="px-6 py-3">{{overallTotalReserve | number:'1.0-0'}} FC</td>
+                    <td class="px-6 py-3">{{overallTotalReserveInDollars| number:'1.0-0'}} $</td>
+                </tr>
+            
+            </tfoot>
+            
+        
+        </table>
+    </div>
 </div>
 <div class=" container lg:block  flex mx-auto shadow-xl  flex-col md:justify-center md:flex-row  ">
 
