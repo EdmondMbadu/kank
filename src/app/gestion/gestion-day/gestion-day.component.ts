@@ -222,9 +222,10 @@ export class GestionDayComponent implements OnInit {
             ),
             trackingId: user.uid!,
           });
-          const todayKey = Object.keys(user.reserve || {}).find((key) =>
+          const todayKeys = Object.keys(user.reserve || {}).filter((key) =>
             key.startsWith(this.today)
           );
+
           this.reserveTotals.push({
             firstName: user.firstName!,
 
@@ -234,14 +235,20 @@ export class GestionDayComponent implements OnInit {
                 reserveTotal.toString()
               )
             ),
-            actual: todayKey ? Number(user.reserve![todayKey]) : 0, // Default to 0 if undefined
-            actualInDollar: todayKey
-              ? Number(
+            actual: todayKeys.reduce(
+              (sum, key) => sum + Number(user.reserve![key] || 0),
+              0
+            ), // Default to 0 if undefined
+            actualInDollar: todayKeys.reduce(
+              (sum, key) =>
+                sum +
+                Number(
                   this.compute.convertCongoleseFrancToUsDollars(
-                    user.reserve![todayKey].toString()
+                    user.reserve![key].toString()
                   )
-                )
-              : 0,
+                ),
+              0
+            ),
             trackingId: user.uid!,
           });
 
