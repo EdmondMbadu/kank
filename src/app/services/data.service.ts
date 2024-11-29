@@ -1402,4 +1402,25 @@ export class DataService {
     };
     return userRef.set(data, { merge: true });
   }
+  didClientStartThisWeek(client: Client) {
+    const convertToDateCompatibleFormat = (dateStr: string) => {
+      const [month, day, year] = dateStr.split('-');
+      return `${year}/${month}/${day}`;
+    };
+
+    const oneWeekAgo = new Date();
+    // watch out for this one. I am not sure. whether it is 7 so I put 6 just in case.
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 6);
+
+    const formattedDebtCycleStartDate = convertToDateCompatibleFormat(
+      client.debtCycleStartDate!
+    );
+    const debtCycleStartDate = new Date(formattedDebtCycleStartDate);
+
+    if (debtCycleStartDate > oneWeekAgo) {
+      return false;
+    }
+
+    return true;
+  }
 }

@@ -9,6 +9,7 @@ import { TimeService } from 'src/app/services/time.service';
 import { User } from 'src/app/models/user';
 import { Client } from 'src/app/models/client';
 import { Card } from 'src/app/models/card';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-gestion-day',
@@ -21,7 +22,8 @@ export class GestionDayComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    public compute: ComputationService
+    public compute: ComputationService,
+    private data: DataService
   ) {}
   ngOnInit(): void {
     this.auth.getManagementInfo().subscribe((data) => {
@@ -143,6 +145,8 @@ export class GestionDayComponent implements OnInit {
 
     total: number;
     totalInDollar: number;
+    actual?: number;
+    actualInDollar?: number;
     trackingId: string;
   }> = [];
   overallTotal: number = 0;
@@ -158,6 +162,7 @@ export class GestionDayComponent implements OnInit {
 
     // Initialize userRequestTotals and overallTotal
     this.userRequestTotals = [];
+    this.reserveTotals = [];
     this.overallTotal = 0;
 
     let completedRequests = 0;
@@ -183,7 +188,12 @@ export class GestionDayComponent implements OnInit {
             }
           }
           this.currentClientsReserve = clients.filter((data) => {
-            return Number(data.debtLeft) > 0 && data.paymentDay === this.theDay;
+            return (
+              Number(data.debtLeft) > 0 &&
+              data.paymentDay === this.theDay &&
+              data &&
+              this.data.didClientStartThisWeek(data) // this condition can be confusing. it is the opposite
+            );
           });
           reserveTotal = this.compute.computeExpectedPerDate(
             this.currentClientsReserve
@@ -212,6 +222,9 @@ export class GestionDayComponent implements OnInit {
             ),
             trackingId: user.uid!,
           });
+          const todayKey = Object.keys(user.reserve || {}).find((key) =>
+            key.startsWith(this.today)
+          );
           this.reserveTotals.push({
             firstName: user.firstName!,
 
@@ -221,6 +234,14 @@ export class GestionDayComponent implements OnInit {
                 reserveTotal.toString()
               )
             ),
+            actual: todayKey ? Number(user.reserve![todayKey]) : 0, // Default to 0 if undefined
+            actualInDollar: todayKey
+              ? Number(
+                  this.compute.convertCongoleseFrancToUsDollars(
+                    user.reserve![todayKey].toString()
+                  )
+                )
+              : 0,
             trackingId: user.uid!,
           });
 
@@ -254,6 +275,7 @@ export class GestionDayComponent implements OnInit {
                 this.overallTotalReserve.toString()
               )
             );
+            console.log('all the reserve amounts', this.reserveTotals);
             this.isFetchingClients = false;
             // Now you can use this.userRequestTotals and this.overallTotal in your template
           }

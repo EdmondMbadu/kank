@@ -4,6 +4,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-today',
@@ -15,7 +16,8 @@ export class TodayComponent {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    public compute: ComputationService
+    public compute: ComputationService,
+    private data: DataService
   ) {}
   ngOnInit() {
     this.initalizeInputs();
@@ -221,7 +223,11 @@ export class TodayComponent {
 
     // Filter clients who have debt and whose payment day matches today
     this.clientsWithDebts = this.clients!.filter((data) => {
-      return Number(data.debtLeft) > 0 && data.paymentDay === this.day;
+      return (
+        Number(data.debtLeft) > 0 &&
+        data.paymentDay === this.day &&
+        this.data.didClientStartThisWeek(data)
+      );
     });
     console.log('clients with debts for today', this.clientsWithDebts);
 

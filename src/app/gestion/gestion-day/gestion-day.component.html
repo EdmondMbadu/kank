@@ -100,10 +100,10 @@
                         Équipe
                     </th>
                     <th scope="col" class=" py-3 px-6">
-                        Reserve Attendu (FC)
+                        Reserve Attendu 
                     </th>
                     <th scope="col" class=" px-6 py-3">
-                        Reserve Attendu($)
+                        Reserve Donnée 
                     </th>
                     
                 </tr>
@@ -114,10 +114,10 @@
                     {{i+1}}.  {{s.firstName}}
                     </th>
                     <td class="px-6 py-4">
-                    {{s.total | number:'1.0-0'}} FC
+                    {{s.total | number:'1.0-0'}} FC ->{{s.totalInDollar | number:'1.0-0'}} $
                     </td>
                     <td class="px-6 py-4">
-                        {{s.totalInDollar | number:'1.0-0'}} $
+                        {{s.actual | number:'1.0-0'}} FC -> {{s.actualInDollar | number:'1.0-0'}} $
                     </td>
                     
                 </tr>
@@ -127,8 +127,8 @@
             <tfoot>
                 <tr class="font-semibold ">
                     <th scope="row" class="px-6 py-3 text-base">Total</th>
-                    <td class="px-6 py-3">{{overallTotalReserve | number:'1.0-0'}} FC</td>
-                    <td class="px-6 py-3">{{overallTotalReserveInDollars| number:'1.0-0'}} $</td>
+                    <td class="px-6 py-3">{{overallTotalReserve | number:'1.0-0'}} FC ->{{overallTotalReserveInDollars| number:'1.0-0'}} $</td>
+                    <td class="px-6 py-3">{{dailyReserve| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(dailyReserve)| number:'1.0-0'}} $ </td>
                 </tr>
             
             </tfoot>
