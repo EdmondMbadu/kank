@@ -1239,12 +1239,11 @@ export class DataService {
   }
 
   computeAmountToPay(interestRate: string, loanAmount: string) {
-    const amount = (
-      (1 + Number(interestRate) * 0.01) *
-      Number(loanAmount)
-    ).toString();
+    const amount = (1 + Number(interestRate) * 0.01) * Number(loanAmount);
+    // Round to the nearest whole number
+    const roundedAmount = Math.round(amount);
 
-    return amount;
+    return roundedAmount.toString();
   }
 
   computeDailyReimbursement(date: string, payment: string) {
