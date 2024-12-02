@@ -167,10 +167,10 @@ const routes: Routes = [
   { path: 'new-cycle-register/:id', component: NewCycleRegisterComponent },
   { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
-  {
-    path: 'client-portal-savings/:id',
-    component: ClientPortalSavingsComponent,
-  },
+  // {
+  //   path: 'client-portal-savings/:id',
+  //   component: ClientPortalSavingsComponent,
+  // },
   { path: 'register-portal/:id', component: RegiserPortalComponent },
   { path: 'client-portal-card/:id', component: ClientPortalCardComponent },
   { path: 'add-investment', component: AmountInvestedComponent },
