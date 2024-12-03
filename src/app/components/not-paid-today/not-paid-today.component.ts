@@ -76,32 +76,38 @@ export class NotPaidTodayComponent {
     this.dailyPaymentsNames = [];
     this.paidToday = [];
     this.trackingIds = [];
-    for (let client of this.clients!) {
-      const filteredDict = Object.fromEntries(
-        Object.entries(client.payments!).filter(([key, value]) =>
-          key.startsWith(this.requestDateCorrectFormat)
-        )
-      );
-      const filteredValues = Object.values(filteredDict);
-      if (filteredValues.length !== 0) {
-        this.paidToday.push(client);
-        this.fillDailyPayment(client, filteredValues);
+    if (this.clients) {
+      for (let client of this.clients!) {
+        const filteredDict = client.payments
+          ? Object.fromEntries(
+              Object.entries(client.payments).filter(([key, value]) =>
+                key.startsWith(this.requestDateCorrectFormat)
+              )
+            )
+          : {};
+        const filteredValues = Object.values(filteredDict);
+        if (filteredValues.length !== 0) {
+          this.paidToday.push(client);
+          this.fillDailyPayment(client, filteredValues);
+        }
       }
     }
   }
   findThoseWhoHaveNotPaidToday() {
     this.haveNotPaidToday = [];
-    for (let c of this.shouldPayToday) {
-      if (
-        this.paidToday.indexOf(c) === -1 &&
-        Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
-        !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
-        this.didClientStartThisWeek(c)
-      ) {
-        c.minPayment = (
-          Number(c.amountToPay) / Number(c.paymentPeriodRange)
-        ).toString();
-        this.haveNotPaidToday.push(c);
+    if (this.shouldPayToday) {
+      for (let c of this.shouldPayToday) {
+        if (
+          this.paidToday.indexOf(c) === -1 &&
+          Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
+          !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
+          this.didClientStartThisWeek(c)
+        ) {
+          c.minPayment = (
+            Number(c.amountToPay) / Number(c.paymentPeriodRange)
+          ).toString();
+          this.haveNotPaidToday.push(c);
+        }
       }
     }
   }
