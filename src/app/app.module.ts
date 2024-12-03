@@ -103,6 +103,7 @@ import { SharedModule } from './shared/shared.module';
 import { ClientInfoSavingsComponent } from './components/client-info-savings/client-info-savings.component';
 import { ClientPortalSavingsComponent } from './components/client-portal-savings/client-portal-savings.component';
 import { PaymentSavingsComponent } from './components/payment-savings/payment-savings.component';
+import { FinishedDebtComponent } from './components/finished-debt/finished-debt.component';
 
 @NgModule({
   declarations: [
@@ -191,6 +192,7 @@ import { PaymentSavingsComponent } from './components/payment-savings/payment-sa
     ClientInfoSavingsComponent,
     ClientPortalSavingsComponent,
     PaymentSavingsComponent,
+    FinishedDebtComponent,
   ],
   imports: [
     BrowserModule,

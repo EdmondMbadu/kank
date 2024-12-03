@@ -82,6 +82,7 @@ import { DailyCardReturnsComponent } from './card/daily-card-returns/daily-card-
 import { ClientInfoSavingsComponent } from './components/client-info-savings/client-info-savings.component';
 import { ClientPortalSavingsComponent } from './components/client-portal-savings/client-portal-savings.component';
 import { PaymentSavingsComponent } from './components/payment-savings/payment-savings.component';
+import { FinishedDebtComponent } from './components/finished-debt/finished-debt.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -171,6 +172,10 @@ const routes: Routes = [
   //   path: 'client-portal-savings/:id',
   //   component: ClientPortalSavingsComponent,
   // },
+  {
+    path: 'finished-debt',
+    component: FinishedDebtComponent,
+  },
   { path: 'register-portal/:id', component: RegiserPortalComponent },
   { path: 'client-portal-card/:id', component: ClientPortalCardComponent },
   { path: 'add-investment', component: AmountInvestedComponent },

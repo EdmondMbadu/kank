@@ -42,6 +42,7 @@ export class GestionDayComponent implements OnInit {
       }
     });
   }
+  percentage: string = '0';
   week: number = 5;
   month: number = 20;
   day: number = 1;
@@ -282,6 +283,10 @@ export class GestionDayComponent implements OnInit {
                 this.overallTotalReserve.toString()
               )
             );
+            this.percentage = (
+              (Number(this.dailyReserve) / this.overallTotalReserve) *
+              100
+            ).toFixed(2);
             console.log('all the reserve amounts', this.reserveTotals);
             this.isFetchingClients = false;
             // Now you can use this.userRequestTotals and this.overallTotal in your template
