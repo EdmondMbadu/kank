@@ -67,7 +67,7 @@ export class FinishedDebtComponent implements OnInit {
   findClientsWithDebts() {
     this.currentClients = [];
     this.clients?.forEach((client) => {
-      if (Number(client.debtLeft) === 0) {
+      if (Number(client.debtLeft) === 0 && client.type !== 'register') {
         this.currentClients!.push(client);
       }
     });
