@@ -163,14 +163,33 @@ export class PerformanceService {
     });
   }
 
+  // extractTodayPayments() {
+  //   this.paidToday = [];
+
+  //   if (this.clients?.length === 0) return;
+  //   if (this.clients && Array.isArray(this.clients)) {
+  //     for (let client of this.clients!) {
+  //       const filteredDict = Object.fromEntries(
+  //         Object.entries(client.payments!).filter(([key, value]) =>
+  //           key.startsWith(this.today)
+  //         )
+  //       );
+  //       const filteredValues = Object.values(filteredDict);
+  //       if (filteredValues.length !== 0) {
+  //         this.paidToday.push(client);
+  //       }
+  //     }
+  //   }
+  // }
   extractTodayPayments() {
     this.paidToday = [];
 
-    if (this.clients?.length === 0) return;
-    if (this.clients && Array.isArray(this.clients)) {
-      for (let client of this.clients!) {
+    if (!this.clients || this.clients.length === 0) return;
+
+    for (let client of this.clients) {
+      if (client.payments && typeof client.payments === 'object') {
         const filteredDict = Object.fromEntries(
-          Object.entries(client.payments!).filter(([key, value]) =>
+          Object.entries(client.payments).filter(([key, value]) =>
             key.startsWith(this.today)
           )
         );
@@ -181,6 +200,7 @@ export class PerformanceService {
       }
     }
   }
+
   findThoseWhoHaveNotPaidToday() {
     this.haveNotPaidToday = [];
     for (let c of this.shouldPayToday) {
