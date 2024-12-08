@@ -99,6 +99,7 @@ export class NotPaidTodayComponent {
       for (let c of this.shouldPayToday) {
         if (
           this.paidToday.indexOf(c) === -1 &&
+          c.vitalStatus !== 'Mort' && // make sure that the client is not dead
           Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
           !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
           this.didClientStartThisWeek(c)

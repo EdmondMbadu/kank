@@ -200,7 +200,7 @@ export class EmployeePageComponent implements OnInit {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
       // set location coordinates
-      if (this.auth.currentUser.locationCoordinates) {
+      if (this.auth.currentUser && this.auth.currentUser.locationCoordinates) {
         this.locationCoordinate = this.auth.currentUser.locationCoordinates;
         this.currentLat = Number(this.locationCoordinate.lattitude);
         this.currentLng = Number(this.locationCoordinate.longitude);

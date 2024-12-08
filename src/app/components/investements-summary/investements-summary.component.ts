@@ -200,35 +200,43 @@ export class InvestementsSummaryComponent implements OnInit {
   findClientsWithDebts() {
     this.currentClientsRegistered = [];
     this.currentClients = [];
-    this.clients?.forEach((client) => {
-      if (Number(client.debtLeft) > 0) {
-        this.currentClients!.push(client);
-      } else if (client.type !== undefined && client.type === 'register') {
-        this.currentClientsRegistered?.push(client);
-      }
-    });
+    if (this.clients) {
+      this.clients?.forEach((client) => {
+        if (Number(client.debtLeft) > 0 && client.vitalStatus !== 'Mort') {
+          this.currentClients!.push(client);
+        } else if (client.type !== undefined && client.type === 'register') {
+          this.currentClientsRegistered?.push(client);
+        }
+      });
+    }
+
     return this.currentClients?.length;
   }
   findClientsWithoutDebts() {
     this.clientsWithoutDebt = [];
-    this.clients?.forEach((client) => {
-      if (Number(client.debtLeft) === 0 && client.type !== 'register') {
-        this.clientsWithoutDebt!.push(client);
-      }
-    });
+    if (this.clients) {
+      this.clients?.forEach((client) => {
+        if (Number(client.debtLeft) === 0 && client.type !== 'register') {
+          this.clientsWithoutDebt!.push(client);
+        }
+      });
+    }
     return this.clientsWithoutDebt?.length;
   }
   findClientsWithoutDebtsButWithSavings() {
     this.clientsWithoutDebt = [];
-    this.clients?.forEach((client) => {
-      if (
-        Number(client.debtLeft) === 0 &&
-        Number(client.savings) > 0 &&
-        client.type !== 'register'
-      ) {
-        this.clientsWithoutDebt!.push(client);
-      }
-    });
+    if (this.clients) {
+      this.clients?.forEach((client) => {
+        if (
+          Number(client.debtLeft) === 0 &&
+          Number(client.savings) > 0 &&
+          client.type !== 'register'
+        ) {
+          this.clientsWithoutDebt!.push(client);
+        }
+      });
+    }
+
     return this.clientsWithoutDebt?.length;
   }
 

@@ -81,17 +81,16 @@ export class PerformanceService {
   }
 
   callEachEmployeeToUpdatePerformancePerSubmission() {
-    for (let em of this.employees!) {
-      // console.log('current employee daily points', em.dailyPoints![this.today]);
-      // console.log(
-      //   'current employee  total points',
-      //   em.totalDailyPoints![this.today]
-      // );
-      // if both the daily and total poitns are 0, do not update the employe performance points
-      if (em.dailyPoints![this.today] === '0' && em.currentTotalPoints === 0) {
-        // console.log('entering here');
-      } else {
-        this.UpdateEachEmployeePerformancePerSubmission(em);
+    if (this.employees) {
+      for (let em of this.employees!) {
+        if (
+          em.dailyPoints![this.today] === '0' &&
+          em.currentTotalPoints === 0
+        ) {
+          // console.log('entering here');
+        } else {
+          this.UpdateEachEmployeePerformancePerSubmission(em);
+        }
       }
     }
   }
@@ -123,18 +122,20 @@ export class PerformanceService {
     // actually, if a client paid twice their amount, increase the performance of employees
     // rounded = Math.max(1, rounded); // we will see if this is a good idea
 
-    for (let em of this.employees!) {
-      em.dailyPoints![`${this.today}`] =
-        em.dailyPoints![`${this.today}`] === undefined
-          ? '0'
-          : em.dailyPoints![`${this.today}`];
-      if (
-        em.clients!.includes(client.uid!) &&
-        client.debtCycleStartDate !== this.today
-      ) {
-        em.dailyPoints![`${this.today}`] = (
-          Number(em.dailyPoints![`${this.today}`]) + rounded
-        ).toString();
+    if (this.employees) {
+      for (let em of this.employees!) {
+        em.dailyPoints![`${this.today}`] =
+          em.dailyPoints![`${this.today}`] === undefined
+            ? '0'
+            : em.dailyPoints![`${this.today}`];
+        if (
+          em.clients!.includes(client.uid!) &&
+          client.debtCycleStartDate !== this.today
+        ) {
+          em.dailyPoints![`${this.today}`] = (
+            Number(em.dailyPoints![`${this.today}`]) + rounded
+          ).toString();
+        }
       }
     }
   }
@@ -163,24 +164,6 @@ export class PerformanceService {
     });
   }
 
-  // extractTodayPayments() {
-  //   this.paidToday = [];
-
-  //   if (this.clients?.length === 0) return;
-  //   if (this.clients && Array.isArray(this.clients)) {
-  //     for (let client of this.clients!) {
-  //       const filteredDict = Object.fromEntries(
-  //         Object.entries(client.payments!).filter(([key, value]) =>
-  //           key.startsWith(this.today)
-  //         )
-  //       );
-  //       const filteredValues = Object.values(filteredDict);
-  //       if (filteredValues.length !== 0) {
-  //         this.paidToday.push(client);
-  //       }
-  //     }
-  //   }
-  // }
   extractTodayPayments() {
     this.paidToday = [];
 
@@ -203,17 +186,19 @@ export class PerformanceService {
 
   findThoseWhoHaveNotPaidToday() {
     this.haveNotPaidToday = [];
-    for (let c of this.shouldPayToday) {
-      if (
-        this.paidToday.indexOf(c) === -1 &&
-        Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
-        !c.debtCycleStartDate?.startsWith(this.today) &&
-        this.clientStartedMorethanOneWeekAgo(c)
-      ) {
-        c.minPayment = (
-          Number(c.amountToPay) / Number(c.paymentPeriodRange)
-        ).toString();
-        this.haveNotPaidToday.push(c);
+    if (this.shouldPayToday) {
+      for (let c of this.shouldPayToday) {
+        if (
+          this.paidToday.indexOf(c) === -1 &&
+          Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
+          !c.debtCycleStartDate?.startsWith(this.today) &&
+          this.clientStartedMorethanOneWeekAgo(c)
+        ) {
+          c.minPayment = (
+            Number(c.amountToPay) / Number(c.paymentPeriodRange)
+          ).toString();
+          this.haveNotPaidToday.push(c);
+        }
       }
     }
   }
@@ -225,6 +210,7 @@ export class PerformanceService {
       for (let client of this.clients) {
         if (
           client.paymentDay === day &&
+          client.vitalStatus !== 'Mort' && // make sure that we filter out dead clients
           Number(client.debtLeft) > 0 &&
           this.clientStartedMorethanOneWeekAgo(client)
         ) {
@@ -293,43 +279,72 @@ export class PerformanceService {
       ).toString();
     }
   }
-  findAverageAndTotal(employee: Employee) {
+  findAverageAndTotal(employee: Employee): [number, number] {
     let average = 0,
       total = 0;
-    for (let key in employee.dailyPoints) {
-      average += Number(employee.dailyPoints[key]);
-      total += Number(employee.totalDailyPoints![key]);
+
+    if (employee.dailyPoints && typeof employee.dailyPoints === 'object') {
+      for (let key in employee.dailyPoints) {
+        average += Number(employee.dailyPoints[key]) || 0;
+      }
     }
+
+    if (
+      employee.totalDailyPoints &&
+      typeof employee.totalDailyPoints === 'object'
+    ) {
+      for (let key in employee.totalDailyPoints) {
+        total += Number(employee.totalDailyPoints[key]) || 0;
+      }
+    }
+
     return [average, total];
   }
-  findAverageTotalToday(employees: Employee[]) {
+
+  findAverageTotalToday(employees: Employee[]): string {
     let total = 0;
-    for (let e of employees) {
-      let current = Number(e.dailyPoints![this.today]);
-      if (!isNaN(current)) {
-        total += current;
+
+    if (employees && Array.isArray(employees)) {
+      for (let e of employees) {
+        if (e.dailyPoints && typeof e.dailyPoints === 'object') {
+          const current = Number(e.dailyPoints[this.today]);
+          if (!isNaN(current)) {
+            total += current;
+          }
+        }
       }
     }
+
     return isNaN(total) ? '' : total.toString();
   }
-  findTotalToday(employees: Employee[]) {
+
+  findTotalToday(employees: Employee[]): string {
     let total = 0;
-    for (let e of employees) {
-      let current = Number(e.totalDailyPoints![this.today]);
-      if (!isNaN(current)) {
-        total += current;
+
+    if (employees && Array.isArray(employees)) {
+      for (let e of employees) {
+        if (e.totalDailyPoints && typeof e.totalDailyPoints === 'object') {
+          const current = Number(e.totalDailyPoints[this.today]);
+          if (!isNaN(current)) {
+            total += current;
+          }
+        }
       }
     }
+
     return isNaN(total) ? '' : total.toString();
   }
+
   findAverageAndTotalAllEmployee(employees: Employee[]) {
     let average = 0,
       total = 0;
 
-    for (let e of employees) {
-      for (let key in e.dailyPoints) {
-        average += Number(e.dailyPoints[key]);
-        total += Number(e.totalDailyPoints![key]);
+    if (employees) {
+      for (let e of employees) {
+        for (let key in e.dailyPoints) {
+          average += Number(e.dailyPoints[key]);
+          total += Number(e.totalDailyPoints![key]);
+        }
       }
     }
 

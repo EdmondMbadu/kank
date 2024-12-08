@@ -185,7 +185,7 @@ export class TeamPageComponent implements OnInit {
   findClientsWithDebts() {
     if (this.allClients) {
       this.clientsWithDebts = this.allClients.filter((data) => {
-        return Number(data.debtLeft) > 0;
+        return Number(data.debtLeft) > 0 && data.vitalStatus !== 'Mort'; //remove clients that are dead from the mixt
       });
       this.agentClientMap = this.getAgentsWithClients();
     }

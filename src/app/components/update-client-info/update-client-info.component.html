@@ -63,6 +63,17 @@
         <option [ngValue]="'Saturday'">Samedi </option>
         </select>
     </div>
+    <div *ngIf="this.auth.isAdmin" class="mb-6">
+        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Etat vital</label>
+        <select [disabled]="!this.auth.isAdmin"  id="countries"[(ngModel)]="client.vitalStatus"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <option selected>Choose</option>
+        <option [ngValue]="'Mort'">Mort</option>
+        <option [ngValue]="'Vivant'">Vivant</option>
+        <option [ngValue]="'Quitté'">Quitté</option>
+        
+       
+        </select>
+    </div>
     <div class="mb-6">
         <label class="block mb-2 text-sm font-medium text-red-700">Agent</label>
         <select [disabled]="!this.auth.isAdmin"   id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
