@@ -210,7 +210,7 @@ export class PerformanceService {
       for (let client of this.clients) {
         if (
           client.paymentDay === day &&
-          client.vitalStatus !== 'Mort' && // make sure that we filter out dead clients
+          // client.vitalStatus !== 'Mort' && // make sure that we filter out dead clients
           Number(client.debtLeft) > 0 &&
           this.clientStartedMorethanOneWeekAgo(client)
         ) {
