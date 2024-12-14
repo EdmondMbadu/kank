@@ -661,7 +661,7 @@ export class EmployeePageComponent implements OnInit {
                 'border-black',
                 'text-white'
               );
-              cell.innerHTML = `${date}<br>Late${
+              cell.innerHTML = `${date}<br>Retard${
                 time ? `<br><span class="small-time">${time}</span>` : ''
               }`;
             }
