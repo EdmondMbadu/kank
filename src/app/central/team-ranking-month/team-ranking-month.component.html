@@ -99,12 +99,25 @@
             <td class="px-6 py-4 font-medium">{{ i + 1 }}. {{ em.firstName }} {{ em.lastName }}</td>
             <td class="px-6 py-4">{{ em.paymentAmount | number: '1.0-0' }} $</td>
           </tr>
+          <h1 class="text-center text-2xl font-bold underline mx-auto">Maisons Loyer</h1>
+          <tr *ngFor="let u of allUsers; let i=index" class="bg-white dark:bg-gray-800">
+            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+            {{i+1}}.  {{u.firstName}} 
+            </th>
+            
+            <td class="px-6 py-4">
+                {{u.housePayment | number:'1.0-0'}} $
+                </td>
+            
+        </tr>
         </tbody>
         <tfoot>
           <tr class="font-semibold bg-gray-50">
             <td class="px-6 py-3 text-lg">Total</td>
             <td class="px-6 py-3 text-lg">{{ total | number: '1.0-0' }} $</td>
           </tr>
+         
+       
         </tfoot>
       </table>
     </div>
