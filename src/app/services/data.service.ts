@@ -149,7 +149,9 @@ export class DataService {
       profession: client.profession,
       paymentDay: client.paymentDay,
       agent: client.agent,
-      vitalStatus: client.vitalStatus,
+      ...(client.vitalStatus !== undefined && {
+        vitalStatus: client.vitalStatus,
+      }),
     };
 
     return clientRef.set(data, { merge: true });
