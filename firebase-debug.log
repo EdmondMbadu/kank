@@ -1,0 +1,138 @@
+[debug] [2024-12-25T00:32:03.178Z] ----------------------------------------------------------------------
+[debug] [2024-12-25T00:32:03.184Z] Command:       /Users/edmondmbadu/.nvm/versions/node/v19.9.0/bin/node /opt/homebrew/bin/firebase deploy --only functions
+[debug] [2024-12-25T00:32:03.184Z] CLI Version:   13.14.2
+[debug] [2024-12-25T00:32:03.185Z] Platform:      darwin
+[debug] [2024-12-25T00:32:03.185Z] Node Version:  v19.9.0
+[debug] [2024-12-25T00:32:03.185Z] Time:          Tue Dec 24 2024 16:32:03 GMT-0800 (Pacific Standard Time)
+[debug] [2024-12-25T00:32:03.185Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-12-25T00:32:03.223Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-12-25T00:32:03.223Z] > authorizing via signed-in user (mbadungoma@gmail.com)
+[debug] [2024-12-25T00:32:03.223Z] [iam] checking project kank-4bbbc for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]
+[debug] [2024-12-25T00:32:03.224Z] > refreshing access token with scopes: []
+[debug] [2024-12-25T00:32:03.225Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-12-25T00:32:03.225Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-12-25T00:32:03.495Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2024-12-25T00:32:03.495Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-12-25T00:32:03.510Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions [none]
+[debug] [2024-12-25T00:32:03.510Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions x-goog-quota-user=projects/kank-4bbbc
+[debug] [2024-12-25T00:32:03.511Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2024-12-25T00:32:03.822Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions 200
+[debug] [2024-12-25T00:32:03.822Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get"]}
+[debug] [2024-12-25T00:32:03.822Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2024-12-25T00:32:03.823Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2024-12-25T00:32:04.253Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2024-12-25T00:32:04.254Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'kank-4bbbc'...
+[info] 
+[info] i  deploying functions 
+[debug] [2024-12-25T00:32:04.262Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc [none]
+[debug] [2024-12-25T00:32:04.638Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc 200
+[debug] [2024-12-25T00:32:04.638Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc {"projectId":"kank-4bbbc","projectNumber":"940518039240","displayName":"Kank","name":"projects/kank-4bbbc","resources":{"hostingSite":"kank-4bbbc","storageBucket":"kank-4bbbc.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_4f4314ae-146f-4c2a-8588-49ef9e30468f"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2024-12-25T00:32:04.639Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudfunctions.googleapis.com [none]
+[debug] [2024-12-25T00:32:04.639Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/kank-4bbbc
+[debug] [2024-12-25T00:32:04.640Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/runtimeconfig.googleapis.com [none]
+[debug] [2024-12-25T00:32:04.640Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/kank-4bbbc
+[debug] [2024-12-25T00:32:04.641Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudbuild.googleapis.com [none]
+[debug] [2024-12-25T00:32:04.641Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudbuild.googleapis.com x-goog-quota-user=projects/kank-4bbbc
+[debug] [2024-12-25T00:32:04.641Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/artifactregistry.googleapis.com [none]
+[debug] [2024-12-25T00:32:04.641Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/artifactregistry.googleapis.com x-goog-quota-user=projects/kank-4bbbc
+[debug] [2024-12-25T00:32:05.119Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/runtimeconfig.googleapis.com 200
+[debug] [2024-12-25T00:32:05.120Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/runtimeconfig.googleapis.com [omitted]
+[debug] [2024-12-25T00:32:05.129Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudfunctions.googleapis.com 200
+[debug] [2024-12-25T00:32:05.129Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudfunctions.googleapis.com [omitted]
+[info] ✔  functions: required API cloudfunctions.googleapis.com is enabled 
+[debug] [2024-12-25T00:32:05.130Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/artifactregistry.googleapis.com 200
+[debug] [2024-12-25T00:32:05.130Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/artifactregistry.googleapis.com [omitted]
+[info] ✔  artifactregistry: required API artifactregistry.googleapis.com is enabled 
+[debug] [2024-12-25T00:32:05.131Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudbuild.googleapis.com 200
+[debug] [2024-12-25T00:32:05.131Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/cloudbuild.googleapis.com [omitted]
+[info] ✔  functions: required API cloudbuild.googleapis.com is enabled 
+[debug] [2024-12-25T00:32:05.131Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc/adminSdkConfig [none]
+[debug] [2024-12-25T00:32:05.523Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc/adminSdkConfig 200
+[debug] [2024-12-25T00:32:05.523Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc/adminSdkConfig {"projectId":"kank-4bbbc","storageBucket":"kank-4bbbc.appspot.com","locationId":"us-central"}
+[debug] [2024-12-25T00:32:05.524Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs [none]
+[debug] [2024-12-25T00:32:05.749Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs 200
+[debug] [2024-12-25T00:32:05.749Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs {"configs":[{"name":"projects/kank-4bbbc/configs/twilio"}]}
+[debug] [2024-12-25T00:32:05.750Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables [none]
+[debug] [2024-12-25T00:32:05.928Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables 200
+[debug] [2024-12-25T00:32:05.929Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables {"variables":[{"name":"projects/kank-4bbbc/configs/twilio/variables/sid","updateTime":"2024-12-24T23:41:30.683763156Z"},{"name":"projects/kank-4bbbc/configs/twilio/variables/token","updateTime":"2024-12-24T23:42:01.019385198Z"},{"name":"projects/kank-4bbbc/configs/twilio/variables/phone_number","updateTime":"2024-12-24T21:51:15.464399280Z"}]}
+[debug] [2024-12-25T00:32:05.929Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/sid [none]
+[debug] [2024-12-25T00:32:05.930Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/token [none]
+[debug] [2024-12-25T00:32:05.934Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/phone_number [none]
+[debug] [2024-12-25T00:32:06.123Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/sid 200
+[debug] [2024-12-25T00:32:06.123Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/sid {"name":"projects/kank-4bbbc/configs/twilio/variables/sid","updateTime":"2024-12-24T23:41:30.683763156Z","text":"AC95f871838df6c87a49cfe03c7786fdff"}
+[debug] [2024-12-25T00:32:06.185Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/phone_number 200
+[debug] [2024-12-25T00:32:06.185Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/phone_number {"name":"projects/kank-4bbbc/configs/twilio/variables/phone_number","updateTime":"2024-12-24T21:51:15.464399280Z","text":"+18444357154"}
+[debug] [2024-12-25T00:32:06.186Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/token 200
+[debug] [2024-12-25T00:32:06.187Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/kank-4bbbc/configs/twilio/variables/token {"name":"projects/kank-4bbbc/configs/twilio/variables/token","updateTime":"2024-12-24T23:42:01.019385198Z","text":"d14bf5718a8f1ad8775e7f3b99e1b86a"}
+[debug] [2024-12-25T00:32:06.189Z] Validating nodejs source
+[warn] ⚠  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] ⚠  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2024-12-25T00:32:06.858Z] > [functions] package.json contents: {
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "firebase-functions": "^4.3.1",
+    "twilio": "^5.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-config-google": "^0.14.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2024-12-25T00:32:06.858Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2024-12-25T00:32:06.859Z] Could not find functions.yaml. Must use http discovery
+[debug] [2024-12-25T00:32:06.865Z] Found firebase-functions binary at '/Users/edmondmbadu/repo/kank/functions/node_modules/.bin/firebase-functions'
+[info] Serving at port 8047
+
+[debug] [2024-12-25T00:32:07.424Z] Got response from /__/functions.yaml {"endpoints":{"sendPaymentSMS":{"platform":"gcfv1","availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"eventTrigger":{"eventType":"providers/cloud.firestore/eventTypes/document.update","eventFilters":{"resource":"projects/kank-4bbbc/databases/(default)/documents/users/{userId}/clients/{clientId}"},"retry":false},"labels":{},"entryPoint":"sendPaymentSMS"}},"specVersion":"v1alpha1","requiredAPIs":[]}
+[info] shutdown requested via /__/quitquitquit
+
+[info] i  functions: preparing functions directory for uploading... 
+[info] i  functions: packaged /Users/edmondmbadu/repo/kank/functions (76.45 KB) for uploading 
+[debug] [2024-12-25T00:32:12.471Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/kank-4bbbc/locations/-/functions [none]
+[debug] [2024-12-25T00:32:13.058Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/kank-4bbbc/locations/-/functions 200
+[debug] [2024-12-25T00:32:13.058Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/kank-4bbbc/locations/-/functions {"functions":[{"name":"projects/kank-4bbbc/locations/us-central1/functions/sendPaymentSMS","eventTrigger":{"eventType":"providers/cloud.firestore/eventTypes/document.update","resource":"projects/kank-4bbbc/databases/(default)/documents/users/{userId}/clients/{clientId}","service":"firestore.googleapis.com","failurePolicy":{}},"status":"ACTIVE","entryPoint":"sendPaymentSMS","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"kank-4bbbc@appspot.gserviceaccount.com","updateTime":"2024-12-24T23:43:34.663Z","versionId":"3","labels":{"firebase-functions-hash":"7835a614ce9553afac937426ac86119de3de4a97","deployment-tool":"cli-firebase"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-307108722977.us-central1.cloudfunctions.appspot.com/081feca0-2cfe-4d75-b73c-f7ec7d47d20e.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"kank-4bbbc\",\"storageBucket\":\"kank-4bbbc.appspot.com\",\"locationId\":\"us-central\"}","GCLOUD_PROJECT":"kank-4bbbc","EVENTARC_CLOUD_EVENT_SOURCE":"projects/kank-4bbbc/locations/us-central1/functions/sendPaymentSMS"},"runtime":"nodejs18","maxInstances":3000,"ingressSettings":"ALLOW_ALL","buildId":"fa2d1ef1-aa41-465f-8a40-5257c4e2b1ef","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/940518039240/locations/us-central1/builds/fa2d1ef1-aa41-465f-8a40-5257c4e2b1ef","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{}}]}
+[debug] [2024-12-25T00:32:13.061Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/kank-4bbbc/locations/-/functions filter=environment%3D%22GEN_2%22
+[debug] [2024-12-25T00:32:13.664Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v2/projects/kank-4bbbc/locations/-/functions 200
+[debug] [2024-12-25T00:32:13.665Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v2/projects/kank-4bbbc/locations/-/functions {"functions":[{"name":"projects/kank-4bbbc/locations/us-central1/functions/helloWorld","buildConfig":{"build":"projects/940518039240/locations/us-central1/builds/9f9ea93d-4b5e-4aea-9978-0fdefdf98c78","runtime":"nodejs18","entryPoint":"helloWorld","source":{"storageSource":{"bucket":"gcf-v2-sources-940518039240-us-central1","object":"helloWorld/function-source.zip","generation":"1735074131091844"}},"environmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"dockerRepository":"projects/kank-4bbbc/locations/us-central1/repositories/gcf-artifacts","sourceProvenance":{"resolvedStorageSource":{"bucket":"gcf-v2-sources-940518039240-us-central1","object":"helloWorld/function-source.zip","generation":"1735074131091844"}},"dockerRegistry":"ARTIFACT_REGISTRY"},"serviceConfig":{"service":"projects/kank-4bbbc/locations/us-central1/services/helloworld","timeoutSeconds":60,"environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"kank-4bbbc\",\"storageBucket\":\"kank-4bbbc.appspot.com\",\"locationId\":\"us-central\"}","GCLOUD_PROJECT":"kank-4bbbc","EVENTARC_CLOUD_EVENT_SOURCE":"projects/kank-4bbbc/locations/us-central1/services/helloWorld","FUNCTION_TARGET":"helloWorld","LOG_EXECUTION_ID":"true"},"maxInstanceCount":100,"ingressSettings":"ALLOW_ALL","uri":"https://helloworld-wctqlll4ma-uc.a.run.app","serviceAccountEmail":"940518039240-compute@developer.gserviceaccount.com","availableMemory":"256Mi","allTrafficOnLatestRevision":true,"revision":"helloworld-00003-koh","maxInstanceRequestConcurrency":80,"availableCpu":"1"},"state":"ACTIVE","updateTime":"2024-12-24T21:03:38.941242400Z","labels":{"firebase-functions-hash":"de646763187612c81fe9f6ae09f593e8b94a8b29","deployment-tool":"cli-firebase"},"environment":"GEN_2","url":"https://us-central1-kank-4bbbc.cloudfunctions.net/helloWorld","createTime":"2023-09-11T16:51:47.414680829Z"}]}
+[debug] [2024-12-25T00:32:13.670Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc [none]
+[debug] [2024-12-25T00:32:13.900Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc 200
+[debug] [2024-12-25T00:32:13.900Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc {"projectId":"kank-4bbbc","projectNumber":"940518039240","displayName":"Kank","name":"projects/kank-4bbbc","resources":{"hostingSite":"kank-4bbbc","storageBucket":"kank-4bbbc.appspot.com","locationId":"us-central"},"state":"ACTIVE","etag":"1_4f4314ae-146f-4c2a-8588-49ef9e30468f"}
+[debug] [2024-12-25T00:32:13.903Z] >>> [apiv2][query] POST https://cloudfunctions.googleapis.com/v1/projects/kank-4bbbc/locations/us-central1/functions:generateUploadUrl [none]
+[debug] [2024-12-25T00:32:13.903Z] >>> [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/kank-4bbbc/locations/us-central1/functions:generateUploadUrl {}
+[debug] [2024-12-25T00:32:14.556Z] <<< [apiv2][status] POST https://cloudfunctions.googleapis.com/v1/projects/kank-4bbbc/locations/us-central1/functions:generateUploadUrl 200
+[debug] [2024-12-25T00:32:14.556Z] <<< [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/kank-4bbbc/locations/us-central1/functions:generateUploadUrl {"uploadUrl":"https://storage.googleapis.com/uploads-307108722977.us-central1.cloudfunctions.appspot.com/30327d80-2866-40da-8331-9f85c85e1ba5.zip?GoogleAccessId=service-940518039240@gcf-admin-robot.iam.gserviceaccount.com&Expires=1735088534&Signature=1NmPyiq1t0pKrqPIYgRoDE1umj5CQu%2FReWDH59ZRTC1zWmnTO6MNTsEbHFKaK79f6bPRoZFo96OZNxospVbZ0Ymq7BHTC5WzZGWL5%2Bh26ixwhFMPcCGVDK8ejwyI4tFaL3zkLs0Xwuv13Cb31gR2%2BwTkIJ7TG%2FW%2FhXvwqZ%2FBV0reRCVRsIWGWakbkip2rdpasu6%2Bns6KKJg04LohXzSA9IaWBOEOXilhxgOj7JQ7xiqXbwkJSz6ycYKuKibxMYH4zVj4InNjyA2%2FhFbUzj14F5Fog%2BpH0E9OH00M5Ex2FVD3KOyHOWVZIcxKU9FW%2B2Mqiz%2B2KbAhpesS4P6DEgVk0g%3D%3D"}
+[debug] [2024-12-25T00:32:14.557Z] >>> [apiv2][query] PUT https://storage.googleapis.com/uploads-307108722977.us-central1.cloudfunctions.appspot.com/30327d80-2866-40da-8331-9f85c85e1ba5.zip GoogleAccessId=service-940518039240%40gcf-admin-robot.iam.gserviceaccount.com&Expires=1735088534&Signature=1NmPyiq1t0pKrqPIYgRoDE1umj5CQu%2FReWDH59ZRTC1zWmnTO6MNTsEbHFKaK79f6bPRoZFo96OZNxospVbZ0Ymq7BHTC5WzZGWL5%2Bh26ixwhFMPcCGVDK8ejwyI4tFaL3zkLs0Xwuv13Cb31gR2%2BwTkIJ7TG%2FW%2FhXvwqZ%2FBV0reRCVRsIWGWakbkip2rdpasu6%2Bns6KKJg04LohXzSA9IaWBOEOXilhxgOj7JQ7xiqXbwkJSz6ycYKuKibxMYH4zVj4InNjyA2%2FhFbUzj14F5Fog%2BpH0E9OH00M5Ex2FVD3KOyHOWVZIcxKU9FW%2B2Mqiz%2B2KbAhpesS4P6DEgVk0g%3D%3D
+[debug] [2024-12-25T00:32:14.557Z] >>> [apiv2][body] PUT https://storage.googleapis.com/uploads-307108722977.us-central1.cloudfunctions.appspot.com/30327d80-2866-40da-8331-9f85c85e1ba5.zip [stream]
+[debug] [2024-12-25T00:32:14.913Z] <<< [apiv2][status] PUT https://storage.googleapis.com/uploads-307108722977.us-central1.cloudfunctions.appspot.com/30327d80-2866-40da-8331-9f85c85e1ba5.zip 200
+[debug] [2024-12-25T00:32:14.913Z] <<< [apiv2][body] PUT https://storage.googleapis.com/uploads-307108722977.us-central1.cloudfunctions.appspot.com/30327d80-2866-40da-8331-9f85c85e1ba5.zip [omitted]
+[info] ✔  functions: functions folder uploaded successfully 
+[info] 
+The following functions are found in your project but do not exist in your local source code:
+	helloWorld(us-central1)
+
+If you are renaming a function or changing its region, it is recommended that you create the new function first before deleting the old one to prevent event loss. For more info, visit https://firebase.google.com/docs/functions/manage-functions#modify
+
