@@ -1,24 +1,4 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-// const functions = require("firebase-functions");
-// const admin = require("firebase-admin");
-
-// const twilio = require("twilio");
-// admin.initializeApp();
-// const accountSid = functions.config().twilio.sid;
-// const authToken = functions.config().twilio.token;
-
-// eslint-disable-next-line new-cap
-// const client = new twilio(accountSid, authToken);
-
-
-// function makeValidE164(num:any){}
+/* eslint-disable max-len */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const twilio = require("twilio");
@@ -32,29 +12,23 @@ const authToken = functions.config().twilio.token;
 const twilioPhoneNumber = functions.config().twilio.phone_number;
 
 // Initialize Twilio client
-// eslint-disable-next-line new-cap
-const twilioClient = new twilio(accountSid, authToken);
+const twilioClient = twilio(accountSid, authToken);
 
 
 // eslint-disable-next-line require-jsdoc
 function makeValidE164(number) {
-  // Remove all non-numeric characters
   const cleaned = ("" + number).replace(/\D/g, "");
-
-  // Basic validation for US numbers; adjust regex for other formats
   if (cleaned.length === 10) {
     return `+1${cleaned}`;
   } else if (cleaned.length === 11 && cleaned.startsWith("1")) {
     return `+${cleaned}`;
-  } else {
-    // Invalid format
-    return null;
   }
+  return null;
 }
 
+// eslint-disable-next-line valid-jsdoc
 /**
  * Helper function to get today's date in MM-DD-YYYY format
- * @return {string}
  */
 function getTodayDateString() {
   const today = new Date();
@@ -70,38 +44,40 @@ function getTodayDateString() {
 exports.sendPaymentSMS = functions.firestore
     .document("users/{userId}/clients/{clientId}")
     .onUpdate(async (change, context) => {
+      console.log("Function execution started");
+
       const beforeData = change.before.data();
       const afterData = change.after.data();
 
-      // Check if the 'payments' field has changed
       const paymentsBefore = beforeData.payments || {};
       const paymentsAfter = afterData.payments || {};
 
-      // If 'payments' hasn't changed, exit the function
+      // Check if 'payments' field has changed
       if (JSON.stringify(paymentsBefore) === JSON.stringify(paymentsAfter)) {
         console.log("'payments' field has not changed. Exiting function.");
         return null;
       }
 
       // Identify new payment entries
-      const newPayments = Object.keys(paymentsAfter)
-          .filter((key) => !(key in paymentsBefore));
-
+      const newPayments = Object.keys(paymentsAfter).filter((key) => !(key in paymentsBefore));
       if (newPayments.length === 0) {
         console.log("No new payments detected.");
         return null;
       }
 
-      // Get today's date string
+      // Get today's date
       const todayStr = getTodayDateString();
+      console.log(`Today's date string: ${todayStr}`);
 
-      // Sum all payments made today
+      // Sum today's payments
       let todaysPaymentTotal = 0;
       newPayments.forEach((paymentKey) => {
         if (paymentKey.startsWith(todayStr)) {
           const amount = parseFloat(paymentsAfter[paymentKey]);
           if (!isNaN(amount)) {
             todaysPaymentTotal += amount;
+          } else {
+            console.log(`Invalid payment amount for key ${paymentKey}: ${paymentsAfter[paymentKey]}`);
           }
         }
       });
@@ -128,33 +104,36 @@ exports.sendPaymentSMS = functions.firestore
         return null;
       }
 
-      // Retrieve total savings and amount remaining
+      console.log(`Formatted phone number: ${formattedNumber}`);
+
+      // Retrieve savings and debt
       const totalSavings = parseFloat(client.savings) || 0;
       const amountRemaining = parseFloat(client.debtLeft) || 0;
 
-      // Construct the SMS message
+      // Construct message
       const message = `Bonjour ${firstName} ${lastName},
 
       Paiement d'aujourd'hui : FC ${todaysPaymentTotal.toLocaleString()}
-      Epargnes: FC ${totalSavings.toLocaleString()}
-      Dette restant : FC ${amountRemaining.toLocaleString()}
+      Montant restant : FC ${amountRemaining.toLocaleString()}
+      Epargnes : FC ${totalSavings.toLocaleString()}
       
-      Merci pour votre confiance continue !`;
+      Merci pour votre confiance continue a la Fondation Gervais!`;
+      console.log(`Constructed message: ${message}`);
 
       try {
-      // Send SMS via Twilio
+      // Send SMS
         const twilioResponse = await twilioClient.messages.create({
           body: message,
           from: twilioPhoneNumber,
           to: formattedNumber,
         });
 
-        const sid = twilioResponse.sid;
-        console.log(`SMS sent to ${formattedNumber}: SID ${sid}`);
+        console.log(`SMS sent to ${formattedNumber}: SID ${twilioResponse.sid}`);
+        console.log(`Twilio Response:`, twilioResponse);
       } catch (error) {
         console.error("Error sending SMS via Twilio:", error);
       }
 
+      console.log("Function execution completed");
       return null;
     });
-
