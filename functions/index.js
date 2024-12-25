@@ -15,14 +15,48 @@ const twilioPhoneNumber = functions.config().twilio.phone_number;
 const twilioClient = twilio(accountSid, authToken);
 
 
-// eslint-disable-next-line require-jsdoc
+/**
+ * Formats a phone number to E.164 standard based on its origin.
+ * - If the number starts with '0', it's treated as a DRC number.
+ *   - Removes the leading '0' and adds '+243'.
+ * - Otherwise, it's treated as a US number.
+ *   - If 10 digits, adds '+1'.
+ *   - If 11 digits starting with '1', adds '+' without altering digits.
+ * - Returns null for invalid formats.
+ *
+ * @param {string} number - The raw phone number input.
+ * @return {string|null} - The formatted E.164 phone number or null if invalid.
+ */
 function makeValidE164(number) {
+  // Remove all non-digit characters
   const cleaned = ("" + number).replace(/\D/g, "");
+
+  // Check if the number starts with '0' (DRC)
+  if (cleaned.startsWith("0")) {
+    const withoutZero = cleaned.slice(1); // Remove the leading '0'
+
+    // Optional: Validate DRC number length (typically 9 digits after '0')
+    // Uncomment the following lines if you want to enforce length
+    // if (withoutZero.length !== 9) {
+    //   console.log(`Invalid DRC number length: ${number}`);
+    //   return null;
+    // }
+
+    return `+243${withoutZero}`;
+  }
+
+  // Check for US numbers with 10 digits
   if (cleaned.length === 10) {
     return `+1${cleaned}`;
-  } else if (cleaned.length === 11 && cleaned.startsWith("1")) {
+  }
+
+  // Check for US numbers with 11 digits starting with '1'
+  if (cleaned.length === 11 && cleaned.startsWith("1")) {
     return `+${cleaned}`;
   }
+
+  // If none of the above conditions are met, return null
+  console.log(`Invalid phone number format: ${number}`);
   return null;
 }
 
@@ -111,14 +145,17 @@ exports.sendPaymentSMS = functions.firestore
       const amountRemaining = parseFloat(client.debtLeft) || 0;
 
       // Construct message
-      const message = `Bonjour ${firstName} ${lastName},
-
+      const message = `
+      Bonjour ${firstName} ${lastName},
       Paiement d'aujourd'hui : FC ${todaysPaymentTotal.toLocaleString()}
       Montant restant : FC ${amountRemaining.toLocaleString()}
       Epargnes : FC ${totalSavings.toLocaleString()}
       
-      Merci pour votre confiance continue a la Fondation Gervais!`;
+      Merci pour votre confiance continue à la Fondation Gervais!
+      `.trim();
+
       console.log(`Constructed message: ${message}`);
+
 
       try {
       // Send SMS
