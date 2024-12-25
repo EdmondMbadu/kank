@@ -72,6 +72,14 @@ function getTodayDateString() {
   return `${month}-${day}-${year}`;
 }
 
+// eslint-disable-next-line require-jsdoc
+function getTodayDateStringFormatted() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  const year = today.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 /**
  * Cloud Function to send SMS upon payment update
  */
@@ -144,10 +152,11 @@ exports.sendPaymentSMS = functions.firestore
       const totalSavings = parseFloat(client.savings) || 0;
       const amountRemaining = parseFloat(client.debtLeft) || 0;
 
+      const todayFormatted = getTodayDateStringFormatted();
       // Construct message
       const message = `
       Bonjour ${firstName} ${lastName},
-      Paiement d'aujourd'hui : FC ${todaysPaymentTotal.toLocaleString()}
+      Paiement d'aujourd'hui le ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}
       Montant restant : FC ${amountRemaining.toLocaleString()}
       Epargnes : FC ${totalSavings.toLocaleString()}
       
