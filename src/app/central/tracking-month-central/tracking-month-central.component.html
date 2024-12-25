@@ -20,7 +20,7 @@
         <div class="mb-6 ">
             <!-- <label for="payments" class="block mb-2 text-md font-medium text-gray-900 m-2">Année: {{givenYear}}</label> -->
             <select id="payments" [(ngModel)]="givenYear"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "  (change)="initalizeInputs()">
-            <option  *ngFor="let year of yearsList" [ngValue]="year">{{year}}</option>
+            <option  *ngFor="let year of this.time.yearsList" [ngValue]="year">{{year}}</option>
           
             <!-- <option [ngValue]="maxRange">Max</option> -->
             </select>
