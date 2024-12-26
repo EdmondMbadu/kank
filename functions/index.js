@@ -154,8 +154,7 @@ exports.sendPaymentSMS = functions.firestore
 
       const todayFormatted = getTodayDateStringFormatted();
       // Construct message
-      const message = `
-      Bonjour ${firstName} ${lastName},
+      const message = `${firstName} ${lastName},
       Paiement d'aujourd'hui le ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}
       Montant restant : FC ${amountRemaining.toLocaleString()}
       Epargnes : FC ${totalSavings.toLocaleString()}
