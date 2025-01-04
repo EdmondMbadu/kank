@@ -14,7 +14,6 @@ const twilioPhoneNumber = functions.config().twilio.phone_number;
 // Initialize Twilio client
 const twilioClient = twilio(accountSid, authToken);
 
-
 /**
  * Formats a phone number to E.164 standard based on its origin.
  * - If the number starts with '0', it's treated as a DRC number.
@@ -66,12 +65,11 @@ function makeValidE164(number) {
  */
 function getTodayDateString() {
   const today = new Date();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
+  const month = today.getMonth() + 1; // Months are zero-based
+  const day = today.getDate();
   const year = today.getFullYear();
   return `${month}-${day}-${year}`;
 }
-
 // eslint-disable-next-line require-jsdoc
 function getTodayDateStringFormatted() {
   const today = new Date();
@@ -80,8 +78,9 @@ function getTodayDateStringFormatted() {
   const year = today.getFullYear();
   return `${day}/${month}/${year}`;
 }
+
 /**
- * Cloud Function to send SMS upon payment update
+ * Cloud Function to send SMS upon payment update or daily summary
  */
 exports.sendPaymentSMS = functions.firestore
     .document("users/{userId}/clients/{clientId}")
@@ -94,24 +93,22 @@ exports.sendPaymentSMS = functions.firestore
       const paymentsBefore = beforeData.payments || {};
       const paymentsAfter = afterData.payments || {};
 
-      // Check if 'payments' field has changed
-      if (JSON.stringify(paymentsBefore) === JSON.stringify(paymentsAfter)) {
-        console.log("'payments' field has not changed. Exiting function.");
-        return null;
-      }
+      // **Removed Early Exit:**
+      // Previously, the function would exit if 'payments' field had not changed.
+      // To always send SMS, even if payments haven't changed, we remove this check.
+      // if (JSON.stringify(paymentsBefore) === JSON.stringify(paymentsAfter)) {
+      //   console.log("'payments' field has not changed. Exiting function.");
+      //   return null;
+      // }
 
-      // Identify new payment entries
+      // **Identify new payment entries**
       const newPayments = Object.keys(paymentsAfter).filter((key) => !(key in paymentsBefore));
-      if (newPayments.length === 0) {
-        console.log("No new payments detected.");
-        return null;
-      }
+      console.log(`New payments detected: ${newPayments.length}`);
 
-      // Get today's date
+      // **Sum today's payments**
       const todayStr = getTodayDateString();
       console.log(`Today's date string: ${todayStr}`);
 
-      // Sum today's payments
       let todaysPaymentTotal = 0;
       newPayments.forEach((paymentKey) => {
         if (paymentKey.startsWith(todayStr)) {
@@ -124,12 +121,9 @@ exports.sendPaymentSMS = functions.firestore
         }
       });
 
-      if (todaysPaymentTotal === 0) {
-        console.log("No payments made today.");
-        return null;
-      }
+      console.log(`Today's payment total: ${todaysPaymentTotal}`);
 
-      // Retrieve client details
+      // **Retrieve client details**
       const client = afterData;
       const firstName = client.firstName || "Valued";
       const lastName = client.lastName || "Client";
@@ -148,25 +142,28 @@ exports.sendPaymentSMS = functions.firestore
 
       console.log(`Formatted phone number: ${formattedNumber}`);
 
-      // Retrieve savings and debt
+      // **Retrieve savings and debt**
       const totalSavings = parseFloat(client.savings) || 0;
       const amountRemaining = parseFloat(client.debtLeft) || 0;
 
       const todayFormatted = getTodayDateStringFormatted();
-      // Construct message
-      const message = `${firstName} ${lastName},
-      Paiement d'aujourd'hui le ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}
-      Montant restant : FC ${amountRemaining.toLocaleString()}
-      Epargnes : FC ${totalSavings.toLocaleString()}
-      
-      Merci pour votre confiance continue à la Fondation Gervais!
-      `.trim();
+
+      // **Construct message with conditional payment line**
+      let message = `${firstName} ${lastName},\n`;
+
+      if (todaysPaymentTotal > 0) {
+        message += `Paiement d'aujourd'hui le ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}\n`;
+      } else {
+      // Optionally, you can include a line stating no payments were made today
+      // message += `Aucun paiement effectué aujourd'hui le ${todayFormatted}.\n`;
+      }
+
+      message += `Montant restant : FC ${amountRemaining.toLocaleString()}\nEpargnes : FC ${totalSavings.toLocaleString()}\n\nMerci pour votre confiance continue à la Fondation Gervais!`.trim();
 
       console.log(`Constructed message: ${message}`);
 
-
       try {
-      // Send SMS
+      // **Send SMS**
         const twilioResponse = await twilioClient.messages.create({
           body: message,
           from: twilioPhoneNumber,
