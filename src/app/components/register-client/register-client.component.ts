@@ -39,6 +39,15 @@ export class RegisterClientComponent implements OnInit {
   loanAmount: string = '';
   savings: string = '';
   requestDate: string = '';
+  timeInBusiness: string = '';
+  dailyIncome: string = '';
+  monthlyIncome: string = '';
+  debtInProcess: string = '';
+  planToPayDebt: string = '';
+  references: string[] = [];
+  newReference: string = '';
+  collateral: string = '';
+  creditworthinessScore: number | null = null;
 
   applicationFeeOtherDisplay: boolean = false;
   loanAmountOtherDisplay: boolean = false;
@@ -47,6 +56,8 @@ export class RegisterClientComponent implements OnInit {
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
+    // only for testing.
+    this.creditworthinessScore = this.calculateCreditworthiness();
     let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
       this.requestDate
     );
@@ -67,7 +78,13 @@ export class RegisterClientComponent implements OnInit {
       this.applicactionFee === '' ||
       this.memberShipFee === '' ||
       this.savings === '' ||
-      this.requestDate === ''
+      this.requestDate === '' ||
+      this.timeInBusiness === '' ||
+      this.dailyIncome === '' ||
+      this.debtInProcess === '' ||
+      this.planToPayDebt === '' ||
+      this.collateral === '' ||
+      this.references.length === 0
     ) {
       alert('Completer tous les données');
       return;
@@ -108,6 +125,9 @@ export class RegisterClientComponent implements OnInit {
         return;
       }
       this.setNewClientValues();
+      const creditworthinessScore = this.calculateCreditworthiness();
+      console.log(`Creditworthiness Score: ${creditworthinessScore}%`);
+
       // let employee = this.findAgentWithId(this.client.agent!);
       this.auth.registerNewClient(this.client).then(
         (res: any) => {
@@ -166,6 +186,7 @@ export class RegisterClientComponent implements OnInit {
     } else {
       this.loanAmountOtherDisplay = false;
     }
+    this.calculateCreditworthiness();
   }
 
   resetFields() {
@@ -184,6 +205,7 @@ export class RegisterClientComponent implements OnInit {
   }
   setNewClientValues() {
     this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
+
     this.client.firstName = this.firstName;
     this.client.lastName = this.lastName;
     this.client.middleName = this.middleName;
@@ -199,12 +221,122 @@ export class RegisterClientComponent implements OnInit {
     this.client.requestAmount = this.loanAmount;
     this.client.requestDate = this.requestDate;
     this.client.dateOfRequest = this.time.todaysDate();
-    this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
+
+    // Additional fields
+    this.client.timeInBusiness = this.timeInBusiness;
+    this.client.monthlyIncome = (Number(this.dailyIncome) * 25).toFixed(0);
+    this.client.debtInProcess = this.debtInProcess;
+    this.client.planToPayDebt = this.planToPayDebt;
+    this.client.references = [...this.references];
+    this.client.collateral = this.collateral;
+
+    // Payments
+    this.client.savingsPayments = {
+      [this.time.todaysDate()]: this.savings,
+    };
     this.client.applicationFeePayments = {
       [this.time.todaysDate()]: this.applicactionFee,
     };
     this.client.membershipFeePayments = {
       [this.time.todaysDate()]: this.memberShipFee,
     };
+
+    // New: Calculate and include creditworthiness score
+    this.client.creditworthinessScore =
+      this.calculateCreditworthiness().toFixed(0);
+  }
+
+  // Add a new reference if the limit isn't exceeded
+  addReference(): void {
+    if (this.references.length < 3 && this.newReference.trim()) {
+      this.references.push(this.newReference.trim());
+      this.newReference = ''; // Clear the input field
+    } else if (this.references.length >= 3) {
+      alert('You can only add up to 3 references.');
+    }
+  }
+
+  // Handle the selection of a reference from the dropdown
+  onReferenceSelect(event: Event): void {
+    const selectedValue = (event.target as HTMLSelectElement).value;
+    console.log('Selected Reference:', selectedValue);
+  }
+  calculateCreditworthiness(): number {
+    let stabilityScore = 0;
+    let financialStabilityScore = 0;
+    let riskResilienceScore = 0;
+    let reputationScore = 0;
+    let collateralScore = 0;
+
+    // Stabilité et Performance de l'Entreprise (30%)
+    stabilityScore +=
+      Number(this.timeInBusiness) >= 2
+        ? 10
+        : Number(this.timeInBusiness) === 1
+        ? 5
+        : 0;
+    stabilityScore +=
+      Number(this.dailyIncome) * 25 > Number(this.loanAmount)
+        ? 10
+        : Number(this.dailyIncome) * 25 === Number(this.loanAmount)
+        ? 5
+        : 0;
+    console.log('stability score ', stabilityScore);
+
+    stabilityScore = Math.min(stabilityScore, 10);
+
+    // Stabilité Financière (30%)
+    financialStabilityScore +=
+      Number(this.debtInProcess) === 0
+        ? 10
+        : Number(this.debtInProcess) <= 2
+        ? 5
+        : 0;
+
+    financialStabilityScore = Math.min(financialStabilityScore, 10);
+
+    // Risque et Résilience (20%)
+    riskResilienceScore +=
+      Number(this.planToPayDebt) >= 2
+        ? 10
+        : Number(this.planToPayDebt) === 1
+        ? 5
+        : 0;
+
+    riskResilienceScore = Math.min(riskResilienceScore, 10);
+
+    // Réputation et Références (10%)
+    reputationScore +=
+      this.references.length >= 3 ? 10 : this.references.length >= 1 ? 5 : 0;
+
+    reputationScore = Math.min(reputationScore, 10);
+
+    // Garanties et Collatéral (10%)
+    collateralScore +=
+      Number(this.collateral) >= 2 ? 10 : Number(this.collateral) === 1 ? 5 : 0;
+
+    collateralScore = Math.min(collateralScore, 10);
+
+    console.log(
+      'stability, financial, risk, reputation, collateral',
+      stabilityScore,
+      financialStabilityScore,
+      riskResilienceScore,
+      reputationScore,
+      collateralScore
+    );
+
+    // Correct total score calculation
+    const totalScore =
+      (stabilityScore * 30 +
+        financialStabilityScore * 30 +
+        riskResilienceScore * 20 +
+        reputationScore * 10 +
+        collateralScore * 10) /
+      10;
+
+    console.log('The total score computed is out of 100', totalScore);
+    this.creditworthinessScore = Math.round(totalScore);
+    return Math.round(totalScore);
   }
 }

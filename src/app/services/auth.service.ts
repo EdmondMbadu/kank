@@ -303,6 +303,7 @@ export class AuthService {
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
     const day = now.getDate();
+
     const data = {
       uid: this.afs.createId().toString(),
       firstName: client.firstName,
@@ -318,7 +319,7 @@ export class AuthService {
       savingsPayments: client.savingsPayments,
       applicationFeePayments: client.applicationFeePayments,
       membershipFeePayments: client.membershipFeePayments,
-      creditScore: '50',
+      creditScore: '50', // Default to '50' if not calculated
       type: 'register',
       loanAmount: client.loanAmount,
       requestAmount: client.requestAmount,
@@ -330,7 +331,17 @@ export class AuthService {
       dateJoined: `${month}-${day}-${year}`,
       payments: {},
       clients: [],
+
+      // New fields
+      timeInBusiness: client.timeInBusiness,
+      monthlyIncome: client.monthlyIncome,
+      debtInProcess: client.debtInProcess,
+      planToPayDebt: client.planToPayDebt,
+      references: client.references,
+      collateral: client.collateral,
+      creditworthinessScore: client.creditworthinessScore,
     };
+
     this.clientId = data.uid;
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.currentUser.uid}/clients/${data.uid}`

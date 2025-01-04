@@ -52,6 +52,79 @@
         <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Addresse Business </label>
         <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="businessAddress">
     </div> 
+    <div class="mb-6">
+        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Depuis combien de temps dirigez-vous votre business ?</label>
+        <select id="applicationFee" [(ngModel)]="timeInBusiness"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
+        <option selected>Choose</option>
+        <option [ngValue]="0">0 - 1ans</option>
+        <option [ngValue]="2">2 - 3 ans</option>
+        <option [ngValue]="4">4+ ans</option>
+   
+        </select>
+    </div>
+    <div class="mb-6"> 
+        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Quel est votre revenu par jour dans votre business (FC)? </label>
+        <input type="text" id="income" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="20000" required [(ngModel)]="dailyIncome">
+    </div> 
+    <div class="mb-6">
+        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Avez-vous des dettes en cours ?</label>
+        <select id="applicationFee" [(ngModel)]="debtInProcess"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
+        <option selected>Choose</option>
+        <option [ngValue]="0">Aucune Dettes</option>
+        <option [ngValue]="2">1-2 dette</option>
+        <option [ngValue]="4">3+ Dettes</option>
+   
+        </select>
+    </div>
+    <div class="mb-6">
+        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Comment comptez-vous gérer le remboursement pendant les périodes difficiles ?</label>
+        <select id="applicationFee" [(ngModel)]="planToPayDebt"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
+        <option selected>Choose</option>
+        <option [ngValue]="0">Aucun Plan</option>
+        <option [ngValue]="2">Plan partiel</option>
+        <option [ngValue]="4">Plan Clair</option>
+   
+        </select>
+    </div>
+    <div class="mb-6">
+        <label for="newReference" class="block mb-2 text-sm font-medium text-gray-900">
+            Pouvez-vous fournir des références de personess crédibles?
+        </label>
+        <div *ngFor="let ref of references">
+            {{ref}}
+        </div>
+        <div class="flex items-center gap-2 mb-4">
+            <input
+                id="newReference"
+                type="text"
+                [(ngModel)]="newReference"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-full"
+                placeholder="Jonathan Kalubi - 0893258653"
+                [disabled]="references.length >= 3"
+            />
+            <button
+                (click)="addReference()"
+                class="px-4 py-2 bg-green-500 text-white rounded-lg"
+                [disabled]="references.length >= 3 || !newReference.trim()">
+                Ajouter
+            </button>
+        </div>
+    
+        
+    </div>
+
+    <div class="mb-6">
+        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Avez-vous des guarantis à offrir aux cas ou vous n'etes pas capable de payer?</label>
+        <select id="applicationFee" [(ngModel)]="collateral"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
+        <option selected>Choose</option>
+        <option [ngValue]="0">Aucun</option>
+        <option [ngValue]="1">Guaranti Partiel</option>
+        <option [ngValue]="2">Guaranti Complet</option>
+      
+        </select>
+    </div>
+    
+    
 
 <div class="mb-6">
     <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
@@ -65,6 +138,7 @@
     <option [ngValue]="">Autre Montant </option>
     </select>
 </div>
+
 <div *ngIf="applicationFeeOtherDisplay" class="mb-6">
     <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
     <input type="text" [(ngModel)]="applicactionFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
@@ -113,14 +187,44 @@
 </div>
 <div *ngIf="loanAmountOtherDisplay" class="mb-6">
     <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
-    <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+    <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required >
 </div> 
 <div class="mb-4">
     <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900">Date De Donner L'Argent au Client</label>
     <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023" required>
   
 </div>
+<div *ngIf="creditworthinessScore !== null" class="border-2 shadow border-green-800 p-12 rounded-lg">
+    <!-- Form inputs here -->
 
+    <!-- Interpretation of Creditworthiness -->
+    <div *ngIf="creditworthinessScore !== null" class="mt-3 max-wl-sm">
+        <h2 class="text-lg font-bold">Risque Pour Le Crédit</h2>
+        <p
+            class="text-white p-4 rounded-lg mt-4"
+            [ngClass]="{
+                'bg-green-600': creditworthinessScore >= 90,
+                'bg-blue-500': creditworthinessScore >= 70 && creditworthinessScore < 90,
+                'bg-yellow-400': creditworthinessScore >= 50 && creditworthinessScore < 70,
+                'bg-red-600': creditworthinessScore < 50
+            }"
+        >
+            <ng-container *ngIf="creditworthinessScore >= 90">
+                <strong>Excellent (90-100%) :</strong> Très solvable, prêt sûr.
+            </ng-container>
+            <ng-container *ngIf="creditworthinessScore >= 70 && creditworthinessScore < 90">
+                <strong>Bon (70-89%) :</strong> Solvable avec un risque gérable.
+            </ng-container>
+            <ng-container *ngIf="creditworthinessScore >= 50 && creditworthinessScore < 70">
+                <strong>Moyen (50-69%) :</strong> Risque potentiel ; des vérifications ou des garanties supplémentaires peuvent être nécessaires.
+            </ng-container>
+            <ng-container *ngIf="creditworthinessScore < 50">
+                <strong>Mauvais (moins de 50%) :</strong> Risque élevé ; prêt non conseillé.
+            </ng-container>
+        </p>
+    </div>
+
+</div>
 
    
 <button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>

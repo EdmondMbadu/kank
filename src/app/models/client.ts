@@ -48,4 +48,11 @@ export class Client {
   dateOfRequest?: string;
   profilePicture?: Avatar;
   vitalStatus?: string;
+  timeInBusiness?: string;
+  monthlyIncome?: string;
+  debtInProcess?: string;
+  planToPayDebt?: string;
+  references?: string[];
+  collateral?: string;
+  creditworthinessScore?: string;
 }

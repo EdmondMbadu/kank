@@ -117,7 +117,14 @@
             
             <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/saving-activity',id ]">Details D'Epargne</button>
 
-        
+            <div *ngIf="client.references" class="flex flex-col items-center justify-center">
+                <div *ngFor="let r of client.references">
+                  
+                    <dd class="text-gray-500 text-center dark:text-gray-400">{{r}}</dd>
+                </div>
+                <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">Références</dd>
+
+            </div>
            
         </dl>
     </div>

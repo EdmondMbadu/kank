@@ -25,6 +25,26 @@ export class RegiserPortalComponent {
   debtStart = '';
   requestDate = '';
   debtEnd = '';
+  worhty? = '';
+  public graphWorthiness = {
+    data: [
+      {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: 270,
+        title: { text: 'Speed' },
+        type: 'indicator',
+        mode: 'gauge+number',
+        gauge: {
+          axis: { range: [0, 100], tickcolor: 'blue' }, // Color of the ticks (optional)
+          bar: { color: 'blue' }, // Single color for the gauge bar (needle)
+        },
+      },
+    ],
+    layout: {
+      margin: { t: 0, b: 0, l: 0, r: 0 }, // Adjust margins
+      responsive: true, // Make the chart responsive
+    },
+  };
   public graphCredit = {
     data: [
       {
@@ -62,7 +82,9 @@ export class RegiserPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      console.log('Current client references', this.client.references);
       this.setGraphCredit();
+      this.setGraphWorthiness();
       this.client.debtCycle =
         this.client.debtCycle === undefined || this.client.debtCycle === '0'
           ? '1'
@@ -190,6 +212,32 @@ export class RegiserPortalComponent {
       },
     };
   }
+  setGraphWorthiness() {
+    let num = Number(this.client.creditworthinessScore);
+    let gaugeColor = this.compute.getGradientColor(Number(num));
+    let text = this.getCreditworthinessCategory(num);
+    this.graphWorthiness = {
+      data: [
+        {
+          domain: { x: [0, 1], y: [0, 1] },
+          value: num,
+          title: {
+            text: text,
+          },
+          type: 'indicator',
+          mode: 'gauge+number',
+          gauge: {
+            axis: { range: [0, 100], tickcolor: gaugeColor }, // Color of the ticks (optional)
+            bar: { color: gaugeColor }, // Single color for the gauge bar (needle)
+          },
+        },
+      ],
+      layout: {
+        margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
+        responsive: true, // Make the chart responsive
+      },
+    };
+  }
   async startUpload(event: FileList) {
     console.log('current employee', this.client);
     const file = event?.item(0);
@@ -231,5 +279,18 @@ export class RegiserPortalComponent {
   onImageClick(id: string): void {
     const fileInput = document.getElementById(id) as HTMLInputElement;
     fileInput.click();
+  }
+  getCreditworthinessCategory(score: number): string {
+    if (score >= 90 && score <= 100) {
+      return 'Excellent – Très solvable, faible risque.';
+    } else if (score >= 70 && score <= 89) {
+      return 'Bon – Solvable avec un risque modéré.';
+    } else if (score >= 50 && score <= 69) {
+      return 'Moyen – Risque potentiel.';
+    } else if (score < 50) {
+      return 'Faible – Risque élevé ; prêt non recommandé.';
+    } else {
+      return 'Score invalide.';
+    }
   }
 }

@@ -82,6 +82,15 @@
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{requestDate}} </dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Date De Remettre L'argent Au Client </dd>
             </div>
+
+            <div *ngIf="client.references" class="flex flex-col items-center justify-center">
+                <div *ngFor="let r of client.references">
+                  
+                    <dd class="text-gray-500 text-center dark:text-gray-400">{{r}}</dd>
+                </div>
+                <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">References</dd>
+
+            </div>
          
           
         
@@ -97,8 +106,15 @@
 
     <div class="flex flex-col ">
      
-        <div class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-0 mb-2">
+        <div *ngIf="client.debtCycle!=='1'" class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-0 mb-2">
             <plotly-plot [data]="graphCredit.data" [layout]="graphCredit.layout"></plotly-plot>
+          </div>
+        
+    </div>
+    <div *ngIf="client.debtCycle==='1'" class="flex flex-col ">
+     
+        <div class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-0 mb-2">
+            <plotly-plot [data]="graphWorthiness.data" [layout]="graphWorthiness.layout"></plotly-plot>
           </div>
         
     </div>
