@@ -2,18 +2,13 @@
 
 <div class="flex container mx-auto justify-center m-12">
     <h1 class="hidden md:block text-2xl text-center md:text-4xl mr-10 ">Profile Du Client</h1>
-    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/update-client-info',id ]">Mettre à jour Info Client</button>
     <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="delete()">Supprimer Client</button> -->
 </div>
-<div *ngIf="!client?.profilePicture" class="flex container mx-auto justify-center">
-    
-    <input type="file" [id]="'putPicture'" style="display:none" (change)="startUpload($any($event.target).files)">
-    <button (click)="onImageClick('putPicture')" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Ajouter Photo Du Client</button>
-</div>
+
 <div *ngIf="client?.profilePicture" class="flex container mx-auto justify-center">
     <div *ngIf="client?.profilePicture?.downloadURL" >
-        <input type="file" [id]="'changePicture'" style="display:none" (change)="startUpload($any($event.target).files)">
-        <a (click)="onImageClick('changePicture')">  <img [src]="client.profilePicture!.downloadURL" class="h-64 md:h-80 mb-4" alt="">
+      
+        <a>  <img [src]="client.profilePicture!.downloadURL" class="h-64 md:h-80 mb-4" alt="">
         </a>
    
     </div>
@@ -92,20 +87,8 @@
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} </dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Jour De Paiment </dd>
             </div>
-            <!-- <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
-            </div> -->
-            <!-- <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Credit Score</dd>
-            </div> -->
-           
-            
+   
         
-            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
-            <!-- <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button> -->
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity',id ]">Details De Paiement</button>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
@@ -114,9 +97,9 @@
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400"> Score Credit</dd>
             </div>
+      
             
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/saving-activity',id ]">Details D'Epargne</button>
-
+        
             <div *ngIf="client.references" class="flex flex-col items-center justify-center">
                 <div *ngFor="let r of client.references">
                   
@@ -125,14 +108,7 @@
                 <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">Références</dd>
 
             </div>
-            <div *ngIf="clientCycles.length>0 " class="flex flex-col items-center justify-center ">
-                <div *ngFor="let c of clientCycles">
-                  
-                    <dd [routerLink]="['/client-cycle',client.uid+'-'+c.cycleId]" class="text-gray-500 text-center dark:text-gray-400 underline font-bold cursor-pointer">{{c.debtCycle}}</dd>
-                </div>
-                <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">Cycle Precedents</dd>
-
-            </div>
+            
            
         </dl>
     </div>
@@ -141,21 +117,7 @@
 
   
 
-<div class="flex container flex-col s  md:flex-row justify-center my-6 sm:mx-1 md:mx-auto rounded-md shadow-sm" role="group">
-    <button  (click)="startNewDebtCycle()"type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border-l border-t border-b border-gray-900  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-        Enregistrement Nouveau Cycle
-    </button>
-    <button (click)="delete()" *ngIf="this.auth.isAdmin" type="button" class="px-4 py-4 text-md font-medium text-gray-100   bg-green-700 hover:bg-green-800 border border-gray-900 rounded-s-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-        Delete Client
-    </button>
-    
-    <button (click)="requestWithDrawFromSavings()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  border border-gray-900  bg-green-700 hover:bg-green-800 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-        Demander Retrait  D'Argent Epargne
-    </button>
-    <button (click)="withDrawFromSavings()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border border-gray-900 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-        Retrait D'Argent Epargne
-    </button>
-  </div>
+
   
 
   <div class=" container  flex mx-auto shadow-xl  flex-col md:justify-center md:flex-row  ">

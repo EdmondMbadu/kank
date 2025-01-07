@@ -55,4 +55,5 @@ export class Client {
   references?: string[];
   collateral?: string;
   creditworthinessScore?: string;
+  cycleId?: string;
 }

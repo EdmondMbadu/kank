@@ -154,52 +154,52 @@ export class NewCycleRegisterComponent implements OnInit {
       }
       this.setClientNewDebtCycleValues();
 
+      // Save the current cycle to the 'cycles' subcollection
       this.data
-        .registerNewDebtCycle(this.client)
+        .saveCurrentCycle(this.client)
+        .then(() => {
+          // Register the new debt cycle
+          this.data.registerNewDebtCycle(this.client).then(
+            (res: any) => {
+              this.router.navigate(['/register-portal/' + this.id]);
+            },
+            (err: any) => {
+              alert(
+                "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+              );
+            }
+          );
 
-        .then(
-          (res: any) => {
-            this.router.navigate(['/register-portal/' + this.id]);
-          },
-          (err: any) => {
-            alert(
-              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+          // Update user info
+          const date = this.time.todaysDateMonthDayYear();
+          this.data
+            .updateUserInfoForRegisterClientNewDebtCycle(
+              this.client,
+              this.savings,
+              date
+            )
+            .then(
+              (res: any) => {
+                console.log(
+                  'Informations utilisateur mises à jour avec succès'
+                );
+              },
+              (err: any) => {
+                alert(
+                  "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+                );
+              }
             );
-          }
-        );
-      // .then(() => {
-      //   this.performance
-      //     .updateUserPerformance(this.client)
-      //     .then((res: any) => {
-      //       console.log('updated user info performance');
-      //     })
-      //     .catch((err: any) => {
-      //       console.log('error while updating performance');
-      //     });
-      // });
 
-      let date = this.time.todaysDateMonthDayYear();
-      this.data
-        .updateUserInfoForRegisterClientNewDebtCycle(
-          this.client,
-          this.savings,
-          date
-        )
-        .then(
-          (res: any) => {
-            console.log('Informations utilisateur mises à jour avec succès');
-          },
-          (err: any) => {
-            alert(
-              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-            );
-          }
-        );
-
-      this.resetFields();
-      return;
+          this.resetFields();
+        })
+        .catch((error: any) => {
+          console.error('Error saving current cycle:', error);
+          alert('Erreur lors de la sauvegarde du cycle actuel.');
+        });
     }
   }
+
   findAgentWithId(id: string) {
     for (let em of this.employees) {
       if (em.uid === id) {

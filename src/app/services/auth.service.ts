@@ -104,6 +104,12 @@ export class AuthService {
   getAllClients(): Observable<Client> {
     return this.clientsRef$;
   }
+  getClient(clientId: string) {
+    const clieintref: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.currentUser.uid}/clients/${clientId}`
+    );
+    return clieintref.valueChanges();
+  }
   getClientsOfAUser(userId: string) {
     return this.afs
       .collection<Client>(`users/${userId}/clients/`)

@@ -83,6 +83,7 @@ import { ClientInfoSavingsComponent } from './components/client-info-savings/cli
 import { ClientPortalSavingsComponent } from './components/client-portal-savings/client-portal-savings.component';
 import { PaymentSavingsComponent } from './components/payment-savings/payment-savings.component';
 import { FinishedDebtComponent } from './components/finished-debt/finished-debt.component';
+import { ClientCycleComponent } from './components/client-cycle/client-cycle.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -168,6 +169,7 @@ const routes: Routes = [
   { path: 'new-cycle-register/:id', component: NewCycleRegisterComponent },
   { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
+  { path: 'client-cycle/:id', component: ClientCycleComponent },
   // {
   //   path: 'client-portal-savings/:id',
   //   component: ClientPortalSavingsComponent,

@@ -370,6 +370,48 @@ export class DataService {
       .catch((error) => console.error('Failed to update client data:', error));
     // return clientRef.set(data, { merge: true });
   }
+  public async saveCurrentCycle(client: Client): Promise<void> {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+    const cycleId = this.afs.createId();
+
+    // Fetch the current client data
+    const clientData = await clientRef.ref
+      .get()
+      .then((doc) => doc.data() as Client);
+
+    if (clientData) {
+      const cyclesCollection: AngularFirestoreCollection<any> =
+        clientRef.collection('cycles');
+
+      const cycleData = {
+        ...clientData,
+        debtCycle: clientData.debtCycle,
+        cycleId: cycleId,
+        // Optionally, remove fields that shouldn't be duplicated
+      }; // Or use a timestamp: Date.now().toString()
+
+      // Add a timestamp or cycle number as document ID
+      return cyclesCollection.doc(cycleId).set(cycleData);
+    } else {
+      throw new Error('Client data not found.');
+    }
+  }
+  getClientCycles(clientId: string): Observable<any[]> {
+    const cyclesCollection: AngularFirestoreCollection<any> =
+      this.afs.collection(
+        `users/${this.auth.currentUser.uid}/clients/${clientId}/cycles`,
+        (ref) => ref.orderBy('debtCycle', 'desc') // Adjust ordering as needed
+      );
+    return cyclesCollection.valueChanges({ idField: 'cycleId' });
+  }
+  getClientCycle(clientId: string, cycleId: string): Observable<any> {
+    const cycleDoc: AngularFirestoreDocument<any> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${clientId}/cycles/${cycleId}`
+    );
+    return cycleDoc.valueChanges();
+  }
 
   registerClientRequestUpdate(client: Client) {
     const data = {
