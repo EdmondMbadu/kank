@@ -126,10 +126,13 @@
 
             </div>
             <div *ngIf="clientCycles.length>0 " class="flex flex-col items-center justify-center ">
-                <div *ngFor="let c of clientCycles">
+                <div class="flex flex-wrap space-x-2">
+                    <div *ngFor="let c of clientCycles" >
                   
-                    <dd [routerLink]="['/client-cycle',client.uid+'-'+c.cycleId]" class="text-gray-500 text-center dark:text-gray-400 underline font-bold cursor-pointer">{{c.debtCycle}}</dd>
+                        <dd [routerLink]="['/client-cycle',client.uid+'-'+c.cycleId]" class="text-gray-500 text-center dark:text-gray-400 underline font-bold cursor-pointer">{{c.debtCycle}} ,</dd>
+                    </div>
                 </div>
+                
                 <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">Cycle Precedents</dd>
 
             </div>
