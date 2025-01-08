@@ -60,7 +60,6 @@ export class ClientCycleComponent {
     const [ci, cy] = this.id.split('-');
     this.clientId = ci;
     this.cycleId = cy;
-    console.log('Client id ', this.clientId, this.cycleId);
   }
   ngOnInit(): void {
     this.retrieveClientCycle();
@@ -140,115 +139,5 @@ export class ClientCycleComponent {
     const pay =
       Number(this.client.amountToPay) / Number(this.client.paymentPeriodRange);
     this.minPay = pay.toString();
-  }
-
-  startNewDebtCycle() {
-    if (this.client.amountPaid !== this.client.amountToPay) {
-      alert(
-        `Vous devez encore FC ${this.client.debtLeft}. Terminez d'abord ce cycle.`
-      );
-      return;
-    } else {
-      this.router.navigate(['/new-cycle-register/' + this.id]);
-    }
-  }
-  withDrawFromSavings() {
-    if (this.client.savings === '0') {
-      alert("Vous n'avez pas d'argent d'epargnes!");
-      return;
-    } else {
-      this.router.navigate(['/withdraw-savings/' + this.id]);
-    }
-  }
-  requestWithDrawFromSavings() {
-    if (this.client.savings === '0') {
-      alert("Vous n'avez pas d'argent d'epargnes!");
-      return;
-    } else if (Number(this.client.debtLeft) > 0) {
-      alert(
-        'Vous devez d’abord finir votre dette avant de demander votre épargne!'
-      );
-      return;
-    } else {
-      this.router.navigate(['/request-savings-withdraw/' + this.id]);
-    }
-  }
-
-  delete() {
-    let result = confirm('Êtes-vous sûr de vouloir supprimer ce client?');
-    if (!result) {
-      return;
-    }
-    this.auth
-      .deleteClient(this.client)
-      .then(() => {
-        alert('Client supprimé avec succès !');
-        this.router.navigate(['/client-info/']);
-      })
-      .catch((error) => {
-        alert('Error deleting client: ');
-      });
-
-    this.auth
-      .UpdateUserInfoForDeletedClient(this.client)
-      .then(() => {
-        console.log('updated user info');
-      })
-      .catch((error) => {
-        alert('Error deleting client: ');
-      });
-    this.removeClientFromAgentList();
-  }
-
-  removeClientFromAgentList() {
-    this.agent!.clients = this.agent?.clients?.filter(
-      (element) => element !== this.client.uid
-    );
-
-    this.data
-      .updateEmployeeInfoForClientAgentAssignment(this.agent!)
-      .then(() => console.log('agent clients list updated succesfully.'));
-  }
-  async startUpload(event: FileList) {
-    // console.log('current employee', this.client);
-    const file = event?.item(0);
-    // console.log(' current file data', file);
-
-    if (file?.type.split('/')[0] !== 'image') {
-      console.log('unsupported file type');
-      return;
-    }
-    // the size cannot be greater than 10mb
-    if (file?.size >= 20000000) {
-      alert(
-        "L'image est trop grande. La Taille maximale du fichier est de 10MB"
-      );
-      return;
-    }
-    const path = `clients-avatar/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}`;
-
-    // the main task
-    console.log('the path', path);
-
-    // this.task = await this.storage.upload(path, file);
-    const uploadTask = await this.storage.upload(path, file);
-    this.url = await uploadTask.ref.getDownloadURL();
-    uploadTask.totalBytes;
-    // console.log('the download url', this.url);
-    const avatar = {
-      path: path,
-      downloadURL: this.url,
-      size: uploadTask.totalBytes.toString(),
-    };
-    try {
-      await this.data.updateClientPictureData(this.client, avatar);
-    } catch (error) {
-      console.error('Error updating employee picture:', error);
-    }
-    // this.router.navigate(['/home']);
-  }
-  onImageClick(id: string): void {
-    const fileInput = document.getElementById(id) as HTMLInputElement;
-    fileInput.click();
   }
 }

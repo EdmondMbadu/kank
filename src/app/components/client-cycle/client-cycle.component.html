@@ -88,7 +88,8 @@
                 <dd class="text-gray-500 text-center dark:text-gray-400">Jour De Paiment </dd>
             </div>
    
-        
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-cycle-activity', client.uid+'-'+client.cycleId]">Details De Paiement</button>
+            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/saving-cycle-activity',client.uid+'-'+client.cycleId ]">Details D'Epargne</button>
             <div class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>

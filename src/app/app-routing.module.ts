@@ -84,6 +84,8 @@ import { ClientPortalSavingsComponent } from './components/client-portal-savings
 import { PaymentSavingsComponent } from './components/payment-savings/payment-savings.component';
 import { FinishedDebtComponent } from './components/finished-debt/finished-debt.component';
 import { ClientCycleComponent } from './components/client-cycle/client-cycle.component';
+import { PaymentCycleActivityComponent } from './components/payment-cycle-activity/payment-cycle-activity.component';
+import { SavingCycleActivityComponent } from './components/saving-cycle-activity/saving-cycle-activity.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -194,7 +196,15 @@ const routes: Routes = [
     component: RequestSavingsWithdrawComponent,
   },
   { path: 'payment-activity/:id', component: PaymentActivityComponent },
+  {
+    path: 'payment-cycle-activity/:id',
+    component: PaymentCycleActivityComponent,
+  },
   { path: 'saving-activity/:id', component: SavingActivityComponent },
+  {
+    path: 'saving-cycle-activity/:id',
+    component: SavingCycleActivityComponent,
+  },
   {
     path: 'payment-activity-card/:id',
     component: PaymentActivityCardComponent,
