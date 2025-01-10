@@ -231,6 +231,10 @@ export class TeamPageComponent implements OnInit {
     const fileInput = document.getElementById('getCV') as HTMLInputElement;
     fileInput.click();
   }
+  onFieldClick(id: string): void {
+    const fileInput = document.getElementById(id) as HTMLInputElement;
+    fileInput.click();
+  }
 
   async startUpload(event: FileList, emp: Employee) {
     console.log('current employee', emp);
@@ -347,5 +351,18 @@ export class TeamPageComponent implements OnInit {
     let dummyClient = new Client();
     this.performance.updateUserPerformance(dummyClient);
     this.router.navigate(['/home']);
+  }
+  async startUploadContract(event: FileList, employee: Employee) {
+    try {
+      await this.data.startUpload(
+        event,
+        `contracts/${employee.firstName}-${employee.lastName}`,
+        employee.uid!,
+        'contract'
+      );
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error occurred while uploading file. Please try again.');
+    }
   }
 }

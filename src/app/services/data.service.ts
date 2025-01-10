@@ -15,6 +15,8 @@ import { ComputationService } from '../shrink/services/computation.service';
 import { Card } from '../models/card';
 import { WriteBatch } from 'firebase/firestore';
 import { Management } from '../models/management';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -22,12 +24,23 @@ import { Management } from '../models/management';
 export class DataService {
   constructor(
     private afs: AngularFirestore,
+    private storage: AngularFireStorage,
     private auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private router: Router
   ) {}
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   todayFull = this.time.todaysDate();
+  url: string = '';
+  allowedMimeTypes: string[] = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'application/webb',
+    'image/heic',
+    'application/pdf', // Correct MIME type for PDF files
+  ];
   clientWithdrawFromSavings(client: Client, amount: string) {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`
@@ -1466,5 +1479,64 @@ export class DataService {
     }
 
     return true;
+  }
+
+  async startUpload(
+    event: FileList,
+    currentPath: string,
+    employeeId: string,
+    field: string
+  ) {
+    const file = event?.item(0);
+    console.log(' current file data', file);
+
+    if (file) {
+      if (!this.allowedMimeTypes.includes(file.type)) {
+        console.log('unsupported file type');
+        return;
+      }
+
+      // Proceed with file processing
+      console.log('File is supported:', file);
+      // Your file handling logic here
+      if (file?.size >= 10000000) {
+        console.log('the file is too big');
+        alert('The picture is too big. It should be less than 5MB');
+        return;
+      }
+    }
+    // the file should not be larger than 10MB
+
+    const path = currentPath;
+
+    // the main task
+    console.log('the path', path);
+
+    // this.task = await this.storage.upload(path, file);
+    const uploadTask = await this.storage.upload(path, file);
+    this.url = await uploadTask.ref.getDownloadURL();
+    uploadTask.totalBytes;
+    // console.log('the download url', this.url);
+    const avatar = {
+      path: path,
+      downloadURL: this.url,
+      size: uploadTask.totalBytes.toString(),
+    };
+
+    await this.updateEmployeeField(employeeId, field, this.url);
+    this.router.navigate(['/home']);
+    return this.url;
+  }
+
+  updateEmployeeField(employeeId: string, field: string, value: any) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employeeId}`
+    );
+
+    const data = {
+      [field]: value, // Dynamically set the field and value
+    };
+
+    return employeeRef.set(data, { merge: true });
   }
 }
