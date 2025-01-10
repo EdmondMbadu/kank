@@ -42,7 +42,7 @@ export class TeamPageComponent implements OnInit {
   employees: Employee[] = [];
   allClients: Client[] = [];
   clientsWithDebts: Client[] = [];
-
+  year = new Date().getFullYear();
   employee: Employee = {};
   firstName: string = '';
   lastName: string = '';
