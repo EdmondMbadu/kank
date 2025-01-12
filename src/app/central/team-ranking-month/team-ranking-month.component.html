@@ -69,8 +69,20 @@
           </p>
           <p class="text-sm text-gray-500 mt-1 font-semibold">
             Performance: {{ em.performancePercentageMonth }}%
-          </p>
-        </div>
+          </p>  
+          <div *ngIf=" em.attendance && getVacationInProgressDates(em).length" class="p-4 bg-gray-100 rounded-lg shadow-md my-2">
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">Vacances en cours</h3>
+            <ul class="space-y-4">
+              <li
+                *ngFor="let date of getVacationInProgressDates(em)"
+                class="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border"
+              >
+                <span class="text-gray-700 font-medium">{{ date }}</span>
+                
+              </li>
+            </ul>
+          </div>       
+        </div>  
         <!-- Action Buttons -->
         <div>
           <a

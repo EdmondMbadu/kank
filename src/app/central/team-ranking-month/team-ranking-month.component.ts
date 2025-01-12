@@ -70,6 +70,7 @@ export class TeamRankingMonthComponent {
           Number(user.housePayment) + Number(this.totalHouse)
         ).toString();
     });
+
     console.log('sum for house paumeyts', this.totalHouse);
     this.allUsers.forEach((user) => {
       this.currentClients = [];
@@ -195,6 +196,11 @@ export class TeamRankingMonthComponent {
       result = rounded.toString();
     }
     return result;
+  }
+  getVacationInProgressDates(employee: Employee): string[] {
+    return Object.keys(employee.attendance!)
+      .filter((date) => employee.attendance![date] === 'VP')
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
   }
   sortKeysAndValuesPerformance(time: number, employee: Employee) {
     const sortedKeys = Object.keys(employee.dailyPoints!)
