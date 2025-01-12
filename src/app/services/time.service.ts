@@ -632,4 +632,55 @@ export class TimeService {
     }
     return true; // On time
   }
+
+  public isValidRequestDateForVacation(date: string): boolean {
+    if (!date) {
+      alert('La date est vide');
+      return false;
+    }
+
+    // Parse the date string and adjust to local time
+    const [year, month, day] = date.split('-').map(Number);
+    const enteredDate = new Date(year, month - 1, day); // Month is zero-based
+    const today = new Date();
+    const yearNow = today.getFullYear();
+
+    // Check if the date is valid
+    if (isNaN(enteredDate.getTime())) {
+      alert('Format de date invalide');
+      return false;
+    }
+
+    console.log('enetered date', enteredDate);
+    // Ensure the date is not in the past
+    today.setHours(0, 0, 0, 0); // Normalize today's date to midnight
+    if (enteredDate < today) {
+      alert('La date est dans le passé');
+      return false;
+    }
+
+    // Ensure the date is not tomorrow
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    if (enteredDate.getTime() === tomorrow.getTime()) {
+      alert('La date ne peut pas être demain');
+      return false;
+    }
+
+    // Ensure the date is the day after tomorrow
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(today.getDate() + 2);
+    if (enteredDate.getTime() < dayAfterTomorrow.getTime()) {
+      alert('La date doit être après-demain');
+      return false;
+    }
+
+    // Ensure the date is within the current year
+    if (enteredDate.getFullYear() !== yearNow) {
+      alert("La date doit être dans l'année en cours");
+      return false;
+    }
+
+    return true;
+  }
 }

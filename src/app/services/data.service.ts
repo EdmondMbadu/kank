@@ -707,6 +707,39 @@ export class DataService {
     };
     return employeeRef.set(data, { merge: true });
   }
+  updateEmployeeAttendanceRejection(attendance: any, employeeId: string) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employeeId}`
+    );
+
+    // Use update instead of set
+    return employeeRef
+      .update({ attendance })
+      .then(() => {
+        console.log('Attendance successfully updated in the database.');
+      })
+      .catch((error) => {
+        console.error('Error updating attendance in the database:', error);
+      });
+  }
+  updateEmployeeNumberOfVacationRequest(vR: string, employeeId: string) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employeeId}`
+    );
+    const data = {
+      vacationRequestNumberOfDays: vR,
+    };
+    return employeeRef.set(data, { merge: true });
+  }
+  updateEmployeeNumberOfAcceptedVacation(vA: string, employeeId: string) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employeeId}`
+    );
+    const data = {
+      vacationAcceptedNumberOfDays: vA,
+    };
+    return employeeRef.set(data, { merge: true });
+  }
 
   addCertificateData(certificate: Certificate[], certificateId: string) {
     const certificateref: AngularFirestoreDocument<any> = this.afs.doc(

@@ -13,6 +13,7 @@
                         <div>
                             <a href="#" rel="author" class="text-xl font-bold text-gray-900 ">{{employee.firstName}} {{employee.middleName}} {{employee.lastName}}</a>
                             <p class="text-base text-gray-500 ">Role: {{employee.role}}</p>
+                            <p class="text-base text-gray-500 "> Jours de vacances restants: {{vacation}} </p>
                             <p class="text-base text-gray-500  mb-4"> Performance {{preposition}}  {{time.monthFrenchNames[givenMonth-1]}} : <strong> {{performancePercentageMonth}} %</strong> </p>
                             <button *ngIf="this.auth.isAdmninistrator" (click)="toggleCheckVisibility()" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mt-4 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800">Basculer Bonus Visibilité</button>
                             <button *ngIf="checkVisible==='true'" (click)="toggleCode()" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800">Signer Bonus</button>
@@ -89,7 +90,40 @@
                 <button *ngIf="this.auth.isAdmninistrator"  type="submit" (click)="toggleMakePayment()"  class="md:ml-52 ml-32 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Paiement</button>
                 <button *ngIf="this.auth.isAdmninistrator || auth.isDistributor"  type="submit" (click)="toggleAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Présence</button>
                 <button  type="submit" (click)="determineAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Présence Employée</button>
-                <!-- <h1 class="mb-4 text-3xl font-extrabold leading-tight text-gray-900 lg:mb-6 lg:text-4xl ">Graphs</h1> -->
+           
+                <button  type="submit" (click)="toggle('showRequestVacation')" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Demande Vacances</button>
+                <div *ngIf="showRequestVacation" class="mb-4">
+                    <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900">Date de Prendre les vacances</label>
+                    <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023" required>
+                    <button  type="submit" (click)="requestVacation()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Soumettre</button>
+                </div>
+
+                <div *ngIf=" employee.attendance" class="p-4 bg-gray-100 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Vacances en cours</h3>
+                    <ul class="space-y-4">
+                      <li
+                        *ngFor="let date of getVacationInProgressDates()"
+                        class="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border"
+                      >
+                        <span class="text-gray-700 font-medium">{{ date }}</span>
+                        <div *ngIf="this.auth.isAdmin " class="flex gap-2">
+                          <button
+                            (click)="acceptVacation(date)"
+                            class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                          >
+                            Accepter
+                          </button>
+                          <button *ngIf="this.auth.isAdmin "
+                            (click)="rejectVacation(date)"
+                            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                          >
+                            Rejeter
+                          </button>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                  
             </header>
 
         

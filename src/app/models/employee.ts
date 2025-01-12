@@ -45,6 +45,8 @@ export class Employee {
   paymentCode?: string;
   tempLocationHolder?: string;
   contract?: string;
+  vacationRequestNumberOfDays?: string;
+  vacationAcceptedNumberOfDays?: string;
 }
 export class Avatar {
   path?: string;

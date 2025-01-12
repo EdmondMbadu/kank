@@ -18,6 +18,11 @@ import { LocationCoordinates } from 'src/app/models/user';
 })
 export class EmployeePageComponent implements OnInit {
   salaryPaid: string = '';
+  showRequestVacation: boolean = false;
+
+  requestDate: string = '';
+
+  vacation: number = 0;
   currentDownloadUrl: string = '';
   displayMakePayment: boolean = false;
   displayAttendance: boolean = false;
@@ -137,6 +142,16 @@ export class EmployeePageComponent implements OnInit {
       responsive: true, // Make the chart responsive
     },
   };
+
+  findNumberOfVacationDaysLeft() {
+    const acceptedDays =
+      Number(this.employee.vacationAcceptedNumberOfDays) || 0;
+    this.vacation = 7 - acceptedDays;
+  }
+
+  toggle(property: 'showRequestVacation') {
+    this[property] = !this[property];
+  }
   toggleBonus() {
     this.displayBonus = !this.displayBonus;
   }
@@ -206,6 +221,7 @@ export class EmployeePageComponent implements OnInit {
         this.currentLng = Number(this.locationCoordinate.longitude);
       }
       this.employee = data[this.id];
+      this.findNumberOfVacationDaysLeft();
       this.getAllPayments();
       this.setEmployeeBonusAmounts();
       this.computeTotalBonusAmount();
@@ -508,6 +524,11 @@ export class EmployeePageComponent implements OnInit {
       this.toggleMakePayment();
     }
   }
+  getVacationInProgressDates(): string[] {
+    return Object.keys(this.employee.attendance!)
+      .filter((date) => this.employee.attendance![date] === 'VP')
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  }
 
   generateInvoice() {
     this.compute.generateInvoice(this.employee);
@@ -654,6 +675,22 @@ export class EmployeePageComponent implements OnInit {
               cell.innerHTML = `${date}<br>Absent${
                 time ? `<br><span class="small-time">${time}</span>` : ''
               }`;
+            } else if (attendance === 'VP') {
+              cell.classList.add(
+                'bg-blue-600',
+                'border',
+                'border-black',
+                'text-white'
+              );
+              cell.innerHTML = `${date}<br>Vacance En Cours...`;
+            } else if (attendance === 'V') {
+              cell.classList.add(
+                'bg-yellow-400',
+                'border',
+                'border-black',
+                'text-white'
+              );
+              cell.innerHTML = `${date}<br>Vacance`;
             } else if (attendance === 'L') {
               cell.classList.add(
                 'bg-orange-600',
@@ -818,13 +855,17 @@ export class EmployeePageComponent implements OnInit {
     }
   }
 
-  async addAttendance(toggle = true) {
+  async addAttendance(toggle = true, date = '') {
     if (this.attendance === '') {
       alert('Remplissez la presence, Réessayez');
       return;
     }
     try {
       let val: any = { [this.time.todaysDate()]: this.attendance };
+      if (date !== '') {
+        val = { [date]: this.attendance };
+      }
+
       const value = await this.data.updateEmployeeAttendance(
         val,
         this.employee.uid!
@@ -838,6 +879,82 @@ export class EmployeePageComponent implements OnInit {
     if (toggle) {
       this.toggleAttendance();
     }
+  }
+  acceptVacation(date: string) {
+    if (!this.employee.attendance || this.employee.attendance[date] !== 'VP') {
+      console.error(`Date ${date} not in progress or not found.`);
+      return;
+    }
+
+    // Update attendance from VP to V
+    this.employee.attendance[date] = 'V';
+
+    // Increase the number of accepted vacations
+    let acceptedVacations =
+      Number(this.employee.vacationAcceptedNumberOfDays) || 0;
+    acceptedVacations += 1;
+    this.employee.vacationAcceptedNumberOfDays = acceptedVacations.toString();
+
+    console.log(
+      'Updated attendance after acceptance:',
+      this.employee.attendance
+    );
+
+    // Update the database
+    this.data
+      .updateEmployeeAttendance(
+        { ...this.employee.attendance },
+        this.employee.uid!
+      )
+      .then(() => {
+        this.data.updateEmployeeNumberOfAcceptedVacation(
+          acceptedVacations.toString(),
+          this.employee.uid!
+        );
+        console.log('Acceptance successfully updated in the database.');
+      })
+      .catch((error) => {
+        console.error('Error updating acceptance in the database:', error);
+      });
+  }
+
+  rejectVacation(date: string) {
+    if (!this.employee.attendance || !this.employee.attendance[date]) {
+      console.error(`Date ${date} not found in attendance.`);
+      return;
+    }
+
+    // Remove the entry from the attendance object
+    delete this.employee.attendance[date];
+
+    console.log(
+      'Updated attendance after rejection:',
+      this.employee.attendance
+    );
+
+    let vacationRequests =
+      Number(this.employee.vacationRequestNumberOfDays) || 0;
+    if (vacationRequests > 0) {
+      vacationRequests -= 1;
+      this.employee.vacationRequestNumberOfDays = vacationRequests.toString();
+    }
+
+    // Update the database
+    this.data
+      .updateEmployeeAttendanceRejection(
+        { ...this.employee.attendance },
+        this.employee.uid!
+      )
+      .then(() => {
+        this.data.updateEmployeeNumberOfVacationRequest(
+          vacationRequests.toString(),
+          this.employee.uid!
+        );
+        console.log('Rejection successfully updated in the database.');
+      })
+      .catch((error) => {
+        console.error('Error updating rejection in the database:', error);
+      });
   }
 
   async toggleCheckVisibility() {
@@ -974,5 +1091,58 @@ export class EmployeePageComponent implements OnInit {
         this.errorMessage = error.message;
         this.withinRadius = null;
       });
+  }
+
+  requestVacation() {
+    console.log('empolyee attendance', this.employee.attendance);
+    if (!this.time.isValidRequestDateForVacation(this.requestDate)) {
+      return;
+    }
+    // Vacation in process
+    this.attendance = 'VP';
+
+    const formattedDate = this.formatDate(this.requestDate);
+
+    // Check if the date is already requested
+    if (
+      this.employee.attendance &&
+      this.employee.attendance[formattedDate] === 'VP'
+    ) {
+      alert('Cette date a déjà été demandée. Veuillez en choisir une autre.');
+      return;
+    }
+
+    // Add the number of requests for vacation
+    let vacationRequests =
+      Number(this.employee.vacationRequestNumberOfDays) || 0;
+    if (vacationRequests >= 8) {
+      alert(
+        "Vous avez déjà utilisé toutes vos vacances. Essayez l'année prochaine"
+      );
+      return;
+    }
+
+    vacationRequests += 1;
+    this.employee.vacationRequestNumberOfDays = vacationRequests.toString();
+
+    this.addAttendance(false, formattedDate);
+    this.data.updateEmployeeNumberOfVacationRequest(
+      vacationRequests.toString(),
+      this.employee.uid!
+    );
+
+    this.toggle('showRequestVacation');
+  }
+  private formatDate(inputDate: string): string {
+    const [year, month, day] = inputDate.split('-');
+    const now = new Date();
+    // const hours = now.getHours();
+
+    // Trim leading zeros
+    const trimmedMonth = month.replace(/^0/, '');
+    const trimmedDay = day.replace(/^0/, '');
+
+    // Return the formatted date
+    return `${trimmedMonth}-${trimmedDay}-${year}`;
   }
 }
