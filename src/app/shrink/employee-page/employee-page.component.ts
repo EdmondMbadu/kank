@@ -200,10 +200,10 @@ export class EmployeePageComponent implements OnInit {
 
   computeTotalBonusAmount() {
     this.totalBonusAmount =
-      this.bonusAmount +
-      this.bestTeamBonusAmount +
-      this.bestEmployeeBonusAmount +
-      this.bestManagerBonusAmount;
+      Number(this.bonusAmount) +
+      Number(this.bestTeamBonusAmount) +
+      Number(this.bestEmployeeBonusAmount) +
+      Number(this.bestManagerBonusAmount);
 
     this.employee.totalPayments = this.totalBonusAmount.toString();
     this.employee.totalBonusThisMonth = this.totalBonusAmount.toString();
