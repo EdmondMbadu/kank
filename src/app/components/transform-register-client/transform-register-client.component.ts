@@ -55,6 +55,10 @@ export class TransformRegisterClientComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.allClients = data;
       this.client = data[Number(this.id)];
+      this.client.debtCycle =
+        this.client.debtCycle === undefined || this.client.debtCycle === '0'
+          ? '1'
+          : this.client.debtCycle;
       this.findClientsWithDebts();
       if (this.client.loanAmount != undefined) {
         this.loanAmount = this.client.loanAmount;
