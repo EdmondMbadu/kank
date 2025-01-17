@@ -524,6 +524,66 @@
 
             </div>
           </div>
+          <h2 id="accordion-collapse-heading-2">
+            <button (click)="toggle('budget')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-2" aria-expanded="false" aria-controls="accordion-collapse-body-2">
+              <span>Budget Du Mois</span>
+              <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
+              </svg>
+            </button>
+          </h2>
+
+          <div *ngIf="budget" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2">
+            <div class="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
+              <div class="p-4">
+                  <!-- <h1 class="text-lg font-semibold text-gray-700 mb-4">Pourcentage du Manager et Budget</h1> -->
+                  <div class="overflow-x-auto">
+                      <table class="min-w-full bg-white border border-gray-200 text-gray-700">
+                          <thead>
+                              <tr class="bg-gray-100 border-b">
+                                  <th class="px-4 py-2 text-left">Pourcentage du Manager</th>
+                                  <th class="px-4 py-2 text-left">Budget en FC</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr class="border-b hover:bg-gray-50">
+                                  <td class="px-4 py-2">100%</td>
+                                  <td class="px-4 py-2">15M</td>
+                              </tr>
+                              <tr class="border-b hover:bg-gray-50">
+                                  <td class="px-4 py-2">90-99%</td>
+                                  <td class="px-4 py-2">12M</td>
+                              </tr>
+                              <tr class="border-b hover:bg-gray-50">
+                                  <td class="px-4 py-2">80-89%</td>
+                                  <td class="px-4 py-2">10M</td>
+                              </tr>
+                              <tr class="border-b hover:bg-gray-50">
+                                  <td class="px-4 py-2">70-79%</td>
+                                  <td class="px-4 py-2">8M</td>
+                              </tr>
+                              <tr class="border-b hover:bg-gray-50">
+                                  <td class="px-4 py-2">60-69%</td>
+                                  <td class="px-4 py-2">6M</td>
+                              </tr>
+                              <tr class="border-b hover:bg-gray-50">
+                                  <td class="px-4 py-2">50-59%</td>
+                                  <td class="px-4 py-2">4M</td>
+                              </tr>
+                              <tr class="hover:bg-gray-50">
+                                  <td class="px-4 py-2">40-49%</td>
+                                  <td class="px-4 py-2">2M</td>
+                              </tr>
+                              <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-2">0-39%</td>
+                                <td class="px-4 py-2">0M</td>
+                            </tr>
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
+          </div>
 
        
 
