@@ -22,6 +22,7 @@ export class EmployeePageComponent implements OnInit {
 
   requestDate: string = '';
 
+  isLoading: boolean = false;
   vacation: number = 0;
   currentDownloadUrl: string = '';
   displayMakePayment: boolean = false;
@@ -149,7 +150,7 @@ export class EmployeePageComponent implements OnInit {
     this.vacation = 7 - acceptedDays;
   }
 
-  toggle(property: 'showRequestVacation') {
+  toggle(property: 'showRequestVacation' | 'isLoading') {
     this[property] = !this[property];
   }
   toggleBonus() {
@@ -732,6 +733,7 @@ export class EmployeePageComponent implements OnInit {
       this.bestEmployeeBonusAmount.toString();
     this.employee.bestManagerBonusAmount =
       this.bestManagerBonusAmount.toString();
+    this.toggle('isLoading');
 
     try {
       this.computeTotalBonusAmount(); // Recalculate total bonus after update
@@ -756,6 +758,7 @@ export class EmployeePageComponent implements OnInit {
       console.error(err);
     } finally {
       this.toggleBonus();
+      this.toggle('isLoading');
     }
   }
   async updateEmployeePaymentInfo() {
@@ -770,6 +773,7 @@ export class EmployeePageComponent implements OnInit {
   }
   async updateEmployeePaymentInfoAndSignCheck() {
     this.employee.paymentAmount = this.paymentAmount.toString();
+    this.toggle('isLoading');
     try {
       await this.data.updateEmployeePaymentInfo(this.employee);
       await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
@@ -790,6 +794,7 @@ export class EmployeePageComponent implements OnInit {
       alert(err);
     } finally {
       this.togglePayment();
+      this.toggle('isLoading');
     }
   }
   async updateEmployeeBonusInfo() {
