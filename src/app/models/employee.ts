@@ -47,6 +47,7 @@ export class Employee {
   contract?: string;
   vacationRequestNumberOfDays?: string;
   vacationAcceptedNumberOfDays?: string;
+  bank?: string;
 }
 export class Avatar {
   path?: string;

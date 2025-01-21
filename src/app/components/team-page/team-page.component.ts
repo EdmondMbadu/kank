@@ -352,13 +352,18 @@ export class TeamPageComponent implements OnInit {
     this.performance.updateUserPerformance(dummyClient);
     this.router.navigate(['/home']);
   }
-  async startUploadContract(event: FileList, employee: Employee) {
+  async startUploadContract(
+    event: FileList,
+    employee: Employee,
+    path: string = 'contract'
+  ) {
+    console.log('path', path);
     try {
       await this.data.startUpload(
         event,
-        `contracts/${employee.firstName}-${employee.lastName}`,
+        `${path}/${employee.firstName}-${employee.lastName}`,
         employee.uid!,
-        'contract'
+        path
       );
     } catch (error) {
       console.error('Error uploading file:', error);
