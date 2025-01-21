@@ -56,4 +56,14 @@ export class Client {
   collateral?: string;
   creditworthinessScore?: string;
   cycleId?: string;
+  comments?: Comment[];
+}
+
+export class Comment {
+  name?: string;
+  time?: string;
+  timeFormatted?: string;
+  comment?: string;
+  stars?: string;
+  starsNumber?: number;
 }

@@ -1,3 +1,5 @@
+import { Comment } from './client';
+
 export class User {
   uid?: string;
   email?: string;
@@ -42,6 +44,7 @@ export class User {
   monthBudgetPending?: string;
   housePayment?: string;
   locationCoordinates?: LocationCoordinates;
+  reviews?: Comment[];
 }
 export class LocationCoordinates {
   longitude?: string;

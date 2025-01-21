@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Client } from 'src/app/models/client';
+import { Client, Comment } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -20,6 +20,9 @@ export class ClientPortalComponent {
   employees: Employee[] = [];
   agent?: Employee = { firstName: '-' };
   url: string = '';
+  personPostingComment?: string = '';
+  comment?: string = '';
+  comments: Comment[] = [];
   public graphCredit = {
     data: [
       {
@@ -83,6 +86,7 @@ export class ClientPortalComponent {
         this.client.paymentDay!
       );
       this.setGraphCredit();
+      this.setComments();
 
       this.paymentDate = this.time.nextPaymentDate(this.client.dateJoined);
       this.debtStart = this.time.formatDateString(
@@ -96,6 +100,31 @@ export class ClientPortalComponent {
         });
       }
     });
+  }
+  setComments() {
+    if (this.client.comments) {
+      this.comments = this.client.comments;
+      // add the formatted time
+      this.comments.forEach((comment) => {
+        comment.timeFormatted = this.time.convertDateToDesiredFormat(
+          comment.time!
+        );
+      });
+    }
+    this.comments.sort((a: any, b: any) => {
+      const parseTime = (time: string) => {
+        const [month, day, year, hour, minute, second] = time
+          .split('-')
+          .map(Number);
+        return new Date(year, month - 1, day, hour, minute, second).getTime();
+      };
+
+      const dateA = parseTime(a.time);
+      const dateB = parseTime(b.time);
+      return dateB - dateA; // Descending order
+    });
+
+    console.log('comments sorted', this.comments);
   }
 
   setGraphCredit() {
@@ -245,5 +274,34 @@ export class ClientPortalComponent {
   onImageClick(id: string): void {
     const fileInput = document.getElementById(id) as HTMLInputElement;
     fileInput.click();
+  }
+
+  addComment() {
+    if (this.comment === '' || this.personPostingComment === '') {
+      alert('Remplissez toutes les données.');
+      return;
+    }
+    let conf = confirm(`Êtes-vous sûr de vouloir publier ce commentaire`);
+    if (!conf) {
+      return;
+    }
+    try {
+      const com = {
+        name: this.personPostingComment,
+        comment: this.comment,
+        time: this.time.todaysDate(),
+      };
+      this.comments?.push(com);
+      this.data
+        .addCommentToClientProfile(this.client, this.comments)
+        .then(() => {
+          this.personPostingComment = '';
+          this.comment = '';
+        });
+    } catch (error) {
+      alert(
+        "Une erreur s'est produite lors de la publication du commentaire. Essayer à nouveau."
+      );
+    }
   }
 }

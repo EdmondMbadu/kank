@@ -11,7 +11,7 @@ import {
 import { Observable, of } from 'rxjs';
 import { filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
-import { Client } from '../models/client';
+import { Client, Comment } from '../models/client';
 import { Timestamp } from 'firebase/firestore';
 import { TimeService } from './time.service';
 import { ComputationService } from '../shrink/services/computation.service';
@@ -115,6 +115,20 @@ export class AuthService {
       .collection<Client>(`users/${userId}/clients/`)
       .valueChanges();
   }
+  getReviews(): Observable<any[]> {
+    return this.user$.pipe(
+      switchMap((user) => {
+        if (user && user.uid) {
+          return this.afs
+            .collection<Client>(`users/${user.uid}/reviews/`)
+            .valueChanges();
+        } else {
+          return of([]); // Return an empty array if no user is authenticated
+        }
+      })
+    );
+  }
+
   getCertificateInfo() {
     return this.afs.collection<Client>(`certificate/`).valueChanges();
   }
@@ -304,6 +318,43 @@ export class AuthService {
     );
     return clientRef.set(data, { merge: true });
   }
+
+  addReview(review: Comment): Promise<void> {
+    const reviewsCollection = this.afs.collection<any>(
+      `users/${this.currentUser.uid}/reviews/`
+    );
+
+    return reviewsCollection
+      .snapshotChanges()
+      .pipe(take(1))
+      .toPromise()
+      .then((actions: any) => {
+        if (actions.length > 0) {
+          // Get the existing document
+          const doc = actions[0];
+          const reviewId = doc.payload.doc.id; // Extract reviewId
+          const data = doc.payload.doc.data();
+          const updatedReviews = data.reviews || [];
+          updatedReviews.push(review); // Add a single review object
+
+          return this.afs
+            .doc(`users/${this.currentUser.uid}/reviews/${reviewId}`)
+            .set({ reviews: updatedReviews }, { merge: true });
+        } else {
+          // Create a new document with a generated reviewId
+          const reviewId = this.afs.createId();
+          const data = {
+            reviews: [review], // Wrap the single review in an array
+            reviewId: reviewId,
+          };
+
+          return this.afs
+            .doc(`users/${this.currentUser.uid}/reviews/${reviewId}`)
+            .set(data);
+        }
+      });
+  }
+
   registerNewClient(client: Client) {
     const now = new Date();
     const year = now.getFullYear();

@@ -173,3 +173,48 @@
 
 
 </div>
+
+
+<section class="bg-white dark:bg-gray-900 py-8 lg:py-16 antialiased">
+    <div class="max-w-2xl mx-auto px-4">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">Commentaires...</h2>
+      </div>
+      <div class="mb-6">
+        <div class="my-2">
+            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nom de la Person qui poste</label>
+            <input [(ngModel)]="personPostingComment" type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Jeanne Kiluwa" required />
+        </div>
+          <div class="py-2 px-4 mb-4 bg-white rounded-lg rounded-t-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+              <label for="comment" class="sr-only">Your comment</label>
+              <textarea [(ngModel)]="comment" id="comment" rows="6"
+                  class="px-0 w-full text-sm text-gray-900 border-0 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-gray-400 dark:bg-gray-800"
+                  placeholder="Les détails sur les raisons pour lesquelles le client ne paie pas..." required></textarea>
+          </div>
+          <button (click)="addComment()" type="submit"
+              class="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-green-700 rounded-lg focus:ring-4 focus:ring-green-200 dark:focus:ring-green-900 hover:bg-green-800">
+              Poster commentaire
+          </button>
+        </div>
+      <article *ngFor="let c of (comments | slice:0:(this.auth.isAdmninistrator ? comments.length : 2)) let i=index" class="p-6 text-base bg-white rounded-lg dark:bg-gray-900">
+          <footer class="flex justify-between items-center mb-2">
+              <div class="flex items-center">
+              
+                    <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600 mr-2">
+                        <span class="font-medium text-gray-600 dark:text-gray-300 ">{{c.name?.substring(0,2)}}</span>
+                    </div>    <p class="inline-flex items-center mr-3 text-sm text-gray-900 dark:text-white font-semibold">{{c.name}}</p>
+                          
+                  <p class="text-sm text-gray-600 dark:text-gray-400"><time pubdate datetime="2022-02-08"
+                          title="February 8th, 2022">{{c.timeFormatted}}</time></p>
+              </div>
+              
+      
+          </footer>
+          <p class="text-gray-500 dark:text-gray-400">{{c.comment}}</p>
+          
+      </article>
+     
+
+
+    </div>
+  </section>

@@ -107,6 +107,7 @@ import { FinishedDebtComponent } from './components/finished-debt/finished-debt.
 import { ClientCycleComponent } from './components/client-cycle/client-cycle.component';
 import { PaymentCycleActivityComponent } from './components/payment-cycle-activity/payment-cycle-activity.component';
 import { SavingCycleActivityComponent } from './components/saving-cycle-activity/saving-cycle-activity.component';
+import { ReviewsComponent } from './components/reviews/reviews.component';
 
 @NgModule({
   declarations: [
@@ -199,6 +200,7 @@ import { SavingCycleActivityComponent } from './components/saving-cycle-activity
     ClientCycleComponent,
     PaymentCycleActivityComponent,
     SavingCycleActivityComponent,
+    ReviewsComponent,
   ],
   imports: [
     BrowserModule,

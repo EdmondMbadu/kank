@@ -8,7 +8,7 @@ import { LocationCoordinates, User } from '../models/user';
 import { Observable } from 'rxjs';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthService } from './auth.service';
-import { Client } from '../models/client';
+import { Client, Comment } from '../models/client';
 import { TimeService } from './time.service';
 import { Avatar, Certificate, Employee } from '../models/employee';
 import { ComputationService } from '../shrink/services/computation.service';
@@ -697,6 +697,15 @@ export class DataService {
       profilePicture: avatar,
     };
     return employeeRef.set(data, { merge: true });
+  }
+  addCommentToClientProfile(client: Client, comments: Comment[]) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+    const data = {
+      comments: comments,
+    };
+    return clientRef.set(data, { merge: true });
   }
   updateEmployeeAttendance(attendance: any, employeeId: string) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(

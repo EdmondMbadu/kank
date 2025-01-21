@@ -86,6 +86,7 @@ import { FinishedDebtComponent } from './components/finished-debt/finished-debt.
 import { ClientCycleComponent } from './components/client-cycle/client-cycle.component';
 import { PaymentCycleActivityComponent } from './components/payment-cycle-activity/payment-cycle-activity.component';
 import { SavingCycleActivityComponent } from './components/saving-cycle-activity/saving-cycle-activity.component';
+import { ReviewsComponent } from './components/reviews/reviews.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -255,6 +256,7 @@ const routes: Routes = [
   { path: 'team-ranking-month', component: TeamRankingMonthComponent },
   { path: 'certificate', component: CertificateComponent },
   { path: 'tutorial', component: TutorialComponent },
+  { path: 'reviews', component: ReviewsComponent },
   // { path: 'employee-page/:id', component: EmployeePageComponent },
   {
     path: 'employee-page',

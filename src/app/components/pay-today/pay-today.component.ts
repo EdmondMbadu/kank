@@ -171,13 +171,49 @@ export class PayTodayComponent implements OnInit {
               return month === searchMonth && year === searchYear;
             }
             return false;
-          // case 'debtCycleStartDateMore':
-          //   if (client.debtCycleStartDate) {
-          //     const [month, , year] = client.debtCycleStartDate.split('-');
-          //     const [searchMonth, searchYear] = lowerCaseValue.split('-');
-          //     return month >= searchMonth && year === searchYear;
-          //   }
-          //   return false;
+          case '3+weeks':
+            const THREE_WEEKS_IN_MS = 21 * 24 * 60 * 60 * 1000; // 3 weeks in milliseconds
+            const now = new Date();
+
+            return client.debtCycleStartDate && client.payments
+              ? (() => {
+                  // Check if the debt cycle start date is at least 3 weeks ago
+                  const [startMonth, startDay, startYear] =
+                    client.debtCycleStartDate.split('-').map(Number);
+                  const debtCycleStartDate = new Date(
+                    startYear,
+                    startMonth - 1,
+                    startDay
+                  );
+
+                  if (
+                    now.getTime() - debtCycleStartDate.getTime() <
+                    THREE_WEEKS_IN_MS
+                  ) {
+                    return false; // Client's debt cycle is too recent
+                  }
+
+                  // Check if there are any payments made in the last 3 weeks
+                  const recentPaymentExists = Object.keys(client.payments).some(
+                    (paymentDate) => {
+                      const [payMonth, payDay, payYear] = paymentDate
+                        .split('-')
+                        .map(Number);
+                      const paymentDateObj = new Date(
+                        payYear,
+                        payMonth - 1,
+                        payDay
+                      );
+                      return (
+                        now.getTime() - paymentDateObj.getTime() <
+                        THREE_WEEKS_IN_MS
+                      );
+                    }
+                  );
+
+                  return !recentPaymentExists; // Client has not made recent payments
+                })()
+              : false; // Skip if no debtCycleStartDate or payments data exists
           default:
             return false;
         }

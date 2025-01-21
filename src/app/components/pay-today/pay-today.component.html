@@ -11,6 +11,12 @@
   aria-current="page">
   Jour De Paiment
 </button>
+<button
+[ngClass]="getButtonClasses('3+weeks')"
+(click)="setSerachCriteria('3+weeks')"
+aria-current="page">
+3+ Semaines Sans Payer
+</button>
 
 <button
   [ngClass]="getButtonClasses('creditScore')"
