@@ -10,7 +10,20 @@
             <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nom de l'Audit qui poste</label>
             <input [(ngModel)]="personPostingComment" type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Jeanne Kiluwa" required />
         </div>
-        <div class="my-2">
+        
+          
+          <div class="py-2 px-4 mb-4 bg-white rounded-lg rounded-t-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+              <label for="comment" class="sr-only">Your comment</label>
+              <textarea [(ngModel)]="comment" id="comment" rows="6"
+                  class="px-0 w-full text-sm text-gray-900 border-0 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-gray-400 dark:bg-gray-800"
+                  placeholder="
+                  - Heure d’Arrivée
+                  - Accueil des Clients
+                  - Collaboration dans l’Équipe
+                  - Descente sur le Terrain
+                  - Innovation dans le Travail" required></textarea>
+          </div>
+          <div class="my-2">
             <label for="stars" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                 Cote sur 5
             </label>
@@ -23,13 +36,6 @@
                 {{ star }}
               </option>
             </select>
-          </div>
-          
-          <div class="py-2 px-4 mb-4 bg-white rounded-lg rounded-t-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-              <label for="comment" class="sr-only">Your comment</label>
-              <textarea [(ngModel)]="comment" id="comment" rows="6"
-                  class="px-0 w-full text-sm text-gray-900 border-0 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-gray-400 dark:bg-gray-800"
-                  placeholder="feedback général pour l'équipe" required></textarea>
           </div>
           <button (click)="addReview()" type="submit"
               class="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-green-700 rounded-lg focus:ring-4 focus:ring-green-200 dark:focus:ring-green-900 hover:bg-green-800">
