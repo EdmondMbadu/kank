@@ -1,77 +1,81 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
+<app-navbar 
+    [email]="this.auth.currentUser.email"
+    [firstName]="this.auth.currentUser.firstName" 
+    [path]="'home'">
+</app-navbar>
 
-<!-- investements -->
-
-    <div class="flex container mx-auto m-6 justify-center">
-        <h1 class="text-2xl md:text-4xl mr-10 ml-4">Activités Du Jour {{frenchDate}}</h1>
-        <button  type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mr-4" routerLink="/client-info-current">Info Clients</button>
-    </div>
-    <div class="flex container mx-auto justify-center mb-2">    
-        <div class="">
-        <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->
-        <input [(ngModel)]="requestDate"   type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" (change)="findDailyActivitiesAmount()"  required>
-        <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="findDailyActivitiesAmount()">Chercher</button> -->
-        </div>
-       
-    </div>
-    <div class="container  flex flex-wrap  items-center justify-center  mx-auto md:flex-row">
-
-        <div class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl">
-            <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Reserve</h1>
-            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                    <tr>
-                        <!-- <th scope="col" class="px-6 py-3 rounded-s-lg">
-                            Équipe
-                        </th> -->
-                        <th scope="col" class=" py-3 px-6">
-                        Reserve Attendue Du Jour
-                        </th>
-                        <th scope="col" class=" px-6 py-3">
-                            Reserve Du Jour
-                        </th>
-                        
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr  class="bg-white dark:bg-gray-800">
-                        <!-- <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                        {{i+1}}.  {{s.firstName}}
-                        </th> -->
-                        <td class="px-6 py-4">
-                        {{expectedReserve | number:'1.0-0'}} FC -> {{expectedReserveInDollars | number:'1.0-0'}} $
-                        </td>
-                        <td class="px-6 py-4">
-                            {{dailyReserve | number:'1.0-0'}} FC ->  {{compute.convertCongoleseFrancToUsDollars(dailyReserve)| number:'1.0-0'}} $
-                        </td>
-                        
-                    </tr>
-                    
-                    
-                </tbody>
-                
-                
-            
-            </table>
-        </div>
-    </div>
-
-<div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
-
-    <div class="flex-col w-60  m-6 " *ngFor="let s of summary; let i = index;  ">
-        <a routerLink="{{linkPaths[i]}}" class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
-            <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
-            
-            <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" > FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" > $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
-         
-        </a>
-    </div>
-    
-
-
+<!-- Header Section -->
+<div class="flex container mx-auto m-6 justify-center items-center">
+    <h1 class="text-2xl md:text-4xl mr-10 ml-4 text-green-800">Activités Du Jour {{ frenchDate }}</h1>
+    <button 
+        type="submit" 
+        class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mr-4" 
+        routerLink="/client-info-current">
+        Info Clients
+    </button>
 </div>
 
+<!-- Date Picker -->
+<div class="flex container mx-auto justify-center mb-6">    
+    <div class="w-full max-w-xs">
+        <input 
+            [(ngModel)]="requestDate" 
+            type="date" 
+            id="first_name" 
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" 
+            (change)="findDailyActivitiesAmount()" 
+            required>
+    </div>
+</div>
 
+<!-- Performance and Reserve Section -->
+<div class="container mx-auto flex flex-wrap items-center justify-center">
+    <div class="w-full max-w-2xl">
+        <!-- Performance of the Day -->
+        <div class="bg-green-50 p-6 rounded-lg shadow-md mb-6 text-center">
+            <h3 class="text-xl font-semibold text-green-800">Performance Du Jour</h3>
+            <p class="text-2xl font-bold text-green-900 mt-2">
+                {{ percentage }}%
+            </p>
+        </div>
 
+        <!-- Reserve Information -->
+        <div class="bg-green-50 p-6 rounded-lg shadow-md">
+            <h1 class="text-2xl font-bold text-center text-green-800 underline mb-4">Reserve</h1>
+
+            <!-- Expected Reserve -->
+            <div class="bg-white p-4 rounded-lg shadow-sm mb-4 mx-auto">
+                <h3 class="text-lg font-semibold text-green-800 mb-2">Reserve Attendue Du Jour</h3>
+                <p class="text-xl font-bold text-green-900">
+                    {{ expectedReserve | number:'1.0-0' }} FC 
+                    <span class="text-gray-600">-></span> 
+                    {{ expectedReserveInDollars | number:'1.0-0' }} $
+                </p>
+            </div>
+
+            <!-- Daily Reserve -->
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <h3 class="text-lg font-semibold text-green-800 mb-2">Reserve Du Jour</h3>
+                <p class="text-xl font-bold text-green-900">
+                    {{ dailyReserve | number:'1.0-0' }} FC 
+                    <span class="text-gray-600">-></span> 
+                    {{ compute.convertCongoleseFrancToUsDollars(dailyReserve) | number:'1.0-0' }} $
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="container flex flex-wrap flex-col items-center justify-center mx-auto md:flex-row">
+    <div class="flex-col w-60 m-6" *ngFor="let s of summary; let i = index">
+        <a 
+            routerLink="{{ linkPaths[i] }}" 
+            class="block max-w-sm p-6 bg-neutral-200 border border-gray-200 rounded-lg shadow hover:bg-green-100">
+            <img src="{{ imagePaths[i] }}" alt="" class="w-20 justify-center mx-auto">
+            <h5 class="my-2 text-2xl text-center font-bold tracking-tight text-gray-900">{{ s }}</h5>
+            <h2 class="font-bold text-lg text-green-700 text-center">FC {{ summaryContent[i] | number:'1.0-0' }}</h2>
+            <h2 class="font-bold text-lg text-yellow-900 text-center">$ {{ valuesConvertedToDollars[i] | number:'1.0-0' }}</h2>
+        </a>
+    </div>
+</div>

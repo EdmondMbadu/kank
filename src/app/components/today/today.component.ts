@@ -30,6 +30,7 @@ export class TodayComponent {
   clients?: Client[] = [];
   clientsWithDebts: Client[] = [];
 
+  percentage: string = '0';
   dailyLending: string = '0';
   dailyPayment: string = '0';
   dailyFees: string = '0';
@@ -238,6 +239,10 @@ export class TodayComponent {
     this.expectedReserveInDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.expectedReserve)
       .toString();
+    this.percentage = (
+      (Number(this.dailyReserve) / Number(this.expectedReserve)) *
+      100
+    ).toFixed(2);
 
     console.log(`Total debt for clients with payments due today: ${total}`);
   }
