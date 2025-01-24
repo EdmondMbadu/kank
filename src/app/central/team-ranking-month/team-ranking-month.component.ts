@@ -15,6 +15,7 @@ import { TimeService } from 'src/app/services/time.service';
   styleUrls: ['./team-ranking-month.component.css'],
 })
 export class TeamRankingMonthComponent {
+  averagePerformancePercentage: string = '0'; // Add this line
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
@@ -141,6 +142,38 @@ export class TeamRankingMonthComponent {
     this.allEmployees = this.allEmployees.filter((data) => {
       return data.status === 'Travaille';
     });
+    this.calculateAveragePerformancePercentage();
+  }
+  // Add this method to calculate the average performance percentage
+  calculateAveragePerformancePercentage() {
+    if (!this.allEmployees || this.allEmployees.length === 0) {
+      this.averagePerformancePercentage = '0';
+      return;
+    }
+
+    // Filter employees with valid percentages (> 0)
+    const validEmployees = this.allEmployees.filter((employee) => {
+      const percentage = parseFloat(employee.performancePercentageMonth || '0');
+      return percentage > 0;
+    });
+
+    // If no valid employees, set average to 0
+    if (validEmployees.length === 0) {
+      this.averagePerformancePercentage = '0';
+      return;
+    }
+
+    // Calculate the total percentage for valid employees
+    const totalPercentage = validEmployees.reduce((sum, employee) => {
+      const percentage = parseFloat(employee.performancePercentageMonth || '0');
+      return sum + percentage;
+    }, 0);
+
+    // Calculate the average
+    const average = totalPercentage / validEmployees.length;
+    this.averagePerformancePercentage = this.compute
+      .roundNumber(average)
+      .toString();
   }
 
   computePerformances(employees: any, employee: Employee) {
