@@ -239,10 +239,14 @@ export class TodayComponent {
     this.expectedReserveInDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.expectedReserve)
       .toString();
-    this.percentage = (
-      (Number(this.dailyReserve) / Number(this.expectedReserve)) *
-      100
-    ).toFixed(2);
+    if (Number(this.expectedReserve) === 0) {
+      this.percentage = '0.00';
+    } else {
+      this.percentage = (
+        (Number(this.dailyReserve) / Number(this.expectedReserve)) *
+        100
+      ).toFixed(2);
+    }
 
     console.log(`Total debt for clients with payments due today: ${total}`);
   }
