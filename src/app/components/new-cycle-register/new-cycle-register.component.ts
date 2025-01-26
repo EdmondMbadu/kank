@@ -145,6 +145,8 @@ export class NewCycleRegisterComponent implements OnInit {
         `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${diff} FC`
       );
       return;
+    } else if (this.savingsPaidAtleast10PercentOfLoanAmount() === false) {
+      return;
     } else {
       let conf = confirm(
         `Vous allez enregistré ${this.client.firstName} ${this.client.lastName} pour un nouveau cycle. Voulez-vous quand même continuer?`
@@ -209,6 +211,19 @@ export class NewCycleRegisterComponent implements OnInit {
     return null;
   }
 
+  savingsPaidAtleast10PercentOfLoanAmount() {
+    let savings = Number(this.savings);
+    let loanAmount = Number(this.loanAmount);
+    if (savings < loanAmount * 0.1) {
+      alert(
+        `Le montant d'épargne doit être au moins 10% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${
+          loanAmount * 0.1
+        } FC`
+      );
+      return false;
+    }
+    return true;
+  }
   resetFields() {
     this.applicationFee = '';
     this.memberShipFee = '';
