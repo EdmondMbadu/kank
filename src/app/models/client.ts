@@ -66,4 +66,5 @@ export class Comment {
   comment?: string;
   stars?: string;
   starsNumber?: number;
+  audioUrl?: string;
 }
