@@ -312,25 +312,71 @@ export class ClientPortalComponent {
       );
     }
   }
+  // async startRecording() {
+  //   try {
+  //     // Request mic permission
+  //     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  //     // Initialize MediaRecorder
+  //     this.mediaRecorder = new MediaRecorder(stream);
+  //     this.audioChunks = []; // clear any previous data
+
+  //     // Collect chunks
+  //     this.mediaRecorder.ondataavailable = (event) => {
+  //       if (event.data?.size > 0) {
+  //         this.audioChunks.push(event.data);
+  //       }
+  //     };
+
+  //     // Start recording
+  //     this.mediaRecorder.start();
+  //     this.isRecording = true;
+  //   } catch (err) {
+  //     console.error('Error accessing microphone:', err);
+  //     alert(
+  //       'Could not access the microphone. Check permissions and try again.'
+  //     );
+  //   }
+  // }
   async startRecording() {
     try {
-      // Request mic permission
+      // 1) getUserMedia
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Initialize MediaRecorder
-      this.mediaRecorder = new MediaRecorder(stream);
-      this.audioChunks = []; // clear any previous data
+      // 2) pick a mimeType
+      const preferredMimeTypes = [
+        'audio/mp4;codecs=mp4a',
+        'audio/ogg;codecs=opus',
+        'audio/webm;codecs=opus',
+      ];
 
-      // Collect chunks
+      let selectedMimeType = '';
+      for (const mt of preferredMimeTypes) {
+        if (MediaRecorder.isTypeSupported(mt)) {
+          selectedMimeType = mt;
+          break;
+        }
+      }
+      const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
+
+      // 3) create MediaRecorder
+      this.mediaRecorder = new MediaRecorder(stream, options);
+      this.audioChunks = [];
+
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data?.size > 0) {
           this.audioChunks.push(event.data);
         }
       };
 
-      // Start recording
+      // 4) start
       this.mediaRecorder.start();
       this.isRecording = true;
+
+      console.log(
+        'Recording started with mimeType:',
+        selectedMimeType || 'browser default'
+      );
     } catch (err) {
       console.error('Error accessing microphone:', err);
       alert(
@@ -338,6 +384,7 @@ export class ClientPortalComponent {
       );
     }
   }
+
   stopRecording() {
     if (!this.mediaRecorder) return;
 
