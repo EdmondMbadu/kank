@@ -70,6 +70,25 @@ export class GestionDayComponent implements OnInit {
   total: string = '';
   totalCard: string = '';
   track: number = 0;
+  public graphMonthPerformance = {
+    data: [
+      {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: 270,
+        title: { text: 'Speed' },
+        type: 'indicator',
+        mode: 'gauge+number',
+        gauge: {
+          axis: { range: [0, 100], tickcolor: 'blue' }, // Color of the ticks (optional)
+          bar: { color: 'blue' }, // Single color for the gauge bar (needle)
+        },
+      },
+    ],
+    layout: {
+      margin: { t: 0, b: 0, l: 0, r: 0 }, // Adjust margins
+      responsive: true, // Make the chart responsive
+    },
+  };
 
   clientsRequestLending: Client[] = [];
   clientsRequestSavings: Client[] = [];
@@ -290,6 +309,7 @@ export class GestionDayComponent implements OnInit {
             console.log('all the reserve amounts', this.reserveTotals);
             this.isFetchingClients = false;
             // Now you can use this.userRequestTotals and this.overallTotal in your template
+            this.setGraphics();
           }
         },
         (error) => {
@@ -453,12 +473,37 @@ export class GestionDayComponent implements OnInit {
 
     this.initalizeInputs();
   }
-  getBackgroundColor(value: string): string {
-    return this.compute.getGradientColorLite(Number(value)).background;
-  }
+  // getBackgroundColor(value: string): string {
+  //   return this.compute.getGradientColorLite(Number(value)).background;
+  // }
 
-  getTextColor(value: string): string {
-    return this.compute.getGradientColorLite(Number(value)).text;
+  // getTextColor(value: string): string {
+  //   return this.compute.getGradientColorLite(Number(value)).text;
+  // }
+  setGraphics() {
+    let num = Number(this.percentage);
+    let gaugeColor = this.compute.getGradientColor(Number(num));
+    this.graphMonthPerformance = {
+      data: [
+        {
+          domain: { x: [0, 1], y: [0, 1] },
+          value: num,
+          title: {
+            text: `Performance Du Jour`,
+          },
+          type: 'indicator',
+          mode: 'gauge+number',
+          gauge: {
+            axis: { range: [0, 100], tickcolor: gaugeColor }, // Color of the ticks (optional)
+            bar: { color: gaugeColor }, // Single color for the gauge bar (needle)
+          },
+        },
+      ],
+      layout: {
+        margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
+        responsive: true, // Make the chart responsive
+      },
+    };
   }
   updateReserveGraphics(time: number) {
     let sorted = this.sortKeysAndValuesReserve(time);

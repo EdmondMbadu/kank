@@ -16,14 +16,18 @@
         </div>
       </div> -->
        <!-- Average Performance Percentage -->
-    <div class="flex container mx-auto justify-center text-center mb-8">
-        <div [ngStyle]="{'background-color': getBackgroundColor(percentage), 'color': getTextColor(percentage)}" class="p-6 rounded-lg shadow-md">
-          <h3 class="text-xl font-semibold">Performance Du Jour </h3>
-          <p class="text-2xl font-bold mt-2">
-            {{ percentage  }}%
-          </p>
+       <div class=" container  flex mx-auto   flex-col md:justify-center md:flex-row  ">
+
+        <div class="flex flex-col ">
+         
+            <div class="w-80 md:w-96 max-w-sm   mx-auto mt-0 md:-mt-8 mb-2">
+                <plotly-plot [data]="graphMonthPerformance.data" [layout]="graphMonthPerformance.layout"></plotly-plot>
+              </div>
+            
         </div>
-      </div>
+
+
+    </div>
     <div class="flex container mx-auto justify-center mb-2">    
         <div class="">
         <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->

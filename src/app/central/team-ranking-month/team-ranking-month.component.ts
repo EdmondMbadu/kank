@@ -52,6 +52,25 @@ export class TeamRankingMonthComponent {
   }
 
   allEmployees?: Employee[];
+  public graphMonthPerformance = {
+    data: [
+      {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: 270,
+        title: { text: 'Speed' },
+        type: 'indicator',
+        mode: 'gauge+number',
+        gauge: {
+          axis: { range: [0, 100], tickcolor: 'blue' }, // Color of the ticks (optional)
+          bar: { color: 'blue' }, // Single color for the gauge bar (needle)
+        },
+      },
+    ],
+    layout: {
+      margin: { t: 0, b: 0, l: 0, r: 0 }, // Adjust margins
+      responsive: true, // Make the chart responsive
+    },
+  };
 
   valuesConvertedToDollars: string[] = [];
 
@@ -105,6 +124,7 @@ export class TeamRankingMonthComponent {
           this.filterAndInitializeEmployees(tempEmployees, this.currentClients);
           this.isFetchingClients = false;
         }
+        this.setGraphics();
       });
     });
     this.total = (Number(this.total) + Number(this.totalHouse)).toString();
@@ -179,10 +199,32 @@ export class TeamRankingMonthComponent {
   getBackgroundColor(value: string): string {
     return this.compute.getGradientColorLite(Number(value)).background;
   }
-
-  getTextColor(value: string): string {
-    return this.compute.getGradientColorLite(Number(value)).text;
+  setGraphics() {
+    let num = Number(this.averagePerformancePercentage);
+    let gaugeColor = this.compute.getGradientColor(Number(num));
+    this.graphMonthPerformance = {
+      data: [
+        {
+          domain: { x: [0, 1], y: [0, 1] },
+          value: num,
+          title: {
+            text: `Performance Moyenne`,
+          },
+          type: 'indicator',
+          mode: 'gauge+number',
+          gauge: {
+            axis: { range: [0, 100], tickcolor: gaugeColor }, // Color of the ticks (optional)
+            bar: { color: gaugeColor }, // Single color for the gauge bar (needle)
+          },
+        },
+      ],
+      layout: {
+        margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
+        responsive: true, // Make the chart responsive
+      },
+    };
   }
+
   computePerformances(employees: any, employee: Employee) {
     this.maxRange = Object.keys(employee.dailyPoints!).length;
     if (employee.role === 'Manager') {
