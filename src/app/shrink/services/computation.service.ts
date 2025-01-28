@@ -188,6 +188,21 @@ export class ComputationService {
       return 'rgb(40, 167, 69)'; // A: Green for 90-100
     }
   }
+  getGradientColorLite(value: number): { background: string; text: string } {
+    if (value < 50) {
+      return { background: 'rgb(255, 0, 0)', text: 'white' }; // F: Red for values below 50
+    } else if (value < 60) {
+      return { background: 'rgb(255, 87, 34)', text: 'white' }; // E: Red-Orange for 50-60
+    } else if (value < 70) {
+      return { background: 'rgb(255, 152, 0)', text: 'black' }; // D: Orange for 60-70
+    } else if (value < 80) {
+      return { background: 'rgb(255, 193, 7)', text: 'black' }; // C: Yellow for 70-80
+    } else if (value < 90) {
+      return { background: 'rgb(139, 195, 74)', text: 'black' }; // B: Light Green for 80-90
+    } else {
+      return { background: 'rgb(40, 167, 69)', text: 'white' }; // A: Green for 90-100
+    }
+  }
 
   findColor(array: string[]) {
     let start = Number(array[0]);

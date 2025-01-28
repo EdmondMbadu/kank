@@ -453,6 +453,13 @@ export class GestionDayComponent implements OnInit {
 
     this.initalizeInputs();
   }
+  getBackgroundColor(value: string): string {
+    return this.compute.getGradientColorLite(Number(value)).background;
+  }
+
+  getTextColor(value: string): string {
+    return this.compute.getGradientColorLite(Number(value)).text;
+  }
   updateReserveGraphics(time: number) {
     let sorted = this.sortKeysAndValuesReserve(time);
     this.recentReserveDates = sorted[0];

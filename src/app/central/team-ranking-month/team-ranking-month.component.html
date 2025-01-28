@@ -7,14 +7,23 @@
       <h2 class="text-2xl md:text-4xl font-bold">Classement Des Employée Du Mois</h2>
     </div>
     <!-- Average Performance Percentage -->
-    <div class="flex container mx-auto justify-center text-center mb-8">
+    <!-- <div class="flex container mx-auto justify-center text-center mb-8">
       <div class="bg-green-100 p-6 rounded-lg shadow-md">
         <h3 class="text-xl font-semibold text-green-800">Performance Moyenne</h3>
         <p class="text-2xl font-bold text-green-900 mt-2">
           {{ averagePerformancePercentage }}%
         </p>
       </div>
-    </div>
+    </div> -->
+       <!-- Average Performance Percentage -->
+       <div class="flex container mx-auto justify-center text-center mb-8">
+        <div [ngStyle]="{'background-color': getBackgroundColor(averagePerformancePercentage), 'color': getTextColor(averagePerformancePercentage)}" class="p-6 rounded-lg shadow-md">
+          <h3 class="text-xl font-semibold">Performance Moyenne</h3>
+          <p class="text-2xl font-bold mt-2">
+            {{ averagePerformancePercentage }}%
+          </p>
+        </div>
+      </div>
 
     <!-- Filters -->
     <div class="flex container mx-auto justify-center text-center space-x-8 mb-6">

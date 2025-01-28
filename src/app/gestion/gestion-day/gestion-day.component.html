@@ -6,12 +6,21 @@
         <h1 class="text-2xl md:text-4xl mr-10 ml-4">Gestion Du Jour {{frenchDate}}</h1>
        
     </div>
-    <!-- Average Performance Percentage -->
+    <!-- Average Performance Percentage
     <div class="flex container mx-auto justify-center text-center mb-8">
         <div class="bg-green-100 p-6 rounded-lg shadow-md">
           <h3 class="text-xl font-semibold text-green-800">Performance Du Jour</h3>
           <p class="text-2xl font-bold text-green-900 mt-2">
             {{ percentage }}%
+          </p>
+        </div>
+      </div> -->
+       <!-- Average Performance Percentage -->
+    <div class="flex container mx-auto justify-center text-center mb-8">
+        <div [ngStyle]="{'background-color': getBackgroundColor(percentage), 'color': getTextColor(percentage)}" class="p-6 rounded-lg shadow-md">
+          <h3 class="text-xl font-semibold">Performance Du Jour </h3>
+          <p class="text-2xl font-bold mt-2">
+            {{ percentage  }}%
           </p>
         </div>
       </div>

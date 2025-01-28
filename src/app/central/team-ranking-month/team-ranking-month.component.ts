@@ -176,6 +176,13 @@ export class TeamRankingMonthComponent {
       .toString();
   }
 
+  getBackgroundColor(value: string): string {
+    return this.compute.getGradientColorLite(Number(value)).background;
+  }
+
+  getTextColor(value: string): string {
+    return this.compute.getGradientColorLite(Number(value)).text;
+  }
   computePerformances(employees: any, employee: Employee) {
     this.maxRange = Object.keys(employee.dailyPoints!).length;
     if (employee.role === 'Manager') {
