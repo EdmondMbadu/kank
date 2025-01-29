@@ -66,6 +66,40 @@ export class ClientPortalComponent {
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
+  selectedAudioFile?: File;
+  selectedAudioPreviewURL?: string; // For local preview
+
+  onAudioFileSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const file = fileList[0];
+
+    // Optional: Check size, type, etc.
+    if (file.size >= 20000000) {
+      alert('Le fichier audio dépasse la limite de 20MB.');
+      return;
+    }
+
+    if (file.type.split('/')[0] !== 'audio') {
+      alert('Veuillez choisir un fichier audio valide.');
+      return;
+    }
+
+    this.selectedAudioFile = file;
+
+    // Create a local preview URL for immediate playback
+    this.selectedAudioPreviewURL = URL.createObjectURL(file);
+    // ⚠️ IMPORTANT: Reset the input value so that picking the same file again re-triggers change.
+    const input = document.getElementById('audioFile') as HTMLInputElement;
+    if (input) {
+      input.value = ''; // Clear out so a re-selection fires change
+    }
+
+    console.log('Audio file selected:', file);
+  }
+
   ngOnInit(): void {
     this.retrieveClient();
 
@@ -312,32 +346,6 @@ export class ClientPortalComponent {
       );
     }
   }
-  // async startRecording() {
-  //   try {
-  //     // Request mic permission
-  //     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-  //     // Initialize MediaRecorder
-  //     this.mediaRecorder = new MediaRecorder(stream);
-  //     this.audioChunks = []; // clear any previous data
-
-  //     // Collect chunks
-  //     this.mediaRecorder.ondataavailable = (event) => {
-  //       if (event.data?.size > 0) {
-  //         this.audioChunks.push(event.data);
-  //       }
-  //     };
-
-  //     // Start recording
-  //     this.mediaRecorder.start();
-  //     this.isRecording = true;
-  //   } catch (err) {
-  //     console.error('Error accessing microphone:', err);
-  //     alert(
-  //       'Could not access the microphone. Check permissions and try again.'
-  //     );
-  //   }
-  // }
   async startRecording() {
     try {
       // 1) getUserMedia
@@ -407,39 +415,38 @@ export class ClientPortalComponent {
     };
   }
 
-  addCommentWithAudio() {
-    // We'll define some helper booleans
-    const hasName =
-      this.personPostingComment && this.personPostingComment.trim().length > 0;
-    const hasTextComment = this.comment && this.comment.trim().length > 0;
-    const hasAudio = !!this.recordedBlob; // true if there's a recorded audio blob
+  //   const hasName =
+  //     this.personPostingComment && this.personPostingComment.trim().length > 0;
+  //   const hasTextComment = this.comment && this.comment.trim().length > 0;
+  //   const hasAudio = !!this.recordedBlob; // true if there's a recorded audio blob
 
-    // Always require a name
-    if (!hasName) {
-      alert('Veuillez renseigner votre nom.');
-      return;
-    }
+  //   // Always require a name
+  //   if (!hasName) {
+  //     alert('Veuillez renseigner votre nom.');
+  //     return;
+  //   }
 
-    // If user did NOT record audio, then they must provide text
-    if (!hasAudio && !hasTextComment) {
-      alert('Vous devez saisir un commentaire ou enregistrer un audio.');
-      return;
-    }
+  //   // If user did NOT record audio, then they must provide text
+  //   if (!hasAudio && !hasTextComment) {
+  //     alert('Vous devez saisir un commentaire ou enregistrer un audio.');
+  //     return;
+  //   }
 
-    // Confirm
-    const conf = confirm(`Êtes-vous sûr de vouloir publier ce commentaire ?`);
-    if (!conf) return;
+  //   // Confirm
+  //   const conf = confirm(`Êtes-vous sûr de vouloir publier ce commentaire ?`);
+  //   if (!conf) return;
 
-    // If we have recorded audio, upload it and then post
-    if (hasAudio) {
-      this.uploadRecordedAudioAndThenPostComment();
-    } else {
-      // Post without audio
-      this.postCommentWithoutAudio();
-    }
-  }
+  //   // If we have recorded audio, upload it and then post
+  //   if (hasAudio) {
+  //     this.uploadRecordedAudioAndThenPostComment();
+  //   } else {
+  //     // Post without audio
+  //     this.postCommentWithoutAudio();
+  //   }
+  // }
 
   // Helper: Upload the audio if it exists, then post comment
+
   async uploadRecordedAudioAndThenPostComment() {
     try {
       // 1) Convert blob to File, upload to Firebase
@@ -464,8 +471,8 @@ export class ClientPortalComponent {
     this.finalizeCommentPost('');
   }
   // Let user discard the current recording if they don’t want it
-  cancelRecording() {
-    // If actively recording, stop first
+  discardAudio() {
+    // 1) If we were actively recording, stop the recorder
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
     }
@@ -473,7 +480,21 @@ export class ClientPortalComponent {
     this.audioChunks = [];
     this.recordedBlob = undefined;
     this.recordedAudioURL = undefined;
-    console.log('Recording canceled/reset.');
+
+    // 2) If we had selected an audio file to upload, clear that
+    if (this.selectedAudioPreviewURL) {
+      // Revoke the object URL to free memory
+      URL.revokeObjectURL(this.selectedAudioPreviewURL);
+    }
+    this.selectedAudioPreviewURL = undefined;
+    this.selectedAudioFile = undefined;
+    // 3) Also reset the <input> value so the user can pick the same file again
+    const input = document.getElementById('audioFile') as HTMLInputElement;
+    if (input) {
+      input.value = '';
+    }
+
+    console.log('Audio canceled/reset.');
   }
 
   // Optional: Example method to upload the recorded audio
@@ -524,6 +545,143 @@ export class ClientPortalComponent {
       .catch((err) => {
         console.error(err);
         alert('Error posting comment.');
+      });
+  }
+  // addCommentWithAudioFile() {
+  //   // Validate name (optional if you want)
+  //   if (!this.personPostingComment || !this.personPostingComment.trim()) {
+  //     alert('Veuillez saisir votre nom.');
+  //     return;
+  //   }
+  //   // Validate comment text OR audio file
+  //   const hasText = this.comment && this.comment.trim().length > 0;
+  //   const hasAudio = !!this.selectedAudioFile;
+
+  //   if (!hasText && !hasAudio) {
+  //     alert('Veuillez saisir un commentaire ou sélectionner un fichier audio.');
+  //     return;
+  //   }
+
+  //   const confirmPost = confirm(
+  //     `Êtes-vous sûr de vouloir publier ce commentaire ?`
+  //   );
+  //   if (!confirmPost) return;
+
+  //   // If we have an audio file, upload it first, then post
+  //   if (hasAudio) {
+  //     this.uploadAudioFileThenPostComment();
+  //   } else {
+  //     // Just post a text comment
+  //     this.postCommentToFirestore('');
+  //   }
+  // }
+  addCommentWithAudioFile() {
+    // 1) Must have a name
+    if (!this.personPostingComment || !this.personPostingComment.trim()) {
+      alert('Veuillez saisir votre nom.');
+      return;
+    }
+
+    // 2) Check for text or audio
+    const hasText = this.comment && this.comment.trim().length > 0;
+    const hasRecordedAudio = !!this.recordedBlob; // if user used mic
+    const hasUploadedAudio = !!this.selectedAudioFile; // if user selected a file
+
+    if (!hasText && !hasRecordedAudio && !hasUploadedAudio) {
+      alert(
+        'Veuillez saisir un commentaire OU un fichier audio (enregistré ou téléversé).'
+      );
+      return;
+    }
+
+    // 3) Confirm
+    if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) {
+      return;
+    }
+
+    // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
+    if (hasRecordedAudio) {
+      this.uploadRecordedBlobAndThenPostComment();
+    } else if (hasUploadedAudio) {
+      this.uploadSelectedFileAndThenPostComment();
+    } else {
+      // just text
+      this.postCommentToFirestore('');
+    }
+  }
+
+  private async uploadRecordedBlobAndThenPostComment() {
+    try {
+      // Convert Blob -> File
+      const fileName = `recorded-${Date.now()}.webm`;
+      const audioFile = new File([this.recordedBlob!], fileName, {
+        type: this.recordedBlob!.type,
+      });
+
+      const path = `clients-audio/${this.client.uid}-${fileName}`;
+      const uploadTask = await this.storage.upload(path, audioFile);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      // Now finalize
+      this.postCommentToFirestore(downloadURL);
+
+      // Reset local fields
+      this.recordedBlob = undefined;
+      this.recordedAudioURL = '';
+    } catch (error) {
+      console.error('Error uploading recorded blob:', error);
+      alert('Erreur lors du téléversement de votre enregistrement.');
+    }
+  }
+
+  private async uploadSelectedFileAndThenPostComment() {
+    try {
+      const fileName = `upload-${Date.now()}-${this.selectedAudioFile?.name}`;
+      const path = `clients-audio/${this.client.uid}-${fileName}`;
+
+      const uploadTask = await this.storage.upload(
+        path,
+        this.selectedAudioFile!
+      );
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      // Now finalize
+      this.postCommentToFirestore(downloadURL);
+
+      // Reset local fields
+      if (this.selectedAudioPreviewURL) {
+        URL.revokeObjectURL(this.selectedAudioPreviewURL);
+      }
+      this.selectedAudioPreviewURL = undefined;
+      this.selectedAudioFile = undefined;
+    } catch (error) {
+      console.error('Error uploading selected file:', error);
+      alert('Erreur lors du téléversement du fichier audio.');
+    }
+  }
+
+  private postCommentToFirestore(audioUrl: string) {
+    const newComment: Comment = {
+      name: this.personPostingComment,
+      comment: this.comment,
+      time: this.time.todaysDate(),
+      audioUrl: audioUrl, // could be '' if none
+    };
+
+    // Add locally
+    this.comments.push(newComment);
+
+    // Save to Firestore
+    this.data
+      .addCommentToClientProfile(this.client, this.comments)
+      .then(() => {
+        this.personPostingComment = '';
+        this.comment = '';
+        alert('Commentaire publié avec succès!');
+      })
+      .catch((error) => {
+        console.error(error);
+        alert('Erreur lors de la publication du commentaire.');
       });
   }
 }
