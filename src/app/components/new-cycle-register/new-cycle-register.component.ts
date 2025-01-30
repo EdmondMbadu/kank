@@ -6,6 +6,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { __generator } from 'tslib';
 
 @Component({
   selector: 'app-new-cycle-register',
@@ -212,13 +213,14 @@ export class NewCycleRegisterComponent implements OnInit {
   }
 
   savingsPaidAtleast10PercentOfLoanAmount() {
-    let savings = Number(this.savings);
+    let savings = Number(this.savings) + Number(this.client.savings);
     let loanAmount = Number(this.loanAmount);
+    let savingsToAdd = Number(loanAmount) * 0.1 - Number(this.client.savings);
     if (savings < loanAmount * 0.1) {
       alert(
         `Le montant d'épargne doit être au moins 10% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${
           loanAmount * 0.1
-        } FC`
+        } FC. Vous devez ajouter au moins ${savingsToAdd} FC d'épargne pour continuer.`
       );
       return false;
     }
