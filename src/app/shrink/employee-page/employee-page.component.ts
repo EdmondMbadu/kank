@@ -702,6 +702,16 @@ export class EmployeePageComponent implements OnInit {
               cell.innerHTML = `${date}<br>Retard${
                 time ? `<br><span class="small-time">${time}</span>` : ''
               }`;
+            } else if (attendance === 'N') {
+              cell.classList.add(
+                'bg-gray-400', // Use gray for "Néant"
+                'border',
+                'border-black',
+                'text-white'
+              );
+              cell.innerHTML = `${date}<br>Néant${
+                time ? `<br><span class="small-time">${time}</span>` : ''
+              }`;
             }
           } else {
             // Default cell styling for days with no attendance data
