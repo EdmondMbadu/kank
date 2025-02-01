@@ -37,7 +37,7 @@ export class CertificateComponent implements OnInit {
   givenMonth = this.currentMonth - 1;
   givenYear = this.currentYear;
   month?: number = this.givenMonth;
-  monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
+  monthsList: number[] = [...Array(12).keys()];
   yearsList: number[] = this.time.yearsList;
   year = this.currentDate.getFullYear();
   preposition: string = 'De';
