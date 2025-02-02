@@ -108,7 +108,7 @@
         <!-- Action Buttons -->
         <div>
           <a
-            *ngIf="em.profilePicture?.CVDownloadURL"
+            *ngIf="auth.isAdmninistrator  && em.profilePicture?.CVDownloadURL"
             [href]="em.profilePicture?.CVDownloadURL"
             target="_blank"
             class="text-sm font-medium text-white bg-green-600 px-4 py-2 rounded-full hover:bg-green-700"
