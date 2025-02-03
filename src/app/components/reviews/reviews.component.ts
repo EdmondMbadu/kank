@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import { Comment } from 'src/app/models/client';
@@ -18,13 +18,24 @@ export class ReviewsComponent implements OnInit {
   comment?: string = '';
   reviews: Comment[] = [];
 
+  isRecording = false;
+  mediaRecorder!: MediaRecorder;
+  audioChunks: BlobPart[] = []; // Will store the recorded audio data (chunks)
+  recordedBlob?: Blob; // Final audio blob
+  recordedAudioURL?: string; // Local blob URL for playback in the UI
+  commentAudioUrl: string = ''; // Final upload URL from Firebase
+
+  selectedAudioFile?: File;
+  selectedAudioPreviewURL?: string; // For local preview
+
   constructor(
     private router: Router,
     public auth: AuthService,
     private storage: AngularFireStorage,
     private data: DataService,
     public time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+       private cd: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -60,22 +71,22 @@ export class ReviewsComponent implements OnInit {
       return dateB - dateA; // Descending order
     });
   }
-  addReview() {
-    if (
-      this.comment === '' ||
-      this.personPostingComment === '' ||
-      this.numberofStars === ''
-    ) {
-      alert('Remplissez toutes les données.');
-      return;
-    }
+  addReview(audioUrl: string) {
+    // if (
+    //   this.comment === '' ||
+    //   this.personPostingComment === '' ||
+    //   this.numberofStars === ''
+    // ) {
+    //   alert('Remplissez toutes les données.');
+    //   return;
+    // }
 
-    const confirmation = confirm(
-      `Êtes-vous sûr de vouloir publier ce commentaire`
-    );
-    if (!confirmation) {
-      return;
-    }
+    // const confirmation = confirm(
+    //   `Êtes-vous sûr de vouloir publier ce commentaire`
+    // );
+    // if (!confirmation) {
+    //   return;
+    // }
 
     try {
       const review = {
@@ -83,6 +94,7 @@ export class ReviewsComponent implements OnInit {
         comment: this.comment,
         time: this.time.todaysDate(),
         stars: this.numberofStars,
+        audioUrl: audioUrl, // could be '' if none
       };
 
       this.auth.addReview(review).then(() => {
@@ -91,9 +103,225 @@ export class ReviewsComponent implements OnInit {
         this.numberofStars = '';
       });
     } catch (error) {
+      console.error('Error adding review:', error);
       alert(
         "Une erreur s'est produite lors de la publication du commentaire. Essayez à nouveau."
       );
     }
   }
+  async startRecording() {
+    try {
+      // 1) getUserMedia
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // 2) pick a mimeType
+      const preferredMimeTypes = [
+        'audio/mp4;codecs=mp4a',
+        'audio/ogg;codecs=opus',
+        'audio/webm;codecs=opus',
+      ];
+
+      let selectedMimeType = '';
+      for (const mt of preferredMimeTypes) {
+        if (MediaRecorder.isTypeSupported(mt)) {
+          selectedMimeType = mt;
+          break;
+        }
+      }
+      const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
+
+      // 3) create MediaRecorder
+      this.mediaRecorder = new MediaRecorder(stream, options);
+      this.audioChunks = [];
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      // 4) start
+      this.mediaRecorder.start();
+      this.isRecording = true;
+
+      console.log(
+        'Recording started with mimeType:',
+        selectedMimeType || 'browser default'
+      );
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
+      alert(
+        'Could not access the microphone. Check permissions and try again.'
+      );
+    }
+  }
+
+  stopRecording() {
+    if (!this.mediaRecorder) return;
+
+    // Stop the MediaRecorder
+    this.mediaRecorder.stop();
+    this.isRecording = false;
+
+    // Once it fully stops, combine the chunks into a single Blob
+    this.mediaRecorder.onstop = () => {
+      this.recordedBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+
+      // Create a local URL for immediate playback
+      this.recordedAudioURL = URL.createObjectURL(this.recordedBlob);
+
+      console.log('Recording complete. Blob size:', this.recordedBlob.size);
+      console.log('the local url', this.recordedAudioURL);
+      // The user can now preview the audio right away
+      // Force Angular to detect the new value
+      this.cd.detectChanges();
+    };
+  }
+
+  private async uploadRecordedBlobAndThenPostComment() {
+    try {
+      // Convert Blob -> File
+      const fileName = `recorded-${Date.now()}.webm`;
+      const audioFile = new File([this.recordedBlob!], fileName, {
+        type: this.recordedBlob!.type,
+      });
+
+      const path = `reviews/${this.auth.currentUser.uid}-${fileName}`;
+      const uploadTask = await this.storage.upload(path, audioFile);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      // Now finalize
+      this.addReview(downloadURL);
+
+      // Reset local fields
+      this.recordedBlob = undefined;
+      this.recordedAudioURL = '';
+    } catch (error) {
+      console.error('Error uploading recorded blob:', error);
+      alert('Erreur lors du téléversement de votre enregistrement.');
+    }
+  }
+  private async uploadSelectedFileAndThenPostComment() {
+    try {
+      const fileName = `upload-${Date.now()}-${this.selectedAudioFile?.name}`;
+      const path = `reviews/${this.auth.currentUser.uid}-${fileName}`;
+
+      const uploadTask = await this.storage.upload(
+        path,
+        this.selectedAudioFile!
+      );
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      // Now finalize
+      this.addReview(downloadURL);
+
+      // Reset local fields
+      if (this.selectedAudioPreviewURL) {
+        URL.revokeObjectURL(this.selectedAudioPreviewURL);
+      }
+      this.selectedAudioPreviewURL = undefined;
+      this.selectedAudioFile = undefined;
+    } catch (error) {
+      console.error('Error uploading selected file:', error);
+      alert('Erreur lors du téléversement du fichier audio.');
+    }
+  }
+
+    // Let user discard the current recording if they don’t want it
+    discardAudio() {
+      // 1) If we were actively recording, stop the recorder
+      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+      }
+      this.isRecording = false;
+      this.audioChunks = [];
+      this.recordedBlob = undefined;
+      this.recordedAudioURL = undefined;
+  
+      // 2) If we had selected an audio file to upload, clear that
+      if (this.selectedAudioPreviewURL) {
+        // Revoke the object URL to free memory
+        URL.revokeObjectURL(this.selectedAudioPreviewURL);
+      }
+      this.selectedAudioPreviewURL = undefined;
+      this.selectedAudioFile = undefined;
+      // 3) Also reset the <input> value so the user can pick the same file again
+      const input = document.getElementById('audioFile') as HTMLInputElement;
+      if (input) {
+        input.value = '';
+      }
+  
+      console.log('Audio canceled/reset.');
+    }
+
+    onAudioFileSelected(fileList: FileList | null) {
+      if (!fileList || fileList.length === 0) {
+        return;
+      }
+  
+      const file = fileList[0];
+  
+      // Optional: Check size, type, etc.
+      if (file.size >= 20000000) {
+        alert('Le fichier audio dépasse la limite de 20MB.');
+        return;
+      }
+  
+      if (file.type.split('/')[0] !== 'audio') {
+        alert('Veuillez choisir un fichier audio valide.');
+        return;
+      }
+  
+      this.selectedAudioFile = file;
+  
+      // Create a local preview URL for immediate playback
+      this.selectedAudioPreviewURL = URL.createObjectURL(file);
+      // ⚠️ IMPORTANT: Reset the input value so that picking the same file again re-triggers change.
+      const input = document.getElementById('audioFile') as HTMLInputElement;
+      if (input) {
+        input.value = ''; // Clear out so a re-selection fires change
+      }
+  
+      console.log('Audio file selected:', file);
+    }
+    addReviewWithOrWithoutAudioFile() {
+      // 1) Must have a name
+      if (!this.personPostingComment || !this.personPostingComment.trim()) {
+        alert('Veuillez saisir votre nom.');
+        return;
+      }
+      if (!this.numberofStars || !this.numberofStars.trim()) {
+        alert('Veuillez saisir votre cote.');
+        return;
+      }
+  
+      // 2) Check for text or audio
+      const hasText = this.comment && this.comment.trim().length > 0;
+      const hasRecordedAudio = !!this.recordedBlob; // if user used mic
+      const hasUploadedAudio = !!this.selectedAudioFile; // if user selected a file
+  
+      if (!hasText && !hasRecordedAudio && !hasUploadedAudio) {
+        alert(
+          'Veuillez saisir un commentaire OU un fichier audio (enregistré ou téléversé).'
+        );
+        return;
+      }
+  
+      // 3) Confirm
+      if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) {
+        return;
+      }
+  
+      // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
+      if (hasRecordedAudio) {
+        this.uploadRecordedBlobAndThenPostComment();
+      } else if (hasUploadedAudio) {
+        this.uploadSelectedFileAndThenPostComment();
+      } else {
+        // just text
+        this.addReview('');
+      }
+    }
+  
+  
 }

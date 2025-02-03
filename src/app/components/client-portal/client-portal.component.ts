@@ -415,35 +415,7 @@ export class ClientPortalComponent {
     };
   }
 
-  //   const hasName =
-  //     this.personPostingComment && this.personPostingComment.trim().length > 0;
-  //   const hasTextComment = this.comment && this.comment.trim().length > 0;
-  //   const hasAudio = !!this.recordedBlob; // true if there's a recorded audio blob
 
-  //   // Always require a name
-  //   if (!hasName) {
-  //     alert('Veuillez renseigner votre nom.');
-  //     return;
-  //   }
-
-  //   // If user did NOT record audio, then they must provide text
-  //   if (!hasAudio && !hasTextComment) {
-  //     alert('Vous devez saisir un commentaire ou enregistrer un audio.');
-  //     return;
-  //   }
-
-  //   // Confirm
-  //   const conf = confirm(`Êtes-vous sûr de vouloir publier ce commentaire ?`);
-  //   if (!conf) return;
-
-  //   // If we have recorded audio, upload it and then post
-  //   if (hasAudio) {
-  //     this.uploadRecordedAudioAndThenPostComment();
-  //   } else {
-  //     // Post without audio
-  //     this.postCommentWithoutAudio();
-  //   }
-  // }
 
   // Helper: Upload the audio if it exists, then post comment
 
@@ -498,27 +470,6 @@ export class ClientPortalComponent {
   }
 
   // Optional: Example method to upload the recorded audio
-  async uploadRecordedAudio() {
-    if (!this.recordedBlob) {
-      alert('No recorded audio to upload.');
-      return;
-    }
-
-    // Convert the Blob to a File
-    const fileName = `audio-${Date.now()}.webm`;
-    const audioFile = new File([this.recordedBlob], fileName, {
-      type: this.recordedBlob.type,
-    });
-
-    // Now upload the file to your Firebase (or other) storage
-    // Example:
-    // const path = `clients-audio/${fileName}`;
-    // const uploadTask = await this.storage.upload(path, audioFile);
-    // this.commentAudioUrl = await uploadTask.ref.getDownloadURL();
-    // console.log('Audio uploaded. Download URL:', this.commentAudioUrl);
-
-    alert('Audio is ready to be uploaded – implement your own logic here.');
-  }
 
   finalizeCommentPost(audioUrl: string) {
     const newComment: Comment = {
@@ -547,34 +498,7 @@ export class ClientPortalComponent {
         alert('Error posting comment.');
       });
   }
-  // addCommentWithAudioFile() {
-  //   // Validate name (optional if you want)
-  //   if (!this.personPostingComment || !this.personPostingComment.trim()) {
-  //     alert('Veuillez saisir votre nom.');
-  //     return;
-  //   }
-  //   // Validate comment text OR audio file
-  //   const hasText = this.comment && this.comment.trim().length > 0;
-  //   const hasAudio = !!this.selectedAudioFile;
 
-  //   if (!hasText && !hasAudio) {
-  //     alert('Veuillez saisir un commentaire ou sélectionner un fichier audio.');
-  //     return;
-  //   }
-
-  //   const confirmPost = confirm(
-  //     `Êtes-vous sûr de vouloir publier ce commentaire ?`
-  //   );
-  //   if (!confirmPost) return;
-
-  //   // If we have an audio file, upload it first, then post
-  //   if (hasAudio) {
-  //     this.uploadAudioFileThenPostComment();
-  //   } else {
-  //     // Just post a text comment
-  //     this.postCommentToFirestore('');
-  //   }
-  // }
   addCommentWithAudioFile() {
     // 1) Must have a name
     if (!this.personPostingComment || !this.personPostingComment.trim()) {
