@@ -28,6 +28,11 @@ export class ReviewsComponent implements OnInit {
   selectedAudioFile?: File;
   selectedAudioPreviewURL?: string; // For local preview
 
+  
+  elapsedTime = '00:00';
+  recordingProgress = 0;
+  private recordingTimer: any;
+
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -71,22 +76,28 @@ export class ReviewsComponent implements OnInit {
       return dateB - dateA; // Descending order
     });
   }
-  addReview(audioUrl: string) {
-    // if (
-    //   this.comment === '' ||
-    //   this.personPostingComment === '' ||
-    //   this.numberofStars === ''
-    // ) {
-    //   alert('Remplissez toutes les données.');
-    //   return;
-    // }
+  private startTimer() {
+    let seconds = 0;
+    this.recordingTimer = setInterval(() => {
+      seconds++;
+      this.elapsedTime = this.formatTime(seconds);
+      this.recordingProgress = (seconds / 60) * 100; // Assuming max recording time is 60 seconds
+    }, 1000);
+  }
+  private formatTime(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${this.pad(minutes)}:${this.pad(secs)}`;
+  }
+  getLimitedProgress(): number {
+    return Math.min(this.recordingProgress, 100);
+  }
+  private pad(num: number): string {
+    return num < 10 ? `0${num}` : `${num}`;
+  }
 
-    // const confirmation = confirm(
-    //   `Êtes-vous sûr de vouloir publier ce commentaire`
-    // );
-    // if (!confirmation) {
-    //   return;
-    // }
+  
+  addReview(audioUrl: string) {
 
     try {
       const review = {
@@ -143,7 +154,9 @@ export class ReviewsComponent implements OnInit {
       // 4) start
       this.mediaRecorder.start();
       this.isRecording = true;
-
+      this.recordingProgress = 0;
+      this.elapsedTime = '00:00';
+      this.startTimer();
       console.log(
         'Recording started with mimeType:',
         selectedMimeType || 'browser default'
@@ -162,6 +175,7 @@ export class ReviewsComponent implements OnInit {
     // Stop the MediaRecorder
     this.mediaRecorder.stop();
     this.isRecording = false;
+    clearInterval(this.recordingTimer);
 
     // Once it fully stops, combine the chunks into a single Blob
     this.mediaRecorder.onstop = () => {
