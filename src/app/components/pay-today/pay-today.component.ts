@@ -111,15 +111,97 @@ export class PayTodayComponent implements OnInit {
     );
     return foundAgent ? foundAgent.uid : null;
   }
-  // search(value: string) {
+
+  // search(value: string, field: string = this.searchCriteria) {
   //   if (value) {
   //     const lowerCaseValue = value.toLowerCase();
-  //     let current = this.clients!.filter(
-  //       (client) =>
-  //         client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
-  //         (client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue) &&
-  //           Number(client.amountToPay) - Number(client.amountPaid) > 0)
-  //     );
+
+  //     let current = this.clientsWithDebts!.filter((client) => {
+  //       // Switch to handle different fields for filtering
+  //       switch (field) {
+  //         case 'paymentDay':
+  //           return (
+  //             client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
+  //             client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
+  //           );
+  //         case 'creditScore':
+  //           return client.creditScore?.toString() === lowerCaseValue;
+  //         case 'loanAmount':
+  //           return client.loanAmount?.toString() === lowerCaseValue;
+  //         case 'loanAmountMore':
+  //           return (
+  //             Number(client.loanAmount?.toString()) >= Number(lowerCaseValue)
+  //           );
+  //         case 'debtCycle':
+  //           return client.debtCycle?.toString() === lowerCaseValue;
+  //         case 'debtLeft':
+  //           return client.debtLeft?.toString() === lowerCaseValue;
+  //         case 'debtLeftMore':
+  //           return (
+  //             Number(client.debtLeft?.toString()) >= Number(lowerCaseValue)
+  //           );
+  //         case 'amountPaid':
+  //           return client.amountPaid?.toString().includes(lowerCaseValue);
+  //         // Add more cases for other fields as needed
+  //         case 'agent':
+  //           // Get the agent uid using the helper function
+  //           const agentUid = this.getAgentUidByName(value);
+  //           return client.agent?.toString().includes(agentUid!);
+  //         case 'debtCycleStartDate':
+  //           if (client.debtCycleStartDate) {
+  //             const [month, , year] = client.debtCycleStartDate.split('-');
+  //             const [searchMonth, searchYear] = lowerCaseValue.split('-');
+  //             return month === searchMonth && year === searchYear;
+  //           }
+  //           return false;
+  //         case '3+weeks':
+  //           const THREE_WEEKS_IN_MS = 21 * 24 * 60 * 60 * 1000; // 3 weeks in milliseconds
+  //           const now = new Date();
+
+  //           return client.debtCycleStartDate && client.payments
+  //             ? (() => {
+  //                 // Check if the debt cycle start date is at least 3 weeks ago
+  //                 const [startMonth, startDay, startYear] =
+  //                   client.debtCycleStartDate.split('-').map(Number);
+  //                 const debtCycleStartDate = new Date(
+  //                   startYear,
+  //                   startMonth - 1,
+  //                   startDay
+  //                 );
+
+  //                 if (
+  //                   now.getTime() - debtCycleStartDate.getTime() <
+  //                   THREE_WEEKS_IN_MS
+  //                 ) {
+  //                   return false; // Client's debt cycle is too recent
+  //                 }
+
+  //                 // Check if there are any payments made in the last 3 weeks
+  //                 const recentPaymentExists = Object.keys(client.payments).some(
+  //                   (paymentDate) => {
+  //                     const [payMonth, payDay, payYear] = paymentDate
+  //                       .split('-')
+  //                       .map(Number);
+  //                     const paymentDateObj = new Date(
+  //                       payYear,
+  //                       payMonth - 1,
+  //                       payDay
+  //                     );
+  //                     return (
+  //                       now.getTime() - paymentDateObj.getTime() <
+  //                       THREE_WEEKS_IN_MS
+  //                     );
+  //                   }
+  //                 );
+
+  //                 return !recentPaymentExists; // Client has not made recent payments
+  //               })()
+  //             : false; // Skip if no debtCycleStartDate or payments data exists
+  //         default:
+  //           return false;
+  //       }
+  //     });
+
   //     this.totalGivenDate = this.compute.computeExpectedPerDate(current);
   //     this.numberOfPeople = current.length;
   //     return of(current);
@@ -133,69 +215,71 @@ export class PayTodayComponent implements OnInit {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
 
-      let current = this.clientsWithDebts!.filter((client) => {
-        // Switch to handle different fields for filtering
-        switch (field) {
-          case 'paymentDay':
-            return (
-              client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
-              client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
-            );
-          case 'creditScore':
-            return client.creditScore?.toString() === lowerCaseValue;
-          case 'loanAmount':
-            return client.loanAmount?.toString() === lowerCaseValue;
-          case 'loanAmountMore':
-            return (
-              Number(client.loanAmount?.toString()) >= Number(lowerCaseValue)
-            );
-          case 'debtCycle':
-            return client.debtCycle?.toString() === lowerCaseValue;
-          case 'debtLeft':
-            return client.debtLeft?.toString() === lowerCaseValue;
-          case 'debtLeftMore':
-            return (
-              Number(client.debtLeft?.toString()) >= Number(lowerCaseValue)
-            );
-          case 'amountPaid':
-            return client.amountPaid?.toString().includes(lowerCaseValue);
-          // Add more cases for other fields as needed
-          case 'agent':
-            // Get the agent uid using the helper function
-            const agentUid = this.getAgentUidByName(value);
-            return client.agent?.toString().includes(agentUid!);
-          case 'debtCycleStartDate':
-            if (client.debtCycleStartDate) {
-              const [month, , year] = client.debtCycleStartDate.split('-');
-              const [searchMonth, searchYear] = lowerCaseValue.split('-');
-              return month === searchMonth && year === searchYear;
-            }
-            return false;
-          case '3+weeks':
-            const THREE_WEEKS_IN_MS = 21 * 24 * 60 * 60 * 1000; // 3 weeks in milliseconds
-            const now = new Date();
+      let current;
 
-            return client.debtCycleStartDate && client.payments
-              ? (() => {
-                  // Check if the debt cycle start date is at least 3 weeks ago
-                  const [startMonth, startDay, startYear] =
-                    client.debtCycleStartDate.split('-').map(Number);
-                  const debtCycleStartDate = new Date(
-                    startYear,
-                    startMonth - 1,
-                    startDay
-                  );
+      if (field === 'creditScore') {
+        // Search among all clients when filtering by creditScore
+        current = this.clients!.filter(
+          (client) => client.creditScore?.toString() === lowerCaseValue
+        );
+      } else {
+        // Search only among clients with debts for other fields
+        current = this.clientsWithDebts!.filter((client) => {
+          switch (field) {
+            case 'paymentDay':
+              return (
+                client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
+                client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
+              );
+            case 'loanAmount':
+              return client.loanAmount?.toString() === lowerCaseValue;
+            case 'loanAmountMore':
+              return (
+                Number(client.loanAmount?.toString()) >= Number(lowerCaseValue)
+              );
+            case 'debtCycle':
+              return client.debtCycle?.toString() === lowerCaseValue;
+            case 'debtLeft':
+              return client.debtLeft?.toString() === lowerCaseValue;
+            case 'debtLeftMore':
+              return (
+                Number(client.debtLeft?.toString()) >= Number(lowerCaseValue)
+              );
+            case 'amountPaid':
+              return client.amountPaid?.toString().includes(lowerCaseValue);
+            case 'agent':
+              const agentUid = this.getAgentUidByName(value);
+              return client.agent?.toString().includes(agentUid!);
+            case 'debtCycleStartDate':
+              if (client.debtCycleStartDate) {
+                const [month, , year] = client.debtCycleStartDate.split('-');
+                const [searchMonth, searchYear] = lowerCaseValue.split('-');
+                return month === searchMonth && year === searchYear;
+              }
+              return false;
+            case '3+weeks':
+              const THREE_WEEKS_IN_MS = 21 * 24 * 60 * 60 * 1000;
+              const now = new Date();
+              return client.debtCycleStartDate && client.payments
+                ? (() => {
+                    const [startMonth, startDay, startYear] =
+                      client.debtCycleStartDate.split('-').map(Number);
+                    const debtCycleStartDate = new Date(
+                      startYear,
+                      startMonth - 1,
+                      startDay
+                    );
 
-                  if (
-                    now.getTime() - debtCycleStartDate.getTime() <
-                    THREE_WEEKS_IN_MS
-                  ) {
-                    return false; // Client's debt cycle is too recent
-                  }
+                    if (
+                      now.getTime() - debtCycleStartDate.getTime() <
+                      THREE_WEEKS_IN_MS
+                    ) {
+                      return false;
+                    }
 
-                  // Check if there are any payments made in the last 3 weeks
-                  const recentPaymentExists = Object.keys(client.payments).some(
-                    (paymentDate) => {
+                    const recentPaymentExists = Object.keys(
+                      client.payments
+                    ).some((paymentDate) => {
                       const [payMonth, payDay, payYear] = paymentDate
                         .split('-')
                         .map(Number);
@@ -208,16 +292,16 @@ export class PayTodayComponent implements OnInit {
                         now.getTime() - paymentDateObj.getTime() <
                         THREE_WEEKS_IN_MS
                       );
-                    }
-                  );
+                    });
 
-                  return !recentPaymentExists; // Client has not made recent payments
-                })()
-              : false; // Skip if no debtCycleStartDate or payments data exists
-          default:
-            return false;
-        }
-      });
+                    return !recentPaymentExists;
+                  })()
+                : false;
+            default:
+              return false;
+          }
+        });
+      }
 
       this.totalGivenDate = this.compute.computeExpectedPerDate(current);
       this.numberOfPeople = current.length;
