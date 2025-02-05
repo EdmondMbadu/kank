@@ -8,6 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-team-ranking-month',
@@ -29,13 +30,15 @@ export class TeamRankingMonthComponent {
   performancePercentageMonth: string = '';
   totalPointsMonth: string = '';
   totalBonus: string = '';
+  showPresent: boolean = false;
   yearsList: number[] = this.time.yearsList;
   constructor(
     private router: Router,
     public auth: AuthService,
     public time: TimeService,
     private performance: PerformanceService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private data: DataService
   ) {}
   isFetchingClients = false;
   currentEmployees: any = [];
@@ -73,6 +76,8 @@ export class TeamRankingMonthComponent {
   };
 
   valuesConvertedToDollars: string[] = [];
+
+  // toggle property in general
 
   getAllEmployees() {
     if (this.isFetchingClients) return;
@@ -115,7 +120,10 @@ export class TeamRankingMonthComponent {
           }
 
           // Assign location
+          em.tempUser = user; // attach the user info to the employee
           em.tempLocationHolder = user.firstName;
+          // Initialize the toggle property
+          em.showAttendance = false;
         });
 
         // this.currentEmployees = employees;
@@ -305,5 +313,42 @@ export class TeamRankingMonthComponent {
       ).toString()
     );
     return [sortedKeys, values];
+  }
+  // In team-ranking-month.component.ts
+  async addAttendanceForEmployee(
+    employee: Employee,
+    attendanceValue: string,
+    date: string = ''
+  ) {
+    if (!attendanceValue || attendanceValue === '') {
+      alert('Remplissez la présence, Réessayez');
+      return;
+    }
+    try {
+      // Build the attendance record object
+      let attendanceRecord: any = { [this.time.todaysDate()]: attendanceValue };
+      if (date !== '') {
+        attendanceRecord = { [date]: attendanceValue };
+      }
+
+      if (!employee.tempUser || !employee.tempUser.uid) {
+        alert('Aucun utilisateur associé à cet employé.');
+        return;
+      }
+
+      await this.data.updateEmployeeAttendanceForUser(
+        attendanceRecord,
+        employee.uid!,
+        employee.tempUser.uid
+      );
+      // add a success message here
+      alert('Présence ajoutée avec succès');
+
+      // Optionally show a success message here
+    } catch (err) {
+      alert("Une erreur s'est produite lors de l'attendance, Réessayez");
+      return;
+    }
+    // Optionally clear inputs or do other post-submission tasks here
   }
 }

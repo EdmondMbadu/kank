@@ -1,3 +1,5 @@
+import { User } from './user';
+
 export class Employee {
   uid?: string;
   firstName?: string;
@@ -48,6 +50,8 @@ export class Employee {
   vacationRequestNumberOfDays?: string;
   vacationAcceptedNumberOfDays?: string;
   bank?: string;
+  tempUser?: User;
+  showAttendance?: boolean;
 }
 export class Avatar {
   path?: string;

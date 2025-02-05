@@ -716,6 +716,19 @@ export class DataService {
     };
     return employeeRef.set(data, { merge: true });
   }
+  // In your data service (e.g., data.service.ts)
+  updateEmployeeAttendanceForUser(
+    attendance: any,
+    employeeId: string,
+    userId: string
+  ) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${userId}/employees/${employeeId}`
+    );
+    const data = { attendance: attendance };
+    return employeeRef.set(data, { merge: true });
+  }
+
   updateEmployeeAttendanceRejection(attendance: any, employeeId: string) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employeeId}`
