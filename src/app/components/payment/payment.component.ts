@@ -73,13 +73,16 @@ export class PaymentComponent {
     ) {
       alert('Entrée incorrecte. Entrez un numéro');
       return;
-    } else if (
-      Number(this.paymentAmount) < 0 ||
-      Number(this.savingsAmount) < 0
+    } // skip this test if admin because they can undo a payment
+    else if (
+      !this.auth.isAdmninistrator &&
+      (Number(this.paymentAmount) < 0 || Number(this.savingsAmount) < 0)
     ) {
       alert('les nombres doivent etre positifs');
       return;
-    } else if (
+    } // skip this test if admin because they can undo a payment
+    else if (
+      !this.auth.isAdmninistrator &&
       Number(this.paymentAmount) <= 0 &&
       Number(this.savingsAmount) <= 0
     ) {
