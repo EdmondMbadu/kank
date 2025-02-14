@@ -496,11 +496,11 @@
                 </dl>
                 <dl *ngIf="paymentAbsent!==0 || this.auth.isAdmninistrator" class="flex items-center justify-between gap-4">
                     <dt class="text-base font-normal text-red-500 ">Absent </dt>
-                    <dd class="text-base font-medium  text-red-500">$ {{paymentAbsent | number:'1.0-0'}}</dd>
+                    <dd class="text-base font-medium  text-red-500">$ -{{paymentAbsent | number:'1.0-0'}}</dd>
                   </dl>
                   <dl *ngIf="paymentNothing!==0 || this.auth.isAdmninistrator" class="flex items-center justify-between gap-4">
                     <dt class="text-base font-normal text-red-500 ">Néant </dt>
-                    <dd class="text-base font-medium  text-red-500">$ {{paymentNothing | number:'1.0-0'}}</dd>
+                    <dd class="text-base font-medium  text-red-500">$ -{{paymentNothing | number:'1.0-0'}}</dd>
                   </dl>
                 <div *ngIf="this.auth.isAdmninistrator">
                     <input type="text" name="lastName" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="100" required=""[(ngModel)]="paymentAmount">
