@@ -41,6 +41,8 @@ export class Employee {
   bestEmployeeBonusAmount?: string;
   bestManagerBonusAmount?: string;
   totalBonusThisMonth?: string;
+  paymentAbsent?: string;
+  paymentNothing?: string;
   thisMonthPaymentAmount?: string;
   totalPayments?: string;
   bonusCheckUrl?: string;

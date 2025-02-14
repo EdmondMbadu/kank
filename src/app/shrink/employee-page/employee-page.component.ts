@@ -72,6 +72,10 @@ export class EmployeePageComponent implements OnInit {
   paymentAmounts: string[] = [];
   paymentDates: string[] = [];
 
+  paymentNothing: number = 0;
+  paymentAbsent: number = 0;
+  totalPayments: number = 0;
+
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
   performancePercentageTotal: string = '';
@@ -197,6 +201,15 @@ export class EmployeePageComponent implements OnInit {
     this.paymentAmount = this.employee.paymentAmount
       ? parseFloat(this.employee.paymentAmount)
       : 0;
+    this.paymentAbsent = this.employee.paymentAbsent
+      ? parseFloat(this.employee.paymentAbsent)
+      : 0;
+    this.paymentNothing = this.employee.paymentNothing
+      ? parseFloat(this.employee.paymentNothing)
+      : 0;
+    this.totalPayments = this.employee.totalPayments
+      ? parseFloat(this.employee.totalPayments)
+      : 0;
   }
 
   computeTotalBonusAmount() {
@@ -210,7 +223,10 @@ export class EmployeePageComponent implements OnInit {
     this.employee.totalBonusThisMonth = this.totalBonusAmount.toString();
   }
   computeTotalPayment() {
-    this.employee.totalPayments = this.employee.paymentAmount;
+    // the payment of the month is the total payment of the month minus the absent and nothing days
+    this.totalPayments =
+      this.paymentAmount - this.paymentAbsent - this.paymentNothing;
+    return this.totalPayments;
   }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
@@ -537,117 +553,6 @@ export class EmployeePageComponent implements OnInit {
   generateInvoiceBonus() {
     this.compute.generateInvoice(this.employee, 'Bonus');
   }
-
-  // generateAttendanceTable(month: number, year: number) {
-  //   const dict: any = this.employee?.attendance || {}; // Use an empty object if attendance is null or undefined.
-  //   const daysInMonth = new Date(year, month, 0).getDate();
-  //   const firstDayIndex = new Date(year, month - 1, 1).getDay();
-  //   const tableBody = document.getElementById('attendance-body');
-  //   tableBody!.innerHTML = '';
-
-  //   let date = 1;
-  //   for (let i = 0; i < 6; i++) {
-  //     // Maximum 6 rows to cover all days
-  //     const row = document.createElement('tr');
-
-  //     for (let j = 0; j < 7; j++) {
-  //       const cell = document.createElement('td');
-  //       if (i === 0 && j < firstDayIndex) {
-  //         // Add empty cells for days before the 1st of the month
-  //         cell.classList.add('not-filled');
-  //         cell.innerHTML = '';
-  //       } else if (date > daysInMonth) {
-  //         // Add empty cells for days after the last day of the month
-  //         cell.classList.add('bg-gray-200');
-  //         cell.classList.add('p-16');
-  //         cell.innerHTML = '';
-  //       } else {
-  //         const dateStr = `${month}-${date}-${year}`;
-
-  //         // Check for matching attendance data
-  //         const matchedKey = Object.keys(dict).find((key) =>
-  //           key.startsWith(dateStr)
-  //         );
-  //         const attendance = matchedKey && dict ? dict[matchedKey] : undefined;
-
-  //         if (attendance) {
-  //           // Extract hours and minutes from the key if available
-  //           const time = matchedKey!.split('-').slice(3, 5).join(':'); // "18:54" format
-
-  //           if (attendance === 'P') {
-  //             cell.classList.add(
-  //               'bg-green-600',
-  //               'border',
-  //               'border-black',
-  //               'text-white'
-  //             );
-  //             cell.innerHTML = `${date}<br>Present${
-  //               time ? `<br><span class="small-time">${time}</span>` : ''
-  //             }`;
-  //           } else if (attendance === 'A') {
-  //             cell.classList.add(
-  //               'bg-red-600',
-  //               'border',
-  //               'border-black',
-  //               'text-white'
-  //             );
-  //             cell.innerHTML = `${date}<br>Absent${
-  //               time ? `<br><span class="small-time">${time}</span>` : ''
-  //             }`;
-  //           } else if (attendance === 'VP') {
-  //             cell.classList.add(
-  //               'bg-blue-600',
-  //               'border',
-  //               'border-black',
-  //               'text-white'
-  //             );
-  //             cell.innerHTML = `${date}<br>Vacance En Cours...`;
-  //           } else if (attendance === 'V') {
-  //             cell.classList.add(
-  //               'bg-yellow-400',
-  //               'border',
-  //               'border-black',
-  //               'text-white'
-  //             );
-  //             cell.innerHTML = `${date}<br>Vacance`;
-  //           } else if (attendance === 'L') {
-  //             cell.classList.add(
-  //               'bg-orange-600',
-  //               'border',
-  //               'border-black',
-  //               'text-white'
-  //             );
-  //             cell.innerHTML = `${date}<br>Retard${
-  //               time ? `<br><span class="small-time">${time}</span>` : ''
-  //             }`;
-  //           } else if (attendance === 'N') {
-  //             cell.classList.add(
-  //               'bg-gray-400', // Use gray for "Néant"
-  //               'border',
-  //               'border-black',
-  //               'text-white'
-  //             );
-  //             cell.innerHTML = `${date}<br>Néant${
-  //               time ? `<br><span class="small-time">${time}</span>` : ''
-  //             }`;
-  //           }
-  //         } else {
-  //           // Default cell styling for days with no attendance data
-  //           cell.classList.add('border', 'border-black', 'p-4');
-  //           cell.innerHTML = date.toString();
-  //         }
-  //         date++;
-  //       }
-  //       row.appendChild(cell);
-  //     }
-
-  //     tableBody!.appendChild(row);
-
-  //     if (date > daysInMonth) {
-  //       break;
-  //     }
-  //   }
-  // }
   generateAttendanceTable(month: number, year: number) {
     const dict: any = this.employee?.attendance || {}; // Use an empty object if attendance is null or undefined.
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -821,7 +726,7 @@ export class EmployeePageComponent implements OnInit {
     }
   }
   async updateEmployeePaymentInfo() {
-    this.employee.paymentAmount = this.paymentAmount.toString();
+    this.setPaymentInfo();
     try {
       await this.data.updateEmployeePaymentInfo(this.employee);
     } catch (err) {
@@ -830,19 +735,27 @@ export class EmployeePageComponent implements OnInit {
       this.togglePayment();
     }
   }
-  async updateEmployeePaymentInfoAndSignCheck() {
+
+  setPaymentInfo() {
     this.employee.paymentAmount = this.paymentAmount.toString();
+    this.employee.paymentAbsent = this.paymentAbsent.toString();
+    this.employee.paymentNothing = this.paymentNothing.toString();
+    this.employee.totalPayments = this.computeTotalPayment().toString();
+  }
+  async updateEmployeePaymentInfoAndSignCheck() {
+    this.setPaymentInfo();
+    // this.employee.paymentAmount = this.paymentAmount.toString();
     this.toggle('isLoading');
     try {
       await this.data.updateEmployeePaymentInfo(this.employee);
       await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
-      this.employee.totalPayments = this.employee.paymentAmount;
+      // this.employee.totalPayments = this.employee.paymentAmount;
       this.togglePaymentCheckVisible();
       // Generate the bonus check and get the Blob
       const blob: any = await this.compute.generatePaymentCheck(
         this.employee,
         'Paiement',
-        this.paymentAmount.toString()
+        this.totalPayments.toString()
       );
 
       // Upload the Blob to Firebase Storage
@@ -908,7 +821,7 @@ export class EmployeePageComponent implements OnInit {
       if (total === 'bonus') {
         this.employee.salaryPaid = this.totalBonusAmount.toString();
       } else {
-        this.employee.salaryPaid = this.paymentAmount.toString();
+        this.employee.salaryPaid = this.totalPayments.toString();
       }
       await this.data.addPaymentToEmployee(this.employee);
 

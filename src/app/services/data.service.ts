@@ -243,6 +243,9 @@ export class DataService {
 
     const data = {
       paymentAmount: employee.paymentAmount,
+      paymentAbsent: employee.paymentAbsent,
+      paymentNothing: employee.paymentNothing,
+      totalPayments: employee.totalPayments,
     };
 
     return employeeRef.set(data, { merge: true });
