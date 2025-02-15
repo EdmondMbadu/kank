@@ -107,6 +107,9 @@
                 </svg></button>
   
                 <div *ngIf="gestionDropDown">
+                
+                    <a routerLink="/today-central"class="block px-6 py-2 text-lg hover:bg-slate-100">Activités Du Jour</a>
+               
                   <a  routerLink="/gestion-today"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Gestion Du Jour</a>
                   <a *ngIf="auth.isAdmninistrator || auth.isDistributoring" routerLink="/team-ranking-month"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a>
 
