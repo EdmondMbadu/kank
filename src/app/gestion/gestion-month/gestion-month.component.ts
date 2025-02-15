@@ -58,6 +58,7 @@ export class GestionMonthComponent {
     '/gestion-bank',
     '/gestion-loss',
     '/gestion-investment',
+    '/gestion-month',
   ];
   summary: string[] = [
     'Pourcentage Perte Du Mois',
@@ -68,6 +69,7 @@ export class GestionMonthComponent {
     'Argent En Banque Du Mois',
     'Perte Du Du Mois',
     'Investissement Du Mois',
+    ' Benefice Reel Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -81,6 +83,8 @@ export class GestionMonthComponent {
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
 
+  givenMonthRealGain: string = '';
+
   imagePaths: string[] = [
     '../../../assets/img/loss-ratio.png',
     '../../../assets/img/reserve.svg',
@@ -90,6 +94,7 @@ export class GestionMonthComponent {
     '../../../assets/img/bank.png',
     '../../../assets/img/loss.png',
     '../../../assets/img/invest.svg',
+    '../../../assets/img/benefit.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -158,6 +163,14 @@ export class GestionMonthComponent {
       Math.ceil(
         (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 10000
       ) / 100;
+
+    // find the real gain
+    this.givenMonthRealGain = (
+      Number(this.givenMonthTotalReserveAmount) -
+      Number(this.givenMonthTotalServedAmount) -
+      Number(this.givenMonthTotalExpenseAmount) -
+      Number(this.givenMonthTotalLossAmount)
+    ).toString();
     this.summaryContent = [
       `${this.lossRatio}`,
       `${this.givenMonthTotalReserveAmount}`,
@@ -167,6 +180,7 @@ export class GestionMonthComponent {
       `${this.givenMonthTotalBankAmountFrancs}`,
       `${totalLoss}`,
       `${this.givenMonthTotalInvestmentAmount}`,
+      `${this.givenMonthRealGain}`,
     ];
     this.valuesConvertedToDollars = [
       ``,
@@ -184,6 +198,9 @@ export class GestionMonthComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(totalLoss)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalInvestmentAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthRealGain
       )}`,
     ];
   }
