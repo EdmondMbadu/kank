@@ -31,6 +31,7 @@ export class TodayComponent {
   clientsWithDebts: Client[] = [];
 
   percentage: string = '0';
+  perc: number = 0;
   dailyLending: string = '0';
   dailyPayment: string = '0';
   dailyFees: string = '0';
@@ -247,6 +248,7 @@ export class TodayComponent {
         100
       ).toFixed(2);
     }
+    this.perc = Number(this.percentage);
 
     console.log(`Total debt for clients with payments due today: ${total}`);
   }
