@@ -109,6 +109,12 @@ export class TransformRegisterClientComponent implements OnInit {
         `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${this.auth.currentUser.monthBudget} FC`
       );
       return;
+    } else if (
+      this.client.profilePicture === undefined ||
+      this.client.profilePicture === null
+    ) {
+      alert('Veuillez ajouter une photo de profil du client pour continuer');
+      return;
     } else {
       let conf = confirm(
         `Vous allez emprunté ${this.loanAmount} FC a ${this.client.firstName} ${this.client.middleName} ${this.client.lastName}. Voulez-vous quand même continuer ?`
