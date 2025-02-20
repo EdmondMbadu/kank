@@ -32,7 +32,15 @@
 <div class="container mx-auto flex flex-wrap items-center justify-center">
     <div class="w-full max-w-2xl">
         <!-- Performance of the Day -->
-        <div *ngIf="perc==0 || perc>=50"  class="bg-green-50 p-6 rounded-lg shadow-md mb-6 text-center">
+        <div *ngIf=" perc==0"  class="bg-green-50 p-6 rounded-lg shadow-md mb-6 text-center">
+            <h3 class="text-xl font-semibold text-green-800">Performance Du Jour</h3>
+            <p class="text-2xl font-bold text-green-900 mt-2">
+                
+                
+                ____%
+            </p>
+        </div>
+        <div *ngIf=" perc>=50"  class="bg-green-50 p-6 rounded-lg shadow-md mb-6 text-center">
             <h3 class="text-xl font-semibold text-green-800">Performance Du Jour</h3>
             <p class="text-2xl font-bold text-green-900 mt-2">
                 {{ percentage }}%
@@ -44,6 +52,7 @@
                 {{ percentage }}%
             </p>
         </div>
+        
 
         <!-- Reserve Information -->
         <div class="bg-green-50 p-6 rounded-lg shadow-md">
