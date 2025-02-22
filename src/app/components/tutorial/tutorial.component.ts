@@ -81,16 +81,17 @@ export class TutorialComponent {
   }
 
   findBase(people: number, agentRole: string, percentage: number): number {
-    let base = 0;
+    let base = 80;
     if (people < 100) {
       base = 80;
-    } else if (percentage < 50) {
-      base = 80;
-    } else if (people >= 100 && people < 160) {
-      base = 100;
-    } else if (people >= 160 && base < 200) {
-      base = 120;
-    } else base = 140;
+    }
+    // } else if (percentage < 50) {
+    //   base = 80;
+    // } else if (people >= 100 && people < 160) {
+    //   base = 100;
+    // } else if (people >= 160 && base < 200) {
+    //   base = 120;
+    // } else base = 140;
 
     if (agentRole !== 'Manager') base -= 10;
     return base;
