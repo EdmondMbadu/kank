@@ -39,7 +39,7 @@ export class ComputationService {
   }
   salaries: any[] = [
     [
-      { people: '60' },
+      { people: '50' },
       { role: 'Manager', base: '80$', a: '15$', b: '25$', c: '45$', d: '55$' },
       {
         role: 'Agent Marketing',
@@ -50,63 +50,63 @@ export class ComputationService {
         d: '50$',
       },
     ],
-    [
-      { people: '100' },
-      {
-        role: 'Manager',
-        base: '100$',
-        a: '60$',
-        b: '80$',
-        c: '100$',
-        d: '110$',
-      },
-      {
-        role: 'Agent Marketing',
-        base: '90$',
-        a: '50$',
-        b: '70$',
-        c: '90$',
-        d: '100$',
-      },
-    ],
-    [
-      { people: '160' },
-      {
-        role: 'Manager',
-        base: '120$',
-        a: '110$',
-        b: '130$',
-        c: '150$',
-        d: '160$',
-      },
-      {
-        role: 'Agent Marketing',
-        base: '110$',
-        a: '100$',
-        b: '120$',
-        c: '140$',
-        d: '150$',
-      },
-    ],
-    [
-      { people: '200' },
-      {
-        role: 'Manager',
-        base: '140$',
-        a: '160$',
-        b: '180$',
-        c: '200$',
-        d: '220$',
-      },
-      {
-        role: 'Agent Marketing',
-        base: '130$',
-        a: '150$',
-        b: '170$',
-        c: '190$',
-        d: '210$',
-      },
-    ],
+    // [
+    //   { people: '100' },
+    //   {
+    //     role: 'Manager',
+    //     base: '100$',
+    //     a: '60$',
+    //     b: '80$',
+    //     c: '100$',
+    //     d: '110$',
+    //   },
+    //   {
+    //     role: 'Agent Marketing',
+    //     base: '90$',
+    //     a: '50$',
+    //     b: '70$',
+    //     c: '90$',
+    //     d: '100$',
+    //   },
+    // ],
+    // [
+    //   { people: '160' },
+    //   {
+    //     role: 'Manager',
+    //     base: '120$',
+    //     a: '110$',
+    //     b: '130$',
+    //     c: '150$',
+    //     d: '160$',
+    //   },
+    //   {
+    //     role: 'Agent Marketing',
+    //     base: '110$',
+    //     a: '100$',
+    //     b: '120$',
+    //     c: '140$',
+    //     d: '150$',
+    //   },
+    // ],
+    // [
+    //   { people: '200' },
+    //   {
+    //     role: 'Manager',
+    //     base: '140$',
+    //     a: '160$',
+    //     b: '180$',
+    //     c: '200$',
+    //     d: '220$',
+    //   },
+    //   {
+    //     role: 'Agent Marketing',
+    //     base: '130$',
+    //     a: '150$',
+    //     b: '170$',
+    //     c: '190$',
+    //     d: '210$',
+    //   },
+    // ],
   ];
   minimumPayment(client: Client) {
     const pay = Number(client.amountToPay) / Number(client.paymentPeriodRange);
