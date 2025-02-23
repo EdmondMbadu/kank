@@ -53,6 +53,8 @@ export class RegisterClientComponent implements OnInit {
   loanAmountOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
   savingsOtherDisplay: boolean = false;
+  newReferenceName: string = '';
+  newReferencePhone: string = '';
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
@@ -245,14 +247,19 @@ export class RegisterClientComponent implements OnInit {
     this.client.creditworthinessScore =
       this.calculateCreditworthiness().toFixed(0);
   }
-
-  // Add a new reference if the limit isn't exceeded
+  // Add a new reference with both name and phone number
   addReference(): void {
-    if (this.references.length < 3 && this.newReference.trim()) {
-      this.references.push(this.newReference.trim());
-      this.newReference = ''; // Clear the input field
+    if (
+      this.references.length < 3 &&
+      this.newReferenceName.trim() &&
+      this.newReferencePhone.trim()
+    ) {
+      const fullReference = `${this.newReferenceName.trim()} - ${this.newReferencePhone.trim()}`;
+      this.references.push(fullReference);
+      this.newReferenceName = ''; // Clear the name input field
+      this.newReferencePhone = ''; // Clear the phone input field
     } else if (this.references.length >= 3) {
-      alert('You can only add up to 3 references.');
+      alert("Vous ne pouvez ajouter que jusqu'à 3 références.");
     }
   }
 

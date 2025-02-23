@@ -86,33 +86,47 @@
    
         </select>
     </div>
+  
     <div class="mb-6">
-        <label for="newReference" class="block mb-2 text-sm font-medium text-gray-900">
-            Pouvez-vous fournir des références de personess crédibles?
+        <label for="newReferenceName" class="block mb-2 text-sm font-medium text-gray-900">
+            Pouvez-vous fournir des références de personnes crédibles?
         </label>
+        
         <div *ngFor="let ref of references">
-            {{ref}}
+            {{ ref }}
         </div>
+    
         <div class="flex items-center gap-2 mb-4">
+            <!-- Name Input -->
             <input
-                id="newReference"
+                id="newReferenceName"
                 type="text"
-                [(ngModel)]="newReference"
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-full"
-                placeholder="Jonathan Kalubi - 0893258653"
+                [(ngModel)]="newReferenceName"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-1/2"
+                placeholder="Nom du Référent"
                 [disabled]="references.length >= 3"
             />
+    
+            <!-- Phone Input -->
+            <input
+                id="newReferencePhone"
+                type="tel"
+                [(ngModel)]="newReferencePhone"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-1/2"
+                placeholder="Téléphone (e.g., 0893258653)"
+                [disabled]="references.length >= 3"
+            />
+    
+            <!-- Add Button -->
             <button
                 (click)="addReference()"
                 class="px-4 py-2 bg-green-500 text-white rounded-lg"
-                [disabled]="references.length >= 3 || !newReference.trim()">
+                [disabled]="references.length >= 3 || !newReferenceName.trim() || !newReferencePhone.trim()">
                 Ajouter
             </button>
         </div>
-    
-        
     </div>
-
+    
     <div class="mb-6">
         <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Avez-vous des guarantis à offrir aux cas ou vous n'etes pas capable de payer?</label>
         <select id="applicationFee" [(ngModel)]="collateral"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
