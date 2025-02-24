@@ -248,19 +248,37 @@ export class RegisterClientComponent implements OnInit {
       this.calculateCreditworthiness().toFixed(0);
   }
   // Add a new reference with both name and phone number
+  // Function to add a new reference with validation for the phone number
   addReference(): void {
-    if (
-      this.references.length < 3 &&
-      this.newReferenceName.trim() &&
-      this.newReferencePhone.trim()
-    ) {
-      const fullReference = `${this.newReferenceName.trim()} - ${this.newReferencePhone.trim()}`;
-      this.references.push(fullReference);
-      this.newReferenceName = ''; // Clear the name input field
-      this.newReferencePhone = ''; // Clear the phone input field
-    } else if (this.references.length >= 3) {
+    const phonePattern = /^[0-9]{10}$/; // Ensures exactly 10 digits
+
+    if (this.references.length >= 3) {
       alert("Vous ne pouvez ajouter que jusqu'à 3 références.");
+      return;
     }
+
+    if (!this.newReferenceName.trim()) {
+      alert('Veuillez entrer le nom du référent.');
+      return;
+    }
+
+    if (!this.newReferencePhone.trim()) {
+      alert('Veuillez entrer un numéro de téléphone.');
+      return;
+    }
+
+    if (!phonePattern.test(this.newReferencePhone.trim())) {
+      alert('Le numéro de téléphone doit contenir exactement 10 chiffres.');
+      return;
+    }
+
+    // Concatenate name and phone number if validation passes
+    const fullReference = `${this.newReferenceName.trim()} - ${this.newReferencePhone.trim()}`;
+    this.references.push(fullReference);
+
+    // Clear the input fields after adding
+    this.newReferenceName = '';
+    this.newReferencePhone = '';
   }
 
   // Handle the selection of a reference from the dropdown
