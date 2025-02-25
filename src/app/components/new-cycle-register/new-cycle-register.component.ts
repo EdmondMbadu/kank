@@ -161,7 +161,7 @@ export class NewCycleRegisterComponent implements OnInit {
       return;
     } else if (this.maxLoanAmount < Number(this.loanAmount)) {
       alert(
-        `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC. Reduisez votre montant de prêt`
+        `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
       return;
     } else if (this.savingsPaidAtleast10PercentOfLoanAmount() === false) {

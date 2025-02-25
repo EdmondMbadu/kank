@@ -127,14 +127,12 @@ export class TransformRegisterClientComponent implements OnInit {
     ) {
       alert('Veuillez ajouter une photo de profil du client pour continuer');
       return;
-    }
-    // else if (this.maxLoanAmount < Number(this.loanAmount)) {
-    //   alert(
-    //     `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC. Reduisez votre montant de prêt`
-    //   );
-    //   return;
-    // }
-    else {
+    } else if (this.maxLoanAmount < Number(this.loanAmount)) {
+      alert(
+        `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
+      );
+      return;
+    } else {
       let conf = confirm(
         `Vous allez emprunté ${this.loanAmount} FC a ${this.client.firstName} ${this.client.middleName} ${this.client.lastName}. Voulez-vous quand même continuer ?`
       );

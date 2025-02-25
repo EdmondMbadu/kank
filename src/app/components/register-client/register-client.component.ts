@@ -116,7 +116,7 @@ export class RegisterClientComponent implements OnInit {
       return;
     } else if (this.maxLendAmount < Number(this.loanAmount)) {
       alert(
-        `Le montant maximum que vous pouvez emprunter est de ${this.maxLendAmount} FC. Reduisez votre montant de prêt`
+        `Le montant maximum que vous pouvez emprunter est de ${this.maxLendAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
       return;
     } else if (!checkDate) {
