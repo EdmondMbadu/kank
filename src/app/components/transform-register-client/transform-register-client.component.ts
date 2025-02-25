@@ -6,6 +6,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 
 @Component({
   selector: 'app-transform-register-client',
@@ -35,6 +36,7 @@ export class TransformRegisterClientComponent implements OnInit {
   loanAmountOtherDisplay: boolean = false;
   clientsWithDebts: Client[] = [];
   agentClientMap: any = {};
+  maxLoanAmount: number = 0;
 
   constructor(
     public auth: AuthService,
@@ -42,7 +44,8 @@ export class TransformRegisterClientComponent implements OnInit {
     private data: DataService,
     private router: Router,
     private time: TimeService,
-    private performance: PerformanceService
+    private performance: PerformanceService,
+    private compute: ComputationService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -62,6 +65,15 @@ export class TransformRegisterClientComponent implements OnInit {
       this.findClientsWithDebts();
       if (this.client.loanAmount != undefined) {
         this.loanAmount = this.client.loanAmount;
+      }
+      // get credit score to find maxLoanAmount
+      if (this.client && this.client.creditScore !== undefined) {
+        this.maxLoanAmount = this.compute.getMaxLendAmount(
+          Number(this.client.creditScore)
+        );
+      } else {
+        this.maxLoanAmount = 400000;
+        console.error('Client or credit score is undefined');
       }
     });
   }
@@ -115,7 +127,14 @@ export class TransformRegisterClientComponent implements OnInit {
     ) {
       alert('Veuillez ajouter une photo de profil du client pour continuer');
       return;
-    } else {
+    }
+    // else if (this.maxLoanAmount < Number(this.loanAmount)) {
+    //   alert(
+    //     `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC. Reduisez votre montant de prêt`
+    //   );
+    //   return;
+    // }
+    else {
       let conf = confirm(
         `Vous allez emprunté ${this.loanAmount} FC a ${this.client.firstName} ${this.client.middleName} ${this.client.lastName}. Voulez-vous quand même continuer ?`
       );

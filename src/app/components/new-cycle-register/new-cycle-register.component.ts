@@ -6,6 +6,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { __generator } from 'tslib';
 
 @Component({
@@ -26,6 +27,7 @@ export class NewCycleRegisterComponent implements OnInit {
   loanAmount: string = '';
   middleName: string = '';
   requestDate: string = '';
+  maxLoanAmount: number = 0;
 
   applicationFeeOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
@@ -38,7 +40,8 @@ export class NewCycleRegisterComponent implements OnInit {
     private data: DataService,
     private router: Router,
     private time: TimeService,
-    private performance: PerformanceService
+    private performance: PerformanceService,
+    private compute: ComputationService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -52,6 +55,16 @@ export class NewCycleRegisterComponent implements OnInit {
       this.client = data[Number(this.id)];
       this.middleName =
         this.client.middleName !== undefined ? this.client.middleName : '';
+
+      // get credit score to find maxLoanAmount
+      if (this.client && this.client.creditScore !== undefined) {
+        this.maxLoanAmount = this.compute.getMaxLendAmount(
+          Number(this.client.creditScore)
+        );
+      } else {
+        this.maxLoanAmount = 400000;
+        console.error('Client or credit score is undefined');
+      }
     });
   }
 
@@ -144,6 +157,11 @@ export class NewCycleRegisterComponent implements OnInit {
         Number(this.auth.currentUser.monthBudgetPending);
       alert(
         `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${diff} FC`
+      );
+      return;
+    } else if (this.maxLoanAmount < Number(this.loanAmount)) {
+      alert(
+        `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC. Reduisez votre montant de prêt`
       );
       return;
     } else if (this.savingsPaidAtleast10PercentOfLoanAmount() === false) {

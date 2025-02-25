@@ -237,8 +237,17 @@
             </ng-container>
         </p>
     </div>
+  
 
 </div>
+  <!-- Display Max Allowed Lending Amount -->
+  <div *ngIf="creditworthinessScore !== null" class="border-2 shadow border-blue-600 p-6 rounded-lg mt-6">
+    <h2 class="text-lg font-bold text-blue-700">Montant Maximum de Prêt Autorisé</h2>
+    <p class="text-gray-900 font-medium text-xl mt-2">
+        {{ maxLendAmount| number }} FC
+    </p>
+</div>
+
 
    
 <button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>

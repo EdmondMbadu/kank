@@ -55,6 +55,7 @@ export class RegisterClientComponent implements OnInit {
   savingsOtherDisplay: boolean = false;
   newReferenceName: string = '';
   newReferencePhone: string = '';
+  maxLendAmount: number = 400000;
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
@@ -112,6 +113,11 @@ export class RegisterClientComponent implements OnInit {
       Number(this.memberShipFee) < 5000
     ) {
       alert("Les frais d'inscription ou d'adhesion doit etre minimum 5000 FC.");
+      return;
+    } else if (this.maxLendAmount < Number(this.loanAmount)) {
+      alert(
+        `Le montant maximum que vous pouvez emprunter est de ${this.maxLendAmount} FC. Reduisez votre montant de prêt`
+      );
       return;
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
