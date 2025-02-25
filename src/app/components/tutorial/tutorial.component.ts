@@ -15,6 +15,7 @@ export class TutorialComponent {
   system: boolean = false;
   payment: boolean = false;
   role: boolean = false;
+  maxLoan: boolean = false;
   performance: boolean = false;
   budget: boolean = false;
   intro: boolean = false;
@@ -63,6 +64,7 @@ export class TutorialComponent {
       | 'dailyActivity'
       | 'best'
       | 'budget'
+      | 'maxLoan'
   ) {
     this[property] = !this[property];
   }

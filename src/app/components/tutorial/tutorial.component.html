@@ -578,6 +578,98 @@
               </div>
           </div>
           </div>
+          <h2 id="accordion-collapse-heading-loan">
+            <button (click)="toggle('maxLoan')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-loan" aria-expanded="false" aria-controls="accordion-collapse-body-loan">
+                <span>Maximum Montant Autorisé d'Emprunt Au Client</span>
+                <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
+                </svg>
+            </button>
+        </h2>
+        
+        <div *ngIf="maxLoan" id="accordion-collapse-body-loan" aria-labelledby="accordion-collapse-heading-loan">
+            <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
+                <div class="p-4">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 text-gray-700">
+                            <thead>
+                                <tr class="bg-gray-100 border-b">
+                                    <th class="px-4 py-2 text-left">Score Crédit</th>
+                                    <th class="px-4 py-2 text-left">Montant Max (FC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">100%</td>
+                                    <td class="px-4 py-2">1.5M</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">95-99%</td>
+                                    <td class="px-4 py-2">1.3M</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">90-94%</td>
+                                    <td class="px-4 py-2">1.2M</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">85-89%</td>
+                                    <td class="px-4 py-2">1.1M</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">80-84%</td>
+                                    <td class="px-4 py-2">1M</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">75-79%</td>
+                                    <td class="px-4 py-2">900K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">70-74%</td>
+                                    <td class="px-4 py-2">800K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">65-69%</td>
+                                    <td class="px-4 py-2">700K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">60-64%</td>
+                                    <td class="px-4 py-2">600K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">55-59%</td>
+                                    <td class="px-4 py-2">500K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">50-54%</td>
+                                    <td class="px-4 py-2">400K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">45-49%</td>
+                                    <td class="px-4 py-2">300K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">40-44%</td>
+                                    <td class="px-4 py-2">200K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">35-39%</td>
+                                    <td class="px-4 py-2">150K</td>
+                                </tr>
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">20-34%</td>
+                                    <td class="px-4 py-2">100K</td>
+                                </tr>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-2">0-19%</td>
+                                    <td class="px-4 py-2">0 FC</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
 
        
 
