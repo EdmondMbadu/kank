@@ -208,9 +208,13 @@ export class PerformanceService {
     let day = this.time.getDayOfWeek(this.today);
     if (this.clients && Array.isArray(this.clients)) {
       for (let client of this.clients) {
+        const isAlive =
+          client.vitalStatus === undefined ||
+          client.vitalStatus.toLowerCase() === 'vivant';
+
         if (
           client.paymentDay === day &&
-          // client.vitalStatus !== 'Mort' && // make sure that we filter out dead clients
+          isAlive && // Ensures only alive clients or those without a vitalStatus field are included
           Number(client.debtLeft) > 0 &&
           this.clientStartedMorethanOneWeekAgo(client)
         ) {

@@ -71,7 +71,10 @@ export class PayTodayComponent implements OnInit {
   }
   findClientsWithDebts() {
     this.clientsWithDebts = this.clients!.filter((data) => {
-      return Number(data.debtLeft) > 0;
+      const isAlive =
+        data.vitalStatus === undefined ||
+        data.vitalStatus.toLowerCase() === 'vivant';
+      return isAlive && Number(data.debtLeft) > 0;
     });
   }
   getButtonClasses(field: string): string {
