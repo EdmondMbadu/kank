@@ -1282,4 +1282,22 @@ export class ComputationService {
 
     return amounts[scoreRanges.findIndex((limit) => creditScore <= limit)];
   }
+  yearsSinceJoining(dateJoined: string): number {
+    const joinDate = new Date(dateJoined);
+    const currentDate = new Date();
+
+    let yearsPassed = currentDate.getFullYear() - joinDate.getFullYear();
+
+    // Check if the anniversary for this year has passed or not
+    const hasAnniversaryPassed =
+      currentDate.getMonth() > joinDate.getMonth() ||
+      (currentDate.getMonth() === joinDate.getMonth() &&
+        currentDate.getDate() >= joinDate.getDate());
+
+    if (!hasAnniversaryPassed) {
+      yearsPassed--; // Subtract one if the anniversary hasn't occurred yet
+    }
+
+    return Math.max(0, yearsPassed); // Ensure non-negative values
+  }
 }

@@ -245,6 +245,7 @@ export class DataService {
       paymentAmount: employee.paymentAmount,
       paymentAbsent: employee.paymentAbsent,
       paymentNothing: employee.paymentNothing,
+      paymentIncreaseYears: employee.paymentIncreaseYears,
       totalPayments: employee.totalPayments,
     };
 

@@ -43,6 +43,7 @@ export class Employee {
   totalBonusThisMonth?: string;
   paymentAbsent?: string;
   paymentNothing?: string;
+  paymentIncreaseYears?: string;
   thisMonthPaymentAmount?: string;
   totalPayments?: string;
   bonusCheckUrl?: string;

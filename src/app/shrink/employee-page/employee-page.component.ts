@@ -75,6 +75,7 @@ export class EmployeePageComponent implements OnInit {
   paymentNothing: number = 0;
   paymentAbsent: number = 0;
   totalPayments: number = 0;
+  paymentIncreaseYears: number = 0;
 
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
@@ -106,6 +107,7 @@ export class EmployeePageComponent implements OnInit {
   averagePoints: string = '';
   totalBonusSalary: string = '';
   salaryThisMonth = '';
+  yearsAtCompany: number = 0;
   constructor(
     private router: Router,
     private data: DataService,
@@ -201,6 +203,9 @@ export class EmployeePageComponent implements OnInit {
     this.paymentAmount = this.employee.paymentAmount
       ? parseFloat(this.employee.paymentAmount)
       : 0;
+    this.paymentIncreaseYears = this.employee.paymentIncreaseYears
+      ? parseFloat(this.employee.paymentIncreaseYears)
+      : 0;
     this.paymentAbsent = this.employee.paymentAbsent
       ? parseFloat(this.employee.paymentAbsent)
       : 0;
@@ -223,9 +228,14 @@ export class EmployeePageComponent implements OnInit {
     this.employee.totalBonusThisMonth = this.totalBonusAmount.toString();
   }
   computeTotalPayment() {
-    // the payment of the month is the total payment of the month minus the absent and nothing days
+    // the payment of the month is the total payment of the month minus the absent and nothing days plus the increase years
     this.totalPayments =
-      this.paymentAmount - this.paymentAbsent - this.paymentNothing;
+      this.paymentAmount +
+      this.paymentIncreaseYears -
+      this.paymentAbsent -
+      this.paymentNothing;
+
+    console.log('the total payment is', this.totalPayments);
     return this.totalPayments;
   }
   retrieveEmployees(): void {
@@ -238,6 +248,12 @@ export class EmployeePageComponent implements OnInit {
         this.currentLng = Number(this.locationCoordinate.longitude);
       }
       this.employee = data[this.id];
+      if (this.employee.dateJoined) {
+        this.yearsAtCompany = this.compute.yearsSinceJoining(
+          this.employee.dateJoined
+        );
+      }
+      console.log('the employee is', this.employee);
       this.findNumberOfVacationDaysLeft();
       this.getAllPayments();
       this.setEmployeeBonusAmounts();
@@ -740,6 +756,7 @@ export class EmployeePageComponent implements OnInit {
     this.employee.paymentAmount = this.paymentAmount.toString();
     this.employee.paymentAbsent = this.paymentAbsent.toString();
     this.employee.paymentNothing = this.paymentNothing.toString();
+    this.employee.paymentIncreaseYears = this.paymentIncreaseYears.toString();
     this.employee.totalPayments = this.computeTotalPayment().toString();
   }
   async updateEmployeePaymentInfoAndSignCheck() {
