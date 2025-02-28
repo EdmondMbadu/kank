@@ -88,7 +88,10 @@ export class PaymentComponent {
     ) {
       alert('Au moins un nombre doit etre plus grand que 0.');
       return;
-    } else if (Number(this.client.debtLeft) <= 0) {
+    } else if (
+      !this.auth.isAdmninistrator &&
+      Number(this.client.debtLeft) <= 0
+    ) {
       alert('Vous avez tout payé. Plus besoin de paiements!');
       return;
     } else if (Number(this.paymentAmount) > Number(this.client.debtLeft)) {
