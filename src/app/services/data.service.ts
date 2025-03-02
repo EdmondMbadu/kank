@@ -1619,4 +1619,20 @@ export class DataService {
     // return clients
     return clients;
   }
+
+  findTotalDebtLeft(clients: Client[]) {
+    // just to make sure we will filter again
+    clients = clients!.filter((data) => {
+      const isAlive =
+        data.vitalStatus === undefined ||
+        data.vitalStatus.toLowerCase() === 'vivant';
+      return isAlive && Number(data.debtLeft) > 0;
+    });
+    const totalDebtLeft = clients.reduce(
+      (sum, client) => sum + Number(client.debtLeft || 0),
+      0
+    );
+
+    return totalDebtLeft.toString();
+  }
 }

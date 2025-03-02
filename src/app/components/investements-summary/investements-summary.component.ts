@@ -156,10 +156,8 @@ export class InvestementsSummaryComponent implements OnInit {
         this.auth.currentUser.amountInvested === undefined
           ? '0'
           : this.auth.currentUser.amountInvested;
-      let debtTotal =
-        this.auth.currentUser.totalDebtLeft === undefined
-          ? '0'
-          : this.auth.currentUser.totalDebtLeft;
+      let dv = this.data.findTotalDebtLeft(this.clients!);
+      let debtTotal = dv === undefined ? '0' : dv;
       let cardM =
         this.auth.currentUser.cardsMoney === undefined
           ? '0'
@@ -204,6 +202,12 @@ export class InvestementsSummaryComponent implements OnInit {
     this.currentClients = [];
     if (this.clients) {
       this.currentClients = this.data.findClientsWithDebts(this.clients);
+      const totalDebtLeft = this.currentClients.reduce(
+        (sum, client) => sum + (Number(client.debtLeft) || 0),
+        0
+      );
+      console.log('Total debt left here', totalDebtLeft);
+
       this.clients?.forEach((client) => {
         if (client.type !== undefined && client.type === 'register') {
           this.currentClientsRegistered?.push(client);
