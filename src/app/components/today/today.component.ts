@@ -224,14 +224,14 @@ export class TodayComponent {
     console.log(' today', this.day);
 
     // Filter clients who have debt and whose payment day matches today
-    this.clientsWithDebts = this.clients!.filter((data) => {
+    if (this.clients) {
+      this.clientsWithDebts = this.data.findClientsWithDebts(this.clients);
+    }
+    this.clientsWithDebts = this.clientsWithDebts!.filter((data) => {
       return (
-        Number(data.debtLeft) > 0 &&
-        data.paymentDay === this.day &&
-        this.data.didClientStartThisWeek(data)
+        data.paymentDay === this.day && this.data.didClientStartThisWeek(data)
       );
     });
-    console.log('clients with debts for today', this.clientsWithDebts);
 
     // Calculate the total debt for these clients
     this.expectedReserve = this.compute

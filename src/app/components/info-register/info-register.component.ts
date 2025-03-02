@@ -34,7 +34,7 @@ export class InfoRegisterComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
-      this.findClientsWithDebts();
+      this.findClientsRegistered();
       this.filteredItems = this.currentRegisterClients;
       this.addIdToFilterItems();
     });
@@ -63,7 +63,7 @@ export class InfoRegisterComponent implements OnInit {
       return of(this.clients);
     }
   }
-  findClientsWithDebts() {
+  findClientsRegistered() {
     this.currentRegisterClients = [];
     this.clients?.forEach((client) => {
       if (client.type !== undefined && client.type === 'register') {

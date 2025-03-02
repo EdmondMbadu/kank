@@ -6,6 +6,7 @@ import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-home-central',
@@ -17,7 +18,8 @@ export class HomeCentralComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private data: DataService
   ) {}
   isFetchingClients = false;
   currentClients: Array<Client[]> = [];
@@ -162,11 +164,7 @@ export class HomeCentralComponent implements OnInit {
   }
 
   findClientsWithDebts() {
-    this.allClients?.forEach((client) => {
-      if (Number(client.debtLeft) > 0) {
-        this.allCurrentClients!.push(client);
-      }
-    });
+    this.allCurrentClients = this.data.findClientsWithDebts(this.allClients!);
     return this.allCurrentClients?.length;
   }
 

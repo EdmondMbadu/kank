@@ -1598,4 +1598,15 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
+
+  findClientsWithDebts(clients: Client[]) {
+    clients = clients!.filter((data) => {
+      const isAlive =
+        data.vitalStatus === undefined ||
+        data.vitalStatus.toLowerCase() === 'vivant';
+      return isAlive && Number(data.debtLeft) > 0;
+    });
+    // return clients
+    return clients;
+  }
 }

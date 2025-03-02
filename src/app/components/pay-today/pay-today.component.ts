@@ -7,6 +7,7 @@ import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-pay-today',
@@ -36,7 +37,8 @@ export class PayTodayComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private data: DataService
   ) {
     this.retrieveClients();
   }
@@ -70,12 +72,7 @@ export class PayTodayComponent implements OnInit {
     });
   }
   findClientsWithDebts() {
-    this.clientsWithDebts = this.clients!.filter((data) => {
-      const isAlive =
-        data.vitalStatus === undefined ||
-        data.vitalStatus.toLowerCase() === 'vivant';
-      return isAlive && Number(data.debtLeft) > 0;
-    });
+    this.clientsWithDebts = this.data.findClientsWithDebts(this.clients!);
   }
   getButtonClasses(field: string): string {
     const baseClasses =

@@ -6,6 +6,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { PlotlyModule } from 'angular-plotly.js';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-investements-summary',
@@ -17,7 +18,8 @@ export class InvestementsSummaryComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    public compute: ComputationService
+    public compute: ComputationService,
+    private data: DataService
   ) {}
   clients?: Client[];
   clientsWithoutDebt?: Client[];
@@ -201,10 +203,9 @@ export class InvestementsSummaryComponent implements OnInit {
     this.currentClientsRegistered = [];
     this.currentClients = [];
     if (this.clients) {
+      this.currentClients = this.data.findClientsWithDebts(this.clients);
       this.clients?.forEach((client) => {
-        if (Number(client.debtLeft) > 0 && client.vitalStatus !== 'Mort') {
-          this.currentClients!.push(client);
-        } else if (client.type !== undefined && client.type === 'register') {
+        if (client.type !== undefined && client.type === 'register') {
           this.currentClientsRegistered?.push(client);
         }
       });

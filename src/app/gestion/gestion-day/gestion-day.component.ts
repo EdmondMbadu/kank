@@ -207,14 +207,18 @@ export class GestionDayComponent implements OnInit {
               userTotal += Number(client.requestAmount);
             }
           }
-          this.currentClientsReserve = clients.filter((data) => {
-            return (
-              Number(data.debtLeft) > 0 &&
-              data.paymentDay === this.theDay &&
-              data &&
-              this.data.didClientStartThisWeek(data) // this condition can be confusing. it is the opposite
-            );
-          });
+          // first filter out as everyone and then add some more reasons
+          this.currentClientsReserve = this.data.findClientsWithDebts(clients);
+          this.currentClientsReserve = this.currentClientsReserve.filter(
+            (data) => {
+              return (
+                Number(data.debtLeft) > 0 &&
+                data.paymentDay === this.theDay &&
+                data &&
+                this.data.didClientStartThisWeek(data) // this condition can be confusing. it is the opposite
+              );
+            }
+          );
           reserveTotal = this.compute.computeExpectedPerDate(
             this.currentClientsReserve
           );
@@ -473,13 +477,6 @@ export class GestionDayComponent implements OnInit {
 
     this.initalizeInputs();
   }
-  // getBackgroundColor(value: string): string {
-  //   return this.compute.getGradientColorLite(Number(value)).background;
-  // }
-
-  // getTextColor(value: string): string {
-  //   return this.compute.getGradientColorLite(Number(value)).text;
-  // }
   setGraphics() {
     let num = Number(this.percentage);
     let gaugeColor = this.compute.getGradientColor(Number(num));

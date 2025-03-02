@@ -35,7 +35,7 @@ export class FinishedDebtComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
       this.currentClients = [];
-      this.findClientsWithDebts();
+      this.findClientsWhoFinishedDebts();
       this.filteredItems = this.currentClients;
       this.addIdToFilterItems();
     });
@@ -64,7 +64,7 @@ export class FinishedDebtComponent implements OnInit {
       return of(this.clients);
     }
   }
-  findClientsWithDebts() {
+  findClientsWhoFinishedDebts() {
     this.currentClients = [];
     this.clients?.forEach((client) => {
       if (Number(client.debtLeft) === 0 && client.type !== 'register') {

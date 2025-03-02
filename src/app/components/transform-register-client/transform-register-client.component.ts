@@ -199,9 +199,7 @@ export class TransformRegisterClientComponent implements OnInit {
   }
 
   findClientsWithDebts() {
-    this.clientsWithDebts = this.allClients.filter((data) => {
-      return Number(data.debtLeft) > 0;
-    });
+    this.clientsWithDebts = this.data.findClientsWithDebts(this.allClients);
     this.agentClientMap = this.getAgentsWithClients();
     // console.log(' all clients with debts', this.clientsWithDebts);
     console.log('agent with clients table', this.agentClientMap);

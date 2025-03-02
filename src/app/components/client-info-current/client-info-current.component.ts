@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-client-info-current',
@@ -15,7 +16,11 @@ export class ClientInfoCurrentComponent implements OnInit {
   currentClients?: Client[] = [];
   filteredItems?: Client[];
   searchControl = new FormControl();
-  constructor(private router: Router, public auth: AuthService) {
+  constructor(
+    private router: Router,
+    public auth: AuthService,
+    private data: DataService
+  ) {
     this.retrieveClients();
   }
   debts: string[] = [];
@@ -67,10 +72,6 @@ export class ClientInfoCurrentComponent implements OnInit {
   }
   findClientsWithDebts() {
     this.currentClients = [];
-    this.clients?.forEach((client) => {
-      if (Number(client.debtLeft) > 0) {
-        this.currentClients!.push(client);
-      }
-    });
+    this.currentClients = this.data.findClientsWithDebts(this.clients!);
   }
 }
