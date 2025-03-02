@@ -24,7 +24,7 @@
 
 
 </div>
-<div *ngIf="this.auth.isAdmninistrator" class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
+<!-- <div *ngIf="this.auth.isAdmninistrator" class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
     <div class="max-w-sm mx-auto">
         <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Entrer Le Budget Du Mois:</label>
         <input [(ngModel)]="amountBudget" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
@@ -40,10 +40,69 @@
         <input [(ngModel)]="housePayment" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
         <button (click)="setMonthHousePayment()" type="button" class="text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 my-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Confirmer</button>
     </div>
+    <div class="max-w-sm mx-auto">
+        <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Entrer Le Maximum Nombre Des Clients Voulu</label>
+        <input [(ngModel)]="maxNumberOfClients" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
+        <button (click)="setMaxNumberOfClients()" type="button" class="text-white bg-red-700 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 my-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Confirmer</button>
+    </div>
     
     
 
-</div>
+</div> -->
 
+<div *ngIf="this.auth.isAdmninistrator" class="container mx-auto p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+      
+      <!-- Budget du Mois -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Budget du Mois</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ monthBudget}}</strong></p>
+        <input [(ngModel)]="amountBudget" type="number" placeholder="Entrez le budget" 
+          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+        <button (click)="setMonthBudget()" 
+          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
+          Confirmer
+        </button>
+      </div>
+  
+      <!-- Budget en attente -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Budget en Attente</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ amountBudgetPending}}</strong></p>
+        <input [(ngModel)]="amountBudgetPending" type="number" placeholder="Entrez le budget en attente" 
+          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+        <button (click)="setMonthBudgetPending()" 
+          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
+          Confirmer
+        </button>
+      </div>
+  
+      <!-- Montant du Loyer -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Montant du Loyer</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ housePayment }}</strong></p>
+        <input [(ngModel)]="housePayment" type="number" placeholder="Entrez le montant du loyer" 
+          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+        <button (click)="setMonthHousePayment()" 
+          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
+          Confirmer
+        </button>
+      </div>
+  
+      <!-- Maximum Nombre de Clients -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Maximum Nombre de Clients</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ maxNumberOfClients }}</strong></p>
+        <input [(ngModel)]="maxNumberOfClients" type="number" placeholder="Entrez le nombre maximum de clients" 
+          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+        <button (click)="setMaxNumberOfClients()" 
+          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
+          Confirmer
+        </button>
+      </div>
+  
+    </div>
+  </div>
+  
 
 

@@ -44,6 +44,7 @@ export class TrackingComponent {
     'Benefice Réel',
   ];
   valuesConvertedToDollars: string[] = [];
+  maxNumberOfClients: number = this.data.generalMaxNumberOfClients;
 
   imagePaths: string[] = [
     '../../../assets/img/saving.svg',
@@ -65,6 +66,9 @@ export class TrackingComponent {
   amountBudgetPending: string = '';
   summaryContent: string[] = [];
   initalizeInputs() {
+    this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
+      ? Number(this.auth.currentUser.maxNumberOfClients)
+      : this.data.generalMaxNumberOfClients;
     let realBenefit = (
       Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)
@@ -129,9 +133,11 @@ export class TrackingComponent {
       return;
     }
     try {
-      const clientCardPayment = await this.auth.setMonthBudget(
+      const monthBudget = await this.auth.setUserField(
+        'monthBudget',
         this.amountBudget
       );
+
       this.monthBudget = this.amountBudget;
       this.initalizeInputs();
     } catch (err) {
@@ -146,9 +152,11 @@ export class TrackingComponent {
       return;
     }
     try {
-      const clientCardPayment = await this.auth.setMonthBudgetPending(
+      const aM = await this.auth.setUserField(
+        'monthBudgetPending',
         this.amountBudgetPending
       );
+
       this.initalizeInputs();
     } catch (err) {
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");
@@ -162,9 +170,27 @@ export class TrackingComponent {
       return;
     }
     try {
-      const clientCardPayment = await this.auth.setMonthHousePayment(
+      const clientCardPayment = await this.auth.setUserField(
+        'housePayment',
         this.housePayment
       );
+      this.initalizeInputs();
+    } catch (err) {
+      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+      return;
+    }
+  }
+  async setMaxNumberOfClients() {
+    if (!this.maxNumberOfClients.toString()) {
+      alert('Enter a valid number');
+      return;
+    }
+    try {
+      const maxNum = await this.auth.setUserField(
+        'maxNumberOfClients',
+        this.maxNumberOfClients.toString()
+      );
+      alert('Le nombre maximum des clients a ete mis a jour');
       this.initalizeInputs();
     } catch (err) {
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");
