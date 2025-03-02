@@ -20,8 +20,21 @@ export class RegisterClientComponent implements OnInit {
     private time: TimeService,
     private performance: PerformanceService
   ) {}
-  ngOnInit() {}
+  currentClients: Client[] = [];
+  ngOnInit() {
+    this.auth.getAllClients().subscribe((data: any) => {
+      // get current clients directly
+      this.currentClients = this.data.findClientsWithDebts(data);
+      this.numberOfCurrentClients = this.currentClients.length;
+    });
+
+    this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
+      ? Number(this.auth.currentUser.maxNumberOfClients)
+      : this.data.generalMaxNumberOfClients;
+  }
   employees: Employee[] = [];
+  maxNumberOfClients: number = 0;
+  numberOfCurrentClients = 0;
   rateDisplay: boolean = false;
   amountToPayDisplay: boolean = false;
   debtCycleDisplay: boolean = false;
@@ -117,6 +130,15 @@ export class RegisterClientComponent implements OnInit {
     } else if (this.maxLendAmount < Number(this.loanAmount)) {
       alert(
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLendAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
+      );
+      return;
+    } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
+      alert(
+        `Vous avez depassez la limite de clients autorisez. La limite est de ${
+          this.maxNumberOfClients
+        } clients. Vous devez enlever ${
+          this.numberOfCurrentClients - this.maxNumberOfClients + 1
+        } clients avant d'ajouter.`
       );
       return;
     } else if (!checkDate) {

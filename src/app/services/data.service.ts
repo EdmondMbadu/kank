@@ -33,6 +33,7 @@ export class DataService {
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   todayFull = this.time.todaysDate();
   url: string = '';
+  generalMaxNumberOfClients: number = 100;
   allowedMimeTypes: string[] = [
     'image/jpeg',
     'image/png',

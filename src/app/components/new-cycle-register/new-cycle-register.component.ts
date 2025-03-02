@@ -34,6 +34,9 @@ export class NewCycleRegisterComponent implements OnInit {
   savingsOtherDisplay: boolean = false;
   loanAmountOtherDisplay: boolean = false;
 
+  maxNumberOfClients: number = 0;
+  numberOfCurrentClients = 0;
+
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -53,8 +56,12 @@ export class NewCycleRegisterComponent implements OnInit {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      this.numberOfCurrentClients = this.data.findClientsWithDebts(data).length; // clients with debt number
       this.middleName =
         this.client.middleName !== undefined ? this.client.middleName : '';
+      this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
+        ? Number(this.auth.currentUser.maxNumberOfClients)
+        : this.data.generalMaxNumberOfClients;
 
       // get credit score to find maxLoanAmount
       if (this.client && this.client.creditScore !== undefined) {
@@ -162,6 +169,15 @@ export class NewCycleRegisterComponent implements OnInit {
     } else if (this.maxLoanAmount < Number(this.loanAmount)) {
       alert(
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
+      );
+      return;
+    } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
+      alert(
+        `Vous avez depassez la limite de clients autorisez. La limite est de ${
+          this.maxNumberOfClients
+        } clients. Vous devez enlever ${
+          this.numberOfCurrentClients - this.maxNumberOfClients + 1
+        } clients avant d'ajouter.`
       );
       return;
     } else if (this.savingsPaidAtleast10PercentOfLoanAmount() === false) {

@@ -45,6 +45,7 @@ export class User {
   housePayment?: string;
   locationCoordinates?: LocationCoordinates;
   reviews?: Comment[];
+  maxNumberOfClients?: string;
 }
 export class LocationCoordinates {
   longitude?: string;
