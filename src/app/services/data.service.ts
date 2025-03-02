@@ -106,6 +106,15 @@ export class DataService {
     this.updateUserInfoForClientDeposit(client, savings, date);
     return clientRef.set(data, { merge: true });
   }
+  setClientField(field: string, value: any, clientId: string) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${clientId}`
+    );
+    const data = {
+      [field]: value, // Dynamic key assignment
+    };
+    return userRef.set(data, { merge: true });
+  }
   clientCardPayment(clientCard: Card) {
     const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`

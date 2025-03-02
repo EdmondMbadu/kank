@@ -30,6 +30,11 @@ export class ClientPortalComponent {
   recordedAudioURL?: string; // Local blob URL for playback in the UI
   commentAudioUrl: string = ''; // Final upload URL from Firebase
 
+  loanAmount: string = '0';
+  debtLeft: string = '0';
+  amountToPay: string = '0';
+  paymentPeriodRange: string = '0';
+
   public graphCredit = {
     data: [
       {
@@ -100,8 +105,6 @@ export class ClientPortalComponent {
     if (input) {
       input.value = ''; // Clear out so a re-selection fires change
     }
-
-    console.log('Audio file selected:', file);
   }
 
   ngOnInit(): void {
@@ -131,6 +134,7 @@ export class ClientPortalComponent {
       this.client.frenchPaymentDay = this.time.translateDayInFrench(
         this.client.paymentDay!
       );
+      this.setFields();
       this.setGraphCredit();
       this.setComments();
 
@@ -142,10 +146,42 @@ export class ClientPortalComponent {
       if (this.auth.isAdmninistrator) {
         this.data.getClientCycles(this.client.uid!).subscribe((data) => {
           this.clientCycles = data;
-          console.log(' all the client cycles data', this.clientCycles);
         });
       }
     });
+  }
+
+  setFields() {
+    if (this.client.loanAmount) {
+      this.loanAmount = this.client.loanAmount;
+    }
+    if (this.client.debtLeft) {
+      this.debtLeft = this.client.debtLeft;
+    }
+    if (this.client.amountToPay) {
+      this.amountToPay = this.client.amountToPay;
+    }
+    if (this.client.paymentPeriodRange) {
+      this.paymentPeriodRange = this.client.paymentPeriodRange;
+    }
+  }
+
+  async setClientField(field: string, value: any) {
+    if (!this.compute.isNumber(this.loanAmount)) {
+      alert('Enter a valid number');
+      return;
+    }
+    try {
+      const loA = await this.data.setClientField(
+        field,
+        value,
+        this.client.uid!
+      );
+      alert('Montant changer avec succès');
+    } catch (err) {
+      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+      return;
+    }
   }
   setComments() {
     if (this.client.comments) {
@@ -169,8 +205,6 @@ export class ClientPortalComponent {
       const dateB = parseTime(b.time);
       return dateB - dateA; // Descending order
     });
-
-    console.log('comments sorted', this.comments);
   }
 
   setGraphCredit() {
@@ -438,14 +472,10 @@ export class ClientPortalComponent {
   getLimitedProgress(): number {
     return Math.min(this.recordingProgress, 100);
   }
-  
 
   private pad(num: number): string {
     return num < 10 ? `0${num}` : `${num}`;
   }
-
-
-
 
   // Helper: Upload the audio if it exists, then post comment
 

@@ -1300,4 +1300,7 @@ export class ComputationService {
 
     return Math.max(0, yearsPassed); // Ensure non-negative values
   }
+  isNumber(value: string): boolean {
+    return !isNaN(Number(value));
+  }
 }

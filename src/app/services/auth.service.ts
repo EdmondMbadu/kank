@@ -550,24 +550,7 @@ export class AuthService {
     };
     return userRef.set(data, { merge: true });
   }
-  setMonthBudget(monthBudget: string) {
-    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
-      `users/${this.currentUser.uid}`
-    );
-    const data = {
-      monthBudget: monthBudget,
-    };
-    return userRef.set(data, { merge: true });
-  }
-  setMonthHousePayment(housePayment: string) {
-    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
-      `users/${this.currentUser.uid}`
-    );
-    const data = {
-      housePayment: housePayment,
-    };
-    return userRef.set(data, { merge: true });
-  }
+
   setUserField(field: string, value: any) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.currentUser.uid}`
@@ -577,15 +560,7 @@ export class AuthService {
     };
     return userRef.set(data, { merge: true });
   }
-  setMonthBudgetPending(monthBudget: string) {
-    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
-      `users/${this.currentUser.uid}`
-    );
-    const data = {
-      monthBudgetPending: monthBudget,
-    };
-    return userRef.set(data, { merge: true });
-  }
+
   UpdateUserInfoForDeletedRegisterClient(client: Client) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.currentUser.uid}`
