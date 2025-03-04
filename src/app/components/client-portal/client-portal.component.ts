@@ -185,7 +185,7 @@ export class ClientPortalComponent {
   }
 
   async setClientField(field: string, value: any) {
-    if (!this.compute.isNumber(this.loanAmount)) {
+    if (!this.compute.isNumber(value)) {
       alert('Enter a valid number');
       return;
     }

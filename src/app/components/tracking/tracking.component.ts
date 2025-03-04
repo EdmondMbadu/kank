@@ -65,6 +65,7 @@ export class TrackingComponent {
   amountBudget: string = '';
   amountBudgetPending: string = '';
   summaryContent: string[] = [];
+  moneyInHands: string = '';
   initalizeInputs() {
     this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
       ? Number(this.auth.currentUser.maxNumberOfClients)
@@ -83,6 +84,9 @@ export class TrackingComponent {
         : this.auth.currentUser.monthBudgetPending;
     this.housePayment = this.auth.currentUser.housePayment
       ? this.auth.currentUser.housePayment
+      : '0';
+    this.moneyInHands = this.auth.currentUser.moneyInHands
+      ? this.auth.currentUser.moneyInHands
       : '0';
     let cardM =
       this.auth.currentUser.cardsMoney === undefined
@@ -127,18 +131,14 @@ export class TrackingComponent {
     }
   }
 
-  async setMonthBudget() {
-    if (!this.isNumber(this.amountBudget)) {
+  async setUserField(field: string, value: any) {
+    if (!this.compute.isNumber(value)) {
       alert('Enter a valid number');
       return;
     }
     try {
-      const monthBudget = await this.auth.setUserField(
-        'monthBudget',
-        this.amountBudget
-      );
-
-      this.monthBudget = this.amountBudget;
+      const val = await await this.auth.setUserField(field, value);
+      alert('Montant changer avec succès');
       this.initalizeInputs();
     } catch (err) {
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");
@@ -146,57 +146,6 @@ export class TrackingComponent {
     }
   }
 
-  async setMonthBudgetPending() {
-    if (!this.isNumber(this.amountBudgetPending)) {
-      alert('Enter a valid number');
-      return;
-    }
-    try {
-      const aM = await this.auth.setUserField(
-        'monthBudgetPending',
-        this.amountBudgetPending
-      );
-
-      this.initalizeInputs();
-    } catch (err) {
-      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
-      return;
-    }
-  }
-
-  async setMonthHousePayment() {
-    if (!this.isNumber(this.housePayment)) {
-      alert('Enter a valid number');
-      return;
-    }
-    try {
-      const clientCardPayment = await this.auth.setUserField(
-        'housePayment',
-        this.housePayment
-      );
-      this.initalizeInputs();
-    } catch (err) {
-      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
-      return;
-    }
-  }
-  async setMaxNumberOfClients() {
-    if (!this.maxNumberOfClients.toString()) {
-      alert('Enter a valid number');
-      return;
-    }
-    try {
-      const maxNum = await this.auth.setUserField(
-        'maxNumberOfClients',
-        this.maxNumberOfClients.toString()
-      );
-      alert('Le nombre maximum des clients a ete mis a jour');
-      this.initalizeInputs();
-    } catch (err) {
-      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
-      return;
-    }
-  }
   isNumber(value: string): boolean {
     return !isNaN(Number(value));
   }
