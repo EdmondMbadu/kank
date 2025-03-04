@@ -1,0 +1,107 @@
+<div class="min-h-screen bg-gray-100 flex items-center justify-center py-8">
+
+    <!-- 1) NAME CARD -->
+    <div
+      class="w-full max-w-md bg-white rounded shadow p-6"
+      *ngIf="!quizStarted && !quizCompleted"
+    >
+      <h2 class="text-2xl font-bold mb-6">Enter Your Name</h2>
+  
+      <div class="mb-4">
+        <label class="block mb-1 font-semibold">First Name</label>
+        <input
+          type="text"
+          class="border border-gray-300 rounded px-3 py-2 w-full"
+          [(ngModel)]="firstName"
+        />
+      </div>
+  
+      <div class="mb-6">
+        <label class="block mb-1 font-semibold">Last Name</label>
+        <input
+          type="text"
+          class="border border-gray-300 rounded px-3 py-2 w-full"
+          [(ngModel)]="lastName"
+        />
+      </div>
+  
+      <button
+        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        (click)="startQuiz()"
+      >
+        Start Quiz
+      </button>
+    </div>
+  
+    <!-- 2) QUIZ CARD -->
+    <div
+      class="w-full max-w-2xl bg-white rounded shadow p-6"
+      *ngIf="quizStarted && !quizCompleted"
+    >
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold">Quiz</h2>
+        <span class="text-red-500">Time left: {{ timeLeft }}s</span>
+      </div>
+  
+      <!-- Questions -->
+      <div
+        *ngFor="let questionObj of quizQuestions; index as i"
+        class="mb-6 border-b pb-4"
+      >
+        <h3 class="font-semibold mb-2">
+          {{ i + 1 }}. {{ questionObj.question }}
+        </h3>
+        <div *ngFor="let answer of questionObj.answers; index as j" class="flex items-center mb-2">
+          <input
+            type="radio"
+            [name]="'question-' + i"
+            [value]="j"
+            class="mr-2"
+            (click)="selectAnswer(i, j)"
+            [checked]="userAnswers[i] === j"
+          />
+          <label>{{ answer }}</label>
+        </div>
+      </div>
+  
+      <!-- Submit button -->
+      <div class="flex justify-end">
+        <button
+          class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+          (click)="submitQuiz()"
+        >
+          Submit Quiz
+        </button>
+      </div>
+    </div>
+  
+    <!-- 3) RESULT CARD -->
+    <div
+      class="w-full max-w-lg bg-white rounded shadow p-6 text-center"
+      *ngIf="quizCompleted"
+    >
+      <h2 class="text-2xl font-bold mb-4">Quiz Results</h2>
+  
+      <p class="text-lg mb-2">
+        Hi, {{ firstName }} {{ lastName }}!
+      </p>
+  
+      <p class="text-lg mb-6">
+        You answered
+        <span class="font-bold">{{ correctCount }}</span> out of
+        <span class="font-bold">{{ quizQuestions.length }}</span> questions correctly.
+      </p>
+  
+      <!-- Optional logic for a little "congratulations" message -->
+      <ng-container *ngIf="correctCount >= quizQuestions.length / 2; else lowScore">
+        <p class="text-xl font-semibold text-green-600">Congratulations!</p>
+      </ng-container>
+      <ng-template #lowScore>
+        <p class="text-xl font-semibold text-red-500">
+          Better luck next time!
+        </p>
+      </ng-template>
+    </div>
+  
+  </div>
+  

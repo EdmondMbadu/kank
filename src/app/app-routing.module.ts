@@ -87,6 +87,7 @@ import { ClientCycleComponent } from './components/client-cycle/client-cycle.com
 import { PaymentCycleActivityComponent } from './components/payment-cycle-activity/payment-cycle-activity.component';
 import { SavingCycleActivityComponent } from './components/saving-cycle-activity/saving-cycle-activity.component';
 import { ReviewsComponent } from './components/reviews/reviews.component';
+import { QuestionsComponent } from './components/questions/questions.component';
 
 const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -257,6 +258,7 @@ const routes: Routes = [
   { path: 'certificate', component: CertificateComponent },
   { path: 'tutorial', component: TutorialComponent },
   { path: 'reviews', component: ReviewsComponent },
+  { path: 'questions', component: QuestionsComponent },
   // { path: 'employee-page/:id', component: EmployeePageComponent },
   {
     path: 'employee-page',
