@@ -34,6 +34,10 @@ export class ClientPortalComponent {
   debtLeft: string = '0';
   amountToPay: string = '0';
   paymentPeriodRange: string = '0';
+  creditScore: number = 0;
+  isSilver: boolean = false;
+  isGold: boolean = false;
+  isPlatinum: boolean = false;
 
   public graphCredit = {
     data: [
@@ -163,6 +167,20 @@ export class ClientPortalComponent {
     }
     if (this.client.paymentPeriodRange) {
       this.paymentPeriodRange = this.client.paymentPeriodRange;
+    }
+    if (this.client.creditScore) {
+      this.creditScore = Number(this.client.creditScore);
+      this.determineTrophy();
+    }
+  }
+
+  determineTrophy() {
+    if (this.creditScore >= 100) {
+      this.isPlatinum = true;
+    } else if (this.creditScore >= 90) {
+      this.isGold = true;
+    } else if (this.creditScore >= 70) {
+      this.isSilver = true;
     }
   }
 
