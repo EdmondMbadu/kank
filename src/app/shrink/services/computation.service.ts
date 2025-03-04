@@ -1276,12 +1276,13 @@ export class ComputationService {
       19, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 84, 89, 94, 99, 100,
     ];
     const amounts = [
-      0, 100000, 150000, 200000, 300000, 400000, 500000, 600000, 700000, 800000,
-      900000, 1000000, 1100000, 1200000, 1300000, 1500000,
+      0, 100000, 150000, 200000, 300000, 400000, 500000, 600000, 700000,
+      1000000, 1100000, 1200000, 1300000, 1400000, 1500000, 2000000,
     ];
 
     return amounts[scoreRanges.findIndex((limit) => creditScore <= limit)];
   }
+
   yearsSinceJoining(dateJoined: string): number {
     const joinDate = new Date(dateJoined);
     const currentDate = new Date();
