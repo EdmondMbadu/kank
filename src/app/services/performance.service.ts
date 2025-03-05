@@ -114,7 +114,7 @@ export class PerformanceService {
       Number(client.amountToPay) / Number(client.paymentPeriodRange);
     let num = Number(this.clientPaymentAmount) / Number(minpay);
 
-    let rounded = this.roundFloorToDecimal(num);
+    let rounded = this.roundCeilToDecimal(num);
     // this was added because if a client, paid twice the min amount,
     // it would be as if two people paid. increasing the performance of employees artificially
     // we commented this line because it they paid twice, they should get twice the performance
@@ -369,7 +369,7 @@ export class PerformanceService {
     return 'F';
   }
 
-  roundFloorToDecimal(number: number, decimals: number = 1): number {
+  roundCeilToDecimal(number: number, decimals: number = 1): number {
     // Factor calculation with type assertion for clarity
     const factor = Math.pow(10, decimals);
     const multiplied = number * factor;
