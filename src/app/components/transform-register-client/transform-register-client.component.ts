@@ -37,6 +37,8 @@ export class TransformRegisterClientComponent implements OnInit {
   clientsWithDebts: Client[] = [];
   agentClientMap: any = {};
   maxLoanAmount: number = 0;
+  maxNumberOfClients: number = 0;
+  numberOfCurrentClients = 0;
 
   constructor(
     public auth: AuthService,
@@ -58,6 +60,12 @@ export class TransformRegisterClientComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.allClients = data;
       this.client = data[Number(this.id)];
+      this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
+        ? Number(this.auth.currentUser.maxNumberOfClients)
+        : this.data.generalMaxNumberOfClients;
+      this.clientsWithDebts = this.data.findClientsWithDebts(data);
+      this.numberOfCurrentClients = this.clientsWithDebts.length;
+
       this.client.debtCycle =
         this.client.debtCycle === undefined || this.client.debtCycle === '0'
           ? '1'
@@ -130,6 +138,15 @@ export class TransformRegisterClientComponent implements OnInit {
     } else if (this.maxLoanAmount < Number(this.loanAmount)) {
       alert(
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
+      );
+      return;
+    } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
+      alert(
+        `Vous avez depassez la limite de clients autorisez. La limite est de ${
+          this.maxNumberOfClients
+        } clients. Vous devez enlever ${
+          this.numberOfCurrentClients - this.maxNumberOfClients + 1
+        } clients avant d'ajouter.`
       );
       return;
     } else {
