@@ -32,6 +32,7 @@ export class ClientPortalComponent {
 
   loanAmount: string = '0';
   debtLeft: string = '0';
+  savings: string = '0';
   amountToPay: string = '0';
   paymentPeriodRange: string = '0';
   creditScore: number = 0;
@@ -171,6 +172,9 @@ export class ClientPortalComponent {
     if (this.client.creditScore) {
       this.creditScore = Number(this.client.creditScore);
       this.determineTrophy();
+    }
+    if (this.client.savings) {
+      this.savings = this.client.savings;
     }
   }
 

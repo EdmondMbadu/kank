@@ -26,6 +26,7 @@ export class RegiserPortalComponent {
   requestDate = '';
   debtEnd = '';
   worhty? = '';
+  savings: string = '0';
   public graphWorthiness = {
     data: [
       {
@@ -84,6 +85,7 @@ export class RegiserPortalComponent {
       this.client = data[Number(this.id)];
       console.log('Current client references', this.client.references);
       this.setGraphCredit();
+      this.setFields();
       this.setGraphWorthiness();
       this.client.debtCycle =
         this.client.debtCycle === undefined || this.client.debtCycle === '0'
@@ -291,6 +293,30 @@ export class RegiserPortalComponent {
       return 'Faible – Risque élevé ; prêt non recommandé.';
     } else {
       return 'Score invalide.';
+    }
+  }
+
+  async setClientField(field: string, value: any) {
+    if (!this.compute.isNumber(value)) {
+      alert('Enter a valid number');
+      return;
+    }
+    try {
+      const loA = await this.data.setClientField(
+        field,
+        value,
+        this.client.uid!
+      );
+      alert('Montant changer avec succès');
+    } catch (err) {
+      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+      return;
+    }
+  }
+
+  setFields() {
+    if (this.client.savings) {
+      this.savings = this.client.savings;
     }
   }
 }
