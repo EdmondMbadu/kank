@@ -97,10 +97,14 @@ export class NotPaidTodayComponent {
     this.haveNotPaidToday = [];
     if (this.shouldPayToday) {
       for (let c of this.shouldPayToday) {
+        const isAlive =
+          c.vitalStatus === undefined ||
+          c.vitalStatus.toLowerCase() === 'vivant';
+        // return isAlive && Number(c.debtLeft) > 0;
         if (
           this.paidToday.indexOf(c) === -1 &&
-          c.vitalStatus !== 'Mort' && // make sure that the client is not dead
-          Number(c.amountToPay) - Number(c.amountPaid) > 0 &&
+          isAlive &&
+          Number(c.debtLeft) > 0 &&
           !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
           this.didClientStartThisWeek(c)
         ) {
