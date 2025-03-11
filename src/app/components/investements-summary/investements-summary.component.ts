@@ -110,32 +110,35 @@ export class InvestementsSummaryComponent implements OnInit {
   elements: number = 10;
 
   linkPath: string[] = [
+    '/client-info-current',
     '/client-info',
     '/client-info-current',
     '/finished-debt',
     '/info-register',
-    '/client-info-current',
+
     '/add-investment',
 
     '/client-info-current',
   ];
   imagePaths: string[] = [
-    '../../../assets/img/people.svg',
-    '../../../assets/img/people.svg',
-    '../../../assets/img/people.svg',
-    '../../../assets/img/people.svg',
     '../../../assets/img/debt.png',
+    '../../../assets/img/people.svg',
+    '../../../assets/img/people.svg',
+    '../../../assets/img/people.svg',
+    '../../../assets/img/people.svg',
+
     '../../../assets/img/invest.svg',
 
     '../../../assets/img/total-income.png',
   ];
 
   summary: string[] = [
+    'Dette à Récupérer',
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
     'Nombres des Clients Sans Credit',
     'Nombres des Clients Enregistré',
-    'Dette à Récupérer',
+
     'Argent Investi',
 
     "Chiffre D'Affaire",
@@ -172,22 +175,24 @@ export class InvestementsSummaryComponent implements OnInit {
         Number(cardM)
       ).toString();
       this.summaryContent = [
+        ` ${debtTotal}`,
         `${this.auth.currentUser.numberOfClients}`,
         `${this.findClientsWithDebts()}`,
         `${this.findClientsWithoutDebts()}`,
         `${this.currentClientsRegistered?.length}`,
-        ` ${debtTotal}`,
+
         ` ${invested}`,
 
         `${totalIncome}`,
       ];
 
       this.valuesConvertedToDollars = [
-        ``,
-        ``,
-        ``,
-        ``,
         `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
+        ``,
+        ``,
+        ``,
+        ``,
+
         `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
 
         `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,

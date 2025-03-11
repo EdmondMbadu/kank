@@ -20,15 +20,15 @@
             -->
                 <h2 
                     class="font-bold text-lg text-green-700 text-center" 
-                    *ngIf="i > 3">
+                    *ngIf="i > 4 || i==0">
                     FC {{ getValidNumber(summaryContent[i]) | number:'1.0-0' }}
                 </h2>
                 <h2 
                     class="font-bold text-lg text-yellow-900 text-center" 
-                    *ngIf="i > 3">
+                    *ngIf="i > 4 || i==0">
                     $ {{ getValidNumber(valuesConvertedToDollars[i]) | number:'1.0-0' }}
                 </h2>
-            <h2 class="font-bold  text-lg text-green-700 text-center" *ngIf="i<=3 ">  {{summaryContent[i] }}</h2>
+            <h2 class="font-bold  text-lg text-green-700 text-center" *ngIf="i<=4 && i!=0 ">  {{summaryContent[i] }}</h2>
         </a>
     </div>
     
