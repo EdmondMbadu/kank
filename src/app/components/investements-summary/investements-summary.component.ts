@@ -114,8 +114,9 @@ export class InvestementsSummaryComponent implements OnInit {
     '/client-info-current',
     '/finished-debt',
     '/info-register',
-    '/add-investment',
     '/client-info-current',
+    '/add-investment',
+
     '/client-info-current',
   ];
   imagePaths: string[] = [
@@ -123,8 +124,9 @@ export class InvestementsSummaryComponent implements OnInit {
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
-    '../../../assets/img/invest.svg',
     '../../../assets/img/debt.png',
+    '../../../assets/img/invest.svg',
+
     '../../../assets/img/total-income.png',
   ];
 
@@ -133,9 +135,8 @@ export class InvestementsSummaryComponent implements OnInit {
     'Nombres des Clients Actuel',
     'Nombres des Clients Sans Credit',
     'Nombres des Clients Enregistré',
-
+    'Dette à Récupérer',
     'Argent Investi',
-    'Prêt Restant',
 
     "Chiffre D'Affaire",
   ];
@@ -175,8 +176,8 @@ export class InvestementsSummaryComponent implements OnInit {
         `${this.findClientsWithDebts()}`,
         `${this.findClientsWithoutDebts()}`,
         `${this.currentClientsRegistered?.length}`,
-        ` ${invested}`,
         ` ${debtTotal}`,
+        ` ${invested}`,
 
         `${totalIncome}`,
       ];
@@ -186,13 +187,14 @@ export class InvestementsSummaryComponent implements OnInit {
         ``,
         ``,
         ``,
-        `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
         `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
+        `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
+
         `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
       ];
 
       if (!this.auth.isAdmninistrator) {
-        this.summary = this.compute.filterOutElements(this.summary, 4);
+        this.summary = this.compute.filterOutElements(this.summary, 5);
       }
     }
   }
