@@ -473,7 +473,7 @@
                         <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
                         </svg>
-                        À 90 points, Client Or. Vous recevez 5% de l'argent que vouz avez empruntez directement dans votre epargnes.
+                        À 90 points, Vous recevez 5% de l'argent que vouz avez empruntez directement dans votre epargnes.
                     </li>
                     <li class="flex items-center">
                       <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
@@ -487,37 +487,7 @@
                   
 
           </div>
-          <h2 id="accordion-collapse-heading-2">
-            <button (click)="toggle('performance')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-2" aria-expanded="false" aria-controls="accordion-collapse-body-2">
-              <span>Performance Et Emprunts</span>
-              <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-              </svg>
-            </button>
-          </h2>
-
-          <div *ngIf="performance" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2">
-            <div class="p-5 border border-gray-200 dark:border-gray-700">
-                  
-              <div class="relative min-w-3xl flex flex-col overflow-x-auto mb-6 " >
-                <h2 class="mb-2 text-lg font-semibold text-gray-900 ">Informations générales sur le prêt</h2>
-                    <ul class="space-y-1 text-gray-500 list-disc list-inside ">
-                        <li>
-                          Le budget pour prêter de l'argent sera déterminé sous la Trésorerie-> le Budget Emprunts Du Mois. Suivez ce montant de près, si le montant atteint 0. Vous ne pouvez pas accepter de nouveaux emprunteurs jusqu'à ce que des fonds supplémentaires soient alloués à votre budget.
-                          Il n'y aura aucun montant supplémentaire accordé en dehors du budget de près en general. 
-                        </li>
-                        
-                        
-                    </ul>
-                <h1 class="text-xl  font-semibold text-center mx-4 mt-4 mb-4 "> *Note: 3 fois une performance de moins de 50% consécutifs durant l'année, nécessite un licenciement.
-                  .
-                    Pour plus d'informations <a class="text-blue-400 underline" target="_blank" href="https://docs.google.com/document/d/1Qgen3QRTMvdZbomRGv4YmOTLAqPPGXwEXLVBfwSMAe0/edit?usp=sharing">voir ici</a> 
-                </h1>
-
-              </div>
-
-            </div>
-          </div>
+     
           <h2 id="accordion-collapse-heading-2">
             <button (click)="toggle('budget')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-2" aria-expanded="false" aria-controls="accordion-collapse-body-2">
               <span>Budget Du Mois</span>
@@ -601,13 +571,16 @@
                   <li>Si la dette est remboursée à temps (au plus tard à la date prévue), le client reçoit <strong>+5 points</strong>.</li>
                   <li>Si le remboursement est en retard, <strong>-2 points</strong> sont retirés pour chaque semaine de retard.</li>
               </ul>
-              <em>Exemple :</em> Si un client devait rembourser sa dette avant le <strong>11 mars</strong> mais termine le <strong>1er avril</strong>, il accumule <strong>3 semaines de retard</strong> et perd <strong>8 points</strong>.
+              <em>Exemple :</em> Si un client devait rembourser sa dette avant le <strong>11 mars</strong> mais termine le <strong>1er avril</strong>, il accumule <strong>3 semaines de retard</strong> et perd <strong>6 points</strong>.
           
           <p>
               Lorsqu’un client atteint un <strong>Score Crédit de 70</strong>, il bénéficie d’un accès permanent à un prêt chaque fois qu'il en a besoin, à condition de ne pas avoir de dette en cours. De plus, l'argent prêté ne sera pas déduit de votre budget.
           </p>
+          <p>
+            <strong>💰 Bonus :</strong> À <strong>90 points de Score Crédit</strong>, vous recevez <strong>5% du montant emprunté</strong>, directement ajouté à votre épargne.
+          </p>
           <p style="background-color: #ffeb3b; padding: 10px; border-radius: 5px;">
-            <strong>⚠️ Important :</strong> Pour chaque crédit demandé, <strong>30% du montant du prêt</strong> doit être déposé sur l’épargne pour pouvoir obtenir le prêt a partier du mois d'Avril 2025.
+            <strong>⚠️ Important :</strong> Pour chaque crédit demandé, <strong>30% du montant du prêt</strong> doit être déposé sur l’épargne pour pouvoir obtenir le prêt a partir du mois d'Avril 2025.
           </p>
           </div>
           
