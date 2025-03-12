@@ -542,31 +542,31 @@
                           <tbody>
                               <tr class="border-b hover:bg-gray-50">
                                   <td class="px-4 py-2">100%</td>
-                                  <td class="px-4 py-2">15M</td>
+                                  <td class="px-4 py-2">20M</td>
                               </tr>
                               <tr class="border-b hover:bg-gray-50">
                                   <td class="px-4 py-2">90-99%</td>
-                                  <td class="px-4 py-2">12M</td>
+                                  <td class="px-4 py-2">18M</td>
                               </tr>
                               <tr class="border-b hover:bg-gray-50">
                                   <td class="px-4 py-2">80-89%</td>
-                                  <td class="px-4 py-2">10M</td>
+                                  <td class="px-4 py-2">15M</td>
                               </tr>
                               <tr class="border-b hover:bg-gray-50">
                                   <td class="px-4 py-2">70-79%</td>
-                                  <td class="px-4 py-2">8M</td>
+                                  <td class="px-4 py-2">12M</td>
                               </tr>
                               <tr class="border-b hover:bg-gray-50">
                                   <td class="px-4 py-2">60-69%</td>
-                                  <td class="px-4 py-2">6M</td>
+                                  <td class="px-4 py-2">9M</td>
                               </tr>
                               <tr class="border-b hover:bg-gray-50">
                                   <td class="px-4 py-2">50-59%</td>
-                                  <td class="px-4 py-2">4M</td>
+                                  <td class="px-4 py-2">6M</td>
                               </tr>
                               <tr class="hover:bg-gray-50">
                                   <td class="px-4 py-2">40-49%</td>
-                                  <td class="px-4 py-2">2M</td>
+                                  <td class="px-4 py-2">3M</td>
                               </tr>
                               <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-2">0-39%</td>
@@ -580,7 +580,7 @@
           </div>
           <h2 id="accordion-collapse-heading-loan">
             <button (click)="toggle('maxLoan')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-loan" aria-expanded="false" aria-controls="accordion-collapse-body-loan">
-                <span>Maximum Montant Autorisé d'Emprunt Au Client</span>
+                <span>Score Credit et Emprunts</span>
                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
                 </svg>
@@ -588,7 +588,29 @@
         </h2>
         
         <div *ngIf="maxLoan" id="accordion-collapse-body-loan" aria-labelledby="accordion-collapse-heading-loan">
-            <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
+            
+          <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
+          <div class="my-4">
+            <p>
+              <strong>Qu'est-ce qu'un Score Crédit ?</strong><br>
+              Le <strong>Score Crédit</strong> est un chiffre que nous utilisons pour suivre la fiabilité d'un client dans le remboursement de ses dettes. Tout le monde commence avec un score de <strong>50</strong>. 
+          </p>
+          <p>
+              À chaque cycle de remboursement (<strong>1 ou 2 mois</strong>), le score évolue en fonction du respect des délais :
+              <ul>
+                  <li>Si la dette est remboursée à temps (au plus tard à la date prévue), le client reçoit <strong>+5 points</strong>.</li>
+                  <li>Si le remboursement est en retard, <strong>-2 points</strong> sont retirés pour chaque semaine de retard.</li>
+              </ul>
+              <em>Exemple :</em> Si un client devait rembourser sa dette avant le <strong>11 mars</strong> mais termine le <strong>1er avril</strong>, il accumule <strong>3 semaines de retard</strong> et perd <strong>8 points</strong>.
+          
+          <p>
+              Lorsqu’un client atteint un <strong>Score Crédit de 70</strong>, il bénéficie d’un accès permanent à un prêt chaque fois qu'il en a besoin, à condition de ne pas avoir de dette en cours. De plus, l'argent prêté ne sera pas déduit de votre budget.
+          </p>
+          <p style="background-color: #ffeb3b; padding: 10px; border-radius: 5px;">
+            <strong>⚠️ Important :</strong> Pour chaque crédit demandé, <strong>30% du montant du prêt</strong> doit être déposé sur l’épargne pour pouvoir obtenir le prêt a partier du mois d'Avril 2025.
+          </p>
+          </div>
+          
                 <div class="p-4">
                     <div class="overflow-x-auto">
                         <table class="min-w-full bg-white border border-gray-200 text-gray-700">
