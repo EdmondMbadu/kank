@@ -320,7 +320,7 @@ export class PerformanceService {
       }
     }
 
-    return isNaN(total) ? '' : total.toString();
+    return isNaN(total) ? '' : total.toFixed(2);
   }
 
   findTotalToday(employees: Employee[]): string {
@@ -337,7 +337,7 @@ export class PerformanceService {
       }
     }
 
-    return isNaN(total) ? '' : total.toString();
+    return isNaN(total) ? '' : total.toFixed(2);
   }
 
   findAverageAndTotalAllEmployee(employees: Employee[]) {

@@ -216,9 +216,12 @@ export class ComputationService {
     }
     return total;
   }
+  // roundNumber(num: any) {
+  //   let rounded: any = Math.round(num * 10) / 10;
+  //   return rounded;
+  // }
   roundNumber(num: any) {
-    let rounded: any = Math.round(num * 10) / 10;
-    return rounded;
+    return Math.ceil(num);
   }
 
   filterClientsWithoutDebtFollowedByEmployee(
@@ -239,6 +242,23 @@ export class ComputationService {
     return filteredClients;
   }
 
+  // findTotalForMonth(
+  //   dailyReimbursement: { [key: string]: string },
+  //   month: string,
+  //   year: string
+  // ) {
+  //   const targetMonth = parseInt(month, 10);
+  //   const targetYear = parseInt(year, 10);
+
+  //   let total = 0;
+  //   for (const [date, amount] of Object.entries(dailyReimbursement)) {
+  //     const [month, day, year] = date.split('-').map(Number);
+  //     if (month === targetMonth && year === targetYear) {
+  //       total += parseInt(amount as string, 10);
+  //     }
+  //   }
+  //   return total.toString();
+  // }
   findTotalForMonth(
     dailyReimbursement: { [key: string]: string },
     month: string,
@@ -249,13 +269,16 @@ export class ComputationService {
 
     let total = 0;
     for (const [date, amount] of Object.entries(dailyReimbursement)) {
-      const [month, day, year] = date.split('-').map(Number);
-      if (month === targetMonth && year === targetYear) {
-        total += parseInt(amount as string, 10);
+      const [entryMonth, day, entryYear] = date.split('-').map(Number);
+      if (entryMonth === targetMonth && entryYear === targetYear) {
+        console.log('amount is', amount);
+        total += parseFloat(amount); // Allows decimal values
+        console.log('total is', total);
       }
     }
-    return total.toString();
+    return total.toFixed(2); // Keeps two decimal places
   }
+
   findTotalForToday(reserve: { [key: string]: string }, dateString: string) {
     // Compute today's date in "M-D-YYYY" format without leading zeros
 
@@ -277,11 +300,11 @@ export class ComputationService {
       // Check if the date part matches today's date
       if (keyDate === dateString) {
         // Sum the values for today's date
-        totalForToday += parseInt(value, 10);
+        totalForToday += parseFloat(value);
       }
     });
 
-    return totalForToday;
+    return totalForToday.toFixed(2);
   }
 
   findTotalGiventMonth(
@@ -393,13 +416,13 @@ export class ComputationService {
         for (const [date, amount] of Object.entries(e.dailyPoints)) {
           const [month, day, year] = date.split('-').map(Number);
           if (month === targetMonth && year === targetYear) {
-            total += parseInt(amount, 10);
+            total += parseFloat(amount);
           }
         }
       }
     }
 
-    return total.toString();
+    return total.toFixed(2);
   }
 
   findTotalForMonthAllTotalDailyPointsEmployees(
