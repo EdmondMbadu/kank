@@ -149,13 +149,13 @@ exports.sendPaymentSMS = functions.firestore
       let message = `${firstName} ${lastName},\n`;
 
       if (todaysPaymentTotal > 0) {
-        message += `Paiement d'aujourd'hui le ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}\n`;
+        message += `Paiement du ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}\n`;
       } else {
       // Optionally mention no payment made today
       // message += `Aucun paiement effectué aujourd'hui le ${todayFormatted}.\n`;
       }
 
-      message += `Montant restant : FC ${amountRemaining.toLocaleString()}\nEpargnes : FC ${totalSavings.toLocaleString()}\n\nMerci pour votre confiance continue à la Fondation Gervais!`.trim();
+      message += `Dette: FC ${amountRemaining.toLocaleString()}\nEpargnes : FC ${totalSavings.toLocaleString()}\n\nMerci pour votre confiance continue à la Fondation Gervais!`.trim();
 
       console.log(`Constructed message: ${message}`);
 
