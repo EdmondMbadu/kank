@@ -1,18 +1,25 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const twilio = require("twilio");
+const AfricasTalking = require("africastalking");
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Retrieve Twilio credentials from environment variables
-const accountSid = functions.config().twilio.sid;
-const authToken = functions.config().twilio.token;
-const twilioPhoneNumber = functions.config().twilio.phone_number;
+// Retrieve Africa's Talking credentials from environment variables
+const apiKey = functions.config().africastalking.api_key;
+const username = functions.config().africastalking.username;
 
-// Initialize Twilio client
-const twilioClient = twilio(accountSid, authToken);
+// Initialize Africa's Talking SDK
+// eslint-disable-next-line new-cap
+const africastalking = AfricasTalking({
+  apiKey,
+  username,
+});
+
+// Get the SMS service
+const sms = africastalking.SMS;
 
 /**
  * Formats a phone number to E.164 standard based on its origin.
@@ -33,14 +40,6 @@ function makeValidE164(number) {
   // Check if the number starts with '0' (DRC)
   if (cleaned.startsWith("0")) {
     const withoutZero = cleaned.slice(1); // Remove the leading '0'
-
-    // Optional: Validate DRC number length (typically 9 digits after '0')
-    // Uncomment the following lines if you want to enforce length
-    // if (withoutZero.length !== 9) {
-    //   console.log(`Invalid DRC number length: ${number}`);
-    //   return null;
-    // }
-
     return `+243${withoutZero}`;
   }
 
@@ -63,134 +62,126 @@ function makeValidE164(number) {
 /**
  * Helper function to get today's date in MM-DD-YYYY format
  */
-// function getTodayDateString() {
-//   const today = new Date();
-//   const month = today.getMonth() + 1; // Months are zero-based
-//   const day = today.getDate();
-//   const year = today.getFullYear();
-//   return `${month}-${day}-${year}`;
-// }
-// // eslint-disable-next-line require-jsdoc
-// function getTodayDateStringFormatted() {
-//   const today = new Date();
-//   const month = String(today.getMonth() + 1).padStart(2, "0");
-//   const day = String(today.getDate()).padStart(2, "0");
-//   const year = today.getFullYear();
-//   return `${day}/${month}/${year}`;
-// }
+function getTodayDateString() {
+  const today = new Date();
+  const month = today.getMonth() + 1; // Months are zero-based
+  const day = today.getDate();
+  const year = today.getFullYear();
+  return `${month}-${day}-${year}`;
+}
+// eslint-disable-next-line require-jsdoc
+function getTodayDateStringFormatted() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  const year = today.getFullYear();
+  return `${day}/${month}/${year}`;
+}
 
 /**
  * Cloud Function to send SMS upon payment update or daily summary
  */
-// exports.sendPaymentSMS = functions.firestore
-//     .document("users/{userId}/clients/{clientId}")
-//     .onUpdate(async (change, context) => {
-//       console.log("Function execution started");
+exports.sendPaymentSMS = functions.firestore
+    .document("users/{userId}/clients/{clientId}")
+    .onUpdate(async (change, context) => {
+      console.log("Function execution started");
 
-//       const beforeData = change.before.data();
-//       const afterData = change.after.data();
+      const beforeData = change.before.data();
+      const afterData = change.after.data();
 
-//       const paymentsBefore = beforeData.payments || {};
-//       const paymentsAfter = afterData.payments || {};
+      const paymentsBefore = beforeData.payments || {};
+      const paymentsAfter = afterData.payments || {};
 
-//       // **Removed Early Exit:**
-//       // Previously, the function would exit if 'payments' field had not changed.
-//       // To always send SMS, even if payments haven't changed, we remove this check.
-//       // if (JSON.stringify(paymentsBefore) === JSON.stringify(paymentsAfter)) {
-//       //   console.log("'payments' field has not changed. Exiting function.");
-//       //   return null;
-//       // }
+      // **Removed Early Exit** (always send SMS regardless of whether payments changed)
 
-//       // **Identify new payment entries**
-//       const newPayments = Object.keys(paymentsAfter).filter((key) => !(key in paymentsBefore));
-//       console.log(`New payments detected: ${newPayments.length}`);
+      // Identify new payment entries
+      const newPayments = Object.keys(paymentsAfter).filter(
+          (key) => !(key in paymentsBefore),
+      );
+      console.log(`New payments detected: ${newPayments.length}`);
 
-//       // **Sum today's payments**
-//       const todayStr = getTodayDateString();
-//       console.log(`Today's date string: ${todayStr}`);
+      // Sum today's payments
+      const todayStr = getTodayDateString();
+      console.log(`Today's date string: ${todayStr}`);
 
-//       let todaysPaymentTotal = 0;
-//       newPayments.forEach((paymentKey) => {
-//         if (paymentKey.startsWith(todayStr)) {
-//           const amount = parseFloat(paymentsAfter[paymentKey]);
-//           if (!isNaN(amount)) {
-//             todaysPaymentTotal += amount;
-//           } else {
-//             console.log(`Invalid payment amount for key ${paymentKey}: ${paymentsAfter[paymentKey]}`);
-//           }
-//         }
-//       });
+      let todaysPaymentTotal = 0;
+      newPayments.forEach((paymentKey) => {
+        if (paymentKey.startsWith(todayStr)) {
+          const amount = parseFloat(paymentsAfter[paymentKey]);
+          if (!isNaN(amount)) {
+            todaysPaymentTotal += amount;
+          } else {
+            console.log(
+                `Invalid payment amount for key ${paymentKey}: ${paymentsAfter[paymentKey]}`,
+            );
+          }
+        }
+      });
 
-//       console.log(`Today's payment total: ${todaysPaymentTotal}`);
+      console.log(`Today's payment total: ${todaysPaymentTotal}`);
 
-//       // **Retrieve client details**
-//       const client = afterData;
-//       const firstName = client.firstName || "Valued";
-//       const lastName = client.lastName || "Client";
-//       const phoneNumber = client.phoneNumber;
+      // Retrieve client details
+      const client = afterData;
+      const firstName = client.firstName || "Valued";
+      const lastName = client.lastName || "Client";
+      const phoneNumber = client.phoneNumber;
 
-//       if (!phoneNumber) {
-//         console.log("Client does not have a phone number.");
-//         return null;
-//       }
+      if (!phoneNumber) {
+        console.log("Client does not have a phone number.");
+        return null;
+      }
 
-//       const formattedNumber = makeValidE164(phoneNumber);
-//       if (!formattedNumber) {
-//         console.log(`Invalid phone number format: ${phoneNumber}`);
-//         return null;
-//       }
+      const formattedNumber = makeValidE164(phoneNumber);
+      if (!formattedNumber) {
+        console.log(`Invalid phone number format: ${phoneNumber}`);
+        return null;
+      }
 
-//       console.log(`Formatted phone number: ${formattedNumber}`);
+      console.log(`Formatted phone number: ${formattedNumber}`);
 
-//       // **Retrieve savings and debt**
-//       const totalSavings = parseFloat(client.savings) || 0;
-//       const amountRemaining = parseFloat(client.debtLeft) || 0;
+      // Retrieve savings and debt
+      const totalSavings = parseFloat(client.savings) || 0;
+      const amountRemaining = parseFloat(client.debtLeft) || 0;
 
-//       const todayFormatted = getTodayDateStringFormatted();
+      const todayFormatted = getTodayDateStringFormatted();
 
-//       // **Construct message with conditional payment line**
-//       let message = `${firstName} ${lastName},\n`;
+      // Construct message
+      let message = `${firstName} ${lastName},\n`;
 
-//       if (todaysPaymentTotal > 0) {
-//         message += `Paiement d'aujourd'hui le ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}\n`;
-//       } else {
-//       // Optionally, you can include a line stating no payments were made today
-//       // message += `Aucun paiement effectué aujourd'hui le ${todayFormatted}.\n`;
-//       }
+      if (todaysPaymentTotal > 0) {
+        message += `Paiement d'aujourd'hui le ${todayFormatted} : FC ${todaysPaymentTotal.toLocaleString()}\n`;
+      } else {
+      // Optionally mention no payment made today
+      // message += `Aucun paiement effectué aujourd'hui le ${todayFormatted}.\n`;
+      }
 
-//       message += `Montant restant : FC ${amountRemaining.toLocaleString()}\nEpargnes : FC ${totalSavings.toLocaleString()}\n\nMerci pour votre confiance continue à la Fondation Gervais!`.trim();
+      message += `Montant restant : FC ${amountRemaining.toLocaleString()}\nEpargnes : FC ${totalSavings.toLocaleString()}\n\nMerci pour votre confiance continue à la Fondation Gervais!`.trim();
 
-//       console.log(`Constructed message: ${message}`);
+      console.log(`Constructed message: ${message}`);
 
-//       try {
-//       // **Send SMS**
-//         const twilioResponse = await twilioClient.messages.create({
-//           body: message,
-//           from: twilioPhoneNumber,
-//           to: formattedNumber,
-//         });
+      try {
+      // **Send SMS via Africa's Talking**
+        const response = await sms.send({
+          to: [formattedNumber],
+          message: message,
+        // from: 'YourSenderIdOrShortCodeIfApplicable' // Optional
+        });
+        console.log(`SMS sent to ${formattedNumber}:`, response);
+      } catch (error) {
+        console.error("Error sending SMS via Africa's Talking:", error);
+      }
 
-//         console.log(`SMS sent to ${formattedNumber}: SID ${twilioResponse.sid}`);
-//         console.log(`Twilio Response:`, twilioResponse);
-//       } catch (error) {
-//         console.error("Error sending SMS via Twilio:", error);
-//       }
-
-//       console.log("Function execution completed");
-//       return null;
-//     });
-
+      console.log("Function execution completed");
+      return null;
+    });
 
 /**
  * Helper function to format a date string to DD/MM/YYYY
- *
- * @param {string|Date} dateInput - The date to format.
- * @return {string} - Formatted date string.
  */
 function formatDate(dateInput) {
   const date = new Date(dateInput);
   const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-based
+  const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 }
@@ -206,7 +197,7 @@ exports.sendClientCompletionSMS = functions.firestore
       const beforeData = change.before.data();
       const afterData = change.after.data();
 
-      // Check if 'debtCycleStartDate' was just set (i.e., loan activated)
+      // Check if 'debtCycleStartDate' was just set (loan activated)
       const wasDebtCycleStartedBefore = !!beforeData.debtCycleStartDate;
       const isDebtCycleStartedNow = !!afterData.debtCycleStartDate;
 
@@ -232,11 +223,7 @@ exports.sendClientCompletionSMS = functions.firestore
         let montantMinimum = "N/A";
         const amountToPay = parseFloat(afterData.amountToPay);
         const paymentPeriodRange = parseInt(afterData.paymentPeriodRange, 10);
-        if (
-          !isNaN(amountToPay) &&
-        !isNaN(paymentPeriodRange) &&
-        paymentPeriodRange > 0
-        ) {
+        if (!isNaN(amountToPay) && !isNaN(paymentPeriodRange) && paymentPeriodRange > 0) {
           montantMinimum = (amountToPay / paymentPeriodRange).toFixed(2);
         }
 
@@ -269,18 +256,16 @@ Fondation Gervais`;
         console.log(`Constructed message: ${message}`);
 
         try {
-        // Send SMS via Twilio
-          const twilioResponse = await twilioClient.messages.create({
-            body: message,
-            from: twilioPhoneNumber,
-            to: formattedNumber,
+        // Send SMS via Africa's Talking
+          const response = await sms.send({
+            to: [formattedNumber],
+            message: message,
+          // from: 'YourSenderIdOrShortCodeIfApplicable'
           });
 
-          console.log(
-              `SMS sent to ${formattedNumber}: SID ${twilioResponse.sid}`,
-          );
+          console.log(`SMS sent to ${formattedNumber}:`, response);
         } catch (error) {
-          console.error("Error sending SMS via Twilio:", error);
+          console.error("Error sending SMS via Africa's Talking:", error);
         }
       } else {
         console.log("Debt cycle was not just started. Exiting function.");
