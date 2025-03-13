@@ -248,10 +248,7 @@ exports.sendClientCompletionSMS = functions.firestore
 
         // Construct the message
         const message = `Bonjour ${fullName},
-Votre prêt de ${montant} FC a débuté le ${dateDebut} et se terminera le ${dateFin}. Vous effectuerez ${nombrePaiements} paiements sur ${duree}, avec un minimum de ${montantMinimum} FC par paiement. Merci de votre confiance.
-
-Cordialement,
-Fondation Gervais`;
+Votre prêt de ${montant} FC a débuté le ${dateDebut} et se terminera le ${dateFin}. Vous effectuerez ${nombrePaiements} paiements sur ${duree}, avec un minimum de ${montantMinimum} FC par paiement. Merci de votre confiance à la Fondation Gervais`;
 
         console.log(`Constructed message: ${message}`);
 
