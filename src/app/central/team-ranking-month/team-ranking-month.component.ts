@@ -137,41 +137,89 @@ export class TeamRankingMonthComponent {
     });
     this.total = (Number(this.total) + Number(this.totalHouse)).toString();
   }
+  // filterAndInitializeEmployees(
+  //   allEmployees: Employee[],
+  //   currentClients: Client[]
+  // ) {
+  //   // Use a Map or Set to ensure uniqueness. Here, a Map is used to easily access clients by their ID.
+  //   let uniqueEmployees = new Map<string, Client>();
+  //   this.allEmployees = [];
+  //   allEmployees.forEach((employee) => {
+  //     employee.currentClients =
+  //       this.compute.filterClientsWithoutDebtFollowedByEmployee(
+  //         currentClients,
+  //         employee
+  //       );
+  //     // Assuming client.id is the unique identifier
+  //     if (!uniqueEmployees.has(employee.uid!)) {
+  //       uniqueEmployees.set(employee.uid!, employee);
+  //     }
+  //   });
+
+  //   // Convert the Map values back to an array for further processing
+  //   this.allEmployees = Array.from(uniqueEmployees.values());
+  //   this.allEmployees.sort((a, b) => {
+  //     const aPerformance = a.performancePercentageMonth
+  //       ? parseFloat(a.performancePercentageMonth)
+  //       : 0;
+  //     const bPerformance = b.performancePercentageMonth
+  //       ? parseFloat(b.performancePercentageMonth)
+  //       : 0;
+  //     return bPerformance - aPerformance;
+  //   });
+  //   this.allEmployees = this.allEmployees.filter((data) => {
+  //     return data.status === 'Travaille';
+  //   });
+  //   this.calculateAveragePerformancePercentage();
+  // }
   filterAndInitializeEmployees(
     allEmployees: Employee[],
     currentClients: Client[]
   ) {
-    // Use a Map or Set to ensure uniqueness. Here, a Map is used to easily access clients by their ID.
-    let uniqueEmployees = new Map<string, Client>();
+    // Use a Map or Set to ensure uniqueness. Here, a Map is used to easily
+    // track employees by their uid.
+    const uniqueEmployees = new Map<string, Employee>();
     this.allEmployees = [];
+
     allEmployees.forEach((employee) => {
+      // Filter out clients without debt for each employee
       employee.currentClients =
         this.compute.filterClientsWithoutDebtFollowedByEmployee(
           currentClients,
           employee
         );
-      // Assuming client.id is the unique identifier
+
+      // If the employee isn't already in the Map, add them
       if (!uniqueEmployees.has(employee.uid!)) {
         uniqueEmployees.set(employee.uid!, employee);
       }
     });
 
-    // Convert the Map values back to an array for further processing
+    // Convert the Map values back to an array
     this.allEmployees = Array.from(uniqueEmployees.values());
+
+    // Sort by performancePercentageMonth descending,
+    // converting any NaN to 0 so that NaNs don't cause sorting problems
     this.allEmployees.sort((a, b) => {
-      const aPerformance = a.performancePercentageMonth
-        ? parseFloat(a.performancePercentageMonth)
-        : 0;
-      const bPerformance = b.performancePercentageMonth
-        ? parseFloat(b.performancePercentageMonth)
-        : 0;
+      const aVal = parseFloat(a.performancePercentageMonth ?? '0');
+      const bVal = parseFloat(b.performancePercentageMonth ?? '0');
+
+      const aPerformance = isNaN(aVal) ? 0 : aVal;
+      const bPerformance = isNaN(bVal) ? 0 : bVal;
+
+      // Descending order
       return bPerformance - aPerformance;
     });
+
+    // Filter employees who are currently "Travaille" (working)
     this.allEmployees = this.allEmployees.filter((data) => {
       return data.status === 'Travaille';
     });
+
+    // Recalculate or update any relevant average performance
     this.calculateAveragePerformancePercentage();
   }
+
   // Add this method to calculate the average performance percentage
   calculateAveragePerformancePercentage() {
     if (!this.allEmployees || this.allEmployees.length === 0) {
