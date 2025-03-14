@@ -388,7 +388,6 @@ export class RegisterClientComponent implements OnInit {
         collateralScore * 10) /
       10;
 
-    console.log('The total score computed is out of 100', totalScore);
     this.creditworthinessScore = Math.round(totalScore);
     return Math.round(totalScore);
   }

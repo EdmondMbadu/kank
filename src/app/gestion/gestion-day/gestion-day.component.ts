@@ -177,7 +177,6 @@ export class GestionDayComponent implements OnInit {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
 
-    console.log('entering getAllClients');
     // Initialize userRequestTotals and overallTotal
 
     // Initialize userRequestTotals and overallTotal
@@ -310,7 +309,7 @@ export class GestionDayComponent implements OnInit {
               (Number(this.dailyReserve) / this.overallTotalReserve) *
               100
             ).toFixed(2);
-            console.log('all the reserve amounts', this.reserveTotals);
+
             this.isFetchingClients = false;
             // Now you can use this.userRequestTotals and this.overallTotal in your template
             this.setGraphics();

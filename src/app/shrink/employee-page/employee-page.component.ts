@@ -235,7 +235,6 @@ export class EmployeePageComponent implements OnInit {
       this.paymentAbsent -
       this.paymentNothing;
 
-    console.log('the total payment is', this.totalPayments);
     return this.totalPayments;
   }
   retrieveEmployees(): void {
@@ -253,7 +252,7 @@ export class EmployeePageComponent implements OnInit {
           this.employee.dateJoined
         );
       }
-      console.log('the employee is', this.employee);
+
       this.findNumberOfVacationDaysLeft();
       this.getAllPayments();
       this.setEmployeeBonusAmounts();
@@ -1049,7 +1048,7 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
     let currentAttendance = 'A';
-    console.log('Entering determine attendance', this.withinRadius);
+
     if (this.time.isEmployeeOnTime(this.limitHour, this.limitMinutes)) {
       currentAttendance = 'P';
     } else {

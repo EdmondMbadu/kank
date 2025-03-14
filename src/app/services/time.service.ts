@@ -148,7 +148,6 @@ export class TimeService {
 
     // Convert the difference to days
     const diffDays = diffTime / (1000 * 60 * 60 * 24);
-    console.log('diff days', diffDays);
 
     // Check if the difference is within one week and the date is in the future
     // the minus is for practical consideration since the actual data gives us numbers

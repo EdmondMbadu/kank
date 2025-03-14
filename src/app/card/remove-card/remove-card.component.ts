@@ -53,7 +53,6 @@ export class RemoveCardComponent {
       this.potentialNumbersToSubstract.push(a);
       a *= i;
     }
-    console.log('numbers ', this.potentialNumbersToSubstract);
   }
   async substractFromcard() {
     if (this.amountToSubstract === '') {

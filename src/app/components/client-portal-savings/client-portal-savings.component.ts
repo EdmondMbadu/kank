@@ -76,7 +76,7 @@ export class ClientPortalSavingsComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      console.log('client  ', this.client.uid);
+
       this.minimumPayment();
       this.client.frenchPaymentDay = this.time.translateDayInFrench(
         this.client.paymentDay!
@@ -193,7 +193,6 @@ export class ClientPortalSavingsComponent {
       .then(() => console.log('agent clients list updated succesfully.'));
   }
   async startUpload(event: FileList) {
-    console.log('current employee', this.client);
     const file = event?.item(0);
     console.log(' current file data', file);
 

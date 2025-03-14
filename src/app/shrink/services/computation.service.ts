@@ -271,9 +271,7 @@ export class ComputationService {
     for (const [date, amount] of Object.entries(dailyReimbursement)) {
       const [entryMonth, day, entryYear] = date.split('-').map(Number);
       if (entryMonth === targetMonth && entryYear === targetYear) {
-        console.log('amount is', amount);
         total += parseFloat(amount); // Allows decimal values
-        console.log('total is', total);
       }
     }
     return total.toFixed(2); // Keeps two decimal places
@@ -1287,7 +1285,7 @@ export class ComputationService {
       targetLat,
       targetLng
     );
-    console.log('distance ', distance);
+
     return distance <= radius;
   }
   getMaxLendAmount(creditScore: number): number {

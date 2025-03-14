@@ -134,7 +134,7 @@ export class ClientPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      console.log('client  ', this.client);
+
       this.minimumPayment();
       this.client.frenchPaymentDay = this.time.translateDayInFrench(
         this.client.paymentDay!

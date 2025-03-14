@@ -53,7 +53,7 @@ export class GestionInvestmentComponent {
         this.router.navigate(['/gestion-today']);
       } catch (err: any) {
         alert("Une erreur s'est produite lors de l'initialization, Réessayez");
-        console.log('error ocorred while entering reserve amount', err);
+
         return;
       }
     }

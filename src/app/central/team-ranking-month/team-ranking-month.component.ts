@@ -96,7 +96,6 @@ export class TeamRankingMonthComponent {
         ).toString();
     });
 
-    console.log('sum for house paumeyts', this.totalHouse);
     this.allUsers.forEach((user) => {
       this.currentClients = [];
 

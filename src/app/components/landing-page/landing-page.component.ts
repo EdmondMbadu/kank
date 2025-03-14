@@ -16,7 +16,6 @@ export class LandingPageComponent {
     this.email = '';
     this.password = '';
     this.word = '';
-    console.log('all fields', this.word);
   }
   constructor(private auth: AuthService) {}
 

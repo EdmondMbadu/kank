@@ -593,7 +593,6 @@ export class DataService {
   }
 
   updateManagementInfoForMoneyGiven(amount: string) {
-    console.log('data from management', this.auth.managementInfo);
     const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
       `management/${this.auth.managementInfo.id}`
     );
@@ -613,7 +612,6 @@ export class DataService {
     amountDollars: string,
     loss: string
   ) {
-    console.log('data from management', this.auth.managementInfo);
     const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
       `management/${this.auth.managementInfo.id}`
     );

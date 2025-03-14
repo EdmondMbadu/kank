@@ -78,8 +78,7 @@ export class TrackingCentralComponent {
       this.allUsers,
       'cardsMoney'
     );
-    console.log('total money in hands', moneyHand);
-    console.log('reserveDollar', reserveDollar);
+
     // this.currentClients = [];
     let realBenefit = (Number(debtTotal) - Number(invested)).toString();
 

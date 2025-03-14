@@ -85,17 +85,6 @@ export class TeamPageComponent implements OnInit {
     });
   }
   addNewEmployee() {
-    console.log(
-      this.firstName,
-      this.lastName,
-      this.middleName,
-      this.phoneNumber,
-      this.role,
-      this.dateOfBirth,
-      this.sex,
-      this.dateJoined,
-      status
-    );
     if (
       this.firstName === '' ||
       this.lastName === '' ||

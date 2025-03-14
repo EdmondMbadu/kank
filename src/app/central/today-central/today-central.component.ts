@@ -92,7 +92,6 @@ export class TodayCentralComponent {
       )
       .toString();
 
-    console.log('the date today', this.requestDateCorrectFormat);
     this.dailyPayment = this.compute
       .findTodayTotalResultsGivenField(
         this.allUsers,
@@ -108,7 +107,7 @@ export class TodayCentralComponent {
       )
       .toString();
     let tomorrow = this.findNextDay(this.requestDateCorrectFormat);
-    console.log('the data tomorrow', tomorrow);
+
     this.dailyRequest = this.compute
       .findTodayTotalResultsGivenField(
         this.allUsers,

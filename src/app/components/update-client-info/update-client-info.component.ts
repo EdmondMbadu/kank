@@ -78,9 +78,6 @@ export class UpdateClientInfoComponent {
       return;
     } else {
       this.findAgent();
-      console.log(' the client itself', this.client);
-      console.log('client agent during', this.client.agent);
-      console.log('agent clients before', this.agent?.clients);
       this.updateAgentClients();
       this.updatePreviousClientAgentInfo();
       this.data.updateClientInfo(this.client).then(() => {
@@ -96,19 +93,17 @@ export class UpdateClientInfoComponent {
       !this.agent!.clients!.includes(this.client.uid!)
     ) {
       this.agent?.clients?.push(this.client.uid!);
-      console.log('agent clients after', this.agent?.clients);
     }
   }
   // update the clients array on the previous agent side
   updatePreviousClientAgentInfo() {
-    console.log('previous client agent', this.previousClientAgent);
     if (
       this.previousClientAgent !== 'Choose' &&
       this.previousClientAgent !== undefined &&
       this.previousClientAgent !== this.client.agent
     ) {
       let employee = this.findAgentWithId(this.previousClientAgent);
-      console.log('the employee', employee);
+
       employee!.clients = employee?.clients?.filter(
         (element) => element !== this.client.uid
       );

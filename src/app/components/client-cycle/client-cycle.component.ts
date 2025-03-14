@@ -85,7 +85,7 @@ export class ClientCycleComponent {
         .getClientCycle(this.clientId, this.cycleId)
         .subscribe((dataC) => {
           this.client = dataC;
-          console.log('Current client', this.client);
+
           this.minimumPayment();
           this.client.frenchPaymentDay = this.time.translateDayInFrench(
             this.client.paymentDay!

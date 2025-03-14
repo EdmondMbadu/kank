@@ -106,7 +106,6 @@ export class TodayComponent {
   summaryContent: string[] = [];
 
   initalizeInputs() {
-    console.log('the date ', this.requestDateCorrectFormat);
     this.dailyLending =
       this.auth.currentUser?.dailyLending?.[this.requestDateCorrectFormat] ??
       '0';
@@ -221,7 +220,6 @@ export class TodayComponent {
   }
   findClientsWithDebts() {
     let total = 0;
-    console.log(' today', this.day);
 
     // Filter clients who have debt and whose payment day matches today
     if (this.clients) {
@@ -249,7 +247,5 @@ export class TodayComponent {
       ).toFixed(2);
     }
     this.perc = Number(this.percentage);
-
-    console.log(`Total debt for clients with payments due today: ${total}`);
   }
 }

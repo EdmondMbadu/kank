@@ -57,10 +57,9 @@ export class ClientInfoComponent implements OnInit {
 
       // this is to spot clients that goes to Nan for one reason or another
       if (this.filteredItems![i].debtLeft === NaN.toString()) {
-        console.log('the client with NaN is ', this.filteredItems![i]);
+        // console.log('the client with NaN is ', this.filteredItems![i]);
       }
     }
-    console.log('The total debt left is for everyone', total);
   }
   search(value: string) {
     if (value) {
