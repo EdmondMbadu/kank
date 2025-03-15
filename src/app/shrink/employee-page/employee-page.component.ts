@@ -572,7 +572,7 @@ export class EmployeePageComponent implements OnInit {
     const tableBody = document.getElementById('attendance-body');
     // Ensure the element exists before proceeding
     if (!tableBody) {
-      console.error("Element with ID 'attendance-body' not found in the DOM.");
+      console.warn("Element with ID 'attendance-body' not found in the DOM.");
       return;
     }
     const dict: any = this.employee?.attendance || {}; // Use an empty object if attendance is null or undefined.
