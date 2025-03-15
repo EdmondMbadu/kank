@@ -569,10 +569,16 @@ export class EmployeePageComponent implements OnInit {
     this.compute.generateInvoice(this.employee, 'Bonus');
   }
   generateAttendanceTable(month: number, year: number) {
+    const tableBody = document.getElementById('attendance-body');
+    // Ensure the element exists before proceeding
+    if (!tableBody) {
+      console.error("Element with ID 'attendance-body' not found in the DOM.");
+      return;
+    }
     const dict: any = this.employee?.attendance || {}; // Use an empty object if attendance is null or undefined.
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayIndex = new Date(year, month - 1, 1).getDay();
-    const tableBody = document.getElementById('attendance-body');
+
     tableBody!.innerHTML = '';
 
     let date = 1;
