@@ -4,6 +4,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
+import { Client } from 'src/app/models/client';
 
 @Component({
   selector: 'app-tracking',
@@ -19,8 +20,17 @@ export class TrackingComponent {
     private data: DataService
   ) {}
   ngOnInit() {
-    this.initalizeInputs();
+    this.retrieveClients();
   }
+
+  retrieveClients(): void {
+    this.auth.getAllClients().subscribe((data: any) => {
+      this.clients = data;
+      this.initalizeInputs();
+    });
+  }
+
+  clients: Client[] = [];
 
   totalPerfomance: number = 0;
   housePayment: string = '';
@@ -92,6 +102,8 @@ export class TrackingComponent {
       this.auth.currentUser.cardsMoney === undefined
         ? '0'
         : this.auth.currentUser.cardsMoney;
+    let ts = this.data.findTotalClientSavings(this.clients!);
+    console.log('the total savings is ', ts);
     let enMain = Number(this.auth.currentUser.moneyInHands) + Number(cardM);
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,

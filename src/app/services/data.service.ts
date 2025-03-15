@@ -1633,4 +1633,20 @@ export class DataService {
 
     return totalDebtLeft.toString();
   }
+
+  findTotalClientSavings(clients: Client[]) {
+    // just to make sure we will filter again
+    clients = clients!.filter((data) => {
+      const isAlive =
+        data.vitalStatus === undefined ||
+        data.vitalStatus.toLowerCase() === 'vivant';
+      return isAlive && Number(data.debtLeft) > 0;
+    });
+    const totalSavings = clients.reduce(
+      (sum, client) => sum + Number(client.savings || 0),
+      0
+    );
+
+    return totalSavings.toString();
+  }
 }
