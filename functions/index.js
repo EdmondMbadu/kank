@@ -197,24 +197,26 @@ exports.sendClientCompletionSMS = functions.firestore
       const beforeData = change.before.data();
       const afterData = change.after.data();
 
-      // Check if 'debtCycleStartDate' was just set (loan activated)
-      const wasDebtCycleStartedBefore = !!beforeData.debtCycleStartDate;
-      const isDebtCycleStartedNow = !!afterData.debtCycleStartDate;
+      const oldCycleStart = beforeData.debtCycleStartDate;
+      const newCycleStart = afterData.debtCycleStartDate;
 
-      if (!wasDebtCycleStartedBefore && isDebtCycleStartedNow) {
-        console.log("Debt cycle started. Proceeding to send SMS.");
+      console.log("Old cycle start date:", oldCycleStart);
+      console.log("New cycle start date:", newCycleStart);
+
+      // Only proceed if the debtCycleStartDate actually changed
+      if (oldCycleStart !== newCycleStart) {
+        console.log("Debt cycle start date changed. Proceeding to send SMS.");
 
         // Retrieve necessary fields
         const montant = afterData.loanAmount || "N/A";
-        // const dateDebut = afterData.debtCycleStartDate ?
-        // formatDate(afterData.debtCycleStartDate) :
-        // "N/A";
+
+        // For safety, always handle possibility of a missing date
+        const dateDebut = newCycleStart ? formatDate(newCycleStart) : "N/A";
         const dateFin = afterData.debtCycleEndDate ?
         formatDate(afterData.debtCycleEndDate) :
         "N/A";
         const nombrePaiements = afterData.paymentPeriodRange || "N/A";
 
-        // Use paymentPeriodRange directly as duration in weeks
         const duree = afterData.paymentPeriodRange ?
         `${afterData.paymentPeriodRange} semaines` :
         "N/A";
@@ -246,26 +248,23 @@ exports.sendClientCompletionSMS = functions.firestore
 
         console.log(`Formatted phone number: ${formattedNumber}`);
 
-        // Construct the message
+        // Construct your message
         const message = `Bonjour ${fullName},
-Ozui lelo Niongo ya ${montant} FC. Efuteli ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. Merci pona confiance na Fondation Gervais`;
+Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. Merci pona confiance na Fondation Gervais`;
 
         console.log(`Constructed message: ${message}`);
 
         try {
-        // Send SMS via Africa's Talking
           const response = await sms.send({
             to: [formattedNumber],
             message: message,
-          // from: 'YourSenderIdOrShortCodeIfApplicable'
           });
-
           console.log(`SMS sent to ${formattedNumber}:`, response);
         } catch (error) {
           console.error("Error sending SMS via Africa's Talking:", error);
         }
       } else {
-        console.log("Debt cycle was not just started. Exiting function.");
+        console.log("Debt cycle start date did NOT change. Exiting function.");
       }
 
       console.log("sendClientCompletionSMS function execution completed");
