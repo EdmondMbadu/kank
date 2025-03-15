@@ -206,9 +206,9 @@ exports.sendClientCompletionSMS = functions.firestore
 
         // Retrieve necessary fields
         const montant = afterData.loanAmount || "N/A";
-        const dateDebut = afterData.debtCycleStartDate ?
-        formatDate(afterData.debtCycleStartDate) :
-        "N/A";
+        // const dateDebut = afterData.debtCycleStartDate ?
+        // formatDate(afterData.debtCycleStartDate) :
+        // "N/A";
         const dateFin = afterData.debtCycleEndDate ?
         formatDate(afterData.debtCycleEndDate) :
         "N/A";
@@ -248,7 +248,7 @@ exports.sendClientCompletionSMS = functions.firestore
 
         // Construct the message
         const message = `Bonjour ${fullName},
-Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. Merci pona confiance na Fondation Gervais`;
+Ozui lelo Niongo ya ${montant} FC. Efuteli ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. Merci pona confiance na Fondation Gervais`;
 
         console.log(`Constructed message: ${message}`);
 
