@@ -35,6 +35,7 @@ export class ClientPortalComponent {
   savings: string = '0';
   amountToPay: string = '0';
   paymentPeriodRange: string = '0';
+  amountPaid: string = '0';
   creditScore: number = 0;
   isSilver: boolean = false;
   isGold: boolean = false;
@@ -134,6 +135,7 @@ export class ClientPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      console.log('the client', this.client);
 
       this.minimumPayment();
       this.client.frenchPaymentDay = this.time.translateDayInFrench(
@@ -175,6 +177,9 @@ export class ClientPortalComponent {
     }
     if (this.client.savings) {
       this.savings = this.client.savings;
+    }
+    if (this.client.amountPaid) {
+      this.amountPaid = this.client.amountPaid;
     }
   }
 
@@ -269,7 +274,9 @@ export class ClientPortalComponent {
   }
 
   startNewDebtCycle() {
-    if (this.client.amountPaid !== this.client.amountToPay) {
+    if (
+      this.client.amountPaid?.toString() !== this.client.amountToPay?.toString()
+    ) {
       alert(
         `Vous devez encore FC ${this.client.debtLeft}. Terminez d'abord ce cycle.`
       );
@@ -287,7 +294,7 @@ export class ClientPortalComponent {
     }
   }
   requestWithDrawFromSavings() {
-    if (this.client.savings === '0') {
+    if (this.client.savings?.toString() === '0') {
       alert("Vous n'avez pas d'argent d'epargnes!");
       return;
     } else if (Number(this.client.debtLeft) > 0) {

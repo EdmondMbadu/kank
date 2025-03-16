@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
@@ -28,6 +29,12 @@ export class NewCycleRegisterComponent implements OnInit {
   middleName: string = '';
   requestDate: string = '';
   maxLoanAmount: number = 0;
+  allClients: Client[] = [];
+
+  code: string = '';
+  userEnteredCode: string = '';
+  isLoading: boolean = false;
+  codeVerificationStatus: 'waiting' | 'correct' | 'incorrect' | null = null;
 
   applicationFeeOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
@@ -44,7 +51,8 @@ export class NewCycleRegisterComponent implements OnInit {
     private router: Router,
     private time: TimeService,
     private performance: PerformanceService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private fns: AngularFireFunctions
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -55,6 +63,7 @@ export class NewCycleRegisterComponent implements OnInit {
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
+      this.allClients = data;
       this.client = data[Number(this.id)];
       this.numberOfCurrentClients = this.data.findClientsWithDebts(data).length; // clients with debt number
       this.middleName =
@@ -170,6 +179,9 @@ export class NewCycleRegisterComponent implements OnInit {
       alert(
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
+      return;
+    } else if (this.codeVerificationStatus !== 'correct') {
+      alert('Veuillez vérifier votre code de vérification');
       return;
     } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
       alert(
@@ -294,5 +306,58 @@ export class NewCycleRegisterComponent implements OnInit {
     this.client.membershipFeePayments = {
       [this.time.todaysDate()]: this.memberShipFee,
     };
+  }
+
+  toggle(property: 'isLoading') {
+    this[property] = !this[property];
+  }
+  sendMyVerificationCode() {
+    const { phoneNumber, uid } = this.client;
+
+    if (
+      this.allClients.some(
+        (cl) => cl.phoneNumber === phoneNumber && cl.uid !== uid
+      )
+    ) {
+      alert(
+        'Ce numéro de téléphone est déjà utilisé par un autre client. Veuillez utiliser un autre numéro de téléphone.'
+      );
+      return;
+    }
+
+    this.toggle('isLoading');
+
+    const callable = this.fns.httpsCallable('sendVerificationCode');
+    callable({ phoneNumber, name }).subscribe({
+      next: (result) => {
+        // console.log('Verification code sent:', result.code);
+        this.code = result.code;
+        // You can store result.code if you want local verification
+        alert('Code de vérification envoyé avec succès');
+        this.toggle('isLoading');
+      },
+      error: (err) => {
+        console.error('Error sending verification code:', err);
+        alert('Erreur lors de l envoi du code de vérification. Essayez encore');
+        this.toggle('isLoading');
+      },
+    });
+    // this.toggle('isLoading');
+  }
+  verifyMyCode() {
+    const enteredCode = this.userEnteredCode?.toString() || '';
+
+    // Wait until user enters at least 4 digits before checking
+    if (enteredCode.length < 4) {
+      this.codeVerificationStatus = 'waiting';
+      return;
+    }
+
+    // Validate code correctness
+    if (parseInt(enteredCode, 10) === parseInt(this.code, 10)) {
+      this.codeVerificationStatus = 'correct';
+    } else {
+      this.codeVerificationStatus = 'incorrect';
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
@@ -18,12 +19,15 @@ export class RegisterClientComponent implements OnInit {
     public auth: AuthService,
     public data: DataService,
     private time: TimeService,
-    private performance: PerformanceService
+    private performance: PerformanceService,
+    private fns: AngularFireFunctions
   ) {}
   currentClients: Client[] = [];
+  allClients: Client[] = [];
   ngOnInit() {
     this.auth.getAllClients().subscribe((data: any) => {
       // get current clients directly
+      this.allClients = data;
       this.currentClients = this.data.findClientsWithDebts(data);
       this.numberOfCurrentClients = this.currentClients.length;
     });
@@ -69,6 +73,11 @@ export class RegisterClientComponent implements OnInit {
   newReferenceName: string = '';
   newReferencePhone: string = '';
   maxLendAmount: number = 400000;
+
+  code: string = '';
+  userEnteredCode: string = '';
+  codeVerificationStatus: 'waiting' | 'correct' | 'incorrect' = 'waiting';
+  isLoading: boolean = false;
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
@@ -131,6 +140,9 @@ export class RegisterClientComponent implements OnInit {
       alert(
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLendAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
+      return;
+    } else if (this.codeVerificationStatus !== 'correct') {
+      alert('Veuillez vérifier votre code de vérification');
       return;
     } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
       alert(
@@ -390,5 +402,53 @@ export class RegisterClientComponent implements OnInit {
 
     this.creditworthinessScore = Math.round(totalScore);
     return Math.round(totalScore);
+  }
+  toggle(property: 'isLoading') {
+    this[property] = !this[property];
+  }
+  sendMyVerificationCode() {
+    const phoneNumber = this.phoneNumber;
+    const name = `${this.firstName} ${this.middleName} ${this.lastName}`;
+
+    if (this.allClients.some((cl) => cl.phoneNumber === phoneNumber)) {
+      alert(
+        'Ce numéro de téléphone est déjà utilisé par un autre client. Veuillez utiliser un autre numéro de téléphone.'
+      );
+      return;
+    }
+
+    this.toggle('isLoading');
+
+    const callable = this.fns.httpsCallable('sendVerificationCode');
+    callable({ phoneNumber, name }).subscribe({
+      next: (result) => {
+        // console.log('Verification code sent:', result.code);
+        this.code = result.code;
+        // You can store result.code if you want local verification
+        alert('Code de vérification envoyé avec succès');
+        this.toggle('isLoading');
+      },
+      error: (err) => {
+        console.error('Error sending verification code:', err);
+        alert('Erreur lors de l envoi du code de vérification. Essayez encore');
+        this.toggle('isLoading');
+      },
+    });
+  }
+  verifyMyCode() {
+    const enteredCode = this.userEnteredCode?.toString() || '';
+
+    // Wait until user enters at least 4 digits before checking
+    if (enteredCode.length < 4) {
+      this.codeVerificationStatus = 'waiting';
+      return;
+    }
+
+    // Validate code correctness
+    if (parseInt(enteredCode, 10) === parseInt(this.code, 10)) {
+      this.codeVerificationStatus = 'correct';
+    } else {
+      this.codeVerificationStatus = 'incorrect';
+    }
   }
 }

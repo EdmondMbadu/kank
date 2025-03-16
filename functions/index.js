@@ -1,3 +1,4 @@
+/* eslint-disable require-jsdoc */
 /* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 const functions = require("firebase-functions");
@@ -342,5 +343,77 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
   // Return an object so the client knows how many succeeded/failed
   return {
     message: `Reminders sent. Success: ${successCount}, Failed: ${failCount}`,
+  };
+});
+
+
+function generate4DigitCode() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+/**
+ * Cloud Function (callable) that:
+ * 1) Receives { phoneNumber, name? } from client
+ * 2) Generates a 4-digit code
+ * 3) Sends the code via SMS ("<code> ezali code na yo")
+ * 4) Optionally returns (or stores) the code for verification
+ */
+exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
+  const phoneNumber = data.phoneNumber;
+  // const name = data.name || "Cher Client";
+
+  if (!phoneNumber) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "phoneNumber is required",
+    );
+  }
+
+  // Format phone number
+  const formattedPhone = makeValidE164(phoneNumber);
+  if (!formattedPhone) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Could not format phone number",
+    );
+  }
+
+  // Generate the 4-digit code
+  const code = generate4DigitCode();
+
+  // Construct your message in Lingala or French as you prefer
+  const message = `${code} ezali code na yo - Fondation Gervais.`;
+
+  console.log(`Sending code '${code}' to phone: ${formattedPhone}`);
+
+  // Send SMS
+  try {
+    const response = await sms.send({
+      to: [formattedPhone],
+      message: message,
+    });
+    console.log("SMS send response:", response);
+  } catch (error) {
+    console.error("Error sending SMS via Africa's Talking:", error);
+    throw new functions.https.HttpsError(
+        "internal",
+        "Failed to send SMS. " + error.message,
+    );
+  }
+
+  // Optionally store the code in Firestore (if you want verification)
+  // Example: store in a subcollection "otpCodes" under the user's doc
+  /*
+  await admin.firestore().collection("otpCodes").add({
+    phoneNumber: formattedPhone,
+    code: code,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  */
+
+  // Return the code if you need it client-side or for debugging
+  return {
+    message: `Verification code sent to ${formattedPhone}`,
+    code: code,
   };
 });
