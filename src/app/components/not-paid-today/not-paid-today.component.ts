@@ -195,6 +195,7 @@ export class NotPaidTodayComponent {
         lastName: c.lastName,
         phoneNumber: c.phoneNumber,
         minPayment: min,
+        debtLeft: c.debtLeft,
       };
     });
 
