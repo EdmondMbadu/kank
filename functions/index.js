@@ -304,7 +304,7 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
 
   // Iterate through each client, format phone, build message, and send
   for (const client of clients) {
-    const {firstName, lastName, phoneNumber, minPayment, debtLeft} = client;
+    const {firstName, lastName, phoneNumber, minPayment, debtLeft, savings} = client;
     if (!phoneNumber) {
       console.log("Skipping client with no phone number:", client);
       failCount++;
@@ -323,7 +323,7 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
     const message = `Bonjour ${firstName || "Valued"} ${
       lastName || "Client"
     },\n` +
-    `Ozali programmer lelo pona kofuta  FC ${minPayment}. Otikali na niongo ya FC ${debtLeft}.\n` +
+    `Ozali programmer lelo pona kofuta  FC ${minPayment}. Otikali na niongo ya FC ${debtLeft}. Epargnes na yo ezali: FC ${savings}.\n` +
     `Merci pona confiance na Fondation Gervais.`;
 
     try {
