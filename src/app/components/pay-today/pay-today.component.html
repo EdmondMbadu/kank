@@ -11,11 +11,19 @@
   aria-current="page">
   Jour De Paiment
 </button>
+<input 
+type="number" 
+[(ngModel)]="weeksWithoutPayment" 
+min="1"
+placeholder="Entrez X semaines"
+class="border p-2 rounded w-24 text-center mx-2"
+/>
+
 <button
-[ngClass]="getButtonClasses('3+weeks')"
-(click)="setSerachCriteria('3+weeks')"
+[ngClass]="getButtonClasses(weeksWithoutPayment + '+weeks')"
+(click)="setSerachCriteria(weeksWithoutPayment + '+weeks')"
 aria-current="page">
-3+ Semaines Sans Payer
+{{ weeksWithoutPayment || 'X' }}+ Semaines Sans Payer
 </button>
 
 <button
