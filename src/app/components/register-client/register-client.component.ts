@@ -75,6 +75,7 @@ export class RegisterClientComponent implements OnInit {
   maxLendAmount: number = 400000;
 
   code: string = '';
+  blockChangeNumber: boolean = false;
   userEnteredCode: string = '';
   codeVerificationStatus: 'waiting' | 'correct' | 'incorrect' = 'waiting';
   isLoading: boolean = false;
@@ -424,6 +425,7 @@ export class RegisterClientComponent implements OnInit {
       next: (result) => {
         // console.log('Verification code sent:', result.code);
         this.code = result.code;
+        this.blockChangeNumber = true;
         // You can store result.code if you want local verification
         alert('Code de vérification envoyé avec succès');
         this.toggle('isLoading');
