@@ -35,6 +35,7 @@ export class NewCycleRegisterComponent implements OnInit {
   userEnteredCode: string = '';
   isLoading: boolean = false;
   codeVerificationStatus: 'waiting' | 'correct' | 'incorrect' | null = null;
+  blockChangeNumber: boolean = false;
 
   applicationFeeOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
@@ -332,6 +333,7 @@ export class NewCycleRegisterComponent implements OnInit {
       next: (result) => {
         // console.log('Verification code sent:', result.code);
         this.code = result.code;
+        this.blockChangeNumber = true;
         // You can store result.code if you want local verification
         alert('Code de vérification envoyé avec succès');
         this.toggle('isLoading');
