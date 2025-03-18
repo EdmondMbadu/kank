@@ -166,8 +166,9 @@ export class NewCycleRegisterComponent implements OnInit {
       return;
     } else if (
       Number(this.loanAmount) >
-      Number(this.auth.currentUser.monthBudget) -
-        Number(this.auth.currentUser.monthBudgetPending)
+        Number(this.auth.currentUser.monthBudget) -
+          Number(this.auth.currentUser.monthBudgetPending) &&
+      Number(this.client.creditScore) < 70
     ) {
       let diff =
         Number(this.auth.currentUser.monthBudget) -

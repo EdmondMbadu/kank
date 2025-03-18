@@ -123,7 +123,8 @@ export class TransformRegisterClientComponent implements OnInit {
       alert('Assurez-vous que vous avez choisis un Agent.');
       return;
     } else if (
-      Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget)
+      Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget) &&
+      Number(this.client.creditScore) < 70
     ) {
       alert(
         `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${this.auth.currentUser.monthBudget} FC`

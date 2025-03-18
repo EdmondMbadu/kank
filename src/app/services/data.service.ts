@@ -1119,10 +1119,14 @@ export class DataService {
       dailyMoneyRequests: {
         [client.requestDate!]: `${request}`,
       },
-      monthBudgetPending: (
-        Number(this.auth.currentUser.monthBudgetPending) +
-        Number(client.requestAmount)
-      ).toString(),
+      // ADDED CHECK FOR CREDIT SCORE >= 70
+      monthBudgetPending:
+        Number(client.creditScore) >= 70
+          ? this.auth.currentUser.monthBudgetPending // skip updating
+          : (
+              Number(this.auth.currentUser.monthBudgetPending) +
+              Number(client.requestAmount)
+            ).toString(),
 
       feesData: { [date]: `${dailyFees}` },
     };
@@ -1171,13 +1175,22 @@ export class DataService {
       totalDebtLeft: (
         Number(this.auth.currentUser.totalDebtLeft) + Number(client.amountToPay)
       ).toString(),
-      monthBudget: (
-        Number(this.auth.currentUser.monthBudget) - Number(client.loanAmount)
-      ).toString(),
-      monthBudgetPending: (
-        Number(this.auth.currentUser.monthBudgetPending) -
-        Number(client.requestAmount)
-      ).toString(),
+      // ADDED CHECK FOR CREDIT SCORE >= 70
+      monthBudget:
+        Number(client.creditScore) >= 70
+          ? this.auth.currentUser.monthBudget // skip updating
+          : (
+              Number(this.auth.currentUser.monthBudget) -
+              Number(client.loanAmount)
+            ).toString(),
+      // ADDED CHECK FOR CREDIT SCORE >= 70
+      monthBudgetPending:
+        Number(client.creditScore) >= 70
+          ? this.auth.currentUser.monthBudgetPending // skip updating
+          : (
+              Number(this.auth.currentUser.monthBudgetPending) -
+              Number(client.requestAmount)
+            ).toString(),
     };
     return userRef.set(data, { merge: true });
   }
