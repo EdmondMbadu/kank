@@ -250,7 +250,7 @@ exports.sendClientCompletionSMS = functions.firestore
         console.log(`Formatted phone number: ${formattedNumber}`);
 
         // Construct your message
-        const message = `Bonjour ${fullName},
+        const message = `${fullName},
 Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. Merci pona confiance na Fondation Gervais`;
 
         console.log(`Constructed message: ${message}`);
