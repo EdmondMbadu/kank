@@ -102,10 +102,7 @@ export class PayTodayComponent implements OnInit {
     this.searchCriteria = criteria;
     this.selectedField = criteria;
   }
-  setSearchCriteria(field: string) {
-    this.searchCriteria = field;
-    this.search(this.searchControl.value, field);
-  }
+
   getAgentUidByName(name: string) {
     name = name.toLowerCase();
     const foundAgent = this.employees.find(
@@ -262,93 +259,61 @@ export class PayTodayComponent implements OnInit {
                 return month === searchMonth && year === searchYear;
               }
               return false;
-            // case '3+weeks':
-            //   const THREE_WEEKS_IN_MS = 21 * 24 * 60 * 60 * 1000;
-            //   const now = new Date();
-            //   return client.debtCycleStartDate && client.payments
-            //     ? (() => {
-            //         const [startMonth, startDay, startYear] =
-            //           client.debtCycleStartDate.split('-').map(Number);
-            //         const debtCycleStartDate = new Date(
-            //           startYear,
-            //           startMonth - 1,
-            //           startDay
-            //         );
-
-            //         if (
-            //           now.getTime() - debtCycleStartDate.getTime() <
-            //           THREE_WEEKS_IN_MS
-            //         ) {
-            //           return false;
-            //         }
-
-            //         const recentPaymentExists = Object.keys(
-            //           client.payments
-            //         ).some((paymentDate) => {
-            //           const [payMonth, payDay, payYear] = paymentDate
-            //             .split('-')
-            //             .map(Number);
-            //           const paymentDateObj = new Date(
-            //             payYear,
-            //             payMonth - 1,
-            //             payDay
-            //           );
-            //           return (
-            //             now.getTime() - paymentDateObj.getTime() <
-            //             THREE_WEEKS_IN_MS
-            //           );
-            //         });
-
-            //         return !recentPaymentExists;
-            //       })()
-            //     : false;
-            default:
-              // Handle dynamic "X+ weeks" filtering
-              const weeksMatch = field.match(/^(\d+)\+weeks$/);
-              if (weeksMatch) {
-                const weeks = Number(weeksMatch[1]); // Extract user-entered X weeks
-                const WEEKS_IN_MS = weeks * 7 * 24 * 60 * 60 * 1000;
-                const now = new Date();
-
-                return client.debtCycleStartDate && client.payments
-                  ? (() => {
-                      const [startMonth, startDay, startYear] =
-                        client.debtCycleStartDate.split('-').map(Number);
-                      const debtCycleStartDate = new Date(
-                        startYear,
-                        startMonth - 1,
-                        startDay
-                      );
-
-                      // If the debt cycle start date is within the given number of weeks, exclude it
-                      if (
-                        now.getTime() - debtCycleStartDate.getTime() <
-                        WEEKS_IN_MS
-                      ) {
-                        return false;
-                      }
-
-                      // Check if there was a recent payment within the given number of weeks
-                      const recentPaymentExists = Object.keys(
-                        client.payments
-                      ).some((paymentDate) => {
-                        const [payMonth, payDay, payYear] = paymentDate
-                          .split('-')
-                          .map(Number);
-                        const paymentDateObj = new Date(
-                          payYear,
-                          payMonth - 1,
-                          payDay
-                        );
-                        return (
-                          now.getTime() - paymentDateObj.getTime() < WEEKS_IN_MS
-                        );
-                      });
-
-                      return !recentPaymentExists;
-                    })()
-                  : false;
+            case 'xWeeksWithoutPayment': {
+              // The user typed something (e.g. "3" or "5") into the search bar.
+              // Convert that to a number of weeks:
+              const weeks = parseInt(lowerCaseValue, 10);
+              if (isNaN(weeks) || weeks <= 0) {
+                // If they typed something not a valid number, skip or return false
+                return false;
               }
+
+              const WEEKS_IN_MS = weeks * 7 * 24 * 60 * 60 * 1000;
+              const now = new Date();
+
+              // We only filter if the client has a debtCycleStartDate AND payments
+              if (client.debtCycleStartDate && client.payments) {
+                const [startMonth, startDay, startYear] =
+                  client.debtCycleStartDate.split('-').map(Number);
+                const debtCycleStartDate = new Date(
+                  startYear,
+                  startMonth - 1,
+                  startDay
+                );
+
+                // If the total time since the debt cycle started is < X weeks, exclude
+                if (
+                  now.getTime() - debtCycleStartDate.getTime() <
+                  WEEKS_IN_MS
+                ) {
+                  return false;
+                }
+
+                // Check if the client made any payment within the last X weeks
+                const recentPaymentExists = Object.keys(client.payments).some(
+                  (paymentDate) => {
+                    const [payMonth, payDay, payYear] = paymentDate
+                      .split('-')
+                      .map(Number);
+                    const paymentDateObj = new Date(
+                      payYear,
+                      payMonth - 1,
+                      payDay
+                    );
+                    return (
+                      now.getTime() - paymentDateObj.getTime() < WEEKS_IN_MS
+                    );
+                  }
+                );
+
+                // We only want those who do NOT have a recent payment
+                // (meaning no payment within the last X weeks)
+                return !recentPaymentExists;
+              }
+              return false; // No start date or no payments
+            }
+
+            default:
               return false;
           }
         });
@@ -358,6 +323,7 @@ export class PayTodayComponent implements OnInit {
       this.numberOfPeople = current.length;
       return of(current);
     } else {
+      // If no search text is entered, decide whether to return all or none
       this.totalGivenDate = this.compute.computeExpectedPerDate([]);
       this.numberOfPeople = 0;
       return of(this.clients);
