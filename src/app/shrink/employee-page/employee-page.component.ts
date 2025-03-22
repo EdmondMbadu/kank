@@ -35,6 +35,8 @@ export class EmployeePageComponent implements OnInit {
   onTime: string = '';
 
   locationCoordinate: LocationCoordinates = {};
+  // For tracking which payment index we're attaching a receipt for
+  currentReceiptIndex: number | null = null;
 
   withinRadius: boolean | null = null;
   errorMessage: string | null = null;
@@ -1143,5 +1145,90 @@ export class EmployeePageComponent implements OnInit {
 
     // Return the formatted date
     return `${trimmedMonth}-${trimmedDay}-${year}`;
+  }
+
+  /** Called when user clicks "Attach/Change Receipt" button */
+  attachReceipt(index: number) {
+    // Save which index we are about to attach or replace
+    this.currentReceiptIndex = index;
+
+    // Programmatically open the hidden file input
+    const fileInput = document.getElementById(
+      'receiptFileInput'
+    ) as HTMLInputElement;
+    fileInput.click();
+  }
+
+  /** Called when user picks a file from the system file dialog */
+  async onReceiptFileSelected(fileList: FileList) {
+    const file = fileList?.item(0);
+    if (!file) return;
+
+    // Optionally, check file type, size, or convert HEIC to PNG
+    if (file.type.split('/')[0] !== 'image') {
+      alert('Seuls les fichiers images sont acceptés comme reçus.');
+      return;
+    }
+
+    if (file.size >= 5_000_000) {
+      alert('Le fichier est trop grand (max 5MB).');
+      return;
+    }
+
+    let fileToUpload = file;
+    // Example: if you want to convert HEIC to PNG
+    if (file.type === 'image/heic') {
+      try {
+        const heic2any = (await import('heic2any')).default;
+        const convertedBlob: any = await heic2any({
+          blob: file,
+          toType: 'image/png',
+          quality: 0.7,
+        });
+        fileToUpload = new File([convertedBlob], `${file.name}.png`, {
+          type: 'image/png',
+        });
+      } catch (error) {
+        console.error('Erreur de conversion HEIC -> PNG :', error);
+        return;
+      }
+    }
+
+    // Make sure we know which index we are updating
+    if (this.currentReceiptIndex === null) {
+      console.error('No currentReceiptIndex set. Cannot attach receipt.');
+      return;
+    }
+
+    try {
+      // e.g. "receipts/firstname-lastname-receipt{index}.png"
+      const path = `receipts/${this.employee.firstName}-${this.employee.lastName}-receipt${this.currentReceiptIndex}`;
+
+      // Upload to Firebase Storage
+      const uploadTask = await this.storage.upload(path, fileToUpload);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      // Ensure receipts array is defined & large enough
+      if (!this.employee.receipts) {
+        this.employee.receipts = [];
+      }
+      // If the array is too short, fill up with empty strings
+      while (this.employee.receipts.length <= this.currentReceiptIndex) {
+        this.employee.receipts.push('');
+      }
+
+      // Insert or replace
+      this.employee.receipts[this.currentReceiptIndex] = downloadURL;
+
+      // Now update Firestore with the new `receipts` array
+      await this.data.updateEmployeeReceiptsField(this.employee);
+      alert('Reçu ajouté/modifié avec succès!');
+    } catch (error) {
+      console.error("Erreur d'upload :", error);
+      alert("Impossible d'ajouter le reçu. Réessayez.");
+    } finally {
+      // Reset the index so we don't accidentally overwrite another payment
+      this.currentReceiptIndex = null;
+    }
   }
 }

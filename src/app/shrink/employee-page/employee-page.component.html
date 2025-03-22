@@ -341,7 +341,7 @@
     <div *ngIf="code===paymentCode" class="flow-root">
             <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
                 <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let p of paymentAmounts; let i=index">
-                    <a [href]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]"target="_blank">
+
                     <div class="flex items-center space-x-4">
                      <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
                          <span class="font-medium text-gray-600 dark:text-gray-300">{{this.auth.currentUser.firstName?.substring(0,2)}}</span>
@@ -359,15 +359,48 @@
                             
                          $ {{paymentAmounts[i] | number:'1.0-0'}}
                         </div>
-                        <img [src]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]" class="w-12" alt="">
+
                     </div>
-                    </a>
+                    <div class="container flex flex-row items-center space-x-8 mx-auto justify-center">
+
+                            
+                                    <a [href]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]"target="_blank">
+                                        <img src="../../../assets/img/receipt.png" class="w-12 h-12 object-cover rounded-md border" alt="">
+                                    </a>
+                                    <!-- If receipt[i] is set, show an image/link + "Change" button -->
+                        <ng-container *ngIf="employee.receipts && employee.receipts[paymentAmounts.length - 1 - i]">
+                        <a [href]="employee.receipts[paymentAmounts.length - 1 - i]" target="_blank">
+                            <img src="../../../assets/img/validating-ticket.png"
+                                class="w-12 h-12 object-cover rounded-md border"
+                                alt="Bank Transfer Receipt" />
+                        </a>
+                        <button *ngIf="this.auth.isAdmin" (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                        class="px-2 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 my-2 mx-auto">
+                        Changer Reçu
+                        </button>
+                        </ng-container>
+
+                        <!-- Otherwise, if no receipt, show "Attach" button -->
+                        <ng-container *ngIf="!employee.receipts ||
+                                    !employee.receipts[paymentAmounts.length - 1 - i]">
+                        <button *ngIf="this.auth.isAdmin" (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                        class="px-2 py-1 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700 my-2 mx-auto">
+                        Attacher Reçu
+                        </button>
+                        </ng-container>
+                    </div>
                 </li>
             </ul>
     </div>
     
     </div>
     
+    <input
+    type="file"
+    id="receiptFileInput"
+    style="display: none;"
+    (change)="onReceiptFileSelected($any($event.target).files)"
+  />
   
 
 

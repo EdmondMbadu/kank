@@ -55,6 +55,7 @@ export class Employee {
   bank?: string;
   tempUser?: User;
   showAttendance?: boolean;
+  receipts?: string[];
 }
 export class Avatar {
   path?: string;

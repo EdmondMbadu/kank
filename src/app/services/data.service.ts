@@ -821,6 +821,14 @@ export class DataService {
     };
     return employeeRef.set(data, { merge: true });
   }
+  // In data.service.ts (or wherever):
+  updateEmployeeReceiptsField(employee: Employee) {
+    const docRef = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+    // or `users/${this.auth.currentUser.uid}/employees/${employee.uid}`, depending on your structure
+    return docRef.update({ receipts: employee.receipts });
+  }
 
   updateUserInfoForClientCardPayment(deposit: string) {
     let date = this.time.todaysDateMonthDayYear();
