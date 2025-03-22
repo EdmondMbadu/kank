@@ -182,9 +182,6 @@ export class NewCycleRegisterComponent implements OnInit {
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
       return;
-    } else if (this.codeVerificationStatus !== 'correct') {
-      alert('Veuillez vérifier votre code de vérification');
-      return;
     } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
       alert(
         `Vous avez depassez la limite de clients autorisez. La limite est de ${
@@ -194,7 +191,10 @@ export class NewCycleRegisterComponent implements OnInit {
         } clients avant d'ajouter.`
       );
       return;
-    } else if (this.savingsPaidAtleast10PercentOfLoanAmount() === false) {
+    } else if (this.savingsPaidAtleast30PercentOfLoanAmount() === false) {
+      return;
+    } else if (this.codeVerificationStatus !== 'correct') {
+      alert('Veuillez vérifier votre code de vérification');
       return;
     } else {
       let conf = confirm(
@@ -260,14 +260,14 @@ export class NewCycleRegisterComponent implements OnInit {
     return null;
   }
 
-  savingsPaidAtleast10PercentOfLoanAmount() {
+  savingsPaidAtleast30PercentOfLoanAmount() {
     let savings = Number(this.savings) + Number(this.client.savings);
     let loanAmount = Number(this.loanAmount);
-    let savingsToAdd = Number(loanAmount) * 0.1 - Number(this.client.savings);
-    if (savings < loanAmount * 0.1) {
+    let savingsToAdd = Number(loanAmount) * 0.3 - Number(this.client.savings);
+    if (savings < loanAmount * 0.3) {
       alert(
-        `Le montant d'épargne doit être au moins 10% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${
-          loanAmount * 0.1
+        `Le montant d'épargne doit être au moins 30% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${
+          loanAmount * 0.3
         } FC. Vous devez ajouter au moins ${savingsToAdd} FC d'épargne pour continuer.`
       );
       return false;

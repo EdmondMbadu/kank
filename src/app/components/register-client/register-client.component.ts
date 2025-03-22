@@ -142,9 +142,6 @@ export class RegisterClientComponent implements OnInit {
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLendAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
       return;
-    } else if (this.codeVerificationStatus !== 'correct') {
-      alert('Veuillez vérifier votre code de vérification');
-      return;
     } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
       alert(
         `Vous avez depassez la limite de clients autorisez. La limite est de ${
@@ -154,11 +151,16 @@ export class RegisterClientComponent implements OnInit {
         } clients avant d'ajouter.`
       );
       return;
+    } else if (this.savingsPaidAtleast30PercentOfLoanAmount() === false) {
+      return;
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
         - Est Dans L'intervalle D'Une Semaine\n
         - N'est Pas Aujourdhui ou au Passé
         `);
+      return;
+    } else if (this.codeVerificationStatus !== 'correct') {
+      alert('Veuillez vérifier votre code de vérification');
       return;
     } else {
       let conf = confirm(
@@ -452,5 +454,19 @@ export class RegisterClientComponent implements OnInit {
     } else {
       this.codeVerificationStatus = 'incorrect';
     }
+  }
+  savingsPaidAtleast30PercentOfLoanAmount() {
+    let savings = Number(this.savings);
+    let loanAmount = Number(this.loanAmount);
+    let savingsToAdd = Number(loanAmount) * 0.3;
+    if (savings < loanAmount * 0.3) {
+      alert(
+        `Le montant d'épargne doit être au moins 30% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${
+          loanAmount * 0.3
+        } FC. Vous devez ajouter au moins ${savingsToAdd} FC d'épargne pour continuer.`
+      );
+      return false;
+    }
+    return true;
   }
 }
