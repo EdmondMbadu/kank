@@ -7,6 +7,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { DataService } from 'src/app/services/data.service';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 
 @Component({
   selector: 'app-home-central',
@@ -19,11 +20,15 @@ export class HomeCentralComponent implements OnInit {
     public auth: AuthService,
     private time: TimeService,
     private compute: ComputationService,
-    private data: DataService
+    private data: DataService,
+    private fns: AngularFireFunctions
   ) {}
   isFetchingClients = false;
   currentClients: Array<Client[]> = [];
+  allcurrentClientsWithDebts: Client[] = [];
+  allCurrentClientsWithDebtsScheduledToPayToday: Client[] = [];
   allUsers: User[] = [];
+  theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
   ngOnInit(): void {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
@@ -106,7 +111,9 @@ export class HomeCentralComponent implements OnInit {
   sContent: string[] = [];
 
   initalizeInputs() {
+    console.log('the day', this.theDay);
     this.findClientsWithoutDebtsButWithSavings();
+    this.findAllClientsWithDebts();
     let reserve = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'reserveAmount')
       .toString();
@@ -168,6 +175,31 @@ export class HomeCentralComponent implements OnInit {
     return this.allCurrentClients?.length;
   }
 
+  findAllClientsWithDebts() {
+    this.allcurrentClientsWithDebts =
+      this.data.findClientsWithDebtsIncludingThoseWhoLeft(this.allClients!);
+
+    console.log(
+      'all current clients with debts',
+      this.allcurrentClientsWithDebts
+    );
+    this.allCurrentClientsWithDebtsScheduledToPayToday =
+      this.allcurrentClientsWithDebts.filter((data) => {
+        return (
+          data.paymentDay === this.theDay &&
+          data &&
+          this.data.didClientStartThisWeek(data) // this condition can be confusing. it is the opposite
+        );
+      });
+    console.log(
+      'all current clients with debts scheduled to pay today',
+      this.allCurrentClientsWithDebtsScheduledToPayToday
+    );
+    return this.allcurrentClientsWithDebts?.length
+      ? this.allcurrentClientsWithDebts
+      : [];
+  }
+
   // find clients with debts =0 and savings > 10
   findClientsWithoutDebtsButWithSavings() {
     this.savingsWithoutDebtsButWithSavings = 0;
@@ -181,5 +213,40 @@ export class HomeCentralComponent implements OnInit {
     });
     this.savingsWithoutDebtsButWithSavings = total;
     return this.allClientsWithoutDebtsButWithSavings?.length;
+  }
+  sendReminders() {
+    if (
+      !this.allCurrentClientsWithDebtsScheduledToPayToday ||
+      this.allCurrentClientsWithDebtsScheduledToPayToday.length === 0
+    ) {
+      console.log('No clients to remind.');
+      return;
+    }
+
+    // We only send the fields necessary for the SMS
+    const clientsPayload =
+      this.allCurrentClientsWithDebtsScheduledToPayToday.map((c) => {
+        const min = this.data.minimumPayment(c);
+        return {
+          firstName: c.firstName,
+          lastName: c.lastName,
+          phoneNumber: c.phoneNumber,
+          minPayment: min,
+          debtLeft: c.debtLeft,
+          savings: c.savings,
+        };
+      });
+
+    const callable = this.fns.httpsCallable('sendPaymentReminders');
+    callable({ clients: clientsPayload }).subscribe({
+      next: (result: any) => {
+        console.log('Reminder SMS function result:', result);
+        alert('Reminders sent successfully!');
+      },
+      error: (err: any) => {
+        console.error('Error calling reminder function', err);
+        alert('Error sending reminders. Please try again.');
+      },
+    });
   }
 }

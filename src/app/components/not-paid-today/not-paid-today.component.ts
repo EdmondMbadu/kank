@@ -8,6 +8,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { TimeService } from 'src/app/services/time.service';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { min } from 'rxjs';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-not-paid-today',
@@ -37,7 +38,8 @@ export class NotPaidTodayComponent {
     public auth: AuthService,
     private time: TimeService,
     private compute: ComputationService,
-    private fns: AngularFireFunctions
+    private fns: AngularFireFunctions,
+    private data: DataService
   ) {
     this.retrieveClients();
   }
@@ -171,15 +173,6 @@ export class NotPaidTodayComponent {
     this.retrieveClients();
   }
 
-  minimumPayment(client: Client) {
-    const pay = Number(client.amountToPay) / Number(client.paymentPeriodRange);
-
-    // make sure that if the client has a debt less than the minimum payment, we only ask for the debt
-    if (client.debtLeft && Number(client.debtLeft) < pay) {
-      return client.debtLeft;
-    }
-    return pay.toString();
-  }
   // 3) Method to call the Cloud Function
   sendReminders() {
     if (!this.haveNotPaidToday || this.haveNotPaidToday.length === 0) {
@@ -189,7 +182,7 @@ export class NotPaidTodayComponent {
 
     // We only send the fields necessary for the SMS
     const clientsPayload = this.haveNotPaidToday.map((c) => {
-      const min = this.minimumPayment(c);
+      const min = this.data.minimumPayment(c);
       return {
         firstName: c.firstName,
         lastName: c.lastName,

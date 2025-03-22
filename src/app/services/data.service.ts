@@ -1630,6 +1630,22 @@ export class DataService {
     // return clients
     return clients;
   }
+  findClientsWithDebtsIncludingThoseWhoLeft(clients: Client[]) {
+    clients = clients!.filter((data) => {
+      return Number(data.debtLeft) > 0;
+    });
+    // return clients
+    return clients;
+  }
+  minimumPayment(client: Client) {
+    const pay = Number(client.amountToPay) / Number(client.paymentPeriodRange);
+
+    // make sure that if the client has a debt less than the minimum payment, we only ask for the debt
+    if (client.debtLeft && Number(client.debtLeft) < pay) {
+      return client.debtLeft;
+    }
+    return pay.toString();
+  }
 
   findTotalDebtLeft(clients: Client[]) {
     // just to make sure we will filter again
