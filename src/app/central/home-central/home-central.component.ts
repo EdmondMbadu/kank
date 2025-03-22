@@ -215,6 +215,7 @@ export class HomeCentralComponent implements OnInit {
     return this.allClientsWithoutDebtsButWithSavings?.length;
   }
   sendReminders() {
+    // 1. Check if there are any clients to remind
     if (
       !this.allCurrentClientsWithDebtsScheduledToPayToday ||
       this.allCurrentClientsWithDebtsScheduledToPayToday.length === 0
@@ -223,24 +224,26 @@ export class HomeCentralComponent implements OnInit {
       return;
     }
 
-    // We only send the fields necessary for the SMS
+    // 2. Prepare the payload for all clients at once
     const clientsPayload =
-      this.allCurrentClientsWithDebtsScheduledToPayToday.map((c) => {
-        const min = this.data.minimumPayment(c);
+      this.allCurrentClientsWithDebtsScheduledToPayToday.map((client) => {
+        const minPayment = this.data.minimumPayment(client);
         return {
-          firstName: c.firstName,
-          lastName: c.lastName,
-          phoneNumber: c.phoneNumber,
-          minPayment: min,
-          debtLeft: c.debtLeft,
-          savings: c.savings,
+          firstName: client.firstName,
+          lastName: client.lastName,
+          phoneNumber: client.phoneNumber,
+          minPayment,
+          debtLeft: client.debtLeft,
+          savings: client.savings,
         };
       });
 
+    // 3. Call the Cloud Function once, passing in the entire clients array
     const callable = this.fns.httpsCallable('sendPaymentReminders');
     callable({ clients: clientsPayload }).subscribe({
       next: (result: any) => {
-        console.log('Reminder SMS function result:', result);
+        console.log('Reminder function result:', result);
+        // 4. Only one alert after the batch completes
         alert('Reminders sent successfully!');
       },
       error: (err: any) => {

@@ -417,3 +417,100 @@ exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
     code: code,
   };
 });
+
+
+exports.sendClientRegistrationSMS = functions.firestore
+    .document("users/{userId}/clients/{clientId}")
+    .onWrite(async (change, context) => {
+    // Exit if the document is deleted
+      if (!change.after.exists) {
+        console.log("Document was deleted. Exiting...");
+        return null;
+      }
+      const beforeData = change.before.data() || {};
+      const afterData = change.after.data() || {};
+
+      // Check if we have *transitioned* to the register state
+      const wasRegister = isRegisterState(beforeData);
+      const isRegister = isRegisterState(afterData);
+
+      if (!isRegister) {
+        // Not in registration state after the update => do nothing
+        console.log("Not a registration state. Exiting...");
+        return null;
+      }
+
+      if (wasRegister && isRegister) {
+        // Already was in registration state => no change => do nothing
+        console.log("Already in registration state, no change. Exiting...");
+        return null;
+      }
+
+      // ---- If we reach here, we *just* transitioned to 'register' state ----
+      console.log("Client transitioned to registration state. Proceeding with SMS...");
+
+
+      // ---- Gather necessary fields ----
+      const firstName = afterData.firstName || "";
+      const lastName = afterData.lastName || "";
+      const fullName = `${firstName} ${lastName}`.trim() || "Valued Client";
+
+      const phoneNumber = afterData.phoneNumber;
+      if (!phoneNumber) {
+        console.log("No phone number found for this client. Skipping SMS...");
+        return null;
+      }
+
+      // Validate or convert phone number to E.164 (if needed)
+      const formattedNumber = makeValidE164(phoneNumber);
+      if (!formattedNumber) {
+        console.log(`Invalid phone number format: ${phoneNumber}`);
+        return null;
+      }
+
+      // Summation of fees: membership + application
+      const membershipFee = Number(afterData.membershipFee || 0);
+      const applicationFee = Number(afterData.applicationFee || 0);
+      const frais = membershipFee + applicationFee;
+
+      // The total loan amount
+      const montant = afterData.loanAmount || "N/A";
+
+      // Savings (already updated in your app when they register)
+      const savings = afterData.savings || 0;
+
+      // requestDate is stored in MM-DD-YYYY, but you want DD/MM/YYYY
+      const requestDateRaw = afterData.requestDate; // e.g. "3-18-2025"
+      const requestDate = formatDate(requestDateRaw);
+
+      // ---- Construct your SMS message ----
+      // Example in Lingala (based on your snippet):
+      const message = `${fullName},
+Osengi niongo ya ${montant} FC. Niongo okozua yango le ${requestDate}.
+Ofuti mobongo ya frais nionso ${frais} FC. Epargnes na yo otie ezali ${savings} FC.
+Merci pona confiance na Fondation Gervais`;
+
+      console.log("Registration SMS message:", message);
+      console.log("Sending to:", formattedNumber);
+
+      // ---- Send the SMS using your Africa's Talking (or other) SDK ----
+      try {
+        const response = await sms.send({
+          to: [formattedNumber],
+          message: message,
+        });
+        console.log(`SMS sent to ${formattedNumber}:`, response);
+      } catch (error) {
+        console.error("Error sending registration SMS:", error);
+      }
+
+      return null;
+    });
+
+function isRegisterState(data) {
+  return (
+    data.type === "register" &&
+        data.requestStatus === "pending" &&
+        data.requestType === "lending"
+  );
+}

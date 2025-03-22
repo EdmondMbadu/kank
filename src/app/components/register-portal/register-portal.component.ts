@@ -83,7 +83,7 @@ export class RegiserPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      console.log('Current client references', this.client.references);
+      console.log('Current client ', this.client);
       this.setGraphCredit();
       this.setFields();
       this.setGraphWorthiness();
