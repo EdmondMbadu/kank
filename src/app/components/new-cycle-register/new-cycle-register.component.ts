@@ -182,7 +182,12 @@ export class NewCycleRegisterComponent implements OnInit {
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
       return;
-    } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
+    } // if the client has reached the maximum number of clients allowed and the credit score is less than 70 for the given client. don't register them.
+    // but if the credit score of the given client is greater than 70, then register them regardless of the  number of clients the team has.
+    else if (
+      this.numberOfCurrentClients >= this.maxNumberOfClients &&
+      Number(this.client.creditScore) < 70
+    ) {
       alert(
         `Vous avez depassez la limite de clients autorisez. La limite est de ${
           this.maxNumberOfClients
