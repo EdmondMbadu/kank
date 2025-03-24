@@ -40,6 +40,7 @@ export class ClientPortalComponent {
   isSilver: boolean = false;
   isGold: boolean = false;
   isPlatinum: boolean = false;
+  isPhoneNumberCorrect: string = '';
 
   public graphCredit = {
     data: [
@@ -181,6 +182,9 @@ export class ClientPortalComponent {
     if (this.client.amountPaid) {
       this.amountPaid = this.client.amountPaid;
     }
+    if (this.client.isPhoneCorrect) {
+      this.isPhoneNumberCorrect = this.client.isPhoneCorrect;
+    }
   }
 
   determineTrophy() {
@@ -193,8 +197,8 @@ export class ClientPortalComponent {
     }
   }
 
-  async setClientField(field: string, value: any) {
-    if (!this.compute.isNumber(value)) {
+  async setClientField(field: string, value: any, skip: boolean = false) {
+    if (!this.compute.isNumber(value) && !skip) {
       alert('Enter a valid number');
       return;
     }

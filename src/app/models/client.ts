@@ -57,6 +57,7 @@ export class Client {
   creditworthinessScore?: string;
   cycleId?: string;
   comments?: Comment[];
+  isPhoneCorrect?: string;
 }
 
 export class Comment {

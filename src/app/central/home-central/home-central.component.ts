@@ -188,7 +188,8 @@ export class HomeCentralComponent implements OnInit {
         return (
           data.paymentDay === this.theDay &&
           data &&
-          this.data.didClientStartThisWeek(data) // this condition can be confusing. it is the opposite
+          this.data.didClientStartThisWeek(data) && // this condition can be confusing. it is the opposite
+          data.isPhoneCorrect !== 'false' // filter out fake numbers because we are wasting money in that case
         );
       });
     console.log(
