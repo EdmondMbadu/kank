@@ -1628,18 +1628,27 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
+  findClientsWithDebts(clients: Client[] | null | undefined): Client[] {
+    if (!Array.isArray(clients)) {
+      return [];
+    }
 
-  findClientsWithDebts(clients: Client[]) {
-    clients = clients!.filter((data) => {
+    return clients.filter((data) => {
       const isAlive =
         data.vitalStatus === undefined ||
-        data.vitalStatus.toLowerCase() === 'vivant';
-      return isAlive && Number(data.debtLeft) > 0;
+        data.vitalStatus?.toLowerCase() === 'vivant';
+
+      const debt = Number(data.debtLeft);
+      const hasDebt = !isNaN(debt) && debt > 0;
+
+      return isAlive && hasDebt;
     });
-    // return clients
-    return clients;
   }
+
   findClientsWithDebtsIncludingThoseWhoLeft(clients: Client[]) {
+    if (!Array.isArray(clients)) {
+      return [];
+    }
     clients = clients!.filter((data) => {
       return Number(data.debtLeft) > 0;
     });
