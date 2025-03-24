@@ -52,13 +52,26 @@ export class ClientInfoSavingsComponent implements OnInit {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
       return of(
-        this.clients!.filter(
-          (client) =>
-            client.firstName?.toLowerCase().includes(lowerCaseValue) ||
-            client.lastName?.toLowerCase().includes(lowerCaseValue) ||
-            client.middleName?.toLowerCase().includes(lowerCaseValue) ||
-            client.amountPaid?.includes(lowerCaseValue)
-        )
+        this.clients!.filter((client) => {
+          try {
+            return (
+              client.firstName?.toLowerCase().includes(lowerCaseValue) ||
+              client.lastName?.toLowerCase().includes(lowerCaseValue) ||
+              client.middleName?.toLowerCase().includes(lowerCaseValue) ||
+              client.phoneNumber?.toLowerCase().includes(lowerCaseValue) ||
+              client.amountPaid?.toString().includes(lowerCaseValue) // Safely convert
+            );
+          } catch (err) {
+            console.error(
+              'Error with client:',
+              client,
+              'amountPaid:',
+              client.amountPaid,
+              err
+            );
+            return false;
+          }
+        })
       );
     } else {
       return of(this.clients);
