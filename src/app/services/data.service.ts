@@ -380,6 +380,7 @@ export class DataService {
       requestAmount: client.requestAmount,
       requestStatus: 'pending',
       requestType: 'lending',
+      isPhoneCorrect: 'true',
       requestDate: client.requestDate,
       dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,
