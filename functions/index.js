@@ -514,3 +514,206 @@ function isRegisterState(data) {
         data.requestType === "lending"
   );
 }
+
+
+// Utility: convert "MM-DD-YYYY" to "YYYY/MM/DD" for JS Date()
+function convertToDateCompatibleFormat(dateStr) {
+  const [month, day, year] = dateStr.split("-");
+  return `${year}/${month}/${day}`;
+}
+
+/**
+ * didClientStartThisWeek(client)
+ * Returns false if client started their debt cycle in the last 6 days
+ * (meaning 'debtCycleStartDate' is > oneWeekAgo).
+ */
+function didClientStartThisWeek(client) {
+  if (!client.debtCycleStartDate) {
+    // If missing, decide your default. We'll assume "true" so they won't be filtered out.
+    return true;
+  }
+
+  const oneWeekAgo = new Date();
+  // Subtract 6 days
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 6);
+
+  const formatted = convertToDateCompatibleFormat(client.debtCycleStartDate);
+  const debtCycleStartDate = new Date(formatted);
+
+  // If they started more recently than oneWeekAgo => false
+  if (debtCycleStartDate > oneWeekAgo) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * findClientsWithDebtsIncludingThoseWhoLeft
+ * Returns only clients where debtLeft > 0
+ */
+function findClientsWithDebtsIncludingThoseWhoLeft(clients) {
+  if (!Array.isArray(clients)) return [];
+  return clients.filter((c) => Number(c.debtLeft) > 0);
+}
+
+/**
+ * minimumPayment(client)
+ * If the remaining debt (debtLeft) is less than the "standard" min payment,
+ * we only ask for the remaining debt. Otherwise, ask for pay = amountToPay / paymentPeriodRange.
+ */
+function minimumPayment(client) {
+  const pay = Number(client.amountToPay) / Number(client.paymentPeriodRange);
+
+  if (
+    client.debtLeft &&
+    Number(client.debtLeft) > 0 &&
+    Number(client.debtLeft) < pay
+  ) {
+    // Use the leftover debt as the min payment
+    return Number(client.debtLeft);
+  }
+
+  // Otherwise, the normal min
+  return pay; // can return as number or string, but let's keep it numeric for clarity
+}
+
+
+/**
+ * SCHEDULED FUNCTION:
+ * Runs daily at 08:00 Africa/Kinshasa Time
+ * Fetches all users except mode="testing", collects clients,
+ * filters them, calculates minPayment, and sends SMS reminders
+ */
+exports.scheduledSendReminders = functions.pubsub
+    .schedule("0 8 * * *")
+    .timeZone("Africa/Kinshasa")
+    .onRun(async (context) => {
+      console.log("===> Starting scheduledSendReminders at 8AM Kinshasa time...");
+
+      try {
+      // 1. Identify today's weekday => "Monday", "Tuesday", etc.
+        const theDay = new Date().toLocaleString("en-US", {weekday: "long"});
+        console.log("===> Today is:", theDay);
+
+        // 2. Fetch all users except those with mode="testing"
+        const usersSnapshot = await admin
+            .firestore()
+            .collection("users")
+            .where("mode", "!=", "testing")
+            .get();
+
+        if (usersSnapshot.empty) {
+          console.log("No users found (excl. mode='testing'). Exiting...");
+          return null;
+        }
+
+        // 3. For each user, get sub-collection "clients"
+        const allClients = [];
+        for (const userDoc of usersSnapshot.docs) {
+          const userId = userDoc.id;
+
+          const clientSnapshot = await admin
+              .firestore()
+              .collection("users")
+              .doc(userId)
+              .collection("clients")
+              .get();
+
+          if (!clientSnapshot.empty) {
+            clientSnapshot.forEach((cDoc) => {
+            // Add doc data to allClients array
+              allClients.push({
+                ...cDoc.data(),
+                docId: cDoc.id,
+                userId,
+              });
+            });
+          }
+        }
+
+        if (allClients.length === 0) {
+          console.log("No clients found across all non-testing users. Exiting...");
+          return null;
+        }
+
+        // 4. Filter to only those with debts
+        const clientsWithDebts = findClientsWithDebtsIncludingThoseWhoLeft(allClients);
+
+        // 5. Filter by paymentDay, isPhoneCorrect, and didClientStartThisWeek
+        const clientsToRemind = clientsWithDebts.filter((client) => {
+          return (
+            client.paymentDay === theDay &&
+          client.isPhoneCorrect !== "false" &&
+          didClientStartThisWeek(client)
+          );
+        });
+
+        if (clientsToRemind.length === 0) {
+          console.log("No clients need reminders today after filtering. Exiting...");
+          return null;
+        }
+
+        // 6. Send SMS to each valid client
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const client of clientsToRemind) {
+          const {
+            firstName,
+            lastName,
+            phoneNumber,
+            debtLeft,
+            savings,
+          } = client;
+
+          // Calculate minPayment with your logic
+          //   amountToPay / paymentPeriodRange
+          //   or leftover debt if smaller
+          const minPay = minimumPayment(client);
+
+          // Format phone
+          if (!phoneNumber) {
+            console.log("Skipping client with no phone number:", client);
+            failCount++;
+            continue;
+          }
+          const formattedNumber = makeValidE164(phoneNumber);
+          if (!formattedNumber) {
+            console.log(`Skipping invalid phone number: ${phoneNumber}`);
+            failCount++;
+            continue;
+          }
+
+          // Construct your reminder message
+          const message = `Bonjour ${firstName || "Valued"} ${
+            lastName || "Client"
+          },\n` +
+          `Ozali programmer lelo pona kofuta ${minPay} FC. ` +
+          `Otikali na niongo ya ${debtLeft} FC. ` +
+          `Epargnes na yo ezali: ${savings}FC.\n` +
+          `Merci pona confiance na Fondation Gervais.`;
+
+          try {
+          // Send SMS via Africa's Talking
+            const response = await sms.send({
+              to: [formattedNumber],
+              message,
+            });
+            // console.log(`SMS sent to ${formattedNumber} =>`, message);
+            console.log(`SMS sent to ${formattedNumber} =>`, response);
+            successCount++;
+          } catch (error) {
+            console.error(`Error sending SMS to ${formattedNumber}:`, error);
+            failCount++;
+          }
+        }
+
+        console.log(
+            `===> Reminders done. Success: ${successCount}, Failed: ${failCount}`,
+        );
+        return null;
+      } catch (error) {
+        console.error("Error in scheduledSendReminders:", error);
+        throw error; // Let Firebase log it as a function error
+      }
+    });
