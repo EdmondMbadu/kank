@@ -183,6 +183,7 @@ export class ReserveComponent {
     // Auto-dismiss after 6 seconds
     setTimeout(() => {
       this.showTooltip = false;
+      this.router.navigate(['/today']);
     }, 10000);
   }
 
@@ -210,5 +211,6 @@ export class ReserveComponent {
 
   closeTooltip() {
     this.showTooltip = false;
+    this.router.navigate(['/today']);
   }
 }
