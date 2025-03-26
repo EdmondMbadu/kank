@@ -75,3 +75,38 @@
         </ul>
    </div>
    </div>
+<!-- The rest of your component's HTML here ... -->
+
+<!-- Popup overlay + container -->
+<div *ngIf="showTooltip"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <!-- The popup card, tailwind classes + dynamic color -->
+  <div [ngClass]="tooltipColor"
+       class="relative w-full max-w-lg mx-4 p-6 rounded shadow-md text-center">
+
+    <!-- 'X' Close button in top-right corner -->
+    <button (click)="closeTooltip()"
+            class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 font-bold text-lg focus:outline-none">
+      X
+    </button>
+
+    <!-- Emphasized daily percentage -->
+    <div class="text-5xl font-extrabold mb-4">
+      {{ dailyPercentage.toFixed(0) }}%
+    </div>
+
+    <!-- The main text -->
+    <p class="mb-6">
+      {{ tooltipMessage }}
+    </p>
+
+    <!-- "Fermer" button at bottom -->
+    <button (click)="closeTooltip()"
+            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded focus:outline-none">
+      Fermer
+    </button>
+  </div>
+</div>
+
+  
+  
