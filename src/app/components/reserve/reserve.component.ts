@@ -101,7 +101,7 @@ export class ReserveComponent {
   getCurrentUserReserve() {
     this.auth.user$.subscribe((user) => {
       this.currentUser = user;
-      this.reserveAmount = '';
+
       this.reserve = this.currentUser.reserve;
       console.log('currentUser reserve', this.currentUser.reserve);
 
