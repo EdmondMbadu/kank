@@ -113,7 +113,7 @@
         </div>
     </div>
     <div class="flex container flex-col md:flex-row mx-auto justify-center ">
-        <a type="submit" class="text-white bg-green-700 hover:bg-green-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"  [routerLink]="['/request-update',id ]">Demande de Mise à Jour</a>
+        <a *ngIf="this.auth.isAdmin" type="submit" class="text-white bg-green-700 hover:bg-green-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"  [routerLink]="['/request-update',id ]">Demande de Mise à Jour</a>
     <button *ngIf="client.type==='register'"  type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="cancelRegistration()">Annuler Enregistrement</button>
    
 </div>
