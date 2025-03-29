@@ -22,6 +22,7 @@ export class RequestClientCardComponent {
   requestAmount: string = '';
   requestDate: string = '';
   clientCard: Card = new Card();
+  totalPaidToday: number = 0;
   constructor(
     private activatedRoute: ActivatedRoute,
     public auth: AuthService,
@@ -40,6 +41,11 @@ export class RequestClientCardComponent {
   retrieveClientCard(): void {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
+      console.log('this.clientCard', this.clientCard);
+      this.totalPaidToday = this.sumPaymentsMadeToday(
+        this.clientCard.payments!
+      );
+
       this.amountToReturnToClient = (
         Number(this.clientCard.amountPaid) - Number(this.clientCard.amountToPay)
       ).toString();
@@ -52,8 +58,19 @@ export class RequestClientCardComponent {
     let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
       this.requestDate
     );
+    const amountToReturnNum = Number(this.amountToReturnToClient);
     if (this.amountToReturnToClient === '') {
       alert('Remplissez toutes les données');
+      return;
+    }
+
+    // Check if total paid today is >= 40% of the amount to return
+    // this condtion is because of PUMBU. will be monitoring this.
+    else if (this.totalPaidToday >= 0.4 * amountToReturnNum) {
+      alert(
+        'Vous avez déjà donné beaucoup d’argent aujourd’hui. ' +
+          'Vous devriez attendre demain pour demander votre argent.'
+      );
       return;
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
@@ -104,5 +121,23 @@ export class RequestClientCardComponent {
     );
     let number = filteredObj.length;
     return number;
+  }
+  sumPaymentsMadeToday(payments: any) {
+    // Get today's date in MM-DD-YYYY
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(1, '0');
+    const dd = String(today.getDate()).padStart(1, '0');
+    const yyyy = today.getFullYear();
+    const todayStr = `${mm}-${dd}-${yyyy}`;
+
+    let sum = 0;
+    // Iterate over each key in the payments object
+    for (const [key, value] of Object.entries(payments)) {
+      // If the key starts with today's date string, add to the sum
+      if (key.startsWith(todayStr)) {
+        sum += Number(value);
+      }
+    }
+    return sum;
   }
 }
