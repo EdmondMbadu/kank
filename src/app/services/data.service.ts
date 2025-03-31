@@ -831,6 +831,45 @@ export class DataService {
     return docRef.update({ receipts: employee.receipts });
   }
 
+  async atomicClientCardAndUserUpdate(clientCard: Card, deposit: string) {
+    // Document references
+    const clientCardRef = this.afs.doc<Card>(
+      `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
+    ).ref;
+
+    const userRef = this.afs.doc<User>(
+      `users/${this.auth.currentUser.uid}`
+    ).ref;
+
+    // Exactly the same data you normally set in each separate call:
+    const cardData = {
+      amountPaid: clientCard.amountPaid,
+      numberOfPaymentsMade: clientCard.numberOfPaymentsMade,
+      payments: clientCard.payments,
+    };
+
+    const date = this.time.todaysDateMonthDayYear();
+    const depot = this.computeDailyCardPayments(date, deposit);
+    const userData = {
+      cardsMoney: (
+        Number(this.auth.currentUser.cardsMoney) + Number(deposit)
+      ).toString(),
+      dailyCardPayments: {
+        [date]: `${depot}`,
+      },
+    };
+
+    // 2. Build a single Firestore WriteBatch
+    const batch = this.afs.firestore.batch();
+
+    // 3. Enqueue our two .set() operations
+    batch.set(clientCardRef, cardData, { merge: true });
+    batch.set(userRef, userData, { merge: true });
+
+    // 4. Commit the batch atomically
+    return batch.commit();
+  }
+
   updateUserInfoForClientCardPayment(deposit: string) {
     let date = this.time.todaysDateMonthDayYear();
     let depot: any = this.computeDailyCardPayments(date, deposit);

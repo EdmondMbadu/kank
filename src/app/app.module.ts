@@ -54,8 +54,8 @@ import { ClientInfoCurrentComponent } from './components/client-info-current/cli
 import { NewCardComponent } from './components/new-card/new-card.component';
 import { ClientInfoCardComponent } from './card/client-info-card/client-info-card.component';
 import { ClientPortalCardComponent } from './card/client-portal-card/client-portal-card.component';
-import { PaymentCardComponent } from './components/payment-card/payment-card.component';
-import { PaymentActivityCardComponent } from './components/payment-activity-card/payment-activity-card.component';
+import { PaymentCardComponent } from './card/payment-card/payment-card.component';
+import { PaymentActivityCardComponent } from './card/payment-activity-card/payment-activity-card.component';
 import { ReturnClientCardComponent } from './components/return-client-card/return-client-card.component';
 import { CardCycleComponent } from './components/card-cycle/card-cycle.component';
 import { SummaryCardComponent } from './card/summary-card/summary-card.component';

@@ -69,15 +69,17 @@ export class PaymentCardComponent {
     }
 
     try {
-      const clientCardPayment = await this.data.clientCardPayment(
-        this.clientCard
-      );
-      const updateUser = await this.data.updateUserInfoForClientCardPayment(
+      // 1. Use the new atomic method
+      await this.data.atomicClientCardAndUserUpdate(
+        this.clientCard,
         this.depositAmount
       );
+
+      // 2. If it all succeeded, proceed
       this.router.navigate(['/client-portal-card/' + this.id]);
     } catch (err) {
       alert("Une erreur s'est produite lors d'un paiement, Réessayez");
+      console.error(err);
       return;
     }
   }
