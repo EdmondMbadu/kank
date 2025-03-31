@@ -77,7 +77,7 @@ export class ReserveComponent {
         //    immediately. One simple approach is to call getCurrentUserReserve()
         //    again, then show the tooltip:
 
-        this.getCurrentUserReserve();
+        // this.getCurrentUserReserve();
         this.showDailyReserveTooltip();
 
         // If you still want to navigate away, do so after the tooltip has shown:
@@ -146,7 +146,12 @@ export class ReserveComponent {
 
     const dailySum = this.calculateTodaySum();
     const expected = parseFloat(this.expectedReserve) || 0;
-    if (expected === 0) return;
+    if (expected === 0) {
+      // Possibly set some tooltip message like “0 expected for today”
+      // or skip the tooltip but still navigate:
+      this.router.navigate(['/today']);
+      return;
+    }
 
     this.dailyPercentage = (dailySum / expected) * 100;
 
