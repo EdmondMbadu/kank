@@ -381,6 +381,7 @@ export class DataService {
       requestStatus: 'pending',
       requestType: 'lending',
       isPhoneCorrect: 'true',
+      vitalStatus: '',
       requestDate: client.requestDate,
       dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,
