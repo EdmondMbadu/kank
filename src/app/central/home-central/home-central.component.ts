@@ -123,9 +123,10 @@ export class HomeCentralComponent implements OnInit {
     let invested = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'amountInvested')
       .toString();
-    let debtTotal = this.compute
-      .findTotalAllUsersGivenField(this.allUsers, 'totalDebtLeft')
-      .toString();
+    // let debtTotal = this.compute
+    //   .findTotalAllUsersGivenField(this.allUsers, 'totalDebtLeft')
+    //   .toString();
+    let debtTotal = this.data.findTotalDebtLeft(this.allClients!);
     let cardM = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'cardsMoney')
       .toString();
