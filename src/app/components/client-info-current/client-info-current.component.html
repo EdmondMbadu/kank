@@ -55,10 +55,26 @@
                </li>
            </ul>
    </div>
+
    </div>
 
 
+
+
 </div>
+      <!-- Add a new button in the template -->
+       <div *ngIf="this.auth.isAdmin" class="flex flex-col mx-auto justify-center max-w-sm my-4">
+        <button
+        type="button"
+        class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none 
+               focus:ring-red-300 font-medium rounded-full text-sm w-auto sm:w-auto 
+               px-5 py-2.5 text-center ml-4 "
+        (click)="onBatchQuit()"
+        >
+        Marquer tous comme "Quitté"
+        </button>
+       </div>
+
 
 
 

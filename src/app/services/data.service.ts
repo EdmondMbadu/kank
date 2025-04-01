@@ -1327,6 +1327,21 @@ export class DataService {
 
     return userRef.set(data, { merge: true });
   }
+  async batchUpdateVitalStatus(
+    clients: Client[],
+    status: string
+  ): Promise<void> {
+    const batch = this.afs.firestore.batch();
+
+    for (const client of clients) {
+      const docRef = this.afs.doc(
+        `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+      ).ref;
+      batch.set(docRef, { vitalStatus: status }, { merge: true });
+    }
+    // Commit once
+    await batch.commit();
+  }
 
   updateUserInfoForRegisterClient(client: Client, date: string) {
     // let dailyLending: any = this.computeDailyLending(client, date);

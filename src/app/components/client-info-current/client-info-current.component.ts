@@ -88,4 +88,20 @@ export class ClientInfoCurrentComponent implements OnInit {
     this.currentClients = [];
     this.currentClients = this.data.findClientsWithDebts(this.clients!);
   }
+
+  // client-info-current.component.ts
+  onBatchQuit() {
+    if (!this.currentClients?.length) return;
+
+    // Just call the data service's batch method
+    this.data
+      .batchUpdateVitalStatus(this.currentClients, 'Quitté')
+      .then(() => {
+        alert('All clients updated to "Quitté" in a single batch!');
+        console.log('All clients updated to "Quitté" in a single batch!');
+        // Optionally refresh the UI or show a success message
+        // this.retrieveClients();
+      })
+      .catch((err) => console.error('Batch update error: ', err));
+  }
 }
