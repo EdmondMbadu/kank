@@ -37,11 +37,11 @@
    
 
         <div class="l max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-            <a *ngIf="selectedBest!==undefined && selectedBest.bestTeam!==undefined"  href="{{selectedBest.bestTeamCertificateDownloadUrl}}" target="_blank" >
+            <a *ngIf="selectedBest && selectedBest.bestTeam"  href="{{selectedBest.bestTeamCertificateDownloadUrl}}" target="_blank" >
                 <img class="rounded-t-lg " src="{{selectedBest.bestTeamCertificateDownloadUrl}}" alt="" />
             </a>
             <div class="p-5 ">
-                <a *ngIf="selectedBest!==undefined && selectedBest.bestTeam !==undefined"  >
+                <a *ngIf="selectedBest && selectedBest.bestTeam "  >
                     <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Équipe {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: {{selectedBest.bestTeam}}</h5>
                 </a>
                 <p *ngIf="selectedBest!==undefined && selectedBest.bestTeam !==undefined"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">
@@ -52,28 +52,28 @@
         </div>
 
         <div class=" max-w-xl container  bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-            <a *ngIf="selectedBest!==undefined && selectedBest.bestEmployee!==undefined" target="_blank" href="{{selectedBest.bestTeamCertificateDownloadUrl}}">
-                <img *ngIf="selectedBest!==undefined && selectedBest.bestEmployee!==undefined"  class="rounded-t-lg " src="{{selectedBest.bestEmployeeCertificateDownloadUrl}}" alt="" />
+            <a *ngIf="selectedBest && selectedBest.bestEmployee" target="_blank" href="{{selectedBest.bestTeamCertificateDownloadUrl}}">
+                <img *ngIf="selectedBest && selectedBest.bestEmployee"  class="rounded-t-lg " src="{{selectedBest.bestEmployeeCertificateDownloadUrl}}" alt="" />
             </a>
             <div class="p-5 ">
                 <a >
-                    <h5 *ngIf="selectedBest!==undefined && selectedBest.bestEmployee!==undefined"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Employé {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: {{selectedBest.bestEmployee}}</h5>
+                    <h5 *ngIf="selectedBest && selectedBest.bestEmployee"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Employé {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: {{selectedBest.bestEmployee}}</h5>
                 </a>
-                <p *ngIf="selectedBest!==undefined && selectedBest.bestEmployee!==undefined"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">Performance : {{selectedBest.bestEmployeePerformance}}. 
+                <p *ngIf="selectedBest && selectedBest.bestEmployee"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">Performance : {{selectedBest.bestEmployeePerformance}}. 
                     Félicitations 🎉🎉🎉</p>
                 
             </div>
         </div>
 
         <div class="max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 ">
-            <a *ngIf="selectedBest!==undefined && selectedBest.bestManager!==undefined" target="_blank" href="{{selectedBest.bestManagerCertificateDownloadUrl}}">
-                <img *ngIf="selectedBest!==undefined && selectedBest.bestManager!==undefined"  class="rounded-t-lg " src="{{selectedBest.bestManagerCertificateDownloadUrl}}" alt="" />
+            <a *ngIf="selectedBest && selectedBest.bestManager" target="_blank" href="{{selectedBest.bestManagerCertificateDownloadUrl}}">
+                <img *ngIf="selectedBest && selectedBest.bestManager"  class="rounded-t-lg " src="{{selectedBest.bestManagerCertificateDownloadUrl}}" alt="" />
             </a>
             <div class="p-5 ">
                 <a >
-                    <h5 *ngIf="selectedBest!==undefined && selectedBest.bestManager!==undefined"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Manager {{preposition}}  {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: {{selectedBest.bestManager}}</h5>
+                    <h5 *ngIf="selectedBest && selectedBest.bestManager"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Manager {{preposition}}  {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: {{selectedBest.bestManager}}</h5>
                 </a>
-                <p *ngIf="selectedBest!==undefined && selectedBest.bestManager!==undefined"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">
+                <p *ngIf="selectedBest && selectedBest.bestManager"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">
                     Félicitations 🎉 🎉 🎉</p>
                 
             </div>
