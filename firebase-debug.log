@@ -1,0 +1,86 @@
+[debug] [2025-04-02T18:36:54.778Z] ----------------------------------------------------------------------
+[debug] [2025-04-02T18:36:54.782Z] Command:       /Users/edmondmbadu/.nvm/versions/node/v19.9.0/bin/node /opt/homebrew/bin/firebase init
+[debug] [2025-04-02T18:36:54.783Z] CLI Version:   13.14.2
+[debug] [2025-04-02T18:36:54.783Z] Platform:      darwin
+[debug] [2025-04-02T18:36:54.783Z] Node Version:  v19.9.0
+[debug] [2025-04-02T18:36:54.783Z] Time:          Wed Apr 02 2025 11:36:54 GMT-0700 (Pacific Daylight Time)
+[debug] [2025-04-02T18:36:54.783Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-04-02T18:36:54.784Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2025-04-02T18:36:54.833Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-04-02T18:36:54.833Z] > authorizing via signed-in user (mbadungoma@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /Users/edmondmbadu/repo/kank
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[debug] [2025-04-02T18:36:55.126Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2025-04-02T18:36:55.126Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2025-04-02T18:37:05.753Z] Using project from CLI flag: kank-4bbbc
+[debug] [2025-04-02T18:37:05.754Z] > refreshing access token with scopes: []
+[debug] [2025-04-02T18:37:05.755Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-04-02T18:37:05.756Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-04-02T18:37:05.908Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-04-02T18:37:05.908Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-04-02T18:37:05.922Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc [none]
+[debug] [2025-04-02T18:37:06.329Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc 200
+[debug] [2025-04-02T18:37:06.329Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc {"projectId":"kank-4bbbc","projectNumber":"940518039240","displayName":"Kank","name":"projects/kank-4bbbc","resources":{"hostingSite":"kank-4bbbc","locationId":"us-central"},"state":"ACTIVE","etag":"1_4f4314ae-146f-4c2a-8588-49ef9e30468f"}
+[info] i  Using project kank-4bbbc (Kank) 
+[info] 
+=== Firestore Setup
+[debug] [2025-04-02T18:37:06.339Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/firestore.googleapis.com [none]
+[debug] [2025-04-02T18:37:06.339Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/firestore.googleapis.com x-goog-quota-user=projects/kank-4bbbc
+[debug] [2025-04-02T18:37:06.857Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/firestore.googleapis.com 200
+[debug] [2025-04-02T18:37:06.858Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/kank-4bbbc/services/firestore.googleapis.com [omitted]
+[debug] [2025-04-02T18:37:06.859Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/kank-4bbbc/databases/(default) [none]
+[debug] [2025-04-02T18:37:07.346Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/kank-4bbbc/databases/(default) 200
+[debug] [2025-04-02T18:37:07.346Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/kank-4bbbc/databases/(default) {"name":"projects/kank-4bbbc/databases/(default)","uid":"27782e62-58e5-4335-a272-83923acc37cc","createTime":"2023-08-31T09:45:06.395654Z","updateTime":"2023-08-31T09:45:06.395654Z","locationId":"nam5","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2025-04-02T17:37:07.336609Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"s","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"etag":"IN30/YX/uYwDMPeuyvyWqYwD"}
+[debug] [2025-04-02T18:37:07.347Z] database_type: FIRESTORE_NATIVE
+[debug] [2025-04-02T18:37:07.347Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-04-02T18:37:07.348Z] > authorizing via signed-in user (mbadungoma@gmail.com)
+[debug] [2025-04-02T18:37:07.348Z] [iam] checking project kank-4bbbc for permissions ["firebase.projects.get"]
+[debug] [2025-04-02T18:37:07.348Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions [none]
+[debug] [2025-04-02T18:37:07.349Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions x-goog-quota-user=projects/kank-4bbbc
+[debug] [2025-04-02T18:37:07.349Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2025-04-02T18:37:07.594Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions 200
+[debug] [2025-04-02T18:37:07.594Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions {"permissions":["firebase.projects.get"]}
+[info] 
+[info] Firestore Security Rules allow you to define how and when to allow
+[info] requests. You can keep these rules in your project directory
+[info] and publish them with firebase deploy.
+[info] 
+[debug] [2025-04-02T18:37:12.769Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/kank-4bbbc/releases pageSize=10&pageToken=
+[debug] [2025-04-02T18:37:13.099Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/kank-4bbbc/releases 200
+[debug] [2025-04-02T18:37:13.099Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/kank-4bbbc/releases {"releases":[{"name":"projects/kank-4bbbc/releases/cloud.firestore","rulesetName":"projects/kank-4bbbc/rulesets/2ca22155-789a-45a2-8027-2ed9fd2da80b","createTime":"2023-08-31T09:45:08.273412Z","updateTime":"2025-02-06T08:28:31.112186Z"},{"name":"projects/kank-4bbbc/releases/firebase.storage/kank-4bbbc.appspot.com","rulesetName":"projects/kank-4bbbc/rulesets/37772453-9d4c-4084-be08-84c698fdd4b6","createTime":"2023-12-31T07:55:44.630162Z","updateTime":"2023-12-31T08:18:59.105355Z"}]}
+[debug] [2025-04-02T18:37:13.121Z] Found ruleset: projects/kank-4bbbc/rulesets/2ca22155-789a-45a2-8027-2ed9fd2da80b
+[debug] [2025-04-02T18:37:13.121Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/kank-4bbbc/rulesets/2ca22155-789a-45a2-8027-2ed9fd2da80b [none]
+[debug] [2025-04-02T18:37:13.292Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/kank-4bbbc/rulesets/2ca22155-789a-45a2-8027-2ed9fd2da80b 200
+[debug] [2025-04-02T18:37:13.292Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/kank-4bbbc/rulesets/2ca22155-789a-45a2-8027-2ed9fd2da80b [omitted]
+[debug] [2025-04-02T18:37:13.438Z] Error: EISDIR: illegal operation on a directory, open '/Users/edmondmbadu/repo/kank/y'
+    at Object.openSync (node:fs:589:3)
+    at Object.writeFileSync (node:fs:2247:35)
+    at Object.createFileSync (/opt/homebrew/lib/node_modules/firebase-tools/node_modules/fs-extra/lib/ensure/file.js:63:6)
+    at Config.writeProjectFile (/opt/homebrew/lib/node_modules/firebase-tools/lib/config.js:159:12)
+    at /opt/homebrew/lib/node_modules/firebase-tools/lib/init/features/firestore/rules.js:50:27
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async doSetup (/opt/homebrew/lib/node_modules/firebase-tools/lib/init/features/firestore/index.js:33:5)
+    at async init (/opt/homebrew/lib/node_modules/firebase-tools/lib/init/index.js:40:9)
+[error] 
+[error] Error: An unexpected error has occurred.

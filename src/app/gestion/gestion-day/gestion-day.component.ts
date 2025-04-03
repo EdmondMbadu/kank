@@ -31,6 +31,7 @@ export class GestionDayComponent implements OnInit {
       this.initalizeInputs();
       this.updateReserveGraphics(this.graphicsRange);
       this.updateServeGraphics(this.graphicsRangeServe);
+      this.updateCombinedGraphics(this.graphicsRange);
     });
     // get all clients to find what is needed for tomorrow
     this.auth.getAllUsersInfo().subscribe((data) => {
@@ -102,6 +103,14 @@ export class GestionDayComponent implements OnInit {
     },
   };
   public graphServe = {
+    data: [{}],
+    layout: {
+      title: 'Argent A Servir Journalier en $',
+      barmode: 'stack',
+    },
+  };
+
+  public graphCombined = {
     data: [{}],
     layout: {
       title: 'Argent A Servir Journalier en $',
@@ -610,5 +619,56 @@ export class GestionDayComponent implements OnInit {
       this.requestDateRigthFormat
     );
     this.getAllClients();
+  }
+
+  updateCombinedGraphics(time: number) {
+    // Get Reserve data
+
+    let [reserveDates, reserveVals] = this.sortKeysAndValuesReserve(time);
+    let [serveDates, serveVals] = this.sortKeysAndValuesServe(time);
+
+    // Convert them into sets for quick membership checks
+    let reserveSet = new Set(reserveDates);
+    let serveSet = new Set(serveDates);
+
+    // Filter out any dates from Reserve if not in Serve, etc.:
+    reserveDates = reserveDates.filter((d) => serveSet.has(d));
+    // Do the same for the Serve side:
+    serveDates = serveDates.filter((d) => reserveSet.has(d));
+    let sortedReserve = this.sortKeysAndValuesReserve(time);
+    // let reserveDates = sortedReserve[0];
+    let reserveAmounts = this.compute.convertToDollarsArray(sortedReserve[1]);
+    console.log('reserve data', sortedReserve[0]);
+
+    let sortedServe = this.sortKeysAndValuesServe(time);
+    // let serveDates = sortedServe[0];
+    console.log('serve data', sortedServe[0]);
+    let serveAmounts = this.compute.convertToDollarsArray(sortedServe[1]);
+
+    // Create two traces
+    this.graphCombined = {
+      data: [
+        {
+          x: reserveDates,
+          y: reserveAmounts,
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: 'Reserve Par Jour',
+        },
+        {
+          x: serveDates,
+          y: serveAmounts,
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: 'Argent A Servir',
+        },
+      ],
+      layout: {
+        title: 'Reserve & Argent A Servir (en $)',
+        barmode: 'stack',
+        // xaxis: { title: 'Date' },
+        // yaxis: { title: 'Montant ($)' }
+      },
+    };
   }
 }
