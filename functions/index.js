@@ -1,3 +1,4 @@
+/* eslint-disable brace-style */
 /* eslint-disable require-jsdoc */
 /* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
@@ -716,4 +717,170 @@ exports.scheduledSendReminders = functions.pubsub
         console.error("Error in scheduledSendReminders:", error);
         throw error; // Let Firebase log it as a function error
       }
+    });
+
+
+/**
+ * Parse the custom "MM-DD-YYYY-HH-mm-SS" key into a real Date object.
+ * Returns an invalid Date if parsing fails, so handle with caution.
+ */
+function parsePaymentKey(key) {
+  // e.g. "3-20-2025-14-57-2"
+  const [M, D, Y, h, m, s] = key.split("-");
+  return new Date(Number(Y), Number(M) - 1, Number(D), Number(h), Number(m), Number(s));
+}
+
+/**
+ * Finds the most recent payment entry in the 'payments' object by parsing the keys as dates.
+ * Returns { key, amount } of the latest or null if no valid entries.
+ */
+function findLatestPayment(payments) {
+  const keys = Object.keys(payments);
+  if (keys.length === 0) return null;
+
+  let latestKey = null;
+  let latestDate = null;
+
+  for (const k of keys) {
+    const dateObj = parsePaymentKey(k); // attempt to parse
+    if (!latestDate || dateObj > latestDate) {
+      latestDate = dateObj;
+      latestKey = k;
+    }
+  }
+
+  if (!latestKey) return null;
+  return {key: latestKey, amount: payments[latestKey]};
+}
+
+/**
+ * Cloud Function: send SMS on payment or savings changes
+ *  - If type === "register", do nothing (already handled elsewhere).
+ *  - Trigger only if payments or savings changed.
+ */
+exports.sendPaymentOrSavingsUpdateSMS = functions.firestore
+    .document("users/{userId}/clients/{clientId}")
+    .onUpdate(async (change, context) => {
+      const beforeData = change.before.data() || {};
+      const afterData = change.after.data() || {};
+
+      // 1) Skip if type is "register"
+      if (afterData.type === "register") {
+        console.log("Type is 'register'. Skipping...");
+        return null;
+      }
+
+      // 2) Determine if 'payments' changed
+      const paymentsBefore = beforeData.payments || {};
+      const paymentsAfter = afterData.payments || {};
+      const paymentsChanged =
+      JSON.stringify(paymentsBefore) !== JSON.stringify(paymentsAfter);
+
+      // 3) Determine if 'savings' changed
+      const savingsBefore = Number(beforeData.savings) || 0;
+      const savingsAfter = Number(afterData.savings) || 0;
+      const savingsChanged = savingsBefore !== savingsAfter;
+
+      // If neither changed, skip
+      if (!paymentsChanged && !savingsChanged) {
+        console.log("Neither payments nor savings changed. Skipping...");
+        return null;
+      }
+
+      // Gather client info
+      const firstName = afterData.firstName || "";
+      const lastName = afterData.lastName || "";
+      const fullName = `${firstName} ${lastName}`.trim();
+      const phoneNumber = afterData.phoneNumber;
+      const debtLeft = Number(afterData.debtLeft) || 0;
+
+      if (!phoneNumber) {
+        console.log("Client has no phone number. Skipping SMS...");
+        return null;
+      }
+      const formattedNumber = makeValidE164(phoneNumber);
+      if (!formattedNumber) {
+        console.log(`Invalid phone number: ${phoneNumber}`);
+        return null;
+      }
+
+      // We'll need the latest payment if 'payments' changed
+      let paymentJustPaid = null;
+      if (paymentsChanged) {
+        const latest = findLatestPayment(paymentsAfter);
+        if (latest) {
+          paymentJustPaid = Number(latest.amount) || 0;
+        }
+      }
+
+      // For the savings difference
+      const savingsDiff = savingsAfter - savingsBefore;
+      // Example:
+      //   if > 0, "Obakisi epargnes na yo ya XXX FC"
+      //   if < 0, "Olongoli epargnes na yo ya XXX FC"
+      const absoluteSavingsDiff = Math.abs(savingsDiff);
+
+      // Build the final message (4 main cases + optional nuance if both changed but savings decreased)
+      let message = "";
+
+      // CASE 1: Only payments changed
+      if (paymentsChanged && !savingsChanged) {
+      // {firstname}{lastname}, Ofuti mombongo ya {paymentJustpaid} FC
+      // Otikali na Niongo ya {debtLeft} FC. Epargnes na yo ezali {savings}.
+      // Merci pona confiance na Fondation Gervais.
+        message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC.
+Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
+Merci pona confiance na Fondation Gervais.`;
+      }
+
+      // CASE 2 or 3: Only savings changed
+      else if (!paymentsChanged && savingsChanged) {
+        if (savingsDiff > 0) {
+        // CASE 2: savings added
+        // {firstname}{lastname}, Obakisi epargnes na yo ya {savingsAdded} FC
+          message = `${fullName}, Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
+Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
+Merci pona confiance na Fondation Gervais.`;
+        } else {
+        // CASE 3: savings removed
+        // {firstname}{lastname}, Olongoli epargnes na yo ya {savingsRemoved} FC
+          message = `${fullName}, Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
+Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
+Merci pona confiance na Fondation Gervais.`;
+        }
+      }
+
+      // CASE 4: Both payments and savings changed
+      else if (paymentsChanged && savingsChanged) {
+      // The user only explicitly provided a message for "added" savings,
+      // but let's handle removal similarly if that case can happen.
+
+        if (savingsDiff > 0) {
+        // "Ofuti mombongo ya {paymentJustpaid} FC. Obakisi epargnes na yo ya {savingsAdded} FC"
+          message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
+Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
+Merci pona confiance na Fondation Gervais.`;
+        } else {
+        // If you need a "removal" version, do:
+        // "Ofuti mombongo ya {paymentJustPaid} FC. Olongoli epargnes na yo ya {savingsRemoved} FC"
+          message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
+Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
+Merci pona confiance na Fondation Gervais.`;
+        }
+      }
+
+      console.log("Constructed message:", message);
+
+      // Send the SMS
+      try {
+        const response = await sms.send({
+          to: [formattedNumber],
+          message,
+        });
+        console.log(`SMS sent to ${formattedNumber} =>`, response);
+      } catch (error) {
+        console.error("Error sending SMS:", error);
+      }
+
+      return null;
     });
