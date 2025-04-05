@@ -161,15 +161,15 @@ export class ReserveComponent {
     if (this.dailyPercentage < 10) {
       mainMessage = 'C’est très faible. Redoublez d’efforts !';
     } else if (this.dailyPercentage < 20) {
-      mainMessage = 'Un début, continuez pour augmenter le score !';
+      mainMessage = 'Un début mais faible, continuez pour augmenter le score !';
     } else if (this.dailyPercentage < 40) {
-      mainMessage = 'Pas mal, on avance. Poursuivez vos efforts !';
+      mainMessage = 'Pas mal mais faible. Poursuivez vos efforts !';
     } else if (this.dailyPercentage < 50) {
       mainMessage = 'Presque à mi-chemin, courage !';
     } else if (this.dailyPercentage < 70) {
       mainMessage = 'Bien joué, continuez comme ça !';
     } else {
-      mainMessage = 'Excellent travail, vous y êtes presque !';
+      mainMessage = 'Excellent travail, continuez comme ça !';
     }
 
     // 2) Combine the main message + mention the current day's percentage
