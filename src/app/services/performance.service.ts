@@ -211,6 +211,7 @@ export class PerformanceService {
       for (let client of this.clients) {
         const isAlive =
           client.vitalStatus === undefined ||
+          client.vitalStatus === '' ||
           client.vitalStatus.toLowerCase() === 'vivant';
 
         if (

@@ -104,6 +104,7 @@ export class NotPaidTodayComponent {
       for (let c of this.shouldPayToday) {
         const isAlive =
           c.vitalStatus === undefined ||
+          c.vitalStatus === '' ||
           c.vitalStatus.toLowerCase() === 'vivant';
         // return isAlive && Number(c.debtLeft) > 0;
         if (

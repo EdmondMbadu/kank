@@ -1691,6 +1691,7 @@ export class DataService {
     return clients.filter((data) => {
       const isAlive =
         data.vitalStatus === undefined ||
+        data.vitalStatus === '' ||
         data.vitalStatus?.toLowerCase() === 'vivant';
 
       const debt = Number(data.debtLeft);
@@ -1725,6 +1726,7 @@ export class DataService {
     clients = clients!.filter((data) => {
       const isAlive =
         data.vitalStatus === undefined ||
+        data.vitalStatus.toLowerCase() === '' ||
         data.vitalStatus.toLowerCase() === 'vivant';
       return isAlive && Number(data.debtLeft) > 0;
     });
@@ -1741,6 +1743,7 @@ export class DataService {
     clients = clients!.filter((data) => {
       const isAlive =
         data.vitalStatus === undefined ||
+        data.vitalStatus.toLowerCase() === '' ||
         data.vitalStatus.toLowerCase() === 'vivant';
       return isAlive && Number(data.debtLeft) > 0;
     });
