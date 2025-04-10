@@ -58,6 +58,7 @@ export class Client {
   cycleId?: string;
   comments?: Comment[];
   isPhoneCorrect?: string;
+  agentVerifyingName?: string;
 }
 
 export class Comment {

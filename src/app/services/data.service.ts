@@ -382,6 +382,7 @@ export class DataService {
       requestType: 'lending',
       isPhoneCorrect: 'true',
       vitalStatus: '',
+      agentVerifyingName: '',
       requestDate: client.requestDate,
       dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,

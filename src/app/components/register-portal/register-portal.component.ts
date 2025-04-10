@@ -19,6 +19,8 @@ export class RegiserPortalComponent {
   employees: Employee[] = [];
   agent?: Employee = { firstName: '-' };
   url: string = '';
+  agentVerifyingName: string = '';
+  agentSubmmitted: boolean = false;
 
   id: any = '';
   paymentDate = '';
@@ -313,10 +315,40 @@ export class RegiserPortalComponent {
       return;
     }
   }
+  async setClientFieldAgent(field: string, value: any) {
+    if (field === '') {
+      alert("Entrer un nom d'agent valide");
+      return;
+    }
+
+    const confirmation = confirm(
+      'Confirmez-vous que le client a été vérifié, n’a aucun lien familial avec le Manager/Agent Marketing, que les montants sont valides et qu’il est apte à rembourser la dette ?'
+    );
+
+    if (!confirmation) {
+      alert("Modification annulée par L'Audit.");
+      return;
+    }
+
+    try {
+      const loA = await this.data.setClientField(
+        field,
+        value,
+        this.client.uid!
+      );
+      this.agentSubmmitted = true;
+      alert('Confirmer avec succès');
+    } catch (err) {
+      alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+    }
+  }
 
   setFields() {
     if (this.client.savings) {
       this.savings = this.client.savings;
+    }
+    if (this.client.agentVerifyingName) {
+      this.agentVerifyingName = this.client.agentVerifyingName!;
     }
   }
 }

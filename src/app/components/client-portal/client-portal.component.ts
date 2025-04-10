@@ -29,6 +29,7 @@ export class ClientPortalComponent {
   recordedBlob?: Blob; // Final audio blob
   recordedAudioURL?: string; // Local blob URL for playback in the UI
   commentAudioUrl: string = ''; // Final upload URL from Firebase
+  agentVerifyingName: string = '';
 
   loanAmount: string = '0';
   debtLeft: string = '0';
@@ -184,6 +185,9 @@ export class ClientPortalComponent {
     }
     if (this.client.isPhoneCorrect) {
       this.isPhoneNumberCorrect = this.client.isPhoneCorrect;
+    }
+    if ((this, this.client.agentVerifyingName)) {
+      this.agentVerifyingName = this.client.agentVerifyingName;
     }
   }
 
