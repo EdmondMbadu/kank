@@ -40,6 +40,10 @@ export class TransformRegisterClientComponent implements OnInit {
   maxNumberOfClients: number = 0;
   numberOfCurrentClients = 0;
 
+  showConfirmation: boolean = false;
+  isConfirmed: boolean = false;
+  isLoading: boolean = false;
+
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -151,76 +155,71 @@ export class TransformRegisterClientComponent implements OnInit {
       );
       return;
     } else {
-      let conf = confirm(
-        `Vous allez emprunté ${this.loanAmount} FC a ${this.client.firstName} ${this.client.middleName} ${this.client.lastName}. Voulez-vous quand même continuer ?`
-      );
-      if (!conf) {
-        return;
-      }
-      this.setClientNewDebtCycleValues();
-      let employee = this.findAgentWithId(this.client.agent!);
-
-      this.data
-        .transformRegisterClientToFullClient(this.client)
-
-        .then(
-          (res: any) => {
-            this.router.navigate(['/client-portal/' + this.id]);
-          },
-          (err: any) => {
-            alert(
-              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-            );
-          }
-        )
-        .then(() => {
-          if (this.client.uid !== undefined && employee !== null) {
-            employee?.clients?.push(this.client.uid);
-            employee.clients = employee?.clients!.filter(
-              (item, index) => employee!.clients!.indexOf(item) === index
-            );
-          }
-          this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
-        });
-      // this probably redundant, but it works. I did not want to reqwrite the logic clean.
-      // It probably needs to be rewrritten for a clean flow.
-      // .then(() => {
-      //   try {
-      //     this.findClientsWithDebts();
-      //     this.resetClientsAndEmployees();
-      //   } catch (error) {
-      //     console.log(
-      //       'An error ocurred while resetting the data for employees',
-      //       error
-      //     );
-      //   }
-      // });
-
-      let date = this.time.todaysDateMonthDayYear();
-      this.data
-        .updateUserInforForRegisterClientToFullClient(this.client, date)
-        .then(
-          (res: any) => {
-            console.log('Informations utilisateur mises à jour avec succès');
-          },
-
-          (err: any) => {
-            alert(
-              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-            );
-          }
-        );
-
-      this.resetFields();
-      return;
+      this.proceed();
     }
   }
 
+  toggle(property: 'showConfirmation' | 'isLoading') {
+    this[property] = !this[property];
+  }
   findClientsWithDebts() {
     this.clientsWithDebts = this.data.findClientsWithDebts(this.allClients);
     this.agentClientMap = this.getAgentsWithClients();
     // console.log(' all clients with debts', this.clientsWithDebts);
     console.log('agent with clients table', this.agentClientMap);
+  }
+  proceed() {
+    this.toggle('showConfirmation');
+  }
+  submitFullClient() {
+    if (!this.isConfirmed) {
+      alert('Veuillez confirmer que vous avez respecté toutes les règles.');
+      return;
+    }
+    this.toggle('isLoading');
+    this.setClientNewDebtCycleValues();
+    let employee = this.findAgentWithId(this.client.agent!);
+
+    this.data
+      .transformRegisterClientToFullClient(this.client)
+
+      .then(
+        (res: any) => {
+          this.router.navigate(['/client-portal/' + this.id]);
+        },
+        (err: any) => {
+          alert(
+            "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+          );
+        }
+      )
+      .then(() => {
+        if (this.client.uid !== undefined && employee !== null) {
+          employee?.clients?.push(this.client.uid);
+          employee.clients = employee?.clients!.filter(
+            (item, index) => employee!.clients!.indexOf(item) === index
+          );
+        }
+        this.data.updateEmployeeInfoForClientAgentAssignment(employee!);
+      });
+
+    let date = this.time.todaysDateMonthDayYear();
+    this.data
+      .updateUserInforForRegisterClientToFullClient(this.client, date)
+      .then(
+        (res: any) => {
+          console.log('Informations utilisateur mises à jour avec succès');
+        },
+
+        (err: any) => {
+          alert(
+            "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+          );
+        }
+      );
+
+    this.resetFields();
+    return;
   }
 
   async resetClientsAndEmployees() {
