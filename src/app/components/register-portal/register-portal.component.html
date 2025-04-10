@@ -126,7 +126,7 @@
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Nom: <strong>{{ agentVerifyingName}}</strong></p>
             <input [(ngModel)]="agentVerifyingName" type="text" placeholder="Entrez Votre Nom" 
               class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <button (click)="setClientFieldAgent('agentVerifyingName',agentVerifyingName)" 
+            <button (click)="toggle('showAuditConfirmation')" 
               class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
               Confirmer
             </button>
@@ -159,3 +159,59 @@
 
 </div>
 
+
+
+<div *ngIf="showAuditConfirmation" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md md:max-w-lg text-sm p-6">
+      
+      <h2 class="text-lg font-semibold text-red-700 mb-4 text-center">
+        ✅ Confirmation de Vérification (Audit)
+      </h2>
+  
+      <p class="mb-4 text-gray-700">
+        Vous êtes sur le point de valider les informations du client <strong>{{ this.client.firstName }} {{ this.client.lastName }}</strong>. Veuillez confirmer les points suivants :
+      </p>
+  
+      <div class="mb-4">
+        <p class="text-red-600 font-semibold mb-2">Avant de continuer, veuillez confirmer que :</p>
+        <ul class="list-disc list-inside space-y-2 text-gray-800">
+          <li>
+            <strong>J’ai rencontré ou parlé directement au client :</strong>
+            Et j’ai vérifié que les montants demandés et les frais payés correspondent à ce qui est enregistré dans le système.
+          </li>
+          <li>
+            <strong>J’ai confirmé que le client comprend les conditions de remboursement :</strong>
+            Et qu’il sait contacter un responsable (moi) s’il paie mais ne reçoit pas de message de confirmation, ou si le montant est incorrect.
+          </li>
+          <li>
+            <strong>J’ai vérifié que la photo prise représente bien le lieu d’activité de la Fondation.</strong>
+          </li>
+        </ul>
+        <p class="mt-4 text-sm text-red-600 font-medium">
+          Toute fausse validation ou négligence peut entraîner des sanctions disciplinaires, des poursuites judiciaires.
+        </p>
+        <!-- <p class="mt-4 text-sm text-red-600 font-medium">
+          Toute fausse validation ou négligence peut entraîner des sanctions disciplinaires, des poursuites judiciaires et une peine de prison.
+        </p> -->
+      </div>
+  
+      <div class="mt-4 mb-2 flex items-center">
+        <input [(ngModel)]="isConfirmed" type="checkbox" id="auditConfirmCheck" class="mr-2 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+        <label for="auditConfirmCheck" class="text-gray-800 text-sm">
+          Je confirme avoir respecté toutes les règles ci-dessus.
+        </label>
+      </div>
+  
+      <div class="mt-4 flex justify-between">
+        <button (click)="toggle('showAuditConfirmation')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">
+          Annuler
+        </button>
+        <button [disabled]="!isConfirmed" (click)="setClientFieldAgent('agentVerifyingName',agentVerifyingName)" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
+          Continuer
+        </button>
+      </div>
+  
+    </div>
+  </div>
+  
+  

@@ -22,6 +22,9 @@ export class RegiserPortalComponent {
   agentVerifyingName: string = '';
   agentSubmmitted: boolean = false;
 
+  showAuditConfirmation: boolean = false;
+  isConfirmed: boolean = false;
+
   id: any = '';
   paymentDate = '';
   debtStart = '';
@@ -143,6 +146,12 @@ export class RegiserPortalComponent {
   //     });
   // }
 
+  toggle(property: 'showAuditConfirmation' | 'isConfirmed') {
+    this[property] = !this[property];
+  }
+  confirmAudit() {
+    this.toggle('showAuditConfirmation');
+  }
   async cancelRegistration() {
     let total =
       Number(this.client.savings) +
@@ -321,15 +330,6 @@ export class RegiserPortalComponent {
       return;
     }
 
-    const confirmation = confirm(
-      'Confirmez-vous que le client a été vérifié, n’a aucun lien familial avec le Manager/Agent Marketing, que les montants sont valides et qu’il est apte à rembourser la dette ?'
-    );
-
-    if (!confirmation) {
-      alert("Modification annulée par L'Audit.");
-      return;
-    }
-
     try {
       const loA = await this.data.setClientField(
         field,
@@ -338,6 +338,8 @@ export class RegiserPortalComponent {
       );
       this.agentSubmmitted = true;
       alert('Confirmer avec succès');
+      this.toggle('showAuditConfirmation');
+      this.toggle('isConfirmed');
     } catch (err) {
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");
     }
