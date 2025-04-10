@@ -67,6 +67,8 @@ export class RegisterClientComponent implements OnInit {
   newReference: string = '';
   collateral: string = '';
   creditworthinessScore: number | null = null;
+  showConfirmation: boolean = false;
+  isConfirmed: boolean = false;
 
   applicationFeeOtherDisplay: boolean = false;
   loanAmountOtherDisplay: boolean = false;
@@ -171,43 +173,50 @@ export class RegisterClientComponent implements OnInit {
       alert('Veuillez vérifier votre code de vérification');
       return;
     } else {
-      let conf = confirm(
-        `Vous allez enregistré ${this.firstName} ${this.middleName} ${this.lastName}. Voulez-vous quand même continuer ?`
-      );
-      if (!conf) {
-        return;
-      }
-      this.setNewClientValues();
-      const creditworthinessScore = this.calculateCreditworthiness();
-      console.log(`Creditworthiness Score: ${creditworthinessScore}%`);
-
-      // let employee = this.findAgentWithId(this.client.agent!);
-      this.auth.registerNewClient(this.client).then(
-        (res: any) => {
-          this.router.navigate(['info-register']);
-        },
-        (err: any) => {
-          alert(
-            "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client!"
-          );
-        }
-      );
-      this.data.updateUserInfoForRegisterClient(this.client, date).then(
-        (res: any) => {
-          console.log('Informations utilisateur mises à jour avec succès');
-        },
-        (err: any) => {
-          alert(
-            "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client"
-          );
-        }
-      );
-
-      this.resetFields();
-      return;
+      this.proceed();
     }
   }
+  proceed() {
+    this.toggle('showConfirmation');
+  }
+  submitRegistration() {
+    let date = this.time.todaysDateMonthDayYear();
+    if (!this.isConfirmed) {
+      alert('Veuillez confirmer que vous avez respecté toutes les règles.');
+      return;
+    }
+    this.toggle('isLoading');
 
+    this.setNewClientValues();
+    const creditworthinessScore = this.calculateCreditworthiness();
+    console.log(`Creditworthiness Score: ${creditworthinessScore}%`);
+
+    // let employee = this.findAgentWithId(this.client.agent!);
+    this.auth.registerNewClient(this.client).then(
+      (res: any) => {
+        this.router.navigate(['info-register']);
+      },
+      (err: any) => {
+        alert(
+          "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client!"
+        );
+      }
+    );
+    this.data.updateUserInfoForRegisterClient(this.client, date).then(
+      (res: any) => {
+        console.log('Informations utilisateur mises à jour avec succès');
+        this.toggle('isLoading');
+      },
+      (err: any) => {
+        alert(
+          "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client"
+        );
+      }
+    );
+
+    this.resetFields();
+    return;
+  }
   displayApplicationFeeOtherAmount() {
     if (this.applicactionFee === 'Autre Montant') {
       this.applicationFeeOtherDisplay = true;
@@ -415,7 +424,7 @@ export class RegisterClientComponent implements OnInit {
     this.creditworthinessScore = Math.round(totalScore);
     return Math.round(totalScore);
   }
-  toggle(property: 'isLoading') {
+  toggle(property: 'isLoading' | 'showConfirmation') {
     this[property] = !this[property];
   }
   onImageClick(id: string): void {

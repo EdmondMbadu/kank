@@ -36,6 +36,8 @@ export class NewCycleRegisterComponent implements OnInit {
   isLoading: boolean = false;
   codeVerificationStatus: 'waiting' | 'correct' | 'incorrect' | null = null;
   blockChangeNumber: boolean = false;
+  showConfirmation: boolean = false;
+  isConfirmed: boolean = false;
 
   applicationFeeOtherDisplay: boolean = false;
   memberShipFeeOtherDisplay: boolean = false;
@@ -210,57 +212,13 @@ export class NewCycleRegisterComponent implements OnInit {
       alert('Veuillez vérifier votre code de vérification');
       return;
     } else {
-      let conf = confirm(
-        `Vous allez enregistré ${this.client.firstName} ${this.client.lastName} pour un nouveau cycle. Voulez-vous quand même continuer?`
-      );
-      if (!conf) {
-        return;
-      }
-      this.setClientNewDebtCycleValues();
-
-      // Save the current cycle to the 'cycles' subcollection
-      this.data
-        .saveCurrentCycle(this.client)
-        .then(() => {
-          // Register the new debt cycle
-          this.data.registerNewDebtCycle(this.client).then(
-            (res: any) => {
-              this.router.navigate(['/register-portal/' + this.id]);
-            },
-            (err: any) => {
-              alert(
-                "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-              );
-            }
-          );
-
-          // Update user info
-          const date = this.time.todaysDateMonthDayYear();
-          this.data
-            .updateUserInfoForRegisterClientNewDebtCycle(
-              this.client,
-              this.savings,
-              date
-            )
-            .then(
-              (res: any) => {
-                console.log(
-                  'Informations utilisateur mises à jour avec succès'
-                );
-              },
-              (err: any) => {
-                alert(
-                  "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-                );
-              }
-            );
-
-          this.resetFields();
-        })
-        .catch((error: any) => {
-          console.error('Error saving current cycle:', error);
-          alert('Erreur lors de la sauvegarde du cycle actuel.');
-        });
+      // let conf = confirm(
+      //   `Vous allez enregistré ${this.client.firstName} ${this.client.lastName} pour un nouveau cycle. Voulez-vous quand même continuer?`
+      // );
+      // if (!conf) {
+      //   return;
+      // }
+      this.proceed();
     }
   }
 
@@ -323,7 +281,65 @@ export class NewCycleRegisterComponent implements OnInit {
     };
   }
 
-  toggle(property: 'isLoading') {
+  proceed() {
+    this.toggle('showConfirmation');
+  }
+
+  submitNewCycleRegistration() {
+    if (!this.isConfirmed) {
+      alert('Veuillez confirmer que vous avez respecté toutes les règles.');
+      return;
+    }
+    this.toggle('isLoading');
+    this.setClientNewDebtCycleValues();
+
+    // Save the current cycle to the 'cycles' subcollection
+    this.data
+      .saveCurrentCycle(this.client)
+      .then(() => {
+        // Register the new debt cycle
+        this.data.registerNewDebtCycle(this.client).then(
+          (res: any) => {
+            this.router.navigate(['/register-portal/' + this.id]);
+          },
+          (err: any) => {
+            alert(
+              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+            );
+          }
+        );
+
+        // Update user info
+        const date = this.time.todaysDateMonthDayYear();
+        this.data
+          .updateUserInfoForRegisterClientNewDebtCycle(
+            this.client,
+            this.savings,
+            date
+          )
+          .then(
+            (res: any) => {
+              console.log('Informations utilisateur mises à jour avec succès');
+              this.toggle('isLoading');
+
+              this.isConfirmed = false;
+            },
+            (err: any) => {
+              alert(
+                "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+              );
+            }
+          );
+
+        this.resetFields();
+      })
+      .catch((error: any) => {
+        console.error('Error saving current cycle:', error);
+        alert('Erreur lors de la sauvegarde du cycle actuel.');
+      });
+  }
+
+  toggle(property: 'isLoading' | 'showConfirmation') {
     this[property] = !this[property];
   }
   sendMyVerificationCode() {
