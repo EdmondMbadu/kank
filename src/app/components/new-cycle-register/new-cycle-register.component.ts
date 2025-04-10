@@ -153,7 +153,8 @@ export class NewCycleRegisterComponent implements OnInit {
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
         - Est Dans L'intervalle D'Une Semaine\n
-        - N'est Pas Aujourdhui ou au Passé
+        - N'est Pas Aujourdhui ou au Passé\n
+        - N'est Pas Demain mais au Moins Un lendemain ou dans 2+ jour\n
         `);
       return;
     } else if (

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
@@ -20,7 +21,8 @@ export class RegisterClientComponent implements OnInit {
     public data: DataService,
     private time: TimeService,
     private performance: PerformanceService,
-    private fns: AngularFireFunctions
+    private fns: AngularFireFunctions,
+    private storage: AngularFireStorage
   ) {}
   currentClients: Client[] = [];
   allClients: Client[] = [];
@@ -79,6 +81,8 @@ export class RegisterClientComponent implements OnInit {
   userEnteredCode: string = '';
   codeVerificationStatus: 'waiting' | 'correct' | 'incorrect' = 'waiting';
   isLoading: boolean = false;
+  url: string = '';
+  avatar: any;
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
@@ -151,13 +155,17 @@ export class RegisterClientComponent implements OnInit {
         } clients avant d'ajouter.`
       );
       return;
+    } else if (this.url === '' || this.url === undefined) {
+      alert('Veuillez ajouter une photo de profil du client pour continuer');
+      return;
     } else if (this.savingsPaidAtleast30PercentOfLoanAmount() === false) {
       return;
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
-        - Est Dans L'intervalle D'Une Semaine\n
-        - N'est Pas Aujourdhui ou au Passé
-        `);
+          - Est Dans L'intervalle D'Une Semaine\n
+          - N'est Pas Aujourdhui ou au Passé\n
+          - N'est Pas Demain mais au Moins Un lendemain ou dans 2+ jour\n
+          `);
       return;
     } else if (this.codeVerificationStatus !== 'correct') {
       alert('Veuillez vérifier votre code de vérification');
@@ -266,6 +274,7 @@ export class RegisterClientComponent implements OnInit {
     this.client.requestAmount = this.loanAmount;
     this.client.requestDate = this.requestDate;
     this.client.dateOfRequest = this.time.todaysDate();
+    this.client.profilePicture = this.avatar;
 
     // Additional fields
     this.client.timeInBusiness = this.timeInBusiness;
@@ -408,6 +417,50 @@ export class RegisterClientComponent implements OnInit {
   }
   toggle(property: 'isLoading') {
     this[property] = !this[property];
+  }
+  onImageClick(id: string): void {
+    const fileInput = document.getElementById(id) as HTMLInputElement;
+    fileInput.click();
+  }
+  async startUpload(event: FileList) {
+    console.log('current employee', this.client);
+    const file = event?.item(0);
+    console.log(' current file data', file);
+
+    if (file?.type.split('/')[0] !== 'image') {
+      console.log('unsupported file type');
+      return;
+    }
+    // the size cannot be greater than 10mb
+    if (file?.size >= 20000000) {
+      alert(
+        "L'image est trop grande. La Taille maximale du fichier est de 10MB"
+      );
+      return;
+    }
+    const path = `clients-avatar/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}`;
+
+    // the main task
+    console.log('the path', path);
+
+    // this.task = await this.storage.upload(path, file);
+    const uploadTask = await this.storage.upload(path, file);
+    this.url = await uploadTask.ref.getDownloadURL();
+    uploadTask.totalBytes;
+    // console.log('the download url', this.url);
+    const avatar = {
+      path: path,
+      downloadURL: this.url,
+      size: uploadTask.totalBytes.toString(),
+    };
+
+    this.avatar = avatar;
+    // try {
+    // await this.data.updateClientPictureData(this.client, avatar);
+    // } catch (error) {
+    //   console.error('Error updating employee picture:', error);
+    // }
+    // this.router.navigate(['/home']);
   }
   sendMyVerificationCode() {
     const phoneNumber = this.phoneNumber;

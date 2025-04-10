@@ -388,6 +388,7 @@ export class AuthService {
       dateJoined: `${month}-${day}-${year}`,
       payments: {},
       clients: [],
+      profilePicture: client.profilePicture,
 
       // New fields
       timeInBusiness: client.timeInBusiness,
