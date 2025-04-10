@@ -274,7 +274,7 @@
         <button (click)="toggle('showConfirmation')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">
           Annuler
         </button>
-        <button (click)="submitNewCycleRegistration()"  class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded">
+        <button [disabled]="!isConfirmed" (click)="submitNewCycleRegistration()"  class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
           Continuer
         </button>
       </div>
