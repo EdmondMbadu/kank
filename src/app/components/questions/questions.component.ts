@@ -175,7 +175,7 @@ export class QuestionsComponent implements OnInit {
     } else {
       // Show popup or alert
       alert(
-        `You are not in the correct location. Please go to ${pc.clientLocation} to access this client.`
+        `Vous n'êtes pas au bon endroit. Veuillez accéder à ${pc.clientLocation} pour accéder à ce client.`
       );
     }
   }

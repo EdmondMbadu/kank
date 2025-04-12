@@ -200,7 +200,7 @@
                 <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">Cycle Precedents</dd>
 
             </div>
-            <div *ngIf="agentVerifyingName !== ''" class="text-center text-green-600 text-lg md:text-xl font-bold mx-auto">
+            <div *ngIf="agentVerifyingName !== '' && (this.auth.isAdmin|| this.auth.isDistributor)" class="text-center text-green-600 text-lg md:text-xl font-bold mx-auto">
               ✔️ Client vérifié 
               par {{agentVerifyingName}}
             </div>'

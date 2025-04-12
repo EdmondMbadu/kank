@@ -145,6 +145,11 @@ export class TransformRegisterClientComponent implements OnInit {
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
       return;
+    } else if (this.client.agentSubmittedVerification !== 'true') {
+      alert(
+        "Le client n'a pas encore été vérifié. Veuillez patienter un jour avant de refaire cette action."
+      );
+      return;
     } else if (this.numberOfCurrentClients >= this.maxNumberOfClients) {
       alert(
         `Vous avez depassez la limite de clients autorisez. La limite est de ${

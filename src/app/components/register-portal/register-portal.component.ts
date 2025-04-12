@@ -90,6 +90,7 @@ export class RegiserPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      // console.log('the client', this.client);
       this.auth.getAuditInfo().subscribe((data) => {
         // this.auditInfo = data[0];
         this.audits = data;
