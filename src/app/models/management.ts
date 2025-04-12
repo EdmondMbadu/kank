@@ -1,3 +1,5 @@
+import { Client } from './client';
+
 export class Management {
   id?: string;
   moneyInHands?: string;
@@ -9,4 +11,20 @@ export class Management {
   dollarTransferLoss?: { [key: string]: string } = {};
   bankDepositDollars?: { [key: string]: string } = {};
   bankDepositFrancs?: { [key: string]: string } = {};
+}
+
+export class Audit {
+  id?: string;
+  name?: string;
+  phoneNumber?: string;
+  pendingClients?: PendingClient[];
+  profilePicture?: string;
+}
+
+export class PendingClient {
+  clientName?: string;
+  clientPhoneNumber?: string;
+  clientLocation?: string;
+  clientId?: string;
+  clientProfilePicture?: string;
 }

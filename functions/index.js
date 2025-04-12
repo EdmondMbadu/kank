@@ -12,6 +12,7 @@ admin.initializeApp();
 // Retrieve Africa's Talking credentials from environment variables
 const apiKey = functions.config().africastalking.api_key;
 const username = functions.config().africastalking.username;
+const db = admin.firestore();
 
 // Initialize Africa's Talking SDK
 // eslint-disable-next-line new-cap
@@ -503,6 +504,96 @@ Merci pona confiance na Fondation Gervais`;
         console.log(`SMS sent to ${formattedNumber}:`, response);
       } catch (error) {
         console.error("Error sending registration SMS:", error);
+      }
+
+      // -----------------------------------------------------------------
+      //   PART 2: Assign the client to an auditor & send the auditor SMS
+      // -----------------------------------------------------------------
+
+      try {
+      // 1) Fetch the user doc to get the user’s firstName as "clientLocation"
+        const userDocSnapshot = await db
+            .collection("users")
+            .doc(context.params.userId)
+            .get();
+        const userData = userDocSnapshot.data() || {};
+        const clientLocation = userData.firstName || "Unknown";
+
+        // 2) Fetch all audit documents
+        const auditsSnapshot = await db.collection("audit").get();
+        if (auditsSnapshot.empty) {
+          console.log("No auditors found. Skipping assignment...");
+          return null;
+        }
+
+        // 3) Find the auditor with the fewest pendingClients
+        let chosenAudit = null;
+        let minClients = Infinity;
+        let backupAudits = []; // In case multiple have the same #, we can pick randomly
+
+        auditsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const pendingClients = data.pendingClients || [];
+          const size = pendingClients.length;
+
+          if (size < minClients) {
+            chosenAudit = {id: doc.id, ...data};
+            minClients = size;
+            backupAudits = [chosenAudit];
+          } else if (size === minClients) {
+          // track multiple if needed
+            backupAudits.push({id: doc.id, ...data});
+          }
+        });
+
+        // If we have multiple audits tied, pick randomly from backupAudits
+        if (backupAudits.length > 1) {
+          const idx = Math.floor(Math.random() * backupAudits.length);
+          chosenAudit = backupAudits[idx];
+        }
+
+        if (!chosenAudit) {
+          console.log("No suitable auditor found. Skipping assignment...");
+          return null;
+        }
+
+        console.log("Chosen auditor:", chosenAudit.name);
+
+        // 4) Add this client to the chosen auditor's pendingClients array
+        await db
+            .collection("audit")
+            .doc(chosenAudit.id)
+            .update({
+              pendingClients: admin.firestore.FieldValue.arrayUnion({
+                clientName: fullName,
+                clientLocation: clientLocation,
+                clientPhoneNumber: phoneNumber,
+                clientId: context.params.clientId,
+                clientProfilePicture: afterData.profilePicture.downloadURL || "",
+              }),
+            });
+
+        // 5) Send SMS to the chosen auditor
+        const auditorNumber = makeValidE164(chosenAudit.phoneNumber);
+        if (!auditorNumber) {
+          console.log(`Invalid phone number for auditor: ${chosenAudit.phoneNumber}`);
+        } else {
+        // Construct the auditor SMS
+          const auditorMessage = `${chosenAudit.name},
+Oponami pona ko verifier identie ya client ${fullName} ya location ${clientLocation}. Numero na ye ezali ${phoneNumber}. Benga ye pe verifier suka lobi. Merci pona mosala malamu na Fondation Gervais`;
+
+          try {
+            const response = await sms.send({
+              to: [auditorNumber],
+              message: auditorMessage,
+            });
+            console.log(`SMS sent to auditor ${auditorNumber}:`, response);
+          } catch (error) {
+            console.error("Error sending auditor SMS:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error during auditor assignment:", error);
       }
 
       return null;

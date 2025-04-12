@@ -17,7 +17,7 @@ import { TimeService } from './time.service';
 import { ComputationService } from '../shrink/services/computation.service';
 import { Employee } from '../models/employee';
 import { Card } from '../models/card';
-import { Management } from '../models/management';
+import { Audit, Management } from '../models/management';
 @Injectable({
   providedIn: 'root',
 })
@@ -134,6 +134,9 @@ export class AuthService {
   }
   getManagementInfo() {
     return this.afs.collection<Management>(`management/`).valueChanges();
+  }
+  getAuditInfo() {
+    return this.afs.collection<Audit>(`audit/`).valueChanges();
   }
   getClientsCardOfAUser(userId: string) {
     return this.afs.collection<Client>(`users/${userId}/cards/`).valueChanges();

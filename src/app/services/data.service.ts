@@ -14,7 +14,7 @@ import { Avatar, Certificate, Employee } from '../models/employee';
 import { ComputationService } from '../shrink/services/computation.service';
 import { Card } from '../models/card';
 import { WriteBatch } from 'firebase/firestore';
-import { Management } from '../models/management';
+import { Audit, Management } from '../models/management';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 
@@ -230,6 +230,19 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
+  updateAuditInfo(audit: Audit) {
+    const auditRef: AngularFirestoreDocument<Audit> = this.afs.doc(
+      `audit/${audit.id}`
+    );
+
+    const data = {
+      name: audit.name,
+      phoneNumber: audit.phoneNumber,
+    };
+
+    return auditRef.set(data, { merge: true });
+  }
+
   updateEmployeeBonusInfo(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
@@ -703,6 +716,15 @@ export class DataService {
       profilePicture: avatar,
     };
     return employeeRef.set(data, { merge: true });
+  }
+  updateAuditPictureData(audit: Audit, url: string) {
+    const auditRef: AngularFirestoreDocument<Audit> = this.afs.doc(
+      `audit/${audit.id}`
+    );
+    const data = {
+      profilePicture: url,
+    };
+    return auditRef.set(data, { merge: true });
   }
   updateClientPictureData(client: Client, avatar: Avatar) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
