@@ -242,7 +242,22 @@ export class DataService {
 
     return auditRef.set(data, { merge: true });
   }
+  createAudit(audit: Partial<Audit>) {
+    const docRef = this.afs.collection('audit').doc();
 
+    const newAudit: Audit = {
+      id: docRef.ref.id,
+      name: audit.name || '',
+      phoneNumber: audit.phoneNumber || '',
+      profilePicture: audit.profilePicture || '',
+      pendingClients: audit.pendingClients || [],
+    };
+
+    return docRef.set(newAudit, { merge: true });
+  }
+  deleteAudit(auditId: string) {
+    return this.afs.collection('audit').doc(auditId).delete();
+  }
   updateEmployeeBonusInfo(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
@@ -258,6 +273,23 @@ export class DataService {
     };
 
     return employeeRef.set(data, { merge: true });
+  }
+  removePendingClientByFilter(audit: Audit, clientIdToRemove: string) {
+    // 1) Filter out the client from the local array
+    const newPendingClients = audit.pendingClients
+      ? audit.pendingClients.filter((pc) => pc.clientId !== clientIdToRemove)
+      : [];
+
+    // 2) Build the new object to save
+    const updatedAuditData = {
+      pendingClients: newPendingClients,
+    };
+
+    // 3) Use set(..., { merge: true }) to overwrite pendingClients
+    const auditDocRef: AngularFirestoreDocument<Audit> = this.afs.doc(
+      `audit/${audit.id}`
+    );
+    return auditDocRef.set(updatedAuditData, { merge: true });
   }
   updateEmployeePaymentInfo(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(

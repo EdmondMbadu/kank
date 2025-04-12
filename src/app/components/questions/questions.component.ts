@@ -1,6 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { Router } from '@angular/router';
+import { Client } from 'src/app/models/client';
 import { Audit } from 'src/app/models/management';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
@@ -20,7 +22,8 @@ export class QuestionsComponent implements OnInit {
     private afs: AngularFirestore,
     public auth: AuthService,
     private data: DataService,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private router: Router
   ) {}
   audits: Audit[] = [];
   url: string = '';
@@ -33,12 +36,18 @@ export class QuestionsComponent implements OnInit {
   editName: string = ''; // holds new name
   editPhoneNumber: string = ''; // holds new phoneNumber
 
+  // For the "Add Auditor" form
+  showAddAuditorForm: boolean = false;
+  newAuditorName: string = '';
+  newAuditorPhone: string = '';
+  clients: Client[] = [];
   ngOnInit(): void {
     this.auth.getAuditInfo().subscribe((data) => {
       // this.auditInfo = data[0];
       this.audits = data;
       // this.audits = this.auditInfo;
       console.log('this.auditInfo', this.audits);
+      this.retrieveClients();
     });
   }
 
@@ -59,7 +68,38 @@ export class QuestionsComponent implements OnInit {
       this.editPhoneNumber = audit.phoneNumber!;
     }
   }
+  // Toggle the "Add Auditor" pop-up
+  toggleAddAuditForm(): void {
+    this.showAddAuditorForm = !this.showAddAuditorForm;
+    // Clear fields if closing
+    if (!this.showAddAuditorForm) {
+      this.newAuditorName = '';
+      this.newAuditorPhone = '';
+    }
+  }
+  // Create the new auditor
+  onCreateAudit(): void {
+    if (!this.newAuditorName.trim() || !this.newAuditorPhone.trim()) {
+      alert('Please fill in both Name and Phone Number');
+      return;
+    }
 
+    const auditorData: Partial<Audit> = {
+      name: this.newAuditorName.trim(),
+      phoneNumber: this.newAuditorPhone.trim(),
+      profilePicture: '',
+      pendingClients: [],
+    };
+
+    this.data
+      .createAudit(auditorData)
+      .then(() => {
+        console.log('Auditor created successfully!');
+        // Optionally close the form
+        this.toggleAddAuditForm();
+      })
+      .catch((err) => console.error('Error creating auditor:', err));
+  }
   // Save the changed name/phoneNumber
   async saveAuditEdits(audit: Audit) {
     try {
@@ -86,10 +126,61 @@ export class QuestionsComponent implements OnInit {
     alert(`Edit auditor: ${audit.name}`);
   }
 
-  onDeleteAudit(audit: any) {
-    // placeholder for your logic to delete an auditor
-    alert(`Delete auditor: ${audit.name}`);
+  onDeleteAudit(audit: Audit) {
+    if (confirm(`Are you sure you want to delete auditor "${audit.name}"?`)) {
+      this.data
+        .deleteAudit(audit.id!)
+        .then(() => {
+          console.log('Audit document successfully deleted!');
+        })
+        .catch((error) => {
+          console.error('Error deleting auditor:', error);
+        });
+    }
   }
+  retrieveClients(): void {
+    this.auth.getAllClients().subscribe((data: any) => {
+      this.clients = data;
+      console.log('this.clients', this.clients);
+
+      // Match each pendingClient with an actual client by ID
+      this.audits.forEach((audit) => {
+        if (!audit.pendingClients) return;
+
+        audit.pendingClients.forEach((pc) => {
+          // Find the index of the client whose uid matches pc.clientId
+          const matchIndex = this.clients.findIndex(
+            (c) => c.uid === pc.clientId
+          );
+
+          if (matchIndex !== -1) {
+            // Store the index as the pendingId
+            pc.pendingId = matchIndex.toString();
+          }
+        });
+      });
+    });
+  }
+
+  // For jumping to the client's register portal
+  goToClientPortal(audit: Audit, pc: any) {
+    if (this.auth.currentUser.firstName === pc.clientLocation) {
+      if (pc.pendingId) {
+        // If you have Angular Router:
+        this.router.navigate(['/register-portal', pc.pendingId]);
+        // alert(`Navigating to /register-portal/${pc.pendingId}`);
+      } else {
+        alert('No matching client found, or no pendingId set.');
+      }
+    } else {
+      // Show popup or alert
+      alert(
+        `You are not in the correct location. Please go to ${pc.clientLocation} to access this client.`
+      );
+    }
+  }
+
+  // ...existing createAudit, edit, delete, etc. methods...
 
   async startUpload(event: FileList, audit: Audit) {
     console.log('current employee', audit);

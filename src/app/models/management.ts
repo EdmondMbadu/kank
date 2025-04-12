@@ -27,4 +27,5 @@ export class PendingClient {
   clientLocation?: string;
   clientId?: string;
   clientProfilePicture?: string;
+  pendingId?: string;
 }

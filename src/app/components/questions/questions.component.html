@@ -8,15 +8,74 @@
 <!-- Page Container -->
 <div class="min-h-screen  p-6">
   <div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-extrabold text-gray-800 mb-6">Auditors</h1>
+    <h1 class="text-3xl font-extrabold text-gray-800 mb-6">Auditeurrs</h1>
 
     <!-- Add Auditor Button -->
     <button
       class="inline-flex items-center px-5 py-2 mb-6 text-white bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-green-300 font-medium rounded-full shadow-md transition-all"
-      (click)="onAddAudit()"
+      (click)="toggleAddAuditForm()"
     >
-      + Add Auditor
+      + Ajouter Auditeur
     </button>
+    <div
+    *ngIf="showAddAuditorForm"
+    class="absolute inset-0 flex justify-center items-start z-50"
+  >
+    <div
+      class="mt-20 w-80 bg-white border border-gray-300 rounded-lg shadow-xl p-6 
+             relative flex flex-col"
+    >
+      <!-- Optional small arrow at the top -->
+      <div
+        class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1
+               w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent 
+               border-b-8 border-b-gray-300"
+      ></div>
+
+      <h2 class="text-lg font-semibold mb-4 text-gray-700">Add New Auditor</h2>
+      
+      <!-- Form fields -->
+      <label class="block mb-4">
+        <span class="block text-sm font-medium text-gray-700">Name:</span>
+        <input
+          type="text"
+          [(ngModel)]="newAuditorName"
+          class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 
+                 rounded-md text-sm shadow-sm placeholder-gray-400
+                 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          placeholder="e.g. Edmond Mbadu"
+        />
+      </label>
+
+      <label class="block mb-4">
+        <span class="block text-sm font-medium text-gray-700">Phone Number:</span>
+        <input
+          type="text"
+          [(ngModel)]="newAuditorPhone"
+          class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 
+                 rounded-md text-sm shadow-sm placeholder-gray-400
+                 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          placeholder="e.g. 2156877614"
+        />
+      </label>
+
+      <!-- Action buttons -->
+      <div class="flex justify-end space-x-2">
+        <button
+          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-all"
+          (click)="onCreateAudit()"
+        >
+          Create
+        </button>
+        <button
+          class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md transition-all"
+          (click)="toggleAddAuditForm()"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
 
     <!-- Loop over all auditors -->
     <div 
@@ -43,18 +102,18 @@
             <p class="text-gray-600">Phone: {{ audit.phoneNumber }}</p>
           </div>
 
-          <div class="mt-3 space-x-2">
+          <div class="mt-3 space-x-2 space-y-4 items-center">
             <button
               class="px-4 py-1 bg-yellow-400 hover:bg-yellow-500 text-white rounded-md transition-all"
               (click)="toggleEditTooltip(audit)"
             >
-              Edit
+              Modifier
             </button>
             <button
               class="px-4 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md transition-all"
               (click)="onDeleteAudit(audit)"
             >
-              Delete
+              Suprimer
             </button>
           </div>
         </div>
@@ -66,7 +125,7 @@
 
         <!-- Each pending client -->
         <div 
-          class="flex items-center mb-3 pb-3 border-b border-gray-200 last:border-0 last:pb-0"
+          class="flex items-center mb-3 pb-3 border-b border-gray-200 last:border-0 last:pb-0 md:space-x-4"
           *ngFor="let client of audit.pendingClients"
         >
           <!-- Client Avatar -->
@@ -82,7 +141,16 @@
             <div class="text-sm text-gray-700">Location: {{ client.clientLocation }}</div>
             <div class="text-sm text-gray-700">Phone: {{ client.clientPhoneNumber }}</div>
           </div>
+          <!-- Inside your *ngFor="let pc of audit.pendingClients" -->
+          <button
+          class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+          (click)="goToClientPortal(audit, client)"
+          >
+          verifier Client
+          </button>
+
         </div>
+        
           <!-- EDIT TOOLTIP (only shown if editAuditId === audit.id) -->
   <!-- EDIT TOOLTIP (centered) -->
   <div

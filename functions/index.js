@@ -580,7 +580,7 @@ Merci pona confiance na Fondation Gervais`;
         } else {
         // Construct the auditor SMS
           const auditorMessage = `${chosenAudit.name},
-Oponami pona ko verifier identie ya client ${fullName} ya location ${clientLocation}. Numero na ye ezali ${phoneNumber}. Benga ye pe verifier suka lobi. Merci pona mosala malamu na Fondation Gervais`;
+Oponami pona ko verifier ba information ya client ${fullName} ya location ${clientLocation}. Numero na ye ezali ${phoneNumber}. Benga ye pe verifier ba information na ye. Merci pona mosala malamu na Fondation Gervais`;
 
           try {
             const response = await sms.send({

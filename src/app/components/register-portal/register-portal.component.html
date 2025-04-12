@@ -20,12 +20,13 @@
     </div>
 
 </div>
-<div *ngIf="this.auth.isAdmin" class="flex container mx-auto justify-center mb-4">
-    <div *ngIf="agentVerifyingName !== ''" class="flex items-center text-green-600 text-xl font-bold">
+<div  class="flex container mx-auto justify-center mb-4">
+    <div *ngIf="agentSubmmittedVerification" class="flex items-center text-green-600 text-xl font-bold">
       ✔️ Client vérifié 
-      par {{agentVerifyingName}}
+      <span *ngIf="this.auth.isAdmin" > par {{agentVerifyingName}}</span>
+     
     </div>
-    <div *ngIf="agentVerifyingName === ''" class="flex items-center text-red-600 text-xl font-bold">
+    <div *ngIf="!agentSubmmittedVerification" class="flex items-center text-red-600 text-xl font-bold">
       ❌ Client non vérifié
     </div>
   </div>
@@ -121,12 +122,12 @@
             </button>
          </div>
          <!-- Montant Emprunter -->
-         <div *ngIf="this.auth.isAdmin || !agentSubmmitted" class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+         <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nom de L'Audit Qui a verfie le Client</h2>
             <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Nom: <strong>{{ agentVerifyingName}}</strong></p>
-            <input [(ngModel)]="agentVerifyingName" type="text" placeholder="Entrez Votre Nom" 
+            <input [disabled]="!this.auth.isAdmin" [(ngModel)]="agentVerifyingName" type="text" placeholder="Entrez Votre Nom" 
               class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-            <button (click)="toggle('showAuditConfirmation')" 
+            <button *ngIf="!agentSubmmittedVerification || this.auth.isAdmin" (click)="toggle('showAuditConfirmation')" 
               class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
               Confirmer
             </button>

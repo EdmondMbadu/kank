@@ -7,6 +7,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { Audit } from 'src/app/models/management';
 
 @Component({
   selector: 'app-register-portal',
@@ -20,10 +21,11 @@ export class RegiserPortalComponent {
   agent?: Employee = { firstName: '-' };
   url: string = '';
   agentVerifyingName: string = '';
-  agentSubmmitted: boolean = false;
+  agentSubmmittedVerification: string = '';
 
   showAuditConfirmation: boolean = false;
   isConfirmed: boolean = false;
+  audits: Audit[] = [];
 
   id: any = '';
   paymentDate = '';
@@ -88,7 +90,30 @@ export class RegiserPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      console.log('Current client ', this.client);
+      this.auth.getAuditInfo().subscribe((data) => {
+        // this.auditInfo = data[0];
+        this.audits = data;
+        // this.audits = this.auditInfo;
+        console.log('this.auditInfo', this.audits);
+
+        //    Assuming the field is named `clientId`.
+        const matchingAudit = this.audits.find((audit) => {
+          if (!audit.pendingClients) return false;
+          return audit.pendingClients.some(
+            (pc) => pc.clientId === this.client.uid
+          );
+        });
+
+        // 4) If found, store that audit's name in agentVerifyingName
+        if (matchingAudit) {
+          this.agentVerifyingName = matchingAudit.name!;
+          console.log('Matching audit found:', matchingAudit);
+          // optionally, also store it in the client object if desired:
+          // this.client.agentVerifyingName = matchingAudit.name;
+        }
+      });
+      // 3) Find the audit that has a pendingClient with this client's ID
+
       this.setGraphCredit();
       this.setFields();
       this.setGraphWorthiness();
@@ -336,10 +361,16 @@ export class RegiserPortalComponent {
         value,
         this.client.uid!
       );
-      this.agentSubmmitted = true;
+      const lo = await this.data.setClientField(
+        'agentSubmittedVerification',
+        'true',
+        this.client.uid!
+      );
+      this.agentSubmmittedVerification = 'true';
       alert('Confirmer avec succès');
       this.toggle('showAuditConfirmation');
       this.toggle('isConfirmed');
+      await this.removeClientFromPending();
     } catch (err) {
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");
     }
@@ -351,6 +382,39 @@ export class RegiserPortalComponent {
     }
     if (this.client.agentVerifyingName) {
       this.agentVerifyingName = this.client.agentVerifyingName!;
+    }
+    if (this.client.agentSubmittedVerification) {
+      this.agentSubmmittedVerification =
+        this.client.agentSubmittedVerification!;
+    }
+  }
+  // In your component (e.g., questions.component.ts):
+
+  async removeClientFromPending(): Promise<void> {
+    // 1) Find the audit that has this.client.uid in its pendingClients
+    const matchingAudit = this.audits.find((audit) =>
+      audit.pendingClients?.some((pc) => pc.clientId === this.client.uid)
+    );
+
+    if (!matchingAudit) {
+      console.log('No matching audit found for this client.');
+      return;
+    }
+
+    // 2) Call your DataService method to filter out this client
+    try {
+      await this.data.removePendingClientByFilter(
+        matchingAudit,
+        this.client.uid!
+      );
+      console.log('Client removed from pendingClients successfully!');
+
+      // 3) Optionally remove the client locally for immediate UI feedback
+      matchingAudit.pendingClients = matchingAudit.pendingClients?.filter(
+        (pc) => pc.clientId !== this.client.uid
+      );
+    } catch (err) {
+      console.error('Error removing client from pendingClients:', err);
     }
   }
 }

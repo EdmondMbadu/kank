@@ -59,6 +59,7 @@ export class Client {
   comments?: Comment[];
   isPhoneCorrect?: string;
   agentVerifyingName?: string;
+  agentSubmittedVerification?: string;
 }
 
 export class Comment {
