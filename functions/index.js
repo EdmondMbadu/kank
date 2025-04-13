@@ -519,6 +519,10 @@ Merci pona confiance na Fondation Gervais`;
         const userData = userDocSnapshot.data() || {};
         const clientLocation = userData.firstName || "Unknown";
 
+        if (userData.mode==="testing") {
+          console.log("User is in testing mode. Skipping auditor assignment...");
+          return null;
+        }
         // 2) Fetch all audit documents
         const auditsSnapshot = await db.collection("audit").get();
         if (auditsSnapshot.empty) {
