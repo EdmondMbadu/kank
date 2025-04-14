@@ -208,6 +208,7 @@ export class GestionDayComponent implements OnInit {
           for (let client of clients) {
             if (
               client.requestStatus !== undefined &&
+              client.agentSubmittedVerification === 'true' &&
               (client.requestType === 'lending' ||
                 client.requestType === 'savings') &&
               client.requestDate === this.requestDateRigthFormat

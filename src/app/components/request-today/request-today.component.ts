@@ -137,6 +137,7 @@ export class RequestTodayComponent implements OnInit {
       if (
         client.requestStatus !== undefined &&
         client.requestType === 'lending' &&
+        client.agentSubmittedVerification === 'true' &&
         client.requestDate === this.requestDateRigthFormat
       ) {
         this.clientsRequestLending.push(client);
