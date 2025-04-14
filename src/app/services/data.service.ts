@@ -428,6 +428,7 @@ export class DataService {
       isPhoneCorrect: 'true',
       vitalStatus: '',
       agentVerifyingName: '',
+      agentSubmittedVerification: '',
       requestDate: client.requestDate,
       dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,
