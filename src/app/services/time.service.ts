@@ -153,7 +153,7 @@ export class TimeService {
     // the minus is for practical consideration since the actual data gives us numbers
     // between -1 and 0 for future considerations ( from -1 to 0)
     // added one day to the minimum to include today
-    if (diffDays > 0 && diffDays <= 7) {
+    if (diffDays > 1 && diffDays <= 7) {
       return true;
     } else {
       return false;
