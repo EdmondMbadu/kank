@@ -159,6 +159,30 @@ export class TimeService {
       return false;
     }
   }
+
+  validateDateWithInOneWeekNotPastOrTodayCard(dateStr: string) {
+    // Get the current date
+    const currentDate: any = new Date();
+
+    // Create a date object from the input date string
+    const inputDate: any = new Date(dateStr);
+
+    // Calculate the difference in milliseconds
+    const diffTime = inputDate - currentDate;
+
+    // Convert the difference to days
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+    // Check if the difference is within one week and the date is in the future
+    // the minus is for practical consideration since the actual data gives us numbers
+    // between -1 and 0 for future considerations ( from -1 to 0)
+    // added one day to the minimum to include today
+    if (diffDays > -1 && diffDays <= 7) {
+      return true;
+    } else {
+      return false;
+    }
+  }
   convertDateToDayMonthYear(dateStr: string) {
     // Split the input date string by the hyphen
     const [month, day, year] = dateStr.split('-');

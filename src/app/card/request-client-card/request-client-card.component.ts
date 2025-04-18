@@ -55,7 +55,7 @@ export class RequestClientCardComponent {
   }
 
   async returnCLientCardMoney() {
-    let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
+    let checkDate = this.time.validateDateWithInOneWeekNotPastOrTodayCard(
       this.requestDate
     );
     const amountToReturnNum = Number(this.amountToReturnToClient);
