@@ -529,7 +529,15 @@
           
   
       </footer>
-      <p class="text-gray-500 dark:text-gray-400">{{c.comment}}</p>
+      <div *ngIf="c.comment" class="mb-2">
+        <strong>Commentaire :</strong>
+        <p>{{ c.comment }}</p>
+      </div>
+      
+      <div *ngIf="c.audioUrl" class="mb-2">
+        <strong>Enregistrement :</strong>
+        <audio [src]="c.audioUrl" controls class="w-full"></audio>
+      </div>
       
   </article>
  
