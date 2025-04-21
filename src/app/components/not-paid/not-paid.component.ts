@@ -25,6 +25,7 @@ export class NotPaidComponent implements OnInit {
   datesRange: string[] = [];
   startDate: string = '';
   endDate: string = '';
+  showWarning: boolean = false;
   constructor(
     public auth: AuthService,
     private time: TimeService,
@@ -44,7 +45,65 @@ export class NotPaidComponent implements OnInit {
       });
   }
 
+  find5WeeksOrMoreNotPaid() {
+    // The user typed something (e.g. "3" or "5") into the search bar.
+    // Convert that to a number of weeks:
+    this.haveNotPaid = this.clients;
+    this.haveNotPaid = this.haveNotPaid?.filter((client) => {
+      const weeks = parseInt('20', 10);
+      if (isNaN(weeks) || weeks <= 0) {
+        // If they typed something not a valid number, skip or return false
+        return false;
+      }
+      if (Number(client.debtLeft) <= 0) {
+        return false;
+      }
+      // filter out clients who died.
+      if (client.vitalStatus === 'Mort') {
+        return false;
+      }
+      const WEEKS_IN_MS = weeks * 7 * 24 * 60 * 60 * 1000;
+      const now = new Date();
+      // We only filter if the client has a debtCycleStartDate AND payments
+      if (client.debtCycleStartDate && client.payments) {
+        const [startMonth, startDay, startYear] = client.debtCycleStartDate
+          .split('-')
+          .map(Number);
+        const debtCycleStartDate = new Date(
+          startYear,
+          startMonth - 1,
+          startDay
+        );
+        // If the total time since the debt cycle started is < X weeks, exclude
+        if (now.getTime() - debtCycleStartDate.getTime() < WEEKS_IN_MS) {
+          return false;
+        }
+        // Check if the client made any payment within the last X weeks
+        const recentPaymentExists = Object.keys(client.payments).some(
+          (paymentDate) => {
+            const [payMonth, payDay, payYear] = paymentDate
+              .split('-')
+              .map(Number);
+            const paymentDateObj = new Date(payYear, payMonth - 1, payDay);
+            return now.getTime() - paymentDateObj.getTime() < WEEKS_IN_MS;
+          }
+        );
+        // We only want those who do NOT have a recent payment
+        // (meaning no payment within the last X weeks)
+        return !recentPaymentExists;
+      }
+      return false;
+    }); // No start date or no payments
+    this.haveNotPaidCopy = structuredClone(this.haveNotPaid);
+    this.numberofPeopleWhodidNotPay = this.haveNotPaid!.length;
+    this.totalGivenDate = this.haveNotPaid!.reduce(
+      (sum, { debtLeft }) => sum + Number(debtLeft),
+      0
+    );
+    this.showWarning = true;
+  }
   searchThoseWhoDidNotPayPerInterval() {
+    this.showWarning = false;
     this.validStartDate = this.time.isDateInRange(this.startDate);
     this.validEndDate = this.time.isDateInRange(this.endDate);
 
@@ -74,6 +133,7 @@ export class NotPaidComponent implements OnInit {
       // filter out clients that have not debt( registered) or have finished their debts.
 
       this.retrieveEmployees();
+      this.find5WeeksOrMoreNotPaid();
     });
   }
 

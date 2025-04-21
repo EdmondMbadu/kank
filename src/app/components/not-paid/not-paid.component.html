@@ -25,7 +25,19 @@
     <button (click)="searchThoseWhoDidNotPayPerInterval()"  class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " >Découvrir</button>
 </div>
 
-<div class="flex container mx-auto justify-center mb-4">
+<div class="flex  flex-col container mx-auto justify-center mb-4">
+    <div *ngIf="showWarning"
+  class="bg-red-600 text-white px-6 py-4 rounded-lg shadow-md mb-6 flex items-center mx-auto justify-center"
+  role="alert"
+>
+  <!-- Heroicon: exclamation -->
+
+
+  <span class="ml-3 font-semibold text-lg">
+    ⚠️  Clients Dangereux : 5+ Mois sans payer
+  </span>
+</div>
+
     <h2 class="text-center text-xl  ">{{numberofPeopleWhodidNotPay}} Clients N'ont Pas Payé. Montant: {{totalGivenDate | number:'1.0-0'}} FC </h2>
    
 </div>
