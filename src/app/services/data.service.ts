@@ -242,6 +242,18 @@ export class DataService {
 
     return auditRef.set(data, { merge: true });
   }
+  /**
+   * Replace the audit’s pendingClients with a new array
+   */
+  updateAuditPendingClients(
+    auditId: string,
+    pendingClients: any[]
+  ): Promise<void> {
+    // note the path here is `audit/${auditId}`—match whatever you use elsewhere
+    return this.afs
+      .doc(`audit/${auditId}`)
+      .set({ pendingClients }, { merge: true });
+  }
   createAudit(audit: Partial<Audit>) {
     const docRef = this.afs.collection('audit').doc();
 

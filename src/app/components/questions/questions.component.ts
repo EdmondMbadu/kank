@@ -121,6 +121,27 @@ export class QuestionsComponent implements OnInit {
     }
   }
 
+  removePendingClient(audit: Audit, client: any) {
+    if (!confirm(`Supprimer ${client.clientName} ?`)) return;
+
+    // build the trimmed array
+    const updatedPending = audit.pendingClients!.filter(
+      (pc) => pc.clientId !== client.clientId
+    );
+
+    // persist only the pendingClients field
+    this.data
+      .updateAuditPendingClients(audit.id!, updatedPending)
+      .then(() => {
+        // reflect the change immediately in the UI
+        audit.pendingClients = updatedPending;
+      })
+      .catch((err) => {
+        console.error('Erreur suppression client :', err);
+        alert('Impossible de retirer ce client, veuillez réessayer.');
+      });
+  }
+
   onEditAudit(audit: any) {
     // placeholder for your logic to edit auditor's info
     alert(`Edit auditor: ${audit.name}`);
