@@ -198,12 +198,14 @@ export class ReserveComponent {
   calculateTodaySum(): number {
     let dailySum = 0;
     const todayKey = this.getDateKey(new Date()); // e.g. "3-25-2025"
-    const allReserveKeys = Object.keys(this.currentUser.reserve || {});
+    const allReserveKeys = Object.keys(
+      this.currentUser.dailyReimbursement || {}
+    );
     for (let key of allReserveKeys) {
       const splitted = key.split('-'); // "MM-DD-YYYY-HH-mm-ss"
       const dayKey = `${splitted[0]}-${splitted[1]}-${splitted[2]}`;
       if (dayKey === todayKey) {
-        dailySum += Number(this.currentUser.reserve[key]);
+        dailySum += Number(this.currentUser.dailyReimbursement[key]);
       }
     }
     return dailySum;

@@ -30,6 +30,7 @@ export class TodayCentralComponent {
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   dailyLending: string = '0';
   dailyPayment: string = '0';
+  dailyPaymentDollars: string = '0';
   dailyReserve: string = '0';
   dailyReserveDollars: string = '0';
   dailyInvestement: string = '0';
@@ -42,6 +43,11 @@ export class TodayCentralComponent {
   dailyLoss: string = '0';
 
   sortedReserveToday: {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] = [];
+  sortedPaymentToday: {
     firstName: string;
     totalReserve: number;
     totalReserveInDollars: string;
@@ -178,6 +184,9 @@ export class TodayCentralComponent {
     this.dailyReserveDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyReserve)
       .toString();
+    this.dailyPaymentDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.dailyPayment)
+      .toString();
     this.dailyRequestDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyRequest)
       .toString();
@@ -187,6 +196,12 @@ export class TodayCentralComponent {
         this.requestDateCorrectFormat,
         this.allUsers,
         'reserve'
+      );
+    this.sortedPaymentToday =
+      this.compute.findTodayTotalResultsGivenFieldSortedDescending(
+        this.requestDateCorrectFormat,
+        this.allUsers,
+        'dailyReimbursement'
       );
     this.sortedRequestedTomorrow =
       this.compute.findTodayTotalResultsGivenFieldSortedDescending(

@@ -65,6 +65,7 @@ export class TrackingMonthCentralComponent {
   ];
   valuesConvertedToDollars: string[] = [];
   givenMonthTotalPaymentAmount: string = '';
+  givenMonthTotalPaymentAmountDollars: string = '';
   givenMonthTotalSavingAmount: string = '';
   givenMonthTotalSavingReturnsAmount: string = '';
   givenMonthTotalBenefitAmount: string = '';
@@ -91,6 +92,11 @@ export class TrackingMonthCentralComponent {
     '../../../assets/img/budget.png',
   ];
   sortedReserveMonth: {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] = [];
+  sortedPaymentMonth: {
     firstName: string;
     totalReserve: number;
     totalReserveInDollars: string;
@@ -207,6 +213,13 @@ export class TrackingMonthCentralComponent {
         this.givenMonth,
         this.givenYear
       );
+    this.sortedPaymentMonth =
+      this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+        this.allUsers,
+        'dailyReimbursement',
+        this.givenMonth,
+        this.givenYear
+      );
     this.sortedReservePreviousMonth =
       this.compute.findTotalGivenMonthForAllUsersSortedDescending(
         this.allUsers,
@@ -245,6 +258,9 @@ export class TrackingMonthCentralComponent {
 
     this.givenMonthTotalReserveAmountDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.givenMonthTotalReserveAmount)
+      .toString();
+    this.givenMonthTotalPaymentAmountDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.givenMonthTotalPaymentAmount)
       .toString();
 
     console.log('given month total reserve', this.sortedReserveMonth);

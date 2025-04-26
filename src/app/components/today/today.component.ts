@@ -242,7 +242,7 @@ export class TodayComponent {
       this.percentage = '0.00';
     } else {
       this.percentage = (
-        (Number(this.dailyReserve) / Number(this.expectedReserve)) *
+        (Number(this.dailyPayment) / Number(this.expectedReserve)) *
         100
       ).toFixed(2);
     }

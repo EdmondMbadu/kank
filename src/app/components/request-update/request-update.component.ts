@@ -107,7 +107,7 @@ export class RequestUpdateComponent implements OnInit {
       this.applicationFee,
       this.memberShipFee
     );
-    let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
+    let checkDate = this.time.validateDateWithInOneWeekNotPastOrTodayCard(
       this.requestDate
     );
     if (
