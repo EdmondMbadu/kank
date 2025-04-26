@@ -61,6 +61,7 @@ export class GestionDayComponent implements OnInit {
   recentServeDates: string[] = [];
   recentServeAmounts: number[] = [];
   dailyExpense: string = '0';
+  dailyPayment: string = '0';
   dailyBankFranc: string = '0';
   dailyBankDollar: string = '0';
   dailyServed: string = '0';
@@ -171,7 +172,8 @@ export class GestionDayComponent implements OnInit {
   }> = [];
   reserveTotals: Array<{
     firstName: string;
-
+    payment?: number;
+    paymentDollar?: number;
     total: number;
     totalInDollar: number;
     actual?: number;
@@ -181,6 +183,7 @@ export class GestionDayComponent implements OnInit {
   overallTotal: number = 0;
   overallTotalReserve: number = 0;
   overallTotalInDollars: number = 0;
+  paymentTotal: number = 0;
   overallTotalReserveInDollars: number = 0;
   getAllClients() {
     if (this.isFetchingClients) return;
@@ -258,6 +261,27 @@ export class GestionDayComponent implements OnInit {
           const todayKeys = Object.keys(user.reserve || {}).filter((key) =>
             key.startsWith(this.today)
           );
+          const paymentKeys = Object.keys(user.dailyReimbursement || {}).filter(
+            (key) => key === this.today
+          );
+
+          // 2) Sum up raw FC payments
+          const payment = paymentKeys.reduce(
+            (sum, key) => sum + Number(user.dailyReimbursement?.[key] ?? 0),
+            0
+          );
+
+          // 3) Sum up those same payments converted to USD
+          const paymentDollar = paymentKeys.reduce(
+            (sum, key) =>
+              sum +
+              Number(
+                this.compute.convertCongoleseFrancToUsDollars(
+                  String(user.dailyReimbursement?.[key] ?? 0)
+                )
+              ),
+            0
+          );
 
           this.reserveTotals.push({
             firstName: user.firstName!,
@@ -268,10 +292,9 @@ export class GestionDayComponent implements OnInit {
                 reserveTotal.toString()
               )
             ),
-            actual: todayKeys.reduce(
-              (sum, key) => sum + Number(user.reserve![key] || 0),
-              0
-            ), // Default to 0 if undefined
+            payment,
+            paymentDollar,
+            // Default to 0 if undefined
             actualInDollar: todayKeys.reduce(
               (sum, key) =>
                 sum +
@@ -288,6 +311,7 @@ export class GestionDayComponent implements OnInit {
           // Add to the overall total
           this.overallTotal += userTotal;
           this.overallTotalReserve += reserveTotal;
+          this.paymentTotal += payment;
 
           completedRequests++;
           if (completedRequests === this.allUsers.length) {
