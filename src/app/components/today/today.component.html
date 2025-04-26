@@ -70,8 +70,14 @@
 
             <!-- Daily Reserve -->
             <div class="bg-white p-4 rounded-lg shadow-sm">
+                <h3 class="text-lg font-semibold text-green-800 mb-2">Paiement Du Jour</h3>
+                <p class="text-xl font-bold text-green-900 mb-2">
+                    {{ dailyPayment | number:'1.0-0' }} FC 
+                    <span class="text-gray-600">-></span> 
+                    {{ dailyPaymentDollars | number:'1.0-0' }} $
+                </p>
                 <h3 class="text-lg font-semibold text-green-800 mb-2">Reserve Du Jour</h3>
-                <p class="text-xl font-bold text-green-900">
+                <p class="text-lg font-bold text-green-900">
                     {{ dailyReserve | number:'1.0-0' }} FC 
                     <span class="text-gray-600">-></span> 
                     {{ compute.convertCongoleseFrancToUsDollars(dailyReserve) | number:'1.0-0' }} $

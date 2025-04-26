@@ -34,6 +34,7 @@ export class TodayComponent {
   perc: number = 0;
   dailyLending: string = '0';
   dailyPayment: string = '0';
+  dailyPaymentDollars: string = '0';
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -182,7 +183,9 @@ export class TodayComponent {
       `${this.dailyLoss}`,
       // `${this.tomorrowMoneyRequests}`,
     ];
-
+    this.dailyPaymentDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.dailyPayment)
+      .toString();
     this.valuesConvertedToDollars = [
       ``,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
