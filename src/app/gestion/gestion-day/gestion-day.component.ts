@@ -294,6 +294,10 @@ export class GestionDayComponent implements OnInit {
             ),
             payment,
             paymentDollar,
+            actual: todayKeys.reduce(
+              (sum, key) => sum + Number(user.reserve![key]),
+              0
+            ),
             // Default to 0 if undefined
             actualInDollar: todayKeys.reduce(
               (sum, key) =>
