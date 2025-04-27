@@ -56,6 +56,7 @@ export class Employee {
   tempUser?: User;
   showAttendance?: boolean;
   receipts?: string[];
+  paidThisMonth?: boolean;
 }
 export class Avatar {
   path?: string;

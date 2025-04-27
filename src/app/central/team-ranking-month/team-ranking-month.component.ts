@@ -187,6 +187,24 @@ export class TeamRankingMonthComponent {
           currentClients,
           employee
         );
+      // ────────────── NEW: did they get paid this month? ──────────────
+      const now = new Date();
+      const targetMonth = now.getMonth() + 1; // 1–12
+      const targetYear = now.getFullYear(); // e.g. 2025
+      const payments = employee.payments || {}; // might be undefined
+
+      employee.paidThisMonth = Object.keys(payments).some((key) => {
+        // split "M-D-YYYY-HH-mm-ss" into ["M","D","YYYY"]
+        const [mStr, dStr, yStr] = key.split('-', 3);
+        const m = Number(mStr),
+          d = Number(dStr),
+          y = Number(yStr);
+
+        return (
+          m === targetMonth && y === targetYear && d > 15 // ← only count payments after the 15th
+        );
+      });
+      // ────────────────────────────────────────────────────────────────
 
       // If the employee isn't already in the Map, add them
       if (!uniqueEmployees.has(employee.uid!)) {
@@ -196,6 +214,7 @@ export class TeamRankingMonthComponent {
 
     // Convert the Map values back to an array
     this.allEmployees = Array.from(uniqueEmployees.values());
+    console.log('all employees', allEmployees);
 
     // Sort by performancePercentageMonth descending,
     // converting any NaN to 0 so that NaNs don't cause sorting problems

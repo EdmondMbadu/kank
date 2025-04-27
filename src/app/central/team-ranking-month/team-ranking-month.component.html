@@ -82,6 +82,7 @@
         </div>
         <!-- Employee Details -->
         <div class="ml-4 flex-1">
+          <h1 *ngIf="!em.paidThisMonth && this.auth.isAdmin" class="text-lg font-bold text-red-900">⚠️ Not Signed </h1>
           <h3  (click)="em.showAttendance = !em.showAttendance" class="text-lg font-bold text-gray-900">
             {{ em.firstName }}  {{ em.lastName }}
           </h3>
