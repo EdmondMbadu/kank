@@ -675,6 +675,60 @@
                 </div>
             </div>
         </div>
+        <h2 id="accordion-collapse-heading-2">
+          <button (click)="toggle('criteriaToLend')" type="button" 
+            class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" 
+            data-accordion-target="#accordion-collapse-body-2" 
+            aria-expanded="false" aria-controls="accordion-collapse-body-2">
+            <span>Comment Évaluer le Montant à Prêter à un Client</span>
+            <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" 
+              aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" 
+              viewBox="0 0 10 6">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" 
+                stroke-width="2" d="M9 5 5 1 1 5"/>
+            </svg>
+          </button>
+        </h2>
+        
+        <div *ngIf="criteriaToLend" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2" class="p-5 border border-t-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
+          
+          <p class="mb-4">🔎 Avant de parler de bon ou mauvais client, il faut toujours <strong>regarder la réalité</strong>.</p>
+        
+          <p class="mb-4">❓ Posez-vous la question simple : <em>« Ce client est-il capable de rembourser l’argent qu’il demande ? »</em></p>
+        
+          <p class="mb-4">🛠️ Soyez pratique : posez des questions simples, observez les faits et ne vous fiez pas seulement aux paroles.</p>
+        
+          <h3 class="text-lg font-semibold mt-6 mb-2">Montant du Prêt à Accorder</h3>
+        
+          <ul class="list-disc list-inside space-y-2">
+            <li>⚠️ Les gens surestiment souvent leur capacité financière. Ne croyez pas les promesses, observez la réalité.</li>
+            <li>🏠 Ne jamais prêter si :
+              <ul class="list-disc list-inside ml-5">
+                <li>Vous ne savez pas où le client habite.</li>
+                <li>Vous ne savez pas où il vend ses produits.</li>
+              </ul>
+            </li>
+            <li>📈 Condition essentielle : le client doit être en activité depuis au moins <strong>6 mois</strong> et vendre des produits <strong>non périssables</strong>.</li>
+          </ul>
+        
+          <h3 class="text-lg font-semibold mt-6 mb-2">Application au Contexte </h3>
+        
+          <p class="mb-4">💬 Questions pratiques :</p>
+        
+          <ul class="list-disc list-inside space-y-2">
+            <li>💰 Combien le client gagne-t-il <strong>par jour</strong> ?</li>
+            <li>📊 Utilisez la règle suivante : <strong>gain journalier ÷ 3 ≈ capacité de remboursement hebdomadaire</strong>.</li>
+          </ul>
+        
+          <p class="mt-4">Exemple :</p>
+          <ul class="list-disc list-inside ml-5 space-y-2">
+            <li>Gain : 30 000 FC par jour ➔ Capacité de remboursement : 10 000 FC par semaine.</li>
+            <li>Montant de prêt initial recommandé : <strong>50 000 FC</strong>.</li>
+            <li>Après remboursement réussi, possibilité d’augmenter jusqu’à <strong>100 000 FC</strong>.</li>
+          </ul>
+        
+        </div>
+        
 
         <div class="container mx-auto my-6 p-6 bg-red-50 border-l-4 border-red-500 rounded">
           <h2 class="text-2xl font-bold text-red-700 mb-4">⚠️ Cas de Vol</h2>

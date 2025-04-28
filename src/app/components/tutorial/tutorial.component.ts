@@ -29,6 +29,7 @@ export class TutorialComponent {
   moneyRequested: boolean = false;
   reserveSummary: boolean = false;
   dailyActivity: boolean = false;
+  criteriaToLend: boolean = false;
 
   numberOfPeople: number = 0;
   percentage: number = 0;
@@ -65,6 +66,7 @@ export class TutorialComponent {
       | 'best'
       | 'budget'
       | 'maxLoan'
+      | 'criteriaToLend'
   ) {
     this[property] = !this[property];
   }
