@@ -88,168 +88,172 @@ export class WithdrawSavingsComponent implements OnInit {
 
     return creditScore;
   }
-  // withDrawSavings() {
-  //   if (this.savingsWithdrawn === '') {
-  //     alert('emplissez toutes les données');
-  //     return;
-  //   } else if (Number.isNaN(Number(this.savingsWithdrawn))) {
-  //     alert('Entrée incorrecte. Entrez un numéro');
-  //     return;
-  //   } else if (Number(this.savingsWithdrawn) > Number(this.client.savings)) {
-  //     alert(
-  //       "Vous n'avez pas suffisament d'argent pour effectuer cette transaction!"
-  //     );
-  //     return;
-  //   } else if (Number(this.savingsWithdrawn) <= 0) {
-  //     alert('Entrez un nombre valid positifs');
-  //     return;
-  //   }
-  //   const amountNum = +this.savingsWithdrawn;
-  //   const conf = confirm(this.buildConfirmText(amountNum));
-  //   if (!conf) {
-  //     return;
-  //   } else {
-  //     this.client.savings = (
-  //       Number(this.client.savings) - Number(this.savingsWithdrawn)
-  //     ).toString();
-  //     this.client.savingsPayments = {
-  //       [this.time.todaysDate()]: `-${this.savingsWithdrawn}`,
-  //     };
-
-  //     this.data.clientWithdrawFromSavings(this.client, this.savingsWithdrawn);
-  //     this.router.navigate(['/client-portal/' + this.id]);
-  //   }
-  // }
-  /* ---------------------------------------------------------------------- */
-  /*                          NEW withdraw logic                            */
-  /* ---------------------------------------------------------------------- */
-  withDrawSavings() {
-    /* ---------- validations (unchanged) ---------- */
+  makePayment() {
     if (this.savingsWithdrawn === '') {
       alert('emplissez toutes les données');
       return;
-    }
-    if (Number.isNaN(+this.savingsWithdrawn)) {
+    } else if (Number.isNaN(Number(this.savingsWithdrawn))) {
       alert('Entrée incorrecte. Entrez un numéro');
       return;
-    }
-    if (+this.savingsWithdrawn > +this.client.savings!) {
+    } else if (Number(this.savingsWithdrawn) > Number(this.client.savings)) {
       alert(
         "Vous n'avez pas suffisament d'argent pour effectuer cette transaction!"
       );
       return;
-    }
-    if (+this.savingsWithdrawn <= 0) {
+    } else if (Number(this.savingsWithdrawn) <= 0) {
       alert('Entrez un nombre valid positifs');
       return;
     }
-
-    /* ---------- confirm ---------- */
     const amountNum = +this.savingsWithdrawn;
     const conf = confirm(this.buildConfirmText(amountNum));
     if (!conf) {
       return;
+    } else {
+      this.client.savings = (
+        Number(this.client.savings) - Number(this.savingsWithdrawn)
+      ).toString();
+      this.client.savingsPayments = {
+        [this.time.todaysDate()]: `-${this.savingsWithdrawn}`,
+      };
+
+      this.data.clientWithdrawFromSavings(this.client, this.savingsWithdrawn);
+      this.router.navigate(['/client-portal/' + this.id]);
     }
-
-    const today = this.time.todaysDate(); // e.g. 26-04-2025
-    const todayMDY = this.time.todaysDateMonthDayYear(); // e.g. 4-26-2025
-
-    /* ------------------------------------------------------------------
-     CASE A · Client already paid everything ➜ ordinary withdrawal only
-  ------------------------------------------------------------------ */
-    if (+this.client.debtLeft! <= 0) {
-      this.client.savings = (+this.client.savings! - amountNum).toString();
-      this.client.savingsPayments = { [today]: `-${amountNum}` };
-
-      this.data
-        .clientWithdrawFromSavings(this.client, this.savingsWithdrawn)
-        .then(() => this.router.navigate(['/client-portal', this.id]));
-      return;
-    }
-
-    /* ------------------------------------------------------------------
-     CASE B · Debt still open ➜ transfer savings → payment
-  ------------------------------------------------------------------ */
-    if (amountNum > +this.client.debtLeft!) {
-      alert('Le retrait dépasse la dette restante. Ajustez le montant.');
-      return;
-    }
-
-    /* 1️⃣  Update in-memory client object */
-    /* remove from savings */
-    this.client.savings = (+this.client.savings! - amountNum).toString();
-    this.client.savingsPayments = { [today]: `-${amountNum}` };
-
-    /* add as payment */
-    this.client.amountPaid = (+this.client.amountPaid! + amountNum).toString();
-    this.client.numberOfPaymentsMade = (
-      +this.client.numberOfPaymentsMade! + 1
-    ).toString();
-    this.client.numberOfPaymentsMissed = Math.max(
-      0,
-      this.time.weeksSince(this.client.dateJoined!) -
-        +this.client.numberOfPaymentsMade
-    ).toString();
-    this.client.payments = { [today]: amountNum.toString() };
-    this.client.debtLeft = (
-      +this.client.amountToPay! - +this.client.amountPaid
-    ).toString();
-    this.client.creditScore = this.computeCreditScore();
-
-    /* 2️⃣  Persist both updates atomically */
-    const clientPath = `users/${this.auth.currentUser.uid}/clients/${this.client.uid}`;
-    const userPath = `users/${this.auth.currentUser.uid}`;
-
-    this.afs.firestore
-      .runTransaction(async (t) => {
-        /* ---- client document ---- */
-        t.set(
-          this.afs.doc(clientPath).ref,
-          {
-            /* savings side */
-            savings: this.client.savings,
-            savingsPayments: this.client.savingsPayments,
-            /* payment side  */
-            amountPaid: this.client.amountPaid,
-            numberOfPaymentsMade: this.client.numberOfPaymentsMade,
-            numberOfPaymentsMissed: this.client.numberOfPaymentsMissed,
-            payments: this.client.payments,
-            debtLeft: this.client.debtLeft,
-            creditScore: this.client.creditScore,
-          },
-          { merge: true }
-        );
-
-        /* ---- user aggregate document ---- */
-        /* –– subtract from clientsSavings (withdraw) –
-       –– add to moneyInHands & dailyReimbursement (payment) */
-        const u = this.auth.currentUser;
-        const save = this.data.computeDailySaving(todayMDY, '0'); // 0 because no new saving deposit
-        const reimb = this.data.computeDailyReimbursement(
-          todayMDY,
-          amountNum.toString()
-        );
-
-        t.set(
-          this.afs.doc(userPath).ref,
-          {
-            clientsSavings: (Number(u.clientsSavings) - amountNum).toString(),
-            moneyInHands: (Number(u.moneyInHands) + amountNum).toString(),
-            totalDebtLeft: (Number(u.totalDebtLeft) - amountNum).toString(),
-            dailySaving: { [todayMDY]: `${save}` },
-            dailyReimbursement: { [todayMDY]: `${reimb}` },
-          },
-          { merge: true }
-        );
-      })
-      .then(() => {
-        /* 3️⃣  performance metrics, then redirect */
-        this.performance.updateUserPerformance(
-          this.client,
-          this.savingsWithdrawn
-        );
-        this.router.navigate(['/client-portal', this.id]);
-      });
   }
+  /* ---------------------------------------------------------------------- */
+  /*                          NEW withdraw logic                            */
+  /* ---------------------------------------------------------------------- */
+  // withDrawSavings() {
+  //   /* ---------- validations (unchanged) ---------- */
+  //   if (this.savingsWithdrawn === '') {
+  //     alert('emplissez toutes les données');
+  //     return;
+  //   }
+  //   if (Number.isNaN(+this.savingsWithdrawn)) {
+  //     alert('Entrée incorrecte. Entrez un numéro');
+  //     return;
+  //   }
+  //   if (+this.savingsWithdrawn > +this.client.savings!) {
+  //     alert(
+  //       "Vous n'avez pas suffisament d'argent pour effectuer cette transaction!"
+  //     );
+  //     return;
+  //   }
+  //   if (+this.savingsWithdrawn <= 0) {
+  //     alert('Entrez un nombre valid positifs');
+  //     return;
+  //   }
+
+  //   /* ---------- confirm ---------- */
+  //   const amountNum = +this.savingsWithdrawn;
+  //   const conf = confirm(this.buildConfirmText(amountNum));
+  //   if (!conf) {
+  //     return;
+  //   }
+
+  //   const today = this.time.todaysDate(); // e.g. 26-04-2025
+  //   const todayMDY = this.time.todaysDateMonthDayYear(); // e.g. 4-26-2025
+
+  //   /* ------------------------------------------------------------------
+  //    CASE A · Client already paid everything ➜ ordinary withdrawal only
+  // ------------------------------------------------------------------ */
+  //   if (+this.client.debtLeft! <= 0) {
+  //     this.client.savings = (+this.client.savings! - amountNum).toString();
+  //     this.client.savingsPayments = { [today]: `-${amountNum}` };
+
+  //     this.data
+  //       .clientWithdrawFromSavings(this.client, this.savingsWithdrawn)
+  //       .then(() => this.router.navigate(['/client-portal', this.id]));
+  //     return;
+  //   }
+
+  //   /* ------------------------------------------------------------------
+  //    CASE B · Debt still open ➜ transfer savings → payment
+  // ------------------------------------------------------------------ */
+  //   if (amountNum > +this.client.debtLeft!) {
+  //     alert('Le retrait dépasse la dette restante. Ajustez le montant.');
+  //     return;
+  //   }
+
+  //   /* 1️⃣  Update in-memory client object */
+  //   /* remove from savings */
+  //   this.client.savings = (+this.client.savings! - amountNum).toString();
+  //   this.client.savingsPayments = { [today]: `-${amountNum}` };
+
+  //   /* add as payment */
+  //   this.client.amountPaid = (+this.client.amountPaid! + amountNum).toString();
+  //   this.client.numberOfPaymentsMade = (
+  //     +this.client.numberOfPaymentsMade! + 1
+  //   ).toString();
+  //   this.client.numberOfPaymentsMissed = Math.max(
+  //     0,
+  //     this.time.weeksSince(this.client.dateJoined!) -
+  //       +this.client.numberOfPaymentsMade
+  //   ).toString();
+  //   this.client.payments = { [today]: amountNum.toString() };
+  //   this.client.debtLeft = (
+  //     +this.client.amountToPay! - +this.client.amountPaid
+  //   ).toString();
+  //   this.client.creditScore = this.computeCreditScore();
+
+  //   /* 2️⃣  Persist both updates atomically */
+  //   const clientPath = `users/${this.auth.currentUser.uid}/clients/${this.client.uid}`;
+  //   const userPath = `users/${this.auth.currentUser.uid}`;
+
+  //   this.afs.firestore
+  //     .runTransaction(async (t) => {
+  //       /* ---- client document ---- */
+  //       t.set(
+  //         this.afs.doc(clientPath).ref,
+  //         {
+  //           /* savings side */
+  //           savings: this.client.savings,
+  //           savingsPayments: this.client.savingsPayments,
+  //           /* payment side  */
+  //           amountPaid: this.client.amountPaid,
+  //           numberOfPaymentsMade: this.client.numberOfPaymentsMade,
+  //           numberOfPaymentsMissed: this.client.numberOfPaymentsMissed,
+  //           payments: this.client.payments,
+  //           debtLeft: this.client.debtLeft,
+  //           creditScore: this.client.creditScore,
+  //         },
+  //         { merge: true }
+  //       );
+
+  //       /* ---- user aggregate document ---- */
+  //       /* –– subtract from clientsSavings (withdraw) –
+  //      –– add to moneyInHands & dailyReimbursement (payment) */
+  //       const u = this.auth.currentUser;
+  //       const save = this.data.computeDailySaving(todayMDY, '0'); // 0 because no new saving deposit
+  //       // const sa = this.data.computeDailyCardReturns(todayMDY,)
+  //       const reimb = this.data.computeDailyReimbursement(
+  //         todayMDY,
+  //         amountNum.toString()
+  //       );
+
+  //       t.set(
+  //         this.afs.doc(userPath).ref,
+  //         {
+  //           clientsSavings: (Number(u.clientsSavings) - amountNum).toString(),
+  //           // moneyInHands: (Number(u.moneyInHands) + amountNum).toString(),
+  //           totalDebtLeft: (Number(u.totalDebtLeft) - amountNum).toString(),
+  //           dailySaving: { [todayMDY]: `${save}` },
+  //           dailySavingReturns: {
+  //             [todayMDY]: `${save}`,
+  //           },
+  //           dailyReimbursement: { [todayMDY]: `${reimb}` },
+  //         },
+  //         { merge: true }
+  //       );
+  //     })
+  //     .then(() => {
+  //       /* 3️⃣  performance metrics, then redirect */
+  //       this.performance.updateUserPerformance(
+  //         this.client,
+  //         this.savingsWithdrawn
+  //       );
+  //       this.router.navigate(['/client-portal', this.id]);
+  //     });
+  // }
   /* ---------------------------------------------------------------------- */
 }
