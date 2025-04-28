@@ -1,6 +1,6 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 <div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl text-center md:text-3xl mr-4"> {{client.firstName}} {{client.lastName}} Retrait De L'Epargne</h1>
+    <h1 class="text-xl text-center md:text-3xl mr-4"> {{client.firstName}} {{client.lastName}} {{withdrawalLabel}}</h1>
     <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "  routerLink="/client-portal">Client Portal</button> -->
 </div>
 
@@ -38,7 +38,7 @@
    
 
 <button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
-    <button  (click)="makePayment()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumetrre</button>
+    <button  (click)="withDrawSavings()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumetrre</button>
    
 </div>
 
