@@ -140,9 +140,12 @@ export class WithdrawSavingsComponent implements OnInit {
       );
       return;
     }
-    if (+this.savingsWithdrawn > +this.client.debtLeft!) {
+    if (
+      +this.savingsWithdrawn > +this.client.debtLeft! &&
+      +this.client.debtLeft! > 0
+    ) {
       alert(
-        `Vous allez payer plus que le dette restant. Vous ne pouvez que transferrer ${this.client.debtLeft} dans le paiment.`
+        `Vous allez payer plus que le dette restante. Vous ne pouvez que transferrer ${this.client.debtLeft} dans le paiement.`
       );
       return;
     }
