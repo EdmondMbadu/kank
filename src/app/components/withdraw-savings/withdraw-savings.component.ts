@@ -104,8 +104,9 @@ export class WithdrawSavingsComponent implements OnInit {
       alert('Entrez un nombre valid positifs');
       return;
     }
-    const amountNum = +this.savingsWithdrawn;
-    const conf = confirm(this.buildConfirmText(amountNum));
+    let conf = confirm(
+      ` Vous allez retrancher ${this.savingsWithdrawn} FC dans votre compte D'epargnes. Voulez-vous quand même continuer ?`
+    );
     if (!conf) {
       return;
     } else {
