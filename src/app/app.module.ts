@@ -9,8 +9,13 @@ import { AngularFireStorageModule } from '@angular/fire/compat/storage';
 // import * as PlotlyJS from 'plotly.js-dist-min';
 // PlotlyModule.plotlyjs = PlotlyJS;
 // @ts-ignore
-import * as PlotlyJS from 'plotly.js-finance-dist-min';
-PlotlyModule.plotlyjs = PlotlyJS;
+declare global {
+  interface Window {
+    Plotly: any;
+  }
+}
+
+PlotlyModule.plotlyjs = window.Plotly;
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -220,7 +225,12 @@ import { QuestionsComponent } from './components/questions/questions.component';
   providers: [],
   bootstrap: [AppComponent],
 })
-export class AppModule {}
+export class AppModule {
+  constructor() {
+    // TS will complain unless you tell it window.Plotly is “any”
+    PlotlyModule.plotlyjs = (window as any).Plotly;
+  }
+}
 function loadPlotly() {
   throw new Error('Function not implemented.');
 }
