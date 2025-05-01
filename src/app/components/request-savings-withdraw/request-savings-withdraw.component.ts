@@ -45,7 +45,7 @@ export class RequestSavingsWithdrawComponent implements OnInit {
     }
   }
   requestSavingsWithdrawal() {
-    let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
+    let checkDate = this.time.validateDateWithInOneWeekNotPastOrTodayCard(
       this.requestDate
     );
 
