@@ -67,6 +67,7 @@ export class ClientPortalComponent {
   paymentDate = '';
   debtStart = '';
   debtEnd = '';
+  savingsText: string = 'Transfer Epargne vers Paiement';
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -188,6 +189,9 @@ export class ClientPortalComponent {
     }
     if ((this, this.client.agentVerifyingName)) {
       this.agentVerifyingName = this.client.agentVerifyingName;
+    }
+    if (Number(this.client.debtLeft) <= 0) {
+      this.savingsText = 'Retrait Epargne';
     }
   }
 
