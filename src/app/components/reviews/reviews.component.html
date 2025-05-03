@@ -1,6 +1,6 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
 
-<section  class="bg-white dark:bg-gray-900 py-8 lg:py-6 antialiased">
+<section *ngIf="this.auth.isAdmin || this.auth.isDistributor" class="bg-white dark:bg-gray-900 py-8 lg:py-6 antialiased">
     <div class="max-w-2xl mx-auto px-4">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">Commentaires...</h2>
@@ -198,60 +198,60 @@
     </div>
   </section>
 
-<section class="bg-white py-4 antialiased dark:bg-gray-900 md:py-6">
+  <section class="bg-white py-4 antialiased dark:bg-gray-900 md:py-6">
     <div class="mx-auto max-w-screen-xl px-4 2xl:px-0">
       <div class="mx-auto max-w-5xl">
+        
         <div class="gap-4 sm:flex sm:items-center sm:justify-between">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">Commentaires pour l'Équipe</h2>
-          
-        </div>
-        <div class="mt-6 flow-root sm:mt-8">
-          <div *ngFor="let c of (reviews | slice:0:(this.auth.isAdmninistrator ? reviews.length : 2)); let i=index" class="divide-y divide-gray-200 dark:divide-gray-700">
-            <div class="grid md:grid-cols-12 gap-4 md:gap-6 pb-4 md:pb-6">
-              <!-- Name and Time -->
-              <dl class="md:col-span-3 order-3 md:order-1">
-                <dt class="sr-only">Product:</dt>
-                <dd class="text-base font-semibold text-gray-900 dark:text-white">
-                  <a href="#" class="hover:underline">{{c.name}}</a>
-                  <span class="mx-2 text-sm font-extralight">{{c.timeFormatted}}</span>
-                </dd>
-              </dl>
-        
-              <!-- Comment -->
-              <dl *ngIf="c.comment" class="md:col-span-6 order-4 md:order-2">
-                <dt class="sr-only">Message:</dt>
-                <dd class="text-gray-500 dark:text-gray-400">{{c.comment}}</dd>
-              </dl>
-        
-              <!-- Stars -->
-              <div class="md:col-span-3 order-1 md:order-3 flex items-center justify-between">
-                <dl>
-                  <dt class="sr-only">Stars:</dt>
-                  <dd class="flex items-center space-x-1">
-                    <ng-container *ngFor="let star of [1, 2, 3, 4, 5]; let i = index">
-                      <svg *ngIf="i < c.starsNumber!" class="w-5 h-5 text-yellow-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M13.8 4.2a2 2 0 0 0-3.6 0L8.4 8.4l-4.6.3a2 2 0 0 0-1.1 3.5l3.5 3-1 4.4c-.5 1.7 1.4 3 2.9 2.1l3.9-2.3 3.9 2.3c1.5 1 3.4-.4 3-2.1l-1-4.4 3.4-3a2 2 0 0 0-1.1-3.5l-4.6-.3-1.8-4.2Z"></path>
-                      </svg>
-                      <svg *ngIf="i >= c.starsNumber!" class="w-5 h-5 text-yellow-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                        <path stroke="currentColor" stroke-width="2" d="M11.083 5.104c.35-.8 1.485-.8 1.834 0l1.752 4.022a1 1 0 0 0 .84.597l4.463.342c.9.069 1.255 1.2.556 1.771l-3.33 2.723a1 1 0 0 0-.337 1.016l1.03 4.119c.214.858-.71 1.552-1.474 1.106l-3.913-2.281a1 1 0 0 0-1.008 0L7.583 20.8c-.764.446-1.688-.248-1.474-1.106l1.03-4.119A1 1 0 0 0 6.8 14.56l-3.33-2.723c-.698-.571-.342-1.702.557-1.771l4.462-.342a1 1 0 0 0 .84-.597l1.753-4.022Z"/>
-                      </svg>
-                    </ng-container>
-                  </dd>
-                </dl>
-              </div>
-        
-              <!-- Audio Player -->
-              <div class="md:col-span-3 order-4 md:order-4" *ngIf="c.audioUrl">
-                <audio [src]="c.audioUrl" controls></audio>
-              </div>
-            </div>
-          </div>
         </div>
   
+        <div class="mt-6 flow-root sm:mt-8">
+          <div *ngFor="let c of (reviews | slice:0:(this.auth.isAdmninistrator ? reviews.length : 2)); let i=index" class="divide-y divide-gray-200 dark:divide-gray-700">
+  
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-6 pb-6">
+              
+              <!-- Name and Time -->
+              <div class="md:col-span-3 flex flex-col justify-center order-1">
+                <a href="#" class="text-base font-semibold text-gray-900 dark:text-white hover:underline">{{c.name}}</a>
+                <span class="text-sm font-extralight text-gray-500 dark:text-gray-400">{{c.timeFormatted}}</span>
+              </div>
+  
+              <!-- Comment -->
+              <div *ngIf="c.comment" class="md:col-span-6 order-2">
+                <p class="text-gray-500 dark:text-gray-400 break-words">
+                  {{c.comment}}
+                </p>
+              </div>
+  
+              <!-- Stars -->
+              <div class="md:col-span-3 flex items-center order-3">
+                <div class="flex items-center space-x-1">
+                  <ng-container *ngFor="let star of [1, 2, 3, 4, 5]; let i = index">
+                    <svg *ngIf="i < c.starsNumber!" class="w-5 h-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M13.8 4.2a2 2 0 0 0-3.6 0L8.4 8.4l-4.6.3a2 2 0 0 0-1.1 3.5l3.5 3-1 4.4c-.5 1.7 1.4 3 2.9 2.1l3.9-2.3 3.9 2.3c1.5 1 3.4-.4 3-2.1l-1-4.4 3.4-3a2 2 0 0 0-1.1-3.5l-4.6-.3-1.8-4.2Z" />
+                    </svg>
+                    <svg *ngIf="i >= c.starsNumber!" class="w-5 h-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <path stroke="currentColor" stroke-width="2" d="M11.083 5.104c.35-.8 1.485-.8 1.834 0l1.752 4.022a1 1 0 0 0 .84.597l4.463.342c.9.069 1.255 1.2.556 1.771l-3.33 2.723a1 1 0 0 0-.337 1.016l1.03 4.119c.214.858-.71 1.552-1.474 1.106l-3.913-2.281a1 1 0 0 0-1.008 0L7.583 20.8c-.764.446-1.688-.248-1.474-1.106l1.03-4.119A1 1 0 0 0 6.8 14.56l-3.33-2.723c-.698-.571-.342-1.702.557-1.771l4.462-.342a1 1 0 0 0 .84-.597l1.753-4.022Z"/>
+                    </svg>
+                  </ng-container>
+                </div>
+              </div>
+  
+              <!-- Audio -->
+              <div *ngIf="c.audioUrl" class="md:col-span-12 order-4">
+                <audio [src]="c.audioUrl" controls class="w-full mt-2"></audio>
+              </div>
+  
+            </div>
+  
+          </div>
+        </div>
   
       </div>
     </div>
   </section>
+  
   
 
   
