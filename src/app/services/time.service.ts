@@ -243,7 +243,7 @@ export class TimeService {
     const formattedDay = date.getDate();
 
     // Format the date to "Month Day"
-    return `${formattedMonth} ${formattedDay}`;
+    return `${formattedMonth} ${formattedDay} ${year}`;
   }
   getDateInFiveWeeks(inputDate: string) {
     // Parse the input date
