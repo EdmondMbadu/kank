@@ -449,7 +449,7 @@ export class RegisterClientComponent implements OnInit {
     }
     // 👇 Add a unique suffix
     const uniqueSuffix = Date.now(); // or you can use uuidv4() if you import uuid
-    const path = `clients-avatar/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
+    const path = `clients-avatar/${this.firstName}-${this.middleName}-${this.lastName}`;
 
     // the main task
     console.log('the path', path);
