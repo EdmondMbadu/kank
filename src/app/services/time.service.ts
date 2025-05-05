@@ -224,20 +224,19 @@ export class TimeService {
 
     // Array of month names
     const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
     ];
-
     // Get the month name and day
     const formattedMonth = monthNames[date.getMonth()];
     const formattedDay = date.getDate();
