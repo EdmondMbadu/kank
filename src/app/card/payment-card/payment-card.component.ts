@@ -49,6 +49,11 @@ export class PaymentCardComponent {
     if (this.depositAmount === '') {
       alert('Remplissez toutes les données');
       return;
+    } else if (Number(this.clientCard.numberOfPaymentsMade) > 31) {
+      alert(
+        ` Vous avez dépassé le nombre total de paiements(31) pour 1 cycle de carte. Commencez un nouveau cycle.`
+      );
+      return;
     } else {
       let conf = confirm(
         ` Vous avez effectué ${this.numberOfPaymentToday} dépôt(s) aujourd'hui. Voulez-vous quand même continuer ?`
