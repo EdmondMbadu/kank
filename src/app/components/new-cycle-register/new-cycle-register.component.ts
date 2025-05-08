@@ -22,8 +22,8 @@ export class NewCycleRegisterComponent implements OnInit {
   amountToPayDisplay: boolean = false;
   debtCycleDisplay: boolean = false;
   client = new Client();
-  applicationFee: string = '';
-  memberShipFee: string = '';
+  applicationFee: string = '0';
+  memberShipFee: string = '0';
   savings: string = '';
   loanAmount: string = '';
   middleName: string = '';
