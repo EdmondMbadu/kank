@@ -55,28 +55,7 @@
         <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.businessAddress">
     </div> 
 
-    <!-- <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
-        <select id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-        <option [ngValue]="'Monday'">Lundi</option>
-        <option [ngValue]="'Tuesday'">Mardi</option>
-        <option [ngValue]="'Wednesday'">Mercredi</option>
-        <option [ngValue]="'Thursday'">Jeudi</option>
-        <option [ngValue]="'Friday'">Vendredi</option>
-        <option [ngValue]="'Saturday'">Samedi</option>
-        </select>
-    </div> -->
-
-    <!-- <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Agent</label>
-        <select id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-            <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
-     
-       
-        </select>
-    </div> -->
+   
     
 
 
@@ -117,7 +96,7 @@
     
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant Demandé</label>
-        <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
+        <select [disabled]="!this.auth.isAdmin" id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
         <option selected>Choose</option>
         <option [ngValue]="100000">FC 100,000</option>
         <option [ngValue]="200000">FC 200,000</option>
