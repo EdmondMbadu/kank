@@ -85,6 +85,18 @@ export class RegisterClientComponent implements OnInit {
   isLoading: boolean = false;
   url: string = '';
   avatar: any;
+  /** ---------- 1.  DUPLICATE‑NAME HELPERS  ---------- */
+  private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
+
+  /** true if *any* saved client already has exactly the same three names */
+  private nameExists(): boolean {
+    return this.allClients.some(
+      (c) =>
+        this.norm(c.firstName) === this.norm(this.firstName) &&
+        this.norm(c.middleName) === this.norm(this.middleName) &&
+        this.norm(c.lastName) === this.norm(this.lastName)
+    );
+  }
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
@@ -123,6 +135,11 @@ export class RegisterClientComponent implements OnInit {
     } else if (!inputValid) {
       alert(
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
+      );
+      return;
+    } else if (this.nameExists()) {
+      alert(
+        'Un client portant exactement le même prénom, post‑nom et nom existe déjà.'
       );
       return;
     } else if (

@@ -47,6 +47,9 @@ export class NewCycleRegisterComponent implements OnInit {
   maxNumberOfClients: number = 0;
   numberOfCurrentClients = 0;
 
+  /** Normalize text so “  Élodie ” === “elodie” */
+  private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
+
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -126,6 +129,18 @@ export class NewCycleRegisterComponent implements OnInit {
       this.loanAmountOtherDisplay = false;
     }
   }
+  /** Return true if another client already has *exactly* the same names */
+  private nameExists(): boolean {
+    const { firstName, middleName = '', lastName, uid } = this.client;
+
+    return this.allClients.some(
+      (c) =>
+        this.norm(c.firstName) === this.norm(firstName) &&
+        this.norm(c.middleName) === this.norm(middleName) &&
+        this.norm(c.lastName) === this.norm(lastName) &&
+        c.uid !== uid // ignore the client we’re editing
+    );
+  }
 
   registerClientNewDebtCycle() {
     let inputValid = this.data.numbersValid(
@@ -165,6 +180,11 @@ export class NewCycleRegisterComponent implements OnInit {
     ) {
       alert(
         "Les frais d'inscription ou d'adhesion doit etre minimum 5000 FC pour le nouveau cycle."
+      );
+      return;
+    } else if (this.nameExists()) {
+      alert(
+        'Un client possédant exactement le même prénom, nom et post‑nom existe déjà.'
       );
       return;
     } else if (
