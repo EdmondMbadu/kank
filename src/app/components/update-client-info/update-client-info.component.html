@@ -13,20 +13,20 @@
         
         <div  class="mb-6">
             <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Nom</label>
-            <input [(ngModel)]="client.firstName" type="text" id="telelphone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.firstName}}" required>
+            <input  [disabled]="!this.auth.isAdmin" [(ngModel)]="client.firstName" type="text" id="telelphone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.firstName}}" required>
         </div>
         <div  class="mb-6">
             <label for="lasttName" class="block mb-2 text-sm font-medium text-gray-900 "> Postnom</label>
-            <input [(ngModel)]="client.lastName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.lastName}}" required>
+            <input  [disabled]="!this.auth.isAdmin"[(ngModel)]="client.lastName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.lastName}}" required>
         </div>
 
         <div class="mb-6" *ngIf="client.middleName!==undefined">
             <label for="lasttName" class="block mb-2 text-sm font-medium text-gray-900 "> Prenom</label>
-            <input [(ngModel)]="client.middleName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.middleName}}" required>
+            <input [disabled]="!this.auth.isAdmin" [(ngModel)]="client.middleName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.middleName}}" required>
         </div>
         <div class="mb-6" *ngIf="client.middleName ===undefined">
             <label for="lasttName" class="block mb-2 text-sm font-medium text-gray-900 "> Prenom</label>
-            <input [(ngModel)]="middleName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{middleName}}" required>
+            <input  [disabled]="!this.auth.isAdmin" [(ngModel)]="middleName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{middleName}}" required>
         </div>
         <div  class="mb-6" >
             <label for="phoneNumber" class="block mb-2 text-sm font-medium text-gray-900 "> Numero de Telephone</label>
