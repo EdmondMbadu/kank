@@ -274,9 +274,16 @@
         <button (click)="toggle('showConfirmation')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">
           Annuler
         </button>
-        <button [disabled]="!isConfirmed" (click)="submitNewCycleRegistration()"  class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
+        <!-- <button [disabled]="!isConfirmed" (click)="submitNewCycleRegistration()"  class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
           Continuer
+        </button> -->
+        <button
+          class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
+          [disabled]="isLoading || !isConfirmed"
+          (click)="submitNewCycleRegistration()">
+          {{ isLoading ? 'Enregistrement…' : 'Enregistrer le nouveau cycle' }}
         </button>
+
       </div>
   
     </div>

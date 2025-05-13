@@ -215,6 +215,7 @@ import { QuestionsComponent } from './components/questions/questions.component';
     ReactiveFormsModule,
     FormsModule,
     AngularFireModule.initializeApp(environment.firebase),
+    AngularFirestoreModule.enablePersistence({ synchronizeTabs: true }), // <‑‑ add
     AngularFirestoreModule,
     AngularFireAuthModule,
     AngularFireStorageModule,

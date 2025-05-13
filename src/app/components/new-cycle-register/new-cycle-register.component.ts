@@ -8,8 +8,8 @@ import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import { __generator } from 'tslib';
-
 @Component({
   selector: 'app-new-cycle-register',
   templateUrl: './new-cycle-register.component.html',
@@ -272,10 +272,44 @@ export class NewCycleRegisterComponent implements OnInit {
     this.loanAmount = '';
     this.middleName = '';
   }
-  setClientNewDebtCycleValues() {
-    this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
+  // setClientNewDebtCycleValues() {
+  //   this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
+  //   this.client.previousSavingsPayments = { ...this.client.savingsPayments };
+  //   // I want to keep the whole history of payments.
+  //   this.client.previousPayments = {
+  //     ...this.client.previousPayments,
+  //     ...this.client.payments,
+  //   };
+  //   this.client.savingsPayments = {};
+
+  //   this.client.savings = (
+  //     Number(this.client.savings) + Number(this.savings)
+  //   ).toString();
+  //   this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
+  //   this.client.applicationFee = this.applicationFee;
+  //   this.client.middleName = this.middleName;
+  //   this.client.membershipFee = this.memberShipFee;
+  //   this.client.loanAmount = this.loanAmount;
+  //   this.client.requestAmount = this.loanAmount;
+  //   this.client.requestDate = this.requestDate;
+  //   this.client.dateOfRequest = this.time.todaysDate();
+  //   this.client.applicationFeePayments = {
+  //     [this.time.todaysDate()]: this.applicationFee,
+  //   };
+  //   this.client.membershipFeePayments = {
+  //     [this.time.todaysDate()]: this.memberShipFee,
+  //   };
+  // }
+  private setClientNewDebtCycleValues(): void {
+    /* ----- DATE FIELDS (use new helper) ----- */
+    this.requestDate = toAppDateFull(this.requestDate);
+    const today = toAppDateFull(new Date());
+
+    this.client.requestDate = this.requestDate;
+    this.client.dateOfRequest = today;
+
+    /* ----- UNCHANGED FIELDS ↓ ---------------- */
     this.client.previousSavingsPayments = { ...this.client.savingsPayments };
-    // I want to keep the whole history of payments.
     this.client.previousPayments = {
       ...this.client.previousPayments,
       ...this.client.payments,
@@ -285,80 +319,102 @@ export class NewCycleRegisterComponent implements OnInit {
     this.client.savings = (
       Number(this.client.savings) + Number(this.savings)
     ).toString();
-    this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
+
+    this.client.savingsPayments = { [today]: this.savings };
     this.client.applicationFee = this.applicationFee;
-    this.client.middleName = this.middleName;
     this.client.membershipFee = this.memberShipFee;
     this.client.loanAmount = this.loanAmount;
     this.client.requestAmount = this.loanAmount;
-    this.client.requestDate = this.requestDate;
-    this.client.dateOfRequest = this.time.todaysDate();
-    this.client.applicationFeePayments = {
-      [this.time.todaysDate()]: this.applicationFee,
-    };
-    this.client.membershipFeePayments = {
-      [this.time.todaysDate()]: this.memberShipFee,
-    };
-  }
 
+    this.client.applicationFeePayments = { [today]: this.applicationFee };
+    this.client.membershipFeePayments = { [today]: this.memberShipFee };
+  }
   proceed() {
     this.toggle('showConfirmation');
   }
 
-  submitNewCycleRegistration() {
+  // submitNewCycleRegistration() {
+  //   if (!this.isConfirmed) {
+  //     alert('Veuillez confirmer que vous avez respecté toutes les règles.');
+  //     return;
+  //   }
+  //   this.toggle('isLoading');
+  //   this.setClientNewDebtCycleValues();
+
+  //   // Save the current cycle to the 'cycles' subcollection
+  //   this.data
+  //     .saveCurrentCycle(this.client)
+  //     .then(() => {
+  //       // Register the new debt cycle
+  //       this.data.registerNewDebtCycle(this.client).then(
+  //         (res: any) => {
+  //           this.router.navigate(['/register-portal/' + this.id]);
+  //         },
+  //         (err: any) => {
+  //           alert(
+  //             "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+  //           );
+  //         }
+  //       );
+
+  //       // Update user info
+  //       const date = this.time.todaysDateMonthDayYear();
+  //       this.data
+  //         .updateUserInfoForRegisterClientNewDebtCycle(
+  //           this.client,
+  //           this.savings,
+  //           date
+  //         )
+  //         .then(
+  //           (res: any) => {
+  //             console.log('Informations utilisateur mises à jour avec succès');
+  //             this.toggle('isLoading');
+
+  //             this.isConfirmed = false;
+  //           },
+  //           (err: any) => {
+  //             alert(
+  //               "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+  //             );
+  //           }
+  //         );
+
+  //       this.resetFields();
+  //     })
+  //     .catch((error: any) => {
+  //       console.error('Error saving current cycle:', error);
+  //       alert('Erreur lors de la sauvegarde du cycle actuel.');
+  //     });
+  // }
+
+  // -------------------------------------------------------
+  async submitNewCycleRegistration() {
     if (!this.isConfirmed) {
       alert('Veuillez confirmer que vous avez respecté toutes les règles.');
       return;
     }
+
     this.toggle('isLoading');
     this.setClientNewDebtCycleValues();
 
-    // Save the current cycle to the 'cycles' subcollection
-    this.data
-      .saveCurrentCycle(this.client)
-      .then(() => {
-        // Register the new debt cycle
-        this.data.registerNewDebtCycle(this.client).then(
-          (res: any) => {
-            this.router.navigate(['/register-portal/' + this.id]);
-          },
-          (err: any) => {
-            alert(
-              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-            );
-          }
-        );
+    try {
+      await this.data.saveCurrentCycle(this.client);
+      await this.data.registerNewDebtCycle(this.client);
+      await this.data.updateUserInfoForRegisterClientNewDebtCycleOfflineSafe(
+        this.client,
+        Number(this.savings),
+        toAppDate(new Date())
+      );
 
-        // Update user info
-        const date = this.time.todaysDateMonthDayYear();
-        this.data
-          .updateUserInfoForRegisterClientNewDebtCycle(
-            this.client,
-            this.savings,
-            date
-          )
-          .then(
-            (res: any) => {
-              console.log('Informations utilisateur mises à jour avec succès');
-              this.toggle('isLoading');
-
-              this.isConfirmed = false;
-            },
-            (err: any) => {
-              alert(
-                "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-              );
-            }
-          );
-
-        this.resetFields();
-      })
-      .catch((error: any) => {
-        console.error('Error saving current cycle:', error);
-        alert('Erreur lors de la sauvegarde du cycle actuel.');
-      });
+      this.resetFields();
+      this.router.navigate(['/register-portal/' + this.id]);
+    } catch (err) {
+      console.error(err);
+      alert("Quelque chose s'est mal passé.");
+    } finally {
+      this.toggle('isLoading');
+    }
   }
-
   toggle(property: 'isLoading' | 'showConfirmation') {
     this[property] = !this[property];
   }

@@ -13,10 +13,14 @@ import { TimeService } from './time.service';
 import { Avatar, Certificate, Employee } from '../models/employee';
 import { ComputationService } from '../shrink/services/computation.service';
 import { Card } from '../models/card';
-import { WriteBatch } from 'firebase/firestore';
+import { doc, increment, writeBatch } from 'firebase/firestore';
 import { Audit, Management } from '../models/management';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
+import firebase from 'firebase/compat/app'; // ① NEW
+import 'firebase/compat/firestore'; // ②
+
+import 'firebase/compat/firestore';
 
 @Injectable({
   providedIn: 'root',
@@ -1249,7 +1253,57 @@ export class DataService {
     };
     return userRef.set(data, { merge: true });
   }
+  public async updateUserInfoForRegisterClientNewDebtCycleOfflineSafe(
+    client: Client,
+    addedSavings: number,
+    todayApp: string
+  ): Promise<void> {
+    const uid = this.auth.currentUser.uid;
+    const doc = this.afs.doc(`users/${uid}`); // AngularFirestoreDocument
+    const inc = firebase.firestore.FieldValue.increment;
 
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snap = await tx.get(doc.ref); // native DocumentReference
+      const d = snap.data() as User;
+
+      const toNum = (s?: string) => Number(s || 0);
+
+      const feesInc =
+        Number(client.membershipFee) + Number(client.applicationFee);
+
+      const newClientsSavings = toNum(d.clientsSavings) + addedSavings;
+      const newFees = toNum(d.fees) + feesInc;
+      const newMoneyInHands = toNum(d.moneyInHands) + feesInc + addedSavings;
+      const newMonthBudgetPending =
+        toNum(d.monthBudgetPending) +
+        (Number(client.creditScore) >= 70 ? 0 : Number(client.requestAmount));
+
+      /* helper to bump nested‑map strings */
+      const bump = (
+        map: { [k: string]: string } | undefined,
+        key: string,
+        inc: number
+      ) =>
+        Object.assign({}, map, {
+          [key]: (toNum(map?.[key]) + inc).toString(),
+        });
+
+      tx.update(doc.ref, {
+        clientsSavings: newClientsSavings.toString(),
+        fees: newFees.toString(),
+        moneyInHands: newMoneyInHands.toString(),
+        monthBudgetPending: newMonthBudgetPending.toString(),
+
+        dailySaving: bump(d.dailySaving, todayApp, addedSavings),
+        dailyMoneyRequests: bump(
+          d.dailyMoneyRequests,
+          client.requestDate!,
+          Number(client.requestAmount)
+        ),
+        feesData: bump(d.feesData, todayApp, feesInc),
+      });
+    });
+  }
   updateUserInfoForRegisterClientRequestUpdate(
     client: Client,
     savings: string,
