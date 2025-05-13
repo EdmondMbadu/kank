@@ -114,7 +114,8 @@ export class TransformRegisterClientComponent implements OnInit {
       this.payRange === '' ||
       this.debtCycleStartDate === '' ||
       this.debtCycleEndDate === '' ||
-      this.client.agent === ''
+      this.client.agent === '' ||
+      this.client.paymentDay === ''
     ) {
       alert('Completer tous les données');
       return;
@@ -123,8 +124,11 @@ export class TransformRegisterClientComponent implements OnInit {
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
       return;
-    } else if (this.client.agent === 'Choose') {
+    } else if (this.client.agent === 'Choose' || !this.client.agent) {
       alert('Assurez-vous que vous avez choisis un Agent.');
+      return;
+    } else if (!this.client.paymentDay || this.client.paymentDay === 'Choose') {
+      alert('Assurez-vous que vous avez choisi un jour de paiement.');
       return;
     } else if (
       Number(this.loanAmount) > Number(this.auth.currentUser.monthBudget) &&

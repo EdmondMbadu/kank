@@ -61,7 +61,7 @@
     
 
 
-    <div class="mb-6">
+    <!-- <div class="mb-6">
         <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
         <select id="applicationFee" [(ngModel)]="client.applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " disabled >
         <option selected>Choose</option>
@@ -72,9 +72,9 @@
         <option [ngValue]="30000">FC 30,000</option>
         <option [ngValue]="">Autre Montant </option>
         </select>
-    </div>
+    </div> -->
 
-    <div class="mb-6">
+    <!-- <div class="mb-6">
         <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
         <select id="memberFee" [(ngModel)]="client.membershipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " disabled>
         <option selected>Choose</option>
@@ -85,8 +85,8 @@
         <option [ngValue]="30000">FC 30,000</option>
         <option [ngValue]="">Autre Montant </option>
         </select>
-    </div>
-  
+    </div> -->
+<!--   
     <div class="mb-6">
         <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
         <select id="savings"[(ngModel)]="client.savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "disabled>
@@ -97,7 +97,7 @@
             <option [ngValue]="30000">FC 30,000</option>
             <option [ngValue]="">Autre Montant </option>
         </select>
-    </div>
+    </div> -->
 
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
@@ -114,7 +114,7 @@
 
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Agent</label>
-        <select [disabled]="client.debtCycle!=='1'"  id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
+        <select [disabled]="client.debtCycle!=='1' && !this.auth.isAdmin"  id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
         <option selected>Choose</option>
             <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
      
@@ -124,7 +124,7 @@
     
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant De Prêt</label>
-        <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
+        <select [disabled]="!this.auth.isAdmin" id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
         <option selected>Choose</option>
         <option [ngValue]="100000">FC 100,000</option>
         <option [ngValue]="200000">FC 200,000</option>
@@ -135,7 +135,7 @@
     </div>
     <div *ngIf="loanAmountOtherDisplay" class="mb-6">
         <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
-        <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+        <input type="text"  [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
     </div> 
 
 <div class="mb-6">
@@ -150,17 +150,17 @@
 
 <div  *ngIf="rateDisplay" class="mb-6">
     <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Taux D'interet</label> 
-    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="interestRate" required  [(ngModel)]="interestRate">
+    <input [disabled]="!this.auth.isAdmin" type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="interestRate" required  [(ngModel)]="interestRate">
 
   
 </div>
 <div  *ngIf="amountToPayDisplay" class="mb-6">
     <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Montant A Payer</label> 
-    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="amountToPay">  
+    <input [disabled]="!this.auth.isAdmin" type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="amountToPay">  
 </div>
 <div  *ngIf="debtCycleDisplay" class="mb-6">
     <label for="debtCycle" class="block mb-2 text-sm font-medium text-red-700">Period De Cycle De Paiment</label> 
-    <input type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="debtCycleStartDate+' to '+debtCycleEndDate">  
+    <input [disabled]="!this.auth.isAdmin" type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="debtCycleStartDate+' to '+debtCycleEndDate">  
 </div>
 
   <!-- Display Max Allowed Lending Amount -->
