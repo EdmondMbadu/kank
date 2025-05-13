@@ -78,9 +78,20 @@
         </select>
     </div> -->
     
+          <div class="mb-6">
+          <label class="block mb-2 text-sm font-medium text-gray-900">
+            Frais de Dossier
+          </label>
+          <input
+            type="text"
+            class="bg-gray-100 border border-gray-300 text-gray-600 text-sm rounded-lg
+                    block w-full p-2.5 cursor-not-allowed"
+            [value]="'FC 5 000'"
+            disabled
+          />
+          </div>
 
-
-    <div class="mb-6">
+    <!-- <div class="mb-6">
         <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
         <select id="applicationFee" [(ngModel)]="applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
         <option selected>Choose</option>
@@ -91,12 +102,24 @@
         <option [ngValue]="30000">FC 30,000</option>
         <option [ngValue]="">Autre Montant </option>
         </select>
-    </div>
+    </div> -->
     <div *ngIf="applicationFeeOtherDisplay" class="mb-6">
         <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
         <input type="text" [(ngModel)]="applicationFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
     </div> 
     <div class="mb-6">
+        <label class="block mb-2 text-sm font-medium text-gray-900">
+          Frais d’Adhésion
+        </label>
+        <input
+          type="text"
+          class="bg-gray-100 border border-gray-300 text-gray-600 text-sm rounded-lg
+                  block w-full p-2.5 cursor-not-allowed"
+          [value]="'FC 0'"
+          disabled
+        />
+      </div>
+    <!-- <div class="mb-6">
         <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
         <select id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaymemberShipFeeOtherAmount()">
         <option selected>Choose</option>
@@ -107,7 +130,7 @@
         <option [ngValue]="30000">FC 30,000</option>
         <option [ngValue]="">Autre Montant </option>
         </select>
-    </div>
+    </div> -->
     <div *ngIf="memberShipFeeOtherDisplay" class="mb-6">
         <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais D'Adhesion Autre Montant</label>
         <input type="text" [(ngModel)]="memberShipFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>

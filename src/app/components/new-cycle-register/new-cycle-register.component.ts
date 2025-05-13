@@ -30,6 +30,8 @@ export class NewCycleRegisterComponent implements OnInit {
   requestDate: string = '';
   maxLoanAmount: number = 0;
   allClients: Client[] = [];
+  private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
+  private readonly FIXED_MEMBERSHIP_FEE = '0'; // 0 FC
 
   code: string = '';
   userEnteredCode: string = '';
@@ -87,6 +89,11 @@ export class NewCycleRegisterComponent implements OnInit {
         this.maxLoanAmount = 400000;
         console.error('Client or credit score is undefined');
       }
+      /* <<< NEW: pre‑select fixed fees >>> */
+      this.applicationFee = this.FIXED_APPLICATION_FEE;
+      this.memberShipFee = this.FIXED_MEMBERSHIP_FEE;
+      this.applicationFeeOtherDisplay = false;
+      this.memberShipFeeOtherDisplay = false;
     });
   }
 

@@ -26,6 +26,8 @@ export class RegisterClientComponent implements OnInit {
   ) {}
   currentClients: Client[] = [];
   allClients: Client[] = [];
+  private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
+  private readonly FIXED_MEMBERSHIP_FEE = '10000'; // 0 FC
   ngOnInit() {
     this.auth.getAllClients().subscribe((data: any) => {
       // get current clients directly
@@ -37,6 +39,12 @@ export class RegisterClientComponent implements OnInit {
     this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
       ? Number(this.auth.currentUser.maxNumberOfClients)
       : this.data.generalMaxNumberOfClients;
+
+    /* <<< NEW: pre‑select fixed fees >>> */
+    this.applicationFee = this.FIXED_APPLICATION_FEE;
+    this.memberShipFee = this.FIXED_MEMBERSHIP_FEE;
+    this.applicationFeeOtherDisplay = false;
+    this.memberShipFeeOtherDisplay = false;
   }
   employees: Employee[] = [];
   maxNumberOfClients: number = 0;
@@ -53,7 +61,7 @@ export class RegisterClientComponent implements OnInit {
   homeAddress: string = '';
   businessAddress: string = '';
   phoneNumber: string = '';
-  applicactionFee: string = '';
+  applicationFee: string = '';
   memberShipFee: string = '';
   loanAmount: string = '';
   savings: string = '';
@@ -107,7 +115,7 @@ export class RegisterClientComponent implements OnInit {
     );
     let inputValid = this.data.numbersValid(
       this.savings,
-      this.applicactionFee,
+      this.applicationFee,
       this.memberShipFee
     );
     if (
@@ -119,7 +127,7 @@ export class RegisterClientComponent implements OnInit {
       this.bussinessCapital === '' ||
       this.homeAddress === '' ||
       this.phoneNumber === '' ||
-      this.applicactionFee === '' ||
+      this.applicationFee === '' ||
       this.memberShipFee === '' ||
       this.savings === '' ||
       this.requestDate === '' ||
@@ -155,7 +163,7 @@ export class RegisterClientComponent implements OnInit {
       );
       return;
     } else if (
-      Number(this.applicactionFee) < 5000 &&
+      Number(this.applicationFee) < 5000 &&
       Number(this.memberShipFee) < 5000
     ) {
       alert("Les frais d'inscription ou d'adhesion doit etre minimum 5000 FC.");
@@ -235,9 +243,9 @@ export class RegisterClientComponent implements OnInit {
     return;
   }
   displayApplicationFeeOtherAmount() {
-    if (this.applicactionFee === 'Autre Montant') {
+    if (this.applicationFee === 'Autre Montant') {
       this.applicationFeeOtherDisplay = true;
-      this.applicactionFee = '';
+      this.applicationFee = '';
     } else {
       this.applicationFeeOtherDisplay = false;
     }
@@ -278,7 +286,7 @@ export class RegisterClientComponent implements OnInit {
     this.homeAddress = '';
     this.businessAddress = '';
     this.phoneNumber = '';
-    this.applicactionFee = '';
+    this.applicationFee = '';
     this.memberShipFee = '';
     this.savings = '';
   }
@@ -293,7 +301,7 @@ export class RegisterClientComponent implements OnInit {
     this.client.businessAddress = this.businessAddress;
     this.client.phoneNumber = this.phoneNumber;
     this.client.homeAddress = this.homeAddress;
-    this.client.applicationFee = this.applicactionFee;
+    this.client.applicationFee = this.applicationFee;
     this.client.membershipFee = this.memberShipFee;
     this.client.savings = this.savings;
     this.client.loanAmount = this.loanAmount;
@@ -315,7 +323,7 @@ export class RegisterClientComponent implements OnInit {
       [this.time.todaysDate()]: this.savings,
     };
     this.client.applicationFeePayments = {
-      [this.time.todaysDate()]: this.applicactionFee,
+      [this.time.todaysDate()]: this.applicationFee,
     };
     this.client.membershipFeePayments = {
       [this.time.todaysDate()]: this.memberShipFee,
