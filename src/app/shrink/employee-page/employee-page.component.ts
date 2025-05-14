@@ -9,6 +9,7 @@ import { TimeService } from 'src/app/services/time.service';
 import { DataService } from 'src/app/services/data.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { LocationCoordinates } from 'src/app/models/user';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 // import heic2any from 'heic2any';
 
 @Component({
@@ -118,7 +119,8 @@ export class EmployeePageComponent implements OnInit {
     private compute: ComputationService,
     private performance: PerformanceService,
     public activatedRoute: ActivatedRoute,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private fns: AngularFireFunctions
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -1230,5 +1232,27 @@ export class EmployeePageComponent implements OnInit {
       // Reset the index so we don't accidentally overwrite another payment
       this.currentReceiptIndex = null;
     }
+  }
+  /** Envoie le SMS à l'employé affiché */
+  sendSMSCurrent(type: 'bonus' | 'paiement') {
+    const callable = this.fns.httpsCallable('sendEmployeePayRemindersSMS');
+
+    // empaqueter le salarié courant dans un tableau
+    const payload = {
+      type,
+      employees: [
+        {
+          phoneNumber: this.employee.phoneNumber,
+          // optionnel : firstName / signUrl si jamais votre message les utilise
+          firstName: this.employee.firstName,
+          lastName: this.employee.lastName,
+        },
+      ],
+    };
+
+    callable(payload).subscribe({
+      next: (res: any) => alert(`SMS envoyé : ${res.sent}/1`),
+      error: (err) => alert('Erreur SMS : ' + err.message),
+    });
   }
 }

@@ -979,3 +979,31 @@ Merci pona confiance na Fondation Gervais.`;
 
       return null;
     });
+
+
+exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>{
+  // if (!ctx.auth || !ctx.auth.token.admin)
+  // {throw new functions.https.HttpsError("permission-denied", "Admin only");}
+
+  const {type, employees=[]} = data;
+  if (!["bonus", "paiement"].includes(type) || !Array.isArray(employees))
+  {throw new functions.https.HttpsError("invalid-argument", "Bad payload");}
+
+  let sent=0; let failed=0;
+  for (const e of employees) {
+    const to = makeValidE164(e.phoneNumber||"");
+    if (!to) {failed++; continue;}
+
+    const msg =
+  `Fondation Gervais : ${e.firstName} ${e.lastName}, ` +
+  `votre ${type} est disponible. ` +
+  `Allez le SIGNER dans l’appli pour déclencher le virement. ` +
+  `Montant incorrect? Contactez +1 2156877614.`;
+
+    try {
+      await sms.send({to: [to], message: msg});
+      sent++;
+    } catch (err) {console.error(err); failed++;}
+  }
+  return {sent, failed};
+});
