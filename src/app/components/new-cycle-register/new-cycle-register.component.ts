@@ -309,7 +309,7 @@ export class NewCycleRegisterComponent implements OnInit {
   // }
   private setClientNewDebtCycleValues(): void {
     /* ----- DATE FIELDS (use new helper) ----- */
-    this.requestDate = toAppDateFull(this.requestDate);
+    this.requestDate = toAppDate(this.requestDate);
     const today = toAppDateFull(new Date());
 
     this.client.requestDate = this.requestDate;
