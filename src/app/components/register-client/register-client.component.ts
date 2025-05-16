@@ -204,7 +204,7 @@ export class RegisterClientComponent implements OnInit {
   proceed() {
     this.toggle('showConfirmation');
   }
-  submitRegistration() {
+  async submitRegistration() {
     let date = this.time.todaysDateMonthDayYear();
     if (!this.isConfirmed) {
       alert('Veuillez confirmer que vous avez respecté toutes les règles.');
@@ -216,31 +216,24 @@ export class RegisterClientComponent implements OnInit {
     const creditworthinessScore = this.calculateCreditworthiness();
     console.log(`Creditworthiness Score: ${creditworthinessScore}%`);
 
-    // let employee = this.findAgentWithId(this.client.agent!);
-    this.auth.registerNewClient(this.client).then(
-      (res: any) => {
-        this.router.navigate(['info-register']);
-      },
-      (err: any) => {
-        alert(
-          "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client!"
-        );
-      }
-    );
-    this.data.updateUserInfoForRegisterClient(this.client, date).then(
-      (res: any) => {
-        console.log('Informations utilisateur mises à jour avec succès');
-        this.toggle('isLoading');
-      },
-      (err: any) => {
-        alert(
-          "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client"
-        );
-      }
-    );
+    /** ✨ deep copy so later mutations don’t touch Firestore data */
+    const payload: Client = JSON.parse(JSON.stringify(this.client));
 
-    this.resetFields();
-    return;
+    try {
+      await this.auth.registerNewClient(payload);
+      await this.data.updateUserInfoForRegisterClient(
+        payload,
+        this.time.todaysDateMonthDayYear()
+      );
+
+      this.router.navigate(['info-register']);
+    } catch (err) {
+      alert("Impossible d'ajouter un nouveau client !");
+      console.error(err);
+    } finally {
+      this.isLoading = false;
+      this.resetFields(); // safe to reset now
+    }
   }
   displayApplicationFeeOtherAmount() {
     if (this.applicationFee === 'Autre Montant') {
