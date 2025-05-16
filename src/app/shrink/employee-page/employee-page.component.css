@@ -35,5 +35,12 @@
     color: black;
 }
 
+/* employee-page.component.css */
+.blurred {
+  filter: blur(100px);
+  pointer-events: none;      /* prevent clicking through the blur */
+  user-select: none;
+}
+
 
   

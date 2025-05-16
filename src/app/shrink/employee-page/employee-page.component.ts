@@ -111,6 +111,11 @@ export class EmployeePageComponent implements OnInit {
   totalBonusSalary: string = '';
   salaryThisMonth = '';
   yearsAtCompany: number = 0;
+
+  /* employee-page.component.ts */
+  isAuthorized = false; // page visible only when TRUE
+  errorMsg = ''; // “code incorrect” feedback
+  paymentCodeLoaded = false; // becomes true once we have the employee object
   constructor(
     private router: Router,
     private data: DataService,
@@ -126,6 +131,7 @@ export class EmployeePageComponent implements OnInit {
   }
   ngOnInit(): void {
     this.retrieveEmployees();
+    if (this.auth.isAdmninistrator) this.isAuthorized = true;
   }
   public graphPerformance = {
     data: [{}],
@@ -244,6 +250,8 @@ export class EmployeePageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
+      this.paymentCodeLoaded = true; // we now know employee.paymentCode
+
       // set location coordinates
       if (this.auth.currentUser && this.auth.currentUser.locationCoordinates) {
         this.locationCoordinate = this.auth.currentUser.locationCoordinates;
@@ -1254,5 +1262,17 @@ export class EmployeePageComponent implements OnInit {
       next: (res: any) => alert(`SMS envoyé : ${res.sent}/1`),
       error: (err) => alert('Erreur SMS : ' + err.message),
     });
+  }
+  verifyCode() {
+    if (this.code.trim() === this.paymentCode) {
+      this.isAuthorized = true;
+      this.errorMsg = '';
+    } else {
+      this.errorMsg = 'Code incorrect. Essayez encore';
+      this.code = ''; // clear the field
+    }
+  }
+  toggleOverlay(show: boolean) {
+    if (show) this.code = ''; // reset when showing
   }
 }

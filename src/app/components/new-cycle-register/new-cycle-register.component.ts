@@ -413,13 +413,13 @@ export class NewCycleRegisterComponent implements OnInit {
         toAppDate(new Date())
       );
 
-      this.resetFields();
       this.router.navigate(['/register-portal/' + this.id]);
     } catch (err) {
       console.error(err);
       alert("Quelque chose s'est mal passé.");
     } finally {
       this.toggle('isLoading');
+      this.resetFields();
     }
   }
   toggle(property: 'isLoading' | 'showConfirmation') {

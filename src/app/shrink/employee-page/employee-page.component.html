@@ -1,6 +1,6 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
-
+<div [ngClass]="{ 'blurred': !isAuthorized && !auth.isAdmninistrator }">
 <main class="pt-8 pb-16 lg:pt-16 lg:pb-24 bg-white ">
     <div class="flex justify-between px-4 mx-auto max-w-screen-xl ">
         <article class="mx-auto w-full max-w-2xl format format-sm sm:format-base lg:format-lg format-blue ">
@@ -235,6 +235,52 @@
         </article>
     </div>
 </main>
+</div>
+<!-- Access-code prompt -->
+<div *ngIf="!isAuthorized &&  !auth.isAdmninistrator && paymentCodeLoaded "
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-80">
+  <p class="mb-4 text-gray-900 dark:text-gray-100">
+    Veuillez entrer votre code pour accéder à cette page&nbsp;:
+  </p>
+
+  <input
+    [(ngModel)]="code"
+    (keyup.enter)="verifyCode()"
+    type="text"
+    class="w-full mb-4 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+    placeholder="Code"
+    autofocus
+  />
+
+  <!--  primary / confirm  -->
+  <button
+    (click)="verifyCode()"
+    class="w-full py-2 mb-2 rounded text-white font-medium
+           bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300
+           dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+    Valider
+  </button>
+
+  <!--  secondary / cancel  -->
+  <button
+    routerLink="/home"
+    class="w-full py-2 rounded font-medium
+           text-gray-700 border border-gray-300 hover:bg-gray-100
+           focus:outline-none focus:ring-4 focus:ring-gray-300
+           dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+    Annuler
+  </button>
+
+  <p
+    *ngIf="errorMsg"
+    class="mt-3 text-red-600 text-center dark:text-red-400"
+  >
+    {{ errorMsg }}
+  </p>
+</div>
+
+</div>
 
 
 
