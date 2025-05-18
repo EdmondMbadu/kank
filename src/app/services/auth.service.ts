@@ -564,6 +564,15 @@ export class AuthService {
     };
     return userRef.set(data, { merge: true });
   }
+  // auth.service.ts
+  updateNestedUserField(mapField: string, dateKey: string, amount: any) {
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${this.currentUser.uid}`
+    );
+
+    // Dot-notation comprise par update()
+    return userRef.update({ [`${mapField}.${dateKey}`]: amount });
+  }
 
   UpdateUserInfoForDeletedRegisterClient(client: Client) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(

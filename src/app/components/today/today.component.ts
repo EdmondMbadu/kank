@@ -47,6 +47,21 @@ export class TodayComponent {
   dailyLoss: string = '0';
   expectedReserve: string = '0';
   expectedReserveInDollars: string = '0';
+  // ➊ clef de date déjà au bon format « MM-DD-YYYY »
+  todayKey = '';
+
+  // ➋ configuration des champs à éditer
+  dailyFieldConfigs = [
+    { key: 'dailyReimbursement', label: 'Paiement du Jour', input: '' },
+    { key: 'dailyLending', label: 'Emprunt du Jour', input: '' },
+    { key: 'dailySaving', label: 'Épargne du Jour', input: '' },
+    { key: 'dailySavingReturns', label: 'Retrait Épargne Du Jour', input: '' },
+    { key: 'dailyFeesReturns', label: 'Retrait Frais', input: '' },
+    { key: 'feesData', label: 'Frais Du Jour', input: '' },
+    { key: 'dailyCardPayments', label: 'Paiement Carte Du Jour', input: '' },
+    { key: 'dailyCardReturns', label: 'Retrait Carte Du Jour', input: '' },
+    { key: 'dailyCardBenefits', label: 'Carte Benefice Du Jour', input: '' },
+  ];
 
   totalPerfomance: number = 0;
 
@@ -107,6 +122,9 @@ export class TodayComponent {
   summaryContent: string[] = [];
 
   initalizeInputs() {
+    // ➊ clef de date déjà au bon format « MM-DD-YYYY »
+    this.todayKey = this.requestDateCorrectFormat;
+
     this.dailyLending =
       this.auth.currentUser?.dailyLending?.[this.requestDateCorrectFormat] ??
       '0';
@@ -250,5 +268,23 @@ export class TodayComponent {
       ).toFixed(2);
     }
     this.perc = Number(this.percentage);
+  }
+  async setDailyField(mapField: string, value: any) {
+    if (!this.compute.isNumber(value)) {
+      alert('Entrez un nombre valide');
+      return;
+    }
+
+    try {
+      await this.auth.updateNestedUserField(
+        mapField,
+        this.requestDateCorrectFormat, // ex. "5-17-2025"
+        value
+      );
+      alert('Montant changé avec succès');
+      this.initalizeInputs(); // rafraîchit l’écran
+    } catch (err) {
+      alert('Erreur lors de la mise à jour, réessayez');
+    }
   }
 }
