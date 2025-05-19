@@ -279,7 +279,7 @@ export class TodayComponent {
       await this.auth.updateNestedUserField(
         mapField,
         this.requestDateCorrectFormat, // ex. "5-17-2025"
-        value
+        `${value}` // ex. value
       );
       alert('Montant changé avec succès');
       this.initalizeInputs(); // rafraîchit l’écran
