@@ -49,7 +49,7 @@ export class PaymentCardComponent {
     if (this.depositAmount === '') {
       alert('Remplissez toutes les données');
       return;
-    } else if (Number(this.clientCard.numberOfPaymentsMade) > 31) {
+    } else if (Number(this.clientCard.numberOfPaymentsMade) >= 31) {
       alert(
         ` Vous avez dépassé le nombre total de paiements(31) pour 1 cycle de carte. Commencez un nouveau cycle.`
       );
