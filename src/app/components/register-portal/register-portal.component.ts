@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Client } from 'src/app/models/client';
+import { Client, Comment } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -86,11 +86,21 @@ export class RegiserPortalComponent {
   ngOnInit(): void {
     this.retrieveClient();
   }
+  comment?: string = 'RAISON DU REFUS: ';
+
+  comments: Comment[] = [];
+  isRecording = false;
+  personPostingComment?: string = '';
+  mediaRecorder!: MediaRecorder;
+  audioChunks: BlobPart[] = []; // Will store the recorded audio data (chunks)
+  recordedBlob?: Blob; // Final audio blob
+  recordedAudioURL?: string; // Local blob URL for playback in the UI
+  commentAudioUrl: string = ''; // Final upload URL from Firebase
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      // console.log('the client', this.client);
+      console.log('the client', this.client);
       this.auth.getAuditInfo().subscribe((data) => {
         // this.auditInfo = data[0];
         this.audits = data;
@@ -117,6 +127,7 @@ export class RegiserPortalComponent {
 
       this.setGraphCredit();
       this.setFields();
+      this.setComments();
       this.setGraphWorthiness();
       this.client.debtCycle =
         this.client.debtCycle === undefined || this.client.debtCycle === '0'
@@ -125,6 +136,29 @@ export class RegiserPortalComponent {
       this.requestDate = this.time.convertDateToDayMonthYear(
         this.client.requestDate!
       );
+    });
+  }
+  setComments() {
+    if (this.client.comments) {
+      this.comments = this.client.comments;
+      // add the formatted time
+      this.comments.forEach((comment) => {
+        comment.timeFormatted = this.time.convertDateToDesiredFormat(
+          comment.time!
+        );
+      });
+    }
+    this.comments.sort((a: any, b: any) => {
+      const parseTime = (time: string) => {
+        const [month, day, year, hour, minute, second] = time
+          .split('-')
+          .map(Number);
+        return new Date(year, month - 1, day, hour, minute, second).getTime();
+      };
+
+      const dateA = parseTime(a.time);
+      const dateB = parseTime(b.time);
+      return dateB - dateA; // Descending order
     });
   }
 
@@ -416,6 +450,34 @@ export class RegiserPortalComponent {
       );
     } catch (err) {
       console.error('Error removing client from pendingClients:', err);
+    }
+  }
+  addComment() {
+    if (this.comment === '' || this.personPostingComment === '') {
+      alert('Remplissez toutes les données.');
+      return;
+    }
+    let conf = confirm(`Êtes-vous sûr de vouloir publier ce commentaire`);
+    if (!conf) {
+      return;
+    }
+    try {
+      const com = {
+        name: this.personPostingComment,
+        comment: this.comment,
+        time: this.time.todaysDate(),
+      };
+      this.comments?.push(com);
+      this.data
+        .addCommentToClientProfile(this.client, this.comments)
+        .then(() => {
+          this.personPostingComment = '';
+          this.comment = '';
+        });
+    } catch (error) {
+      alert(
+        "Une erreur s'est produite lors de la publication du commentaire. Essayer à nouveau."
+      );
     }
   }
 }
