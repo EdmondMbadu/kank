@@ -77,6 +77,8 @@ export class RegisterClientComponent implements OnInit {
   creditworthinessScore: number | null = null;
   showConfirmation: boolean = false;
   isConfirmed: boolean = false;
+  birthDate: string = ''; // yyyy-mm-dd, sera sauvegardé
+  age: number | null = null; // affichage uniquement, PAS sauvegardé
 
   applicationFeeOtherDisplay: boolean = false;
   loanAmountOtherDisplay: boolean = false;
@@ -139,6 +141,13 @@ export class RegisterClientComponent implements OnInit {
       this.references.length === 0
     ) {
       alert('Completer tous les données');
+      return;
+    }
+    if (this.birthDate === '') {
+      alert('Veuillez renseigner la date de naissance.');
+      return;
+    } else if (this.age !== null && this.age < 21) {
+      alert('Le client doit avoir au moins 21 ans.');
       return;
     } else if (!inputValid) {
       alert(
@@ -282,12 +291,15 @@ export class RegisterClientComponent implements OnInit {
     this.applicationFee = '';
     this.memberShipFee = '';
     this.savings = '';
+    this.birthDate = '';
+    this.age = null;
   }
   setNewClientValues() {
     this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
 
     this.client.firstName = this.firstName;
     this.client.lastName = this.lastName;
+    this.client.birthDate = this.time.convertDateToMonthDayYear(this.birthDate);
     this.client.middleName = this.middleName;
     this.client.profession = this.profession;
     this.client.businessCapital = this.bussinessCapital;
@@ -550,5 +562,19 @@ export class RegisterClientComponent implements OnInit {
       return false;
     }
     return true;
+  }
+  updateAge(): void {
+    if (!this.birthDate) {
+      this.age = null;
+      return;
+    }
+    const today = new Date();
+    const dob = new Date(this.birthDate);
+    let a = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      a--;
+    }
+    this.age = a;
   }
 }

@@ -33,6 +33,9 @@ export class NewCycleRegisterComponent implements OnInit {
   private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
   private readonly FIXED_MEMBERSHIP_FEE = '0'; // 0 FC
 
+  birthDateInput: string = ''; // yyyy-mm-dd (si saisie)
+  age: number | null = null; // affichage uniquement
+
   code: string = '';
   userEnteredCode: string = '';
   isLoading: boolean = false;
@@ -73,6 +76,7 @@ export class NewCycleRegisterComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.allClients = data;
       this.client = data[Number(this.id)];
+      this.updateAge(); // calcule l’âge si birthDate existe déjà
       this.numberOfCurrentClients = this.data.findClientsWithDebts(data).length; // clients with debt number
       this.middleName =
         this.client.middleName !== undefined ? this.client.middleName : '';
@@ -168,6 +172,14 @@ export class NewCycleRegisterComponent implements OnInit {
       this.requestDate === ''
     ) {
       alert('Completer tous les données');
+      return;
+    } // ---- Naissance / âge ----
+    if (!this.client.birthDate && this.birthDateInput === '') {
+      alert('Veuillez renseigner la date de naissance.');
+      return;
+    }
+    if (this.age !== null && this.age < 21) {
+      alert('Le client doit avoir au moins 21 ans.');
       return;
     } else if (!inputValid) {
       alert(
@@ -278,6 +290,8 @@ export class NewCycleRegisterComponent implements OnInit {
     this.savings = '';
     this.loanAmount = '';
     this.middleName = '';
+    this.birthDateInput = '';
+    this.age = null;
   }
   // setClientNewDebtCycleValues() {
   //   this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
@@ -314,6 +328,10 @@ export class NewCycleRegisterComponent implements OnInit {
 
     this.client.requestDate = this.requestDate;
     this.client.dateOfRequest = today;
+    /* --- BirthDate : uniquement si elle n’existe pas déjà et a été saisie --- */
+    if (!this.client.birthDate && this.birthDateInput) {
+      this.client.birthDate = toAppDate(this.birthDateInput); // jj-mm-aaaa
+    }
 
     /* ----- UNCHANGED FIELDS ↓ ---------------- */
     this.client.previousSavingsPayments = { ...this.client.savingsPayments };
@@ -474,5 +492,21 @@ export class NewCycleRegisterComponent implements OnInit {
     } else {
       this.codeVerificationStatus = 'incorrect';
     }
+  }
+  updateAge(): void {
+    const src = this.client.birthDate || this.birthDateInput;
+    if (!src) {
+      this.age = null;
+      return;
+    }
+
+    const today = new Date();
+    const dob = new Date(src);
+    let a = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      a--;
+    }
+    this.age = a;
   }
 }

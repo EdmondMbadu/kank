@@ -60,6 +60,8 @@ export class Client {
   isPhoneCorrect?: string;
   agentVerifyingName?: string;
   agentSubmittedVerification?: string;
+  birthDate?: string;
+  age?: string;
 }
 
 export class Comment {

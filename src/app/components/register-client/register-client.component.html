@@ -49,6 +49,25 @@
             </div>
 
     </div>
+    <!-- Date de naissance -->
+<div class="mb-6">
+  <label for="birthDate" class="block mb-2 text-sm font-medium text-gray-900">
+    Date&nbsp;de&nbsp;naissance
+  </label>
+  <input
+    type="date"
+    id="birthDate"
+    [(ngModel)]="birthDate"
+    (change)="updateAge()"
+    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+           focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+    required
+  />
+  <p *ngIf="age !== null" class="text-gray-600 mt-1">
+    Âge calculé : <strong>{{ age }}</strong> ans
+  </p>
+</div>
+
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
             <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>

@@ -35,6 +35,37 @@
         </div>
 
 </div>
+<!-- Date de naissance / Âge -->
+<div class="mb-6">
+  <!-- 1️⃣  Champ saisie UNIQUEMENT si pas encore enregistrée -->
+  <ng-container *ngIf="!client.birthDate">
+    <label for="birthDate" class="block mb-2 text-sm font-medium text-gray-900">
+      Date&nbsp;de&nbsp;naissance
+    </label>
+    <input
+      type="date"
+      id="birthDate"
+      [(ngModel)]="birthDateInput"
+      (change)="updateAge()"
+      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+             focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+      required
+    />
+  </ng-container>
+
+  <!-- 2️⃣  Affichage lecture-seule si déjà connue -->
+  <ng-container *ngIf="client.birthDate">
+    <p class="text-gray-700 mb-1">
+      Date de naissance&nbsp;: <strong>{{ client.birthDate }}</strong>
+    </p>
+  </ng-container>
+
+  <!-- Âge (dans les deux cas) -->
+  <p *ngIf="age !== null" class="text-gray-600">
+    Âge&nbsp;: <strong>{{ age }}</strong> ans
+  </p>
+</div>
+
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
             <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
