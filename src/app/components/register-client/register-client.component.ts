@@ -120,29 +120,88 @@ export class RegisterClientComponent implements OnInit {
       this.applicationFee,
       this.memberShipFee
     );
+    let missingFields: string[] = [];
+
+    if (!this.lastName?.trim()) missingFields.push('Nom');
+    if (!this.middleName?.trim()) missingFields.push('Post-nom');
+    if (!this.firstName?.trim()) missingFields.push('Prénom');
+    if (!this.phoneNumber?.trim()) missingFields.push('Téléphone');
+    if (!this.birthDate?.trim()) missingFields.push('Date de naissance');
+    if (!this.profession?.trim()) missingFields.push('Profession');
+    if (!this.bussinessCapital?.toString().trim())
+      missingFields.push('Capital');
+    if (!this.homeAddress?.trim()) missingFields.push('Adresse Domicile');
+    if (!this.businessAddress?.trim()) missingFields.push('Adresse Business');
     if (
-      this.firstName === '' ||
-      this.lastName === '' ||
-      this.middleName === '' ||
-      this.profession === '' ||
-      this.businessAddress === '' ||
-      this.bussinessCapital === '' ||
-      this.homeAddress === '' ||
-      this.phoneNumber === '' ||
-      this.applicationFee === '' ||
-      this.memberShipFee === '' ||
-      this.savings === '' ||
-      this.requestDate === '' ||
       this.timeInBusiness === '' ||
-      this.dailyIncome === '' ||
+      this.timeInBusiness === null ||
+      this.timeInBusiness === undefined
+    )
+      missingFields.push('Ancienneté dans le business');
+    if (!this.dailyIncome?.toString().trim())
+      missingFields.push('Revenu journalier');
+    if (
       this.debtInProcess === '' ||
+      this.debtInProcess === null ||
+      this.debtInProcess === undefined
+    )
+      missingFields.push('Dette en cours');
+    if (
       this.planToPayDebt === '' ||
+      this.planToPayDebt === null ||
+      this.planToPayDebt === undefined
+    )
+      missingFields.push('Plan de remboursement');
+    if (
       this.collateral === '' ||
-      this.references.length === 0
-    ) {
-      alert('Completer tous les données');
+      this.collateral === null ||
+      this.collateral === undefined
+    )
+      missingFields.push('Garantie');
+    if (!this.references || this.references.length === 0)
+      missingFields.push('Références');
+    if (!this.applicationFee?.toString().trim())
+      missingFields.push('Frais de dossier');
+    if (!this.memberShipFee?.toString().trim())
+      missingFields.push("Frais d'adhésion");
+    if (!this.savings?.toString().trim()) missingFields.push('Épargne');
+    if (!this.loanAmount?.toString().trim())
+      missingFields.push('Montant demandé');
+    if (!this.requestDate?.trim())
+      missingFields.push("Date de don de l'argent");
+
+    if (missingFields.length > 0) {
+      alert(
+        `⚠️ Veuillez compléter les champs suivants :\n\n- ${missingFields.join(
+          '\n- '
+        )}`
+      );
       return;
     }
+
+    // if (
+    //   this.firstName === '' ||
+    //   this.lastName === '' ||
+    //   this.middleName === '' ||
+    //   this.profession === '' ||
+    //   this.businessAddress === '' ||
+    //   this.bussinessCapital === '' ||
+    //   this.homeAddress === '' ||
+    //   this.phoneNumber === '' ||
+    //   this.applicationFee === '' ||
+    //   this.memberShipFee === '' ||
+    //   this.savings === '' ||
+    //   this.requestDate === '' ||
+    //   this.timeInBusiness === '' ||
+    //   this.dailyIncome === '' ||
+    //   this.debtInProcess === '' ||
+    //   this.planToPayDebt === '' ||
+    //   this.collateral === '' ||
+    //   this.references.length === 0
+    // ) {
+    //   alert('Completer tous les données');
+    //   return;
+    // }
     if (this.birthDate === '') {
       alert('Veuillez renseigner la date de naissance.');
       return;

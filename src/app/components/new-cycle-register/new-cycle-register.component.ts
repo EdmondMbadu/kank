@@ -163,17 +163,54 @@ export class NewCycleRegisterComponent implements OnInit {
     let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
       this.requestDate
     );
-    if (
-      this.loanAmount === '' ||
-      this.applicationFee === '' ||
-      this.middleName === '' ||
-      this.memberShipFee === '' ||
-      this.savings === '' ||
-      this.requestDate === ''
-    ) {
-      alert('Completer tous les données');
+    let missingFields: string[] = [];
+
+    if (!this.client.firstName?.trim()) missingFields.push('Prénom');
+    if (!this.middleName?.trim()) missingFields.push('Post-nom');
+    if (!this.client.lastName?.trim()) missingFields.push('Nom');
+    if (!this.client.phoneNumber?.trim()) missingFields.push('Téléphone');
+    if (!this.client.profession?.trim()) missingFields.push('Profession');
+    if (!this.client.businessCapital?.toString().trim())
+      missingFields.push('Capital');
+    if (!this.client.homeAddress?.trim())
+      missingFields.push('Adresse Domicile');
+    if (!this.client.businessAddress?.trim())
+      missingFields.push('Adresse Business');
+    if (!this.applicationFee?.toString().trim())
+      missingFields.push('Frais de dossier');
+    if (!this.memberShipFee?.toString().trim())
+      missingFields.push("Frais d'adhésion");
+    if (!this.savings?.toString().trim()) missingFields.push('Épargne');
+    if (!this.loanAmount?.toString().trim())
+      missingFields.push('Montant demandé');
+    if (!this.requestDate?.trim())
+      missingFields.push("Date de don de l'argent");
+
+    if (!this.client.profilePicture) missingFields.push('Photo du client');
+
+    if (!this.client.birthDate && !this.birthDateInput?.trim()) {
+      missingFields.push('Date de naissance');
+    }
+
+    if (missingFields.length > 0) {
+      alert(
+        '⚠️ Veuillez compléter les champs suivants :\n\n- ' +
+          missingFields.join('\n- ')
+      );
       return;
-    } // ---- Naissance / âge ----
+    }
+
+    // if (
+    //   this.loanAmount === '' ||
+    //   this.applicationFee === '' ||
+    //   this.middleName === '' ||
+    //   this.memberShipFee === '' ||
+    //   this.savings === '' ||
+    //   this.requestDate === ''
+    // ) {
+    //   alert('Completer tous les données');
+    //   return;
+    // } // ---- Naissance / âge ----
     if (!this.client.birthDate && this.birthDateInput === '') {
       alert('Veuillez renseigner la date de naissance.');
       return;
@@ -293,34 +330,7 @@ export class NewCycleRegisterComponent implements OnInit {
     this.birthDateInput = '';
     this.age = null;
   }
-  // setClientNewDebtCycleValues() {
-  //   this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
-  //   this.client.previousSavingsPayments = { ...this.client.savingsPayments };
-  //   // I want to keep the whole history of payments.
-  //   this.client.previousPayments = {
-  //     ...this.client.previousPayments,
-  //     ...this.client.payments,
-  //   };
-  //   this.client.savingsPayments = {};
 
-  //   this.client.savings = (
-  //     Number(this.client.savings) + Number(this.savings)
-  //   ).toString();
-  //   this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
-  //   this.client.applicationFee = this.applicationFee;
-  //   this.client.middleName = this.middleName;
-  //   this.client.membershipFee = this.memberShipFee;
-  //   this.client.loanAmount = this.loanAmount;
-  //   this.client.requestAmount = this.loanAmount;
-  //   this.client.requestDate = this.requestDate;
-  //   this.client.dateOfRequest = this.time.todaysDate();
-  //   this.client.applicationFeePayments = {
-  //     [this.time.todaysDate()]: this.applicationFee,
-  //   };
-  //   this.client.membershipFeePayments = {
-  //     [this.time.todaysDate()]: this.memberShipFee,
-  //   };
-  // }
   private setClientNewDebtCycleValues(): void {
     /* ----- DATE FIELDS (use new helper) ----- */
     this.requestDate = toAppDate(this.requestDate);
@@ -357,60 +367,6 @@ export class NewCycleRegisterComponent implements OnInit {
   proceed() {
     this.toggle('showConfirmation');
   }
-
-  // submitNewCycleRegistration() {
-  //   if (!this.isConfirmed) {
-  //     alert('Veuillez confirmer que vous avez respecté toutes les règles.');
-  //     return;
-  //   }
-  //   this.toggle('isLoading');
-  //   this.setClientNewDebtCycleValues();
-
-  //   // Save the current cycle to the 'cycles' subcollection
-  //   this.data
-  //     .saveCurrentCycle(this.client)
-  //     .then(() => {
-  //       // Register the new debt cycle
-  //       this.data.registerNewDebtCycle(this.client).then(
-  //         (res: any) => {
-  //           this.router.navigate(['/register-portal/' + this.id]);
-  //         },
-  //         (err: any) => {
-  //           alert(
-  //             "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-  //           );
-  //         }
-  //       );
-
-  //       // Update user info
-  //       const date = this.time.todaysDateMonthDayYear();
-  //       this.data
-  //         .updateUserInfoForRegisterClientNewDebtCycle(
-  //           this.client,
-  //           this.savings,
-  //           date
-  //         )
-  //         .then(
-  //           (res: any) => {
-  //             console.log('Informations utilisateur mises à jour avec succès');
-  //             this.toggle('isLoading');
-
-  //             this.isConfirmed = false;
-  //           },
-  //           (err: any) => {
-  //             alert(
-  //               "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-  //             );
-  //           }
-  //         );
-
-  //       this.resetFields();
-  //     })
-  //     .catch((error: any) => {
-  //       console.error('Error saving current cycle:', error);
-  //       alert('Erreur lors de la sauvegarde du cycle actuel.');
-  //     });
-  // }
 
   // -------------------------------------------------------
   async submitNewCycleRegistration() {
