@@ -147,3 +147,98 @@
   </div>
 </section>
 
+<!-- ╔═══════════ Transport Receipts ═══════════╗ -->
+<section class="mt-6 flex container mx-auto justify-center">
+  <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow
+              sm:p-8 dark:bg-gray-800 dark:border-gray-700">
+
+    <!-- Header + search -->
+    <div class="flex items-center justify-between mb-4">
+      <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">
+        Paiements Transport
+      </h5>
+
+      <div class="flex items-center">
+        <label for="search-code" class="sr-only">Chercher</label>
+
+        <div class="relative w-full">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <!-- icon -->
+            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg"
+                 fill="none" viewBox="0 0 18 20"><path stroke="currentColor"
+                 stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                 d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
+            </svg>
+          </div>
+          <input type="text" id="search-code" [(ngModel)]="searchText"
+                 placeholder="Filtrer par date…"                       
+                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                        focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5
+                        dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
+                        dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload button (admin only) -->
+    <div *ngIf="auth.isAdmin" class="mb-4">
+      <label
+        class="cursor-pointer inline-flex items-center px-3 py-1.5 text-sm font-medium
+               bg-green-700 text-white rounded-lg hover:bg-green-800">
+        📷 Joindre un reçu
+        <input type="file" accept="image/*" hidden (change)="uploadReceipt($any($event.target).files)">
+      </label>
+    </div>
+
+    <!-- List -->
+    <div class="flow-root">
+      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li  *ngFor="let r of filteredReceipts(); let i = index"
+             class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600">
+
+          <div class="flex items-center space-x-4">
+            <!-- avatar initials -->
+            <div class="relative inline-flex items-center justify-center w-10 h-10
+                        overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
+              <span class="font-medium text-gray-600 dark:text-gray-300">
+                {{ auth.currentUser.firstName?.substring(0,2) }}
+              </span>
+            </div>
+
+            <!-- date -->
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
+                {{ r.frenchDate }}
+              </p>
+            </div>
+
+            <!-- link to receipt -->
+            <div class="inline-flex items-center">
+              <a [href]="r.url" target="_blank" title="Voir le reçu">
+                <img src="../../../assets/img/validating-ticket.png"
+                                class="w-12 h-12 object-cover rounded-md border"
+                                alt="Bank Transfer Receipt" />
+                <!-- <img src="../../../assets/img/receipt.png"
+                     class="w-8 h-8 object-cover rounded-md border" /> -->
+              </a>
+            </div>
+
+            <!-- action buttons (admin only) -->
+            <div *ngIf="auth.isAdmin" class="ml-2">
+              <button class="px-2 py-1 text-xs font-medium text-white
+                             bg-blue-600 rounded hover:bg-blue-700"
+                      (click)="prepareUpdate(r)">
+                Changer
+              </button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- hidden input used when admin clicks “Changer” -->
+    <input type="file" #fileInput accept="image/*" hidden
+           (change)="replaceReceipt($any($event.target).files)">
+  </div>
+</section>
+<!-- ╚══════════════════════════════════════════╝ -->

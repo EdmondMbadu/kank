@@ -706,4 +706,27 @@ export class TimeService {
 
     return true;
   }
+  convertEpochToDate(epochMs: number): string {
+    return new Date(epochMs).toLocaleDateString('en-CA'); // → YYYY-MM-DD
+  }
+  /** 14 Mai 2025 à 11:27 (heure locale) */
+  formatEpochLongFr(epochMs: number): string {
+    const d = new Date(epochMs);
+    const date = d.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }); // → "14 mai 2025"
+    const time = d.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }); // → "11:27"
+    // Capitaliser le mois
+    return (
+      date.replace(
+        /^(\d{2}) (\w)/,
+        (_m, p1, p2) => `${p1} ${p2.toUpperCase()}`
+      ) + ` à ${time}`
+    );
+  }
 }

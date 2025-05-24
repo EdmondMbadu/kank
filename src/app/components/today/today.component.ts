@@ -1,23 +1,34 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
 import { DataService } from 'src/app/services/data.service';
-
+import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { ElementRef } from '@angular/core';
+interface Receipt {
+  docId: string;
+  url: string;
+  ts: number;
+  frenchDate: string;
+}
 @Component({
   selector: 'app-today',
   templateUrl: './today.component.html',
   styleUrls: ['./today.component.css'],
 })
 export class TodayComponent {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   constructor(
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
     public compute: ComputationService,
-    private data: DataService
+    private data: DataService,
+    private afs: AngularFirestore,
+    private storage: AngularFireStorage
   ) {}
   ngOnInit() {
     this.initalizeInputs();
@@ -26,9 +37,12 @@ export class TodayComponent {
 
       this.findClientsWithDebts();
     });
+    this.loadReceipts();
   }
   clients?: Client[] = [];
   clientsWithDebts: Client[] = [];
+  receipts: Receipt[] = [];
+  selectedTs = 0; //  ←  add this line
 
   percentage: string = '0';
   perc: number = 0;
@@ -120,6 +134,8 @@ export class TodayComponent {
   requestDateCorrectFormat = this.today;
   day: string = new Date().toLocaleString('en-US', { weekday: 'long' });
   summaryContent: string[] = [];
+  selectedDocId: string | null = null;
+  searchText = '';
 
   initalizeInputs() {
     // ➊ clef de date déjà au bon format « MM-DD-YYYY »
@@ -285,6 +301,97 @@ export class TodayComponent {
       this.initalizeInputs(); // rafraîchit l’écran
     } catch (err) {
       alert('Erreur lors de la mise à jour, réessayez');
+    }
+  }
+
+  // ③  snapshotChanges to capture docId
+  private loadReceipts() {
+    const limit = this.auth.isAdmin ? 50 : 2;
+    this.afs
+      .collection(
+        `users/${this.auth.currentUser.uid}/transportReceipts`,
+        (ref) => ref.orderBy('ts', 'desc').limit(limit)
+      )
+      .snapshotChanges()
+      .subscribe((snaps) => {
+        this.receipts = snaps.map((s) => {
+          const data = s.payload.doc.data() as any;
+          const id = s.payload.doc.id;
+          return {
+            docId: id,
+            url: data.url,
+            ts: data.ts,
+            frenchDate: this.time.formatEpochLongFr(data.ts),
+          };
+        });
+      });
+  }
+
+  // ④  helper used by *ngFor to apply search & admin-limit
+  filteredReceipts() {
+    const list = this.receipts.filter(
+      (r) =>
+        !this.searchText ||
+        r.frenchDate.toLowerCase().includes(this.searchText.toLowerCase())
+    );
+    console.log(' the list', list);
+    return this.auth.isAdmin ? list : list.slice(0, 2);
+  }
+
+  // ⑤  when admin clicks “Changer”
+  prepareUpdate(r: Receipt) {
+    this.selectedDocId = r.docId;
+    this.selectedTs = r.ts; //  ←  remember current timestamp
+    this.fileInput.nativeElement.click();
+  }
+
+  // ⑥  upload & overwrite the existing document
+  async replaceReceipt(files: FileList | null) {
+    if (!files?.length || !this.selectedDocId) return;
+
+    const file = files.item(0)!;
+    /* … same size/type/HEIC checks … */
+    try {
+      const path = `transportReceipts/${this.auth.currentUser.uid}/${this.selectedDocId}`;
+      const upload = await this.storage.upload(path, file);
+      const url = await upload.ref.getDownloadURL();
+
+      // ⚠️  update the document WITHOUT touching ts
+      await this.afs
+        .doc(
+          `users/${this.auth.currentUser.uid}/transportReceipts/${this.selectedDocId}`
+        )
+        .update({ url });
+      alert('✅ Reçu mis à jour');
+      this.loadReceipts();
+    } catch (e) {
+      alert('❌ Impossible de remplacer le reçu — réessayez.');
+    }
+
+    this.selectedDocId = '';
+    this.fileInput.nativeElement.value = '';
+  }
+
+  async uploadReceipt(files: FileList | null, docId?: string) {
+    if (!this.auth.isAdmin || !files?.length) return;
+
+    let file = files.item(0)!;
+    /* … size/type checks + HEIC conversion identical … */
+    try {
+      // use supplied docId (replacement) or a new one
+      const id = this.afs.createId();
+      const path = `transportReceipts/${this.auth.currentUser.uid}/${id}`;
+      const task = await this.storage.upload(path, file);
+      const url = await task.ref.getDownloadURL();
+
+      await this.afs
+        .doc(`users/${this.auth.currentUser.uid}/transportReceipts/${id}`)
+        .set({ url, ts: Date.now() });
+
+      alert('📸 Reçu ajouté avec succès');
+      this.loadReceipts();
+    } catch (e) {
+      alert('❌ Échec de l’envoi du reçu — réessayez.');
     }
   }
 }
