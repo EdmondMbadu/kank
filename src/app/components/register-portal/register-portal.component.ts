@@ -26,6 +26,8 @@ export class RegiserPortalComponent {
   showAuditConfirmation: boolean = false;
   isConfirmed: boolean = false;
   audits: Audit[] = [];
+  suspiciousClientLink: string | null = null;
+  suspiciousReason = '';
 
   id: any = '';
   paymentDate = '';
@@ -53,6 +55,40 @@ export class RegiserPortalComponent {
       responsive: true, // Make the chart responsive
     },
   };
+  /** Cherche un autre client partageant ≥ 2 noms avec celui affiché.
+   *  currentIdx  = index (position) du client courant dans `all`.
+   *  all         = tableau complet des clients.
+   *  Met à jour `suspiciousClientLink` et `suspiciousReason` si besoin. */
+  private detectSuspicious(currentIdx: number, all: Client[]): void {
+    const norm = (s?: string) => (s ?? '').trim().toLowerCase();
+    const cur = all[currentIdx];
+    const curNames = [
+      norm(cur.firstName),
+      norm(cur.middleName),
+      norm(cur.lastName),
+    ];
+
+    all.some((other, i) => {
+      if (i === currentIdx) return false;
+      const otherNames = [
+        norm(other.firstName),
+        norm(other.middleName),
+        norm(other.lastName),
+      ];
+      const matches = curNames.filter(
+        (n) => n && otherNames.includes(n)
+      ).length;
+
+      if (matches >= 2) {
+        this.suspiciousReason =
+          '2 noms similaires à un client déjà dans le système';
+        this.suspiciousClientLink = `/client-portal/${i}`; // ← index, pas uid
+        return true; // stop search
+      }
+      return false;
+    });
+  }
+
   public graphCredit = {
     data: [
       {
@@ -99,7 +135,10 @@ export class RegiserPortalComponent {
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.client = data[Number(this.id)];
+      const idx = Number(this.id); // position du client courant
+      this.client = data[idx];
+      // … (votre logique existante) …
+      this.detectSuspicious(idx, data);
       console.log('the client', this.client);
       this.auth.getAuditInfo().subscribe((data) => {
         // this.auditInfo = data[0];

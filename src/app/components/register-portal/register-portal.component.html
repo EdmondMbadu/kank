@@ -30,6 +30,25 @@
       ❌ Client non vérifié
     </div>
   </div>
+  <!-- SUSPICIOUS-CLIENT BANNER -->
+<div *ngIf="suspiciousClientLink"
+     class="flex container mx-auto justify-center mb-4">
+  <div class="flex flex-col md:flex-row items-center
+              bg-yellow-100 border-l-4 border-yellow-500
+              text-yellow-700 p-3 rounded shadow">
+    <p class="font-semibold flex items-center">
+      ⚠️ Client suspect &nbsp;
+      <span class="text-red-600">
+        — {{ suspiciousReason }}
+      </span>
+    </p>
+    <a [routerLink]="suspiciousClientLink"
+       class="mt-2 md:mt-0 md:ml-4 underline text-blue-600 font-medium">
+      Voir l’autre client
+    </a>
+  </div>
+</div>
+
   
 
 <div id="fullWidthTabContent" class=" rounded-lg  dark:border-gray-600">
