@@ -188,6 +188,12 @@
         📷 Joindre un reçu
         <input type="file" accept="image/*" hidden (change)="uploadReceipt($any($event.target).files)">
       </label>
+       <!-- amount input -->
+  <input type="number" min="0" step="0.01"
+         placeholder="Montant"
+         class="w-24 p-2.5 border rounded-lg bg-gray-50 focus:ring-green-500
+                focus:border-green-500"
+         [(ngModel)]="newReceiptAmount">
     </div>
 
     <!-- List -->
@@ -211,6 +217,20 @@
                 {{ r.frenchDate }}
               </p>
             </div>
+            <!-- amount display / edit -->
+          <ng-container *ngIf="!auth.isAdmin; else editAmount">
+            <p class="text-sm font-semibold text-green-700">
+              {{ r.amount | number:'1.0-2' }} $
+            </p>
+          </ng-container>
+
+          <ng-template #editAmount>
+            <input type="number" min="0" step="0.01"
+                  class="mt-0.5 w-24 p-1 text-xs border rounded
+                          focus:ring-green-500 focus:border-green-500"
+                  [(ngModel)]="r.amount"
+                  (blur)="updateAmount(r)">
+          </ng-template>
 
             <!-- link to receipt -->
             <div class="inline-flex items-center">

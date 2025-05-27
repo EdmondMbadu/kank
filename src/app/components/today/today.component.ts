@@ -13,6 +13,7 @@ interface Receipt {
   url: string;
   ts: number;
   frenchDate: string;
+  amount?: number;
 }
 @Component({
   selector: 'app-today',
@@ -21,6 +22,8 @@ interface Receipt {
 })
 export class TodayComponent {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  newReceiptAmount: number | null = null; // ➋ binds the upload field
+
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -322,6 +325,8 @@ export class TodayComponent {
             url: data.url,
             ts: data.ts,
             frenchDate: this.time.formatEpochLongFr(data.ts),
+            // inside map()
+            amount: data.amount ?? 0,
           };
         });
       });
@@ -372,26 +377,44 @@ export class TodayComponent {
     this.fileInput.nativeElement.value = '';
   }
 
-  async uploadReceipt(files: FileList | null, docId?: string) {
+  async uploadReceipt(files: FileList | null) {
     if (!this.auth.isAdmin || !files?.length) return;
+    if (this.newReceiptAmount == null || this.newReceiptAmount <= 0) {
+      alert('Entrez un montant valide avant d’envoyer le reçu');
+      return;
+    }
 
-    let file = files.item(0)!;
-    /* … size/type checks + HEIC conversion identical … */
+    const file = files.item(0)!;
+    const id = this.afs.createId();
+    const path = `transportReceipts/${this.auth.currentUser.uid}/${id}`;
+
     try {
-      // use supplied docId (replacement) or a new one
-      const id = this.afs.createId();
-      const path = `transportReceipts/${this.auth.currentUser.uid}/${id}`;
       const task = await this.storage.upload(path, file);
       const url = await task.ref.getDownloadURL();
+      const amount = Number(this.newReceiptAmount);
 
       await this.afs
         .doc(`users/${this.auth.currentUser.uid}/transportReceipts/${id}`)
-        .set({ url, ts: Date.now() });
+        .set({ url, ts: Date.now(), amount });
 
       alert('📸 Reçu ajouté avec succès');
+      this.newReceiptAmount = null; // reset the field
       this.loadReceipts();
     } catch (e) {
-      alert('❌ Échec de l’envoi du reçu — réessayez.');
+      alert('❌ Échec de l’envoi — réessayez.');
+    }
+  }
+  async updateAmount(r: Receipt) {
+    if (r.amount == null || r.amount <= 0) {
+      alert('Montant invalide');
+      return;
+    }
+    try {
+      await this.afs
+        .doc(`users/${this.auth.currentUser.uid}/transportReceipts/${r.docId}`)
+        .update({ amount: Number(r.amount) });
+    } catch {
+      alert('Erreur lors de la mise à jour du montant');
     }
   }
 }
