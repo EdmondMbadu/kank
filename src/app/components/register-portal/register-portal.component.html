@@ -29,6 +29,9 @@
     <div *ngIf="!agentSubmmittedVerification" class="flex items-center text-red-600 text-xl font-bold">
       ❌ Client non vérifié
     </div>
+    <!-- inside the <li> that shows an unapproved client -->
+
+
   </div>
   <!-- SUSPICIOUS-CLIENT BANNER -->
 <div *ngIf="suspiciousClientLink"
@@ -156,6 +159,13 @@
     <div class="flex container flex-col md:flex-row mx-auto justify-center ">
         <a åtype="submit" class="text-white bg-green-700 hover:bg-green-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"  [routerLink]="['/request-update',id ]">Demande de Mise à Jour</a>
     <button *ngIf="client.type==='register'"  type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="cancelRegistration()">Annuler Enregistrement</button>
+    <button
+class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"
+  title="Annuler et rembourser"
+  (click)="requestCancel(client)">
+  Demande de Remboursement après rejet
+  
+</button>
    
 </div>
 

@@ -55,6 +55,7 @@ export class RegiserPortalComponent {
       responsive: true, // Make the chart responsive
     },
   };
+  toast: any;
   /** Cherche un autre client partageant ≥ 2 noms avec celui affiché.
    *  currentIdx  = index (position) du client courant dans `all`.
    *  all         = tableau complet des clients.
@@ -518,5 +519,38 @@ export class RegiserPortalComponent {
         "Une erreur s'est produite lors de la publication du commentaire. Essayer à nouveau."
       );
     }
+  }
+
+  requestCancel(c: Client) {
+    const amount =
+      Number(c.savings || 0) +
+      Number(c.applicationFee || 0) +
+      Number(c.membershipFee || 0);
+
+    if (!amount) {
+      alert('Aucun montant à rembourser');
+      return;
+    }
+
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir demander le remboursement des fonds avancés (dossier et épargne) au client, pour un montant total de ${amount.toLocaleString()} FC ?`
+      )
+    )
+      return;
+
+    const today = this.time.todaysDate(); // 05/28/2025
+    const tomorrow = this.time.getTomorrowsDateMonthDayYear(); // 05/29/2025
+
+    c.rejectionReturnAmount = amount.toString();
+    c.requestAmount = c.rejectionReturnAmount;
+    c.requestStatus = 'pending';
+    c.requestType = 'rejection';
+    c.requestDate = tomorrow;
+    c.dateOfRequest = today;
+
+    this.data
+      .clientRequestRejectionRefund(c)
+      .then(() => this.toast.success('Demande enregistrée 🚀'));
   }
 }

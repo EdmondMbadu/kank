@@ -192,9 +192,12 @@ export class GestionDayComponent implements OnInit {
     // Initialize userRequestTotals and overallTotal
 
     // Initialize userRequestTotals and overallTotal
+    // 🔧  NEW – hard reset every time we start a fresh pass
     this.userRequestTotals = [];
     this.reserveTotals = [];
     this.overallTotal = 0;
+    this.paymentTotal = 0;
+    this.overallTotalReserve = 0;
 
     let completedRequests = 0;
     this.allUsers.forEach((user) => {
@@ -213,7 +216,8 @@ export class GestionDayComponent implements OnInit {
               client.requestStatus !== undefined &&
               ((client.requestType === 'lending' &&
                 client.agentSubmittedVerification === 'true') ||
-                client.requestType === 'savings') &&
+                client.requestType === 'savings' ||
+                client.requestType === 'rejection') &&
               client.requestDate === this.requestDateRigthFormat
             ) {
               userTotal += Number(client.requestAmount);

@@ -183,4 +183,78 @@
  </div>
 
 
+<!--  REJECTION / REFUND BOX  -->
+<div class="flex container mx-auto justify-center">
+  <div
+    class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
 
+    <!-- header + search -->
+    <div class="flex items-center justify-between mb-4">
+      <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">
+        Crédits (Rejets)
+      </h5>
+
+      <form class="flex items-center">
+        <label for="search-reject" class="sr-only">Chercher</label>
+        <div class="relative w-full">
+          <div
+            class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400"
+                 xmlns="http://www.w3.org/2000/svg" fill="none"
+                 viewBox="0 0 18 20" aria-hidden="true">
+              <path stroke="currentColor" stroke-linecap="round"
+                    stroke-linejoin="round" stroke-width="2"
+                    d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
+            </svg>
+          </div>
+          <input
+            id="search-reject"
+            type="text"
+            [formControl]="searchControlRejection"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                   focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5
+                   dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
+                   dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500"
+            placeholder="Chercher un client …" />
+        </div>
+      </form>
+    </div>
+
+    <!-- list -->
+    <div class="flow-root">
+      <ul role="list"
+          class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li *ngFor="let c of clientsRequestRejection"
+            class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600"
+            [routerLink]="['/client-portal', c.trackingId]">
+          <div class="flex items-center space-x-4">
+            <div
+              class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden
+                     bg-gray-100 rounded-full dark:bg-gray-600">
+              <span class="font-medium text-gray-600 dark:text-gray-300">
+                {{ c.firstName!.substring(0, 2) }}
+              </span>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <p
+                class="text-sm font-medium text-gray-900 truncate dark:text-white">
+                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+              </p>
+              <p *ngIf="c.dateOfRequest"
+                 class="text-sm text-gray-500 dark:text-gray-400">
+                Demandé le {{ c.dateOfRequest }}
+              </p>
+            </div>
+
+            <div
+              class="inline-flex items-center text-base font-semibold
+                     text-gray-900 dark:text-white">
+              FC {{ c.requestAmount | number:'1.0-0' }}
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

@@ -1877,4 +1877,20 @@ export class DataService {
 
     return totalSavings.toString();
   }
+
+  clientRequestRejectionRefund(client: Client) {
+    const ref = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+
+    const data = {
+      requestAmount: client.rejectionReturnAmount,
+      requestStatus: 'pending',
+      requestType: 'rejection',
+      requestDate: client.requestDate,
+      dateOfRequest: client.dateOfRequest,
+    };
+
+    return ref.set(data, { merge: true });
+  }
 }

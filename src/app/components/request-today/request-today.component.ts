@@ -23,6 +23,7 @@ export class RequestTodayComponent implements OnInit {
 
   clientsRequestLending: Client[] = [];
   clientsRequestSavings: Client[] = [];
+  clientsRequestRejection: Client[] = [];
   clientsRequestCard: Card[] = [];
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
@@ -33,6 +34,7 @@ export class RequestTodayComponent implements OnInit {
   searchControl = new FormControl();
   searchControlSavings = new FormControl();
   searchControlCard = new FormControl();
+  searchControlRejection = new FormControl();
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -69,6 +71,13 @@ export class RequestTodayComponent implements OnInit {
       .subscribe((results) => {
         this.clientsRequestCard = results;
       });
+    this.searchControlRejection.valueChanges
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((v) => this.searchRejection(v))
+      )
+      .subscribe((r) => (this.clientsRequestRejection = r));
   }
 
   retrieveClients(): void {
@@ -153,6 +162,15 @@ export class RequestTodayComponent implements OnInit {
         this.total = (
           Number(this.total) + Number(client.requestAmount)
         ).toString();
+      } else if (
+        client.requestStatus &&
+        client.requestType === 'rejection' && // 👈 NEW
+        client.requestDate === this.requestDateRigthFormat
+      ) {
+        this.clientsRequestRejection.push(client);
+        this.total = (
+          Number(this.total) + Number(client.requestAmount)
+        ).toString();
       }
     }
     this.clientsRequestLending.sort((a, b) => {
@@ -171,6 +189,13 @@ export class RequestTodayComponent implements OnInit {
       }
       return 0; // If dates are missing, leave the order unchanged
     });
+    // optional - sort newest first
+    this.clientsRequestRejection.sort((a, b) =>
+      a.dateOfRequest && b.dateOfRequest
+        ? this.time.parseDate(b.dateOfRequest).getTime() -
+          this.time.parseDate(a.dateOfRequest).getTime()
+        : 0
+    );
   }
   extractTCard() {
     this.trackingIds = [];
@@ -243,5 +268,17 @@ export class RequestTodayComponent implements OnInit {
     } else {
       return of(this.clientsRequestCard);
     }
+  }
+  private searchRejection(val: string) {
+    if (!val) return of(this.clientsRequestRejection);
+    const crit = val.toLowerCase();
+    return of(
+      this.clientsRequestRejection.filter(
+        (c) =>
+          (c.firstName ?? '').toLowerCase().includes(crit) ||
+          (c.lastName ?? '').toLowerCase().includes(crit) ||
+          (c.middleName ?? '').toLowerCase().includes(crit)
+      )
+    );
   }
 }
