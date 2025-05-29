@@ -44,6 +44,7 @@ export class DailyCardPaymentsComponent implements OnInit {
 
   retrieveClients(): void {
     this.auth.getAllClientsCard().subscribe((data: any) => {
+      this.clients = [];
       this.clients = data;
       this.addIdToFilterItems();
       this.extractTodayPayments();
