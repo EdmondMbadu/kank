@@ -200,6 +200,7 @@ export class GestionDayComponent implements OnInit {
     this.overallTotalReserve = 0;
 
     let completedRequests = 0;
+    const targetDate = this.requestDateRigthFormat; // freeze the value
     this.allUsers.forEach((user) => {
       // For each user, fetch both clients and cards
       forkJoin({
@@ -218,7 +219,7 @@ export class GestionDayComponent implements OnInit {
                 client.agentSubmittedVerification === 'true') ||
                 client.requestType === 'savings' ||
                 client.requestType === 'rejection') &&
-              client.requestDate === this.requestDateRigthFormat
+              client.requestDate === targetDate
             ) {
               userTotal += Number(client.requestAmount);
             }
