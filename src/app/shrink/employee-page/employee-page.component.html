@@ -371,7 +371,89 @@
     </div>
  </div>
 
+     <!-- ╔══════════ Reçus d’Audit ══════════╗ -->
+<div    class="mt-8 flex container mx-auto justify-center">
+  <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow
+              sm:p-8 dark:bg-gray-800 dark:border-gray-700">
 
+    <!-- header + quick-search -->
+    <div class="flex items-center justify-between mb-4">
+      <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">
+        Credits & Transports
+      </h5>
+      <input type="text" [(ngModel)]="auditSearch"
+             placeholder="Filtrer par date…"
+             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                    focus:ring-green-500 focus:border-green-500 p-2.5 dark:bg-gray-700
+                    dark:border-gray-600 dark:text-white">
+    </div>
+
+    <!-- upload (admin / audit only) -->
+    <div *ngIf="auth.isAdmin" class="mb-4">
+      <label class="cursor-pointer inline-flex items-center px-3 py-1.5 text-sm
+                     font-medium bg-green-700 text-white rounded-lg hover:bg-green-800">
+        📷 Joindre un reçu
+        <input type="file" accept="image/*" hidden
+               (change)="auditUpload($any($event.target).files)">
+      </label>
+      <input type="number" min="0" step="0.01" [(ngModel)]="auditNewAmount"
+             placeholder="Montant"
+             class="ml-2 w-24 p-2.5 border rounded-lg bg-gray-50
+                    focus:ring-green-500 focus:border-green-500">
+    </div>
+
+    <!-- list -->
+    <div class="flow-root">
+      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li *ngFor="let a of auditFiltered()"
+            class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600">
+          <div class="flex items-center space-x-4">
+            <div class="inline-flex items-center justify-center w-10 h-10 rounded-full
+                        bg-gray-100 dark:bg-gray-600">
+              <span class="font-medium text-gray-600 dark:text-gray-300">
+                {{ employee.firstName?.substring(0,2) }}
+              </span>
+            </div>
+
+            <p class="flex-1 text-sm font-medium truncate dark:text-white">
+              {{ a.frenchDate }}
+            </p>
+
+            <!-- amount -->
+            <ng-container *ngIf="!auth.isAdmin; else editAmt">
+              <p class="text-sm font-semibold text-green-700">
+                {{ a.amount | number:'1.0-2' }} $
+              </p>
+            </ng-container>
+            <ng-template #editAmt>
+              <input type="number" min="0" step="0.01" [(ngModel)]="a.amount"
+                     (blur)="auditUpdateAmount(a)"
+                     class="w-24 p-1 text-xs border rounded
+                            focus:ring-green-500 focus:border-green-500">
+            </ng-template>
+
+            <a [href]="a.url" target="_blank">
+              <img src="../../../assets/img/validating-ticket.png"
+                   class="w-12 h-12 object-cover rounded-md border" />
+            </a>
+
+            <button *ngIf="auth.isAdmin"
+                    class="ml-2 px-2 py-1 text-xs font-medium text-white
+                           bg-blue-600 rounded hover:bg-blue-700"
+                    (click)="auditPrepareReplace(a)">
+              Changer
+            </button>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- hidden input for “Changer” -->
+    <input type="file" #auditFileInput hidden accept="image/*"
+           (change)="auditReplace($any($event.target).files)">
+  </div>
+</div>
+<!-- ╚══════════════════════════════════════╝ -->
 
 <div class=" mt-6 flex container mx-auto  justify-center">
 
@@ -462,7 +544,7 @@
     style="display: none;"
     (change)="onReceiptFileSelected($any($event.target).files)"
   />
-  
+  </div>
 
 
     <div *ngIf="displayAttendance" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6">
@@ -713,3 +795,7 @@
             </div>
           </div>
     
+
+
+
+

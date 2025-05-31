@@ -1,4 +1,10 @@
-import { Component, computed, OnInit } from '@angular/core';
+import {
+  Component,
+  computed,
+  ElementRef,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
@@ -10,7 +16,16 @@ import { DataService } from 'src/app/services/data.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { LocationCoordinates } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 // import heic2any from 'heic2any';
+/* ─── Audit-receipt model ───────────────────────── */
+interface AuditReceipt {
+  docId: string;
+  url: string;
+  ts: number;
+  frenchDate: string;
+  amount?: number;
+}
 
 @Component({
   selector: 'app-employee-page',
@@ -20,6 +35,13 @@ import { AngularFireFunctions } from '@angular/fire/compat/functions';
 export class EmployeePageComponent implements OnInit {
   salaryPaid: string = '';
   showRequestVacation: boolean = false;
+
+  /* ─── Component state ───────────────────────────── */
+  auditReceipts: AuditReceipt[] = [];
+  auditSearch = '';
+  auditNewAmount: number | null = null;
+  private auditSel = '';
+  @ViewChild('auditFileInput') auditFileInput!: ElementRef<HTMLInputElement>;
 
   requestDate: string = '';
 
@@ -125,7 +147,8 @@ export class EmployeePageComponent implements OnInit {
     private performance: PerformanceService,
     public activatedRoute: ActivatedRoute,
     private storage: AngularFireStorage,
-    private fns: AngularFireFunctions
+    private fns: AngularFireFunctions,
+    private afs: AngularFirestore
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -140,6 +163,27 @@ export class EmployeePageComponent implements OnInit {
       barmode: 'bar',
     },
   };
+  /* ─── Fetch on init ─────────────────────────────── */
+  private loadAuditReceipts() {
+    const limit = this.auth.isAdmin ? 50 : 2;
+    this.afs
+      .collection(`users/${this.employee.uid}/auditReceipts`, (ref) =>
+        ref.orderBy('ts', 'desc').limit(limit)
+      )
+      .snapshotChanges()
+      .subscribe((snaps) => {
+        this.auditReceipts = snaps.map((s) => {
+          const d = s.payload.doc.data() as any;
+          return {
+            docId: s.payload.doc.id,
+            url: d.url,
+            ts: d.ts,
+            frenchDate: this.time.formatEpochLongFr(d.ts),
+            amount: d.amount ?? 0,
+          };
+        });
+      });
+  }
   public graphMonthPerformance = {
     data: [
       {
@@ -259,6 +303,7 @@ export class EmployeePageComponent implements OnInit {
         this.currentLng = Number(this.locationCoordinate.longitude);
       }
       this.employee = data[this.id];
+      this.loadAuditReceipts();
       if (this.employee.dateJoined) {
         this.yearsAtCompany = this.compute.yearsSinceJoining(
           this.employee.dateJoined
@@ -1274,5 +1319,77 @@ export class EmployeePageComponent implements OnInit {
   }
   toggleOverlay(show: boolean) {
     if (show) this.code = ''; // reset when showing
+  }
+
+  /* ─── helper used by *ngFor ─────────────────────── */
+  auditFiltered() {
+    const list = this.auditReceipts.filter(
+      (r) =>
+        !this.auditSearch ||
+        r.frenchDate.toLowerCase().includes(this.auditSearch.toLowerCase())
+    );
+    return this.auth.isAdmin ? list : list.slice(0, 2);
+  }
+
+  /* ─── upload new receipt ───────────────────────── */
+  async auditUpload(files: FileList | null) {
+    if (!this.auth.isAdmin || !files?.length) return;
+    if (!this.auditNewAmount || this.auditNewAmount <= 0) {
+      alert('Entrez un montant valide');
+      return;
+    }
+
+    const file = files.item(0)!;
+    const id = this.afs.createId();
+    const path = `auditReceipts/${this.employee.uid}/${id}`;
+
+    try {
+      const up = await this.storage.upload(path, file);
+      const url = await up.ref.getDownloadURL();
+      await this.afs
+        .doc(`users/${this.employee.uid}/auditReceipts/${id}`)
+        .set({ url, ts: Date.now(), amount: Number(this.auditNewAmount) });
+      this.auditNewAmount = null;
+      alert('✅ Reçu ajouté'); // ← success toast
+    } catch {
+      alert('❌ Échec de l’envoi');
+    }
+  }
+
+  /* ─── prepare file-replace ─────────────────────── */
+  auditPrepareReplace(r: AuditReceipt) {
+    this.auditSel = r.docId;
+    this.auditFileInput.nativeElement.click();
+  }
+
+  /* ─── replace existing receipt ─────────────────── */
+  async auditReplace(files: FileList | null) {
+    if (!files?.length || !this.auditSel) return;
+    const file = files.item(0)!;
+    const path = `auditReceipts/${this.employee.uid}/${this.auditSel}`;
+    try {
+      const up = await this.storage.upload(path, file);
+      const url = await up.ref.getDownloadURL();
+      await this.afs
+        .doc(`users/${this.employee.uid}/auditReceipts/${this.auditSel}`)
+        .update({ url });
+      alert('✅ Reçu mis à jour'); // ← success toast
+    } catch {
+      alert('❌ Impossible de remplacer');
+    }
+    this.auditSel = '';
+    this.auditFileInput.nativeElement.value = '';
+  }
+
+  /* ─── inline amount edit ───────────────────────── */
+  async auditUpdateAmount(r: AuditReceipt) {
+    if (!r.amount || r.amount <= 0) {
+      alert('Montant invalide');
+      return;
+    }
+    await this.afs
+      .doc(`users/${this.employee.uid}/auditReceipts/${r.docId}`)
+      .update({ amount: Number(r.amount) });
+    alert('✅ Montant mis à jour'); // ← success toast
   }
 }
