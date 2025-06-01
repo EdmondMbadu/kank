@@ -755,6 +755,6 @@ export class GestionDayComponent implements OnInit {
 
     this.closeBudgetModal();
     this.initalizeInputs(); // refresh dashboard
-    alert('Planned expense saved!');
+    alert('Dépense planifiée enregistrée !');
   }
 }

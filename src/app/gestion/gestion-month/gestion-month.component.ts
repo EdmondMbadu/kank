@@ -54,6 +54,7 @@ export class GestionMonthComponent {
     '/gestion-reserve',
     '/gestion-today',
     '/gestion-expenses',
+    '/gestion-expenses',
     '/gestion-served',
     '/gestion-bank',
     '/gestion-loss',
@@ -65,6 +66,7 @@ export class GestionMonthComponent {
     'Reserve Du Mois',
     'Argent En Main',
     'Depense Du Mois',
+    'Dépenses Planifiées Du Mois',
     'Argent Servi Mois',
     'Argent En Banque Du Mois',
     'Perte Du Du Mois',
@@ -82,6 +84,7 @@ export class GestionMonthComponent {
   givenMonthTotalLossAmountDollar: string = '';
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
+  givenMonthTotalBudgetedExpenseAmount: string = '';
 
   givenMonthRealGain: string = '';
 
@@ -89,6 +92,7 @@ export class GestionMonthComponent {
     '../../../assets/img/loss-ratio.png',
     '../../../assets/img/reserve.svg',
     '../../../assets/img/salary.png',
+    '../../../assets/img/expense.svg',
     '../../../assets/img/expense.svg',
     '../../../assets/img/serve-money.png',
     '../../../assets/img/bank.png',
@@ -106,7 +110,12 @@ export class GestionMonthComponent {
       this.givenMonth,
       this.givenYear
     );
-
+    this.givenMonthTotalBudgetedExpenseAmount =
+      this.compute.findTotalGiventMonth(
+        this.managementInfo?.budgetedExpenses!,
+        this.givenMonth,
+        this.givenYear
+      );
     this.moneyInHands = this.managementInfo?.moneyInHands!;
 
     this.givenMonthTotalExpenseAmount = this.compute.findTotalGiventMonth(
@@ -169,6 +178,7 @@ export class GestionMonthComponent {
       Number(this.givenMonthTotalReserveAmount) -
       Number(this.givenMonthTotalServedAmount) -
       Number(this.givenMonthTotalExpenseAmount) -
+      Number(this.givenMonthTotalBudgetedExpenseAmount) -
       Number(this.givenMonthTotalLossAmount)
     ).toString();
     this.summaryContent = [
@@ -176,6 +186,7 @@ export class GestionMonthComponent {
       `${this.givenMonthTotalReserveAmount}`,
       `${this.moneyInHands}`,
       `${this.givenMonthTotalExpenseAmount}`,
+      `${this.givenMonthTotalBudgetedExpenseAmount}`,
       `${this.givenMonthTotalServedAmount}`,
       `${this.givenMonthTotalBankAmountFrancs}`,
       `${totalLoss}`,
@@ -190,6 +201,9 @@ export class GestionMonthComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.moneyInHands)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalExpenseAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalBudgetedExpenseAmount
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalServedAmount
