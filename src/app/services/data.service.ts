@@ -1893,4 +1893,33 @@ export class DataService {
 
     return ref.set(data, { merge: true });
   }
+
+  async upsertManagementMapField(
+    field: 'expenses' | 'budgetedExpenses' | 'reserve' | 'moneyGiven',
+    amountFC: number,
+    dateKey: string,
+    mode: 'set' | 'add' = 'set' // ← NEW fourth arg (default = replace)
+  ) {
+    const docId = this.auth.managementInfo.id!;
+    const docRef = this.afs.doc<Management>(`management/${docId}`);
+
+    if (mode === 'set') {
+      // overwrite today’s value
+      return docRef.set(
+        { [field]: { [dateKey]: String(amountFC) } },
+        { merge: true }
+      );
+    }
+
+    // mode === 'add'  → atomically increment existing value
+    return this.afs.firestore.runTransaction(async (trx) => {
+      const snap = await trx.get(docRef.ref);
+      const prev = Number(snap.get(field)?.[dateKey] || 0);
+      trx.set(
+        docRef.ref,
+        { [field]: { [dateKey]: String(prev + amountFC) } },
+        { merge: true }
+      );
+    });
+  }
 }

@@ -61,6 +61,7 @@ export class GestionDayComponent implements OnInit {
   recentServeDates: string[] = [];
   recentServeAmounts: number[] = [];
   dailyExpense: string = '0';
+  dailyBudgetExpense = '0';
   dailyPayment: string = '0';
   dailyBankFranc: string = '0';
   dailyBankDollar: string = '0';
@@ -72,6 +73,7 @@ export class GestionDayComponent implements OnInit {
   total: string = '';
   totalCard: string = '';
   track: number = 0;
+  isAddOperation = false;
   public graphMonthPerformance = {
     data: [
       {
@@ -138,6 +140,7 @@ export class GestionDayComponent implements OnInit {
     'Reserve Du Jour',
     'Argent En Main',
     'Depense Du Jour',
+    'Dépenses Planifiées Du Jour',
     'Argent A Servir',
     'Argent En Banque Du Jour',
     'Perte Du Jour',
@@ -149,6 +152,7 @@ export class GestionDayComponent implements OnInit {
     '../../../assets/img/loss-ratio.png',
     '../../../assets/img/reserve.svg',
     '../../../assets/img/salary.png',
+    '../../../assets/img/expense.svg',
     '../../../assets/img/expense.svg',
     '../../../assets/img/serve-money.png',
     '../../../assets/img/bank.png',
@@ -423,6 +427,13 @@ export class GestionDayComponent implements OnInit {
         this.requestDateCorrectFormat
       )
       .toString();
+    this.dailyBudgetExpense = this.compute
+      .findTotalForToday(
+        this.managementInfo?.budgetedExpenses!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
+
     this.dailyServed = this.compute
       .findTotalForToday(
         this.managementInfo?.moneyGiven!,
@@ -475,6 +486,8 @@ export class GestionDayComponent implements OnInit {
       this.dailyReserve === undefined ? '0' : this.dailyReserve;
     this.dailyExpense =
       this.dailyExpense === undefined ? '0' : this.dailyExpense;
+    this.dailyBudgetExpense =
+      this.dailyBudgetExpense === undefined ? '0' : this.dailyBudgetExpense;
     this.dailyLoss = this.dailyLoss === undefined ? '0' : this.dailyLoss;
     this.dailyServed = this.dailyServed === undefined ? '0' : this.dailyServed;
     this.moneyInHands =
@@ -490,6 +503,7 @@ export class GestionDayComponent implements OnInit {
       ` ${this.dailyReserve}`,
       `${this.moneyInHands}`,
       `${this.dailyExpense}`,
+      `${this.dailyBudgetExpense}`,
       `${this.dailyServed}`,
       `${this.dailyBankFranc}`,
       `${dloss}`,
@@ -501,6 +515,9 @@ export class GestionDayComponent implements OnInit {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.moneyInHands)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.dailyBudgetExpense
+      )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyServed)}`,
       `${this.dailyBankDollar}`,
       `${this.compute.convertCongoleseFrancToUsDollars(dloss)}`,
@@ -704,5 +721,40 @@ export class GestionDayComponent implements OnInit {
         // yaxis: { title: 'Montant ($)' }
       },
     };
+  }
+
+  // ─── modal state ───────────────────────────────────────────────
+  showBudgetModal = false;
+  budgetInput: number | null = null;
+
+  openBudgetModal() {
+    this.budgetInput = null;
+    this.showBudgetModal = true;
+  }
+
+  closeBudgetModal() {
+    this.showBudgetModal = false;
+  }
+
+  async saveBudgetedExpense() {
+    if (this.budgetInput === null || isNaN(this.budgetInput)) {
+      alert('Montant invalide');
+      return;
+    }
+
+    const fc = Number(
+      this.compute.convertUsDollarsToCongoleseFranc(this.budgetInput.toString())
+    );
+
+    await this.data.upsertManagementMapField(
+      'budgetedExpenses',
+      fc,
+      this.today,
+      this.isAddOperation ? 'add' : 'set' // ← choose mode
+    );
+
+    this.closeBudgetModal();
+    this.initalizeInputs(); // refresh dashboard
+    alert('Planned expense saved!');
   }
 }
