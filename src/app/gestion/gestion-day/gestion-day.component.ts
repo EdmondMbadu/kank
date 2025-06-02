@@ -131,6 +131,7 @@ export class GestionDayComponent implements OnInit {
     '/gestion-today',
     '/gestion-expenses',
     '/gestion-served',
+    '/gestion-served',
     '/gestion-bank',
     '/gestion-loss',
     '/gestion-investment',
