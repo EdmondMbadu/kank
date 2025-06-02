@@ -236,6 +236,8 @@
 
 
 <!-- Budgeted-expense modal -->
+
+<!-- budget-expense modal -->
 <div
   *ngIf="showBudgetModal"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -243,27 +245,34 @@
   <div
     class="bg-white dark:bg-slate-800 w-80 p-6 rounded-lg shadow-xl flex flex-col"
   >
-    <h2 class="text-xl font-bold mb-4 text-center">
-      Dépense planifiée
-    </h2>
+    <h2 class="text-xl font-bold mb-4 text-center">Dépense planifiée</h2>
 
     <label class="text-sm font-medium mb-1">
       Montant US&nbsp;$ (négatif = retrait)
     </label>
-    <label class="inline-flex items-center mb-4">
-  <input
-    type="checkbox"
-    class="rounded mr-2"
-    [(ngModel)]="isAddOperation"
-  />
-  Ajouter au montant existant
-</label>
     <input
       [(ngModel)]="budgetInput"
       type="number"
       class="border rounded w-full p-2 mb-4"
       placeholder="ex. 50 ou -25"
     />
+
+    <label class="text-sm font-medium mb-1">Raison (court)</label>
+    <input
+      [(ngModel)]="budgetReason"
+      type="text"
+      class="border rounded w-full p-2 mb-4"
+      placeholder="ex. transport"
+    />
+
+    <label class="inline-flex items-center mb-4">
+      <input
+        type="checkbox"
+        class="rounded mr-2"
+        [(ngModel)]="isAddOperation"
+      />
+      Ajouter au montant existant
+    </label>
 
     <div class="flex justify-end space-x-2">
       <button

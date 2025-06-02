@@ -74,6 +74,7 @@ export class GestionDayComponent implements OnInit {
   totalCard: string = '';
   track: number = 0;
   isAddOperation = false;
+  budgetReason = '';
   public graphMonthPerformance = {
     data: [
       {
@@ -730,16 +731,21 @@ export class GestionDayComponent implements OnInit {
 
   openBudgetModal() {
     this.budgetInput = null;
+    this.budgetReason = '';
+    this.isAddOperation = false;
     this.showBudgetModal = true;
   }
 
   closeBudgetModal() {
     this.showBudgetModal = false;
   }
-
   async saveBudgetedExpense() {
     if (this.budgetInput === null || isNaN(this.budgetInput)) {
       alert('Montant invalide');
+      return;
+    }
+    if (!this.budgetReason.trim()) {
+      alert('Veuillez indiquer la raison');
       return;
     }
 
@@ -747,15 +753,19 @@ export class GestionDayComponent implements OnInit {
       this.compute.convertUsDollarsToCongoleseFranc(this.budgetInput.toString())
     );
 
-    await this.data.upsertManagementMapField(
-      'budgetedExpenses',
-      fc,
-      this.today,
-      this.isAddOperation ? 'add' : 'set' // ← choose mode
-    );
+    await this.data.addBudgetPlannedExpense(fc, this.budgetReason);
 
     this.closeBudgetModal();
     this.initalizeInputs(); // refresh dashboard
-    alert('Dépense planifiée enregistrée !');
+    alert('Planned expense saved!');
+  }
+
+  /* ───── click handler for card ───────── */
+  onCardClick(i: number, ev: Event) {
+    if (i === 4) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.openBudgetModal();
+    }
   }
 }

@@ -26,6 +26,78 @@
         </div>
 </div>
 
+<!-- ─── PLANNED-EXPENSES COLLAPSIBLE CARD ───────────────────────── -->
+<div class="w-full max-w-md mx-auto mb-6">
+  <!-- header -->
+  <button
+    (click)="showPlanned = !showPlanned"
+    class="flex items-center justify-between w-full p-4 bg-green-100 border border-green-600 rounded-lg shadow hover:bg-green-200"
+  >
+    <span class="text-lg font-semibold text-gray-800"
+      >Dépenses planifiées ({{ budgetAmounts.length }})</span
+    >
+    <svg
+      [class.transform]="showPlanned"
+      class="w-6 h-6 transition-transform duration-200"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M19 9l-7 7-7-7"
+      />
+    </svg>
+  </button>
+
+  <!-- body -->
+  <div *ngIf="showPlanned" class="border border-t-0 border-green-600 p-4">
+    <ul
+      role="list"
+      class="divide-y divide-gray-200 dark:divide-gray-700"
+      *ngIf="budgetCurrent.length; else emptyPlanned"
+    >
+      <li
+        *ngFor="let item of budgetCurrent; let i = index"
+        class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600"
+      >
+        <div class="flex items-center space-x-4">
+          <div
+            class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600"
+          >
+            <span class="font-medium text-gray-600 dark:text-gray-300">{{
+              currentUser.firstName?.substring(0, 2)
+            }}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ budgetReasons[i] }}
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              {{ budgetDates[i] }}
+            </p>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p
+              class="text-sm font-medium text-gray-900 truncate dark:text-white"
+            >
+              FC {{ budgetAmounts[i] | number : '1.0-0' }}
+            </p>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <ng-template #emptyPlanned>
+      <p class="text-center text-sm text-gray-500 mt-2">
+        Aucune dépense planifiée pour l’instant
+      </p>
+    </ng-template>
+  </div>
+</div>
+<!-- ─── END COLLAPSIBLE CARD ─────────────────────────────────────── -->
 
 <div class=" mt-6 flex container mx-auto  justify-center">
    <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">

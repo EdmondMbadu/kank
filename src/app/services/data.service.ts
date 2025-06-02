@@ -1894,32 +1894,55 @@ export class DataService {
     return ref.set(data, { merge: true });
   }
 
+  /** Generic writer used by the budget-expense modal */
   async upsertManagementMapField(
     field: 'expenses' | 'budgetedExpenses' | 'reserve' | 'moneyGiven',
     amountFC: number,
     dateKey: string,
-    mode: 'set' | 'add' = 'set' // ← NEW fourth arg (default = replace)
+    reason: string,
+    mode: 'set' | 'add' = 'set'
   ) {
     const docId = this.auth.managementInfo.id!;
     const docRef = this.afs.doc<Management>(`management/${docId}`);
 
     if (mode === 'set') {
-      // overwrite today’s value
       return docRef.set(
-        { [field]: { [dateKey]: String(amountFC) } },
+        { [field]: { [dateKey]: `${amountFC}:${reason.trim()}` } },
         { merge: true }
       );
     }
 
-    // mode === 'add'  → atomically increment existing value
+    // mode === 'add' → increment and append reason
     return this.afs.firestore.runTransaction(async (trx) => {
       const snap = await trx.get(docRef.ref);
-      const prev = Number(snap.get(field)?.[dateKey] || 0);
+      const prevRaw = snap.get(field)?.[dateKey] ?? '0';
+      const [prevAmountStr, prevReasonsRaw = ''] = String(prevRaw).split(':');
+      const prevAmount = Number(prevAmountStr);
+      const mergedReasons = [prevReasonsRaw, reason.trim()]
+        .filter(Boolean)
+        .join('|');
+
       trx.set(
         docRef.ref,
-        { [field]: { [dateKey]: String(prev + amountFC) } },
+        {
+          [field]: {
+            [dateKey]: `${prevAmount + amountFC}:${mergedReasons}`,
+          },
+        },
         { merge: true }
       );
     });
+  }
+  async addBudgetPlannedExpense(amountFC: number, reason: string) {
+    const docId = this.auth.managementInfo.id!;
+    const key = this.time.todaysDate(); // timestamp (seconds)
+    const docRef = this.afs.doc(`management/${docId}`);
+
+    return docRef.set(
+      {
+        budgetedExpenses: { [key]: `${amountFC}:${reason.trim()}` },
+      },
+      { merge: true }
+    );
   }
 }

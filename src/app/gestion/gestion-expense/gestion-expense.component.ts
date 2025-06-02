@@ -21,6 +21,12 @@ export class GestionExpenseComponent {
   expensesDates: string[] = [];
   currentUser: any = {};
   managementInfo?: Management = {};
+
+  showPlanned = false; // controls collapse
+  budgetCurrent: [string, string][] = [];
+  budgetAmounts: string[] = [];
+  budgetReasons: string[] = [];
+  budgetDates: string[] = [];
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -31,6 +37,7 @@ export class GestionExpenseComponent {
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
       this.getCurrentExpense();
+      this.getPlannedExpense(); // planned list
     });
   }
 
@@ -71,6 +78,22 @@ export class GestionExpenseComponent {
     );
     this.expensesReasons = this.expensesReasons.map(
       (item) => item.split(':')[1]
+    );
+  }
+  /** planned-expense list */
+  getPlannedExpense() {
+    const map = this.managementInfo?.budgetedExpenses || {};
+    this.budgetCurrent = Object.entries(map);
+    this.budgetCurrent = this.compute.sortArrayByDateDescendingOrder(
+      this.budgetCurrent
+    );
+
+    const rawList = this.budgetCurrent.map((entry) => entry[1]);
+
+    this.budgetAmounts = rawList.map((item) => item.split(':')[0]);
+    this.budgetReasons = rawList.map((item) => item.split(':')[1] || '');
+    this.budgetDates = this.budgetCurrent.map((entry) =>
+      this.time.convertTimeFormat(entry[0])
     );
   }
 }
