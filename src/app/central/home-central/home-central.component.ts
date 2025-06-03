@@ -100,7 +100,7 @@ export class HomeCentralComponent implements OnInit {
   summary: string[] = [
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
-    'Clients Epargnes Sans Credit',
+    'Clients Avec Epargnes Sans Credit',
     'Argent Investi',
     'Prêt Restant',
 
@@ -208,7 +208,7 @@ export class HomeCentralComponent implements OnInit {
     let total = 0;
     this.allClientsWithoutDebtsButWithSavings = [];
     this.allClients?.forEach((client) => {
-      if (Number(client.debtLeft) === 0 && Number(client.savings) > 0) {
+      if (Number(client.debtLeft) <= 0 && Number(client.savings) > 0) {
         total += Number(client.savings);
         this.allClientsWithoutDebtsButWithSavings!.push(client);
       }
