@@ -1149,7 +1149,7 @@ export class DataService {
       },
       monthBudgetPending: (
         Number(this.auth.currentUser.monthBudgetPending) -
-        Number(client.requestAmount)
+        Number(client.previouslyRequestedAmount)
       ).toString(),
       dailyFeesReturns: {
         [date]: `${Total}`,
@@ -1885,6 +1885,7 @@ export class DataService {
 
     const data = {
       requestAmount: client.rejectionReturnAmount,
+      previouslyRequestedAmount: client.previouslyRequestedAmount,
       rejectionReturnAmount: client.rejectionReturnAmount,
       requestStatus: 'pending',
       requestType: 'rejection',

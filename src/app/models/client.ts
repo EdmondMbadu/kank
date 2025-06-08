@@ -42,6 +42,7 @@ export class Client {
   employee?: Employee;
   type?: string;
   requestAmount?: string;
+  previouslyRequestedAmount?: string;
   requestStatus?: string;
   requestDate?: string;
   requestType?: string;

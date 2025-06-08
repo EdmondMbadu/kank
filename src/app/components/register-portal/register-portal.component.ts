@@ -582,6 +582,7 @@ export class RegiserPortalComponent {
     const formattedDate = `${parseInt(m, 10)}-${parseInt(d, 10)}-${y}`; // ex. 6/11/2025
 
     c.rejectionReturnAmount = amount.toString();
+    c.previouslyRequestedAmount = c.requestAmount;
     // c.requestAmount = c.rejectionReturnAmount;
     c.requestStatus = 'pending';
     c.requestType = 'rejection';
