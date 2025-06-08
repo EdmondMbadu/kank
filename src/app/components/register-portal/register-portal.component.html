@@ -26,11 +26,11 @@
       <span *ngIf="this.auth.isAdmin" > par {{agentVerifyingName}}</span>
      
     </div>
-    <div *ngIf="!agentSubmmittedVerification" class="flex items-center text-red-600 text-xl font-bold">
+    <div *ngIf="!agentSubmmittedVerification && client.requestType!=='rejection'" class="flex items-center text-red-600 text-xl font-bold">
       ❌ Client non vérifié
     </div>
     <div *ngIf="client.requestType==='rejection'" class=" flex  items-center text-red-600 text-xl font-bold">
-        - - Rejection en Cours...
+       🚫 Rejection en Cours...
     </div>
     <!-- inside the <li> that shows an unapproved client -->
 
