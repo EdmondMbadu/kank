@@ -1885,6 +1885,7 @@ export class DataService {
 
     const data = {
       requestAmount: client.rejectionReturnAmount,
+      rejectionReturnAmount: client.rejectionReturnAmount,
       requestStatus: 'pending',
       requestType: 'rejection',
       requestDate: client.requestDate,

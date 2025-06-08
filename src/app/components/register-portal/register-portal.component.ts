@@ -29,6 +29,11 @@ export class RegiserPortalComponent {
   suspiciousClientLink: string | null = null;
   suspiciousReason = '';
 
+  // ====== Nouveaux champs ======
+  showRefundDialog = false;
+  selectedReturnDate = ''; // ISO yyyy-MM-dd (lié à l’input date)
+  minReturnDate = ''; // ISO de demain (initialisé dans ngOnInit)
+
   id: any = '';
   paymentDate = '';
   debtStart = '';
@@ -122,6 +127,7 @@ export class RegiserPortalComponent {
   }
   ngOnInit(): void {
     this.retrieveClient();
+    this.minReturnDate = this.time.getTomorrowsDateISO();
   }
   comment?: string = 'RAISON DU REFUS: ';
 
@@ -552,5 +558,40 @@ export class RegiserPortalComponent {
     this.data
       .clientRequestRejectionRefund(c)
       .then(() => this.toast.success('Demande enregistrée 🚀'));
+  }
+  // ====== Ouvre la boîte de dialogue ======
+  openRefundDialog() {
+    this.selectedReturnDate = '';
+    this.showRefundDialog = true;
+  }
+
+  // ====== Valide et enregistre la demande ======
+  confirmRequestCancel(c: Client) {
+    const amount =
+      Number(c.savings || 0) +
+      Number(c.applicationFee || 0) +
+      Number(c.membershipFee || 0);
+
+    if (!amount) {
+      alert('Aucun montant à rembourser');
+      return;
+    }
+
+    // Re‐formate la date ISO (yyyy-MM-dd) vers MM/dd/yyyy pour rester cohérent
+    const [y, m, d] = this.selectedReturnDate.split('-');
+    const formattedDate = `${parseInt(m, 10)}-${parseInt(d, 10)}-${y}`; // ex. 6/11/2025
+
+    c.rejectionReturnAmount = amount.toString();
+    // c.requestAmount = c.rejectionReturnAmount;
+    c.requestStatus = 'pending';
+    c.requestType = 'rejection';
+    c.requestDate = formattedDate;
+    c.dateOfRequest = this.time.todaysDate();
+
+    this.data.clientRequestRejectionRefund(c).then(() => {
+      alert('Demande enregistrée 🚀');
+      // this.showRefundDialog = false;
+      this.showRefundDialog = false;
+    });
   }
 }

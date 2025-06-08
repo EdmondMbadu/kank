@@ -729,4 +729,10 @@ export class TimeService {
       ) + ` à ${time}`
     );
   }
+
+  getTomorrowsDateISO(): string {
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    return t.toISOString().substring(0, 10); // yyyy-MM-dd
+  }
 }

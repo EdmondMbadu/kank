@@ -339,7 +339,7 @@ export class TodayComponent {
         !this.searchText ||
         r.frenchDate.toLowerCase().includes(this.searchText.toLowerCase())
     );
-    console.log(' the list', list);
+
     return this.auth.isAdmin ? list : list.slice(0, 2);
   }
 

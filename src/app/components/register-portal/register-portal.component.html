@@ -29,6 +29,9 @@
     <div *ngIf="!agentSubmmittedVerification" class="flex items-center text-red-600 text-xl font-bold">
       ❌ Client non vérifié
     </div>
+    <div *ngIf="client.requestType==='rejection'" class=" flex  items-center text-red-600 text-xl font-bold">
+        - - Rejection en Cours...
+    </div>
     <!-- inside the <li> that shows an unapproved client -->
 
 
@@ -98,9 +101,13 @@
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.membershipFee | number:'1.0-0'}} </dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Frais D'ahesion Payé (FC)</dd>
             </div>
-            <div class="flex flex-col items-center justify-center">
+            <div *ngIf="client.requestType!=='rejection'"  class="flex flex-col items-center justify-center">
                 <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.requestAmount| number:'1.0-0'}} </dt>
                 <dd class="text-gray-500 text-center dark:text-gray-400">Montant Demandé (FC) </dd>
+            </div>
+            <div *ngIf="client.requestType==='rejection'" class="flex flex-col items-center justify-center">
+                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.requestAmount| number:'1.0-0'}} </dt>
+                <dd class="text-gray-500 text-center dark:text-gray-400">Montant a Remettre au Client Apres Rejet (FC) </dd>
             </div>
             
             <div class="flex flex-col items-center justify-center">
@@ -159,13 +166,42 @@
     <div class="flex container flex-col md:flex-row mx-auto justify-center ">
         <a åtype="submit" class="text-white bg-green-700 hover:bg-green-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"  [routerLink]="['/request-update',id ]">Demande de Mise à Jour</a>
     <button *ngIf="client.type==='register'"  type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4" (click)="cancelRegistration()">Annuler Enregistrement</button>
-    <button
-class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"
+<!-- ========= 1-A.  BUTTON (opens the modal) ========= -->
+<button
+  class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4"
   title="Annuler et rembourser"
-  (click)="requestCancel(client)">
+  (click)="openRefundDialog()">
   Demande de Remboursement après rejet
-  
 </button>
+
+<!-- ========= 1-B.  MODAL ========= -->
+<div *ngIf="showRefundDialog"
+     class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-lg w-full max-w-md md:max-w-lg text-sm p-6">
+    <h2 class="text-lg font-semibold text-red-700 mb-4 text-center">
+      Sélectionnez la date de remboursement
+    </h2>
+
+    <label class="block mb-2 text-gray-700">Date souhaitée :</label>
+    <input type="date"
+           class="w-full border rounded p-2 mb-4"
+           [(ngModel)]="selectedReturnDate"
+           [min]="minReturnDate">
+
+    <div class="flex justify-between">
+      <button (click)="showRefundDialog=false"
+              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">
+        Annuler
+      </button>
+      <button (click)="confirmRequestCancel(client)"
+              class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded"
+              [disabled]="!selectedReturnDate">
+        Confirmer
+      </button>
+    </div>
+  </div>
+</div>
+
    
 </div>
 
