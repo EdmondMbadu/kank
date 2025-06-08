@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
+
 import { Comment } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
@@ -28,7 +29,6 @@ export class ReviewsComponent implements OnInit {
   selectedAudioFile?: File;
   selectedAudioPreviewURL?: string; // For local preview
 
-  
   elapsedTime = '00:00';
   recordingProgress = 0;
   private recordingTimer: any;
@@ -40,14 +40,16 @@ export class ReviewsComponent implements OnInit {
     private data: DataService,
     public time: TimeService,
     private compute: ComputationService,
-       private cd: ChangeDetectorRef
+    private cd: ChangeDetectorRef
   ) {}
+  reviewId: string = '';
 
   ngOnInit(): void {
     // Ensure user is available before fetching reviews
 
     this.auth.getReviews().subscribe((data: any) => {
       this.reviews = data[0].reviews;
+      this.reviewId = data[0].reviewId;
       // console.log('reviews', this.reviews);
       this.setReviews();
     });
@@ -96,9 +98,7 @@ export class ReviewsComponent implements OnInit {
     return num < 10 ? `0${num}` : `${num}`;
   }
 
-  
   addReview(audioUrl: string) {
-
     try {
       const review = {
         name: this.personPostingComment,
@@ -241,101 +241,115 @@ export class ReviewsComponent implements OnInit {
     }
   }
 
-    // Let user discard the current recording if they don’t want it
-    discardAudio() {
-      // 1) If we were actively recording, stop the recorder
-      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-        this.mediaRecorder.stop();
-      }
-      this.isRecording = false;
-      this.audioChunks = [];
-      this.recordedBlob = undefined;
-      this.recordedAudioURL = undefined;
-  
-      // 2) If we had selected an audio file to upload, clear that
-      if (this.selectedAudioPreviewURL) {
-        // Revoke the object URL to free memory
-        URL.revokeObjectURL(this.selectedAudioPreviewURL);
-      }
-      this.selectedAudioPreviewURL = undefined;
-      this.selectedAudioFile = undefined;
-      // 3) Also reset the <input> value so the user can pick the same file again
-      const input = document.getElementById('audioFile') as HTMLInputElement;
-      if (input) {
-        input.value = '';
-      }
-  
-      console.log('Audio canceled/reset.');
+  // Let user discard the current recording if they don’t want it
+  discardAudio() {
+    // 1) If we were actively recording, stop the recorder
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.isRecording = false;
+    this.audioChunks = [];
+    this.recordedBlob = undefined;
+    this.recordedAudioURL = undefined;
+
+    // 2) If we had selected an audio file to upload, clear that
+    if (this.selectedAudioPreviewURL) {
+      // Revoke the object URL to free memory
+      URL.revokeObjectURL(this.selectedAudioPreviewURL);
+    }
+    this.selectedAudioPreviewURL = undefined;
+    this.selectedAudioFile = undefined;
+    // 3) Also reset the <input> value so the user can pick the same file again
+    const input = document.getElementById('audioFile') as HTMLInputElement;
+    if (input) {
+      input.value = '';
     }
 
-    onAudioFileSelected(fileList: FileList | null) {
-      if (!fileList || fileList.length === 0) {
-        return;
-      }
-  
-      const file = fileList[0];
-  
-      // Optional: Check size, type, etc.
-      if (file.size >= 20000000) {
-        alert('Le fichier audio dépasse la limite de 20MB.');
-        return;
-      }
-  
-      if (file.type.split('/')[0] !== 'audio') {
-        alert('Veuillez choisir un fichier audio valide.');
-        return;
-      }
-  
-      this.selectedAudioFile = file;
-  
-      // Create a local preview URL for immediate playback
-      this.selectedAudioPreviewURL = URL.createObjectURL(file);
-      // ⚠️ IMPORTANT: Reset the input value so that picking the same file again re-triggers change.
-      const input = document.getElementById('audioFile') as HTMLInputElement;
-      if (input) {
-        input.value = ''; // Clear out so a re-selection fires change
-      }
-  
-      console.log('Audio file selected:', file);
+    console.log('Audio canceled/reset.');
+  }
+
+  onAudioFileSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return;
     }
-    addReviewWithOrWithoutAudioFile() {
-      // 1) Must have a name
-      if (!this.personPostingComment || !this.personPostingComment.trim()) {
-        alert('Veuillez saisir votre nom.');
-        return;
-      }
-      if (!this.numberofStars || !this.numberofStars.trim()) {
-        alert('Veuillez saisir votre cote.');
-        return;
-      }
-  
-      // 2) Check for text or audio
-      const hasText = this.comment && this.comment.trim().length > 0;
-      const hasRecordedAudio = !!this.recordedBlob; // if user used mic
-      const hasUploadedAudio = !!this.selectedAudioFile; // if user selected a file
-  
-      if (!hasText && !hasRecordedAudio && !hasUploadedAudio) {
-        alert(
-          'Veuillez saisir un commentaire OU un fichier audio (enregistré ou téléversé).'
-        );
-        return;
-      }
-  
-      // 3) Confirm
-      if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) {
-        return;
-      }
-  
-      // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
-      if (hasRecordedAudio) {
-        this.uploadRecordedBlobAndThenPostComment();
-      } else if (hasUploadedAudio) {
-        this.uploadSelectedFileAndThenPostComment();
-      } else {
-        // just text
-        this.addReview('');
-      }
+
+    const file = fileList[0];
+
+    // Optional: Check size, type, etc.
+    if (file.size >= 20000000) {
+      alert('Le fichier audio dépasse la limite de 20MB.');
+      return;
     }
-  
-  
+
+    if (file.type.split('/')[0] !== 'audio') {
+      alert('Veuillez choisir un fichier audio valide.');
+      return;
+    }
+
+    this.selectedAudioFile = file;
+
+    // Create a local preview URL for immediate playback
+    this.selectedAudioPreviewURL = URL.createObjectURL(file);
+    // ⚠️ IMPORTANT: Reset the input value so that picking the same file again re-triggers change.
+    const input = document.getElementById('audioFile') as HTMLInputElement;
+    if (input) {
+      input.value = ''; // Clear out so a re-selection fires change
+    }
+
+    console.log('Audio file selected:', file);
+  }
+  addReviewWithOrWithoutAudioFile() {
+    // 1) Must have a name
+    if (!this.personPostingComment || !this.personPostingComment.trim()) {
+      alert('Veuillez saisir votre nom.');
+      return;
+    }
+    if (!this.numberofStars || !this.numberofStars.trim()) {
+      alert('Veuillez saisir votre cote.');
+      return;
+    }
+
+    // 2) Check for text or audio
+    const hasText = this.comment && this.comment.trim().length > 0;
+    const hasRecordedAudio = !!this.recordedBlob; // if user used mic
+    const hasUploadedAudio = !!this.selectedAudioFile; // if user selected a file
+
+    if (!hasText && !hasRecordedAudio && !hasUploadedAudio) {
+      alert(
+        'Veuillez saisir un commentaire OU un fichier audio (enregistré ou téléversé).'
+      );
+      return;
+    }
+
+    // 3) Confirm
+    if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) {
+      return;
+    }
+
+    // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
+    if (hasRecordedAudio) {
+      this.uploadRecordedBlobAndThenPostComment();
+    } else if (hasUploadedAudio) {
+      this.uploadSelectedFileAndThenPostComment();
+    } else {
+      // just text
+      this.addReview('');
+    }
+  }
+  deleteReview(index: number, review: Comment): void {
+    if (!confirm('Supprimer définitivement ce commentaire ?')) {
+      return;
+    }
+
+    this.auth
+      .deleteReview(this.reviewId, review)
+      .then(() => {
+        this.reviews.splice(index, 1); // instant UI update
+        alert('Commentaire supprimé avec succès.');
+      })
+      .catch((err) => {
+        console.error('Deletion failed:', err);
+        alert('Impossible de supprimer ce commentaire.');
+      });
+  }
 }
