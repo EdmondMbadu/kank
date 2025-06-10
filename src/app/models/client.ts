@@ -64,6 +64,7 @@ export class Client {
   agentSubmittedVerification?: string;
   birthDate?: string;
   age?: string;
+  locationName?: string;
 }
 
 export class Comment {

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subscription, take } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subscription, take } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
@@ -8,6 +8,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { TimeService } from 'src/app/services/time.service';
 import { DataService } from 'src/app/services/data.service';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { FormControl } from '@angular/forms';
 
 @Component({
   selector: 'app-home-central',
@@ -28,6 +29,8 @@ export class HomeCentralComponent implements OnInit {
   allcurrentClientsWithDebts: Client[] = [];
   allCurrentClientsWithDebtsScheduledToPayToday: Client[] = [];
   allUsers: User[] = [];
+  searchControl = new FormControl('');
+  filteredItems: Client[] = [];
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
   ngOnInit(): void {
     this.auth.getAllUsersInfo().subscribe((data) => {
@@ -52,7 +55,11 @@ export class HomeCentralComponent implements OnInit {
     let completedRequests = 0;
     this.allUsers.forEach((user) => {
       this.auth.getClientsOfAUser(user.uid!).subscribe((clients) => {
-        tempClients = tempClients.concat(clients);
+        const tagged = clients.map((c) => ({
+          ...c,
+          locationName: user.firstName,
+        }));
+        tempClients = tempClients.concat(tagged);
         completedRequests++;
         if (completedRequests === this.allUsers.length) {
           this.filterAndInitializeClients(tempClients);
@@ -77,6 +84,9 @@ export class HomeCentralComponent implements OnInit {
 
     // Now, this.currentClients contains unique clients. Proceed with initialization.
     this.initalizeInputs(); // Adjust this method as needed
+    /* 🔍 initialise search */
+    this.filteredItems = this.allClients ?? [];
+    this.setupSearch();
   }
 
   linkPath: string[] = [
@@ -253,5 +263,24 @@ export class HomeCentralComponent implements OnInit {
         alert('Error sending reminders. Please try again.');
       },
     });
+  }
+  private setupSearch() {
+    this.searchControl.valueChanges
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe((term) => {
+        if (!term) {
+          this.filteredItems = this.allClients ?? [];
+          return;
+        }
+        const v = term.toLowerCase();
+        this.filteredItems = (this.allClients ?? []).filter(
+          (cl) =>
+            cl.firstName?.toLowerCase().includes(v) ||
+            cl.lastName?.toLowerCase().includes(v) ||
+            cl.middleName?.toLowerCase().includes(v) ||
+            cl.phoneNumber?.includes(v) ||
+            cl.locationName?.toLowerCase().includes(v)
+        );
+      });
   }
 }
