@@ -46,6 +46,23 @@ export class TutorialComponent {
     private time: TimeService,
     public compute: ComputationService
   ) {}
+  /* === Calcul frais prêt === */
+  isNewClient: boolean = true; // Nouveau = true, Ancien = false
+  loanAmount: number | null = null;
+
+  readonly memberFee: number = 5000; // Frais de membre (toujours)
+  get adhesionFee(): number {
+    // Frais d’adhésion (nouveau client)
+    return this.isNewClient ? 10000 : 0;
+  }
+  get savingDeposit(): number {
+    // 30 % du montant demandé
+    return this.loanAmount ? Math.round(this.loanAmount * 0.3) : 0;
+  }
+  get totalToPay(): number {
+    // Somme totale
+    return this.memberFee + this.adhesionFee + this.savingDeposit;
+  }
 
   // Generic toggle method
   toggle(

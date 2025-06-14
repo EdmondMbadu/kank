@@ -25,6 +25,120 @@
         </div>
     </figcaption>
 </figure>
+<!-- ─────── CALCUL DES FRAIS EMPRUNT (v2-spicy) ──────────────────────────── -->
+<section
+  class="relative max-w-2xl mx-auto mt-10 mb-12 px-6 py-8
+         bg-white/80 dark:bg-slate-800/80 backdrop-blur
+         rounded-2xl shadow-lg ring-1 ring-gray-200 dark:ring-slate-700
+         animate-fadeIn">
+
+  <!-- Gradient ribbon -->
+  <div class="absolute -top-2 -left-2 right-0 h-2 rounded-t-2xl
+              bg-gradient-to-r from-teal-400 via-emerald-500 to-lime-400"></div>
+
+  <!-- Faint pulse -->
+  <div class="absolute inset-0 rounded-2xl pointer-events-none
+              before:absolute before:inset-0 before:bg-emerald-400/10
+              before:blur-xl before:opacity-0 hover:before:opacity-100
+              before:transition-opacity"></div>
+
+  <h2 class="text-2xl font-extrabold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
+    <svg class="w-6 h-6 text-emerald-500" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19.5 12A7.5 7.5 0 115.025 6.18"/>
+    </svg>
+    Estimation des frais
+  </h2>
+
+  <!-- ── 1. Sélecteur de type de client ───────────────────────────── -->
+  <div class="mb-6">
+    <div class="inline-flex rounded-full bg-gray-100 dark:bg-slate-700 p-1 shadow-sm">
+      <button
+        (click)="isNewClient = true"
+        class="px-4 py-1.5 text-sm font-medium rounded-full transition
+               duration-200"
+        [ngClass]="isNewClient
+          ? 'bg-emerald-500 text-white shadow'
+          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
+        Nouveau
+      </button>
+      <button
+        (click)="isNewClient = false"
+        class="px-4 py-1.5 text-sm font-medium rounded-full transition
+               duration-200"
+        [ngClass]="!isNewClient
+          ? 'bg-emerald-500 text-white shadow'
+          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
+        Ancien
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 2. Montant demandé ───────────────────────────────────────── -->
+  <div class="mb-8">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+      Montant demandé (FC)
+    </label>
+    <input type="number" min="0" step="100" [(ngModel)]="loanAmount"
+           placeholder="0"
+           class="w-full rounded-lg border border-gray-300 dark:border-slate-600
+                  bg-gray-50 dark:bg-slate-700 p-3 text-gray-900
+                  focus:border-emerald-500 focus:ring-emerald-500
+                  transition-shadow shadow-inner">
+  </div>
+
+  <!-- ── 3. Résultats en temps réel ───────────────────────────────── -->
+  <ul class="space-y-2 text-gray-800 dark:text-gray-200">
+    <li class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3"/>
+      </svg>
+      <span class="flex-1">Frais de membre</span>
+      <strong>{{ memberFee | number:'1.0-0' }} FC</strong>
+    </li>
+
+    <li *ngIf="isNewClient" class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M16 12H8m8 0l-3-3m3 3l-3 3"/>
+      </svg>
+      <span class="flex-1">Frais&nbsp;d’adhésion</span>
+      <strong>{{ adhesionFee | number:'1.0-0' }} FC</strong>
+    </li>
+
+    <li class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-fuchsia-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 9V7a5 5 0 00-10 0v2"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M5 12h14l1 9H4l1-9z"/>
+      </svg>
+      <span class="flex-1">Épargne obligatoire (30 %)</span>
+      <strong>{{ savingDeposit | number:'1.0-0' }} FC</strong>
+    </li>
+  </ul>
+
+  <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
+
+  <p class="flex items-center justify-between text-lg font-extrabold">
+    <span class="flex items-center gap-2">
+      <svg class="w-6 h-6 text-green-600 animate-bounce-slow"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19.5 12A7.5 7.5 0 115.025 6.18"/>
+      </svg>
+      Total à payer
+    </span>
+    {{ totalToPay | number:'1.0-0' }} FC
+  </p>
+</section>
+<!-- ─────── FIN ──────────────────────────────────────────────────────────── -->
+
 
     <!-- <p class="mb-3 text-lg text-gray-500 md:text-xl dark:text-gray-400 mx-4"> Notre Mission:  Aider les petits vendeurs locaux à obtenir des crédits pour gérer leur entreprise afin d'augmenter leur production et de développer leur activité.
     </p>
