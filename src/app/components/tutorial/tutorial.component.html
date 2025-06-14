@@ -123,7 +123,7 @@
 
   <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
 
-  <p class="flex items-center justify-between text-lg font-extrabold">
+  <!-- <p class="flex items-center justify-between text-lg font-extrabold">
     <span class="flex items-center gap-2">
       <svg class="w-6 h-6 text-green-600 animate-bounce-slow"
            fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,6 +133,84 @@
               d="M19.5 12A7.5 7.5 0 115.025 6.18"/>
       </svg>
       Total à payer
+    </span>
+    {{ totalToPay | number:'1.0-0' }} FC
+  </p> -->
+
+  <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
+
+  <!-- ── 4. Projection de remboursement ───────────────────────────── -->
+  <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-1">
+    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4l3 3"/>
+    </svg>
+    Projection de remboursement
+  </h3>
+
+  <!-- Sélecteur durée -->
+  <div class="mb-4">
+    <div class="inline-flex rounded-full bg-gray-100 dark:bg-slate-700 p-1 shadow-sm">
+      <button
+        (click)="repaymentWeeks = 4"
+        class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
+        [ngClass]="repaymentWeeks === 4
+          ? 'bg-indigo-500 text-white shadow'
+          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
+        4&nbsp;semaines&nbsp;(1&nbsp;mois)
+      </button>
+      <button
+        (click)="repaymentWeeks = 8"
+        class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
+        [ngClass]="repaymentWeeks === 8
+          ? 'bg-indigo-500 text-white shadow'
+          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
+        8&nbsp;semaines&nbsp;(2&nbsp;mois)
+      </button>
+    </div>
+  </div>
+
+  <!-- Résumé chiffres -->
+  <ul class="space-y-2 text-gray-800 dark:text-gray-200">
+    <li class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4H8v-2h4V8l4 4-4 4z"/>
+      </svg>
+      <span class="flex-1">Intérêt&nbsp;({{ interestRate*100 | number:'1.0-0' }} %)</span>
+      <strong>{{ loanInterest | number:'1.0-0' }} FC</strong>
+    </li>
+    <li class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 12h16M4 12l4 4m-4-4l4-4"/>
+      </svg>
+      <span class="flex-1">Total à rembourser</span>
+      <strong>{{ totalRepay | number:'1.0-0' }} FC</strong>
+    </li>
+    <li class="flex items-center gap-2">
+      <svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3"/>
+      </svg>
+      <span class="flex-1">Paiement hebdomadaire (×{{ repaymentWeeks }})</span>
+      <strong>{{ weeklyRepay | number:'1.0-0' }} FC</strong>
+    </li>
+  </ul>
+
+  <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
+
+  <!-- ── 5. Total initial (frais + épargne) ──────────────────────── -->
+  <p class="flex items-center justify-between text-lg font-extrabold">
+    <span class="flex items-center gap-2">
+      <svg class="w-6 h-6 text-green-600 animate-bounce-slow"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19.5 12A7.5 7.5 0 115.025 6.18"/>
+      </svg>
+      Total frais initiaux
     </span>
     {{ totalToPay | number:'1.0-0' }} FC
   </p>

@@ -51,6 +51,27 @@ export class TutorialComponent {
   loanAmount: number | null = null;
 
   readonly memberFee: number = 5000; // Frais de membre (toujours)
+  repaymentWeeks = 8; // 4 ou 8
+
+  // Taux d’intérêt simple (0.20 ou 0.40)
+  get interestRate(): number {
+    return this.repaymentWeeks === 8 ? 0.4 : 0.2;
+  }
+
+  // Intérêt en FC
+  get loanInterest(): number {
+    return this.loanAmount! * this.interestRate;
+  }
+
+  // Montant total à rembourser (principal + intérêt)
+  get totalRepay(): number {
+    return this.loanAmount! + this.loanInterest;
+  }
+
+  // Paiement hebdomadaire
+  get weeklyRepay(): number {
+    return this.totalRepay / this.repaymentWeeks;
+  }
   get adhesionFee(): number {
     // Frais d’adhésion (nouveau client)
     return this.isNewClient ? 10000 : 0;
