@@ -123,19 +123,7 @@
 
   <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
 
-  <!-- <p class="flex items-center justify-between text-lg font-extrabold">
-    <span class="flex items-center gap-2">
-      <svg class="w-6 h-6 text-green-600 animate-bounce-slow"
-           fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M19.5 12A7.5 7.5 0 115.025 6.18"/>
-      </svg>
-      Total à payer
-    </span>
-    {{ totalToPay | number:'1.0-0' }} FC
-  </p> -->
+ 
 
   <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
 
@@ -172,14 +160,7 @@
 
   <!-- Résumé chiffres -->
   <ul class="space-y-2 text-gray-800 dark:text-gray-200">
-    <!-- <li class="flex items-center gap-2">
-      <svg class="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M13 16h-1v-4H8v-2h4V8l4 4-4 4z"/>
-      </svg>
-      <span class="flex-1">Intérêt&nbsp;({{ interestRate*100 | number:'1.0-0' }} %)</span>
-      <strong>{{ loanInterest | number:'1.0-0' }} FC</strong>
-    </li> -->
+
     <li class="flex items-center gap-2">
       <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -417,66 +398,7 @@
               Les paiements de salaire seront effectués le <span class="text-red-500"> 1er </span> de chaque mois. Si le 1er tombe un samedi ou un dimanche, les agents seront payés la veille.
               Les paiements de bonus seront effectués le <span class="text-red-500"> 15 </span> de chaque mois. Si le 15 tombe un samedi ou un dimanche, les agents seront payés la veille.
           </p>
-          <!-- <section class="bg-white py-8 antialiased dark:bg-gray-900 md:py-16">
-            <div class="mx-auto max-w-screen-xl px-4 2xl:px-0">
-              <div class="mx-auto max-w-5xl">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">Calculer Le Bonus (s'appliquent uniquement si vous avez 50+%)</h2>
-          
-                <div class="mt-6 sm:mt-8 lg:flex lg:items-start lg:gap-12">
-                  <div action="#" class="w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:p-6 lg:max-w-xl lg:p-8">
-                    <div class="mb-6 grid grid-cols-2 gap-4">
-                      <div class="col-span-2 sm:col-span-1">
-                        <label for="full_name" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white"> Nombre De Clients Actuels </label>
-                        <input [(ngModel)]="numberOfPeople"  type="text" id="full_name" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500" placeholder="100" required />
-                      </div>
-          
-                      <div class="col-span-2 sm:col-span-1">
-                        <label for="full_name" class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Pourcentage (%)</label>
-                        <input [(ngModel)]="percentage" type="text" id="full_name" class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500" placeholder="70" required />
-                      </div>
-                      <div>
-                        <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
-                        <select [(ngModel)]="agentRole" id="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                            <option selected=""></option>
-                            <option [ngValue]="'Manager'" >Manager</option>
-                            <option [ngValue]="'Agent Marketing'" >Agent Marketing</option>
-                           
-                        </select>
-                    </div>
-          
-                     
-                      
-                    </div>
-          
-                    <button (click)="computeBonus()" type="submit" class="flex w-full items-center bg-green-500 justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 focus:outline-none focus:ring-4  focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">Calculer</button>
-                  </div>
-          
-                  <div class="mt-6 grow sm:mt-8 lg:mt-0">
-                    <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
-                      <div class="space-y-2">
-                        <dl class="flex items-center justify-between gap-4">
-                          <dt class="text-base font-normal text-gray-500 dark:text-gray-400">Base</dt>
-                          <dd class="text-base font-medium text-gray-900 dark:text-white">${{base}}</dd>
-                        </dl>
-          
-                        <dl class="flex items-center justify-between gap-4">
-                          <dt class="text-base font-bold  text-gray-500 dark:text-gray-400">Bonus</dt>
-                          <dd class="text-base font-bold text-green-500">${{bonus}}</dd>
-                        </dl>
-          
-                       
-                      </div>
-                    </div>
-          
-                   
-                  </div>
-                </div>
-          
-               
-              </div>
-            </div>
-          </section> -->
-          
+   
           <div *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2">
             <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
                 <div class="p-4">
