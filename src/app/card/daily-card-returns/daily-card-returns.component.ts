@@ -24,6 +24,16 @@ export class DailyCardReturnsComponent implements OnInit {
   dailyPamentsAmount: string[] = [];
   trackingIds: string[] = [];
   searchControl = new FormControl();
+
+  /** ▼▼▼  NEW state for date navigation & totals */
+  requestDate: string = this.time.getTodaysDateYearMonthDay(); // yyyy-MM-dd
+  requestDateCorrectFormat = this.today; // MM-DD-YYYY
+  frenchDate = this.todayFrench;
+
+  totalGivenDate = '0'; // running total FC     – NEW
+  numberOfPeople = '0'; // count of rows        – NEW
+
+  /** ─────────────────────────────────────── */
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -47,7 +57,8 @@ export class DailyCardReturnsComponent implements OnInit {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clients = data;
       this.addIdToFilterItems();
-      this.extractTodayPayments();
+      // this.extractTodayPayments();
+      this.extractPaymentsForDay();
     });
   }
 
@@ -56,31 +67,68 @@ export class DailyCardReturnsComponent implements OnInit {
       this.clients![i].trackingId = `${i}`;
     }
   }
+  /** runs each time user changes the date picker */
+  onDateChange() {
+    // NEW
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
 
-  extractTodayPayments() {
-    this.dailyPamentsAmount = [];
-    this.dailyPaymentsNames = [];
-    this.trackingIds = [];
-    for (let client of this.clients!) {
-      // Ensure client.payments and client.previousPayments are not undefined or null
-      const paymentsEntries = client.withdrawal
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+    this.totalGivenDate = '0';
+    this.numberOfPeople = '0';
+
+    this.extractPaymentsForDay(); // renamed helper
+  }
+
+  private extractPaymentsForDay() {
+    // NEW (was extractTodayPayments)
+    if (!this.clients?.length) return;
+
+    const keyWanted = this.requestDateCorrectFormat; // MM-DD-YYYY
+
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+    this.totalGivenDate = '0';
+    this.numberOfPeople = '0';
+
+    for (const client of this.clients) {
+      const entries = client.withdrawal
         ? Object.entries(client.withdrawal)
         : [];
 
-      // Combine entries from both payments and previousPayments
-      const combinedEntries = [...paymentsEntries];
-
-      // Filter the combined entries
-      const filteredDict = Object.fromEntries(
-        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
+      const sameDay = Object.fromEntries(
+        entries.filter(([k]) => k.startsWith(keyWanted))
       );
+      if (!Object.keys(sameDay).length) continue;
 
-      const filteredValues = Object.values(filteredDict);
-      const filteredKeys = Object.keys(filteredDict);
-      if (filteredValues.length !== 0) {
-        this.fillDailyPayment(client, filteredValues, filteredKeys);
-      }
+      this.fillDailyPayment(
+        client,
+        Object.values(sameDay),
+        Object.keys(sameDay)
+      );
     }
+
+    /* after filling  */
+    this.numberOfPeople = this.dailyPayments.length.toString();
+    this.dailyPayments.forEach(
+      (p) =>
+        (this.totalGivenDate = (
+          Number(this.totalGivenDate) + Number(p.amount)
+        ).toString())
+    );
+
+    /* keep existing sort */
+    this.dailyPayments.sort(
+      (a, b) =>
+        this.time.parseDate(b.time).getTime() -
+        this.time.parseDate(a.time).getTime()
+    );
+    this.dailyPaymentsCopy = [...this.dailyPayments];
   }
 
   fillDailyPayment(client: Client, values: string[], keys: string[]) {

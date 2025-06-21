@@ -23,6 +23,13 @@ export class DailyCardPaymentsComponent implements OnInit {
   dailyPamentsAmount: string[] = [];
   trackingIds: string[] = [];
   searchControl = new FormControl();
+  totalGivenDate = '0'; // NEW  – sum of all amounts FC
+  numberOfPeople = '0'; // NEW  – how many distinct rows
+
+  // ▼▼▼  NEW state for “any day” navigation
+  requestDate: string = this.time.getTodaysDateYearMonthDay(); // yyyy-MM-dd
+  requestDateCorrectFormat = this.today; // MM-DD-YYYY
+  frenchDate = this.todayFrench;
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -47,7 +54,8 @@ export class DailyCardPaymentsComponent implements OnInit {
       this.clients = [];
       this.clients = data;
       this.addIdToFilterItems();
-      this.extractTodayPayments();
+      // this.extractTodayPayments();
+      this.extractPaymentsForDay();
     });
   }
 
@@ -61,33 +69,51 @@ export class DailyCardPaymentsComponent implements OnInit {
     }
   }
 
-  extractTodayPayments() {
-    this.dailyPamentsAmount = [];
-    this.dailyPaymentsNames = [];
-    this.trackingIds = [];
-    for (let client of this.clients!) {
-      // Ensure client.payments and client.previousPayments are not undefined or null
-      const paymentsEntries = client.payments
-        ? Object.entries(client.payments)
-        : [];
-      const previousPaymentsEntries = client.previousPayments
-        ? Object.entries(client.previousPayments)
-        : [];
+  /** renamed & generalised */
+  private extractPaymentsForDay() {
+    if (!this.clients?.length) return;
 
-      // Combine entries from both payments and previousPayments
-      const combinedEntries = [...paymentsEntries, ...previousPaymentsEntries];
+    const keyWanted = this.requestDateCorrectFormat; // MM-DD-YYYY
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+    this.totalGivenDate = '0'; // NEW
+    this.numberOfPeople = '0'; // NEW
 
-      // Filter the combined entries
-      const filteredDict = Object.fromEntries(
-        combinedEntries.filter(([key, value]) => key.startsWith(this.today))
+    for (const client of this.clients) {
+      const entries = [
+        ...(client.payments ? Object.entries(client.payments) : []),
+        ...(client.previousPayments
+          ? Object.entries(client.previousPayments)
+          : []),
+      ];
+
+      const sameDay = Object.fromEntries(
+        entries.filter(([k]) => k.startsWith(keyWanted))
       );
+      if (!Object.keys(sameDay).length) continue;
 
-      const filteredValues = Object.values(filteredDict);
-      const filteredKeys = Object.keys(filteredDict);
-      if (filteredValues.length !== 0) {
-        this.fillDailyPayment(client, filteredValues, filteredKeys);
-      }
+      this.fillDailyPayment(
+        client,
+        Object.values(sameDay),
+        Object.keys(sameDay)
+      );
     }
+    /* after the loop */
+    this.numberOfPeople = this.dailyPayments.length.toString(); // NEW
+    this.dailyPayments.forEach(
+      (p) =>
+        (this.totalGivenDate = (
+          Number(this.totalGivenDate) + Number(p.amount)
+        ).toString())
+    );
+
+    /* sort once at the end */
+    this.dailyPayments?.sort(
+      (a, b) =>
+        this.time.parseDate(b.time).getTime() -
+        this.time.parseDate(a.time).getTime()
+    );
+    this.dailyPaymentsCopy = [...this.dailyPayments];
   }
 
   fillDailyPayment(client: Client, values: string[], keys: string[]) {
@@ -137,6 +163,21 @@ export class DailyCardPaymentsComponent implements OnInit {
     } else {
       return of(this.dailyPaymentsCopy);
     }
+  }
+
+  /** 🔸 runs when the user picks another date */
+  onDateChange() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+
+    // reload the list for the new day
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+    this.extractPaymentsForDay(); // renamed helper
   }
 }
 
