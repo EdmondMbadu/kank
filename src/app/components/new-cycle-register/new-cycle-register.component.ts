@@ -210,8 +210,8 @@ export class NewCycleRegisterComponent implements OnInit {
     const today = new Date(); // current computer date
     if (today.getDate() > Number(this.maxNumberOfDaysToLend)) {
       alert(
-        'Les enregistrements ne sont autorisées que du 1ᵉʳ au 20 de chaque mois.' +
-          '\nVeuillez attendre le début du mois prochain.'
+        `Les enregistrements de clients ne peuvent qu' être effectués du 1ᵉʳ au ${this.maxNumberOfDaysToLend} de ce mois.
+          '\nVeuillez attendre le début du mois prochain.`
       );
       return; // 💥 abort immediately
     }

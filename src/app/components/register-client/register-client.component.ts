@@ -189,8 +189,8 @@ export class RegisterClientComponent implements OnInit {
 
     if (today.getDate() > Number(this.maxNumberOfDaysToLend)) {
       alert(
-        'Les enregistrements de clients ne peuvent pas être effectués  que du 1ᵉʳ au 20 de chaque mois.' +
-          '\nVeuillez attendre le début du mois prochain.'
+        `Les enregistrements de clients ne peuvent qu' être effectués du 1ᵉʳ au ${this.maxNumberOfDaysToLend} de ce mois.
+          '\nVeuillez attendre le début du mois prochain.`
       );
       return; // 💥 abort immediately
     }
