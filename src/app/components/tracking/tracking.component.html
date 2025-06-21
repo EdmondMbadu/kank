@@ -34,6 +34,27 @@
     Confirmer
   </button>
 </div>
+<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 max-w-sm mx-auto">
+  <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+    🔒 Prêts autorisés jusqu’au <strong class="text-red-600 text-xl">{{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong>
+  </h2>
+  
+  <ul class="text-gray-600 dark:text-gray-300 list-disc pl-5 space-y-1 mb-3 text-base">
+    <li>✅ Période autorisée : <strong class="text-blue-600">du 1<sup>er</sup> au {{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong></li>
+    <li>🚫 Après le <strong class="text-red-600">{{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong>, aucun prêt n’est permis jusqu’au mois suivant.</li>
+  </ul>
+
+  <input *ngIf="this.auth.isAdmninistrator" [(ngModel)]="maxNumberOfDaysToLend" type="number" placeholder="Jour limite (ex: 20)" 
+    class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+
+  <button *ngIf="this.auth.isAdmninistrator" (click)="setUserField('maxNumberOfDaysToLend', maxNumberOfDaysToLend)"  
+    class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
+    Confirmer
+  </button>
+</div>
+
+
+
 
 <div *ngIf="this.auth.isAdmninistrator" class="container mx-auto p-4">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
@@ -88,17 +109,7 @@
           Confirmer
         </button>
       </div>
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 max-w-sm mx-auto">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Jour Limite D'emprunter</h2>
-        <p class="text-lg text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ maxNumberOfDaysToLend }}</strong></p>
-        <input *ngIf="this.auth.isAdmninistrator" [(ngModel)]="maxNumberOfDaysToLend" type="number" placeholder="Entrez le nombre maximum de clients" 
-          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-        <button *ngIf="this.auth.isAdmninistrator" (click)="setUserField('maxNumberOfDaysToLend', maxNumberOfDaysToLend)"  
-          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-          Confirmer
-        </button>
-      </div>
-  
+      
     </div>
   </div>
   

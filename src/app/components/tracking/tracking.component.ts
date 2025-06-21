@@ -20,6 +20,7 @@ export class TrackingComponent {
     private data: DataService
   ) {}
   ngOnInit() {
+    this.setCurrentMonth();
     this.retrieveClients();
   }
 
@@ -29,8 +30,26 @@ export class TrackingComponent {
       this.initalizeInputs();
     });
   }
-
+  public currentMonth: string = '';
   clients: Client[] = [];
+  setCurrentMonth() {
+    const monthNamesFr = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+    const now = new Date();
+    this.currentMonth = monthNamesFr[now.getMonth()];
+  }
 
   totalPerfomance: number = 0;
   housePayment: string = '';
