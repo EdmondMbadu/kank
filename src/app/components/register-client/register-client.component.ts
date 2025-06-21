@@ -40,6 +40,12 @@ export class RegisterClientComponent implements OnInit {
       ? Number(this.auth.currentUser.maxNumberOfClients)
       : this.data.generalMaxNumberOfClients;
 
+    this.maxNumberOfDaysToLend = Number(
+      this.auth.currentUser.maxNumberOfDaysToLend
+    )
+      ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
+      : this.data.generalMaxNumberOfDaysToLend;
+
     /* <<< NEW: pre‑select fixed fees >>> */
     this.applicationFee = this.FIXED_APPLICATION_FEE;
     this.memberShipFee = this.FIXED_MEMBERSHIP_FEE;
@@ -48,6 +54,7 @@ export class RegisterClientComponent implements OnInit {
   }
   employees: Employee[] = [];
   maxNumberOfClients: number = 0;
+  maxNumberOfDaysToLend: Number = 0;
   numberOfCurrentClients = 0;
   rateDisplay: boolean = false;
   amountToPayDisplay: boolean = false;
@@ -110,6 +117,7 @@ export class RegisterClientComponent implements OnInit {
 
   addNewClient() {
     let date = this.time.todaysDateMonthDayYear();
+    const today = new Date(); // current computer date
     // only for testing.
     this.creditworthinessScore = this.calculateCreditworthiness();
     let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
@@ -177,6 +185,14 @@ export class RegisterClientComponent implements OnInit {
         )}`
       );
       return;
+    }
+
+    if (today.getDate() > Number(this.maxNumberOfDaysToLend)) {
+      alert(
+        'Les enregistrements de clients ne peuvent pas être effectués  que du 1ᵉʳ au 20 de chaque mois.' +
+          '\nVeuillez attendre le début du mois prochain.'
+      );
+      return; // 💥 abort immediately
     }
 
     // if (

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { ActivatedRoute, Router } from '@angular/router';
+import { max } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
@@ -50,6 +51,7 @@ export class NewCycleRegisterComponent implements OnInit {
   loanAmountOtherDisplay: boolean = false;
 
   maxNumberOfClients: number = 0;
+  maxNumberOfDaysToLend: Number = 0;
   numberOfCurrentClients = 0;
 
   /** Normalize text so “  Élodie ” === “elodie” */
@@ -83,6 +85,11 @@ export class NewCycleRegisterComponent implements OnInit {
       this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
         ? Number(this.auth.currentUser.maxNumberOfClients)
         : this.data.generalMaxNumberOfClients;
+      this.maxNumberOfDaysToLend = Number(
+        this.auth.currentUser.maxNumberOfDaysToLend
+      )
+        ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
+        : this.data.generalMaxNumberOfDaysToLend;
 
       // get credit score to find maxLoanAmount
       if (this.client && this.client.creditScore !== undefined) {
@@ -200,17 +207,15 @@ export class NewCycleRegisterComponent implements OnInit {
       return;
     }
 
-    // if (
-    //   this.loanAmount === '' ||
-    //   this.applicationFee === '' ||
-    //   this.middleName === '' ||
-    //   this.memberShipFee === '' ||
-    //   this.savings === '' ||
-    //   this.requestDate === ''
-    // ) {
-    //   alert('Completer tous les données');
-    //   return;
-    // } // ---- Naissance / âge ----
+    const today = new Date(); // current computer date
+    if (today.getDate() > Number(this.maxNumberOfDaysToLend)) {
+      alert(
+        'Les enregistrements ne sont autorisées que du 1ᵉʳ au 20 de chaque mois.' +
+          '\nVeuillez attendre le début du mois prochain.'
+      );
+      return; // 💥 abort immediately
+    }
+    // ---- Naissance / âge ----
     if (!this.client.birthDate && this.birthDateInput === '') {
       alert('Veuillez renseigner la date de naissance.');
       return;

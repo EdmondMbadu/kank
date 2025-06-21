@@ -76,10 +76,19 @@ export class TrackingComponent {
   amountBudgetPending: string = '';
   summaryContent: string[] = [];
   moneyInHands: string = '';
+  maxNumberOfDaysToLend: Number = 0;
+
   initalizeInputs() {
     this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
       ? Number(this.auth.currentUser.maxNumberOfClients)
       : this.data.generalMaxNumberOfClients;
+
+    this.maxNumberOfDaysToLend = Number(
+      this.auth.currentUser.maxNumberOfDaysToLend
+    )
+      ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
+      : this.data.generalMaxNumberOfDaysToLend;
+
     let realBenefit = (
       Number(this.auth.currentUser.totalDebtLeft) -
       Number(this.auth.currentUser.amountInvested)

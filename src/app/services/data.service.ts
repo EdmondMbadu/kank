@@ -38,6 +38,7 @@ export class DataService {
   todayFull = this.time.todaysDate();
   url: string = '';
   generalMaxNumberOfClients: number = 70;
+  generalMaxNumberOfDaysToLend: Number = 20;
   allowedMimeTypes: string[] = [
     'image/jpeg',
     'image/png',
