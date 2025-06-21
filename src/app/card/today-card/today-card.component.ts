@@ -19,6 +19,15 @@ export class TodayCardComponent {
   ngOnInit() {
     this.initalizeInputs();
   }
+  // today-card.component.ts  (new ↑ lines marked with // NEW)
+
+  requestDate: string = this.time.getTodaysDateYearMonthDay(); // NEW
+  requestDateCorrectFormat = this.time.todaysDateMonthDayYear(); // NEW
+  frenchDate = this.time.convertDateToDayMonthYear(
+    // NEW
+    this.requestDateCorrectFormat
+  ); // NEW
+
   dailyCardPayments: string = '0';
   dailyCardReturns: string = '0';
   dailyCardBenefits: string = '0';
@@ -44,17 +53,14 @@ export class TodayCardComponent {
   today: string = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
+    const key = this.requestDateCorrectFormat; // NEW
+
     this.dailyCardPayments =
-      this.auth.currentUser.dailyCardPayments[this.today];
-    this.dailyCardReturns = this.auth.currentUser.dailyCardReturns[this.today];
-    this.dailyCardBenefits =
-      this.auth.currentUser.dailyCardBenefits[this.today];
-    this.dailyCardPayments =
-      this.dailyCardPayments === undefined ? '0' : this.dailyCardPayments;
+      this.auth.currentUser?.dailyCardPayments?.[key] ?? '0';
     this.dailyCardReturns =
-      this.dailyCardReturns === undefined ? '0' : this.dailyCardReturns;
+      this.auth.currentUser?.dailyCardReturns?.[key] ?? '0';
     this.dailyCardBenefits =
-      this.dailyCardBenefits === undefined ? '0' : this.dailyCardBenefits;
+      this.auth.currentUser?.dailyCardBenefits?.[key] ?? '0';
     this.summaryContent = [
       ` ${this.dailyCardPayments}`,
       ` ${this.dailyCardReturns}`,
@@ -70,5 +76,15 @@ export class TodayCardComponent {
         this.dailyCardBenefits
       )}`,
     ];
+  }
+  // NEW – runs each time the user picks another day
+  onDateChange() {
+    this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.requestDate
+    );
+    this.frenchDate = this.time.convertDateToDayMonthYear(
+      this.requestDateCorrectFormat
+    );
+    this.initalizeInputs(); // refresh all figures
   }
 }

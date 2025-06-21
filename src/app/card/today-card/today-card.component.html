@@ -2,10 +2,24 @@
 
 <!-- investements -->
 
-    <div class="flex container mx-auto m-12 justify-center">
-        <h1 class="text-2xl md:text-4xl mr-10 text-center">Activités Carte Du Jour</h1>
-        <button  type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info-current">Info Clients</button>
-    </div>
+ <!-- just above the summary cards -->
+
+
+<!-- and show the chosen day in the heading -->
+<h1 class="text-2xl md:text-4xl mr-10 text-center mt-10 mb-4">
+  Activités Carte Du {{ frenchDate }}
+</h1>
+<div class="flex container mx-auto justify-center mb-6">
+  <div class="w-full max-w-xs">
+    <input
+      [(ngModel)]="requestDate"
+      type="date"
+      class="bg-gray-50 border border-gray-300 text-sm rounded-lg
+             focus:ring-green-500 focus:border-green-500 block w-full p-2.5"
+      (change)="onDateChange()"                               
+    />
+  </div>
+</div>
 
 
 <div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
