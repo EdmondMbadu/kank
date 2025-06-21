@@ -1220,8 +1220,12 @@ export class EmployeePageComponent implements OnInit {
     if (!file) return;
 
     // Optionally, check file type, size, or convert HEIC to PNG
-    if (file.type.split('/')[0] !== 'image') {
-      alert('Seuls les fichiers images sont acceptés comme reçus.');
+    if (
+      !['image', 'application/pdf'].includes(file.type.split('/')[0]) &&
+      file.type !== 'application/pdf'
+    ) {
+      // NEW condition
+      alert('Seuls les fichiers image ou PDF sont acceptés');
       return;
     }
 

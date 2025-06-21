@@ -327,6 +327,7 @@ export class TodayComponent {
             frenchDate: this.time.formatEpochLongFr(data.ts),
             // inside map()
             amount: data.amount ?? 0,
+            type: data.type ?? 'image/*',
           };
         });
       });
@@ -355,6 +356,7 @@ export class TodayComponent {
     if (!files?.length || !this.selectedDocId) return;
 
     const file = files.item(0)!;
+    const type = file.type;
     /* … same size/type/HEIC checks … */
     try {
       const path = `transportReceipts/${this.auth.currentUser.uid}/${this.selectedDocId}`;
@@ -366,7 +368,7 @@ export class TodayComponent {
         .doc(
           `users/${this.auth.currentUser.uid}/transportReceipts/${this.selectedDocId}`
         )
-        .update({ url });
+        .update({ url, type });
       alert('✅ Reçu mis à jour');
       this.loadReceipts();
     } catch (e) {
@@ -392,10 +394,11 @@ export class TodayComponent {
       const task = await this.storage.upload(path, file);
       const url = await task.ref.getDownloadURL();
       const amount = Number(this.newReceiptAmount);
+      const type = file.type; // NEW
 
       await this.afs
         .doc(`users/${this.auth.currentUser.uid}/transportReceipts/${id}`)
-        .set({ url, ts: Date.now(), amount });
+        .set({ url, ts: Date.now(), amount, type });
 
       alert('📸 Reçu ajouté avec succès');
       this.newReceiptAmount = null; // reset the field

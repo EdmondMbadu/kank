@@ -393,7 +393,7 @@
       <label class="cursor-pointer inline-flex items-center px-3 py-1.5 text-sm
                      font-medium bg-green-700 text-white rounded-lg hover:bg-green-800">
         📷 Joindre un reçu
-        <input type="file" accept="image/*" hidden
+        <input type="file"  accept="image/*,application/pdf" hidden
                (change)="auditUpload($any($event.target).files)">
       </label>
       <input type="number" min="0" step="0.01" [(ngModel)]="auditNewAmount"
@@ -449,7 +449,7 @@
     </div>
 
     <!-- hidden input for “Changer” -->
-    <input type="file" #auditFileInput hidden accept="image/*"
+    <input type="file" #auditFileInput hidden  accept="image/*,application/pdf"
            (change)="auditReplace($any($event.target).files)">
   </div>
 </div>
