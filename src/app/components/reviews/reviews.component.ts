@@ -371,6 +371,7 @@ export class ReviewsComponent implements OnInit {
       // just text
       this.addReview('');
     }
+    alert('Commentaire publié avec succès !');
   }
   deleteReview(index: number, review: Comment): void {
     if (!confirm('Supprimer définitivement ce commentaire ?')) {
@@ -404,17 +405,26 @@ export class ReviewsComponent implements OnInit {
       relationClient: this.metrics[4].value,
     };
 
-    this.auth.addReview(review).then(() => {
-      // reset
-      this.personPostingComment = '';
-      this.comment = '';
-      this.numberofStars = '';
-      this.metrics.forEach((m) => (m.value = 5));
-      this.recordedBlob = undefined;
-      this.recordedAudioURL = undefined;
-      this.selectedAudioFile = undefined;
-      this.selectedAudioPreviewURL = undefined;
-    });
+    this.auth
+      .addReview(review)
+      .then(() => {
+        // reset
+        this.personPostingComment = '';
+        this.comment = '';
+        this.numberofStars = '';
+        this.metrics.forEach((m) => (m.value = 5));
+        this.recordedBlob = undefined;
+        this.recordedAudioURL = undefined;
+        this.selectedAudioFile = undefined;
+        this.selectedAudioPreviewURL = undefined;
+        /* ✅ confirmation à l’utilisateur */
+        // alert('Commentaire publié avec succès !');
+        /*  └─ remplacez par un toast/snackbar si vous en utilisez un */
+      })
+      .catch((err) => {
+        console.error('Erreur d’enregistrement :', err);
+        alert('Échec de la publication du commentaire.');
+      });
   }
   /* === Aperçu === */
   showPreview() {
