@@ -31,17 +31,31 @@
   </div>
 </section> -->
 
-<!-- ░░░ FORMULAIRE ░░░ -->
+<!-- ░░░ FORMULAIRE (accordion) ░░░ -->
 <section class="bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-slate-800 py-10">
-  <div class="max-w-3xl mx-auto px-4 space-y-8">
+  <div class="max-w-3xl mx-auto px-4 space-y-4">
 
-    <h2 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-      <svg class="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
+    <!-- Tête cliquable -->
+    <button (click)="toggleForm()"
+            class="w-full flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-5 py-4 shadow-md">
+      <div class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white">
+        <svg class="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" stroke-width="1.5"
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2" />
+        </svg>
+        Ajouter Un Commentaire Pour L'Equipe
+      </div>
+
+      <!-- Chevron animé -->
+      <svg class="w-6 h-6 text-gray-500 transform transition-transform duration-200"
+           [ngClass]="{'rotate-90': showForm}"
+           fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
       </svg>
-      Commentaire pour l’équipe
-    </h2>
+    </button>
 
+    <!-- Contenu repliable -->
+    <div *ngIf="showForm" class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-6 space-y-8 shadow">
     <!-- Nom rédacteur -->
     <div>
       <label class="block mb-1 font-medium text-sm text-gray-800 dark:text-gray-200">
@@ -169,6 +183,7 @@
         Aperçu
       </button>
     </div>
+  </div>
   </div>
 </section>
 

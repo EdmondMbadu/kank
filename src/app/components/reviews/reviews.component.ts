@@ -18,7 +18,11 @@ export class ReviewsComponent implements OnInit {
   numberofStars: string = '';
   comment?: string = '';
   reviews: Comment[] = [];
+  showForm = false;
 
+  toggleForm() {
+    this.showForm = !this.showForm;
+  }
   /* ---------- NOUVEAU : sliders ---------- */
   metrics = [
     { key: 'ponctualite', label: 'Arrive à l’heure', value: 5 },
