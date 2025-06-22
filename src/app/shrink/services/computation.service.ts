@@ -647,361 +647,853 @@ export class ComputationService {
     }
   }
 
-  async generateBonusCheck(employee: Employee, text = 'Paiement') {
-    let invoiceNum = employee.payments
-      ? (Object.keys(employee.payments!).length + 1).toString()
+  // async generateBonusCheck(employee: Employee, text = 'Paiement') {
+  //   let invoiceNum = employee.payments
+  //     ? (Object.keys(employee.payments!).length + 1).toString()
+  //     : '1';
+
+  //   let dateFrench = this.time.getTodaysDateInFrench();
+  //   const imageUrl = '../../../assets/img/gervais.png';
+  //   try {
+  //     const base64Image = await this.fetchImageAsBase64(imageUrl);
+  //     let dd: any = {
+  //       content: [
+  //         { text: 'Fondation Gervais.', style: 'header' },
+  //         {
+  //           image: base64Image,
+
+  //           width: 75,
+  //           style: 'logo',
+  //         },
+  //         { text: `${text}`, style: 'invoiceTitle' },
+  //         {
+  //           columns: [
+  //             {
+  //               text: [
+  //                 { text: 'Fondation Gervais\n', style: 'companyTitle' },
+  //                 '9 Avenue Nations-Unis, Maman Mobutu \n',
+  //                 'Mon-Ngafula\n',
+  //                 'RDC, Kinshasa\n',
+  //               ],
+  //             },
+  //             {
+  //               text: [
+  //                 { text: 'Facture #', bold: true },
+  //                 `${invoiceNum}\n`,
+
+  //                 { text: 'Date: ', bold: true },
+  //                 `${dateFrench}`,
+
+  //                 // { text: 'Payment Terms: ', bold: true }, 'Net 45\n',
+  //                 // { text: 'Due Date: ', bold: true }, 'Jan 15, 2024\n'
+  //               ],
+  //               alignment: 'right',
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           style: 'section',
+  //           columns: [
+  //             {
+  //               width: 'auto',
+  //               text: [
+  //                 { text: 'Payé à:\n', bold: true },
+  //                 `${employee.firstName} ${employee.middleName} ${employee.lastName}\n`,
+  //                 // 'Ketsia Kiabani Bamu\n',
+  //               ],
+  //             },
+  //             {
+  //               width: '*',
+  //               text: [
+  //                 { text: 'Remuneration:\n', bold: true, fontSize: 14 },
+  //                 {
+  //                   text: `$ ${employee.totalPayments}`,
+  //                   fontSize: 15,
+  //                   italics: true,
+  //                   bold: true,
+  //                 },
+  //               ],
+  //               alignment: 'right',
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           style: 'itemsTable',
+  //           table: {
+  //             widths: ['*', 'auto', 'auto', 'auto'],
+  //             body: [
+  //               [
+  //                 { text: '', style: 'tableHeader' },
+  //                 { text: 'Signature', style: 'tableHeader' },
+  //                 { text: '', style: 'tableHeader' },
+  //                 { text: '', style: 'tableHeader' },
+  //               ],
+  //               [
+  //                 '',
+  //                 {
+  //                   text: `${employee.firstName} ${employee.middleName} ${employee.lastName}`,
+  //                   style: 'signatureStyle',
+  //                 },
+  //                 '',
+  //                 '',
+  //               ],
+  //             ],
+  //           },
+  //           layout: 'lightHorizontalLines',
+  //         },
+  //       ],
+  //       styles: {
+  //         header: {
+  //           fontSize: 10,
+  //           bold: true,
+  //           margin: [0, 0, 0, 10],
+  //         },
+  //         logo: {
+  //           margin: [0, 0, 0, 0],
+  //         },
+
+  //         invoiceTitle: {
+  //           fontSize: 22,
+  //           bold: true,
+  //           alignment: 'right',
+  //           margin: [0, 0, 0, 10],
+  //         },
+  //         companyTitle: {
+  //           fontSize: 14,
+  //           bold: true,
+  //         },
+  //         section: {
+  //           margin: [0, 5, 0, 15],
+  //         },
+  //         itemsTable: {
+  //           margin: [0, 5, 0, 15],
+  //         },
+  //         tableHeader: {
+  //           bold: true,
+  //           fontSize: 13,
+  //           color: 'black',
+  //         },
+  //         totals: {
+  //           bold: true,
+  //           margin: [0, 30, 0, 0],
+  //         },
+  //         signatureStyle: {
+  //           italics: true,
+  //           fontSize: 14,
+  //           bold: true,
+  //           color: 'black',
+  //           // Use a monospaced font for a signature-like appearance
+  //         },
+  //       },
+  //       defaultStyle: {
+  //         columnGap: 20,
+  //       },
+  //     };
+  //     // Dynamic imports with type assertions
+  //     const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
+  //     const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+
+  //     const pdfMake = pdfMakeModule?.default || pdfMakeModule;
+  //     const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
+
+  //     // Set the virtual file system
+  //     pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+
+  //     // Verify that 'Roboto-Medium.ttf' exists
+  //     if (!pdfMake.vfs['Roboto-Medium.ttf']) {
+  //       console.error('Roboto-Medium.ttf not found in pdfMake.vfs');
+  //     }
+  //     const pdfDocGenerator = pdfMake.createPdf(dd);
+
+  //     // Generate PDF as a Blob
+  //     return new Promise<Blob>((resolve, reject) => {
+  //       pdfDocGenerator.getBlob(
+  //         (blob: Blob) => {
+  //           resolve(blob);
+  //         },
+  //         (error: any) => {
+  //           console.error('Error generating PDF Blob:', error);
+  //           reject(error);
+  //         }
+  //       );
+  //     });
+  //   } catch (error) {
+  //     console.error('Error generating bonus check:', error);
+  //     // Throw the error to ensure the function returns a rejected Promise
+  //     throw error;
+  //   }
+  // }
+
+  async generateBonusCheck(
+    employee: Employee,
+    title: string = 'Bonus' // shown in the big heading
+  ): Promise<Blob> {
+    /* ── helpers ─────────────────────────────────────────────────────── */
+    const fmt = (v: number) => {
+      try {
+        return new Intl.NumberFormat('fr-FR', {
+          minimumFractionDigits: 0,
+        }).format(v);
+      } catch {
+        return v.toLocaleString(undefined, { minimumFractionDigits: 0 });
+      }
+    };
+
+    const todayFr = this.time.getTodaysDateInFrench();
+    const periodFr = `${
+      this.time.monthFrenchNames[new Date().getMonth()]
+    } ${new Date().getFullYear()}`;
+    const invoice = employee.payments
+      ? (Object.keys(employee.payments).length + 1).toString()
       : '1';
 
-    let dateFrench = this.time.getTodaysDateInFrench();
-    const imageUrl = '../../../assets/img/gervais.png';
-    try {
-      const base64Image = await this.fetchImageAsBase64(imageUrl);
-      let dd: any = {
-        content: [
-          { text: 'Fondation Gervais.', style: 'header' },
-          {
-            image: base64Image,
+    /* ── bonus components ────────────────────────────────────────────── */
+    const perf = +employee.bonusAmount! || 0;
+    const team = +employee.bestTeamBonusAmount! || 0;
+    const best = +employee.bestEmployeeBonusAmount! || 0;
+    const mgr = +employee.bestManagerBonusAmount! || 0;
+    const total = perf + team + best + mgr;
 
-            width: 75,
-            style: 'logo',
-          },
-          { text: `${text}`, style: 'invoiceTitle' },
-          {
-            columns: [
+    const rows = [
+      [
+        { text: 'Composante', style: 'th' },
+        { text: 'Montant ($)', style: 'th', alignment: 'right' },
+      ],
+      ['Bonus performance', { text: fmt(perf), alignment: 'right' }],
+      ['Meilleure équipe', { text: fmt(team), alignment: 'right' }],
+      ['Meilleur employé', { text: fmt(best), alignment: 'right' }],
+      ['Meilleur manager', { text: fmt(mgr), alignment: 'right' }],
+      [
+        { text: 'Total bonus net', style: 'totalLabel' },
+        { text: fmt(total), style: 'total', alignment: 'right' },
+      ],
+    ];
+
+    /* ── attendance résumé (current month) ───────────────────────────── */
+    const stats = { P: 0, A: 0, L: 0, N: 0 } as Record<string, number>;
+    const ymKey = `${new Date().getMonth() + 1}-`;
+    Object.keys(employee.attendance || {}).forEach((k) => {
+      if (k.startsWith(ymKey)) {
+        const v = (employee.attendance as any)[k];
+        if (stats[v] !== undefined) stats[v] += 1;
+      }
+    });
+
+    /* ── branding ────────────────────────────────────────────────────── */
+    const logo = await this.fetchImageAsBase64(
+      '../../../assets/img/gervais.png'
+    );
+
+    /* ── pdfmake doc-definition ──────────────────────────────────────── */
+    const dd: any = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+
+      content: [
+        // ── header bar
+        {
+          columns: [
+            [
+              { text: 'FONDATION GERVAIS', style: 'brand' },
               {
-                text: [
-                  { text: 'Fondation Gervais\n', style: 'companyTitle' },
-                  '9 Avenue Nations-Unis, Maman Mobutu \n',
-                  'Mon-Ngafula\n',
-                  'RDC, Kinshasa\n',
-                ],
+                text: '9 Av. Nations-Unies\nMon-Ngafula, Kinshasa (RDC)',
+                style: 'tiny',
               },
-              {
-                text: [
-                  { text: 'Facture #', bold: true },
-                  `${invoiceNum}\n`,
-
-                  { text: 'Date: ', bold: true },
-                  `${dateFrench}`,
-
-                  // { text: 'Payment Terms: ', bold: true }, 'Net 45\n',
-                  // { text: 'Due Date: ', bold: true }, 'Jan 15, 2024\n'
-                ],
-                alignment: 'right',
-              },
+              { text: 'Téléphone : +243 825 333 567', style: 'tiny' },
             ],
-          },
-          {
-            style: 'section',
-            columns: [
-              {
-                width: 'auto',
-                text: [
-                  { text: 'Payé à:\n', bold: true },
-                  `${employee.firstName} ${employee.middleName} ${employee.lastName}\n`,
-                  // 'Ketsia Kiabani Bamu\n',
-                ],
-              },
-              {
-                width: '*',
-                text: [
-                  { text: 'Remuneration:\n', bold: true, fontSize: 14 },
-                  {
-                    text: `$ ${employee.totalPayments}`,
-                    fontSize: 15,
-                    italics: true,
-                    bold: true,
-                  },
-                ],
-                alignment: 'right',
-              },
-            ],
-          },
-          {
-            style: 'itemsTable',
-            table: {
-              widths: ['*', 'auto', 'auto', 'auto'],
-              body: [
-                [
-                  { text: '', style: 'tableHeader' },
-                  { text: 'Signature', style: 'tableHeader' },
-                  { text: '', style: 'tableHeader' },
-                  { text: '', style: 'tableHeader' },
-                ],
-                [
-                  '',
-                  {
-                    text: `${employee.firstName} ${employee.middleName} ${employee.lastName}`,
-                    style: 'signatureStyle',
-                  },
-                  '',
-                  '',
-                ],
+            { image: logo, width: 75, alignment: 'right' },
+          ],
+        },
+        {
+          canvas: [
+            {
+              type: 'line',
+              x1: 0,
+              y1: 0,
+              x2: 435,
+              y2: 0,
+              lineWidth: 1.5,
+              lineColor: '#263238',
+            },
+          ],
+          margin: [0, 5, 0, 15],
+        },
+
+        // ── title + meta
+        { text: `Fiche de ${title}`, style: 'docTitle' },
+        {
+          columns: [
+            {
+              text: [
+                { text: 'Employé : ', bold: true },
+                `${employee.firstName} ${employee.middleName ?? ''} ${
+                  employee.lastName
+                }\n`,
+                { text: 'Rôle : ', bold: true },
+                `${employee.role ?? ''}\n`,
+                { text: 'Période : ', bold: true },
+                periodFr,
               ],
             },
-            layout: 'lightHorizontalLines',
-          },
-        ],
-        styles: {
-          header: {
-            fontSize: 10,
-            bold: true,
-            margin: [0, 0, 0, 10],
-          },
-          logo: {
-            margin: [0, 0, 0, 0],
-          },
-
-          invoiceTitle: {
-            fontSize: 22,
-            bold: true,
-            alignment: 'right',
-            margin: [0, 0, 0, 10],
-          },
-          companyTitle: {
-            fontSize: 14,
-            bold: true,
-          },
-          section: {
-            margin: [0, 5, 0, 15],
-          },
-          itemsTable: {
-            margin: [0, 5, 0, 15],
-          },
-          tableHeader: {
-            bold: true,
-            fontSize: 13,
-            color: 'black',
-          },
-          totals: {
-            bold: true,
-            margin: [0, 30, 0, 0],
-          },
-          signatureStyle: {
-            italics: true,
-            fontSize: 14,
-            bold: true,
-            color: 'black',
-            // Use a monospaced font for a signature-like appearance
-          },
+            {
+              text: [
+                { text: 'N° Fiche : ', bold: true },
+                `${invoice}\n`,
+                { text: 'Date : ', bold: true },
+                todayFr,
+              ],
+              alignment: 'right',
+            },
+          ],
+          margin: [0, 0, 0, 15],
         },
-        defaultStyle: {
-          columnGap: 20,
-        },
-      };
-      // Dynamic imports with type assertions
-      const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
-      const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
 
-      const pdfMake = pdfMakeModule?.default || pdfMakeModule;
-      const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
-
-      // Set the virtual file system
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
-
-      // Verify that 'Roboto-Medium.ttf' exists
-      if (!pdfMake.vfs['Roboto-Medium.ttf']) {
-        console.error('Roboto-Medium.ttf not found in pdfMake.vfs');
-      }
-      const pdfDocGenerator = pdfMake.createPdf(dd);
-
-      // Generate PDF as a Blob
-      return new Promise<Blob>((resolve, reject) => {
-        pdfDocGenerator.getBlob(
-          (blob: Blob) => {
-            resolve(blob);
+        // ── bonus breakdown table
+        {
+          style: 'table',
+          table: { widths: ['*', 'auto'], body: rows },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#B0BEC5',
           },
-          (error: any) => {
-            console.error('Error generating PDF Blob:', error);
-            reject(error);
-          }
-        );
-      });
-    } catch (error) {
-      console.error('Error generating bonus check:', error);
-      // Throw the error to ensure the function returns a rejected Promise
-      throw error;
-    }
+          margin: [0, 0, 0, 20],
+        },
+
+        // ── attendance summary
+        {
+          text: 'Résumé de présence',
+          style: 'subHeader',
+          margin: [0, 0, 0, 6],
+        },
+        {
+          ul: [
+            `Présent : ${stats['P']} jours`,
+            `Retard : ${stats['L']} jours`,
+            `Absent : ${stats['A']} jours`,
+            `Néant : ${stats['N']} jours`,
+          ],
+          margin: [0, 0, 0, 20],
+        },
+
+        // ── signature band
+        {
+          table: {
+            widths: ['*', '*', '*'],
+            body: [
+              [
+                { text: 'Signature employé', style: 'th', alignment: 'center' },
+                { text: 'Manager', style: 'th', alignment: 'center' },
+                { text: 'Service RH', style: 'th', alignment: 'center' },
+              ],
+              [
+                // simulate a handwritten signature
+                {
+                  text: `${employee.firstName} ${employee.middleName ?? ''} ${
+                    employee.lastName
+                  }`,
+                  style: 'signature',
+                  alignment: 'center',
+                },
+                { text: ' ', margin: [0, 30] },
+                { text: ' ' },
+              ],
+            ],
+          },
+          layout: 'lightHorizontalLines',
+        },
+      ],
+
+      styles: {
+        brand: { fontSize: 14, bold: true, color: '#263238' },
+        tiny: { fontSize: 8, color: '#546E7A' },
+        docTitle: { fontSize: 18, bold: true, margin: [0, 0, 0, 15] },
+        subHeader: { fontSize: 12, bold: true },
+        table: { margin: [0, 0, 0, 10] },
+        th: { bold: true, fillColor: '#ECEFF1', margin: [0, 3, 0, 3] },
+        totalLabel: { bold: true, margin: [0, 3, 0, 3] },
+        total: { bold: true, fontSize: 12, margin: [0, 3, 0, 3] },
+
+        /* NEW: cursive-like signature */
+        signature: { italics: true, fontSize: 14 },
+      },
+
+      defaultStyle: { fontSize: 10 },
+    };
+
+    /* ── generate & return Blob ────────────────────────────────────────── */
+    const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
+    const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+    const pdfMake = pdfMakeModule.default || pdfMakeModule;
+    const pdfFonts = pdfFontsModule.default || pdfFontsModule;
+    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+
+    return new Promise<Blob>((resolve, reject) => {
+      pdfMake.createPdf(dd as any).getBlob(
+        (blob: Blob) => resolve(blob),
+        (err: any) => reject(err)
+      );
+    });
   }
+  // async generatePaymentCheck(
+  //   employee: Employee,
+  //   text = 'Paiement',
+  //   paymentAmount: string
+  // ) {
+  //   let invoiceNum = employee.payments
+  //     ? (Object.keys(employee.payments!).length + 1).toString()
+  //     : '1';
+
+  //   let dateFrench = this.time.getTodaysDateInFrench();
+  //   const imageUrl = '../../../assets/img/gervais.png';
+  //   try {
+  //     const base64Image = await this.fetchImageAsBase64(imageUrl);
+  //     let dd: any = {
+  //       content: [
+  //         { text: 'Fondation Gervais.', style: 'header' },
+  //         {
+  //           image: base64Image,
+
+  //           width: 75,
+  //           style: 'logo',
+  //         },
+  //         { text: `${text}`, style: 'invoiceTitle' },
+  //         {
+  //           columns: [
+  //             {
+  //               text: [
+  //                 { text: 'Fondation Gervais\n', style: 'companyTitle' },
+  //                 '9 Avenue Nations-Unis, Maman Mobutu \n',
+  //                 'Mon-Ngafula\n',
+  //                 'RDC, Kinshasa\n',
+  //               ],
+  //             },
+  //             {
+  //               text: [
+  //                 { text: 'Facture #', bold: true },
+  //                 `${invoiceNum}\n`,
+
+  //                 { text: 'Date: ', bold: true },
+  //                 `${dateFrench}`,
+
+  //                 // { text: 'Payment Terms: ', bold: true }, 'Net 45\n',
+  //                 // { text: 'Due Date: ', bold: true }, 'Jan 15, 2024\n'
+  //               ],
+  //               alignment: 'right',
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           style: 'section',
+  //           columns: [
+  //             {
+  //               width: 'auto',
+  //               text: [
+  //                 { text: 'Payé à:\n', bold: true },
+  //                 `${employee.firstName} ${employee.middleName} ${employee.lastName}\n`,
+  //                 // 'Ketsia Kiabani Bamu\n',
+  //               ],
+  //             },
+  //             {
+  //               width: '*',
+  //               text: [
+  //                 { text: 'Remuneration:\n', bold: true, fontSize: 14 },
+  //                 {
+  //                   text: `$ ${paymentAmount}`,
+  //                   fontSize: 15,
+  //                   italics: true,
+  //                   bold: true,
+  //                 },
+  //               ],
+  //               alignment: 'right',
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           style: 'itemsTable',
+  //           table: {
+  //             widths: ['*', 'auto', 'auto', 'auto'],
+  //             body: [
+  //               [
+  //                 { text: '', style: 'tableHeader' },
+  //                 { text: 'Signature', style: 'tableHeader' },
+  //                 { text: '', style: 'tableHeader' },
+  //                 { text: '', style: 'tableHeader' },
+  //               ],
+  //               [
+  //                 '',
+  //                 {
+  //                   text: `${employee.firstName} ${employee.middleName} ${employee.lastName}`,
+  //                   style: 'signatureStyle',
+  //                 },
+  //                 '',
+  //                 '',
+  //               ],
+  //             ],
+  //           },
+  //           layout: 'lightHorizontalLines',
+  //         },
+  //       ],
+  //       styles: {
+  //         header: {
+  //           fontSize: 10,
+  //           bold: true,
+  //           margin: [0, 0, 0, 10],
+  //         },
+  //         logo: {
+  //           margin: [0, 0, 0, 0],
+  //         },
+
+  //         invoiceTitle: {
+  //           fontSize: 22,
+  //           bold: true,
+  //           alignment: 'right',
+  //           margin: [0, 0, 0, 10],
+  //         },
+  //         companyTitle: {
+  //           fontSize: 14,
+  //           bold: true,
+  //         },
+  //         section: {
+  //           margin: [0, 5, 0, 15],
+  //         },
+  //         itemsTable: {
+  //           margin: [0, 5, 0, 15],
+  //         },
+  //         tableHeader: {
+  //           bold: true,
+  //           fontSize: 13,
+  //           color: 'black',
+  //         },
+  //         totals: {
+  //           bold: true,
+  //           margin: [0, 30, 0, 0],
+  //         },
+  //         signatureStyle: {
+  //           italics: true,
+  //           fontSize: 14,
+  //           bold: true,
+  //           color: 'black',
+  //           // Use a monospaced font for a signature-like appearance
+  //         },
+  //       },
+  //       defaultStyle: {
+  //         columnGap: 20,
+  //       },
+  //     };
+  //     // Dynamic imports with type assertions
+  //     const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
+  //     const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+
+  //     const pdfMake = pdfMakeModule?.default || pdfMakeModule;
+  //     const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
+
+  //     // Set the virtual file system
+  //     pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+
+  //     // Verify that 'Roboto-Medium.ttf' exists
+  //     if (!pdfMake.vfs['Roboto-Medium.ttf']) {
+  //       console.error('Roboto-Medium.ttf not found in pdfMake.vfs');
+  //     }
+  //     const pdfDocGenerator = pdfMake.createPdf(dd);
+
+  //     // Generate PDF as a Blob
+  //     return new Promise<Blob>((resolve, reject) => {
+  //       pdfDocGenerator.getBlob(
+  //         (blob: Blob) => {
+  //           resolve(blob);
+  //         },
+  //         (error: any) => {
+  //           console.error('Error generating PDF Blob:', error);
+  //           reject(error);
+  //         }
+  //       );
+  //     });
+  //   } catch (error) {
+  //     console.error('Error generating bonus check:', error);
+  //     // Throw the error to ensure the function returns a rejected Promise
+  //     throw error;
+  //   }
+  // }
+
+  /*
+   * Enhanced salary‑ / bonus‑slip generator
+   * -------------------------------------------------------------------
+   * Handles both regular « Paiement » and « Bonus » scenarios.
+   * The table body is built dynamically according to the title passed
+   * (case‑insensitive check for the word “bonus”).
+   */
+
   async generatePaymentCheck(
     employee: Employee,
-    text = 'Paiement',
-    paymentAmount: string
+    title: string = 'Paiement', // "Paiement" or "Bonus"
+    paymentAmount: string // net amount actually paid / total bonus
   ) {
-    let invoiceNum = employee.payments
-      ? (Object.keys(employee.payments!).length + 1).toString()
+    /* ---------- Helpers --------------------------------------------------*/
+    const safeNumber = (v: number) => {
+      try {
+        return new Intl.NumberFormat('fr-FR', {
+          minimumFractionDigits: 0,
+        }).format(v);
+      } catch {
+        return v.toLocaleString(undefined, { minimumFractionDigits: 0 });
+      }
+    };
+
+    const todayFr = this.time.getTodaysDateInFrench();
+    const periodFr = `${
+      this.time.monthFrenchNames[new Date().getMonth()]
+    } ${new Date().getFullYear()}`;
+    const invoiceNum = employee.payments
+      ? (Object.keys(employee.payments).length + 1).toString()
       : '1';
 
-    let dateFrench = this.time.getTodaysDateInFrench();
-    const imageUrl = '../../../assets/img/gervais.png';
-    try {
-      const base64Image = await this.fetchImageAsBase64(imageUrl);
-      let dd: any = {
-        content: [
-          { text: 'Fondation Gervais.', style: 'header' },
-          {
-            image: base64Image,
+    const isBonus = title.toLowerCase().includes('bonus');
 
-            width: 75,
-            style: 'logo',
-          },
-          { text: `${text}`, style: 'invoiceTitle' },
-          {
-            columns: [
+    /* ---------- Amount breakdown ----------------------------------------*/
+    let tableRows: (
+      | string
+      | { text: string; alignment?: string; style?: string }
+    )[][] = [];
+    let netPay = 0;
+
+    if (isBonus) {
+      const perfBonus = Number(employee.bonusAmount ?? 0);
+      const teamBonus = Number(employee.bestTeamBonusAmount ?? 0);
+      const empBonus = Number(employee.bestEmployeeBonusAmount ?? 0);
+      const mgrBonus = Number(employee.bestManagerBonusAmount ?? 0);
+      netPay = perfBonus + teamBonus + empBonus + mgrBonus;
+
+      tableRows = [
+        [
+          { text: 'Composante', style: 'th' },
+          { text: 'Montant ($)', style: 'th', alignment: 'right' },
+        ],
+        [
+          'Bonus performance',
+          { text: safeNumber(perfBonus), alignment: 'right' },
+        ],
+        [
+          'Meilleure équipe',
+          { text: safeNumber(teamBonus), alignment: 'right' },
+        ],
+        [
+          'Meilleur employé',
+          { text: safeNumber(empBonus), alignment: 'right' },
+        ],
+        [
+          'Meilleur manager',
+          { text: safeNumber(mgrBonus), alignment: 'right' },
+        ],
+        [
+          { text: 'Total bonus net', style: 'totalLabel' },
+          { text: safeNumber(netPay), style: 'total', alignment: 'right' },
+        ],
+      ];
+    } else {
+      const baseSalary = Number(employee.paymentAmount ?? 0);
+      const expIncrease = Number(employee.paymentIncreaseYears ?? 0);
+      const absentDed = Number(employee.paymentAbsent ?? 0);
+      const noneDed = Number(employee.paymentNothing ?? 0);
+      netPay = baseSalary + expIncrease - absentDed - noneDed;
+
+      tableRows = [
+        [
+          { text: 'Composante', style: 'th' },
+          { text: 'Montant ($)', style: 'th', alignment: 'right' },
+        ],
+        [
+          'Salaire de base',
+          { text: safeNumber(baseSalary), alignment: 'right' },
+        ],
+        [
+          'Augmentation ancienneté',
+          { text: safeNumber(expIncrease), alignment: 'right' },
+        ],
+        [
+          'Retenues – Absences',
+          { text: `-${safeNumber(absentDed)}`, alignment: 'right' },
+        ],
+        [
+          'Retenues – Néant',
+          { text: `-${safeNumber(noneDed)}`, alignment: 'right' },
+        ],
+        [
+          { text: 'Net à payer', style: 'totalLabel' },
+          { text: safeNumber(netPay), style: 'total', alignment: 'right' },
+        ],
+      ];
+    }
+
+    /* ---------- Attendance stats (kept for both) ------------------------*/
+    const stats = { P: 0, A: 0, L: 0, N: 0 } as Record<string, number>;
+    const now = new Date();
+    const ymKey = `${now.getMonth() + 1}-`;
+    Object.keys(employee.attendance || {}).forEach((k) => {
+      if (k.startsWith(ymKey)) {
+        const v = (employee.attendance as any)[k];
+        if (stats[v] !== undefined) stats[v] += 1;
+      }
+    });
+
+    /* ---------- Branding -------------------------------------------------*/
+    const base64Logo = await this.fetchImageAsBase64(
+      '../../../assets/img/gervais.png'
+    );
+
+    /* ---------- Document definition -------------------------------------*/
+    const dd: any = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+
+      content: [
+        // Header ----------------------------------------------------------
+        {
+          columns: [
+            [
+              { text: 'FONDATION GERVAIS', style: 'brand' },
               {
-                text: [
-                  { text: 'Fondation Gervais\n', style: 'companyTitle' },
-                  '9 Avenue Nations-Unis, Maman Mobutu \n',
-                  'Mon-Ngafula\n',
-                  'RDC, Kinshasa\n',
-                ],
+                text: '9 Av. Nations-Unies\nMon‑Ngafula, Kinshasa (RDC)',
+                style: 'tiny',
               },
-              {
-                text: [
-                  { text: 'Facture #', bold: true },
-                  `${invoiceNum}\n`,
-
-                  { text: 'Date: ', bold: true },
-                  `${dateFrench}`,
-
-                  // { text: 'Payment Terms: ', bold: true }, 'Net 45\n',
-                  // { text: 'Due Date: ', bold: true }, 'Jan 15, 2024\n'
-                ],
-                alignment: 'right',
-              },
+              { text: 'Téléphone : +243 825 333 567', style: 'tiny' },
             ],
-          },
-          {
-            style: 'section',
-            columns: [
-              {
-                width: 'auto',
-                text: [
-                  { text: 'Payé à:\n', bold: true },
-                  `${employee.firstName} ${employee.middleName} ${employee.lastName}\n`,
-                  // 'Ketsia Kiabani Bamu\n',
-                ],
-              },
-              {
-                width: '*',
-                text: [
-                  { text: 'Remuneration:\n', bold: true, fontSize: 14 },
-                  {
-                    text: `$ ${paymentAmount}`,
-                    fontSize: 15,
-                    italics: true,
-                    bold: true,
-                  },
-                ],
-                alignment: 'right',
-              },
-            ],
-          },
-          {
-            style: 'itemsTable',
-            table: {
-              widths: ['*', 'auto', 'auto', 'auto'],
-              body: [
-                [
-                  { text: '', style: 'tableHeader' },
-                  { text: 'Signature', style: 'tableHeader' },
-                  { text: '', style: 'tableHeader' },
-                  { text: '', style: 'tableHeader' },
-                ],
-                [
-                  '',
-                  {
-                    text: `${employee.firstName} ${employee.middleName} ${employee.lastName}`,
-                    style: 'signatureStyle',
-                  },
-                  '',
-                  '',
-                ],
+            { image: base64Logo, width: 75, alignment: 'right' },
+          ],
+        },
+        {
+          canvas: [
+            {
+              type: 'line',
+              x1: 0,
+              y1: 0,
+              x2: 515 - 80,
+              y2: 0,
+              lineWidth: 1.5,
+              lineColor: '#263238',
+            },
+          ],
+          margin: [0, 5, 0, 15],
+        },
+
+        { text: `Fiche de ${title}`, style: 'docTitle' },
+
+        {
+          columns: [
+            {
+              text: [
+                { text: 'Employé : ', bold: true },
+                `${employee.firstName} ${employee.middleName ?? ''} ${
+                  employee.lastName
+                }\n`,
+                { text: 'Rôle : ', bold: true },
+                `${employee.role ?? ''}\n`,
+                { text: 'Période : ', bold: true },
+                `${periodFr}`,
               ],
             },
-            layout: 'lightHorizontalLines',
-          },
-        ],
-        styles: {
-          header: {
-            fontSize: 10,
-            bold: true,
-            margin: [0, 0, 0, 10],
-          },
-          logo: {
-            margin: [0, 0, 0, 0],
-          },
-
-          invoiceTitle: {
-            fontSize: 22,
-            bold: true,
-            alignment: 'right',
-            margin: [0, 0, 0, 10],
-          },
-          companyTitle: {
-            fontSize: 14,
-            bold: true,
-          },
-          section: {
-            margin: [0, 5, 0, 15],
-          },
-          itemsTable: {
-            margin: [0, 5, 0, 15],
-          },
-          tableHeader: {
-            bold: true,
-            fontSize: 13,
-            color: 'black',
-          },
-          totals: {
-            bold: true,
-            margin: [0, 30, 0, 0],
-          },
-          signatureStyle: {
-            italics: true,
-            fontSize: 14,
-            bold: true,
-            color: 'black',
-            // Use a monospaced font for a signature-like appearance
-          },
+            {
+              text: [
+                { text: 'N° Fiche : ', bold: true },
+                `${invoiceNum}\n`,
+                { text: "Date d'édition : ", bold: true },
+                todayFr,
+              ],
+              alignment: 'right',
+            },
+          ],
+          margin: [0, 0, 0, 15],
         },
-        defaultStyle: {
-          columnGap: 20,
-        },
-      };
-      // Dynamic imports with type assertions
-      const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
-      const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
 
-      const pdfMake = pdfMakeModule?.default || pdfMakeModule;
-      const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
-
-      // Set the virtual file system
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
-
-      // Verify that 'Roboto-Medium.ttf' exists
-      if (!pdfMake.vfs['Roboto-Medium.ttf']) {
-        console.error('Roboto-Medium.ttf not found in pdfMake.vfs');
-      }
-      const pdfDocGenerator = pdfMake.createPdf(dd);
-
-      // Generate PDF as a Blob
-      return new Promise<Blob>((resolve, reject) => {
-        pdfDocGenerator.getBlob(
-          (blob: Blob) => {
-            resolve(blob);
+        // Breakdown table -------------------------------------------------
+        {
+          style: 'table',
+          table: {
+            widths: ['*', 'auto'],
+            body: tableRows,
           },
-          (error: any) => {
-            console.error('Error generating PDF Blob:', error);
-            reject(error);
-          }
-        );
-      });
-    } catch (error) {
-      console.error('Error generating bonus check:', error);
-      // Throw the error to ensure the function returns a rejected Promise
-      throw error;
-    }
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#B0BEC5',
+          },
+          margin: [0, 0, 0, 20],
+        },
+
+        // Attendance summary ----------------------------------------------
+        {
+          text: 'Résumé de présence',
+          style: 'subHeader',
+          margin: [0, 0, 0, 6],
+        },
+        {
+          ul: [
+            `Présent : ${stats['P']} jours`,
+            `Retard : ${stats['L']} jours`,
+            `Absent : ${stats['A']} jours`,
+            `Néant : ${stats['N']} jours`,
+          ],
+          margin: [0, 0, 0, 20],
+        },
+
+        // Signatures -------------------------------------------------------
+        {
+          table: {
+            widths: ['*', '*', '*'],
+            body: [
+              [
+                { text: 'Signature employé', style: 'th', alignment: 'center' },
+                { text: 'Manager', style: 'th', alignment: 'center' },
+                { text: 'Service RH', style: 'th', alignment: 'center' },
+              ],
+              [
+                // simulate a handwritten signature
+                {
+                  text: `${employee.firstName} ${employee.middleName ?? ''} ${
+                    employee.lastName
+                  }`,
+                  style: 'signature',
+                  alignment: 'center',
+                },
+                { text: ' ', margin: [0, 30] },
+                { text: ' ' },
+              ],
+            ],
+          },
+          layout: 'lightHorizontalLines',
+        },
+      ],
+
+      styles: {
+        brand: { fontSize: 14, bold: true, color: '#263238' },
+        tiny: { fontSize: 8, color: '#546E7A' },
+        docTitle: { fontSize: 18, bold: true, margin: [0, 0, 0, 15] },
+        subHeader: { fontSize: 12, bold: true },
+        table: { margin: [0, 0, 0, 10] },
+        th: { bold: true, fillColor: '#ECEFF1', margin: [0, 3, 0, 3] },
+        totalLabel: { bold: true, margin: [0, 3, 0, 3] },
+        total: { bold: true, fontSize: 12, margin: [0, 3, 0, 3] },
+
+        /* NEW: cursive-like signature */
+        signature: { italics: true, fontSize: 14 },
+      },
+
+      defaultStyle: { fontSize: 10 },
+    };
+
+    /* ---------- Generate -------------------------------------------------*/
+    const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
+    const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+    const pdfMake = pdfMakeModule.default || pdfMakeModule;
+    const pdfFonts = pdfFontsModule.default || pdfFontsModule;
+    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+
+    return new Promise<Blob>((resolve, reject) => {
+      pdfMake.createPdf(dd).getBlob(
+        (b: Blob) => resolve(b),
+        (e: any) => reject(e)
+      );
+    });
   }
 
   getBrowserName() {
