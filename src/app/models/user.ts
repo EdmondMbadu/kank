@@ -47,6 +47,7 @@ export class User {
   reviews?: Comment[];
   maxNumberOfClients?: string;
   maxNumberOfDaysToLend?: string;
+  objectifPerformance?: string;
 }
 export class LocationCoordinates {
   longitude?: string;

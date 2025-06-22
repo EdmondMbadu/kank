@@ -31,7 +31,7 @@ export class ReviewsComponent implements OnInit {
     },
     {
       key: 'relationClient',
-      label: 'Traitement des clients (respect etc.)',
+      label: 'Traitement des clients avec respect et serieux',
       value: 5,
     },
   ];
@@ -69,6 +69,13 @@ export class ReviewsComponent implements OnInit {
     private cd: ChangeDetectorRef
   ) {}
   reviewId: string = '';
+
+  monthName = new Date().toLocaleDateString('fr-FR', { month: 'long' });
+
+  /** Objectif stocké dans le profil (champ : objectifPerformance) */
+  get objective(): number {
+    return Number(this.auth.currentUser?.objectifPerformance ?? 0);
+  }
 
   ngOnInit(): void {
     // Ensure user is available before fetching reviews

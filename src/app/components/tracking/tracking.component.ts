@@ -74,6 +74,7 @@ export class TrackingComponent {
   ];
   valuesConvertedToDollars: string[] = [];
   maxNumberOfClients: number = this.data.generalMaxNumberOfClients;
+  objectifPerformance: string = '';
 
   imagePaths: string[] = [
     '../../../assets/img/saving.svg',
@@ -116,6 +117,10 @@ export class TrackingComponent {
       this.auth.currentUser.monthBudget === ''
         ? '0'
         : this.auth.currentUser.monthBudget;
+    this.objectifPerformance =
+      this.auth.currentUser.objectifPerformance === ''
+        ? '0'
+        : this.auth.currentUser.objectifPerformance;
     this.amountBudgetPending =
       this.auth.currentUser.monthBudgetPending === ''
         ? '0'
