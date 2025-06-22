@@ -75,4 +75,15 @@ export class Comment {
   stars?: string;
   starsNumber?: number;
   audioUrl?: string;
+
+  visible?: boolean; // false par défaut
+
+  // ← NOUVEAU : 5 indicateurs (1-10)
+  ponctualite?: number;
+  proprete?: number;
+  cahier?: number;
+  suiviClients?: number;
+  relationClient?: number;
+
+  [key: string]: any;
 }

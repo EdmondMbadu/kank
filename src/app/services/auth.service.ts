@@ -748,4 +748,34 @@ export class AuthService {
         return docRef.update({ reviews: newReviews });
       });
   }
+
+  updateReviewVisibility(
+    reviewId: string,
+    updatedReview: Comment
+  ): Promise<void> {
+    const docRef = this.afs.doc<any>(
+      `users/${this.currentUser.uid}/reviews/${reviewId}`
+    );
+
+    return docRef
+      .valueChanges()
+      .pipe(take(1))
+      .toPromise()
+      .then((doc) => {
+        const reviews: Comment[] = doc?.reviews || [];
+
+        // remplace l’élément correspondant (critère = même horodatage & même auteur)
+        const index = reviews.findIndex(
+          (r) => r.time === updatedReview.time && r.name === updatedReview.name
+        );
+
+        if (index !== -1) {
+          reviews[index] = { ...updatedReview }; // remplacement
+        } else {
+          reviews.push(updatedReview); // au cas où il n’existait pas
+        }
+
+        return docRef.set({ reviews }, { merge: true });
+      });
+  }
 }

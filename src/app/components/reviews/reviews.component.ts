@@ -19,6 +19,32 @@ export class ReviewsComponent implements OnInit {
   comment?: string = '';
   reviews: Comment[] = [];
 
+  /* ---------- NOUVEAU : sliders ---------- */
+  metrics = [
+    { key: 'ponctualite', label: 'Arrive à l’heure', value: 5 },
+    { key: 'proprete', label: 'La Foundation est propre', value: 5 },
+    { key: 'cahier', label: 'Cahier & carnets à jour et correcte', value: 5 },
+    {
+      key: 'suiviClients',
+      label: 'A visité les clients qui ne sont pas venu payer',
+      value: 5,
+    },
+    {
+      key: 'relationClient',
+      label: 'Traitement des clients (respect etc.)',
+      value: 5,
+    },
+  ];
+
+  /** liste statique pour l’affichage des barres */
+  metricsKeys = this.metrics.map((m: any) => ({
+    key: m.key,
+    label: m.label,
+  }));
+
+  /* ---------- Aperçu ---------- */
+  previewOpen = false;
+
   isRecording = false;
   mediaRecorder!: MediaRecorder;
   audioChunks: BlobPart[] = []; // Will store the recorded audio data (chunks)
@@ -98,28 +124,28 @@ export class ReviewsComponent implements OnInit {
     return num < 10 ? `0${num}` : `${num}`;
   }
 
-  addReview(audioUrl: string) {
-    try {
-      const review = {
-        name: this.personPostingComment,
-        comment: this.comment,
-        time: this.time.todaysDate(),
-        stars: this.numberofStars,
-        audioUrl: audioUrl, // could be '' if none
-      };
+  // addReview(audioUrl: string) {
+  //   try {
+  //     const review = {
+  //       name: this.personPostingComment,
+  //       comment: this.comment,
+  //       time: this.time.todaysDate(),
+  //       stars: this.numberofStars,
+  //       audioUrl: audioUrl, // could be '' if none
+  //     };
 
-      this.auth.addReview(review).then(() => {
-        this.personPostingComment = '';
-        this.comment = '';
-        this.numberofStars = '';
-      });
-    } catch (error) {
-      console.error('Error adding review:', error);
-      alert(
-        "Une erreur s'est produite lors de la publication du commentaire. Essayez à nouveau."
-      );
-    }
-  }
+  //     this.auth.addReview(review).then(() => {
+  //       this.personPostingComment = '';
+  //       this.comment = '';
+  //       this.numberofStars = '';
+  //     });
+  //   } catch (error) {
+  //     console.error('Error adding review:', error);
+  //     alert(
+  //       "Une erreur s'est produite lors de la publication du commentaire. Essayez à nouveau."
+  //     );
+  //   }
+  // }
   async startRecording() {
     try {
       // 1) getUserMedia
@@ -298,7 +324,7 @@ export class ReviewsComponent implements OnInit {
 
     console.log('Audio file selected:', file);
   }
-  addReviewWithOrWithoutAudioFile() {
+  addReviewWithOrWithoutAudioFile(confirmUser = true) {
     // 1) Must have a name
     if (!this.personPostingComment || !this.personPostingComment.trim()) {
       alert('Veuillez saisir votre nom.');
@@ -322,7 +348,10 @@ export class ReviewsComponent implements OnInit {
     }
 
     // 3) Confirm
-    if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) {
+    if (
+      confirmUser &&
+      !confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')
+    ) {
       return;
     }
 
@@ -351,5 +380,59 @@ export class ReviewsComponent implements OnInit {
         console.error('Deletion failed:', err);
         alert('Impossible de supprimer ce commentaire.');
       });
+  }
+  /** ---------- 1. Injecter les metrics + visible dans le payload ---------- */
+  addReview(audioUrl: string) {
+    const review: Comment = {
+      name: this.personPostingComment,
+      comment: this.comment,
+      time: this.time.todaysDate(),
+      stars: this.numberofStars,
+      audioUrl,
+      visible: false, // masqué par défaut
+      ponctualite: this.metrics[0].value,
+      proprete: this.metrics[1].value,
+      cahier: this.metrics[2].value,
+      suiviClients: this.metrics[3].value,
+      relationClient: this.metrics[4].value,
+    };
+
+    this.auth.addReview(review).then(() => {
+      // reset
+      this.personPostingComment = '';
+      this.comment = '';
+      this.numberofStars = '';
+      this.metrics.forEach((m) => (m.value = 5));
+      this.recordedBlob = undefined;
+      this.recordedAudioURL = undefined;
+      this.selectedAudioFile = undefined;
+      this.selectedAudioPreviewURL = undefined;
+    });
+  }
+  /* === Aperçu === */
+  showPreview() {
+    if (!this.personPostingComment!.trim()) {
+      alert('Veuillez saisir votre nom.');
+      return;
+    }
+    this.previewOpen = true;
+  }
+  /** ---------- 3. Bouton « Publier » dans le modal ---------- */
+  publishComment() {
+    this.previewOpen = false;
+    // on publie sans redemander la confirmation
+    this.addReviewWithOrWithoutAudioFile(false);
+  }
+
+  /** ---------- 4. Méthodes d’affichage / filtrage ---------- */
+  toggleVisibility(c: Comment) {
+    c.visible = !c.visible;
+    this.auth.updateReviewVisibility(this.reviewId, c);
+  }
+
+  filteredReviews() {
+    return this.auth.isAdmin
+      ? this.reviews
+      : this.reviews.filter((r) => r.visible);
   }
 }
