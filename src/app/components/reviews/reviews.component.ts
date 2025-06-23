@@ -25,18 +25,18 @@ export class ReviewsComponent implements OnInit {
   }
   /* ---------- NOUVEAU : sliders ---------- */
   metrics = [
-    { key: 'ponctualite', label: 'Arrive à l’heure', value: 5 },
-    { key: 'proprete', label: 'La Foundation est propre', value: 5 },
-    { key: 'cahier', label: 'Cahier & carnets à jour et correcte', value: 5 },
+    { key: 'ponctualite', label: 'Arrive à l’heure', value: 0 },
+    { key: 'proprete', label: 'La Foundation est propre', value: 0 },
+    { key: 'cahier', label: 'Cahiers et carnets à jour et corrects', value: 0 },
     {
       key: 'suiviClients',
-      label: 'A visité les clients qui ne sont pas venu payer',
-      value: 5,
+      label: 'A visité les clients ne s’étant pas présentés pour payer',
+      value: 0,
     },
     {
       key: 'relationClient',
-      label: 'Traitement des clients avec respect et serieux',
-      value: 5,
+      label: 'Traite les clients avec respect et sérieux',
+      value: 0,
     },
   ];
 

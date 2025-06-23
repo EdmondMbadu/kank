@@ -74,7 +74,7 @@
           <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
             {{ m.label }} <span class="text-blue-600 font-bold">{{ m.value }}</span>/10
           </label>
-          <input type="range" min="1" max="10" step="1"
+          <input type="range" min="0" max="10" step="1"
                  [(ngModel)]="m.value"
                  class="w-full h-2 bg-gray-200 rounded-lg accent-blue-600 cursor-pointer transition-all">
         </div>
@@ -86,9 +86,11 @@
       <label class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
         Autres observations
       </label>
-      <textarea [(ngModel)]="comment" rows="4"
-                class="w-full p-2.5 rounded-lg border focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white resize-y"
-                placeholder="- Heure d’arrivée…"></textarea>
+<textarea [(ngModel)]="comment" rows="4"
+    class="w-full p-2.5 rounded-lg border focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white resize-y"
+    placeholder="- Attitude générale, incidents ou remarques à signaler"></textarea>
+
+
     </div>
 
     <!-- Étoiles -->
