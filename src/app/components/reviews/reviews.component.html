@@ -72,11 +72,13 @@
       <ng-container *ngFor="let m of metrics">
         <div>
           <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-            {{ m.label }} <span class="text-blue-600 font-bold">{{ m.value }}</span>/10
+            {{ m.label }}   <span [style.color]="compute.getGradientColor(m.value * 10)"     
+        class="font-bold">{{ m.value }}</span>/10
           </label>
           <input type="range" min="0" max="10" step="1"
                  [(ngModel)]="m.value"
-                 class="w-full h-2 bg-gray-200 rounded-lg accent-blue-600 cursor-pointer transition-all">
+                 class="w-full h-2 bg-gray-200 rounded-lg accent-blue-600 cursor-pointer transition-all"
+                 [style.accentColor]="compute.getGradientColor(m.value * 10)">
         </div>
       </ng-container>
     </div>
@@ -251,10 +253,13 @@
             <div class="flex items-center text-sm">
               <span class="w-48 break-words">{{ kv.label }}</span>
 
-              <div class="flex-1 h-2 bg-gray-200 rounded mx-2">
-                <div class="h-2 bg-blue-600 rounded"
-                    [style.width.%]="(c[kv.key] / 10) * 100"></div>
+             <div class="flex-1 h-2 bg-gray-200 rounded mx-2">
+                <div class="h-2 rounded"
+                    [style.width.%]="(c[kv.key] / 10) * 100"
+                    [style.backgroundColor]="compute.getGradientColor(c[kv.key] * 10)">
+                </div>
               </div>
+
 
               <span>{{ c[kv.key] }}/10</span>
             </div>

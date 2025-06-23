@@ -69,7 +69,7 @@ export class ReviewsComponent implements OnInit {
     private storage: AngularFireStorage,
     private data: DataService,
     public time: TimeService,
-    private compute: ComputationService,
+    public compute: ComputationService,
     private cd: ChangeDetectorRef
   ) {}
   reviewId: string = '';
