@@ -1,0 +1,134 @@
+<section class="overflow-x-auto bg-white p-4 rounded-lg shadow">
+
+  <!-- ═════════════ Header & controls ═════════════ -->
+  <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
+    <h2 class="text-3xl font-bold">
+      Rotation {{ location }} — {{ monthNames[month - 1] }} {{ year }}
+    </h2>
+
+    <div class="flex items-center gap-2">
+      <!-- Location selector -->
+      <select
+        [(ngModel)]="location"
+        (change)="refresh()"
+        class="border p-1 rounded-lg text-sm"
+      >
+        <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+      </select>
+
+      <!-- Month navigation -->
+      <button (click)="prevMonth()" class="px-2 py-1 rounded-lg bg-gray-100">‹</button>
+      <button (click)="nextMonth()" class="px-2 py-1 rounded-lg bg-gray-100">›</button>
+    </div>
+  </div>
+
+  <!-- ═════════════ Calendar grid (7 columns, any # rows) ═════════════ -->
+  <div class="relative overflow-x-auto mb-6 shadow-xl">
+    <table class="attendance-table min-w-full text-sm">
+      <!-- week-day header -->
+      <thead class="bg-gray-100">
+        <tr>
+          <th *ngFor="let h of weekHeaders" class="p-2 border text-left">
+            {{ h }}
+          </th>
+        </tr>
+      </thead>
+
+      <!-- one <tr> per ISO week -->
+      <tbody>
+        <tr *ngFor="let wk of monthWeeks">
+       <td
+            *ngFor="let cell of wk"
+            class="p-4 border align-top hover:bg-gray-50 cursor-pointer" 
+            (click)="cell && openPicker(cell.iso) && this.auth.isAdmin"
+            >
+            <div *ngIf="cell" class="min-h-[5rem] flex flex-col">              <!-- 5 rem -->
+                <div class="flex items-start justify-between">
+                <span class="text-xs text-gray-400">{{ cell.iso | date:'d' }}</span>
+
+                <!-- slightly bigger ✕ -->
+                <button
+                    *ngIf="auth.isAdmin && cell.employee"
+                    class="text-red-500 text-base leading-none"                  
+                    (click)="clearAssignmentFromCell(cell.iso, $event)"
+                    title="Retirer l’assignation"
+                >
+                    ✕
+                </button>
+                </div>
+
+                <div
+                    class="truncate"
+                    [class.cursor-pointer]="auth.isAdmin"
+                    (click)="auth.isAdmin && openPicker(cell.iso)"
+                    >
+                {{
+                    cell.employee
+                    ? cell.employee.firstName + ' ' + cell.employee.lastName
+                    : '—'
+                }}
+                </div>
+            </div>
+        </td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═════════════ Picker modal (unchanged logic) ═════════════ -->
+  <div
+    *ngIf="pickerVisible && this.auth.isAdmin"
+     (click)="closePicker()" 
+    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+  >
+    <div
+     (click)="$event.stopPropagation()"  class="bg-white p-4 rounded-lg w-80 max-h-[80vh] overflow-y-auto">
+      <h3 class="font-semibold mb-2">
+        Assigner pour {{ pickerDay | date:'d MMMM y' }}
+      </h3>
+      <!-- close icon -->
+    <button
+        class="text-gray-400 hover:text-gray-700 text-xl leading-none"
+        (click)="closePicker()"
+    >
+        ✕
+    </button>
+
+      <!-- search box -->
+      <input
+        [(ngModel)]="search"
+        placeholder="Chercher…"
+        class="w-full border p-1 mb-2 rounded"
+      />
+
+      <!-- employee list -->
+      <ul>
+        <li
+          *ngFor="let emp of filteredEmployees()"
+          (click)="select(emp)"
+          class="flex items-center gap-2 p-1 hover:bg-gray-100 cursor-pointer rounded"
+        >
+          <img
+            *ngIf="emp.profilePicture"
+            [src]="emp.profilePicture.downloadURL"
+            alt=""
+            class="w-6 h-6 rounded-full"
+          />
+          <span class="truncate">{{ emp.firstName }} {{ emp.lastName }}</span>
+        </li>
+      </ul>
+
+      <!-- clear + close -->
+      <button class="mt-3 text-red-600 text-sm" (click)="clearAssignment()">
+        ❌ Retirer l’assignation
+      </button>
+      <button
+        class="absolute top-2 right-2 text-gray-500"
+        (click)="closePicker()"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+</section>

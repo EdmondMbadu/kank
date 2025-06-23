@@ -11,6 +11,9 @@ import {
 } from '@angular/fire/compat/firestore';
 import { User } from '../models/user';
 import { Employee } from '../models/employee';
+import { RotationSchedule } from '../models/management';
+import { map, take } from 'rxjs';
+import firebase from 'firebase/compat/app';
 
 @Injectable({
   providedIn: 'root',
@@ -380,5 +383,102 @@ export class PerformanceService {
 
     // Divide by the factor to get the result with one decimal
     return rounded / factor;
+  }
+
+  private docId(loc: string, y: number, m: number) {
+    return `${loc.toLowerCase()}_${y}_${m}`;
+  }
+
+  /** Get (or create empty) rotation for given location+month */
+  getSchedule(loc: string, y: number, m: number) {
+    const id = this.docId(loc, y, m);
+    return this.afs
+      .doc<RotationSchedule>(`rotations/${id}`)
+      .valueChanges()
+      .pipe(
+        take(1),
+        map(
+          (data) =>
+            data ||
+            ({
+              id,
+              location: loc,
+              month: m,
+              year: y,
+              days: {},
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            } as RotationSchedule)
+        )
+      );
+  }
+
+  /** Assign (or clear) one day */
+  // async setAssignment(
+  //   loc: string,
+  //   y: number,
+  //   m: number,
+  //   isoDay: string,
+  //   employeeUid?: string
+  // ) {
+  //   const id = this.docId(loc, y, m);
+  //   const path = `rotations/${id}`;
+  //   const docRef = this.afs.doc<RotationSchedule>(path).ref;
+  //   return this.afs.firestore.runTransaction(async (tx) => {
+  //     const snap = await tx.get(docRef);
+  //     const data: RotationSchedule =
+  //       (snap.exists ? (snap.data() as any) : null) ||
+  //       ({
+  //         location: loc,
+  //         month: m,
+  //         year: y,
+  //         days: {},
+  //         createdAt: Date.now(),
+  //       } as RotationSchedule);
+
+  //     if (employeeUid) data!.days![isoDay] = employeeUid;
+  //     else delete data!.days![isoDay]; // clear assignment
+
+  //     data.updatedAt = Date.now();
+  //     tx.set(docRef, data, { merge: true });
+  //   });
+  // }
+
+  async setAssignment(
+    loc: string,
+    y: number,
+    m: number,
+    isoDay: string,
+    employeeUid?: string
+  ) {
+    const id = this.docId(loc, y, m);
+    const path = `rotations/${id}`;
+    const docRef = this.afs.doc<RotationSchedule>(path).ref;
+
+    if (employeeUid) {
+      /* add / update (same as before) */
+      return this.afs.firestore.runTransaction(async (tx) => {
+        const snap = await tx.get(docRef);
+        const data: any = snap.exists
+          ? snap.data()
+          : {
+              location: loc,
+              month: m,
+              year: y,
+              days: {},
+              createdAt: Date.now(),
+            };
+
+        data.days[isoDay] = employeeUid;
+        data.updatedAt = Date.now();
+        tx.set(docRef, data, { merge: true });
+      });
+    } else {
+      /* clear → store null (works everywhere, no sentinel) */
+      return this.afs.doc(path).update({
+        [`days.${isoDay}`]: null,
+        updatedAt: Date.now(),
+      });
+    }
   }
 }

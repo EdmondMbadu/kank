@@ -32,6 +32,8 @@ export class TeamRankingMonthComponent {
   totalBonus: string = '';
   showPresent: boolean = false;
   yearsList: number[] = this.time.yearsList;
+
+  allLocations: any[] = [];
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -54,7 +56,7 @@ export class TeamRankingMonthComponent {
     });
   }
 
-  allEmployees?: Employee[];
+  allEmployees: Employee[] = [];
   public graphMonthPerformance = {
     data: [
       {
@@ -236,6 +238,10 @@ export class TeamRankingMonthComponent {
 
     // Recalculate or update any relevant average performance
     this.calculateAveragePerformancePercentage();
+
+    this.allLocations = Array.from(
+      new Set(this.allEmployees!.map((e) => e.tempLocationHolder))
+    );
   }
 
   // Add this method to calculate the average performance percentage

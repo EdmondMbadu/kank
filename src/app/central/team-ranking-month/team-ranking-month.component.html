@@ -3,8 +3,8 @@
 <section class="bg-white">  
   <div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
     <!-- Header -->
-    <div class="flex container mx-auto justify-center text-center mb-8">
-      <h2 class="text-2xl md:text-4xl font-bold">Classement Des Employée Du Mois</h2>
+    <div *ngIf="this.auth.isAdmin || this.auth.isDistributor" class="flex container mx-auto justify-center text-center mb-8">
+      <h2 class="text-2xl md:text-4xl font-bold"> <span>Classement</span> Des Employée Du Mois</h2>
     </div>
  
     <!-- Average Performance Percentage -->
@@ -18,7 +18,7 @@
     </div> -->
       <div class=" container  flex mx-auto   flex-col md:justify-center md:flex-row  ">
 
-        <div class="flex flex-col ">
+        <div *ngIf="this.auth.isAdmin || this.auth.isDistributor" class="flex flex-col ">
          
             <div class="w-full max-w-sm   mx-auto mt-0 md:-mt-8 mb-2">
                 <plotly-plot [data]="graphMonthPerformance.data" [layout]="graphMonthPerformance.layout"></plotly-plot>
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="flex container mx-auto justify-center text-center space-x-8 mb-6">
+    <div *ngIf="this.auth.isAdmin || this.auth.isDistributor"  class="flex container mx-auto justify-center text-center space-x-8 mb-6">
       <div class="mb-6">
         <select
           id="month-filter"
@@ -57,7 +57,7 @@
     </div>
 
     <!-- Employee Leaderboard -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div *ngIf="this.auth.isAdmin || this.auth.isDistributor" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div
         *ngFor="let em of allEmployees; let i = index"
         class="flex bg-gray-50 rounded-lg shadow items-center p-4"
@@ -91,8 +91,11 @@
           <p class="text-sm text-gray-500 mt-1 font-semibold">
            Location: {{em.tempLocationHolder}}
           </p>
-          <p class="text-sm text-gray-500 mt-1 font-semibold">
+          <p *ngIf="this.auth.isAdmin" class="text-sm text-gray-500 mt-1 font-semibold">
             Performance: {{ em.performancePercentageMonth }}%
+          </p>  
+          <p class="text-sm text-gray-500 mt-1 ">
+            Telephone: {{ em.phoneNumber }}
           </p>  
           <div *ngIf=" em.attendance && getVacationInProgressDates(em).length" class="p-4 bg-gray-100 rounded-lg shadow-md my-2">
             <h3 class="text-lg font-semibold text-gray-700 mb-4">Vacances en cours</h3>
@@ -236,4 +239,15 @@
     </div>
   </div>
 </section>
+
+
+<!-- any template -->
+ <div class="mx-auto container max-w-5xl">
+<app-rotation-schedule
+  [employees]="allEmployees"
+  [locations]="allLocations"
+></app-rotation-schedule>
+
+ </div>
+
 
