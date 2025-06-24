@@ -30,6 +30,7 @@ export class ClientPortalComponent {
   recordedAudioURL?: string; // Local blob URL for playback in the UI
   commentAudioUrl: string = ''; // Final upload URL from Firebase
   agentVerifyingName: string = '';
+  numberOfPaymentsMade: string = '';
 
   loanAmount: string = '0';
   debtLeft: string = '0';
@@ -194,6 +195,9 @@ export class ClientPortalComponent {
     }
     if (Number(this.client.debtLeft) <= 0) {
       this.savingsText = 'Retrait Epargne';
+    }
+    if (this.client.numberOfPaymentsMade) {
+      this.numberOfPaymentsMade = this.client.numberOfPaymentsMade;
     }
   }
 
