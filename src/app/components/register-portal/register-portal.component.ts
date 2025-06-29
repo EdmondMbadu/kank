@@ -125,6 +125,12 @@ export class RegiserPortalComponent {
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
+  isFullPictureVisible = false;
+
+  /** Open / close the full-screen photo viewer */
+  toggleFullPicture(): void {
+    this.isFullPictureVisible = !this.isFullPictureVisible;
+  }
   ngOnInit(): void {
     this.retrieveClient();
     this.minReturnDate = this.time.getTomorrowsDateISO();

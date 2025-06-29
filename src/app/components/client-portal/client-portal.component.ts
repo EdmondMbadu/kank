@@ -228,6 +228,12 @@ export class ClientPortalComponent {
       return;
     }
   }
+  isFullPictureVisible = false;
+
+/** Open / close the full-screen photo viewer */
+toggleFullPicture(): void {
+  this.isFullPictureVisible = !this.isFullPictureVisible;
+}
   setComments() {
     if (this.client.comments) {
       this.comments = this.client.comments;
