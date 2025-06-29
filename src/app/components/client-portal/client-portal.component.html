@@ -1,253 +1,466 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<!-- ==== TOP PROFILE HEADER – modern look ==== -->
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<div class="flex container mx-auto justify-center m-12">
-    <h1 class="hidden md:block text-2xl text-center md:text-4xl mr-10 ">Profile Du Client</h1>
-    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/update-client-info',id ]">Mettre à jour Info Client</button>
-    <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="delete()">Supprimer Client</button> -->
+<!-- Hero banner with title & action -->
+<header
+  class="relative mx-auto mt-6 flex max-w-7xl flex-col items-center justify-between gap-6 rounded-3xl bg-gradient-to-r from-green-600 via-emerald-500 to-lime-500 px-6 py-10 shadow-xl sm:flex-row sm:px-10 lg:px-16"
+>
+  <!-- Title -->
+  <h1
+    class="text-center text-3xl font-extrabold tracking-tight text-white drop-shadow sm:text-4xl"
+  >
+    Profil du Client
+  </h1>
+
+  <!-- Update-info button -->
+  <button
+    type="submit"
+    class="inline-flex items-center justify-center rounded-full bg-white/10 px-6 py-3 text-sm font-medium text-white ring-2 ring-white/30 backdrop-blur transition hover:bg-white/20 focus:outline-none focus:ring-4 focus:ring-white/50"
+    [routerLink]="['/update-client-info', id]"
+  >
+    Mettre à jour&nbsp;Info Client
+  </button>
+
+  <!-- soft decorative bubbles -->
+  <span
+    class="pointer-events-none absolute -top-6 right-10 h-24 w-24 rounded-full bg-white/20 blur-3xl sm:block"
+  ></span>
+  <span
+    class="pointer-events-none absolute bottom-0 left-0 h-16 w-16 rounded-full bg-white/10 blur-2xl"
+  ></span>
+</header>
+
+<!-- Photo uploader / viewer -->
+<div
+  class="mx-auto flex max-w-7xl flex-col items-center justify-center py-8"
+>
+  <!-- If no picture yet -->
+  <div *ngIf="!client?.profilePicture" class="flex flex-col items-center">
+    <input
+      type="file"
+      [id]="'putPicture'"
+      class="hidden"
+      (change)="startUpload($any($event.target).files)"
+    />
+    <button
+      (click)="onImageClick('putPicture')"
+      type="button"
+      class="inline-flex items-center justify-center rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800"
+    >
+      Ajouter Photo du Client
+    </button>
+  </div>
+
+  <!-- Show picture (click to change) -->
+  <div *ngIf="client?.profilePicture" class="flex flex-col items-center">
+    <input
+      type="file"
+      [id]="'changePicture'"
+      class="hidden"
+      (change)="startUpload($any($event.target).files)"
+    />
+    <a (click)="onImageClick('changePicture')" class="group relative">
+      <img
+        [src]="client.profilePicture!.downloadURL"
+        alt="Photo du Client"
+        class="h-64 w-64 rounded-full object-cover shadow-lg transition group-hover:brightness-90 md:h-80 md:w-80"
+      />
+      <!-- hover overlay -->
+      <span
+        class="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition group-hover:opacity-100"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-10 w-10 text-white"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12l-6 6m0-6l6-6" />
+        </svg>
+      </span>
+    </a>
+  </div>
 </div>
-<div *ngIf="!client?.profilePicture" class="flex container mx-auto justify-center">
-    
-    <input type="file" [id]="'putPicture'" style="display:none" (change)="startUpload($any($event.target).files)">
-    <button (click)="onImageClick('putPicture')" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Ajouter Photo Du Client</button>
-</div>
-<div *ngIf="client?.profilePicture" class="flex container mx-auto justify-center">
-    <div *ngIf="client?.profilePicture?.downloadURL" >
-        <input type="file" [id]="'changePicture'" style="display:none" (change)="startUpload($any($event.target).files)">
-        <a (click)="onImageClick('changePicture')">  <img [src]="client.profilePicture!.downloadURL" class="h-64 md:h-80 mb-4" alt="">
-        </a>
-   
+
+<!-- Trophy badges -->
+<div class="mx-auto flex max-w-7xl flex-col items-center">
+  <div class="grid grid-cols-1 gap-6 px-4 pb-8 sm:grid-cols-2 md:grid-cols-3">
+    <!-- SILVER -->
+    <div
+      *ngIf="isSilver"
+      class="relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 px-6 py-4 shadow-lg transition hover:scale-105"
+    >
+      <img src="../../../assets/img/winner.png" alt="Argent" class="h-10" />
+      <span class="mt-2 text-lg font-semibold text-gray-800">Argent</span>
+      <div
+        class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-white/70 blur-md"
+      ></div>
     </div>
 
-</div>
-<div class=" container flex flex-col mx-auto justify-center items-center">
-<!-- Container for all badges -->
-<div class="flex flex-col space-y-6 p-4 max-w-sm">
-
-  <!-- SILVER TROPHY BADGE -->
-  <div *ngIf="isSilver"
-    class="relative flex items-center justify-center px-5 py-3 
-           bg-gradient-to-br from-gray-200 to-gray-300 
-           text-gray-800 font-semibold 
-           rounded-2xl shadow-xl
-           ring-4 ring-gray-300 ring-offset-4 ring-offset-white
-           hover:scale-105 transition-transform duration-300 ease-out"
-  >
-
-    <img src="../../../assets/img/winner.png" alt="">
-    <span class="text-lg">Argent</span>
-
-    <div 
-      class="absolute -top-2 -right-2 w-4 h-4 
-             bg-white bg-opacity-50 
-             rounded-full blur-md animate-ping"
-    ></div>
-  </div>
-
-  <!-- GOLD TROPHY BADGE -->
-  <div *ngIf="isGold"
-    class="relative flex items-center justify-center px-5 py-3 
-           bg-gradient-to-br from-amber-300 to-amber-500 
-           text-amber-900 font-semibold 
-           rounded-2xl shadow-2xl
-           ring-4 ring-amber-300 ring-offset-4 ring-offset-white
-           hover:scale-105 transition-transform duration-300 ease-out"
-  >
-  <img src="../../../assets/img/winner.png" alt="">
-    <span class="text-lg">Or</span>
-    <div 
-      class="absolute -top-3 -left-3 w-6 h-6 
-             bg-white bg-opacity-40 
-             rounded-full blur-md animate-ping"
-    ></div>
-  </div>
-
-  <!-- PLATINUM TROPHY BADGE -->
-  <div *ngIf="isPlatinum"
-    class="relative flex items-center justify-center px-5 py-3
-           bg-gradient-to-br from-indigo-300 to-indigo-500 
-           text-indigo-900 font-semibold 
-           rounded-2xl shadow-2xl 
-           ring-4 ring-indigo-300 ring-offset-4 ring-offset-white
-           hover:scale-105 transition-transform duration-300 ease-out"
-  >
-  <img src="../../../assets/img/winner.png" alt="">
-    <span class="text-lg">Platine</span>
-    <div 
-      class="absolute inset-0 bg-white bg-opacity-20 
-             rounded-2xl blur-sm 
-             pointer-events-none animate-pulse"
-    ></div>
-  </div>
-
-</div>
-
-</div>
-
-
-<div id="fullWidthTabContent" class=" rounded-lg  dark:border-gray-600">
-    <div class=" mx-4 lg:mx-60 p-4 bg-white rounded-lg md:p-8 border-2 shadow-lg border-gray-200 dark:bg-gray-800" id="stats" role="tabpanel" aria-labelledby="stats-tab">
-        <dl class="grid  max-w-screen-xl grid-cols-2 text-gray-900 gap-8 p-4 mx-auto sm:grid-cols-3 xl:grid-cols-3 dark:text-white sm:p-8">
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center"> {{client.firstName}} {{client.lastName}} {{client.middleName}}  </dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Membre Depuis {{client.dateJoined?.replaceAll('-','/')}}</dd> <strong class=" text-xl"> {{client.vitalStatus}} </strong>
-            </div>
-            <!-- Âge -->
-          <div *ngIf="age !== null" class="flex flex-col items-center justify-center">
-          <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{ age }}</dt>
-          <dd class="text-gray-500 text-center dark:text-gray-400">Âge (ans)</dd>
-          </div>
-
-           
-            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
-                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center"> ({{client.phoneNumber| slice:0:3}}) - {{client.phoneNumber| slice:3:6}} - {{client.phoneNumber| slice:6:10}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Numero Telphone</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
-                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center">{{client.businessAddress}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Adress Business</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.loanAmount| number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Emprunté(FC)</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold"> {{client.amountPaid | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Percu (FC)</dd>
-            </div>
-
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.debtLeft| number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Restant (FC)</dd>
-            </div>
-
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.amountToPay| number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Montain A Payer (FC)</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-lg md:text-2xl text-center font-bold"> {{ debtStart}} - {{debtEnd}} </dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Cycle de Debt: {{client.paymentPeriodRange}} semaines</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.numberOfPaymentsMade}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Nombre De Paiement Percu</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.savings | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Epargnes (FC)</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center">{{agent?.firstName}} {{agent?.middleName}} {{agent?.lastName}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Agent</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{minPay | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Paiement Minimum (FC)</dd>
-            </div>
-
-
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.debtCycle}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Cycle De Dette</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
-                <dt class="mb-2 text-xl text-center md:text-2xl font-extrabold">{{client.homeAddress}}</dt>
-                <dd class="text-gray-500 text-center  dark:text-gray-400">Adress Domicile</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center" [routerLink]="['/update-client-info',id ]">
-                <dt class="mb-2 text-xl md:text-2xl text-center font-extrabold">{{client.profession}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Profession</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} </dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Jour De Paiment </dd>
-            </div>
-            <!-- <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
-            </div> -->
-            <!-- <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Credit Score</dd>
-            </div> -->
-           
-            
-        
-            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button>
-            <!-- <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-white  rounded-full text-sm w-3/4 px-5 py-2.5 " [routerLink]="['/payment',id ]">Effectuer Un Paiement</button> -->
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity',id ]">Details De Paiement</button>
-            <div class="hidden md:flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.frenchPaymentDay}} {{paymentDate}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Date De Paiement Prochain </dd>
-            </div>
-        <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{client.creditScore}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400"> Score Credit</dd>
-            </div>
-            
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/saving-activity',id ]">Details D'Epargne</button>
-
-            <div *ngIf="client.references" class="flex flex-col items-center justify-center">
-                <div *ngFor="let r of client.references">
-                  
-                    <dd class="text-gray-500 text-center dark:text-gray-400">{{r}}</dd>
-                </div>
-                <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">Références</dd>
-
-            </div>
-            <div *ngIf="clientCycles.length>0 " class="flex flex-col items-center justify-center ">
-                <div class="flex flex-wrap space-x-2">
-                    <div *ngFor="let c of clientCycles" >
-                  
-                        <dd [routerLink]="['/client-cycle',client.uid+'-'+c.cycleId]" class="text-gray-500 text-center dark:text-gray-400 underline font-bold cursor-pointer">{{c.debtCycle}} ,</dd>
-                    </div>
-                </div>
-                
-                <dd class="text-gray-500 text-center dark:text-gray-400 font-bold">Cycle Precedents</dd>
-
-            </div>
-            <div *ngIf="agentVerifyingName !== '' && (this.auth.isAdmin|| this.auth.isDistributor)" class="text-center text-green-600 text-lg md:text-xl font-bold mx-auto">
-              ✔️ Client vérifié 
-              par {{agentVerifyingName}}
-            </div>'
-           
-        </dl>
-        
+    <!-- GOLD -->
+    <div
+      *ngIf="isGold"
+      class="relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 px-6 py-4 shadow-lg transition hover:scale-105"
+    >
+      <img src="../../../assets/img/winner.png" alt="Or" class="h-10" />
+      <span class="mt-2 text-lg font-semibold text-amber-900">Or</span>
+      <div
+        class="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-white/60 blur-md"
+      ></div>
     </div>
+
+    <!-- PLATINUM -->
+    <div
+      *ngIf="isPlatinum"
+      class="relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-300 to-indigo-500 px-6 py-4 shadow-lg transition hover:scale-105"
+    >
+      <img src="../../../assets/img/winner.png" alt="Platine" class="h-10" />
+      <span class="mt-2 text-lg font-semibold text-indigo-900">Platine</span>
+      <div class="absolute inset-0 rounded-2xl bg-white/20 blur-sm"></div>
+    </div>
+  </div>
+</div>
+<!-- ==== /TOP PROFILE HEADER ==== -->
+
+
+<!-- ==== CLIENT PROFILE CARD (modern look) ==== -->
+<div
+  id="fullWidthTabContent"
+  class="mx-4 lg:mx-60 my-8 overflow-hidden rounded-3xl bg-white/70 shadow-xl ring-1 ring-gray-200 backdrop-blur dark:bg-gray-800/70 dark:ring-gray-700"
+>
+  <!-- decorative top bar -->
+  <div
+    class="h-2 w-full bg-gradient-to-r from-green-400 via-emerald-500 to-lime-400 dark:from-emerald-600 dark:via-teal-500 dark:to-cyan-400"
+  ></div>
+
+  <!-- main grid -->
+  <dl
+    class="grid gap-6 p-6 sm:grid-cols-2 xl:grid-cols-3 text-gray-900 dark:text-white"
+  >
+    <!-- Name & vital status -->
+    <div class="col-span-full flex flex-col items-center">
+      <h2 class="text-2xl font-extrabold tracking-tight sm:text-3xl">
+        {{ client.firstName }} {{ client.lastName }}
+        <span *ngIf="client.middleName"> {{ client.middleName }}</span>
+      </h2>
+      <p class="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+        Membre depuis {{ client.dateJoined?.replaceAll('-', '/') }}
+      </p>
+      <span
+        class="mt-2 inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800 dark:bg-green-900/40 dark:text-green-300"
+      >
+        {{ client.vitalStatus }}
+      </span>
+    </div>
+
+    <!-- Age -->
+    <div
+      *ngIf="age !== null"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Âge</dt>
+      <dd class="mt-1 text-3xl font-bold">{{ age }}</dd>
+    </div>
+
+    <!-- Phone number -->
+    <a
+      [routerLink]="['/update-client-info', id]"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Téléphone</dt>
+      <dd class="mt-1 text-xl font-bold text-center">
+        ({{ client.phoneNumber | slice: 0:3 }})-{{ client.phoneNumber
+        | slice: 3:6 }}-{{ client.phoneNumber | slice: 6:10 }}
+      </dd>
+    </a>
+
+    <!-- Business address -->
+    <a
+      [routerLink]="['/update-client-info', id]"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Adresse Business</dt>
+      <dd class="mt-1 text-center text-sm font-medium">
+        {{ client.businessAddress }}
+      </dd>
+    </a>
+
+    <!-- Loan amount -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60"
+    >
+      <dt class="text-lg font-semibold">Montant Emprunté (FC)</dt>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.loanAmount | number: '1.0-0' }}
+      </dd>
+    </div>
+
+    <!-- Amount paid -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-green-50 to-green-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60"
+    >
+      <dt class="text-lg font-semibold">Montant Perçu (FC)</dt>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.amountPaid | number: '1.0-0' }}
+      </dd>
+    </div>
+
+    <!-- Debt left -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-rose-50 to-rose-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60"
+    >
+      <dt class="text-lg font-semibold">Montant Restant (FC)</dt>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.debtLeft | number: '1.0-0' }}
+      </dd>
+    </div>
+
+    <!-- Amount to pay -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60"
+    >
+      <dt class="text-lg font-semibold">Montant à Payer (FC)</dt>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.amountToPay | number: '1.0-0' }}
+      </dd>
+    </div>
+
+    <!-- Debt cycle -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Cycle de Dette</dt>
+      <dd class="mt-1 text-xl font-bold">{{ client.debtCycle }}</dd>
+      <p class="text-xs text-gray-500 dark:text-gray-400">
+        {{ debtStart }} &rarr; {{ debtEnd }}
+      </p>
+    </div>
+
+    <!-- Payments made -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Paiements Reçus</dt>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.numberOfPaymentsMade }}
+      </dd>
+    </div>
+
+    <!-- Savings -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-lime-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Épargnes (FC)</dt>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.savings | number: '1.0-0' }}
+      </dd>
+    </div>
+
+    <!-- Agent -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Agent</dt>
+      <dd class="mt-1 text-center text-sm font-medium">
+        {{ agent?.firstName }} {{ agent?.middleName }} {{ agent?.lastName }}
+      </dd>
+    </div>
+
+    <!-- Payment day -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Jour de Paiement</dt>
+      <dd class="mt-1 text-2xl font-bold">{{ client.frenchPaymentDay }}</dd>
+    </div>
+
+    <!-- Credit score -->
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Score Crédit</dt>
+      <dd class="mt-1 text-3xl font-extrabold">{{ client.creditScore }}</dd>
+    </div>
+
+    <!-- Next payment date (desktop-only) -->
+    <div
+      class="hidden md:flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Prochaine Échéance</dt>
+      <dd class="mt-1 text-2xl font-bold">
+        {{ client.frenchPaymentDay }} {{ paymentDate }}
+      </dd>
+    </div>
+
+    <!-- Verification banner -->
+    <div
+      *ngIf="
+        agentVerifyingName !== '' && (auth.isAdmin || auth.isDistributor)
+      "
+      class="col-span-full flex justify-center"
+    >
+      <span
+        class="inline-flex items-center rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-200"
+      >
+        ✔️ Client vérifié par {{ agentVerifyingName }}
+      </span>
+    </div>
+  </dl>
+
+  <!-- action buttons row -->
+  <div
+    class="flex flex-wrap justify-center gap-4 border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900/60"
+  >
+    <button
+      class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+      [routerLink]="['/payment', id]"
+    >
+      Effectuer un Paiement
+    </button>
+
+    <button
+      class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+      [routerLink]="['/payment-activity', id]"
+    >
+      Détails de Paiement
+    </button>
+
+    <button
+      class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+      [routerLink]="['/saving-activity', id]"
+    >
+      Détails d'Épargne
+    </button>
+  </div>
+</div>
+<!-- ==== /CLIENT PROFILE CARD ==== -->
+
 
 
 
   
 
-<div class="flex container flex-col s  md:flex-row justify-center my-6 sm:mx-1 md:mx-auto rounded-md shadow-sm" role="group">
-    <button  (click)="startNewDebtCycle()"type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border-l border-t border-b border-gray-900  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-        Enregistrement Nouveau Cycle
-    </button>
-    <button (click)="delete()" *ngIf="this.auth.isAdmin" type="button" class="px-4 py-4 text-md font-medium text-gray-100   bg-green-700 hover:bg-green-800 border border-gray-900 rounded-s-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-        Delete Client
-    </button>
-    
-    <button (click)="requestWithDrawFromSavings()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  border border-gray-900  bg-green-700 hover:bg-green-800 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-        Demander Retrait  D'Argent Epargne
-    </button>
-    <button (click)="withDrawFromSavings()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border border-gray-900 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-       {{savingsText}}
-    </button>
-  </div>
-  
+<!-- ==== ACTION BUTTON STRIP ==== -->
+<div
+  class="mx-auto my-10 flex max-w-7xl flex-wrap items-center justify-center gap-4 px-4"
+  role="group"
+>
+  <!-- New Debt Cycle -->
+  <button
+    (click)="startNewDebtCycle()"
+    type="button"
+    class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-400/40 dark:focus:ring-emerald-600/50"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M12 4v16m8-8H4"
+      />
+    </svg>
+    Enregistrement&nbsp;Nouveau&nbsp;Cycle
+  </button>
 
-  <div class=" container  flex mx-auto shadow-xl  flex-col md:justify-center md:flex-row  ">
+  <!-- Delete (admin only) -->
+  <button
+    *ngIf="auth.isAdmin"
+    (click)="delete()"
+    type="button"
+    class="inline-flex items-center gap-2 rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40 dark:focus:ring-red-600/50"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m5 0H4m3-3h10l1 3H6l1-3z"
+      />
+    </svg>
+    Supprimer&nbsp;Client
+  </button>
 
-    <div class="flex flex-col ">
-     
-        <div class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-0 mb-2">
-            <plotly-plot [data]="graphCredit.data" [layout]="graphCredit.layout"></plotly-plot>
-          </div>
-        
-    </div>
+  <!-- Savings withdrawal request -->
+  <button
+    (click)="requestWithDrawFromSavings()"
+    type="button"
+    class="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-400/40 dark:focus:ring-indigo-600/50"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M12 8c1.886 0 3.414-1.28 3.863-3H18V3h-2.137C15.414 1.28 13.886 0 12 0S8.586 1.28 8.137 3H6v2h2.137C8.586 6.72 10.114 8 12 8zM6 9v10h12V9H6zm6 3v4"
+      />
+    </svg>
+    Demander Retrait&nbsp;Épargne
+  </button>
 
-
+  <!-- Confirm savings withdrawal -->
+  <button
+    (click)="withDrawFromSavings()"
+    type="button"
+    class="inline-flex items-center gap-2 rounded-full bg-teal-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-400/40 dark:focus:ring-teal-600/50"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="1.5"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M5 13l4 4L19 7"
+      />
+    </svg>
+    {{ savingsText }}
+  </button>
 </div>
+
+<!-- ==== CREDIT GRAPH PANEL ==== -->
+<div
+  class="mx-auto mb-16 flex max-w-7xl flex-col items-center justify-center px-4"
+>
+  <div
+    class="w-full rounded-3xl bg-white/70 p-6 shadow-lg ring-1 ring-gray-200 backdrop-blur dark:bg-gray-800/70 dark:ring-gray-700"
+  >
+    <plotly-plot
+      [data]="graphCredit.data"
+      [layout]="graphCredit.layout"
+      class="h-[400px] w-full"
+    ></plotly-plot>
+  </div>
+</div>
+<!-- ==== /END ==== -->
+
 
 <div *ngIf="this.auth.isAdmin" class="container mx-auto p-4">
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
