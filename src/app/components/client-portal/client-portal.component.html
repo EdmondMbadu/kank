@@ -531,31 +531,72 @@
           Poster commentaire
       </button>
     </div>
-    <article *ngFor="let c of (comments | slice:0:(this.auth.isAdmninistrator ? comments.length : 2)) let i=index" class="p-6 text-base bg-white rounded-lg dark:bg-gray-900">
-      <footer class="flex justify-between items-center mb-2">
-          <div class="flex items-center">
-          
-                <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600 mr-2">
-                    <span class="font-medium text-gray-600 dark:text-gray-300 ">{{c.name?.substring(0,2)}}</span>
-                </div>    <p class="inline-flex items-center mr-3 text-sm text-gray-900 dark:text-white font-semibold">{{c.name}}</p>
-                      
-              <p class="text-sm text-gray-600 dark:text-gray-400"><time pubdate datetime="2022-02-08"
-                      title="February 8th, 2022">{{c.timeFormatted}}</time></p>
-          </div>
-          
-  
-      </footer>
-      <div *ngIf="c.comment" class="mb-2 dark:text-white">
-        <strong>Commentaire :</strong>
-        <p>{{ c.comment }}</p>
-      </div>
-      
-      <div *ngIf="c.audioUrl" class="mb-2 dark:text-white">
-        <strong >Enregistrement :</strong>
-        <audio [src]="c.audioUrl" controls class="w-full mt-4"></audio>
-      </div>
-      
-  </article>
+<!--  modern block-quote style for each comment  -->
+<article
+  *ngFor="
+    let c of (comments | slice: 0 : (auth.isAdmin ? comments.length : 2));
+    let i = index
+  "
+  class="relative mx-auto mb-6 max-w-2xl rounded-3xl bg-white shadow-lg dark:bg-gray-800"
+>
+  <!-- decorative left ribbon  -->
+  <span
+    class="absolute inset-y-0 left-0 w-1 rounded-l-3xl bg-gradient-to-b from-green-400 to-green-600"
+  ></span>
+
+  <header class="flex items-center px-6 pt-5">
+    <!-- avatar -->
+    <div
+      class="mr-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+    >
+      <span class="font-medium text-gray-600 dark:text-gray-300">
+        {{ c.name?.substring(0, 2) }}
+      </span>
+    </div>
+
+    <!-- name & date -->
+    <div class="flex flex-col">
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">
+        {{ c.name }}
+      </p>
+      <time
+        [attr.datetime]="c['timeISO'] ?? ''"
+        class="text-xs text-gray-500 dark:text-gray-400"
+      >
+        {{ c.timeFormatted }}
+      </time>
+    </div>
+  </header>
+
+  <!-- comment body -->
+  <blockquote
+    class="relative mt-4 rounded-b-3xl bg-gray-50 px-6 pb-6 pt-4 italic text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  >
+    <!-- quotation mark decoration -->
+    <svg
+      aria-hidden="true"
+      class="absolute left-3 top-3 h-5 w-5 text-green-400 opacity-30"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M7.17 15H4.31c.4-2.78 1.5-5.71 3.3-8.79L10 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01zm9 0h-2.86c.4-2.78 1.5-5.71 3.3-8.79L19 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01z"
+      />
+    </svg>
+
+    <p class="ml-6 leading-relaxed" *ngIf="c.comment">{{ c.comment }}</p>
+
+    <!-- audio (if any) -->
+    <div *ngIf="c.audioUrl" class="mt-4 ml-6">
+      <audio
+        [src]="c.audioUrl"
+        controls
+        class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"
+      ></audio>
+    </div>
+  </blockquote>
+</article>
+
  
   </div>
   
