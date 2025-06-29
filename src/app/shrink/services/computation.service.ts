@@ -1293,9 +1293,13 @@ export class ComputationService {
     } else {
       const baseSalary = Number(employee.paymentAmount ?? 0);
       const expIncrease = Number(employee.paymentIncreaseYears ?? 0);
+      const bankTransfer = Number(employee.paymentBankFee ?? 0);
       const absentDed = Number(employee.paymentAbsent ?? 0);
       const noneDed = Number(employee.paymentNothing ?? 0);
-      netPay = baseSalary + expIncrease - absentDed - noneDed;
+      const late = Number(employee.paymentLate ?? 0);
+
+      netPay =
+        baseSalary + expIncrease + bankTransfer - absentDed - noneDed - late;
 
       tableRows = [
         [
@@ -1311,12 +1315,20 @@ export class ComputationService {
           { text: safeNumber(expIncrease), alignment: 'right' },
         ],
         [
+          'Frais de virement bancaire',
+          { text: safeNumber(bankTransfer), alignment: 'right' },
+        ],
+        [
           'Retenues – Absences',
           { text: `-${safeNumber(absentDed)}`, alignment: 'right' },
         ],
         [
           'Retenues – Néant',
           { text: `-${safeNumber(noneDed)}`, alignment: 'right' },
+        ],
+        [
+          'Retenues – Retard',
+          { text: `-${safeNumber(late)}`, alignment: 'right' },
         ],
         [
           { text: 'Net à payer', style: 'totalLabel' },

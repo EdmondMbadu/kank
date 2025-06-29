@@ -57,6 +57,8 @@ export class Employee {
   showAttendance?: boolean;
   receipts?: string[];
   paidThisMonth?: boolean;
+  paymentBankFee?: string;
+  paymentLate?: string;
 }
 export class Avatar {
   path?: string;

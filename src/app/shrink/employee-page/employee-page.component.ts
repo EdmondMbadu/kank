@@ -101,6 +101,8 @@ export class EmployeePageComponent implements OnInit {
   paymentAbsent: number = 0;
   totalPayments: number = 0;
   paymentIncreaseYears: number = 0;
+  paymentBankFee: number = 0;
+  paymentLate: number = 0;
 
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
@@ -266,6 +268,12 @@ export class EmployeePageComponent implements OnInit {
     this.paymentNothing = this.employee.paymentNothing
       ? parseFloat(this.employee.paymentNothing)
       : 0;
+    this.paymentLate = this.employee.paymentLate
+      ? parseFloat(this.employee.paymentLate)
+      : 0;
+    this.paymentBankFee = this.employee.paymentBankFee
+      ? parseFloat(this.employee.paymentBankFee)
+      : 0;
     this.totalPayments = this.employee.totalPayments
       ? parseFloat(this.employee.totalPayments)
       : 0;
@@ -281,14 +289,15 @@ export class EmployeePageComponent implements OnInit {
     this.employee.totalPayments = this.totalBonusAmount.toString();
     this.employee.totalBonusThisMonth = this.totalBonusAmount.toString();
   }
-  computeTotalPayment() {
-    // the payment of the month is the total payment of the month minus the absent and nothing days plus the increase years
-    this.totalPayments =
-      this.paymentAmount +
-      this.paymentIncreaseYears -
-      this.paymentAbsent -
-      this.paymentNothing;
+  computeTotalPayment(): number {
+    const amount = Number(this.paymentAmount) || 0;
+    const bankFee = Number(this.paymentBankFee) || 0;
+    const increase = Number(this.paymentIncreaseYears) || 0;
+    const absent = Number(this.paymentAbsent) || 0;
+    const late = Number(this.paymentLate) || 0;
+    const nothing = Number(this.paymentNothing) || 0;
 
+    this.totalPayments = amount + bankFee + increase - absent - late - nothing;
     return this.totalPayments;
   }
   retrieveEmployees(): void {
@@ -815,10 +824,17 @@ export class EmployeePageComponent implements OnInit {
   }
 
   setPaymentInfo() {
-    this.employee.paymentAmount = this.paymentAmount.toString();
-    this.employee.paymentAbsent = this.paymentAbsent.toString();
-    this.employee.paymentNothing = this.paymentNothing.toString();
-    this.employee.paymentIncreaseYears = this.paymentIncreaseYears.toString();
+    // Ensure all fields are treated as numbers
+    const p = (n: any) => Number(n) || 0;
+
+    this.employee.paymentAmount = p(this.paymentAmount).toString();
+    this.employee.paymentAbsent = p(this.paymentAbsent).toString();
+    this.employee.paymentNothing = p(this.paymentNothing).toString();
+    this.employee.paymentIncreaseYears = p(
+      this.paymentIncreaseYears
+    ).toString();
+    this.employee.paymentBankFee = p(this.paymentBankFee).toString();
+    this.employee.paymentLate = p(this.paymentLate).toString();
     this.employee.totalPayments = this.computeTotalPayment().toString();
   }
   async updateEmployeePaymentInfoAndSignCheck() {
