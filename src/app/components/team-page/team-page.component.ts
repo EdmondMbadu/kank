@@ -76,6 +76,20 @@ export class TeamPageComponent implements OnInit {
       this.addIdsToEmployees();
     });
   }
+  /** — NEW —  add these in your TeamPageComponent class  */
+  isFullPictureVisible = false;
+  fullPictureURL: string | null = null;
+
+  /** Opens the viewer (pass the URL) or closes it when called without a URL */
+  toggleFullPicture(url?: string): void {
+    if (url) {
+      this.fullPictureURL = url;
+      this.isFullPictureVisible = true;
+    } else {
+      this.isFullPictureVisible = false;
+      this.fullPictureURL = null;
+    }
+  }
 
   retreiveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
