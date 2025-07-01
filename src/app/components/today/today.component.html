@@ -1,264 +1,306 @@
-<app-navbar 
-    [email]="this.auth.currentUser.email"
-    [firstName]="this.auth.currentUser.firstName" 
-    [path]="'home'">
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'">
 </app-navbar>
 
-<!-- Header Section -->
-<div class="flex container mx-auto m-6 justify-center items-center">
-    <h1 class="text-2xl md:text-4xl mr-10 ml-4 text-green-800">Activités Du Jour {{ frenchDate }}</h1>
-    <button 
-        type="submit" 
-        class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mr-4" 
-        routerLink="/client-info-current">
-        Info Clients
+<!-- ╭─ Header & date picker ───────────────────────────────────────────╮ -->
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
+
+  <!-- headline + quick link (now centred) -->
+  <div class="flex flex-col lg:flex-row items-center justify-center gap-6 text-center">
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight
+               text-green-800 ">
+      Activités du&nbsp;{{ frenchDate }}
+    </h1>
+
+    <button
+      routerLink="/client-info-current"
+      class="inline-flex items-center gap-2 rounded-full
+             bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow
+             hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+      Info Clients
     </button>
+  </div>
+
+  <!-- date picker (centered) -->
+<!-- date picker (now truly centered) -->
+<div class="flex justify-center">
+  <input
+    [(ngModel)]="requestDate"
+    type="date"
+    class="mx-auto max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5
+           text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+           dark:bg-gray-700 dark:text-white dark:border-gray-600"
+    (change)="findDailyActivitiesAmount()"
+    required
+  />
 </div>
 
-<!-- Date Picker -->
-<div class="flex container mx-auto justify-center mb-6">    
-    <div class="w-full max-w-xs">
-        <input 
-            [(ngModel)]="requestDate" 
-            type="date" 
-            id="first_name" 
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5" 
-            (change)="findDailyActivitiesAmount()" 
-            required>
+</section>
+
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+
+<!-- ╭─ Performance & reserve ──────────────────────────────────────────╮ -->
+<section class="mx-auto mt-12 max-w-3xl px-4 sm:px-6 lg:px-8">
+  <!-- performance cards (3 cases) -->
+  <ng-container *ngIf="expectedReserve === '0'">
+    <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow
+                dark:bg-green-900/20">
+      <h2 class="text-xl font-semibold text-green-800 dark:text-green-300">
+        Performance Paiement du Jour
+      </h2>
+      <p class="mt-2 text-3xl font-extrabold text-green-900">____%</p>
     </div>
-</div>
+  </ng-container>
 
-<!-- Performance and Reserve Section -->
-<div class="container mx-auto flex flex-wrap items-center justify-center">
-    <div class="w-full max-w-2xl">
-        <!-- Performance of the Day -->
-        <div *ngIf=" expectedReserve=='0'"  class="bg-green-50 p-6 rounded-lg shadow-md mb-6 text-center">
-            <h3 class="text-xl font-semibold text-green-800">Performance Paiement Du Jour</h3>
-            <p class="text-2xl font-bold text-green-900 mt-2">
-                
-                
-                ____%
-            </p>
-        </div>
-        <div *ngIf=" perc>=50"  class="bg-green-50 p-6 rounded-lg shadow-md mb-6 text-center">
-            <h3 class="text-xl font-semibold text-green-800">Performance Paiement Du Jour</h3>
-            <p class="text-2xl font-bold text-green-900 mt-2">
-                {{ percentage }}%
-            </p>
-        </div>
-        <div *ngIf="  perc<50 && expectedReserve!=='0' " class="bg-red-50 p-6 rounded-lg shadow-md mb-6 text-center">
-            <h3 class="text-xl font-semibold text-red-800">Performance Paiement Du Jour</h3>
-            <p class="text-2xl font-bold text-red-900 mt-2">
-                {{ percentage }}%
-            </p>
-        </div>
-        
-
-        <!-- Reserve Information -->
-        <div class="bg-green-50 p-6 rounded-lg shadow-md">
-            <h1 class="text-2xl font-bold text-center text-green-800 underline mb-4">Reserve</h1>
-
-            <!-- Expected Reserve -->
-            <div class="bg-white p-4 rounded-lg shadow-sm mb-4 mx-auto">
-                <h3 class="text-lg font-semibold text-green-800 mb-2">Reserve Attendue Du Jour</h3>
-                <p class="text-xl font-bold text-green-900">
-                    {{ expectedReserve | number:'1.0-0' }} FC 
-                    <span class="text-gray-600">-></span> 
-                    {{ expectedReserveInDollars | number:'1.0-0' }} $
-                </p>
-            </div>
-
-            <!-- Daily Reserve -->
-            <div class="bg-white p-4 rounded-lg shadow-sm">
-                <h3 class="text-lg font-semibold text-green-800 mb-2">Paiement Du Jour</h3>
-                <p class="text-xl font-bold text-green-900 mb-2">
-                    {{ dailyPayment | number:'1.0-0' }} FC 
-                    <span class="text-gray-600">-></span> 
-                    {{ dailyPaymentDollars | number:'1.0-0' }} $
-                </p>
-                <h3 class="text-lg font-semibold text-green-800 mb-2">Reserve Du Jour</h3>
-                <p class="text-lg font-bold text-green-900">
-                    {{ dailyReserve | number:'1.0-0' }} FC 
-                    <span class="text-gray-600">-></span> 
-                    {{ compute.convertCongoleseFrancToUsDollars(dailyReserve) | number:'1.0-0' }} $
-                </p>
-            </div>
-        </div>
+  <ng-container *ngIf="expectedReserve !== '0' && perc >= 50">
+    <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow
+                dark:bg-green-900/20">
+      <h2 class="text-xl font-semibold text-green-800 dark:text-green-300">
+        Performance Paiement du Jour
+      </h2>
+      <p class="mt-2 text-3xl font-extrabold text-green-900">
+        {{ percentage }}%
+      </p>
     </div>
-</div>
+  </ng-container>
 
-<!-- Summary Cards -->
-<div class="container flex flex-wrap flex-col items-center justify-center mx-auto md:flex-row">
-    <div class="flex-col w-60 m-6" *ngFor="let s of summary; let i = index">
-        <a 
-            routerLink="{{ linkPaths[i] }}" 
-            class="block max-w-sm p-6 bg-neutral-200 border border-gray-200 rounded-lg shadow hover:bg-green-100">
-            <img src="{{ imagePaths[i] }}" alt="" class="w-20 justify-center mx-auto">
-            <h5 class="my-2 text-2xl text-center font-bold tracking-tight text-gray-900">{{ s }}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center">FC {{ summaryContent[i] | number:'1.0-0' }}</h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center">$ {{ valuesConvertedToDollars[i] | number:'1.0-0' }}</h2>
-        </a>
+  <ng-container *ngIf="expectedReserve !== '0' && perc < 50">
+    <div class="mb-8 rounded-2xl bg-red-50 p-6 text-center shadow
+                ">
+      <h2 class="text-xl font-semibold text-red-800 ">
+        Performance Paiement du Jour
+      </h2>
+      <p class="mt-2 text-3xl font-extrabold text-red-900">
+        {{ percentage }}%
+      </p>
     </div>
-</div>
+  </ng-container>
 
-<!-- ADMIN – MISE À JOUR DES VALEURS DU JOUR -->
-<section *ngIf="this.auth.isAdmin"  class="max-w-screen-xl mx-auto px-4 lg:px-8 py-6">
-  <!-- Titre -->
-  <h2 class="w-full text-center text-2xl sm:text-3xl font-bold text-green-800 mb-8">
-    Modifier les montants du {{ frenchDate }}
+  <!-- reserve card -->
+  <div class="rounded-2xl bg-white p-8 shadow dark:bg-slate-800">
+    <h3 class="mb-6 text-center text-2xl font-bold text-green-800 underline
+               dark:text-green-300">
+      Reserve
+    </h3>
+
+    <!-- expected reserve -->
+    <div class="mb-6 rounded-lg bg-gray-50 p-4 shadow-sm
+                dark:bg-slate-700">
+      <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
+        Reserve Attendue du Jour
+      </h4>
+      <p class="text-xl font-bold text-green-900 dark:text-green-200">
+        {{ expectedReserve | number:'1.0-0' }} FC
+        <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
+        {{ expectedReserveInDollars | number:'1.0-0' }} $
+      </p>
+    </div>
+
+    <!-- daily reserve / payment -->
+    <div class="rounded-lg bg-gray-50 p-4 shadow-sm
+                dark:bg-slate-700">
+      <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
+        Paiement du Jour
+      </h4>
+      <p class="mb-3 text-xl font-bold text-green-900 dark:text-green-200">
+        {{ dailyPayment | number:'1.0-0' }} FC
+        <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
+        {{ dailyPaymentDollars | number:'1.0-0' }} $
+      </p>
+
+      <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
+        Reserve du Jour
+      </h4>
+      <p class="text-xl font-bold text-green-900 dark:text-green-200">
+        {{ dailyReserve | number:'1.0-0' }} FC
+        <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
+        {{ compute.convertCongoleseFrancToUsDollars(dailyReserve) | number:'1.0-0' }} $
+      </p>
+    </div>
+  </div>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+
+<!-- ╭─ Summary cards ───────────────────────────────────────────────────╮ -->
+<section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <a
+      *ngFor="let s of summary; let i = index"
+      routerLink="{{ linkPaths[i] }}"
+      class="group block rounded-2xl bg-white dark:bg-slate-800
+             ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
+             hover:-translate-y-1 hover:shadow-lg
+             hover:ring-green-400 dark:hover:ring-green-500 transition">
+
+      <img [src]="imagePaths[i]"
+           class="mx-auto mb-4 h-16 w-16 object-contain
+                  filter dark:invert dark:brightness-125" />
+
+      <h5 class="mb-2 text-center text-xl font-semibold
+                 text-gray-900 dark:text-gray-50
+                 group-hover:text-green-700 dark:group-hover:text-green-400">
+        {{ s }}
+      </h5>
+
+      <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
+        FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
+      </p>
+      <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
+        $&nbsp;{{ valuesConvertedToDollars[i] | number:'1.0-0' }}
+      </p>
+    </a>
+  </div>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+
+<!-- ╭─ Admin daily update ─────────────────────────────────────────────╮ -->
+<section
+  *ngIf="auth.isAdmin"
+  class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+  <h2 class="mb-10 text-center text-3xl font-bold text-green-800 dark:text-green-300">
+    Modifier les montants du&nbsp;{{ frenchDate }}
   </h2>
 
-  <!-- Cartes -->
   <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     <ng-container *ngFor="let f of dailyFieldConfigs">
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 flex flex-col">
-        <!-- Libellé -->
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+      <div class="flex flex-col rounded-2xl bg-white p-6 shadow-lg
+                  dark:bg-slate-800">
+        <h3 class="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
           {{ f.label }}
         </h3>
-
-        <!-- Valeur actuelle -->
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
+        <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
           Valeur actuelle :
           <strong>{{ auth.currentUser[f.key]?.[todayKey] || 0 }}</strong>
         </p>
 
-        <!-- Saisie -->
         <input
           [(ngModel)]="f.input"
           type="number"
           placeholder="Entrez le montant"
-          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700
-                 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500
-                 focus:outline-none mb-4"
+          class="mb-4 w-full rounded-lg border bg-gray-50 p-2.5
+                 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+                 dark:bg-gray-700 dark:text-white dark:border-gray-600"
         />
 
-        <!-- Bouton -->
         <button
           (click)="setDailyField(f.key, f.input); f.input = ''"
-          class="w-full mt-auto py-2.5 bg-red-700 hover:bg-red-800
-                 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-600
-                 text-white rounded-lg text-sm transition"
-        >
+          class="mt-auto w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+                 transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
           Confirmer
         </button>
       </div>
     </ng-container>
   </div>
 </section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
-<!-- ╔═══════════ Transport Receipts ═══════════╗ -->
-<section class="mt-6 flex container mx-auto justify-center">
-  <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow
-              sm:p-8 dark:bg-gray-800 dark:border-gray-700">
+<!-- ╭─ Credits & transports ───────────────────────────────────────────╮ -->
+<section class="mx-auto mt-16 max-w-md px-4 sm:px-6 lg:px-8">
+  <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
 
-    <!-- Header + search -->
-    <div class="flex items-center justify-between mb-4">
-      <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">
-        Credits & Transports
-      </h5>
+    <!-- heading + search -->
+    <div class="mb-6 flex items-center justify-between">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-gray-50">
+        Credits &amp; Transports
+      </h3>
 
-      <div class="flex items-center">
-        <label for="search-code" class="sr-only">Chercher</label>
-
-        <div class="relative w-full">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <!-- icon -->
-            <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg"
-                 fill="none" viewBox="0 0 18 20"><path stroke="currentColor"
-                 stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                 d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-            </svg>
-          </div>
-          <input type="text" id="search-code" [(ngModel)]="searchText"
-                 placeholder="Filtrer par date…"                       
-                 class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                        focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5
-                        dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400
-                        dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500">
-        </div>
+      <div class="relative w-44">
+        <svg
+          class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400"
+          fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 14a6 6 0 100-12 6 6 0 000 12zm5 1l3 3"/>
+        </svg>
+        <input
+          id="search-code"
+          [(ngModel)]="searchText"
+          placeholder="Filtrer par date…"
+          class="w-full rounded-lg border bg-gray-50 py-2 pl-9 pr-3 text-sm
+                 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+                 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+        />
       </div>
     </div>
 
-    <!-- Upload button (admin only) -->
-    <div *ngIf="auth.isAdmin" class="mb-4">
+    <!-- upload (admin) -->
+    <div *ngIf="auth.isAdmin" class="mb-6 flex items-center gap-4">
       <label
-        class="cursor-pointer inline-flex items-center px-3 py-1.5 text-sm font-medium
-               bg-green-700 text-white rounded-lg hover:bg-green-800">
+        class="inline-flex cursor-pointer items-center gap-2 rounded-lg
+               bg-green-600 px-3 py-1.5 text-sm font-medium text-white
+               hover:bg-green-700">
         📷 Joindre un reçu
-        <input type="file" accept="image/*,application/pdf"   hidden (change)="uploadReceipt($any($event.target).files)">
+        <input
+          type="file" hidden accept="image/*,application/pdf"
+          (change)="uploadReceipt($any($event.target).files)" />
       </label>
-       <!-- amount input -->
-  <input type="number" min="0" step="0.01"
-         placeholder="Montant"
-         class="w-24 p-2.5 border rounded-lg bg-gray-50 focus:ring-green-500
-                focus:border-green-500"
-         [(ngModel)]="newReceiptAmount">
+      <input
+        type="number" min="0" step="0.01"
+        placeholder="Montant"
+        class="w-24 rounded-lg border bg-gray-50 p-2.5 text-sm
+               focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600"
+        [(ngModel)]="newReceiptAmount" />
     </div>
 
-    <!-- List -->
-    <div class="flow-root">
-      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li  *ngFor="let r of filteredReceipts(); let i = index"
-             class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600">
+    <!-- list -->
+    <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+      <li *ngFor="let r of filteredReceipts(); let i = index"
+          class="py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg px-2">
+        <div class="flex items-center gap-4">
+          <!-- initials -->
+          <div class="relative inline-flex h-10 w-10 items-center justify-center rounded-full
+                      bg-gray-100 text-sm font-medium text-gray-600 dark:bg-slate-600 dark:text-gray-300">
+            {{ auth.currentUser.firstName?.substring(0,2) }}
+          </div>
 
-          <div class="flex items-center space-x-4">
-            <!-- avatar initials -->
-            <div class="relative inline-flex items-center justify-center w-10 h-10
-                        overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-              <span class="font-medium text-gray-600 dark:text-gray-300">
-                {{ auth.currentUser.firstName?.substring(0,2) }}
-              </span>
-            </div>
+          <!-- date -->
+          <p class="flex-1 truncate text-sm font-medium
+                    text-gray-900 dark:text-gray-50">
+            {{ r.frenchDate }}
+          </p>
 
-            <!-- date -->
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                {{ r.frenchDate }}
-              </p>
-            </div>
-            <!-- amount display / edit -->
-          <ng-container *ngIf="!auth.isAdmin; else editAmount">
-            <p class="text-sm font-semibold text-green-700">
+          <!-- amount -->
+          <ng-container *ngIf="!auth.isAdmin; else amountEdit">
+            <p class="text-sm font-semibold text-green-700 dark:text-green-400">
               {{ r.amount | number:'1.0-2' }} $
             </p>
           </ng-container>
-
-          <ng-template #editAmount>
-            <input type="number" min="0" step="0.01"
-                  class="mt-0.5 w-24 p-1 text-xs border rounded
-                          focus:ring-green-500 focus:border-green-500"
-                  [(ngModel)]="r.amount"
-                  (blur)="updateAmount(r)">
+          <ng-template #amountEdit>
+            <input
+              type="number" min="0" step="0.01"
+              class="w-24 rounded border p-1 text-xs
+                     focus:border-green-500 focus:ring-2 focus:ring-green-500"
+              [(ngModel)]="r.amount"
+              (blur)="updateAmount(r)" />
           </ng-template>
 
-            <!-- link to receipt -->
-            <div class="inline-flex items-center">
-              <a [href]="r.url" target="_blank" title="Voir le reçu">
-                <img src="../../../assets/img/validating-ticket.png"
-                                class="w-12 h-12 object-cover rounded-md border"
-                                alt="Bank Transfer Receipt" />
-                <!-- <img src="../../../assets/img/receipt.png"
-                     class="w-8 h-8 object-cover rounded-md border" /> -->
-              </a>
-            </div>
+          <!-- receipt link -->
+          <a [href]="r.url" target="_blank" title="Voir le reçu"
+             class="shrink-0">
+            <img src="../../../assets/img/validating-ticket.png"
+                 class="h-12 w-12 rounded-md border object-cover
+                        filter dark:invert dark:brightness-125"
+                 alt="Reçu" />
+          </a>
 
-            <!-- action buttons (admin only) -->
-            <div *ngIf="auth.isAdmin" class="ml-2">
-              <button class="px-2 py-1 text-xs font-medium text-white
-                             bg-blue-600 rounded hover:bg-blue-700"
-                      (click)="prepareUpdate(r)">
-                Changer
-              </button>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </div>
+          <!-- admin ‘changer’ -->
+          <button
+            *ngIf="auth.isAdmin"
+            class="ml-2 rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white
+                   hover:bg-blue-700"
+            (click)="prepareUpdate(r)">
+            Changer
+          </button>
+        </div>
+      </li>
+    </ul>
 
-    <!-- hidden input used when admin clicks “Changer” -->
-    <input type="file" #fileInput accept="image/*,application/pdf"   hidden
-           (change)="replaceReceipt($any($event.target).files)">
+    <!-- hidden file input for “Changer” -->
+    <input
+      #fileInput type="file" hidden accept="image/*,application/pdf"
+      (change)="replaceReceipt($any($event.target).files)" />
   </div>
 </section>
-<!-- ╚══════════════════════════════════════════╝ -->
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
