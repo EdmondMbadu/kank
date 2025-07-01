@@ -46,7 +46,7 @@
   <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     <ng-container *ngFor="let em of employees; let i = index">
       <div
-        class="overflow-hidden rounded-3xl bg-white/70 shadow-xl ring-1 ring-gray-200 backdrop-blur transition hover:shadow-2xl dark:bg-gray-800/70 dark:ring-gray-700"
+        class="overflow-hidden rounded-3xl bg-white/70 shadow-xl ring-1 ring-gray-200 backdrop-blur transition hover:shadow-2xl dark:bg-slate-700 dark:ring-gray-700"
       >
         <!-- hidden upload input for profile picture -->
         <input
@@ -115,19 +115,19 @@
             {{ em.firstName }} {{ em.middleName }} {{ em.lastName }}
           </h3>
 
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Role : <strong>{{ em.role }}</strong>
           </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-sm text-gray-500 dark:text-white">
             # Clients suivi : {{ em.currentClients?.length }}
           </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Sexe : {{ em.sex }}
           </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Début : {{ em.dateJoined }}
           </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Téléphone : {{ em.phoneNumber }}
           </p>
 
@@ -318,7 +318,7 @@
           </select>
         </label>
 
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+        <label class="text-sm font-medium text-gray-700 dark:text-white">
           Statut
           <select
             [(ngModel)]="employees[i].status"
