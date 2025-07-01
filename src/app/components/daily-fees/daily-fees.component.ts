@@ -50,6 +50,7 @@ export class DailyFeesComponent implements OnInit {
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
+      this.clients = [];
       this.clients = data;
       this.retrieveEmployees();
     });
