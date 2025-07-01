@@ -341,6 +341,34 @@
       </dd>
     </div>
 
+      <!-- References -->
+    <div
+     *ngIf="client.references" 
+      class="hidden md:flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+ <dt class="text-lg font-semibold">
+         Références
+        </dt>
+
+      <div *ngFor="let r of client.references">
+        <dd class="mt-1 text-center text-sm font-medium">{{r}}</dd>
+       
+      </div>
+    </div>
+       <!-- Previous Cycles -->
+    <div
+    *ngIf="clientCycles.length>0 " 
+      class="hidden md:flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+     <dt class="text-lg font-semibold">Cycle Precedents</dt>
+      <div *ngFor="let c of clientCycles" >
+      
+        <dd [routerLink]="['/client-cycle',client.uid+'-'+c.cycleId]" class="mt-1 underline text-2xl font-bold cursor-pointer">
+         {{c.debtCycle}} - 
+        </dd>
+      </div>
+    </div>
+      
     <!-- Verification banner -->
     <div
       *ngIf="
