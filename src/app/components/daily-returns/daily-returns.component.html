@@ -1,79 +1,99 @@
+<app-navbar [email]="this.auth.currentUser.email" [firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl text-center m-2 md:text-2xl mr-10">Retrait Frais Des Membres Du Jour {{frenchDate}}</h2>
-   <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center mr-4" routerLink="/client-info">Info Client</button>
-</div>
+<!-- ===================== PAGE WRAPPER ===================== -->
+<section class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-sky-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-8">
+  <!-- ===================== HEADER ===================== -->
+  <header class="container mx-auto mb-8 flex flex-col items-center justify-center gap-4 md:flex-row">
+    <h2 class="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 md:text-3xl text-center ">
+      Retrait Frais Des Membres Du Jour {{ frenchDate }}
+    </h2>
 
-<div class="flex container mx-auto justify-center mb-2">    
-    <div class="">
-    <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->
-    <input [(ngModel)]="requestDate"   type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" (change)="findDailyFeeReturns()"  required>
-    <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="findDailyActivitiesAmount()">Chercher</button> -->
+    <button
+      type="submit"
+      routerLink="/client-info"
+      class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow transition-all duration-150 hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-700">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14m7-7H5" />
+      </svg>
+      Info Client
+    </button>
+  </header>
+
+  <!-- ===================== DATE PICKER ===================== -->
+  <div class="container mx-auto mb-4 flex justify-center">
+    <input
+      [(ngModel)]="requestDate"
+      (change)="findDailyFeeReturns()"
+      type="date"
+      id="requestDate"
+      class="w-full max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400" />
+  </div>
+
+  <!-- ===================== SUMMARY ===================== -->
+  <div class="container mx-auto mb-6 flex justify-center">
+    <h2 class="text-center text-xl font-bold text-gray-700 dark:text-gray-200">
+      {{ numberOfPeople }} clients – Total: {{ totalGivenDate | number: '1.0-0' }} FC
+    </h2>
+  </div>
+
+  <!-- ===================== LIST CARD ===================== -->
+  <div class="container mx-auto flex justify-center">
+    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
+      <!-- CARD HEADER -->
+      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Retraits</h5>
+
+        <!-- SEARCH -->
+        <form class="flex items-center" (submit)="$event.preventDefault()">
+          <label for="fee-search" class="sr-only">Chercher</label>
+          <div class="relative w-40 sm:w-52 md:w-60">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+            <input
+              id="fee-search"
+              type="text"
+              [formControl]="searchControl"
+              placeholder="Chercher un client ..."
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
+          </div>
+        </form>
+      </div>
+
+      <!-- LIST -->
+      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li
+          *ngFor="let c of applicationFeePayments; let i = index"
+          [routerLink]="['/client-portal', c.trackingId]"
+          class="group relative cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+          <div class="flex items-center space-x-4">
+            <!-- AVATAR -->
+            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
+              {{ c.firstName!.substring(0, 2) }}
+            </div>
+
+            <!-- CLIENT INFO -->
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+              </p>
+            </div>
+
+            <!-- FEES -->
+            <div class="min-w-0 flex-1 text-right">
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                Dossier&nbsp;FC {{ c.amount | number: '1.0-0' }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Adhésion&nbsp;FC {{ membershipFeePayments[i].amount | number: '1.0-0' }}
+              </p>
+            </div>
+          </div>
+        </li>
+      </ul>
     </div>
-   
-</div>
-<div class="flex container mx-auto justify-center mb-2">
-    <h2 class="text-center text-2xl font-bold ">{{numberOfPeople}} clients - Total: {{totalGivenDate | number:'1.0-0'}} FC</h2>
-</div>
-<div class="flex container mx-auto  justify-center">
-   <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-       <div class="flex items-center justify-between mb-4">
-           <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Payments</h5>
-           <form class="flex items-center">   
-               <label for="simple-search" class="sr-only">Chercher</label>
-               <div class="relative w-full">
-                   <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                       <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-                       </svg>
-                   </div>
-                   <input type="text" id="simple-search"[formControl]="searchControl" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Chercher un client ..." required>
-               </div>
-               <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                   <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                   </svg>
-                   <span class="sr-only">Chercher</span>
-               </button>
-           </form>
-   </div>
-   <div class="flow-root">
-           <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let c of applicationFeePayments; let i=index  " [routerLink]="['/client-portal',c.trackingId]">
-                   <div class="flex items-center space-x-4">
-                       <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                           <span class="font-medium text-gray-600 dark:text-gray-300">{{c.firstName!.substring(0,2)}}</span>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                           <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                           {{c.firstName}}  {{c.lastName}} {{c.middleName}}
-                           </p>
-                           <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                            <!-- Agent: {{c.employee?.firstName}} {{c.employee?.lastName}} -->
-                           <!-- {{paymentDates[i].replaceAll('-','/').substring(0,9)}} -->
-                           </p>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                        Dossier FC {{c.amount| number:'1.0-0'}}
-                        </p>
-                        <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                          Adhersion FC {{membershipFeePayments[i].amount| number:'1.0-0'}}
-                        <!-- {{paymentDates[i].replaceAll('-','/').substring(0,9)}} -->
-                        </p>
-                    </div>
-                       <!-- <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                           FC {{c.amount| number:'1.0-0'}}
-                       </div> -->
-                   </div>
-               </li>
-           </ul>
-   </div>
-   </div>
-
-
-</div>
-
-
-
+  </div>
+</section>
