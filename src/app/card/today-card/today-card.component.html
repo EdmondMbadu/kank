@@ -1,40 +1,60 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
 
-<!-- investements -->
+<!-- ╭─ Heading + date picker ───────────────────────────────────────────╮ -->
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
 
- <!-- just above the summary cards -->
+  <!-- headline -->
+  <h1 class="text-center text-3xl md:text-4xl font-extrabold tracking-tight
+             text-gray-900 dark:text-white">
+    Activités&nbsp;Carte&nbsp;du&nbsp;{{ frenchDate }}
+  </h1>
 
-
-<!-- and show the chosen day in the heading -->
-<h1 class="text-2xl md:text-4xl mr-10 text-center mt-10 mb-4">
-  Activités Carte Du {{ frenchDate }}
-</h1>
-<div class="flex container mx-auto justify-center mb-6">
-  <div class="w-full max-w-xs">
+  <!-- date picker -->
+  <div class="flex justify-center">
     <input
       [(ngModel)]="requestDate"
       type="date"
-      class="bg-gray-50 border border-gray-300 text-sm rounded-lg
-             focus:ring-green-500 focus:border-green-500 block w-full p-2.5"
-      (change)="onDateChange()"                               
+      class="mx-auto max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5
+             text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+             dark:bg-gray-700 dark:text-white dark:border-gray-600"
+      (change)="onDateChange()"
     />
   </div>
-</div>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
+<!-- ╭─ Summary cards ───────────────────────────────────────────────────╮ -->
+<section class="mx-auto mt-12 max-w-7xl px-4 sm:px-6 lg:px-8">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <a
+      *ngFor="let s of summary; let i = index"
+      routerLink="{{ linkPaths[i] }}"
+      class="group block rounded-2xl bg-white dark:bg-slate-800
+             ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
+             hover:-translate-y-1 hover:shadow-lg
+             hover:ring-green-400 dark:hover:ring-green-500 transition">
 
-<div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
+      <img [src]="imagePaths[i]"
+           class="mx-auto mb-4 h-16 w-16 object-contain
+                  filter dark:invert dark:brightness-125" />
 
-    <div class="flex-col w-60  m-6 " *ngFor="let s of summary; let i = index;  ">
-        <a routerLink="{{linkPaths[i]}}" class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
-            <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
-            
-            <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" > FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" > $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
-         
-        </a>
-    </div>
-    
+      <h5 class="mb-2 text-center text-xl font-semibold
+                 text-gray-900 dark:text-gray-50
+                 group-hover:text-green-700 dark:group-hover:text-green-400">
+        {{ s }}
+      </h5>
 
-
-</div>
+      <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
+        FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
+      </p>
+      <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
+        $&nbsp;{{ valuesConvertedToDollars[i] | number:'1.0-0' }}
+      </p>
+    </a>
+  </div>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
