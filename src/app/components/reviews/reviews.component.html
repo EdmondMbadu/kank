@@ -234,7 +234,7 @@
       <div class="flex justify-between items-start">
         <div>
           <p class="font-semibold text-lg text-gray-900 dark:text-white">{{c.name}}</p>
-          <p class="text-sm text-gray-500">{{c.timeFormatted}}</p>
+          <p class="text-sm text-gray-500 dark:text-white">{{c.timeFormatted}}</p>
         </div>
 
         <div *ngIf="auth.isAdmin" class="flex items-center gap-2">
@@ -250,7 +250,7 @@
         <ng-container *ngFor="let kv of metricsKeys">
           <!-- n’afficher que si la valeur existe -->
           <ng-container *ngIf="c[kv.key] !== undefined">
-            <div class="flex items-center text-sm">
+            <div class="flex items-center text-sm dark:text-white">
               <span class="w-48 break-words">{{ kv.label }}</span>
 
              <div class="flex-1 h-2 bg-gray-200 rounded mx-2">

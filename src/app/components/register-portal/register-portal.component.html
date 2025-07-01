@@ -121,13 +121,13 @@
 <!-- === VERIFICATION & SUSPICIOUS BANNERS === -->
 <div class="mx-auto flex max-w-7xl flex-col items-center justify-center gap-2 px-4">
   <!-- verification status -->
-  <div *ngIf="agentSubmmittedVerification" class="inline-flex items-center rounded-full bg-green-100 px-4 py-2 text-lg font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-200">
+  <div *ngIf="agentSubmmittedVerification" class="inline-flex items-center rounded-full bg-green-100 px-4 py-2 text-lg font-semibold text-green-700 ">
     ✔️ Client vérifié<span *ngIf="auth.isAdmin"> par {{ agentVerifyingName }}</span>
   </div>
-  <div *ngIf="!agentSubmmittedVerification && client.requestType !== 'rejection'" class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+  <div *ngIf="!agentSubmmittedVerification && client.requestType !== 'rejection'" class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700 ">
     ❌ Client non vérifié
   </div>
-  <div *ngIf="client.requestType === 'rejection'" class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+  <div *ngIf="client.requestType === 'rejection'" class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700 ">
     🚫 Rejet en cours...
   </div>
 </div>
