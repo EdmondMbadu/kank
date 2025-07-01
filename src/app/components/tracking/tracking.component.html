@@ -1,128 +1,252 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
 
-<!-- investements -->
+<!-- ╭─ Page header ───────────────────────────────────────────────────────╮ -->
+<section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
+  <div class="flex flex-col lg:flex-row items-center justify-center gap-6 text-center">
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight
+               text-gray-900 dark:text-white">
+      Trésorerie
+    </h1>
 
-    <div class="flex container mx-auto m-12 justify-center">
-        <h1 class="text-2xl md:text-4xl mr-10">Trésorerie</h1>
-        <button  type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info-current">Info Clients</button>
+    <button
+      routerLink="/client-info-current"
+      class="inline-flex items-center gap-2 rounded-full
+             bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow
+             hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+      Info Clients
+    </button>
+  </div>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────────╯ -->
+
+<!-- ╭─ Summary cards ───────────────────────────────────────────────────────╮ -->
+<section class="mx-auto mt-12 max-w-7xl px-4 sm:px-6 lg:px-8">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <a
+      *ngFor="let s of summary; let i = index"
+      routerLink="{{ linkPaths[i] }}"
+      class="group block rounded-2xl bg-white dark:bg-slate-800
+             ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
+             hover:-translate-y-1 hover:shadow-lg
+             hover:ring-green-400 dark:hover:ring-green-500 transition">
+
+      <img [src]="imagePaths[i]"
+           class="mx-auto mb-4 h-16 w-16 object-contain
+                  filter dark:invert dark:brightness-125" />
+
+      <h5 class="mb-2 text-center text-xl font-semibold
+                 text-gray-900 dark:text-gray-50
+                 group-hover:text-green-700 dark:group-hover:text-green-400">
+        {{ s }}
+      </h5>
+
+      <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
+        FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
+      </p>
+      <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
+        $&nbsp;{{ valuesConvertedToDollars[i] | number:'1.0-0' }}
+      </p>
+    </a>
+  </div>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────────╯ -->
+
+<!-- ╭─ Limits & lending window (values visible to all) ───────────────────╮ -->
+<section class="mx-auto mt-16 max-w-4xl px-4 sm:px-6 lg:px-8 grid gap-8 sm:grid-cols-2">
+
+  <!-- Nombre max de clients -->
+  <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+    <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-50">
+      Nombre maximum de clients actuels autorisés
+    </h2>
+
+    <p class="mb-3 text-base text-gray-600 dark:text-gray-300">
+      Valeur actuelle&nbsp;:
+      <strong>{{ maxNumberOfClients }}</strong>
+    </p>
+
+    <!-- admin-only editor -->
+    <ng-container *ngIf="auth.isAdmninistrator">
+      <input
+        [(ngModel)]="maxNumberOfClients"
+        type="number"
+        placeholder="Entrez la valeur"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+
+      <button
+        (click)="setUserField('maxNumberOfClients', maxNumberOfClients)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
+    </ng-container>
+  </div>
+
+  <!-- Délai maximal pour prêter -->
+  <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+    <h2 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-50">
+      🔒 Prêts autorisés jusqu’au
+      <strong class="text-red-600">{{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong>
+    </h2>
+
+    <ul class="mb-4 list-disc space-y-1 pl-5 text-base text-gray-600 dark:text-gray-300">
+      <li>
+        ✅ Période autorisée&nbsp;:
+        <strong class="text-blue-600">du 1<sup>er</sup> au {{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong>
+      </li>
+      <li>
+        🚫 Après le <strong class="text-red-600">{{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong>,
+        aucun prêt n’est permis jusqu’au mois suivant.
+      </li>
+    </ul>
+
+    <!-- admin-only editor -->
+    <ng-container *ngIf="auth.isAdmninistrator">
+      <input
+        [(ngModel)]="maxNumberOfDaysToLend"
+        type="number"
+        placeholder="Jour limite (ex : 20)"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+
+      <button
+        (click)="setUserField('maxNumberOfDaysToLend', maxNumberOfDaysToLend)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
+    </ng-container>
+  </div>
+
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+
+<!-- ╭─ Finance settings grid (admin only) ───────────────────────────────╮ -->
+<section *ngIf="auth.isAdmninistrator"
+         class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+  <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+
+    <!-- Budget du Mois -->
+    <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Budget du Mois
+      </h3>
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle&nbsp;: <strong>{{ monthBudget }}</strong>
+      </p>
+      <input
+        [(ngModel)]="amountBudget"
+        type="number"
+        placeholder="Entrez le budget"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+      <button
+        (click)="setUserField('monthBudget', amountBudget)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
     </div>
 
-
-<div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
-
-    <div class="flex-col w-60  m-6 " *ngFor="let s of summary; let i = index;  ">
-        <a routerLink="{{linkPaths[i]}}" class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
-            <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
-            
-            <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" > FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" > $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
-         
-        </a>
+    <!-- Budget en attente -->
+    <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Budget en Attente
+      </h3>
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle&nbsp;: <strong>{{ amountBudgetPending }}</strong>
+      </p>
+      <input
+        [(ngModel)]="amountBudgetPending"
+        type="number"
+        placeholder="Entrez le budget en attente"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+      <button
+        (click)="setUserField('monthBudgetPending', amountBudgetPending)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
     </div>
-    
 
+    <!-- Montant du Loyer -->
+    <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Montant du Loyer
+      </h3>
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle&nbsp;: <strong>{{ housePayment }}</strong>
+      </p>
+      <input
+        [(ngModel)]="housePayment"
+        type="number"
+        placeholder="Entrez le montant du loyer"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+      <button
+        (click)="setUserField('housePayment', housePayment)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
+    </div>
 
-</div>
-<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 max-w-sm mx-auto">
-  <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Nombre maximum de clients Actuels autorisés</h2>
-  <p class="text-lg text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ maxNumberOfClients }}</strong></p>
-  <input *ngIf="this.auth.isAdmninistrator" [(ngModel)]="maxNumberOfClients" type="number" placeholder="Entrez le nombre maximum de clients" 
-    class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-  <button *ngIf="this.auth.isAdmninistrator" (click)="setUserField('maxNumberOfClients', maxNumberOfClients)"  
-    class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-    Confirmer
-  </button>
-</div>
-<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 max-w-sm mx-auto">
-  <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-    🔒 Prêts autorisés jusqu’au <strong class="text-red-600 text-xl">{{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong>
-  </h2>
-  
-  <ul class="text-gray-600 dark:text-gray-300 list-disc pl-5 space-y-1 mb-3 text-base">
-    <li>✅ Période autorisée : <strong class="text-blue-600">du 1<sup>er</sup> au {{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong></li>
-    <li>🚫 Après le <strong class="text-red-600">{{ maxNumberOfDaysToLend }} {{ currentMonth }}</strong>, aucun prêt n’est permis jusqu’au mois suivant.</li>
-  </ul>
+    <!-- Argent en main -->
+    <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Argent en main
+      </h3>
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle&nbsp;: <strong>{{ moneyInHands }}</strong>
+      </p>
+      <input
+        [(ngModel)]="moneyInHands"
+        type="number"
+        placeholder="Entrez la valeur"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+      <button
+        (click)="setUserField('moneyInHands', moneyInHands)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
+    </div>
 
-  <input *ngIf="this.auth.isAdmninistrator" [(ngModel)]="maxNumberOfDaysToLend" type="number" placeholder="Jour limite (ex: 20)" 
-    class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-
-  <button *ngIf="this.auth.isAdmninistrator" (click)="setUserField('maxNumberOfDaysToLend', maxNumberOfDaysToLend)"  
-    class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-    Confirmer
-  </button>
-</div>
-
-
-
-
-<div *ngIf="this.auth.isAdmninistrator" class="container mx-auto p-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-      
-      <!-- Budget du Mois -->
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Budget du Mois</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ monthBudget}}</strong></p>
-        <input [(ngModel)]="amountBudget" type="number" placeholder="Entrez le budget" 
-          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-        <button (click)="setUserField( 'monthBudget', this.amountBudget)" 
-          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-          Confirmer
-        </button>
-      </div>
-  
-      <!-- Budget en attente -->
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Budget en Attente</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ amountBudgetPending}}</strong></p>
-        <input [(ngModel)]="amountBudgetPending" type="number" placeholder="Entrez le budget en attente" 
-          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-        <button (click)="setUserField( 'monthBudgetPending',amountBudgetPending)" 
-          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-          Confirmer
-        </button>
-      </div>
-  
-      <!-- Montant du Loyer -->
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Montant du Loyer</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ housePayment }}</strong></p>
-        <input [(ngModel)]="housePayment" type="number" placeholder="Entrez le montant du loyer" 
-          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-        <button (click)="setUserField('housePayment',housePayment)" 
-          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-          Confirmer
-        </button>
-      </div>
-  
-      <!-- Maximum Nombre de Clients -->
-      
-
-      <!-- Argent en Main -->
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Argent en main</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ moneyInHands }}</strong></p>
-        <input [(ngModel)]="moneyInHands" type="number" placeholder="Entrez le nombre maximum de clients" 
-          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-        <button (click)="setUserField('moneyInHands', moneyInHands)" 
-          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-          Confirmer
-        </button>
-      </div>
-      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Objectif Performance  Du Mois</h2>
-        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">Valeur actuelle: <strong>{{ objectifPerformance }} %</strong></p>
-        <input [(ngModel)]="objectifPerformance" type="number" placeholder="0-100%" 
-          class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-        <button (click)="setUserField('objectifPerformance', objectifPerformance)" 
-          class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-          Confirmer
-        </button>
-      </div>
-
-      
+    <!-- Objectif Performance -->
+    <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Objectif Performance du Mois
+      </h3>
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle&nbsp;: <strong>{{ objectifPerformance }} %</strong>
+      </p>
+      <input
+        [(ngModel)]="objectifPerformance"
+        type="number"
+        placeholder="0-100 %"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+      <button
+        (click)="setUserField('objectifPerformance', objectifPerformance)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
     </div>
   </div>
-  
-
-
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
