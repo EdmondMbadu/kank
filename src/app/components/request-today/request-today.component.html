@@ -1,18 +1,36 @@
-<app-navbar [email]="this.auth.currentUser.email" [firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
 
 <!-- ===================== PAGE WRAPPER ===================== -->
-<section class="min-h-screen w-full bg-gradient-to-br from-amber-50 via-white to-lime-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-8">
+<section
+  class="min-h-screen w-full overflow-x-hidden
+         bg-gradient-to-br from-amber-50 via-white to-lime-100
+         dark:from-slate-900 dark:via-slate-800 dark:to-slate-900
+         px-4 py-8">
+
   <!-- ===================== HEADER ===================== -->
-  <header class="container mx-auto mb-6 flex flex-col items-center justify-center gap-4 md:flex-row">
-    <h2 class="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 md:text-3xl text-center">
+  <header
+    class="container mx-auto mb-6 flex flex-col items-center justify-center gap-4
+           sm:flex-row">
+    <h2
+      class="text-center text-lg font-semibold tracking-tight text-gray-800
+             dark:text-gray-100 sm:text-2xl">
       Argent demandé pour le {{ frenchDate }}
     </h2>
 
     <button
       type="submit"
       routerLink="/client-info"
-      class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow transition-all duration-150 hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-700">
-      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+      class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2
+             text-xs sm:text-sm font-medium text-white shadow transition-all
+             duration-150 hover:scale-105 hover:bg-emerald-700 focus:outline-none
+             focus:ring-4 focus:ring-emerald-300
+             dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-700">
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"
+           viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 5v14m7-7H5" />
       </svg>
       Info Client
@@ -20,115 +38,261 @@
   </header>
 
   <!-- ===================== DATE PICKER & TOTAL ===================== -->
-  <div class="container mx-auto mb-6 flex flex-col items-center justify-center gap-3 md:flex-row">
+  <div
+    class="container mx-auto mb-6 flex flex-col items-center justify-center gap-3
+           sm:flex-row">
     <input
-      [(ngModel)]="requestDate"
-      (change)="otherDate()"
-      type="date"
-      id="requestDate"
-      class="w-full max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400" />
+      [(ngModel)]="requestDate" (change)="otherDate()"
+      type="date" id="requestDate"
+      class="w-full max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5
+             text-xs sm:text-sm text-gray-900 shadow-sm transition
+             focus:border-emerald-500 focus:ring-emerald-500
+             dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
+             dark:placeholder-gray-400" />
 
-    <h2 class="text-xl font-bold text-gray-700 dark:text-gray-200 md:ml-6">
-      Total&nbsp;: {{ total | number: '1.0-0' }} FC
+    <h2
+      class="sm:ml-6 text-lg font-bold text-gray-700 dark:text-gray-200">
+      Total : {{ total | number:'1.0-0' }} FC
     </h2>
   </div>
 
   <!-- ===================== THREE LIST CARDS ===================== -->
-  <div class="container mx-auto grid gap-8 lg:grid-cols-3 lg:gap-6">
+  <div
+    class="container mx-auto grid gap-6
+           sm:grid-cols-2 lg:grid-cols-3">
+
     <!-- ========= EMPRUNTS ========= -->
-    <div class="w-full rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
-      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Emprunts</h5>
-        <form class="flex items-center" (submit)="$event.preventDefault()">
-          <label for="search-loan" class="sr-only">Chercher</label>
-          <div class="relative w-36 sm:w-44">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+    <div
+      class="w-full rounded-2xl bg-white shadow-xl ring-1 ring-gray-200
+             dark:bg-slate-800 dark:ring-gray-700">
+      <div
+        class="flex items-center justify-between border-b border-gray-200
+               px-4 py-4 dark:border-gray-700">
+        <h5 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Emprunts
+        </h5>
+        <form
+          class="flex w-full max-w-[8.5rem] sm:max-w-[10rem]"
+          (submit)="$event.preventDefault()">
+          <label class="sr-only">Chercher</label>
+          <div class="relative w-full">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   viewBox="0 0 24 24" stroke-linecap="round"
+                   stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
             </div>
-            <input id="search-loan" type="text" [formControl]="searchControl" placeholder="Client…" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
+            <input
+              id="search-loan" type="text" [formControl]="searchControl"
+              placeholder="Client…"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10
+                     text-xs sm:text-sm text-gray-900 shadow-sm transition
+                     focus:border-emerald-500 focus:ring-emerald-500
+                     dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100
+                     dark:placeholder-gray-400" />
           </div>
         </form>
       </div>
-      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li *ngFor="let c of clientsRequestLending; let i = index" [routerLink]="['/register-portal', c.trackingId]" class="group cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
-          <div class="flex items-center space-x-4">
-            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
-              {{ c.firstName!.substring(0, 2) }}
+
+      <ul role="list"
+          class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li
+          *ngFor="let c of clientsRequestLending"
+          [routerLink]="['/register-portal', c.trackingId]"
+          class="group cursor-pointer px-4 py-4 transition-colors duration-150
+                 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+          <div class="flex items-center space-x-3">
+            <div
+              class="relative inline-flex h-9 w-9 flex-shrink-0
+                         items-center justify-center overflow-hidden
+                         rounded-full bg-emerald-100 text-[10px] sm:text-xs
+                         font-semibold text-emerald-700
+                         dark:bg-emerald-700 dark:text-emerald-100">
+              {{ c.firstName!.substring(0,2) }}
             </div>
+
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ c.firstName }} {{ c.lastName }} {{ c.middleName }}</p>
-              <p *ngIf="c.dateOfRequest" class="truncate text-xs text-gray-500 dark:text-gray-400">Demandé le&nbsp;{{ c.dateOfRequest }}</p>
+              <p
+                class="whitespace-normal break-words leading-tight
+                       text-[11px] sm:text-xs md:text-sm font-medium
+                       text-gray-900 dark:text-gray-100">
+                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+              </p>
+              <p
+                *ngIf="c.dateOfRequest"
+                class="whitespace-normal break-words leading-tight
+                       text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                Demandé le {{ c.dateOfRequest }}
+              </p>
             </div>
-            <div class="text-base font-semibold text-gray-900 dark:text-gray-100">FC {{ c.requestAmount | number: '1.0-0' }}</div>
+
+            <div
+              class="whitespace-nowrap text-xs sm:text-sm font-semibold
+                         text-gray-900 dark:text-gray-100">
+              FC {{ c.requestAmount | number:'1.0-0' }}
+            </div>
           </div>
         </li>
       </ul>
     </div>
 
     <!-- ========= ÉPARGNES ========= -->
-    <div class="w-full rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
-      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Épargnes</h5>
-        <form class="flex items-center" (submit)="$event.preventDefault()">
-          <label for="search-save" class="sr-only">Chercher</label>
-          <div class="relative w-36 sm:w-44">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+    <div
+      class="w-full rounded-2xl bg-white shadow-xl ring-1 ring-gray-200
+             dark:bg-slate-800 dark:ring-gray-700">
+      <div
+        class="flex items-center justify-between border-b border-gray-200
+               px-4 py-4 dark:border-gray-700">
+        <h5 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Épargnes
+        </h5>
+        <form
+          class="flex w-full max-w-[8.5rem] sm:max-w-[10rem]"
+          (submit)="$event.preventDefault()">
+          <label class="sr-only">Chercher</label>
+          <div class="relative w-full">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   viewBox="0 0 24 24" stroke-linecap="round"
+                   stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
             </div>
-            <input id="search-save" type="text" [formControl]="searchControlSavings" placeholder="Client…" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
+            <input
+              id="search-save" type="text" [formControl]="searchControlSavings"
+              placeholder="Client…"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10
+                     text-xs sm:text-sm text-gray-900 shadow-sm transition
+                     focus:border-emerald-500 focus:ring-emerald-500
+                     dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100
+                     dark:placeholder-gray-400" />
           </div>
         </form>
       </div>
-      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li *ngFor="let c of clientsRequestSavings; let i = index" [routerLink]="['/client-portal', c.trackingId]" class="group cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
-          <div class="flex items-center space-x-4">
-            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
-              {{ c.firstName!.substring(0, 2) }}
+
+      <ul role="list"
+          class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li
+          *ngFor="let c of clientsRequestSavings"
+          [routerLink]="['/client-portal', c.trackingId]"
+          class="group cursor-pointer px-4 py-4 transition-colors duration-150
+                 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+          <div class="flex items-center space-x-3">
+            <div
+              class="relative inline-flex h-9 w-9 flex-shrink-0
+                         items-center justify-center overflow-hidden
+                         rounded-full bg-emerald-100 text-[10px] sm:text-xs
+                         font-semibold text-emerald-700
+                         dark:bg-emerald-700 dark:text-emerald-100">
+              {{ c.firstName!.substring(0,2) }}
             </div>
+
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ c.firstName }} {{ c.lastName }} {{ c.middleName }}</p>
-              <p *ngIf="c.dateOfRequest" class="truncate text-xs text-gray-500 dark:text-gray-400">Demandé le&nbsp;{{ c.dateOfRequest }}</p>
+              <p
+                class="whitespace-normal break-words leading-tight
+                       text-[11px] sm:text-xs md:text-sm font-medium
+                       text-gray-900 dark:text-gray-100">
+                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+              </p>
+              <p
+                *ngIf="c.dateOfRequest"
+                class="whitespace-normal break-words leading-tight
+                       text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                Demandé le {{ c.dateOfRequest }}
+              </p>
             </div>
-            <div class="text-base font-semibold text-gray-900 dark:text-gray-100">FC {{ c.requestAmount | number: '1.0-0' }}</div>
+
+            <div
+              class="whitespace-nowrap text-xs sm:text-sm font-semibold
+                         text-gray-900 dark:text-gray-100">
+              FC {{ c.requestAmount | number:'1.0-0' }}
+            </div>
           </div>
         </li>
       </ul>
     </div>
 
     <!-- ========= CARTES ========= -->
-    <div class="w-full rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
-      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Cartes</h5>
-        <form class="flex items-center" (submit)="$event.preventDefault()">
-          <label for="search-card" class="sr-only">Chercher</label>
-          <div class="relative w-36 sm:w-44">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+    <div
+      class="w-full rounded-2xl bg-white shadow-xl ring-1 ring-gray-200
+             dark:bg-slate-800 dark:ring-gray-700">
+      <div
+        class="flex items-center justify-between border-b border-gray-200
+               px-4 py-4 dark:border-gray-700">
+        <h5 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Cartes
+        </h5>
+        <form
+          class="flex w-full max-w-[8.5rem] sm:max-w-[10rem]"
+          (submit)="$event.preventDefault()">
+          <label class="sr-only">Chercher</label>
+          <div class="relative w-full">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   viewBox="0 0 24 24" stroke-linecap="round"
+                   stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
             </div>
-            <input id="search-card" type="text" [formControl]="searchControlCard" placeholder="Client…" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
+            <input
+              id="search-card" type="text" [formControl]="searchControlCard"
+              placeholder="Client…"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10
+                     text-xs sm:text-sm text-gray-900 shadow-sm transition
+                     focus:border-emerald-500 focus:ring-emerald-500
+                     dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100
+                     dark:placeholder-gray-400" />
           </div>
         </form>
       </div>
-      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li *ngFor="let c of clientsRequestCard; let i = index" [routerLink]="['/client-portal-card', c.trackingId]" class="group cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
-          <div class="flex items-center space-x-4">
-            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
-              {{ c.firstName!.substring(0, 2) }}
+
+      <ul role="list"
+          class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li
+          *ngFor="let c of clientsRequestCard"
+          [routerLink]="['/client-portal-card', c.trackingId]"
+          class="group cursor-pointer px-4 py-4 transition-colors duration-150
+                 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+          <div class="flex items-center space-x-3">
+            <div
+              class="relative inline-flex h-9 w-9 flex-shrink-0
+                         items-center justify-center overflow-hidden
+                         rounded-full bg-emerald-100 text-[10px] sm:text-xs
+                         font-semibold text-emerald-700
+                         dark:bg-emerald-700 dark:text-emerald-100">
+              {{ c.firstName!.substring(0,2) }}
             </div>
+
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ c.firstName }} {{ c.lastName }} {{ c.middleName }}</p>
-              <p *ngIf="c.dateOfRequest" class="truncate text-xs text-gray-500 dark:text-gray-400">Demandé le&nbsp;{{ c.dateOfRequest }}</p>
+              <p
+                class="whitespace-normal break-words leading-tight
+                       text-[11px] sm:text-xs md:text-sm font-medium
+                       text-gray-900 dark:text-gray-100">
+                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+              </p>
+              <p
+                *ngIf="c.dateOfRequest"
+                class="whitespace-normal break-words leading-tight
+                       text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                Demandé le {{ c.dateOfRequest }}
+              </p>
             </div>
-            <div class="text-base font-semibold text-gray-900 dark:text-gray-100">FC {{ c.requestAmount | number: '1.0-0' }}</div>
+
+            <div
+              class="whitespace-nowrap text-xs sm:text-sm font-semibold
+                         text-gray-900 dark:text-gray-100">
+              FC {{ c.requestAmount | number:'1.0-0' }}
+            </div>
           </div>
         </li>
       </ul>
@@ -137,33 +301,81 @@
 
   <!-- ===================== RÉJECTIONS ===================== -->
   <div class="container mx-auto mt-10 flex justify-center">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
-      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Crédits (Rejets)</h5>
-        <form class="flex items-center" (submit)="$event.preventDefault()">
-          <label for="search-reject" class="sr-only">Chercher</label>
-          <div class="relative w-36 sm:w-44">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+    <div
+      class="w-full sm:max-w-lg lg:max-w-2xl
+             rounded-2xl bg-white shadow-xl ring-1 ring-gray-200
+             dark:bg-slate-800 dark:ring-gray-700">
+      <div
+        class="flex items-center justify-between border-b border-gray-200
+               px-4 py-4 dark:border-gray-700">
+        <h5 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Crédits (Rejets)
+        </h5>
+        <form
+          class="flex w-full max-w-[8.5rem] sm:max-w-[10rem]"
+          (submit)="$event.preventDefault()">
+          <label class="sr-only">Chercher</label>
+          <div class="relative w-full">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   viewBox="0 0 24 24" stroke-linecap="round"
+                   stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
             </div>
-            <input id="search-reject" type="text" [formControl]="searchControlRejection" placeholder="Client…" class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
+            <input
+              id="search-reject" type="text"
+              [formControl]="searchControlRejection"
+              placeholder="Client…"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10
+                     text-xs sm:text-sm text-gray-900 shadow-sm transition
+                     focus:border-emerald-500 focus:ring-emerald-500
+                     dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100
+                     dark:placeholder-gray-400" />
           </div>
         </form>
       </div>
-      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li *ngFor="let c of clientsRequestRejection" [routerLink]="['/register-portal', c.trackingId]" class="group cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
-          <div class="flex items-center space-x-4">
-            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
-              {{ c.firstName!.substring(0, 2) }}
+
+      <ul role="list"
+          class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li
+          *ngFor="let c of clientsRequestRejection"
+          [routerLink]="['/register-portal', c.trackingId]"
+          class="group cursor-pointer px-4 py-4 transition-colors duration-150
+                 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+          <div class="flex items-center space-x-3">
+            <div
+              class="relative inline-flex h-9 w-9 flex-shrink-0
+                         items-center justify-center overflow-hidden
+                         rounded-full bg-emerald-100 text-[10px] sm:text-xs
+                         font-semibold text-emerald-700
+                         dark:bg-emerald-700 dark:text-emerald-100">
+              {{ c.firstName!.substring(0,2) }}
             </div>
+
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ c.firstName }} {{ c.lastName }} {{ c.middleName }}</p>
-              <p *ngIf="c.dateOfRequest" class="truncate text-xs text-gray-500 dark:text-gray-400">Demandé le&nbsp;{{ c.dateOfRequest }}</p>
+              <p
+                class="whitespace-normal break-words leading-tight
+                       text-[11px] sm:text-xs md:text-sm font-medium
+                       text-gray-900 dark:text-gray-100">
+                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+              </p>
+              <p
+                *ngIf="c.dateOfRequest"
+                class="whitespace-normal break-words leading-tight
+                       text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                Demandé le {{ c.dateOfRequest }}
+              </p>
             </div>
-            <div class="text-base font-semibold text-gray-900 dark:text-gray-100">FC {{ c.requestAmount | number: '1.0-0' }}</div>
+
+            <div
+              class="whitespace-nowrap text-xs sm:text-sm font-semibold
+                         text-gray-900 dark:text-gray-100">
+              FC {{ c.requestAmount | number:'1.0-0' }}
+            </div>
           </div>
         </li>
       </ul>
