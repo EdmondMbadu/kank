@@ -382,10 +382,13 @@ export class ReviewsComponent implements OnInit {
       return;
     }
 
+    // Remove the transient fields that were never saved in Firestore
+    const { timeFormatted, starsNumber, ...original } = review as any;
+
     this.auth
-      .deleteReview(this.reviewId, review)
+      .deleteReview(this.reviewId, original) // <-- now matches DB
       .then(() => {
-        this.reviews.splice(index, 1); // instant UI update
+        this.reviews.splice(index, 1);
         alert('Commentaire supprimé avec succès.');
       })
       .catch((err) => {
@@ -393,6 +396,7 @@ export class ReviewsComponent implements OnInit {
         alert('Impossible de supprimer ce commentaire.');
       });
   }
+
   /** ---------- 1. Injecter les metrics + visible dans le payload ---------- */
   addReview(audioUrl: string) {
     const review: Comment = {
