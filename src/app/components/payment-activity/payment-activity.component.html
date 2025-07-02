@@ -60,57 +60,60 @@
 
       <!-- list -->
       <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li
-          *ngFor="let s of payments; let i = index"
-          (click)="goToClient($event)"
-          class="group flex cursor-pointer items-center justify-between px-2 py-3
-                 transition-colors hover:bg-emerald-50 dark:hover:bg-slate-700/60
-                 sm:px-4">
+      <li
+  *ngFor="let s of payments; let i = index"
+  (click)="goToClient($event)"
+  class="group flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between
+         sm:gap-0 cursor-pointer px-2 py-3 transition-colors
+         hover:bg-emerald-50 dark:hover:bg-slate-700/60 sm:px-4">
 
-          <!-- left block -->
-          <div class="flex items-center space-x-4">
-            <!-- avatar -->
-            <div
-              class="relative inline-flex h-10 w-10 items-center justify-center
-                     overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold
-                     text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
-              {{ client.firstName?.substring(0, 2) }}
-            </div>
+  <!-- left block -->
+  <div class="flex flex-1 min-w-0 items-center space-x-4">
+    <!-- avatar -->
+    <div
+      class="relative inline-flex h-10 w-10 shrink-0 items-center justify-center
+             overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold
+             text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
+      {{ client.firstName?.substring(0, 2) }}
+    </div>
 
-            <!-- name + date -->
-            <div class="min-w-0">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ client.firstName }} {{ client.lastName }} {{ client.middleName }}
-              </p>
-              <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                {{ formattedPaymentsDates[i] }}
-              </p>
-            </div>
-          </div>
+    <!-- name + date -->
+    <div class="min-w-0">
+      <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+        {{ client.firstName }} {{ client.lastName }} {{ client.middleName }}
+      </p>
+      <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+        {{ formattedPaymentsDates[i] }}
+      </p>
+    </div>
+  </div>
 
-          <!-- amount -->
-          <span class="text-base font-semibold text-gray-900 dark:text-gray-100">
-            FC {{ s | number:'1.0-0' }}
-          </span>
+  <!-- amount -->
+  <span
+    class="mt-1 text-center shrink-0 text-base font-semibold text-gray-900 dark:text-gray-100
+           sm:mt-0 sm:ml-4">
+    FC {{ s | number:'1.0-0' }}
+  </span>
 
-          <!-- delete (admins) -->
-          <button
-            *ngIf="auth.isAdmin"
-            (click)="deletePayment(paymentDates[i], $event)"
-            aria-label="Supprimer"
-            class="ml-3 hidden text-red-600 transition hover:text-red-800
-                   focus:outline-none group-hover:inline-block dark:text-red-400
-                   dark:hover:text-red-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
-                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              <line x1="10" y1="11" x2="10" y2="17"/>
-              <line x1="14" y1="11" x2="14" y2="17"/>
-            </svg>
-          </button>
-        </li>
+  <!-- delete (admins) -->
+  <button
+    *ngIf="auth.isAdmin"
+    (click)="deletePayment(paymentDates[i], $event)"
+    aria-label="Supprimer"
+    class="ml-3 hidden shrink-0 text-red-600 transition hover:text-red-800
+           focus:outline-none group-hover:inline-block dark:text-red-400
+           dark:hover:text-red-500">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+         viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <line x1="10" y1="11" x2="10" y2="17"/>
+      <line x1="14" y1="11" x2="14" y2="17"/>
+    </svg>
+  </button>
+</li>
+
       </ul>
     </div>
   </div>
