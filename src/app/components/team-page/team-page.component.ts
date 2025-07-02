@@ -179,7 +179,11 @@ export class TeamPageComponent implements OnInit {
     if (!this.auth.isAdmninistrator && !this.auth.isDistributor) {
       if (this.employees) {
         this.employees = this.employees.filter((emp) => {
-          return emp.role === 'Manager' || emp.role === 'Agent';
+          return (
+            emp.role === 'Manager' ||
+            emp.role === 'Agent' ||
+            emp.role === 'Agent Marketing'
+          );
         });
       }
     }
