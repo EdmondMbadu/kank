@@ -49,21 +49,25 @@ export class FinishedDebtComponent implements OnInit {
     }
   }
   search(value: string) {
-    if (value) {
-      const lowerCaseValue = value.toLowerCase();
-      return of(
-        this.clients!.filter(
-          (client) =>
-            client.firstName?.toLowerCase().includes(lowerCaseValue) ||
-            client.lastName?.toLowerCase().includes(lowerCaseValue) ||
-            client.middleName?.toLowerCase().includes(lowerCaseValue) ||
-            client.amountPaid?.includes(lowerCaseValue)
-        )
-      );
-    } else {
-      return of(this.clients);
+    // Sécurise la phase où les données ne sont pas encore chargées.
+    if (!this.clients) {
+      return of(this.currentClients ?? []);
     }
+
+    const term = (value ?? '').trim().toLowerCase();
+    if (!term) {
+      return of(this.currentClients ?? this.clients);
+    }
+
+    return of(
+      (this.currentClients ?? this.clients).filter((c) =>
+        `${c.firstName} ${c.middleName} ${c.lastName}`
+          .toLowerCase()
+          .includes(term)
+      )
+    );
   }
+
   findClientsWhoFinishedDebts() {
     this.currentClients = [];
     this.clients?.forEach((client) => {

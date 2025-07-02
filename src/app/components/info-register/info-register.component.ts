@@ -51,7 +51,7 @@ export class InfoRegisterComponent implements OnInit {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
       return of(
-        this.clients!.filter(
+        this.currentRegisterClients!.filter(
           (client) =>
             client.firstName?.toLowerCase().includes(lowerCaseValue) ||
             client.lastName?.toLowerCase().includes(lowerCaseValue) ||
@@ -60,7 +60,7 @@ export class InfoRegisterComponent implements OnInit {
         )
       );
     } else {
-      return of(this.clients);
+      return of(this.currentRegisterClients);
     }
   }
   findClientsRegistered() {
