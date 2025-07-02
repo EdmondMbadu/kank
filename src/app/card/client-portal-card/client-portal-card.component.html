@@ -1,108 +1,247 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
 
-<div class="flex container mx-auto justify-center m-12">
-    <h1 class=" md:block mx-2 text-2xl text-center md:text-4xl mr-10 ">Profile Du Client De Carte  <span class="text-red-400"> {{status}}</span></h1>
+<!-- ============ PAGE WRAPPER ============ -->
+<section
+  class="min-h-screen w-full bg-gradient-to-br from-fuchsia-50 via-white to-sky-100
+         dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-10">
 
-    <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/update-client-info',id ]">Mettre à jour Info Client</button> -->
-    <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800  ml-4 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="delete()">Supprimer Client</button> -->
-</div>
+  <!-- ============ TITLE ============ -->
+  <header
+    class="container mx-auto mb-10 flex flex-col items-center justify-center gap-4
+           md:flex-row">
+    <h1
+      class="text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow-sm
+             text-gray-800 dark:text-gray-100 text-center">
+      Profil du Client de Carte
+    </h1>
 
-<div id="fullWidthTabContent" class=" rounded-lg  dark:border-gray-600">
-    <div class=" mx-4 lg:mx-60 p-4 bg-white rounded-lg md:p-8 border-2 shadow-lg border-gray-200 dark:bg-gray-800" id="stats" role="tabpanel" aria-labelledby="stats-tab">
-        <dl class="grid  max-w-screen-xl grid-cols-2 text-gray-900 gap-8 p-4 mx-auto sm:grid-cols-3 xl:grid-cols-3 dark:text-white sm:p-8">
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold text-center"> {{clientCard.firstName}} {{clientCard.lastName}} {{clientCard.middleName}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Membre Depuis {{clientCard.dateJoined?.replaceAll('-','/')}}</dd>
-            </div>
-           
-            <div class="flex flex-col items-center justify-center" >
-                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center"> ({{clientCard.phoneNumber| slice:0:3}}) - {{clientCard.phoneNumber| slice:3:6}} - {{clientCard.phoneNumber| slice:6:10}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Numero Telphone</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center" >
-                <dt class="mb-2 text-xl md:text-2xl font-extrabold text-center">{{clientCard.businessAddress}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Adress Business</dd>
-            </div>
-          
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold"> {{clientCard.amountPaid | number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Montant Percu (FC)</dd>
-            </div>
+    <span
+      [ngClass]="status === 'En Cours'
+                  ? 'animate-pulse bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'"
+      class="inline-flex items-center rounded-full px-4 py-1.5 text-sm font-semibold
+             shadow-sm ring-1 ring-inset ring-gray-200 dark:ring-gray-600">
+      {{ status }}
+    </span>
+  </header>
 
-          
+  <!-- ============ INFO CARD ============ -->
+  <div class="container mx-auto mb-12 flex justify-center">
+    <div
+      class="w-full max-w-4xl rounded-3xl bg-white shadow-2xl ring-4 ring-fuchsia-200
+             dark:bg-slate-800 dark:ring-fuchsia-700">
 
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{clientCard.amountToPay| number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Montain A Verser (FC)</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{amountToGiveClient| number:'1.0-0'}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Montain A Remettre Client (FC)</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{clientCard.cardCycle}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Cycle De Carte (FC)</dd>
-            </div>
-           
-            <div class="flex flex-col items-center justify-center">
-                <dt class="mb-2 text-xl md:text-3xl font-extrabold">{{clientCard.numberOfPaymentsMade}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Nombre De Paiement Percu</dd>
-            </div>
-           
-           
-            
+      <div class="px-8 py-10 md:px-12">
+        <!-- GRID -->
+        <dl class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
 
+          <!-- nom -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              Nom complet
+            </dt>
+            <dd class="mt-1 text-3xl font-extrabold text-gray-900 dark:text-gray-100">
+              {{ clientCard.firstName }} {{ clientCard.lastName }} {{ clientCard.middleName }}
+            </dd>
+            <span class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              Membre depuis {{ clientCard.dateJoined?.replaceAll('-', '/') }}
+            </span>
+          </div>
 
-            
-            <div class="flex flex-col items-center justify-center" >
-                <dt class="mb-2 text-xl text-center md:text-2xl font-extrabold">{{clientCard.homeAddress}}</dt>
-                <dd class="text-gray-500 text-center  dark:text-gray-400">Adress Domicile</dd>
-            </div>
-            <div class="flex flex-col items-center justify-center" >
-                <dt class="mb-2 text-xl md:text-2xl text-center font-extrabold">{{clientCard.profession}}</dt>
-                <dd class="text-gray-500 text-center dark:text-gray-400">Profession</dd>
-            </div>
-           
-         
-          
-            <button type="submit" class="  text-white bg-green-700 hover:bg-green-800 dark:text-whit  rounded-full text-sm w-3/4 px-5 py-2.5 " (click)="addMoney()">Effectuer Un Dépôt</button>
+          <!-- téléphone -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">Téléphone</dt>
+            <dd class="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">
+              ({{ clientCard.phoneNumber | slice:0:3 }})
+              {{ clientCard.phoneNumber | slice:3:6 }}-{{ clientCard.phoneNumber | slice:6:10 }}
+            </dd>
+          </div>
 
-            
-            <button type="submit" class=" text-white bg-green-700 hover:bg-green-800 dark:text-white  font-medium rounded-full text-sm w-3/4 px-5 py-2.5  "[routerLink]="['/payment-activity-card',id ]">Details De Dépôts</button>
+          <!-- adresse business -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              Adresse Business
+            </dt>
+            <dd class="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {{ clientCard.businessAddress }}
+            </dd>
+          </div>
 
+          <!-- montant perçu -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              Montant perçu (FC)
+            </dt>
+            <dd
+              class="mt-1 text-4xl font-extrabold text-emerald-600 drop-shadow-sm
+                     dark:text-emerald-400">
+              {{ clientCard.amountPaid | number:'1.0-0' }}
+            </dd>
+          </div>
+
+          <!-- montant à verser -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              Montant à verser (FC)
+            </dt>
+            <dd
+              class="mt-1 text-4xl font-extrabold text-emerald-600 drop-shadow-sm
+                     dark:text-emerald-400">
+              {{ clientCard.amountToPay | number:'1.0-0' }}
+            </dd>
+          </div>
+
+          <!-- à remettre -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              À remettre au client (FC)
+            </dt>
+            <dd
+              class="mt-1 text-4xl font-extrabold text-emerald-600 drop-shadow-sm
+                     dark:text-emerald-400">
+              {{ amountToGiveClient | number:'1.0-0' }}
+            </dd>
+          </div>
+
+          <!-- cycle -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              Cycle de carte
+            </dt>
+            <dd class="mt-1 text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
+              {{ clientCard.cardCycle }}
+            </dd>
+          </div>
+
+          <!-- paiements reçus -->
+          <div class="flex flex-col items-center text-center">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              Paiements reçus
+            </dt>
+            <dd class="mt-1 text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
+              {{ clientCard.numberOfPaymentsMade }}
+            </dd>
+          </div>
+
+          <!-- adresse domicile -->
+          <div class="flex flex-col items-center text-center sm:col-span-2 lg:col-span-1">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">
+              Adresse Domicile
+            </dt>
+            <dd class="mt-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {{ clientCard.homeAddress }}
+            </dd>
+          </div>
+
+          <!-- profession -->
+          <div class="flex flex-col items-center text-center sm:col-span-2 lg:col-span-1">
+            <dt class="text-lg font-medium text-gray-500 dark:text-gray-400">Profession</dt>
+            <dd class="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {{ clientCard.profession }}
+            </dd>
+          </div>
         </dl>
-    </div>
-    <div class="flex container flex-col s  md:flex-row justify-center my-6 sm:mx-1 md:mx-auto rounded-md shadow-sm" role="group">
-        <button  (click)="payClient()"type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border-l border-t border-b border-gray-900  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+
+        <!-- ============ ACTION BUTTONS ============ -->
+        <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+          <button
+            (click)="addMoney()"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-emerald-700
+                   focus:outline-none focus:ring-4 focus:ring-emerald-300
+                   dark:bg-emerald-500 dark:hover:bg-emerald-600
+                   dark:focus:ring-emerald-700">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round"><path d="M12 5v14m7-7H5"/></svg>
+            Dépôt
+          </button>
+
+          <button
+            [routerLink]="['/payment-activity-card', id]"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-emerald-700
+                   focus:outline-none focus:ring-4 focus:ring-emerald-300
+                   dark:bg-emerald-500 dark:hover:bg-emerald-600
+                   dark:focus:ring-emerald-700">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M3 6h18M3 12h18M3 18h18"/>
+            </svg>
+            Détails Dépôts
+          </button>
+
+          <button
+            (click)="payClient()"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-rose-700
+                   focus:outline-none focus:ring-4 focus:ring-rose-300
+                   dark:bg-rose-500 dark:hover:bg-rose-600
+                   dark:focus:ring-rose-700">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             Retrait Total
-        </button>
-        <button (click)="requestMoney()"  type="button" class="px-4 py-4 text-md font-medium text-gray-100   bg-green-700 hover:bg-green-800 border border-gray-900 rounded-s-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
+          </button>
+
+          <button
+            (click)="removeFromCard()"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-rose-700
+                   focus:outline-none focus:ring-4 focus:ring-rose-300
+                   dark:bg-rose-500 dark:hover:bg-rose-600
+                   dark:focus:ring-rose-700">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round"><path d="M3 12h18"/></svg>
+            Retrait Partiel
+          </button>
+
+          <button
+            (click)="requestMoney()"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-yellow-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-yellow-700
+                   focus:outline-none focus:ring-4 focus:ring-yellow-300
+                   dark:bg-yellow-500 dark:hover:bg-yellow-600
+                   dark:focus:ring-yellow-700
+                   sm:col-span-2 lg:col-span-2">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round"><path d="M12 1v22M5 5h14M5 12h14M5 19h14"/></svg>
             Demander
-        </button>
-        
-        <button (click)="removeFromCard()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  border border-gray-900  bg-green-700 hover:bg-green-800 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-            Retrait Partielle
-        </button>
-        <button (click)="startNewCardCycle()" type="button" class="px-4 py-4 text-md font-medium text-gray-100  bg-green-700 hover:bg-green-800 border border-gray-900 rounded-e-lg  hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500  focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 mb-4">
-            Nouveau Cycle De Carte
-        </button>
-      </div>
-    <!-- <div class="flex container flex-col md:flex-row mx-auto justify-center">
-            <div  class="flex container mx-auto justify-center">
-                <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="payClient()"  >Retrait Total</button>
-            
-            </div>
-            <div  class="flex container mx-auto justify-center">
-                <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="requestMoney()"  >Demander</button>
-            
-            </div>
-            <div  class="flex container mx-auto justify-center">
-                <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center " (click)="removeFromCard()"  >Retrait Partielle</button>
-            
-            </div>
-        <div  class="flex container  mx-auto justify-center">
-            <button type="submit" class="text-white bg-red-700 mt-10 hover:bg-red-800   font-medium rounded-full text-sm w-auto sm:w-auto px-8 py-4 text-center "(click)="startNewCardCycle()" >Nouveau Cycle De Carte</button>
-        
-        </div>
-   
-    </div> -->
+          </button>
+
+          <button
+            (click)="startNewCardCycle()"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-indigo-700
+                   focus:outline-none focus:ring-4 focus:ring-indigo-300
+                   dark:bg-indigo-500 dark:hover:bg-indigo-600
+                   dark:focus:ring-indigo-700
+                   sm:col-span-2 lg:col-span-2">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l3 3"/>
+            </svg>
+            Nouveau Cycle Carte
+          </button>
+
+        </div><!-- /buttons -->
+      </div><!-- /card body -->
+    </div><!-- /card wrapper -->
+  </div><!-- /container -->
+</section>
