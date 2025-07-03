@@ -48,6 +48,7 @@ export class User {
   maxNumberOfClients?: string;
   maxNumberOfDaysToLend?: string;
   objectifPerformance?: string;
+  teamCode?: string;
 }
 export class LocationCoordinates {
   longitude?: string;

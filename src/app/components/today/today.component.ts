@@ -8,6 +8,7 @@ import { DataService } from 'src/app/services/data.service';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ElementRef } from '@angular/core';
+import { FormControl } from '@angular/forms';
 interface Receipt {
   docId: string;
   url: string;
@@ -139,7 +140,35 @@ export class TodayComponent {
   summaryContent: string[] = [];
   selectedDocId: string | null = null;
   searchText = '';
+  // ───── unlocking state ─────────────────────────────────────────
+  codesStored: string[] = (this.auth.currentUser?.teamCode ?? '')
+    .split('-')
+    .map((c: any) => c.trim())
+    .filter((c: any) => !!c);
 
+  isPayUnlocked = false; // everyone starts locked
+  showCodeModal = false; // controls the modal visibility
+  payCodeInput = new FormControl('');
+  payErrMsg = '';
+
+  openCodeModal() {
+    this.showCodeModal = true;
+  }
+  closeCodeModal() {
+    this.showCodeModal = false;
+  }
+
+  unlockPayment() {
+    const entered = this.payCodeInput.value?.trim() || '';
+    if (this.codesStored.includes(entered)) {
+      this.isPayUnlocked = true;
+      this.closeCodeModal();
+      this.payErrMsg = '';
+    } else {
+      this.payErrMsg = 'Code incorrect – réessayez !';
+      this.payCodeInput.setValue('');
+    }
+  }
   initalizeInputs() {
     // ➊ clef de date déjà au bon format « MM-DD-YYYY »
     this.todayKey = this.requestDateCorrectFormat;

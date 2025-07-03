@@ -43,42 +43,65 @@
 
 <!-- ╭─ Performance & reserve ──────────────────────────────────────────╮ -->
 <section class="mx-auto mt-12 max-w-3xl px-4 sm:px-6 lg:px-8">
-  <!-- performance cards (3 cases) -->
-  <ng-container *ngIf="expectedReserve === '0'">
-    <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow
-                dark:bg-green-900/20">
-      <h2 class="text-xl font-semibold text-green-800 dark:text-green-300">
-        Performance Paiement du Jour
-      </h2>
-      <p class="mt-2 text-3xl font-extrabold text-green-900">____%</p>
-    </div>
+
+  <!-- ── Performance cards ─────────────────────────────────────────── -->
+  <ng-container *ngIf="isPayUnlocked ||auth.isAdmin; else perfMasked">
+
+    <ng-container *ngIf="expectedReserve === '0'">
+      <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow
+                  dark:bg-green-900/20">
+        <h2 class="text-xl font-semibold text-green-800 dark:text-green-300">
+          Performance Paiement du Jour
+        </h2>
+        <p class="mt-2 text-3xl font-extrabold text-green-900">____%</p>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="expectedReserve !== '0' && perc >= 50">
+      <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow">
+        <h2 class="text-xl font-semibold text-green-800">
+          Performance Paiement du Jour
+        </h2>
+        <p class="mt-2 text-3xl font-extrabold text-green-900">
+          {{ percentage }}%
+        </p>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="expectedReserve !== '0' && perc < 50">
+      <div class="mb-8 rounded-2xl bg-red-50 p-6 text-center shadow">
+        <h2 class="text-xl font-semibold text-red-800">
+          Performance Paiement du Jour
+        </h2>
+        <p class="mt-2 text-3xl font-extrabold text-red-900">
+          {{ percentage }}%
+        </p>
+      </div>
+    </ng-container>
+
   </ng-container>
 
-  <ng-container *ngIf="expectedReserve !== '0' && perc >= 50">
-    <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow
-                ">
-      <h2 class="text-xl font-semibold text-green-800 ">
+  <!-- masked version with padlock -->
+  <ng-template #perfMasked>
+    <div class="relative mb-8 rounded-2xl bg-gray-100 p-6 text-center shadow
+                dark:bg-slate-700">
+      <h2 class="text-xl font-semibold text-gray-500 dark:text-gray-300">
         Performance Paiement du Jour
       </h2>
-      <p class="mt-2 text-3xl font-extrabold text-green-900">
-        {{ percentage }}%
-      </p>
-    </div>
-  </ng-container>
+      <p class="mt-2 text-3xl font-extrabold text-gray-400">•••</p>
 
-  <ng-container *ngIf="expectedReserve !== '0' && perc < 50">
-    <div class="mb-8 rounded-2xl bg-red-50 p-6 text-center shadow
-                ">
-      <h2 class="text-xl font-semibold text-red-800 ">
-        Performance Paiement du Jour
-      </h2>
-      <p class="mt-2 text-3xl font-extrabold text-red-900">
-        {{ percentage }}%
-      </p>
+      <!-- padlock -->
+      <button (click)="openCodeModal()"
+              class="absolute top-3 right-3 rounded-full bg-gray-300/70 p-2
+                     text-gray-700 hover:bg-gray-400 dark:bg-slate-600
+                     dark:text-gray-100">
+        🔒
+      </button>
     </div>
-  </ng-container>
+  </ng-template>
+  <!-- ──────────────────────────────────────────────────────────────── -->
 
-  <!-- reserve card -->
+  <!-- ── Reserve card ──────────────────────────────────────────────── -->
   <div class="rounded-2xl bg-white p-8 shadow dark:bg-slate-800">
     <h3 class="mb-6 text-center text-2xl font-bold text-green-800 underline
                dark:text-green-300">
@@ -86,8 +109,7 @@
     </h3>
 
     <!-- expected reserve -->
-    <div class="mb-6 rounded-lg bg-gray-50 p-4 shadow-sm
-                dark:bg-slate-700">
+    <div class="mb-6 rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-slate-700">
       <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
         Reserve Attendue du Jour
       </h4>
@@ -99,15 +121,27 @@
     </div>
 
     <!-- daily reserve / payment -->
-    <div class="rounded-lg bg-gray-50 p-4 shadow-sm
-                dark:bg-slate-700">
+    <div class="rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-slate-700">
       <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
         Paiement du Jour
+        <button *ngIf="!isPayUnlocked && !auth.isAdmin"
+                (click)="openCodeModal()"
+                class="ml-2 rounded bg-gray-300/70 px-2 py-0.5 text-xs
+                       text-gray-700 hover:bg-gray-400 dark:bg-slate-600
+                       dark:text-gray-100">
+          🔒
+        </button>
       </h4>
-      <p class="mb-3 text-xl font-bold text-green-900 dark:text-green-200">
-        {{ dailyPayment | number:'1.0-0' }} FC
-        <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-        {{ dailyPaymentDollars | number:'1.0-0' }} $
+
+      <p class="mb-3 text-xl font-bold"
+         [ngClass]="isPayUnlocked || auth.isAdmin ? 'text-green-900 dark:text-green-200'
+                                  : 'text-gray-400 dark:text-gray-500'">
+        <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else payDash">
+          {{ dailyPayment | number:'1.0-0' }} FC
+          <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
+          {{ dailyPaymentDollars | number:'1.0-0' }} $
+        </ng-container>
+        <ng-template #payDash>•••</ng-template>
       </p>
 
       <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
@@ -116,44 +150,111 @@
       <p class="text-xl font-bold text-green-900 dark:text-green-200">
         {{ dailyReserve | number:'1.0-0' }} FC
         <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-        {{ compute.convertCongoleseFrancToUsDollars(dailyReserve) | number:'1.0-0' }} $
+        {{ compute.convertCongoleseFrancToUsDollars(dailyReserve)
+           | number:'1.0-0' }} $
       </p>
     </div>
   </div>
+  <!-- ──────────────────────────────────────────────────────────────── -->
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
-<!-- ╭─ Summary cards ───────────────────────────────────────────────────╮ -->
+
+<!-- ╭─ Summary cards ────────────────────────────────────────────────╮ -->
 <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    <a
-      *ngFor="let s of summary; let i = index"
-      routerLink="{{ linkPaths[i] }}"
-      class="group block rounded-2xl bg-white dark:bg-slate-800
-             ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
-             hover:-translate-y-1 hover:shadow-lg
-             hover:ring-green-400 dark:hover:ring-green-500 transition">
 
-      <img [src]="imagePaths[i]"
-           class="mx-auto mb-4 h-16 w-16 object-contain
-                  filter dark:invert dark:brightness-125" />
+    <!-- Tile #1 : « Paiement Du Jour » ----------------------------- -->
+    <ng-container *ngIf="true">
+      <!-- unlocked : normal link -->
+      <a *ngIf="isPayUnlocked || auth.isAdmin"
+         routerLink="{{ linkPaths[1] }}"
+         class="group block rounded-2xl bg-white dark:bg-slate-800
+                ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
+                hover:-translate-y-1 hover:shadow-lg
+                hover:ring-green-400 dark:hover:ring-green-500 transition">
 
-      <h5 class="mb-2 text-center text-xl font-semibold
-                 text-gray-900 dark:text-gray-50
-                 group-hover:text-green-700 dark:group-hover:text-green-400">
-        {{ s }}
-      </h5>
+        <img [src]="imagePaths[1]"
+             class="mx-auto mb-4 h-16 w-16 object-contain
+                    filter dark:invert dark:brightness-125" />
 
-      <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
-        FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
-      </p>
-      <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
-        $&nbsp;{{ valuesConvertedToDollars[i] | number:'1.0-0' }}
-      </p>
-    </a>
+        <h5 class="mb-2 text-center text-xl font-semibold
+                   text-gray-900 dark:text-gray-50
+                   group-hover:text-green-700 dark:group-hover:text-green-400">
+          {{ summary[1] }}
+        </h5>
+
+        <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
+          FC&nbsp;{{ summaryContent[1] | number:'1.0-0' }}
+        </p>
+        <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
+          $&nbsp;{{ valuesConvertedToDollars[1] | number:'1.0-0' }}
+        </p>
+      </a>
+
+      <!-- locked : whole card is a button -->
+      <button *ngIf="!isPayUnlocked && !auth.isAdmin"
+              (click)="openCodeModal()"
+              class="group relative flex flex-col items-center justify-center
+                     rounded-2xl bg-gray-100 p-6 shadow transition
+                     hover:-translate-y-1 hover:shadow-lg
+                     dark:bg-slate-700/50 w-full">
+
+        <img [src]="imagePaths[1]"
+             class="mx-auto mb-4 h-16 w-16 object-contain opacity-40
+                    filter group-hover:opacity-50
+                    dark:invert dark:brightness-75" />
+
+        <h5 class="mb-2 text-center text-xl font-semibold text-gray-500">
+          {{ summary[1] }}
+        </h5>
+
+        <p class="text-center text-lg font-bold text-gray-400">•••</p>
+        <p class="text-center text-base font-semibold text-gray-400">•••</p>
+
+        <!-- centred padlock for visual cue -->
+        <span class="absolute top-3 right-3 text-xl text-gray-600
+                     group-hover:text-gray-800 dark:text-gray-200">
+          🔒
+        </span>
+      </button>
+    </ng-container>
+    <!-- ------------------------------------------------------------ -->
+
+    <!-- All other tiles -------------------------------------------- -->
+    <ng-container *ngFor="let s of summary; let i = index">
+      <ng-container *ngIf="i !== 1">
+        <a routerLink="{{ linkPaths[i] }}"
+           class="group block rounded-2xl bg-white dark:bg-slate-800
+                  ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
+                  hover:-translate-y-1 hover:shadow-lg
+                  hover:ring-green-400 dark:hover:ring-green-500 transition">
+
+          <img [src]="imagePaths[i]"
+               class="mx-auto mb-4 h-16 w-16 object-contain
+                      filter dark:invert dark:brightness-125" />
+
+          <h5 class="mb-2 text-center text-xl font-semibold
+                     text-gray-900 dark:text-gray-50
+                     group-hover:text-green-700 dark:group-hover:text-green-400">
+            {{ s }}
+          </h5>
+
+          <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
+            FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
+          </p>
+          <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
+            $&nbsp;{{ valuesConvertedToDollars[i] | number:'1.0-0' }}
+          </p>
+        </a>
+      </ng-container>
+    </ng-container>
+    <!-- ------------------------------------------------------------ -->
+
   </div>
 </section>
-<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+<!-- ╰───────────────────────────────────────────────────────────────╯ -->
+
 
 <!-- ╭─ Admin daily update ─────────────────────────────────────────────╮ -->
 <section
@@ -304,3 +405,34 @@
   </div>
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+<!-- ╔═══ Déverrouiller les paiements ═══╗ -->
+<div *ngIf="showCodeModal && !isPayUnlocked"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+  <div class="w-80 rounded-lg bg-white dark:bg-gray-800 p-6 shadow-lg">
+    <p class="mb-4 text-gray-900 dark:text-gray-100">
+      Entrez votre <strong>code personnel</strong> pour accedder a cette page :
+    </p>
+
+    <input class="mb-4 w-full rounded border p-2 dark:bg-gray-700 dark:text-white"
+           [formControl]="payCodeInput" (keyup.enter)="unlockPayment()"
+           placeholder="Code secret" autofocus>
+
+    <button class="mb-2 w-full rounded bg-green-700 py-2 font-medium text-white
+                   hover:bg-green-800" (click)="unlockPayment()">
+      Valider
+    </button>
+
+    <button (click)="closeCodeModal()"
+            class="w-full rounded border py-2 font-medium text-gray-700
+                   hover:bg-gray-100 dark:text-gray-300 dark:border-gray-600
+                   dark:hover:bg-gray-700">
+      Annuler
+    </button>
+
+    <p *ngIf="payErrMsg"
+       class="mt-3 text-center text-red-600 dark:text-red-400">
+      {{ payErrMsg }}
+    </p>
+  </div>
+</div>
+<!-- ╚═══════════════════════════════════╝ -->

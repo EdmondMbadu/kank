@@ -97,6 +97,7 @@ export class TrackingComponent {
   summaryContent: string[] = [];
   moneyInHands: string = '';
   maxNumberOfDaysToLend: Number = 0;
+  teamCode: string = '';
 
   initalizeInputs() {
     this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
@@ -131,12 +132,15 @@ export class TrackingComponent {
     this.moneyInHands = this.auth.currentUser.moneyInHands
       ? this.auth.currentUser.moneyInHands
       : '0';
+    this.teamCode = this.auth.currentUser.teamCode
+      ? this.auth.currentUser.teamCode
+      : '';
     let cardM =
       this.auth.currentUser.cardsMoney === undefined
         ? '0'
         : this.auth.currentUser.cardsMoney;
     let ts = this.data.findTotalClientSavings(this.clients!);
-    console.log('the total savings is ', ts);
+
     let enMain = Number(this.auth.currentUser.moneyInHands) + Number(cardM);
     this.summaryContent = [
       ` ${this.auth.currentUser.clientsSavings}`,
@@ -176,8 +180,8 @@ export class TrackingComponent {
     }
   }
 
-  async setUserField(field: string, value: any) {
-    if (!this.compute.isNumber(value)) {
+  async setUserField(field: string, value: any, pass = '') {
+    if (!this.compute.isNumber(value) && !pass) {
       alert('Enter a valid number');
       return;
     }
