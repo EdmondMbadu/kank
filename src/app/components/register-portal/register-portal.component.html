@@ -153,7 +153,7 @@
         {{ client.firstName }} {{ client.lastName }} <span *ngIf="client.middleName">{{ client.middleName }}</span>
       </h2>
       <p class="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
-        Membre depuis {{ client.dateJoined?.replaceAll('-', '/') }}
+        Membre depuis {{ dateJoined}}
       </p>
     </div>
 

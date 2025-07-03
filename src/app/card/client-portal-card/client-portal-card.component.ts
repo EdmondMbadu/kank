@@ -18,6 +18,7 @@ export class ClientPortalCardComponent {
   id: any = '';
   amountToGiveClient: string = '';
   status: string = 'En Cours';
+  dateJoined: string = '';
 
   constructor(
     public auth: AuthService,
@@ -35,6 +36,11 @@ export class ClientPortalCardComponent {
   retrieveClientCard(): void {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
+      if (this.clientCard.dateJoined) {
+        const rawDate = new Date(this.clientCard.dateJoined);
+        this.dateJoined = rawDate.toLocaleDateString('fr-FR'); // => 16/05/2025
+      }
+
       this.status = !!this.clientCard.clientCardStatus
         ? 'Terminé'
         : this.status;

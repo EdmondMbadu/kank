@@ -44,6 +44,7 @@ export class ClientPortalComponent {
   isPlatinum: boolean = false;
   isPhoneNumberCorrect: string = '';
   age: number | null = null; // ← nouveau
+  dateJoined: string = '';
 
   public graphCredit = {
     data: [
@@ -198,6 +199,10 @@ export class ClientPortalComponent {
     }
     if (this.client.numberOfPaymentsMade) {
       this.numberOfPaymentsMade = this.client.numberOfPaymentsMade;
+    }
+    if (this.client.dateJoined) {
+      const rawDate = new Date(this.client.dateJoined);
+      this.dateJoined = rawDate.toLocaleDateString('fr-FR'); // => 16/05/2025
     }
   }
 

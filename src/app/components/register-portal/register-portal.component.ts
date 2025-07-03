@@ -61,6 +61,7 @@ export class RegiserPortalComponent {
     },
   };
   toast: any;
+  dateJoined: string = '';
   /** Cherche un autre client partageant ≥ 2 noms avec celui affiché.
    *  currentIdx  = index (position) du client courant dans `all`.
    *  all         = tableau complet des clients.
@@ -473,6 +474,10 @@ export class RegiserPortalComponent {
     if (this.client.agentSubmittedVerification) {
       this.agentSubmmittedVerification =
         this.client.agentSubmittedVerification!;
+    }
+    if (this.client.dateJoined) {
+      const rawDate = new Date(this.client.dateJoined);
+      this.dateJoined = rawDate.toLocaleDateString('fr-FR'); // => 16/05/2025
     }
   }
   // In your component (e.g., questions.component.ts):
