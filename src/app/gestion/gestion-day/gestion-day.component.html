@@ -129,7 +129,7 @@
                     <th scope="col" class=" px-6 py-3">
                         Reserve Donnée 
                     </th>
-                    <th scope="col" class=" px-6 py-3">
+                    <th *ngIf="auth.isAdmin" scope="col" class=" px-6 py-3">
                         Paiement Donnée 
                     </th>
                     
@@ -146,7 +146,7 @@
                     <td class="px-6 py-4">
                         {{s.actual | number:'1.0-0'}} FC -> {{s.actualInDollar | number:'1.0-0'}} $
                     </td>
-                    <td class="px-6 py-4">
+                    <td *ngIf="auth.isAdmin" class="px-6 py-4">
                         {{s.payment| number:'1.0-0'}} FC -> {{s.paymentDollar| number:'1.0-0'}} $
                     </td>
                     
@@ -159,7 +159,7 @@
                     <th scope="row" class="px-6 py-3 text-base">Total ({{percentage}} %)</th>
                     <td class="px-6 py-3">{{overallTotalReserve | number:'1.0-0'}} FC ->{{overallTotalReserveInDollars| number:'1.0-0'}} $</td>
                     <td class="px-6 py-3">{{dailyReserve| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(dailyReserve)| number:'1.0-0'}} $ </td>
-                    <td class="px-6 py-3">{{paymentTotal| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(paymentTotal.toString())| number:'1.0-0'}} $ </td>
+                    <td *ngIf="auth.isAdmin" class="px-6 py-3">{{paymentTotal| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(paymentTotal.toString())| number:'1.0-0'}} $ </td>
                 </tr>
             
             </tfoot>
