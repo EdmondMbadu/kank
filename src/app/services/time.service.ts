@@ -735,4 +735,28 @@ export class TimeService {
     t.setDate(t.getDate() + 1);
     return t.toISOString().substring(0, 10); // yyyy-MM-dd
   }
+  formatDateForDRC(input: string | undefined | null): string {
+    if (!input) return 'Date inconnue';
+
+    // Try to normalize the input
+    const parts = input.split(/[-/]/);
+
+    let isoDate = '';
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        // Already YYYY-MM-DD
+        isoDate = input;
+      } else {
+        // Assume MM-DD-YYYY or MM/DD/YYYY
+        const [month, day, year] = parts;
+        isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+    }
+
+    const parsed = new Date(isoDate);
+    if (isNaN(parsed.getTime())) return 'Date invalide';
+
+    // Return localized format: jj/mm/aaaa
+    return parsed.toLocaleDateString('fr-FR');
+  }
 }

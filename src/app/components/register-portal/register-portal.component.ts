@@ -476,8 +476,7 @@ export class RegiserPortalComponent {
         this.client.agentSubmittedVerification!;
     }
     if (this.client.dateJoined) {
-      const rawDate = new Date(this.client.dateJoined);
-      this.dateJoined = rawDate.toLocaleDateString('fr-FR'); // => 16/05/2025
+      this.dateJoined = this.time.formatDateForDRC(this.client.dateJoined);
     }
   }
   // In your component (e.g., questions.component.ts):

@@ -36,10 +36,7 @@ export class ClientPortalCardComponent {
   retrieveClientCard(): void {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
-      if (this.clientCard.dateJoined) {
-        const rawDate = new Date(this.clientCard.dateJoined);
-        this.dateJoined = rawDate.toLocaleDateString('fr-FR'); // => 16/05/2025
-      }
+      this.dateJoined = this.time.formatDateForDRC(this.clientCard.dateJoined);
 
       this.status = !!this.clientCard.clientCardStatus
         ? 'Terminé'
