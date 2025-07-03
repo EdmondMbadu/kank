@@ -1,9 +1,45 @@
 <section class="overflow-x-auto bg-white p-4 rounded-lg shadow">
+<div class="my-4">
+    <h2 class="text-3xl font-bold italic">
+      Rotation 
+    </h2>
+</div>
+    <!-- ╭─ RÉCAPITULATIF DES ROTATIONS ────────────────────────────────╮ -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 
+  <!-- Semaine courante -->
+  <div class="bg-green-50 p-4 rounded-lg shadow">
+    <h3 class="text-lg font-bold mb-2">En rotation cette semaine</h3>
+    <ul>
+      <li *ngFor="let r of thisWeekRotation" class="flex justify-between">
+        <span>{{ r.employee.firstName }} {{ r.employee.lastName }}</span>
+        <span class="text-sm text-gray-600">{{ r.location }}</span>
+      </li>
+      <li *ngIf="!thisWeekRotation.length" class="italic text-gray-400">
+        — Aucune rotation —
+      </li>
+    </ul>
+  </div>
+
+  <!-- Semaine prochaine -->
+  <div class="bg-blue-50 p-4 rounded-lg shadow">
+    <h3 class="text-lg font-bold mb-2">En rotation la semaine prochaine</h3>
+    <ul>
+      <li *ngFor="let r of nextWeekRotation" class="flex justify-between">
+        <span>{{ r.employee.firstName }} {{ r.employee.lastName }}</span>
+        <span class="text-sm text-gray-600">{{ r.location }}</span>
+      </li>
+      <li *ngIf="!nextWeekRotation.length" class="italic text-gray-400">
+        — Aucune rotation —
+      </li>
+    </ul>
+  </div>
+</div>
+<!-- ╰──────────────────────────────────────────────────────────────╯ -->
   <!-- ═════════════ Header & controls ═════════════ -->
   <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
     <h2 class="text-3xl font-bold">
-      Rotation {{ location }} — {{ monthNames[month - 1] }} {{ year }}
+     {{ location }} — {{ monthNames[month - 1] }} {{ year }}
     </h2>
 
     <div class="flex items-center gap-2">
@@ -21,6 +57,9 @@
       <button (click)="nextMonth()" class="px-2 py-1 rounded-lg bg-gray-100">›</button>
     </div>
   </div>
+
+
+
 
   <!-- ═════════════ Calendar grid (7 columns, any # rows) ═════════════ -->
   <div class="relative overflow-x-auto mb-6 shadow-xl">

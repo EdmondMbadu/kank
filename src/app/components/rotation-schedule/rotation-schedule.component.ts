@@ -9,7 +9,7 @@ import {
   SimpleChanges,
   OnChanges,
 } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { combineLatest, Subscription, tap } from 'rxjs';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { PerformanceService } from 'src/app/services/performance.service';
@@ -90,6 +90,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       if (list?.length && !this.location) {
         this.location = this.chooseDefaultLocation(list);
         this.refresh();
+        this.loadAllLocationsCurrentMonth();
       }
     }
   }
@@ -112,6 +113,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     if (!this.location && this.locations.length) {
       this.location = this.chooseDefaultLocation(this.locations);
       this.refresh();
+      this.loadAllLocationsCurrentMonth();
     }
   }
 
@@ -171,12 +173,14 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     this.month = p.getMonth() + 1;
     this.year = p.getFullYear();
     this.refresh();
+    this.loadAllLocationsCurrentMonth();
   }
   nextMonth() {
     const n = this.addMonths(new Date(this.year, this.month - 1), 1);
     this.month = n.getMonth() + 1;
     this.year = n.getFullYear();
     this.refresh();
+    this.loadAllLocationsCurrentMonth();
   }
 
   /* picker helpers — unchanged except service name if you renamed it */
@@ -262,6 +266,84 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     );
     this.closePicker();
     this.refresh();
+  }
+  /** Tous les jours assignés, tous sites confondus, pour le mois affiché */
+  private allSchedules: {
+    iso: string;
+    location: string;
+    employee: Employee;
+  }[] = [];
+
+  /** Listes prêtes pour le template */
+  thisWeekRotation: { employee: Employee; location: string }[] = [];
+  nextWeekRotation: { employee: Employee; location: string }[] = [];
+  private loadAllLocationsCurrentMonth(): void {
+    this.allSchedules = [];
+    /* Fermer d’éventuelles souscriptions précédentes */
+    this.schedSub?.unsubscribe();
+
+    const month$ = this.locations.map((loc) =>
+      this.rs.getSchedule(loc, this.year, this.month).pipe(
+        tap((sched) => {
+          Object.entries(sched.days ?? {}).forEach(([iso, uid]) => {
+            const emp = this.employees.find((e) => e.uid === uid);
+            if (emp)
+              this.allSchedules.push({ iso, location: loc, employee: emp });
+          });
+        })
+      )
+    );
+
+    /* Une seule souscription qui attend la fin de toutes */
+    this.schedSub = combineLatest(month$).subscribe(() => {
+      this.computeWeekRotations();
+      this.refresh(); // conserve la grille existante pour le site actif
+      this.cdr.markForCheck();
+    });
+  }
+  private computeWeekRotations(): void {
+    const today = new Date();
+    const startThis = this.startOfWeek(today);
+    const endThis = this.addDays(startThis, 6);
+
+    const startNext = this.addDays(endThis, 1);
+    const endNext = this.addDays(startNext, 6);
+
+    const uniq = new Map<string, { employee: Employee; location: string }>();
+
+    const inSpan = (d: Date, a: Date, b: Date) => d >= a && d <= b;
+
+    const thisW: typeof this.thisWeekRotation = [];
+    const nextW: typeof this.nextWeekRotation = [];
+
+    for (const a of this.allSchedules) {
+      const d = new Date(a.iso);
+      const key = `${a.employee.uid}-${a.location}`; // dé-doublonnage
+
+      if (!uniq.has(key)) {
+        if (inSpan(d, startThis, endThis)) thisW.push(a);
+        else if (inSpan(d, startNext, endNext)) nextW.push(a);
+
+        uniq.set(key, a);
+      }
+    }
+    this.thisWeekRotation = this.dedupe(thisW);
+    this.nextWeekRotation = this.dedupe(nextW);
+  }
+
+  /* Petit util pour retirer d’éventuels doublons */
+  private dedupe(arr: { employee: Employee; location: string }[]) {
+    return Array.from(
+      new Map(arr.map((o) => [`${o.employee.uid}-${o.location}`, o])).values()
+    );
+  }
+
+  /* Helpers déjà présents ; ajoutez : */
+  private startOfWeek(d: Date) {
+    const s = new Date(d);
+    s.setDate(s.getDate() - s.getDay()); // dimanche
+    s.setHours(0, 0, 0, 0);
+    return s;
   }
 
   /* ---------- tiny date helpers (same as before) ---------- */
