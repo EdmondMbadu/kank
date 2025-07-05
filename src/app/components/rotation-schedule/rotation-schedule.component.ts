@@ -116,7 +116,27 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.loadAllLocationsCurrentMonth();
     }
   }
+  /* ─────────── state supplémentaire ─────────── */
+  weekOffset = 0; // 0 = cette semaine, 1 = +1 semaine, etc.
+  thisWeekLabel = ''; // pour le template
 
+  /* ─────────── helpers ─────────── */
+  private frDate(d: Date): string {
+    return d.toLocaleDateString('fr-FR'); // 05/07/2025
+  }
+
+  /* ─────────── navigation semaines ─────────── */
+  nextWeek() {
+    this.weekOffset++;
+    this.computeWeekRotations();
+  }
+  prevWeek() {
+    if (this.weekOffset > 0) {
+      // on ne recule pas avant « cette semaine »
+      this.weekOffset--;
+      this.computeWeekRotations();
+    }
+  }
   /** Build grid *then* merge any saved assignments */
   refresh() {
     if (!this.location) {
@@ -302,13 +322,18 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     });
   }
   private computeWeekRotations(): void {
-    const today = new Date();
-    const startThis = this.startOfWeek(today);
+    const baseStart = this.addDays(
+      this.startOfWeek(new Date()), // dimanche de la semaine courante
+      this.weekOffset * 7 // décale selon l’offset
+    );
+    const startThis = baseStart;
     const endThis = this.addDays(startThis, 6);
 
     const startNext = this.addDays(endThis, 1);
     const endNext = this.addDays(startNext, 6);
 
+    /* MàJ du label à afficher */
+    this.thisWeekLabel = `${this.frDate(startThis)} au ${this.frDate(endThis)}`;
     const uniq = new Map<string, { employee: Employee; location: string }>();
 
     const inSpan = (d: Date, a: Date, b: Date) => d >= a && d <= b;

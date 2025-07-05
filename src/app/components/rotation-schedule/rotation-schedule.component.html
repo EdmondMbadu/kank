@@ -1,15 +1,33 @@
 <section class="overflow-x-auto bg-white p-4 rounded-lg shadow">
-<div class="my-4">
-    <h2 class="text-3xl font-bold italic">
-      Rotation 
-    </h2>
+<div class="flex items-center justify-between mb-4">
+  <button
+    (click)="prevWeek()"
+    [disabled]="weekOffset === 0"
+    class="px-2 py-1 rounded-lg bg-gray-100 disabled:opacity-50"
+    title="Semaine précédente"
+  >
+    ‹
+  </button>
+
+  <h2 class="text-3xl font-bold italic">
+    Rotation — <span class="text-lg">prevue cette semaine {{ thisWeekLabel }} </span>
+  </h2>
+
+  <button
+    (click)="nextWeek()"
+    class="px-2 py-1 rounded-lg bg-gray-100"
+    title="Semaine suivante"
+  >
+    ›
+  </button>
 </div>
+
     <!-- ╭─ RÉCAPITULATIF DES ROTATIONS ────────────────────────────────╮ -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+<div class="grid grid-cols-1  gap-4 mb-6">
 
   <!-- Semaine courante -->
   <div class="bg-green-50 p-4 rounded-lg shadow">
-    <h3 class="text-lg font-bold mb-2">En rotation cette semaine</h3>
+    <h3 class="text-lg font-bold mb-2"> En rotation du {{ thisWeekLabel }}</h3>
     <ul>
       <li *ngFor="let r of thisWeekRotation" class="flex justify-between">
         <span>{{ r.employee.firstName }} {{ r.employee.lastName }}</span>
@@ -23,7 +41,7 @@
 
   <!-- Semaine prochaine -->
   <div class="bg-blue-50 p-4 rounded-lg shadow">
-    <h3 class="text-lg font-bold mb-2">En rotation la semaine prochaine</h3>
+    <h3 class="text-lg font-bold mb-2">En rotation la semaine suivante</h3>
     <ul>
       <li *ngFor="let r of nextWeekRotation" class="flex justify-between">
         <span>{{ r.employee.firstName }} {{ r.employee.lastName }}</span>
