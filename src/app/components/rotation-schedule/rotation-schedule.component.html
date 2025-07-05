@@ -10,7 +10,7 @@
   </button>
 
   <h2 class="text-3xl font-bold italic">
-    Rotation — <span class="text-lg">prevue cette semaine {{ thisWeekLabel }} </span>
+    Rotation  
   </h2>
 
   <button
@@ -27,7 +27,8 @@
 
   <!-- Semaine courante -->
   <div class="bg-green-50 p-4 rounded-lg shadow">
-    <h3 class="text-lg font-bold mb-2"> En rotation du {{ thisWeekLabel }}</h3>
+    <h3 class="text-lg font-bold "> Rotation en cours durant la semaine du</h3>
+    <h4 class="text-md text-center my-2 italic mb-4">{{ thisWeekLabel }}</h4>
     <ul>
       <li *ngFor="let r of thisWeekRotation" class="flex justify-between">
         <span>{{ r.employee.firstName }} {{ r.employee.lastName }}</span>
