@@ -296,7 +296,26 @@
         </div>
 
 
-      <audio *ngIf="c.audioUrl" [src]="c.audioUrl" controls class="w-full rounded"></audio>
+        <div *ngIf="c.audioUrl" class="space-y-2">
+          <!-- Lecture -->
+          <audio [src]="c.audioUrl" controls class="w-full rounded"></audio>
+
+          <!-- Téléchargement -->
+          <button
+          *ngIf="auth.isAdmin"
+            (click)="downloadAudio(c.audioUrl)"
+            class="inline-flex items-center gap-1 text-sm px-3 py-1.5
+                  bg-blue-600 hover:bg-blue-700 text-white rounded-lg focus:ring-4
+                  focus:ring-blue-300 dark:focus:ring-blue-900">
+            <!-- icône flèche ↓ -->
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 4v12m0 0l-4-4m4 4l4-4m-4 4v4" />
+            </svg>
+            Télécharger
+          </button>
+        </div>
+
 
       <div *ngIf="auth.isAdmin" class="text-right">
         <button (click)="deleteReview(i,c)"

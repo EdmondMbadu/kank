@@ -460,4 +460,21 @@ export class ReviewsComponent implements OnInit {
       ? this.reviews
       : this.reviews.filter((r) => r.visible);
   }
+  /** Nom de fichier “propre” (sans token) */
+  private extractFileName(url: string): string {
+    const clean = url.split('?')[0];
+    return decodeURIComponent(clean.substring(clean.lastIndexOf('/') + 1));
+  }
+
+  /** Téléchargement sans fetch : <a download> + clic programmatique */
+  downloadAudio(url: string): void {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.extractFileName(url) || `audio-${Date.now()}.webm`;
+    a.target = '_blank'; // Safari/iOS : ouvre dans un onglet
+    a.rel = 'noopener';
+    document.body.appendChild(a); // Firefox exige que le lien soit dans le DOM
+    a.click();
+    document.body.removeChild(a);
+  }
 }
