@@ -258,7 +258,7 @@
 <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-4 px-4">
   <a [routerLink]="['/request-update', id]" class="rounded-full bg-emerald-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-400/40">Demande de Mise à Jour</a>
   <button *ngIf="client.type === 'register'" (click)="cancelRegistration()" class="rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40">Annuler Enregistrement</button>
-  <button (click)="openRefundDialog()" class="rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40">Remboursement après rejet</button>
+  <button (click)="openRefundDialog()" class="rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40">Demande de Remboursement après rejet</button>
 </div>
 
 <!-- === CHARTS === -->
