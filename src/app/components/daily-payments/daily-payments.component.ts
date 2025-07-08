@@ -121,7 +121,7 @@ export class DailyPaymentsComponent implements OnInit {
         trackingId: client.trackingId,
       };
 
-      if (Number(v) > 0) {
+      if (Number(v) != 0) {
         this.dailyPayments?.push(filt);
         this.totalGivenDate = (
           Number(v) + Number(this.totalGivenDate)
