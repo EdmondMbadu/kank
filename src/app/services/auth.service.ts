@@ -8,7 +8,7 @@ import {
   AngularFirestoreCollection,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
-import { Observable, of } from 'rxjs';
+import { firstValueFrom, Observable, of } from 'rxjs';
 import { filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
 import { Client, Comment } from '../models/client';
@@ -725,28 +725,24 @@ export class AuthService {
     return userRef.set(data, { merge: true });
   }
 
-  // auth.service.ts
   deleteReview(reviewDocId: string, reviewToRemove: Comment): Promise<void> {
     const uid = this.currentUser.uid;
-    const docRef = this.afs.doc(`users/${uid}/reviews/${reviewDocId}`);
+    const docRef = this.afs.doc<{ reviews: Comment[] }>(
+      `users/${uid}/reviews/${reviewDocId}`
+    );
 
-    // 1) Get the current array once
-    return docRef
-      .get()
-      .toPromise()
-      .then((snap: any) => {
-        if (!snap.exists) {
-          return;
-        }
+    return firstValueFrom(docRef.get()).then((snap) => {
+      if (!snap.exists) return;
 
-        const data = snap.data() as { reviews: Comment[] };
-        const newReviews = (data.reviews || []).filter(
-          (r) => JSON.stringify(r) !== JSON.stringify(reviewToRemove)
-        );
+      const current = snap.data()!.reviews || [];
 
-        // 2) Write back the filtered array
-        return docRef.update({ reviews: newReviews });
-      });
+      /* compare *after* stringify to catch deep equality */
+      const next = current.filter(
+        (r) => JSON.stringify(r) !== JSON.stringify(reviewToRemove)
+      );
+
+      return docRef.update({ reviews: next });
+    });
   }
 
   updateReviewVisibility(

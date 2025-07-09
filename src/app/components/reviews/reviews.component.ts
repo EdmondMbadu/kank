@@ -385,18 +385,20 @@ export class ReviewsComponent implements OnInit {
     }
     alert('Commentaire publié avec succès !');
   }
-  deleteReview(index: number, review: Comment): void {
-    if (!confirm('Supprimer définitivement ce commentaire ?')) {
-      return;
-    }
+  deleteReview(idx: number, r: Comment) {
+    if (!confirm('Supprimer définitivement ce commentaire ?')) return;
 
-    // Remove the transient fields that were never saved in Firestore
-    const { timeFormatted, starsNumber, ...original } = review as any;
+    /* ① retirer les champs d’interface */
+    const { __editingPerf, __perfDraft, timeFormatted, starsNumber, ...clean } =
+      r as any;
 
+    /* ② appeler le service */
     this.auth
-      .deleteReview(this.reviewId, original) // <-- now matches DB
+      .deleteReview(this.reviewId, clean)
       .then(() => {
-        this.reviews.splice(index, 1);
+        /* ③  synchro UI + histogramme */
+        this.reviews.splice(idx, 1);
+        this.buildPerformanceGraph();
         alert('Commentaire supprimé avec succès.');
       })
       .catch((err) => {
@@ -419,7 +421,10 @@ export class ReviewsComponent implements OnInit {
       cahier: this.metrics[2].value,
       suiviClients: this.metrics[3].value,
       relationClient: this.metrics[4].value,
-      performance: this.performanceValue,
+      // ⬇️  inclure performance uniquement si admin OU valeur > 0
+      ...(this.auth.isAdmin && this.performanceValue > 0
+        ? { performance: this.performanceValue }
+        : {}),
     };
 
     this.auth
@@ -506,7 +511,7 @@ export class ReviewsComponent implements OnInit {
 
     this.reviews.forEach((r) => {
       const [mm, , yyyy] = r.time!.split('-').map(Number);
-
+      if (r.performance === undefined || r.performance === null) return; // skip
       /* ↓↓↓  recule d’un mois  ↓↓↓ */
       const d = new Date(yyyy, mm - 1); // mois réel de la review
       d.setMonth(d.getMonth() - 1); // mois précédent
