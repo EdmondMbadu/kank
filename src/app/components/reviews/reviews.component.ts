@@ -19,7 +19,11 @@ export class ReviewsComponent implements OnInit {
   comment?: string = '';
   reviews: Comment[] = [];
   showForm = false;
+  // valeur du champ Performance
+  performanceValue = 0;
 
+  // objet graphique
+  graphPerf: any = { data: [], layout: {} };
   toggleForm() {
     this.showForm = !this.showForm;
   }
@@ -49,6 +53,7 @@ export class ReviewsComponent implements OnInit {
   /* ---------- Aperçu ---------- */
   previewOpen = false;
 
+  teamCode: string = '';
   isRecording = false;
   mediaRecorder!: MediaRecorder;
   audioChunks: BlobPart[] = []; // Will store the recorded audio data (chunks)
@@ -100,6 +105,8 @@ export class ReviewsComponent implements OnInit {
           comment.time!
         );
         comment.starsNumber = Number(comment.stars);
+        comment.__editingPerf = false; // ← initialise
+        comment.__perfDraft = comment.performance ?? 0; // ← brouillon
       });
     }
     this.reviews.sort((a: any, b: any) => {
@@ -114,6 +121,7 @@ export class ReviewsComponent implements OnInit {
       const dateB = parseTime(b.time);
       return dateB - dateA; // Descending order
     });
+    this.buildPerformanceGraph();
   }
   private startTimer() {
     let seconds = 0;
@@ -411,6 +419,7 @@ export class ReviewsComponent implements OnInit {
       cahier: this.metrics[2].value,
       suiviClients: this.metrics[3].value,
       relationClient: this.metrics[4].value,
+      performance: this.performanceValue,
     };
 
     this.auth
@@ -420,11 +429,14 @@ export class ReviewsComponent implements OnInit {
         this.personPostingComment = '';
         this.comment = '';
         this.numberofStars = '';
-        this.metrics.forEach((m) => (m.value = 5));
+        this.metrics.forEach((m) => (m.value = 0));
         this.recordedBlob = undefined;
         this.recordedAudioURL = undefined;
         this.selectedAudioFile = undefined;
         this.selectedAudioPreviewURL = undefined;
+        this.performanceValue = 0;
+        this.reviews.unshift(review); // affichage immédiat
+        this.buildPerformanceGraph(); // remet l’histogramme à jour
         /* ✅ confirmation à l’utilisateur */
         // alert('Commentaire publié avec succès !');
         /*  └─ remplacez par un toast/snackbar si vous en utilisez un */
@@ -476,5 +488,109 @@ export class ReviewsComponent implements OnInit {
     document.body.appendChild(a); // Firefox exige que le lien soit dans le DOM
     a.click();
     document.body.removeChild(a);
+  }
+
+  /** Histogramme mensuel coloré – date affichée = 1 mois en arrière */
+  private buildPerformanceGraph() {
+    if (!this.reviews?.length) {
+      this.graphPerf = { data: [], layout: {} };
+      return;
+    }
+
+    /* --- 1. Regrouper par mois (moyenne) --- */
+    interface Bucket {
+      total: number;
+      count: number;
+    }
+    const buckets: Record<string, Bucket> = {};
+
+    this.reviews.forEach((r) => {
+      const [mm, , yyyy] = r.time!.split('-').map(Number);
+
+      /* ↓↓↓  recule d’un mois  ↓↓↓ */
+      const d = new Date(yyyy, mm - 1); // mois réel de la review
+      d.setMonth(d.getMonth() - 1); // mois précédent
+      const key = d.toLocaleDateString('fr-FR', {
+        month: 'long',
+        year: 'numeric',
+      }); // « juin 2025 »
+
+      buckets[key] ??= { total: 0, count: 0 };
+      buckets[key].total += Number(r.performance ?? 0);
+      buckets[key].count += 1;
+    });
+
+    /* --- 2. Trier chronologiquement --- */
+    const monthsFr = [
+      'janvier',
+      'février',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'août',
+      'septembre',
+      'octobre',
+      'novembre',
+      'décembre',
+    ];
+    const parseKey = (s: string) => {
+      const [mFr, y] = s.split(' ');
+      return new Date(+y, monthsFr.indexOf(mFr));
+    };
+    const labels = Object.keys(buckets).sort(
+      (a, b) => +parseKey(a) - +parseKey(b)
+    );
+
+    /* --- 3. Moyenne par mois --- */
+    const values = labels.map(
+      (l) => +(buckets[l].total / buckets[l].count).toFixed(1)
+    );
+
+    /* --- 4. Couleur dynamique --- */
+    let barColor = '#16a34a'; // vert
+    if (values.length > 1 && values.at(-1)! < values.at(-2)!)
+      barColor = '#dc2626'; // rouge
+
+    /* --- 5. Plotly --- */
+    this.graphPerf = {
+      data: [
+        { x: labels, y: values, type: 'bar', marker: { color: barColor } },
+      ],
+      layout: {
+        title: 'Performance moyenne par mois (%)',
+        yaxis: { title: '%', rangemode: 'tozero' },
+        xaxis: { title: 'Mois', tickangle: -30 },
+        margin: { t: 40, r: 10, l: 40, b: 80 },
+      },
+    };
+  }
+
+  savePerformance(c: Comment) {
+    const val = Number(c.__perfDraft);
+    if (isNaN(val) || val < 0 || val > 100) {
+      alert('La performance doit être comprise entre 0 et 100.');
+      return;
+    }
+
+    // 1. Màj locale
+    c.performance = val;
+    c.__editingPerf = false;
+
+    // 2. Construire un tableau sans les champs UI
+    const cleanReviews: Comment[] = this.reviews.map((r) => {
+      const { __editingPerf, __perfDraft, ...rest } = r;
+      return rest as Comment;
+    });
+
+    // 3. Pousser en base
+    this.auth
+      .updateReviewPerformance(this.reviewId, cleanReviews)
+      .then(() => this.buildPerformanceGraph())
+      .catch((err) => {
+        console.error('Update failed:', err);
+        alert('Impossible d’enregistrer la performance.');
+      });
   }
 }

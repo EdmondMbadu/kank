@@ -778,4 +778,10 @@ export class AuthService {
         return docRef.set({ reviews }, { merge: true });
       });
   }
+  /** Remplace entièrement le tableau reviews du document concerné */
+  updateReviewPerformance(reviewDocId: string, reviews: Comment[]) {
+    const uid = this.currentUser.uid; // utilisateur courant
+    const docRef = this.afs.doc(`users/${uid}/reviews/${reviewDocId}`);
+    return docRef.update({ reviews }); // ← Firestore set-merge
+  }
 }

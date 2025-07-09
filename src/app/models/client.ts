@@ -84,6 +84,9 @@ export class Comment {
   cahier?: number;
   suiviClients?: number;
   relationClient?: number;
+  performance?: number;
+  __editingPerf?: boolean;
+  __perfDraft?: number;
 
   [key: string]: any;
 }

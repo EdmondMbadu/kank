@@ -105,6 +105,19 @@
         <option *ngFor="let s of [0,1,2,3,4,5]" [value]="s">{{s}}</option>
       </select>
     </div>
+    <!-- Performance mensuelle -->
+    <div *ngIf="auth.isAdmin">
+      <label class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200">
+        Performance du mois (0-100 %)
+      </label>
+      <input type="number"
+            [(ngModel)]="performanceValue"
+            min="0" max="100" step="1"
+            class="w-full p-2.5 rounded-lg border focus:ring-blue-500
+                    dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="75">
+    </div>
+
 
     <!-- ░░░ AUDIO : ENREGISTRER / STOP / DISCARD ░░░ -->
     <div class="flex flex-wrap gap-4 justify-center">
@@ -223,6 +236,21 @@
   </div>
 </div>
 
+  <!-- ░░░ HISTOGRAMME PERFORMANCE ░░░ -->
+  <section *ngIf="graphPerf.data.length"
+          class="bg-white dark:bg-gray-900 py-8">
+    <div class="max-w-5xl mx-auto px-4">
+      <h2 class="text-2xl font-semibold text-center mb-4
+                text-gray-900 dark:text-white">
+        Performance mensuelle
+      </h2>
+
+      <plotly-plot [data]="graphPerf.data"
+                  [layout]="graphPerf.layout">
+      </plotly-plot>
+    </div>
+  </section>
+
 <!-- ░░░ LISTE DES COMMENTAIRES ░░░ -->
 <section class="bg-white dark:bg-gray-900 py-10">
   <div class="max-w-5xl mx-auto px-4 space-y-8">
@@ -294,6 +322,50 @@
             </svg>
           </ng-container>
         </div>
+
+
+        <!-- ░░░ PERFORMANCE (editable par l’admin) ░░░ -->
+      <div class="flex items-center gap-2 text-sm dark:text-white">
+
+        <!-- Si la performance existe déjà ET que l’admin n’est pas en mode édition -->
+        <ng-container *ngIf="c.performance !== undefined && !c.__editingPerf">
+          <span class="font-semibold w-44">Performance&nbsp;:</span>
+          <span>{{ c.performance }} %</span>
+
+          <!-- petit crayon pour modifier -->
+          <button *ngIf="auth.isAdmin"
+                  (click)="c.__editingPerf = true"
+                  class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"
+                viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M16.862 3.487a2 2 0 0 1 2.829 2.83l-9.65 9.65-3.182.353a.5.5 0 0 1-.554-.555l.353-3.182 9.65-9.65z"/>
+            </svg>
+          </button>
+        </ng-container>
+
+        <!-- Mode saisie (absence ou édition) -->
+        <ng-container *ngIf="auth.isAdmin && (c.performance === undefined) || c.__editingPerf">
+          <span class="font-semibold w-44">Performance&nbsp;:</span>
+          <input type="number" min="0" max="100" step="1"
+                [(ngModel)]="c.__perfDraft"
+                class="w-24 p-1 rounded border dark:bg-gray-700
+                        dark:border-gray-600 dark:text-white" />
+
+          <button (click)="savePerformance(c)"
+                  class="ml-2 px-2 py-1 text-xs rounded
+                        bg-green-600 hover:bg-green-700 text-white">
+            Enregistrer
+          </button>
+
+          <button (click)="c.__editingPerf = false"
+                  class="ml-1 px-2 py-1 text-xs rounded
+                        bg-gray-100 dark:bg-gray-700">
+            Annuler
+          </button>
+        </ng-container>
+
+      </div>
 
 
         <div *ngIf="c.audioUrl" class="space-y-2">
