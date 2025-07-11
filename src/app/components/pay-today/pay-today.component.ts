@@ -44,7 +44,7 @@ export class PayTodayComponent implements OnInit {
   }
   searchCriteria: string = 'paymentDay';
   weeksWithoutPayment: number = 3; // Default to 3 weeks
-
+  atLeastCreditScore = false;
   ngOnInit(): void {
     this.searchControl.valueChanges
       .pipe(
@@ -213,17 +213,28 @@ export class PayTodayComponent implements OnInit {
   //     return of(this.clients);
   //   }
   // }
+  reapplyFilter() {
+    this.search(this.searchControl.value);
+  }
+
   search(value: string, field: string = this.searchCriteria) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
 
-      let current;
+      let current: Client[];
 
       if (field === 'creditScore') {
-        // Search among all clients when filtering by creditScore
-        current = this.clients!.filter(
-          (client) => client.creditScore?.toString() === lowerCaseValue
-        );
+        const score = Number(lowerCaseValue);
+
+        current = this.clients!.filter((client) => {
+          if (this.atLeastCreditScore) {
+            // >= si la case est cochée
+            return (Number(client.creditScore) ?? 0) >= score;
+          } else {
+            // égalité exacte sinon
+            return client.creditScore?.toString() === lowerCaseValue;
+          }
+        });
       } else {
         // Search only among clients with debts for other fields
         current = this.clientsWithDebts!.filter((client) => {

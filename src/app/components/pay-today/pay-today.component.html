@@ -1,146 +1,264 @@
+<!-- ─── BARRE DE NAVIGATION ───────────────────────────────────────── -->
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
 
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Retracer Les Activités Avec Critères Sélectionnés</h2>
-   <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
-</div>
-<div class="flex flex-wrap container mx-auto m-6 justify-center  rounded-md shadow-sm max-w-xl">
+<!-- ─── EN-TÊTE ───────────────────────────────────────────────────── -->
+<header class="container mx-auto mt-10 flex flex-col items-center gap-4">
+  <h2 class="text-center text-2xl md:text-3xl font-semibold tracking-wide
+             bg-gradient-to-r from-green-600 via-emerald-400 to-lime-300
+             bg-clip-text text-transparent drop-shadow-sm">
+    Retracer les activités selon vos critères
+  </h2>
+
+  <button routerLink="/client-info"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full
+                 bg-gradient-to-br from-emerald-600 to-green-700
+                 hover:from-emerald-500 hover:to-green-600
+                 text-white text-sm md:text-base shadow-lg
+                 transition-all duration-300 focus:outline-none focus:ring-4
+                 focus:ring-emerald-300">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 md:w-5 md:h-5"
+         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    Info client
+  </button>
+</header>
+
+<!-- ─── CRITÈRES ──────────────────────────────────────────────────── -->
+<section class="container mx-auto mt-8">
+  <div class="flex flex-wrap justify-center gap-2 md:gap-3
+              bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm
+              p-4 rounded-xl shadow-lg">
+
+    <!-- 1) Jour de Paiement -->
     <button
-  [ngClass]="getButtonClasses('paymentDay')"
-  (click)="setSerachCriteria('paymentDay')"
-  aria-current="page">
-  Jour De Paiment
-</button>
+      (click)="setSerachCriteria('paymentDay')"
+      [ngClass]="getButtonClasses('paymentDay')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Jour de Paiement
+    </button>
 
+    <!-- 2) X Semaines Sans Payer -->
+    <button
+      (click)="setSerachCriteria('xWeeksWithoutPayment')"
+      [ngClass]="getButtonClasses('xWeeksWithoutPayment')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      X Semaines Sans Payer
+    </button>
 
-<!-- Add this button alongside your existing criteria buttons -->
-<button
-  [ngClass]="getButtonClasses('xWeeksWithoutPayment')"
-  (click)="setSerachCriteria('xWeeksWithoutPayment')"
-  aria-current="page"
->
-  X Semaines Sans Payer
-</button>
+    <!-- 3) Score Crédit -->
+    <button
+      (click)="setSerachCriteria('creditScore')"
+      [ngClass]="getButtonClasses('creditScore')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Score Crédit
+    </button>
 
-<button
-  [ngClass]="getButtonClasses('creditScore')"
-  (click)="setSerachCriteria('creditScore')">
-  Score Credit
-</button>
+    <!-- 4) Montant Emprunté -->
+    <button
+      (click)="setSerachCriteria('loanAmount')"
+      [ngClass]="getButtonClasses('loanAmount')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Montant Emprunté
+    </button>
 
-<button
-  [ngClass]="getButtonClasses('loanAmount')"
-  (click)="setSerachCriteria('loanAmount')">
-  Montant Emprunté
-</button>
-<button
-  [ngClass]="getButtonClasses('loanAmountMore')"
-  (click)="setSerachCriteria('loanAmountMore')">
-  Montant Emprunté Ou Plus
-</button>
+    <!-- 5) Montant Emprunté Ou Plus -->
+    <button
+      (click)="setSerachCriteria('loanAmountMore')"
+      [ngClass]="getButtonClasses('loanAmountMore')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Montant Emprunté Ou Plus
+    </button>
 
-<button
-  [ngClass]="getButtonClasses('debtLeft')"
-  (click)="setSerachCriteria('debtLeft')">
-  Montant Restant
-</button>
-<button
-  [ngClass]="getButtonClasses('debtLeftMore')"
-  (click)="setSerachCriteria('debtLeftMore')">
-  Montant Restant Ou Plus
-</button>
+    <!-- 6) Montant Restant -->
+    <button
+      (click)="setSerachCriteria('debtLeft')"
+      [ngClass]="getButtonClasses('debtLeft')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Montant Restant
+    </button>
 
-<button
-  [ngClass]="getButtonClasses('amountPaid')"
-  (click)="setSerachCriteria('amountPaid')">
-  Montant Percu
-</button>
+    <!-- 7) Montant Restant Ou Plus -->
+    <button
+      (click)="setSerachCriteria('debtLeftMore')"
+      [ngClass]="getButtonClasses('debtLeftMore')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Montant Restant Ou Plus
+    </button>
 
-<button
-  [ngClass]="getButtonClasses('agent')"
-  (click)="setSerachCriteria('agent')">
-  Agent
-</button>
+    <!-- 8) Montant Perçu -->
+    <button
+      (click)="setSerachCriteria('amountPaid')"
+      [ngClass]="getButtonClasses('amountPaid')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Montant Perçu
+    </button>
 
-<button
-  [ngClass]="getButtonClasses('debtCycleStartDate')"
-  (click)="setSerachCriteria('debtCycleStartDate')">
-  Cycle De Dette Debut Mois
-</button>
-<!-- <button
-  [ngClass]="getButtonClasses('debtCycleStartDateMore')"
-  (click)="setSerachCriteria('debtCycleStartDateMore')">
-  Cycle De Dette Debut Mois Ou Plus
-</button> -->
+    <!-- 9) Agent -->
+    <button
+      (click)="setSerachCriteria('agent')"
+      [ngClass]="getButtonClasses('agent')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Agent
+    </button>
 
-<button
-  [ngClass]="getButtonClasses('debtCycle')"
-  (click)="setSerachCriteria('debtCycle')">
-  # Cycle De Dette
-</button>
+    <!-- 10) Cycle Dette Début Mois -->
+    <button
+      (click)="setSerachCriteria('debtCycleStartDate')"
+      [ngClass]="getButtonClasses('debtCycleStartDate')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      Cycle Dette Début Mois
+    </button>
 
+    <!-- 11) # Cycle de Dette -->
+    <button
+      (click)="setSerachCriteria('debtCycle')"
+      [ngClass]="getButtonClasses('debtCycle')"
+      class="px-3 py-1.5 rounded-full text-sm font-medium
+             border border-gray-300 dark:border-gray-600
+             bg-gray-50 dark:bg-slate-700
+             hover:bg-emerald-600 hover:text-white
+             transition-colors duration-200 shadow-sm">
+      # Cycle de Dette
+    </button>
 
+    <!-- Case "Au moins ce score" -->
+    <div *ngIf="selectedField === 'creditScore'"
+         class="flex items-center gap-2 ml-1">
+      <input id="atLeastCreditScore" type="checkbox"
+             [(ngModel)]="atLeastCreditScore" (change)="reapplyFilter()"
+             class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded
+                    focus:ring-emerald-500">
+      <label for="atLeastCreditScore"
+             class="text-sm font-medium text-gray-600 dark:text-gray-300">
+        Au moins ce score
+      </label>
+    </div>
   </div>
-<div class="flex container mx-auto justify-center mb-2">
-    <h2 class="text-center text-2xl font-bold ">{{numberOfPeople}} clients - Total Par Date: {{totalGivenDate | number:'1.0-0'}} FC</h2>
-</div>
-<div class="flex container mx-auto  justify-center">
-   <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-       <div class="flex items-center justify-between mb-4">
-           <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Programmé</h5>
-           <form class="flex items-center">   
-               <label for="simple-search" class="sr-only">Chercher</label>
-               <div class="relative w-full">
-                   <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                       <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-                       </svg>
-                   </div>
-                   <input type="text" id="simple-search"[formControl]="searchControl"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Chercher le jour..." required>
-               </div>
-               <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                   <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                   </svg>
-                   <span class="sr-only">Chercher</span>
-               </button>
-           </form>
-   </div>
-   <div class="flow-root">
-           <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let c of filteredItems; let i=index  " [routerLink]="['/client-portal',c.trackingId]">
-                   <div class="flex items-center space-x-4">
-                       <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                           <span class="font-medium text-gray-600 dark:text-gray-300">{{c.firstName?.substring(0,2)}}</span>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                           <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                           {{c.firstName}} {{c.lastName}} {{c.middleName}}
-                           </p>
-                           <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                            {{c.frenchPaymentDay}} 
-                           </p>
-                           <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                            Agent: {{c.employee?.firstName}} {{c.employee?.lastName}}
-                           </p>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white" >
-                            FC {{c.debtLeft| number:'1.0-0'}}
-                      
-                        </p>
-                        <p class="text-sm ml-6 text-gray-500 truncate dark:text-gray-400">
-                        {{c.amountPaid | number:'1.0-0'}}
-                        </p>
-                       </div>
-                   </div>
-               </li>
-           </ul>
-   </div>
-   </div>
+</section>
 
-
+<!-- ─── RÉSUMÉ NOMBRE / TOTAL ───────────────────────────────────── -->
+<div class="container mx-auto text-center mt-6">
+  <h2 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg
+             bg-emerald-50 dark:bg-slate-700 text-emerald-700
+             dark:text-lime-300 font-semibold shadow">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5"
+         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M17 20h5V4H2v16h5m10 0a2 2 0 01-2-2v-3M9 20H7m8-6h.01M5 8h.01M12 8h.01M19 8h.01M5 12h.01M12 12h.01M19 12h.01M5 16h.01M12 16h.01" />
+    </svg>
+    {{ numberOfPeople }} clients – Total : {{ totalGivenDate | number:'1.0-0' }} FC
+  </h2>
 </div>
 
+<!-- ─── LISTE & RECHERCHE ───────────────────────────────────────── -->
+<section class="container mx-auto mt-8 max-w-xl">
+  <div class="bg-white/90 dark:bg-slate-800/70 backdrop-blur-lg
+              rounded-2xl shadow-xl ring-1 ring-black/5 p-6 space-y-6">
 
+    <!-- Barre de recherche -->
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg md:text-xl font-semibold text-gray-800 dark:text-white">
+        Programmé
+      </h3>
 
+      <form class="relative flex-1 max-w-xs">
+        <input id="simple-search" type="text"
+               [formControl]="searchControl"
+               placeholder="Rechercher…"
+               class="w-full pl-10 pr-3 py-2 rounded-full
+                      bg-gray-50 dark:bg-slate-700 border border-gray-300
+                      dark:border-gray-600 text-sm
+                      focus:ring-2 focus:ring-emerald-500
+                      focus:border-emerald-500 outline-none">
+
+        <span class="absolute left-3 top-2.5 text-gray-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="m21 21-4.35-4.35M5.5 11a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z" />
+          </svg>
+        </span>
+      </form>
+    </div>
+
+    <!-- Liste des clients -->
+    <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+      <li *ngFor="let c of filteredItems"
+          class="group flex items-center py-4 hover:bg-gray-50 dark:hover:bg-slate-700
+                 rounded-lg px-2 transition-colors cursor-pointer"
+          [routerLink]="['/client-portal', c.trackingId]">
+
+        <div class="relative inline-flex items-center justify-center
+                    w-11 h-11 bg-emerald-100 dark:bg-emerald-900/30
+                    text-emerald-700 dark:text-emerald-300
+                    font-semibold rounded-full shadow">
+          {{ c.firstName?.substring(0,2) }}
+        </div>
+
+        <div class="ml-4 flex-1 overflow-hidden">
+          <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+            {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {{ c.frenchPaymentDay }} • Agent : {{ c.employee?.firstName }}
+          </p>
+        </div>
+
+        <div class="text-right ml-4">
+          <p class="text-sm font-semibold text-gray-800 dark:text-lime-300">
+            FC {{ c.debtLeft | number:'1.0-0' }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            {{ c.amountPaid | number:'1.0-0' }}
+          </p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
