@@ -58,7 +58,7 @@
       ? 'bg-red-600 text-white'
       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-300'"
     class="rounded-full px-5 py-2 text-sm md:text-base font-medium transition shadow">
-    Sans paiement &ge; 5 mois
+    Sans paiement &ge; {{noPayMonthsThreshold}} mois
   </button>
 </div>
 
@@ -103,6 +103,20 @@
     class="w-32 rounded-lg border-gray-300 dark:border-gray-600 text-sm
            px-3 py-2 bg-gray-50 dark:bg-slate-700
            focus:ring-emerald-500 focus:border-emerald-500
+           text-gray-800 dark:text-gray-100">
+</div>
+
+<!-- ░░ Seuil de mois sans paiement (visible pour 'noPay') ░░ -->
+<div *ngIf="activeList === 'noPay'" class="max-w-6xl mx-auto mt-4">
+  <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+    Nombre de mois sans paiement
+  </label>
+  <input type="number" min="1"
+    [(ngModel)]="noPayMonthsThreshold"
+    (ngModelChange)="onNoPayMonthsChange($event)"
+    class="w-32 rounded-lg border-gray-300 dark:border-gray-600 text-sm
+           px-3 py-2 bg-gray-50 dark:bg-slate-700
+           focus:ring-red-500 focus:border-red-500
            text-gray-800 dark:text-gray-100">
 </div>
 

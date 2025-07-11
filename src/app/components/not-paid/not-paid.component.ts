@@ -38,6 +38,9 @@ export class NotPaidComponent implements OnInit {
   /* threshold in months – default 5 */
   monthsThreshold = 5;
 
+  /* --- threshold for the no-payment list (in months) --- */
+  noPayMonthsThreshold = 5; // default 5 mois
+
   /** called whenever the input changes */
   onThresholdChange(val: string | number): void {
     const n = Number(val);
@@ -126,6 +129,50 @@ export class NotPaidComponent implements OnInit {
     );
     this.showWarning = true;
   }
+
+  onNoPayMonthsChange(val: string | number): void {
+    const n = Number(val);
+    if (!n || n < 1) return; // ignore invalid
+    this.noPayMonthsThreshold = n;
+    this.computeNoPayList(); // recompute instantly
+  }
+
+  private computeNoPayList(): void {
+    if (!this.clients) return;
+
+    const MONTH_MS = 30 * 24 * 60 * 60 * 1000; // 30-day month
+    const thresholdMs = this.noPayMonthsThreshold * MONTH_MS;
+    const now = Date.now();
+
+    this.haveNotPaid = this.clients.filter((client) => {
+      if (!client.debtCycleStartDate || !client.payments) return false;
+      if (+client.debtLeft! <= 0) return false;
+      if (client.vitalStatus === 'Mort') return false;
+
+      /* debt cycle must be older than threshold */
+      const [m, d, y] = client.debtCycleStartDate.split('-').map(Number);
+      const cycleStart = new Date(y, m - 1, d).getTime();
+      if (now - cycleStart < thresholdMs) return false;
+
+      /* no payment within the same threshold */
+      const recentPayment = Object.keys(client.payments).some((dateStr) => {
+        const [pm, pd, py] = dateStr.split('-').map(Number);
+        const payDate = new Date(py, pm - 1, pd).getTime();
+        return now - payDate < thresholdMs;
+      });
+
+      return !recentPayment;
+    });
+
+    /* duplicates of your old stats logic */
+    this.haveNotPaidCopy = structuredClone(this.haveNotPaid);
+    this.numberofPeopleWhodidNotPay = this.haveNotPaid.length;
+    this.totalGivenDate = this.haveNotPaid.reduce(
+      (s, c) => s + +c.debtLeft!,
+      0
+    );
+  }
+
   searchThoseWhoDidNotPayPerInterval() {
     this.showWarning = false;
     this.validStartDate = this.time.isDateInRange(this.startDate);
