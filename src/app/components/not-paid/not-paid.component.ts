@@ -35,6 +35,16 @@ export class NotPaidComponent implements OnInit {
 
   /* simple toggle */
   activeList: 'cycle' | 'noPay' = 'cycle';
+  /* threshold in months – default 5 */
+  monthsThreshold = 5;
+
+  /** called whenever the input changes */
+  onThresholdChange(val: string | number): void {
+    const n = Number(val);
+    if (!n || n < 1) return; // ignore bad input
+    this.monthsThreshold = n;
+    this.computeCycleNotFinished(); // recompute list live
+  }
 
   constructor(
     public auth: AuthService,
@@ -204,7 +214,7 @@ export class NotPaidComponent implements OnInit {
         (today.getFullYear() - start.getFullYear()) * 12 +
         (today.getMonth() - start.getMonth());
 
-      return diffMonths >= 5;
+      return diffMonths >= this.monthsThreshold;
     });
 
     /* NEW – counters for the template */
