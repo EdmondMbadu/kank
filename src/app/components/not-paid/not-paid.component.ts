@@ -26,6 +26,16 @@ export class NotPaidComponent implements OnInit {
   startDate: string = '';
   endDate: string = '';
   showWarning: boolean = false;
+
+  /* NEW – clients 5 + months into a debt cycle that is not finished */
+  cycleNotFinished?: Client[] = [];
+  cycleNotFinishedCopy: Client[] = []; // for search
+  cycleClientCount = 0;
+  totalCycleDebt = 0;
+
+  /* simple toggle */
+  activeList: 'cycle' | 'noPay' = 'cycle';
+
   constructor(
     public auth: AuthService,
     private time: TimeService,
@@ -41,7 +51,11 @@ export class NotPaidComponent implements OnInit {
         switchMap((value) => this.search(value))
       )
       .subscribe((results) => {
-        this.haveNotPaid = results;
+        if (this.activeList === 'cycle') {
+          this.cycleNotFinished = results; // ⇦ update cycle tab
+        } else {
+          this.haveNotPaid = results; // ⇦ update no-pay tab
+        }
       });
   }
 
@@ -133,6 +147,7 @@ export class NotPaidComponent implements OnInit {
       // filter out clients that have not debt( registered) or have finished their debts.
 
       this.retrieveEmployees();
+      this.computeCycleNotFinished(); // ← NEW
       this.find5WeeksOrMoreNotPaid();
     });
   }
@@ -157,19 +172,48 @@ export class NotPaidComponent implements OnInit {
   }
 
   search(value: string) {
-    if (value) {
-      const lowerCaseValue = value.toLowerCase();
-      return of(
-        this.haveNotPaidCopy!.filter(
-          (client) =>
-            client.firstName?.toLowerCase().includes(lowerCaseValue) ||
-            client.lastName?.toLowerCase().includes(lowerCaseValue) ||
-            client.middleName?.toLowerCase().includes(lowerCaseValue) ||
-            client.amountPaid?.includes(lowerCaseValue)
-        )
-      );
-    } else {
-      return of(this.haveNotPaidCopy);
-    }
+    const base =
+      this.activeList === 'cycle'
+        ? this.cycleNotFinishedCopy
+        : this.haveNotPaidCopy;
+
+    if (!value) return of(base);
+
+    const v = value.toLowerCase();
+    return of(
+      base!.filter(
+        (c) =>
+          c.firstName?.toLowerCase().includes(v) ||
+          c.lastName?.toLowerCase().includes(v) ||
+          c.middleName?.toLowerCase().includes(v) ||
+          c.amountPaid?.includes(v)
+      )
+    );
+  }
+
+  /* update the helper that builds the cycle list */
+  private computeCycleNotFinished(): void {
+    const today = new Date();
+    this.cycleNotFinished = (this.clients ?? []).filter((c) => {
+      if (!c.debtCycleStartDate) return false;
+      if (+c.debtLeft! <= 0) return false;
+
+      const [mm, dd, yyyy] = c.debtCycleStartDate.split('-').map(Number);
+      const start = new Date(yyyy, mm - 1, dd);
+      const diffMonths =
+        (today.getFullYear() - start.getFullYear()) * 12 +
+        (today.getMonth() - start.getMonth());
+
+      return diffMonths >= 5;
+    });
+
+    /* NEW – counters for the template */
+    this.cycleClientCount = this.cycleNotFinished.length;
+    this.totalCycleDebt = this.cycleNotFinished.reduce(
+      (sum, c) => sum + +c.debtLeft!,
+      0
+    );
+
+    this.cycleNotFinishedCopy = structuredClone(this.cycleNotFinished);
   }
 }

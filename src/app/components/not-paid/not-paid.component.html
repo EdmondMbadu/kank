@@ -1,101 +1,142 @@
 <app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
+<!-- █  EN-TÊTE  █ -->
+<section
+  class="max-w-6xl mx-auto mt-6 bg-gradient-to-r from-emerald-600 to-emerald-400
+         text-white rounded-xl shadow-lg px-6 py-6">
+  <h1 class="text-2xl md:text-3xl font-semibold tracking-wide">
+    Tableau de Suivi des Retards de Paiement
+  </h1>
+  <p class="text-sm md:text-base opacity-90 mt-1">
+    Comparez les clients en retard de cycle et ceux sans paiement.
+  </p>
+</section>
 
-<div class="container  flex mx-auto m-12 flex-col md:justify-center justify-between  md:flex-row ">
-    <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">N'ont Pas Payé Intervalle De Temps</h2>
-    <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button> -->
+<!-- █  PLAGE DE DATES  █ -->
+<div
+  class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 mt-8
+         bg-white dark:bg-slate-800 p-6 rounded-xl shadow">
+  <div>
+    <label class="block text-sm font-medium mb-1">Date de début</label>
+    <input [(ngModel)]="startDate" type="date"
+      class="w-full rounded-lg border-gray-300 dark:border-gray-600 text-sm
+             px-3 py-2 bg-gray-50 dark:bg-slate-700
+             focus:ring-emerald-500 focus:border-emerald-500
+             text-gray-800 dark:text-gray-100">
+  </div>
+
+  <div>
+    <label class="block text-sm font-medium mb-1">Date de fin</label>
+    <input [(ngModel)]="endDate" type="date"
+      class="w-full rounded-lg border-gray-300 dark:border-gray-600 text-sm
+             px-3 py-2 bg-gray-50 dark:bg-slate-700
+             focus:ring-emerald-500 focus:border-emerald-500
+             text-gray-800 dark:text-gray-100">
+  </div>
+
+  <div class="flex items-end">
+    <button (click)="searchThoseWhoDidNotPayPerInterval()"
+      class="w-full bg-emerald-600 hover:bg-emerald-700 text-white
+             rounded-lg shadow px-4 py-2 font-medium transition">
+      🔍 Rechercher
+    </button>
+  </div>
 </div>
 
-<div class="container  flex mx-auto  flex-col md:justify-center justify-between items-center  md:flex-row ">
-    <div class="flex flex-row">
-        <div class="mx-4">
-            <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900">Date de début</label>
-            <input [(ngModel)]="startDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023" required>
-            <!-- <h1 *ngIf="!validStartDate" class="text-red-500">Date Invalid. </h1> -->
-        </div>
-        <div class="mx-4">
-            <label for="end_date" class="block mb-2 text-sm font-medium text-gray-900 ">Date de fin</label>
-            <input [(ngModel)]="endDate" type="date" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-18-2023" required>
-            <!-- <h1 *ngIf="!validEndDate" class="text-red-500">Date Invalid</h1> -->
-        </div>
-    </div>
-</div>
-<div class="container  flex mx-auto flex-col md:justify-center justify-between  md:flex-row m-4">
-   
-    <button (click)="searchThoseWhoDidNotPayPerInterval()"  class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " >Découvrir</button>
-</div>
+<!-- █  BOUTONS DE BASCULE  █ -->
+<div class="flex justify-center gap-4 mt-8">
+  <button (click)="activeList = 'cycle'"
+    [ngClass]="activeList==='cycle'
+      ? 'bg-emerald-700 text-white'
+      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-300'"
+    class="rounded-full px-5 py-2 text-sm md:text-base font-medium transition shadow">
+    Cycle &ge; 5 mois non soldé
+  </button>
 
-<div class="flex  flex-col container mx-auto justify-center mb-4">
-    <div *ngIf="showWarning"
-  class="bg-red-600 text-white px-6 py-4 rounded-lg shadow-md mb-6 flex items-center mx-auto justify-center"
-  role="alert"
->
-  <!-- Heroicon: exclamation -->
-
-
-  <span class="ml-3 font-semibold text-lg">
-    ⚠️  Clients Dangereux : 5+ Mois sans payer
-  </span>
+  <button (click)="activeList = 'noPay'"
+    [ngClass]="activeList==='noPay'
+      ? 'bg-red-600 text-white'
+      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-700 dark:text-gray-300'"
+    class="rounded-full px-5 py-2 text-sm md:text-base font-medium transition shadow">
+    Sans paiement &ge; 5 mois
+  </button>
 </div>
 
-    <h2 class="text-center text-xl  ">{{numberofPeopleWhodidNotPay}} Clients N'ont Pas Payé. Montant: {{totalGivenDate | number:'1.0-0'}} FC </h2>
-   
+<!-- █  COMPTEURS  █ -->
+<h2 class="text-center text-lg md:text-xl font-semibold mt-6">
+  <ng-container *ngIf="activeList === 'cycle'; else noPayBloc">
+    {{ cycleClientCount }} clients &nbsp;•&nbsp;
+    Total&nbsp;{{ totalCycleDebt | number:'1.0-0' }} FC
+  </ng-container>
+
+  <ng-template #noPayBloc>
+    {{ numberofPeopleWhodidNotPay }} clients &nbsp;•&nbsp;
+    Total&nbsp;{{ totalGivenDate | number:'1.0-0' }} FC
+  </ng-template>
+</h2>
+
+<!-- █  BARRE DE RECHERCHE  █ -->
+<div class="max-w-6xl mx-auto mt-4">
+  <div class="relative">
+    <input id="simple-search" [formControl]="searchControl"
+      placeholder="Rechercher client, agent, montant…"
+      class="w-full pl-10 pr-4 py-2 text-sm rounded-lg
+             bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600
+             focus:ring-emerald-500 focus:border-emerald-500
+             text-gray-800 dark:text-gray-100 shadow-sm">
+    <svg
+      class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18.5a7.5 7.5 0 006.15-1.85z"/>
+    </svg>
+  </div>
 </div>
 
+<!-- █  LISTE DES RÉSULTATS  █ -->
+<section
+  class="max-w-6xl mx-auto mt-6 bg-white dark:bg-slate-800 rounded-xl
+         shadow-lg ring-1 ring-gray-200 dark:ring-slate-700 overflow-hidden">
+  <header class="px-6 py-4 border-b border-gray-100 dark:border-slate-700">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      Résultats
+    </h3>
+  </header>
 
-<div class="flex container mx-auto  justify-center">
-   <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-       <div class="flex items-center justify-between mb-4">
-           <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Resultats</h5>
-           <form class="flex items-center">   
-               <label for="simple-search" class="sr-only">Chercher</label>
-               <div class="relative w-full">
-                   <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                       <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-                       </svg>
-                   </div>
-                   <input type="text" id="simple-search"[formControl]="searchControl"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Chercher la date..." required>
-               </div>
-               <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                   <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                   </svg>
-                   <span class="sr-only">Chercher</span>
-               </button>
-           </form>
-   </div>
-   <div class="flow-root">
-           <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let c of haveNotPaid; let i=index  " [routerLink]="['/client-portal',c.trackingId]">
-                   <div class="flex items-center space-x-4">
-                       <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                           <span class="font-medium text-gray-600 dark:text-gray-300">{{c.firstName?.substring(0,2)}}</span>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                           <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                           {{c.firstName}} {{c.lastName}} {{c.middleName}}
-                           </p>
-                           <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                            Agent: {{c.employee?.firstName}} {{c.employee?.lastName}}
-                            
-                           </p>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white pl-5" >
-                             FC {{c.amountPaid | number:'1.0-0'}}
-                       
-                      
-                        </p>
-                        <p class="text-sm ml-6 text-gray-500 truncate dark:text-gray-400">
-                            Debt  FC {{c.debtLeft| number:'1.0-0'}}
-                        </p>
-                       </div>
-                   </div>
-               </li>
-           </ul>
-   </div>
-   </div>
+  <ul class="divide-y divide-gray-100 dark:divide-slate-700">
+    <li
+      *ngFor="let c of (activeList==='cycle' ? cycleNotFinished : haveNotPaid)"
+      class="group hover:bg-gray-50 dark:hover:bg-slate-700 transition
+             cursor-pointer px-6 py-4 flex items-center"
+      [routerLink]="['/client-portal', c.trackingId]">
 
+      <!-- avatar -->
+      <div
+        class="flex-none w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-600
+               flex items-center justify-center text-sm font-bold
+               text-gray-600 dark:text-gray-300 mr-4">
+        {{ c.firstName?.substring(0, 2) }}
+      </div>
 
-</div>
+      <!-- infos client -->
+      <div class="flex-1 min-w-0">
+        <p class="truncate font-medium text-gray-900 dark:text-gray-100">
+          {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+        </p>
+        <p class="truncate text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          Agent : {{ c.employee?.firstName }} {{ c.employee?.lastName }}
+        </p>
+      </div>
+
+      <!-- montants -->
+      <div class="flex-none text-right">
+        <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          FC {{ c.amountPaid | number:'1.0-0' }}
+        </p>
+        <p class="text-xs mt-0.5 text-red-600 dark:text-red-400">
+          Dette&nbsp;FC {{ c.debtLeft | number:'1.0-0' }}
+        </p>
+      </div>
+    </li>
+  </ul>
+</section>
