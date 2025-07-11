@@ -35,11 +35,11 @@ export class NotPaidComponent implements OnInit {
 
   /* simple toggle */
   activeList: 'cycle' | 'noPay' = 'cycle';
-  /* threshold in months – default 5 */
-  monthsThreshold = 5;
+  /* threshold in months – default 5 for paid nothing */
+  monthsThreshold = 7;
 
-  /* --- threshold for the no-payment list (in months) --- */
-  noPayMonthsThreshold = 5; // default 5 mois
+  /* --- threshold for the no-payment list (in months)  based on cycle--- */
+  noPayMonthsThreshold = 5; // default 7 mois
 
   /** called whenever the input changes */
   onThresholdChange(val: string | number): void {
