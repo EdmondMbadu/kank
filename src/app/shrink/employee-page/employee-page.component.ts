@@ -35,6 +35,7 @@ interface AuditReceipt {
 export class EmployeePageComponent implements OnInit {
   salaryPaid: string = '';
   showRequestVacation: boolean = false;
+  readonly TOTAL_VACATION_DAYS = 7;
 
   /* ─── Component state ───────────────────────────── */
   auditReceipts: AuditReceipt[] = [];
@@ -206,10 +207,11 @@ export class EmployeePageComponent implements OnInit {
     },
   };
 
+  /** Met à jour this.vacation (= jours restants) */
   findNumberOfVacationDaysLeft() {
     const acceptedDays =
       Number(this.employee.vacationAcceptedNumberOfDays) || 0;
-    this.vacation = 7 - acceptedDays;
+    this.vacation = this.TOTAL_VACATION_DAYS - acceptedDays;
   }
 
   toggle(property: 'showRequestVacation' | 'isLoading') {
@@ -1169,6 +1171,13 @@ export class EmployeePageComponent implements OnInit {
     console.log('empolyee attendance', this.employee.attendance);
     if (!this.time.isValidRequestDateForVacation(this.requestDate)) {
       return;
+    }
+    if (this.vacation <= 0) {
+      alert(
+        "Vous n'avez plus de vacances disponibles. " +
+          "Veuillez contacter votre superviseur ou attendre l'année prochaine."
+      );
+      return; // ⟵ On sort immédiatement
     }
     // Vacation in process
     this.attendance = 'VP';
