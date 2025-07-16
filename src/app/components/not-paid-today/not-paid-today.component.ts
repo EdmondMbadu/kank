@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Pipe, PipeTransform } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
@@ -205,5 +205,21 @@ export class NotPaidTodayComponent {
         alert('Error sending reminders. Please try again.');
       },
     });
+  }
+
+  /** Return the first comment that matches `requestDate`, or `null` */
+  getTodaysComment(client: Client) {
+    if (!client.comments?.length) {
+      return null;
+    }
+
+    // Normalise the requested date (remove any leading-zeros)
+    const [mm, dd, yyyy] = this.requestDateCorrectFormat.split('-');
+    const normalisedReq = `${Number(mm)}-${Number(dd)}-${yyyy}`; // e.g. 7-16-2025
+
+    // Find the first comment whose time starts with that normalised date
+    return (
+      client.comments.find((c) => c.time!.startsWith(normalisedReq)) || null
+    );
   }
 }
