@@ -39,20 +39,26 @@ export class LandingPageComponent {
       .subscribe(() => (this.isLoading = false));
   }
 
-  /** ❷ Déclenché au clic sur « Se Connecter » */
+  // landing-page.component.ts
   async SignOn() {
     if (!this.email || !this.password) {
       alert('Veuillez renseigner tous les champs.');
       return;
     }
 
-    this.isLoading = true; // montre le loader tout de suite
+    this.isLoading = true;
+
     try {
       await this.auth.SignOn(this.email, this.password, this.word);
-      // Le routeur redirige vers /home ⇒ isLoading sera repassé à false par le hook ci-dessus
+      // succès → le hook Router (NavigationEnd) remettra isLoading = false
     } catch (err: any) {
-      this.isLoading = false; // échec d’authentification
-      alert(err?.message ?? 'Erreur inconnue');
+      // échec d’authentification
+      this.isLoading = false; // ← spinner disparaît
+      const msg =
+        err?.code === 'auth/wrong-password'
+          ? 'Mot de passe ou email incorrect. Essayer à nouveau.'
+          : err?.message ?? 'Échec de connexion.';
+      alert(msg);
     }
   }
 }

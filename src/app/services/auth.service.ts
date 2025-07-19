@@ -172,32 +172,24 @@ export class AuthService {
       this.currentUser = user;
     });
   }
-  SignOn(email: string, password: string, word: string) {
-    this.fireauth
+  // auth.service.ts
+  SignOn(email: string, password: string, word: string): Promise<void> {
+    return this.fireauth // ← on retourne la promesse
       .signInWithEmailAndPassword(email, password)
-      .then(
-        (res) => {
-          if (word === this.word) {
-            this.isAdmninistrator = true;
-          }
-          if (word === this.distributor) {
-            this.isDistributoring = true;
-          }
-          if (res.user?.emailVerified == true) {
-            this.router.navigate(['/home']);
-          } else {
-            this.router.navigate(['/verify-email']);
-          }
-        },
-        (err) => {
-          alert('Something went wrong');
-          this.router.navigate(['/']);
+      .then((res) => {
+        if (word === this.word) this.isAdmninistrator = true;
+        if (word === this.distributor) this.isDistributoring = true;
+
+        if (res.user?.emailVerified) {
+          this.router.navigate(['/home']);
+        } else {
+          this.router.navigate(['/verify-email']);
         }
-      )
-      .catch((error) => {
-        alert('Something went wrong');
-        this.router.navigate(['/']);
-        // ...
+      })
+      .catch((err) => {
+        // alert('Something went wrong'); // message inchangé
+        // Pas de navigation vers « / » : on reste sur la page
+        return Promise.reject(err); // ← on relaie l’erreur
       });
   }
 
