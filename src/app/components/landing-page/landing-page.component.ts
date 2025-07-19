@@ -42,7 +42,7 @@ export class LandingPageComponent {
   // landing-page.component.ts
   async SignOn() {
     if (!this.email || !this.password) {
-      alert('Veuillez renseigner tous les champs.');
+      alert('Veuillez completez toutes les données.');
       return;
     }
 
