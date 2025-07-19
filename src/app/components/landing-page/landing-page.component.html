@@ -1,6 +1,32 @@
 <app-navbar></app-navbar>
 <!-- Sign On -->
-
+<!-- loader overlay (à placer tout en haut du template) -->
+<div
+  *ngIf="isLoading"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+>
+  <!-- simple SVG spinner Tailwind -->
+  <svg
+    class="animate-spin h-14 w-14 text-white"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+    <circle
+      class="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      stroke-width="4"
+      fill="none"
+    ></circle>
+    <path
+      class="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+    ></path>
+  </svg>
+</div>
 <div class="">
 <section class="container flex flex-col md:flex-row justify-center items-center px-6 mx-auto ">
     <div class=" flex-col w-[22rem] shadow-md  my-6 h-[25rem] border border-green-950 rounded-lg " style="background-image: url(../../../assets/img/african-woman.jpg)">
@@ -8,7 +34,37 @@
   
         <input type="text" name="username" class="mt-2 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Email" required [(ngModel)]="email"/>
         <input type="password" name="password" class="mt-6 w-5/6 h-10 px-3 py-2 bg-white border shadow-sm border-slate-300 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-sky-500 block  rounded-full sm:text-sm focus:ring-1" placeholder="Mot De Passe" required [(ngModel)]="password" />
-        <button type="submit" class="text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="SignOn()">Se Connecter</button>
+          <button
+      type="button"
+      class="relative flex items-center justify-center gap-2 text-white bg-green-700 mt-6 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm px-5 py-2.5"
+      (click)="SignOn()"
+      [disabled]="isLoading"
+    >
+      <!-- spinner miniature dans le bouton -->
+      <svg
+        *ngIf="isLoading"
+        class="animate-spin h-4 w-4 text-white"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+          fill="none"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        ></path>
+      </svg>
+
+      <span>{{ isLoading ? 'Connexion…' : 'Se Connecter' }}</span>
+    </button>
 
         <p routerLink="/forgot-password" class="p-2 cursor-pointer  hover:underline text-white italic">Mot De passe Oublié?</p>
       </label> 

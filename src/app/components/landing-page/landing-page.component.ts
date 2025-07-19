@@ -1,7 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+// landing-page.component.ts
+import { Component } from '@angular/core';
+import {
+  Router,
+  NavigationStart,
+  NavigationEnd,
+  NavigationCancel,
+  NavigationError,
+} from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
-import { DataService } from 'src/app/services/data.service';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-landing-page',
@@ -9,21 +16,43 @@ import { DataService } from 'src/app/services/data.service';
   styleUrls: ['./landing-page.component.css'],
 })
 export class LandingPageComponent {
-  email: string = '';
-  password: string = '';
-  word: string = '';
-  ngOnInit() {
-    this.email = '';
-    this.password = '';
-    this.word = '';
-  }
-  constructor(private auth: AuthService) {}
+  email = '';
+  password = '';
+  word = '';
+  isLoading = false; // <── nouveau
 
-  SignOn() {
-    if (this.email === '' || this.password === '') {
-      alert('FIll all fields');
+  constructor(private auth: AuthService, private router: Router) {
+    /** ❶ Bascule le loader pendant toute navigation */
+    this.router.events
+      .pipe(filter((ev) => ev instanceof NavigationStart))
+      .subscribe(() => (this.isLoading = true));
+
+    this.router.events
+      .pipe(
+        filter(
+          (ev) =>
+            ev instanceof NavigationEnd ||
+            ev instanceof NavigationCancel ||
+            ev instanceof NavigationError
+        )
+      )
+      .subscribe(() => (this.isLoading = false));
+  }
+
+  /** ❷ Déclenché au clic sur « Se Connecter » */
+  async SignOn() {
+    if (!this.email || !this.password) {
+      alert('Veuillez renseigner tous les champs.');
       return;
     }
-    this.auth.SignOn(this.email, this.password, this.word);
+
+    this.isLoading = true; // montre le loader tout de suite
+    try {
+      await this.auth.SignOn(this.email, this.password, this.word);
+      // Le routeur redirige vers /home ⇒ isLoading sera repassé à false par le hook ci-dessus
+    } catch (err: any) {
+      this.isLoading = false; // échec d’authentification
+      alert(err?.message ?? 'Erreur inconnue');
+    }
   }
 }
