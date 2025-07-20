@@ -264,7 +264,7 @@
 
   <!-- 🌙  MODAL OVERLAY --------------------------------------------------- -->
 <div *ngIf="modalOpen"
-     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur">
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur dark:text-white">
   <div class="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl dark:bg-slate-800">
 
     <h3 class="mb-6 text-xl font-bold text-gray-800 dark:text-gray-100">
@@ -274,14 +274,17 @@
     <!-- search -->
     <input type="text" [formControl]="search"
            placeholder="Rechercher un client crédit…"
-           class="mb-4 w-full rounded border px-3 py-2">
+           class="mb-4 w-full rounded border px-3 py-2 dark:text-slate-700">
 
     <!-- list -->
     <ul class="max-h-48 overflow-y-auto rounded border mb-6">
       <li *ngFor="let c of filtered"
           (click)="selected = c"
           [class.bg-emerald-100]="selected?.uid === c.uid"
-          class="cursor-pointer px-4 py-2 hover:bg-emerald-50">
+          [ngClass]="{
+            'bg-emerald-100 dark:text-slate-700': selected?.uid === c.uid
+          }"
+          class="cursor-pointer px-4 py-2 hover:bg-emerald-50 hover:dark:text-slate-700">
         {{ c.firstName }} {{ c.lastName }} —
         Dette: {{ c.debtLeft | number:'1.0-0' }} FC
       </li>
@@ -292,7 +295,7 @@
       Montant à transférer (FC)
     </label>
     <input type="number" [formControl]="amount"
-           class="mb-6 w-40 rounded border px-3 py-2">
+           class="mb-6 w-40 rounded border px-3 py-2 dark:text-slate-700">
     <p class="mb-6 text-xs text-gray-500 dark:text-gray-400">
       * Le montant doit être un multiple de
       <strong>{{ clientCard.amountToPay | number:'1.0-0' }} FC</strong>

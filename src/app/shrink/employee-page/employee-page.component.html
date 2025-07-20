@@ -508,7 +508,7 @@
 
                             
                                     <a [href]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]"target="_blank">
-                                        <img src="../../../assets/img/receipt.png" class="w-12 h-12 object-cover rounded-md border" alt="">
+                                        <img src="../../../assets/img/receipt.png" class="w-12 h-12 object-cover rounded-md border bg-white" alt="">
                                     </a>
                                     <!-- If receipt[i] is set, show an image/link + "Change" button -->
                         <ng-container *ngIf="employee.receipts && employee.receipts[paymentAmounts.length - 1 - i]">
@@ -597,7 +597,7 @@
     <div *ngIf="displayBonus" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-10 z-50 p-4 flex pb-6">
         <div class="mt-6 grow sm:mt-8 lg:mt-0">
             
-            <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
+            <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                 <h2 class="font-bold  "> {{employee.firstName}}  {{employee.lastName}} Bonus {{time.monthFrenchNames[lastMonth-1]}} {{year}}</h2>
               <div class="space-y-2">
                 <dl *ngIf="bonusPercentage!==0 || this.auth.isAdmninistrator" class="flex items-center justify-between gap-4">
@@ -663,7 +663,7 @@
     <div *ngIf="displayPayment" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-10 z-50 p-4 flex pb-6">
         <div class="mt-6 grow sm:mt-8 lg:mt-0">
             
-            <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
+            <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                 <h2 class="font-bold  "> {{employee.firstName}}  {{employee.lastName}} Paiement {{time.monthFrenchNames[lastMonth]}} {{year}}</h2>
               <div class="space-y-2">
                 <dl *ngIf="paymentAmount!==0 || this.auth.isAdmninistrator" class="flex items-center justify-between gap-4">
@@ -743,7 +743,7 @@
     <div *ngIf="displayCode" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-10 z-50 p-4 flex pb-6">
         <div class="mt-6 grow sm:mt-8 lg:mt-0">
             
-            <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
+            <div class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:text-white dark:bg-gray-800">
                 <h2 class="font-bold  "> Entrez le code</h2>
               <div class="space-y-2">
                 

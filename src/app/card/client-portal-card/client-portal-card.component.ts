@@ -56,6 +56,12 @@ export class ClientPortalCardComponent {
 
   /* ---------- open / close ---------- */
   openTransferModal() {
+    if (this.amountToGiveClient === '0') {
+      alert(
+        "Vous n'avez pas d'argent pour faire le transfer. Ajouter l'argent à la carte."
+      );
+      return;
+    }
     this.modalOpen = true;
     this.amount.reset();
     this.search.setValue('');
