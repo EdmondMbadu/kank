@@ -1,5 +1,5 @@
 import { PercentPipe } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -10,7 +10,7 @@ import { TimeService } from 'src/app/services/time.service';
   templateUrl: './tutorial.component.html',
   styleUrls: ['./tutorial.component.css'],
 })
-export class TutorialComponent {
+export class TutorialComponent implements OnInit {
   showFirst: boolean = false;
   system: boolean = false;
   payment: boolean = false;
@@ -30,6 +30,7 @@ export class TutorialComponent {
   reserveSummary: boolean = false;
   dailyActivity: boolean = false;
   criteriaToLend: boolean = false;
+  startingBudget: number = 0;
 
   numberOfPeople: number = 0;
   percentage: number = 0;
@@ -46,6 +47,10 @@ export class TutorialComponent {
     private time: TimeService,
     public compute: ComputationService
   ) {}
+  ngOnInit() {
+    this.startingBudget = Number(this.auth.currentUser?.startingBudget ?? 0);
+    console.log('budget ', this.startingBudget);
+  }
   /* === Calcul frais prêt === */
   isNewClient: boolean = true; // Nouveau = true, Ancien = false
   loanAmount: number | null = null;

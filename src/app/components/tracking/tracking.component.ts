@@ -97,6 +97,7 @@ export class TrackingComponent {
   summaryContent: string[] = [];
   moneyInHands: string = '';
   maxNumberOfDaysToLend: Number = 0;
+  startingBudget: string = '';
   teamCode: string = '';
 
   initalizeInputs() {
@@ -135,6 +136,9 @@ export class TrackingComponent {
     this.teamCode = this.auth.currentUser.teamCode
       ? this.auth.currentUser.teamCode
       : '';
+    this.startingBudget = this.auth.currentUser.startingBudget
+      ? this.auth.currentUser.startingBudget
+      : '0';
     let cardM =
       this.auth.currentUser.cardsMoney === undefined
         ? '0'

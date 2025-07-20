@@ -246,6 +246,28 @@
       </button>
     </div>
 
+    <!-- Starting Budget -->
+    <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Budget Initiale
+      </h3>
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle&nbsp;: <strong>{{ startingBudget }}</strong>
+      </p>
+      <input
+        [(ngModel)]="startingBudget"
+        type="number"
+        placeholder="Entrez la valeur"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+      <button
+        (click)="setUserField('startingBudget', startingBudget)"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
+    </div>
     <!-- Objectif Performance -->
     <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
       <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
