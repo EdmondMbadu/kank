@@ -45,7 +45,7 @@
       </h5>
 
       <!-- Amounts only for i > 1 -->
-      <ng-container *ngIf="i > 1; else countOnly">
+      <ng-container *ngIf="i > 2; else countOnly">
         <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
           FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
         </p>

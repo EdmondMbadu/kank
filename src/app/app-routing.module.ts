@@ -167,7 +167,22 @@ const routes: Routes = [
   { path: 'summary-card-central', component: SummaryCardCentralComponent },
   { path: 'client-info-current', component: ClientInfoCurrentComponent },
   { path: 'client-info-savings', component: ClientInfoSavingsComponent },
-  { path: 'client-info-card', component: ClientInfoCardComponent },
+
+  {
+    path: 'client-info-card/all',
+    component: ClientInfoCardComponent,
+    data: { filter: 'all' },
+  },
+  {
+    path: 'client-info-card/current',
+    component: ClientInfoCardComponent,
+    data: { filter: 'current' },
+  },
+  {
+    path: 'client-info-card/finished',
+    component: ClientInfoCardComponent,
+    data: { filter: 'finished' },
+  },
   { path: 'new-client', component: NewClientComponent },
   { path: 'register-client', component: RegisterClientComponent },
   { path: 'new-cycle-register/:id', component: NewCycleRegisterComponent },

@@ -131,7 +131,7 @@ export class DailyCardPaymentsComponent implements OnInit {
         trackingId: client.trackingId,
       };
 
-      if (Number(v) > 0) {
+      if (Number(v) != 0) {
         this.dailyPayments?.push(filt);
         this.dailyPaymentsCopy?.push(filt);
       }

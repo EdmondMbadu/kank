@@ -24,16 +24,19 @@ export class SummaryCardComponent implements OnInit {
 
   clientsCard: Card[] = [];
   currentClientsCard: Card[] = [];
+  finishedClientsCard: Card[] = [];
 
   elements: number = 10;
 
   linkPath: string[] = [
-    '/client-info-card',
-    '/client-info-card',
+    '/client-info-card/all',
+    '/client-info-card/current',
+    '/client-info-card/finished',
     // '/client-info-card',
-    '/client-info-card',
+    '/client-info-card/all',
   ];
   imagePaths: string[] = [
+    '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
     '../../../assets/img/people.svg',
     // '../../../assets/img/invest.svg',
@@ -43,6 +46,7 @@ export class SummaryCardComponent implements OnInit {
   summary: string[] = [
     'Carte Clients Total',
     'Carte Clients Actuel',
+    'Carte Clients Terminés',
     // 'Argent De Carte En Main',
     'Epargne Carte',
   ];
@@ -57,10 +61,16 @@ export class SummaryCardComponent implements OnInit {
         ? '0'
         : this.auth.currentUser.numberOfCardClients;
     let clientCardSavings = this.findMoneyToReturnToClients();
-
-    this.summaryContent = [`${total}`, `${actual}`, `${clientCardSavings}`];
+    let finished = this.clientsCard.length - actual;
+    this.summaryContent = [
+      `${total}`,
+      `${actual}`,
+      `${finished}`,
+      `${clientCardSavings}`,
+    ];
 
     this.valuesConvertedToDollars = [
+      ``,
       ``,
       ``,
       `${this.compute.convertCongoleseFrancToUsDollars(
