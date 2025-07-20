@@ -394,155 +394,342 @@
         </h2>
         <div *ngIf="payment" id="accordion-collapse-body-2"  aria-labelledby="accordion-collapse-heading-2">
           <div class="p-5 border border-gray-200 dark:border-gray-700">
-            <p class="text-lg  font-light text-center mx-4 mb-4 ">
-              Les paiements de salaire seront effectués le <span class="text-red-500"> 1er </span> de chaque mois. Si le 1er tombe un samedi ou un dimanche, les agents seront payés la veille.
-              Les paiements de bonus seront effectués le <span class="text-red-500"> 15 </span> de chaque mois. Si le 15 tombe un samedi ou un dimanche, les agents seront payés la veille.
-          </p>
-   
-          <div *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2">
-            <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
-                <div class="p-4">
-                    <h1 class="text-lg font-semibold text-gray-700 mb-4 underline">Montant de Paiement et Bonus $15K+ Manager (Audit)</h1>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white border border-gray-200 text-gray-700">
-                            <thead>
-                                <tr class="bg-gray-100 border-b">
-                                    <th class="px-4 py-2 text-left">Role</th>
-                                    <th class="px-4 py-2 text-left">Base</th>
-                                    <th class="px-4 py-2 text-left">Bonus 1.6-2%</th>
-                                    <th class="px-4 py-2 text-left">Bonus 1.1-1.5%</th>
-                                    <th class="px-4 py-2 text-left">Bonus 0.6-1%</th>
-                                    <th class="px-4 py-2 text-left">Bonus 0-0.5%</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="border-b hover:bg-gray-50">
-                                    <td class="px-4 py-2">Manager Gestion</td>
-                                    <td class="px-4 py-2">140$</td>
-                                    <td class="px-4 py-2">15$</td>
-                                    <td class="px-4 py-2">30$</td>
-                                    <td class="px-4 py-2">40$</td>
-                                    <td class="px-4 py-2">50$</td>
-                                </tr>
-                                <tr class="border-b hover:bg-gray-50">
-                                    <td class="px-4 py-2">Auditrice</td>
-                                    <td class="px-4 py-2">100$</td>
-                                    <td class="px-4 py-2">10$</td>
-                                    <td class="px-4 py-2">15$</td>
-                                    <td class="px-4 py-2">20$</td>
-                                    <td class="px-4 py-2">30$</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <!-- Calendrier des versements -->
+              <p class="text-base md:text-lg font-medium text-center text-slate-800 dark:text-slate-200 space-y-2">
+                <span class="flex items-center justify-center gap-1">
+                  <!-- Icon calendrier -->
+                  <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 2a1 1 0 100 2h1v2h2V4h6v2h2V4h1a1 1 0 100-2H6zM3 8a2 2 0 012-2h14a2 2 0 012 2v12a2
+                            2 0 01-2 2H5a2 2 0 01-2-2V8zm2 2v10h14V10H5z"/>
+                  </svg>
+                  Salaires : <span class="font-extrabold text-red-600">1<sup>er</sup></span> de chaque mois
+                  <em class="text-xs opacity-70">(ou la veille si week-end)</em>
+                </span>
+                <br>
+                <span class="flex items-center justify-center gap-1">
+                  <!-- Icon cadeau -->
+                  <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 12v8a2 2 0 01-2 2h-6v-6h8zm-8 0H4v8a2 2 0 002 2h6v-6zm0-2V4h6a2 2 0
+                            012 2v4h-8zm-2-6H6a2 2 0 00-2 2v4h8V4z"/>
+                  </svg>
+                  Bonus : <span class="font-extrabold text-red-600">15</span> de chaque mois
+                  <em class="text-xs opacity-70">(ou la veille si week-end)</em>
+                </span>
+              </p>
+
+       <!-- ░░░ BARÈME PAIEMENT & BONUS — MANAGER 15 K+ ░░░ -->
+          <div *ngIf="auth.isAdmninistrator || auth.isDistributor"
+              class="max-w-2xl mx-auto my-6">
+
+            <div
+              class="rounded-2xl overflow-hidden shadow-lg
+                    ring-1 ring-amber-200 dark:ring-amber-700
+                    bg-gradient-to-br from-white via-amber-50 to-amber-100
+                    dark:from-slate-800 dark:via-slate-800/70 dark:to-slate-900/60">
+
+              <!-- Ruban titre -->
+              <h2
+                class="bg-amber-600/10 dark:bg-amber-900/40
+                      text-amber-800 dark:text-amber-200
+                      text-center py-3 text-sm font-bold tracking-wide
+                      flex items-center justify-center gap-1">
+                <!-- Icône trophée -->
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17 4V2H7v2H3v5a5 5 0 005 5v2H6v2h12v-2h-2v-2a5 5 0 005-5V4h-4zm0
+                          5a3 3 0 01-3 3h-4a3 3 0 01-3-3V6h10v3z"/>
+                </svg>
+                Bonus Pourcentage Distribution
+                <!-- Barème Paiement&nbsp;&amp;&nbsp;Bonus — Managers 15 K+ -->
+              </h2>
+
+              <!-- Tableau -->
+              <div class="overflow-x-auto bg-white dark:bg-slate-800">
+                <table
+                  class="min-w-full text-xs md:text-sm
+                        text-slate-700 dark:text-slate-200 border-collapse">
+                  <thead
+                    class="uppercase tracking-wider bg-slate-100 dark:bg-slate-700/60">
+                    <tr>
+                      <th class="px-4 py-3 text-left rounded-l-lg">Rôle</th>
+                      <!-- <th class="px-4 py-3 text-left">Base</th> -->
+                      <th class="px-4 py-3 text-left">Bonus 1.6–2 %</th>
+                      <th class="px-4 py-3 text-left">Bonus 1.1–1.5 %</th>
+                      <th class="px-4 py-3 text-left">Bonus 0.6–1 %</th>
+                      <th class="px-4 py-3 text-left rounded-r-lg">Bonus 0–0.5 %</th>
+                    </tr>
+                  </thead>
+
+                  <tbody
+                    class="[&>tr:nth-child(even)]:bg-slate-50
+                          dark:[&>tr:nth-child(even)]:bg-slate-800/50
+                          hover:[&>tr]:bg-amber-50
+                          dark:hover:[&>tr]:bg-slate-700/50">
+               
+                    <tr>
+                      <td class="px-4 py-3 font-medium">Audit Team</td>
+                      <!-- <td class="px-4 py-3">100&nbsp;$</td> -->
+                      <td class="px-4 py-3">10&nbsp;$</td>
+                      <td class="px-4 py-3">15&nbsp;$</td>
+                      <td class="px-4 py-3">20&nbsp;$</td>
+                      <td class="px-4 py-3">30&nbsp;$</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-        </div>
-        
-        <div *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2">
-          <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
-            <div class="p-4">
-                <!-- <h1 class="text-lg font-semibold text-gray-700 mb-4">Pourcentage du Manager et Budget</h1> -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-gray-200 text-gray-700">
-                        <thead>
-                            <tr class="bg-gray-100 border-b">
-                                <th class="px-4 py-2 text-left">Pourcentage</th>
-                                <th class="px-4 py-2 text-left">Bonus Audit $</th>
-                          
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-2">100%</td>
-                                <td class="px-4 py-2">120$</td>
-                            </tr>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-2">90-99%$</td>
-                                <td class="px-4 py-2">100$</td>
-                            </tr>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-2">80-89%</td>
-                                <td class="px-4 py-2">80$</td>
-                            </tr>
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-2">70-79%</td>
-                                <td class="px-4 py-2">40$</td>
-                            </tr>
-                             <tr class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-2">60-69%</td>
-                                <td class="px-4 py-2">20$</td>
-                            </tr>
-                             <tr class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-2">50-59%</td>
-                                <td class="px-4 py-2">10$</td>
-                            </tr>
-                           
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        </div>
+          </div>
+          <!-- ░░░ FIN BARÈME ░░░ -->
+
+              
 
         
             
                         <!-- ░░░ SALAIRE ET BONUS STRUCTURE ░░░ -->
-          <div  class="max-w-2xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-4 p-5 border border-gray-200 dark:border-gray-700">
-            <h1 class="text-xl font-semibold text-gray-800 dark:text-white mb-4 underline text-center">Structure de Salaire et Bonus</h1>
-            
-            <div class="overflow-x-auto mb-4">
-              <table class="min-w-full bg-white border border-gray-200 text-gray-700">
-                <thead class="bg-gray-100 border-b">
-                  <tr>
-                    <th class="px-4 py-2 text-left">Rôle</th>
-                    <th class="px-4 py-2 text-left">Salaire Initial</th>
-                    <th class="px-4 py-2 text-left">Après 3 Mois</th>
-                    <th class="px-4 py-2 text-left">Augmentation Annuelle</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="border-b hover:bg-gray-50">
-                    <td class="px-4 py-2">Manager</td>
-                    <td class="px-4 py-2">80$</td>
-                    <td class="px-4 py-2">100$</td>
-                    <td class="px-4 py-2">+10$ / an</td>
-                  </tr>
-                  <tr class="border-b hover:bg-gray-50">
-                    <td class="px-4 py-2">Agent Marketing</td>
-                    <td class="px-4 py-2">70$</td>
-                    <td class="px-4 py-2">90$</td>
-                    <td class="px-4 py-2">+10$ / an</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <!-- ░░░ STRUCTURE DE SALAIRE & BONUS ░░░ -->
+            <div
+              class="max-w-2xl mx-auto my-6
+                    rounded-2xl overflow-hidden shadow-lg
+                    ring-1 ring-indigo-200 dark:ring-slate-700
+                    bg-gradient-to-br from-white via-indigo-50 to-indigo-100
+                    dark:from-slate-800 dark:via-slate-800/70 dark:to-slate-900/60 p-6">
 
-        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Bonus Mensuel selon le Pourcentage de Réussite</h2>
-            <div class="overflow-x-auto mb-2">
-              <table class="min-w-full bg-white border border-gray-200 text-gray-700">
-                <thead class="bg-gray-100 border-b">
-                  <tr>
-                    <th class="px-4 py-2 text-left">Pourcentage de Performance</th>
-                    <th class="px-4 py-2 text-left">Bonus ($)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">50%</td><td class="px-4 py-2">10$</td></tr>
-                  <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">60%</td><td class="px-4 py-2">20$</td></tr>
-                  <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">70%</td><td class="px-4 py-2">40$</td></tr>
-                  <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">80%</td><td class="px-4 py-2">80$</td></tr>
-                  <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">90%</td><td class="px-4 py-2">100$</td></tr>
-                  <tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">100%</td><td class="px-4 py-2">120$</td></tr>
-                </tbody>
-              </table>
-            </div>
+              <!-- Ruban titre -->
+              <h1
+                class="text-xl font-extrabold mb-6 text-center tracking-wide
+                      text-indigo-800 dark:text-indigo-200 relative">
+                Structure de Salaire & Bonus
+              </h1>
 
-            <div class="text-sm text-gray-600 dark:text-gray-300 mt-4">
-              <p><strong>Condition Bonus pour le Manager :</strong> L’équipe doit avoir au moins <strong>50 personnes</strong>.</p>
-              <p><strong>Condition Bonus pour l’Agent Marketing :</strong> L’agent doit gérer au moins <strong>25 clients</strong>.</p>
+              <div class="overflow-x-auto">
+                <table
+                  class="min-w-full text-sm text-gray-700 dark:text-gray-200
+                        border-collapse">
+                  <thead>
+                    <tr
+                      class="bg-indigo-100/70 dark:bg-indigo-900/40 text-left
+                            uppercase text-xs font-semibold tracking-wider">
+                      <th class="px-4 py-3 rounded-l-lg">Rôle</th>
+                      <th class="px-4 py-3">Salaire initial</th>
+                      <th class="px-4 py-3">Après 3&nbsp;mois</th>
+                      <th class="px-4 py-3 rounded-r-lg">Augmentation annuelle</th>
+                    </tr>
+                  </thead>
+
+                  <!-- Manager -->
+                  <tr class="odd:bg-white even:bg-indigo-50/40 dark:odd:bg-slate-800 dark:even:bg-slate-800/50 hover:brightness-105">
+                    <td class="px-4 py-3 font-medium">Manager</td>
+                    <td class="px-4 py-3">80&nbsp;$</td>
+                    <td class="px-4 py-3 flex items-center gap-1">
+                      100&nbsp;$
+                      <svg class="w-4 h-4 text-emerald-500" fill="currentColor"
+                        viewBox="0 0 24 24">
+                        <path d="M5 12l7-7 7 7H5z" />
+                      </svg>
+                    </td>
+                    <td class="px-4 py-3">+10&nbsp;$&nbsp;/ an</td>
+                  </tr>
+
+                  <!-- Agent Marketing -->
+                  <tr class="odd:bg-white even:bg-indigo-50/40 dark:odd:bg-slate-800 dark:even:bg-slate-800/50 hover:brightness-105">
+                    <td class="px-4 py-3 font-medium">Agent Marketing</td>
+                    <td class="px-4 py-3">70&nbsp;$</td>
+                    <td class="px-4 py-3 flex items-center gap-1">
+                      90&nbsp;$
+                      <svg class="w-4 h-4 text-emerald-500" fill="currentColor"
+                        viewBox="0 0 24 24">
+                        <path d="M5 12l7-7 7 7H5z" />
+                      </svg>
+                    </td>
+                    <td class="px-4 py-3">+10&nbsp;$&nbsp;/ an</td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Légende -->
+              <p
+                class="mt-4 text-xs text-gray-600 dark:text-gray-400 text-center">
+                <em>Les flèches signalent les paliers de progression : tout effort
+                régulier est récompensé !</em>
+              </p>
             </div>
+            <!-- ░░░ FIN STRUCTURE ░░░ -->
+
+
+      <!-- ░░░ BONUS MENSUEL : PLUS TU PERFORMES, PLUS TU GAGNES ░░░ -->
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 text-center mx-auto">
+              Bonus mensuel : « Mieux tu performes, plus tu gagnes »
+            </h2>
+
+          <div class="overflow-x-auto mb-6 max-w-2xl mx-auto">
+            <table
+              class="min-w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600">
+              <thead
+                class="bg-gray-100 dark:bg-slate-700/60 text-left text-xs font-semibold uppercase tracking-wider">
+                <tr>
+                  <th class="px-4 py-3">Pourcentage de performance</th>
+                  <th class="px-4 py-3">Indicateur</th>
+                  <th class="px-4 py-3">Bonus ($)</th>
+                </tr>
+              </thead>
+
+              <!-- 50 % -->
+              <tr
+                class="bg-green-50 dark:bg-green-900/20 border-b hover:bg-green-100/70">
+                <td class="px-4 py-3 font-medium">50 %</td>
+                <td class="px-4 py-3">
+                  <div class="w-44 h-2 bg-green-200 rounded">
+                    <div class="h-full bg-green-500 rounded" style="width:50%"></div>
+                  </div>
+                </td>
+                <td
+                  class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1">
+                  10 $
+                  <!-- flèche ↑ -->
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
+                  </svg>
+                </td>
+              </tr>
+
+              <!-- 60 % -->
+              <tr
+                class="bg-green-100 dark:bg-green-900/25 border-b hover:bg-green-150/60">
+                <td class="px-4 py-3 font-medium">60 %</td>
+                <td class="px-4 py-3">
+                  <div class="w-44 h-2 bg-green-200 rounded">
+                    <div class="h-full bg-green-500 rounded" style="width:60%"></div>
+                  </div>
+                </td>
+                <td
+                  class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1">
+                  20 $
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
+                  </svg>
+                </td>
+              </tr>
+
+              <!-- 70 % -->
+              <tr
+                class="bg-green-200 dark:bg-green-900/30 border-b hover:bg-green-250/50">
+                <td class="px-4 py-3 font-medium">70 %</td>
+                <td class="px-4 py-3">
+                  <div class="w-44 h-2 bg-green-200 rounded">
+                    <div class="h-full bg-green-500 rounded" style="width:70%"></div>
+                  </div>
+                </td>
+                <td
+                  class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1">
+                  40 $
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
+                  </svg>
+                </td>
+              </tr>
+
+              <!-- 80 % -->
+              <tr
+                class="bg-green-300 dark:bg-green-900/35 border-b hover:bg-green-350/40">
+                <td class="px-4 py-3 font-medium">80 %</td>
+                <td class="px-4 py-3">
+                  <div class="w-44 h-2 bg-green-200 rounded">
+                    <div class="h-full bg-green-500 rounded" style="width:80%"></div>
+                  </div>
+                </td>
+                <td
+                  class="px-4 py-3 font-semibold text-green-800 dark:text-green-200 flex items-center gap-1">
+                  80 $
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
+                  </svg>
+                </td>
+              </tr>
+
+              <!-- 90 % -->
+              <tr
+                class="bg-green-400 dark:bg-green-900/40 border-b hover:bg-green-450/30">
+                <td class="px-4 py-3 font-medium">90 %</td>
+                <td class="px-4 py-3">
+                  <div class="w-44 h-2 bg-green-200 rounded">
+                    <div class="h-full bg-green-600 rounded" style="width:90%"></div>
+                  </div>
+                </td>
+                <td
+                  class="px-4 py-3 font-semibold text-green-900 dark:text-green-100 flex items-center gap-1">
+                  100 $
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
+                  </svg>
+                </td>
+              </tr>
+
+              <!-- 100 % -->
+              <tr class="bg-green-500 dark:bg-green-800 hover:bg-green-600/80 text-white">
+                <td class="px-4 py-3 font-medium">100 %</td>
+                <td class="px-4 py-3">
+                  <div class="w-44 h-2 bg-green-200 rounded">
+                    <div class="h-full bg-green-700 rounded" style="width:100%"></div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 font-bold flex items-center gap-1">
+                  120 $
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
+                    viewBox="0 0 24 24">
+                    <path
+                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
+                  </svg>
+                </td>
+              </tr>
+            </table>
           </div>
+<!-- ░░░ FIN BONUS ░░░ -->
+
+
+       <!-- ░░░ CONDITIONS D’ÉLIGIBILITÉ ░░░ -->
+          <div
+            class="mt-6 px-4 py-3 rounded-lg max-w-2xl mx-auto text-center
+                  bg-emerald-50 dark:bg-emerald-900/20
+                  ring-1 ring-emerald-300 dark:ring-emerald-700
+                  shadow-sm space-y-2 text-sm">
+
+            <!-- Manager -->
+            <p class="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+              <!-- Icône 👥 -->
+              <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M5 20v-2c0-1.1.9-2 2-2h10a2 2 0 012 2v2"/>
+                <circle cx="12" cy="8" r="4"/>
+              </svg>
+              <span>
+                <strong>Bonus Manager</strong> : déclenché dès que l’équipe atteint
+                <span class="font-extrabold text-emerald-600 dark:text-emerald-300">50&nbsp;personnes</span>
+                ou plus.
+              </span>
+            </p>
+
+            <!-- Agent marketing -->
+            <p class="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+              <!-- Icône 🎯 -->
+              <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a6 6 0 110 12A6 6 0 0112 6zm0 2a4 4 0 100 8 4 4 0 000-8z"/>
+              </svg>
+              <span>
+                <strong>Bonus Agent Marketing</strong> : actif si l’agent gère au moins
+                <span class="font-extrabold text-emerald-600 dark:text-emerald-300">25&nbsp;clients</span>.
+              </span>
+            </p>
+          </div>
+<!-- ░░░ FIN CONDITIONS ░░░ -->
+
 
       
       
