@@ -1950,4 +1950,131 @@ export class DataService {
       { merge: true }
     );
   }
+
+  computeCreditScore(client: Client) {
+    let dateX = '';
+    let creditScore = '';
+    if (client.debtLeft !== '0') {
+      return client.creditScore;
+    }
+    if (Number(client.paymentPeriodRange) === 4) {
+      dateX = this.time.getDateInFiveWeeks(client.debtCycleStartDate!);
+    } else if (Number(client.paymentPeriodRange) === 8) {
+      dateX = this.time.getDateInNineWeeks(client.debtCycleStartDate!);
+    }
+    let today = this.time.todaysDateMonthDayYear();
+    // +5 for finishing the payment anytime early or on the date
+    if (this.time.isGivenDateLessOrEqual(dateX, today)) {
+      creditScore = (Number(client.creditScore) + 5).toString();
+      // -2 every week you are late
+    } else if (!this.time.isGivenDateLessOrEqual(dateX, today)) {
+      let elapsed = this.time.weeksElapsed(dateX, today);
+
+      creditScore = (Number(client.creditScore) - 2 * elapsed).toString();
+    }
+    creditScore = Math.min(Number(creditScore), 100).toString();
+
+    return creditScore;
+  }
+  async transferCardToCredit(card: Card, credit: Client, amount: number) {
+    const uid = this.auth.currentUser.uid;
+    const cardPath = `users/${uid}/cards/${card.uid}`;
+    const creditPath = `users/${uid}/clients/${credit.uid}`;
+    const userPath = `users/${uid}`;
+
+    const today = this.time.todaysDate(); // 26-07-2025
+    const todayMDY = this.time.todaysDateMonthDayYear(); // 7-26-2025
+
+    return this.afs.firestore.runTransaction(async (t) => {
+      /* ───── 1️⃣  CARD ──── */
+      const newCardAmount = +card.amountPaid! - amount;
+      const newCardPayments = { [today]: `-${amount}` };
+
+      t.set(
+        this.afs.doc(cardPath).ref,
+        {
+          amountPaid: newCardAmount.toString(),
+          numberOfPaymentsMade: (+card.numberOfPaymentsMade! + 1).toString(),
+          payments: newCardPayments,
+        },
+        { merge: true }
+      );
+
+      /* ───── 2️⃣  CREDIT ─── */
+      const newPaid = +credit.amountPaid! + amount;
+      const newDebtLeft = +credit.amountToPay! - newPaid;
+      const newPayMade = +credit.numberOfPaymentsMade! + 1;
+      const newPayMissed = Math.max(
+        0,
+        this.time.weeksSince(credit.dateJoined!) - newPayMade
+      );
+
+      let newScore = credit.creditScore;
+      if (newDebtLeft <= 0) {
+        newScore = this.computeCreditScoreForClient(credit);
+      }
+
+      t.set(
+        this.afs.doc(creditPath).ref,
+        {
+          amountPaid: newPaid.toString(),
+          payments: { [today]: amount.toString() },
+          debtLeft: newDebtLeft.toString(),
+          numberOfPaymentsMade: newPayMade.toString(),
+          numberOfPaymentsMissed: newPayMissed.toString(),
+          creditScore: newScore,
+        },
+        { merge: true }
+      );
+
+      /* ───── 3️⃣  USER AGGREGATE ───
+       · cardsMoney ↓
+       · totalDebtLeft ↓
+       · dailyCardPayments (negative)
+       · dailyReimbursement (positive)
+       · moneyInHands -- untouched
+    */
+      const u = this.auth.currentUser;
+
+      const dailyCard = this.computeDailyCardPayments(
+        todayMDY,
+        (-amount).toString() // record as negative
+      );
+      const dailyReimb = this.computeDailyReimbursement(
+        todayMDY,
+        amount.toString()
+      );
+
+      t.set(
+        this.afs.doc(userPath).ref,
+        {
+          // cardsMoney: (+u.cardsMoney - amount).toString(), // this should not be updated either
+          totalDebtLeft: (+u.totalDebtLeft - amount).toString(),
+          dailyCardPayments: { [todayMDY]: dailyCard },
+          dailyReimbursement: { [todayMDY]: dailyReimb },
+          // moneyInHands   : <unchanged>
+        },
+        { merge: true }
+      );
+    });
+  }
+
+  /* helper: identical logic you already have in WithdrawSavingsComponent */
+  private computeCreditScoreForClient(client: Client): string {
+    let dateX = '';
+    if (Number(client.paymentPeriodRange) === 4) {
+      dateX = this.time.getDateInFiveWeeks(client.debtCycleStartDate!);
+    } else if (Number(client.paymentPeriodRange) === 8) {
+      dateX = this.time.getDateInNineWeeks(client.debtCycleStartDate!);
+    }
+    const today = this.time.todaysDateMonthDayYear();
+    let score = +client.creditScore!;
+    if (this.time.isGivenDateLessOrEqual(dateX, today)) {
+      score += 5;
+    } else {
+      const elapsed = this.time.weeksElapsed(dateX, today);
+      score -= 2 * elapsed;
+    }
+    return Math.min(score, 100).toString();
+  }
 }

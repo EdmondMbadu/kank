@@ -193,7 +193,7 @@
             Retrait Total
           </button>
 
-          <button
+          <!-- <button
             (click)="removeFromCard()"
             class="inline-flex items-center justify-center gap-2 rounded-full
                    bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
@@ -205,7 +205,23 @@
                  viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
                  stroke-linejoin="round"><path d="M3 12h18"/></svg>
             Retrait Partiel
+          </button> -->
+  
+          <button (click)="openTransferModal()"
+                  class="inline-flex items-center justify-center gap-2 rounded-full
+                        bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                        transition hover:scale-105 hover:bg-indigo-700
+                        focus:outline-none focus:ring-4 focus:ring-indigo-300
+                        dark:bg-indigo-500 dark:hover:bg-indigo-600
+                        dark:focus:ring-indigo-700
+                        sm:col-span-2 lg:col-span-2">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 12h18M12 5l7 7-7 7"/>
+            </svg>
+            Transfert vers Crédit
           </button>
+
 
           <button
             (click)="requestMoney()"
@@ -244,4 +260,61 @@
       </div><!-- /card body -->
     </div><!-- /card wrapper -->
   </div><!-- /container -->
+
+
+  <!-- 🌙  MODAL OVERLAY --------------------------------------------------- -->
+<div *ngIf="modalOpen"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur">
+  <div class="w-full max-w-lg rounded-2xl bg-white p-8 shadow-xl dark:bg-slate-800">
+
+    <h3 class="mb-6 text-xl font-bold text-gray-800 dark:text-gray-100">
+      Transfert de fonds Carte ➜ Crédit
+    </h3>
+
+    <!-- search -->
+    <input type="text" [formControl]="search"
+           placeholder="Rechercher un client crédit…"
+           class="mb-4 w-full rounded border px-3 py-2">
+
+    <!-- list -->
+    <ul class="max-h-48 overflow-y-auto rounded border mb-6">
+      <li *ngFor="let c of filtered"
+          (click)="selected = c"
+          [class.bg-emerald-100]="selected?.uid === c.uid"
+          class="cursor-pointer px-4 py-2 hover:bg-emerald-50">
+        {{ c.firstName }} {{ c.lastName }} —
+        Dette: {{ c.debtLeft | number:'1.0-0' }} FC
+      </li>
+    </ul>
+
+    <!-- amount -->
+    <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+      Montant à transférer (FC)
+    </label>
+    <input type="number" [formControl]="amount"
+           class="mb-6 w-40 rounded border px-3 py-2">
+    <p class="mb-6 text-xs text-gray-500 dark:text-gray-400">
+      * Le montant doit être un multiple de
+      <strong>{{ clientCard.amountToPay | number:'1.0-0' }} FC</strong>
+    </p>
+    <!-- actions -->
+    <div class="flex justify-end gap-3">
+      <button (click)="closeModal()"
+              class="rounded px-4 py-2 text-sm font-semibold
+                     text-gray-700 hover:text-gray-900 dark:text-gray-300">
+        Annuler
+      </button>
+
+      <button (click)="transferFromCard()"
+              class="rounded bg-indigo-600 px-5 py-2 text-sm font-semibold
+                     text-white hover:bg-indigo-700 focus:outline-none
+                     focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-500
+                     dark:hover:bg-indigo-600 dark:focus:ring-indigo-700">
+        Confirmer
+      </button>
+    </div>
+  </div>
+</div>
+<!-- -------------------------------------------------------------------- -->
+
 </section>
