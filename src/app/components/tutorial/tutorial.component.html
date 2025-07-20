@@ -746,84 +746,49 @@
               </svg>
             </button>
           </h2>
-          <div class="mx-4 my-4" *ngIf="best" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2">
-          
-                  <h2 class="mb-2 text-lg font-semibold text-gray-900 ">Critères pour être la meilleur employé  :</h2>
-                  <ul class="max-w-md space-y-1 text-gray-500 list-inside dark:text-gray-400">
-                      <li class="flex items-center">
-                          <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                          </svg>
-                          Pourcentage le plus élevé ( plus de 50% minimum avec equipe de 40+ personnes)
-                      </li>
-                      
-                     
-                  </ul>
-                  <h2 class="my-2 text-lg font-semibold text-gray-900 ">Critères pour être le meilleur Manager :</h2>
-                  <ul class="max-w-md space-y-1 text-gray-500 list-inside dark:text-gray-400">
-                      <li class="flex items-center">
-                          <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                          </svg>
-                          Pourcentage le plus élevé de Manager ( plus de 50% minimum)
-                      </li>
-                      <li class="flex items-center">
-                          <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                          </svg>
-                          Nombre de personnes nouvellement inscrites du 1er au 30 (ex : de 60 à 89, soit 29 personnes).
-                      </li>
-                      <li class="flex items-center">
-                        <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                        </svg>
-                        Votre équipe est  la meilleure  du mois.
+          <div class="mx-auto my-6 max-w-2xl px-6 py-4 rounded-2xl bg-gradient-to-br from-white to-gray-50 dark:from-slate-900 dark:to-slate-800 shadow-lg ring-1 ring-gray-200 dark:ring-gray-700 space-y-8 transition-all duration-300" *ngIf="best" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2">
 
-                    </li>
-                     
-                    <p>Le manager qui remplit 2 des 3 critères gagne.
-
-                    </p>
-                  </ul>
-                  <h2 class="my-2 text-lg font-semibold text-gray-900 ">Critères pour être la meilleure Equipe :</h2>
-                  <ul class="max-w-md space-y-1 text-gray-500 list-inside dark:text-gray-400">
-                      <li class="flex items-center">
-                          <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                          </svg>
-                          Avoir une réserve avec le plus d’argent.
-                      </li>
-                      
-                     
-                  </ul>
-                  <h2 class="my-2 text-lg font-semibold text-gray-900 ">Critères pour être la meilleur(e) client(e) :</h2>
-                  <p>Pour être considéré comme un client modèle et recevoir des récompenses, vous devez atteindre certains seuils de score de crédit :</p>
-                  <ul class="max-w-md space-y-1 text-gray-500 list-inside dark:text-gray-400">
-                      <li class="flex items-center">
-                          <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                          </svg>
-                          À 70+ points, Client Argent. Vous avez access au credit sans restriction.
-                      </li>
-                      
-                      <li class="flex items-center">
-                        <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                        </svg>
-                        À 90 points, Vous recevez 5% de l'argent que vouz avez empruntez directement dans votre epargnes.
-                    </li>
-                    <li class="flex items-center">
-                      <svg class="w-3.5 h-3.5 me-2 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"/>
-                      </svg>
-                      À 100 points. Vous participez a chaque fin de l'anee a un tombola ou vous pouvez gagner beaucoup des prix ( congelateur, 500$, etc).
-                  </li>
-                     
-                  </ul>
-
-                  
-
+          <!-- Employé -->
+          <div>
+            <h2 class="text-xl font-bold text-indigo-700 dark:text-indigo-300 mb-2">🏅 Meilleur Employé</h2>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-200 list-disc list-inside pl-2">
+              <li><span class="bg-indigo-100 dark:bg-indigo-900 px-2 py-0.5 rounded text-sm font-medium text-indigo-700 dark:text-indigo-200">Critère :</span> Pourcentage le plus élevé (minimum 50%) avec une équipe de 50+ personnes.</li>
+            </ul>
           </div>
+
+          <!-- Manager -->
+          <div>
+            <h2 class="text-xl font-bold text-emerald-700 dark:text-emerald-300 mb-2">👨‍💼 Meilleur Manager</h2>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-200 list-disc list-inside pl-2">
+              <li><span class="bg-emerald-100 dark:bg-emerald-900 px-2 py-0.5 rounded text-sm font-medium text-emerald-700 dark:text-emerald-200">Critère 1 :</span> Pourcentage individuel ≥ 50%.</li>
+              <li><span class="bg-emerald-100 dark:bg-emerald-900 px-2 py-0.5 rounded text-sm font-medium text-emerald-700 dark:text-emerald-200">Critère 2 :</span> Meilleure performance collective de l’équipe (total des paiements).</li>
+              <li><span class="bg-emerald-100 dark:bg-emerald-900 px-2 py-0.5 rounded text-sm font-medium text-emerald-700 dark:text-emerald-200">Critère 3 :</span> Nombre élevé de nouvelles inscriptions (1er–30).</li>
+            </ul>
+            <p class="mt-2 text-sm italic text-gray-500 dark:text-gray-400">Le manager remplissant au moins 2 de ces 3 critères remporte le titre.</p>
+          </div>
+
+          <!-- Équipe -->
+          <div>
+            <h2 class="text-xl font-bold text-pink-700 dark:text-pink-300 mb-2">🤝 Meilleure Équipe</h2>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-200 list-disc list-inside pl-2">
+              <li><span class="bg-pink-100 dark:bg-pink-900 px-2 py-0.5 rounded text-sm font-medium text-pink-700 dark:text-pink-200">Critère :</span> Total de paiements le plus élevé du mois.</li>
+            </ul>
+          </div>
+
+          <!-- Client -->
+          <div>
+            <h2 class="text-xl font-bold text-yellow-700 dark:text-yellow-300 mb-2">👑 Meilleur(e) Client(e)</h2>
+            <p class="text-gray-600 dark:text-gray-300 mb-2">Un client modèle atteint certains paliers de performance :</p>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-200 list-disc list-inside pl-2">
+              <li><span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-0.5 rounded text-sm font-medium text-yellow-700 dark:text-yellow-200">70+ points :</span> Statut <strong>Client Argent</strong> – accès au crédit sans restriction.</li>
+              <li><span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-0.5 rounded text-sm font-medium text-yellow-700 dark:text-yellow-200">90 points :</span> Bonus de 5% sur votre montant emprunté, versé en épargne.</li>
+              <li><span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-0.5 rounded text-sm font-medium text-yellow-700 dark:text-yellow-200">100 points :</span> Participation au grand tombola annuel (réfrigérateur, 500$, etc.).</li>
+            </ul>
+          </div>
+
+        </div>
+
+
      
           <h2 id="accordion-collapse-heading-2">
             <button (click)="toggle('budget')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-2" aria-expanded="false" aria-controls="accordion-collapse-body-2">
