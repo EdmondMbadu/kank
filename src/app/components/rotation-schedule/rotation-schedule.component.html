@@ -134,30 +134,33 @@
     </table>
   </div>
 <!-- ╭─ ADMIN‑ONLY TASKFORCE MONTH BOARD ───────────────────╮ -->
-<section *ngIf="auth.isAdmin" class="mb-8 rounded-lg shadow border border-indigo-200 bg-indigo-50 p-6  overflow-x-auto">
- <div class="flex flex-col gap-2 mb-4">
-  <div class="flex items-center justify-between">
+   <div  *ngIf="auth.isAdmin" class="flex items-center justify-between my-2">
     <h2 class="text-2xl font-bold">TaskForce – {{ monthNames[month-1] }} {{ year }}</h2>
   </div>
+<section *ngIf="auth.isAdmin" class="mb-8 rounded-lg shadow border border-indigo-200 bg-indigo-50 p-6 overflow-x-auto ">
+ <div class="flex flex-col gap-2 mb-4 ">
 
-  <!-- one‑line summary -->
-<p class="flex flex-wrap gap-2" *ngIf="taskWeekSummary?.length">
-  <ng-container *ngFor="let d of taskWeekSummary">
-    <span
-      class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
-             transition"
-      [class.bg-green-100]="d.loc"
-      [class.text-green-800]="d.loc"
-      [class.bg-gray-100]="!d.loc"
-      [class.text-gray-500]="!d.loc"
-    >
-      {{ d.day | slice:0:3 }}   <!-- Lun, Mar, … -->
-      <span *ngIf="d.loc">· {{ d.loc }}</span>
-    </span>
-  </ng-container>
-</p>
 
-</div>
+
+      <!-- one‑line summary -->
+    <p class="flex flex-wrap gap-2" *ngIf="taskWeekSummary?.length">
+      <ng-container *ngFor="let d of taskWeekSummary">
+        <span
+          class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
+                transition"
+          [class.bg-green-100]="d.loc"
+          [class.text-green-800]="d.loc"
+          [class.bg-gray-100]="!d.loc"
+          [class.text-gray-500]="!d.loc"
+        >
+          {{ d.day }}   <!-- Lun, Mar, … -->
+          <span *ngIf="d.loc">· {{ d.loc }}</span>
+        </span>
+      </ng-container>
+    </p>
+  </div>
+
+
 
 
   <table class="w-full text-sm">
