@@ -30,11 +30,42 @@
   </div>
 
   <!-- ===================== SUMMARY ===================== -->
-  <div class="container mx-auto mb-6 flex justify-center">
+  <!-- <div class="container mx-auto mb-6 flex justify-center">
     <h2 class="text-center text-xl font-bold text-gray-700 dark:text-gray-200">
       {{ numberOfPeople }} clients – Total: {{ totalGivenDate | number: '1.0-0' }} FC
     </h2>
+  </div> -->
+  <!-- ===================== SUMMARY ===================== -->
+<div class="container mx-auto mb-2 flex flex-col items-center gap-2">
+  <h2 class="text-xl font-bold text-gray-700 dark:text-gray-200">
+    {{ numberOfPeople }} clients – Total : {{ totalGivenDate | number:'1.0-0' }} FC
+  </h2>
+
+  <!-- VIEW-SWITCH BUTTONS -->
+  <div class="flex gap-3">
+    <!-- En Cours -->
+    <button
+      (click)="switchView('current')"
+      class="rounded-full px-4 py-1.5 text-sm font-medium ring-1 transition
+             ring-emerald-400"
+      [ngClass]="view === 'current'
+        ? 'bg-emerald-600 text-white shadow-lg'
+        : 'bg-white text-emerald-700 hover:bg-emerald-50 dark:bg-slate-700 dark:text-emerald-200'">
+      En&nbsp;Cours
+    </button>
+
+    <!-- À l’écart -->
+    <button
+      (click)="switchView('away')"
+      class="rounded-full px-4 py-1.5 text-sm font-medium ring-1 transition
+             ring-emerald-400"
+      [ngClass]="view === 'away'
+        ? 'bg-emerald-600 text-white shadow-lg'
+        : 'bg-white text-emerald-700 hover:bg-emerald-50 dark:bg-slate-700 dark:text-emerald-200'">
+      À&nbsp;l’écart
+    </button>
   </div>
+</div>
 
   <!-- ===================== LIST CARD ===================== -->
   <div class="container mx-auto flex justify-center">
@@ -66,7 +97,7 @@
       <!-- LIST -->
       <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
         <li
-          *ngFor="let c of haveNotPaidToday; let i = index"
+          *ngFor="let c of (view === 'current' ? haveNotPaidCurrent : haveNotPaidAway); let i = index"
           [routerLink]="['/client-portal', c.trackingId]"
           class="group relative cursor-pointer rounded-lg px-6 py-5 transition
                 hover:bg-emerald-50 hover:shadow-sm dark:hover:bg-slate-700/60">

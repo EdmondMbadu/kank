@@ -33,6 +33,11 @@ export class NotPaidTodayComponent {
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
+
+  // NEW
+  view: 'current' | 'away' = 'current';
+  haveNotPaidCurrent: Client[] = [];
+  haveNotPaidAway: Client[] = [];
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -53,10 +58,10 @@ export class NotPaidTodayComponent {
       this.extractTodayPayments();
       this.filterPayments();
       this.findThoseWhoHaveNotPaidToday();
-      this.totalGivenDate = this.compute.computeExpectedPerDate(
-        this.haveNotPaidToday
-      );
-      this.numberOfPeople = this.haveNotPaidToday.length;
+      // this.totalGivenDate = this.compute.computeExpectedPerDate(
+      //   this.haveNotPaidToday
+      // );
+      // this.numberOfPeople = this.haveNotPaidToday.length;
     });
   }
   retrieveEmployees(): void {
@@ -98,31 +103,79 @@ export class NotPaidTodayComponent {
       }
     }
   }
+  // findThoseWhoHaveNotPaidToday() {
+  //   this.haveNotPaidToday = [];
+  //   if (this.shouldPayToday) {
+  //     for (let c of this.shouldPayToday) {
+  //       const isAlive =
+  //         c.vitalStatus === undefined ||
+  //         c.vitalStatus === '' ||
+  //         c.vitalStatus.toLowerCase() === 'vivant';
+  //       // return isAlive && Number(c.debtLeft) > 0;
+  //       if (
+  //         this.paidToday.indexOf(c) === -1 &&
+  //         isAlive &&
+  //         Number(c.debtLeft) > 0 &&
+  //         !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
+  //         this.didClientStartThisWeek(c)
+  //       ) {
+  //         c.minPayment = (
+  //           Number(c.amountToPay) / Number(c.paymentPeriodRange)
+  //         ).toString();
+  //         this.haveNotPaidToday.push(c);
+  //       }
+  //     }
+  //   }
+  //   console.log('have not paid today', this.haveNotPaidToday);
+  // }
+  // ─────────────────────────── FIND WHO HASN’T PAID
   findThoseWhoHaveNotPaidToday() {
-    this.haveNotPaidToday = [];
-    if (this.shouldPayToday) {
-      for (let c of this.shouldPayToday) {
-        const isAlive =
-          c.vitalStatus === undefined ||
-          c.vitalStatus === '' ||
-          c.vitalStatus.toLowerCase() === 'vivant';
-        // return isAlive && Number(c.debtLeft) > 0;
-        if (
-          this.paidToday.indexOf(c) === -1 &&
-          isAlive &&
-          Number(c.debtLeft) > 0 &&
-          !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
-          this.didClientStartThisWeek(c)
-        ) {
-          c.minPayment = (
-            Number(c.amountToPay) / Number(c.paymentPeriodRange)
-          ).toString();
-          this.haveNotPaidToday.push(c);
-        }
+    this.haveNotPaidCurrent = [];
+    this.haveNotPaidAway = [];
+
+    if (!this.shouldPayToday) return;
+
+    for (const c of this.shouldPayToday) {
+      const isAlive =
+        !c.vitalStatus || c.vitalStatus.toLowerCase() === 'vivant';
+
+      const commonCriteria =
+        this.paidToday.indexOf(c) === -1 &&
+        Number(c.debtLeft) > 0 &&
+        !c.debtCycleStartDate?.startsWith(this.requestDateCorrectFormat) &&
+        this.didClientStartThisWeek(c);
+
+      if (commonCriteria && isAlive) {
+        c.minPayment = (
+          Number(c.amountToPay) / Number(c.paymentPeriodRange)
+        ).toString();
+        this.haveNotPaidCurrent.push(c);
+      } else if (commonCriteria && !isAlive) {
+        c.minPayment = (
+          Number(c.amountToPay) / Number(c.paymentPeriodRange)
+        ).toString();
+        this.haveNotPaidAway.push(c);
       }
     }
-    console.log('have not paid today', this.haveNotPaidToday);
+
+    this.updateSummary();
   }
+
+  // ─────────────────────────── UPDATE HEADER NUMBERS
+  updateSummary() {
+    const activeArray =
+      this.view === 'current' ? this.haveNotPaidCurrent : this.haveNotPaidAway;
+
+    this.totalGivenDate = this.compute.computeExpectedPerDate(activeArray);
+    this.numberOfPeople = activeArray.length;
+  }
+  // ─────────────────────────── BUTTON HANDLER
+  switchView(mode: 'current' | 'away') {
+    if (this.view === mode) return;
+    this.view = mode;
+    this.updateSummary();
+  }
+
   fillDailyPayment(client: Client, values: string[]) {
     for (let v of values) {
       this.dailyPaymentsNames.push(`${client.firstName} ${client.lastName}`);
