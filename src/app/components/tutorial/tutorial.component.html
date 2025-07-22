@@ -28,7 +28,7 @@
 <!-- ─────── CALCUL DES FRAIS EMPRUNT (v2-spicy) ──────────────────────────── -->
 <section
   class="relative max-w-2xl mx-auto mt-10 mb-12 px-6 py-8
-         bg-white/80 dark:bg-slate-800/80 backdrop-blur
+         bg-white/80 dark:bg-slate-800 backdrop-blur
          rounded-2xl shadow-lg ring-1 ring-gray-200 dark:ring-slate-700
          animate-fadeIn">
 
@@ -182,7 +182,7 @@
   <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
 
   <!-- ── 5. Total initial (frais + épargne) ──────────────────────── -->
-  <p class="flex items-center justify-between text-lg font-extrabold">
+  <p class="flex items-center justify-between text-lg font-extrabold dark:text-white">
     <span class="flex items-center gap-2">
       <svg class="w-6 h-6 text-green-600 animate-bounce-slow"
            fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -556,7 +556,7 @@
 
 
       <!-- ░░░ BONUS MENSUEL : PLUS TU PERFORMES, PLUS TU GAGNES ░░░ -->
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 text-center mx-auto">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 text-center mx-auto">
               Bonus mensuel : « Mieux tu performes, plus tu gagnes »
             </h2>
 
@@ -574,7 +574,7 @@
 
               <!-- 50 % -->
               <tr
-                class="bg-green-50 dark:bg-green-900/20 border-b hover:bg-green-100/70">
+                class="bg-green-50 dark:bg-green-900 border-b hover:bg-green-700">
                 <td class="px-4 py-3 font-medium">50 %</td>
                 <td class="px-4 py-3">
                   <div class="w-44 h-2 bg-green-200 rounded">
@@ -595,7 +595,7 @@
 
               <!-- 60 % -->
               <tr
-                class="bg-green-100 dark:bg-green-900/25 border-b hover:bg-green-150/60">
+                class="bg-green-100 dark:bg-green-900 border-b hover:bg-green-7000">
                 <td class="px-4 py-3 font-medium">60 %</td>
                 <td class="px-4 py-3">
                   <div class="w-44 h-2 bg-green-200 rounded">
@@ -615,7 +615,7 @@
 
               <!-- 70 % -->
               <tr
-                class="bg-green-200 dark:bg-green-900/30 border-b hover:bg-green-250/50">
+                class="bg-green-200 dark:bg-green-900 border-b hover:bg-green-700">
                 <td class="px-4 py-3 font-medium">70 %</td>
                 <td class="px-4 py-3">
                   <div class="w-44 h-2 bg-green-200 rounded">
@@ -635,7 +635,7 @@
 
               <!-- 80 % -->
               <tr
-                class="bg-green-300 dark:bg-green-900/35 border-b hover:bg-green-350/40">
+                class="bg-green-300 dark:bg-green-900 border-b hover:bg-green-700">
                 <td class="px-4 py-3 font-medium">80 %</td>
                 <td class="px-4 py-3">
                   <div class="w-44 h-2 bg-green-200 rounded">
@@ -655,7 +655,7 @@
 
               <!-- 90 % -->
               <tr
-                class="bg-green-400 dark:bg-green-900/40 border-b hover:bg-green-450/30">
+                class="bg-green-400 dark:bg-green-900 border-b hover:bg-green-700">
                 <td class="px-4 py-3 font-medium">90 %</td>
                 <td class="px-4 py-3">
                   <div class="w-44 h-2 bg-green-200 rounded">
@@ -674,7 +674,7 @@
               </tr>
 
               <!-- 100 % -->
-              <tr class="bg-green-500 dark:bg-green-800 hover:bg-green-600/80 text-white">
+              <tr class="bg-green-500 dark:bg-green-800 hover:bg-green-600 text-white">
                 <td class="px-4 py-3 font-medium">100 %</td>
                 <td class="px-4 py-3">
                   <div class="w-44 h-2 bg-green-200 rounded">
@@ -753,7 +753,7 @@
               aria-labelledby="accordion-collapse-heading-2"
               class="mx-auto my-8 w-full max-w-3xl rounded-3xl bg-white/70 shadow-xl ring-4 ring-indigo-100/60
                     backdrop-blur-md transition-all duration-300
-                    dark:bg-slate-800/70 dark:ring-indigo-500/30">
+                    dark:bg-slate-800 dark:ring-indigo-500/30">
 
               <!-- Decorative gradient bar -->
               <div class="h-2 rounded-t-3xl bg-gradient-to-r from-indigo-500 via-emerald-500 to-pink-500"></div>
@@ -1116,7 +1116,7 @@
           </button>
         </h2>
         
-        <div *ngIf="criteriaToLend" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2" class="p-5 border border-t-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
+        <div *ngIf="criteriaToLend" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2" class="p-5 border border-t-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
           <div class="flex justify-center my-4">
             <img 
               loading="lazy"
