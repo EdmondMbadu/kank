@@ -14,7 +14,7 @@ import { Employee } from '../models/employee';
 import { RotationSchedule } from '../models/management';
 import { map, take } from 'rxjs';
 import firebase from 'firebase/compat/app';
-import { deleteField } from 'firebase/firestore';
+import { deleteField } from '@angular/fire/firestore';
 
 @Injectable({
   providedIn: 'root',
