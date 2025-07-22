@@ -192,10 +192,10 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   }
   /* --- replace the current openTFPicker() -------------------- */
   openTFPicker(cell: { iso: string; loc?: string }) {
-    const dateObj = new Date(cell.iso); // build Date from ISO
+    const dateObj = this.isoToLocal(cell.iso); // ⬅️ use helper
     this.taskPicker = {
       visible: true,
-      day: { ...cell, date: dateObj }, // now has .date
+      day: { ...cell, date: dateObj },
       loc: cell.loc || '',
     };
   }
@@ -518,6 +518,12 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     return s;
   }
 
+  /** Turn 'YYYY‑MM‑DD' into a local Date (no TZ shift) */
+  private isoToLocal(iso: string): Date {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d); // month is 0‑based
+  }
+
   /* ---------- tiny date helpers (same as before) ---------- */
   addMonths(d: Date, n: number) {
     const r = new Date(d);
@@ -562,7 +568,8 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       /* look up loc from the already‑filled month grid */
       let loc: string | undefined;
       for (const row of this.taskMonthWeeks)
-        for (const cell of row) if (cell?.iso === iso) loc = cell.loc;
+        for (const cell of row) if (cell && cell.iso === iso) loc = cell.loc;
+
       return { day: names[i], loc };
     });
   }

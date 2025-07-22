@@ -134,7 +134,7 @@
     </table>
   </div>
 <!-- ╭─ ADMIN‑ONLY TASKFORCE MONTH BOARD ───────────────────╮ -->
-<section *ngIf="auth.isAdmin" class="mb-8 bg-white p-6 rounded-lg shadow">
+<section *ngIf="auth.isAdmin" class="mb-8 rounded-lg shadow border border-indigo-200 bg-indigo-50 p-6">
  <div class="flex flex-col gap-2 mb-4">
   <div class="flex items-center justify-between">
     <h2 class="text-2xl font-bold">TaskForce – {{ monthNames[month-1] }} {{ year }}</h2>
@@ -201,6 +201,12 @@
     <h3 class="font-semibold mb-3">
       TaskForce&nbsp;—&nbsp;{{ taskPicker.day.date | date:'EEEE d MMMM y' }}
     </h3>
+    <button
+      class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg"
+      (click)="closeTFPicker()"
+    >
+      ✕
+    </button>
 
     <select [(ngModel)]="taskPicker.loc"
             class="w-full border p-2 rounded mb-4">
