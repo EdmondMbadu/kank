@@ -14,6 +14,7 @@ import { Employee } from '../models/employee';
 import { RotationSchedule } from '../models/management';
 import { map, take } from 'rxjs';
 import firebase from 'firebase/compat/app';
+import { deleteField } from 'firebase/firestore';
 
 @Injectable({
   providedIn: 'root',
@@ -480,5 +481,30 @@ export class PerformanceService {
         updatedAt: Date.now(),
       });
     }
+  }
+
+  /* performance.service.ts — add at bottom of file */
+  private tfDocId(isoWeek: string) {
+    return `taskforceSchedules/${isoWeek}`;
+  }
+
+  getTaskForce(isoWeek: string) {
+    return this.afs
+      .doc<{ days: { [iso: string]: string } }>(this.tfDocId(isoWeek))
+      .valueChanges();
+  }
+  setTaskForce(isoWeek: string, isoDay: string, location?: string) {
+    const ref = this.afs.doc(this.tfDocId(isoWeek));
+
+    const data = {
+      updatedAt: Date.now(),
+      days: {
+        // 👈 real sub‑map
+        [isoDay]: location ? location : deleteField(),
+      },
+    };
+
+    // merge = deep‑merge, so this updates only the given day
+    return ref.set(data, { merge: true });
   }
 }

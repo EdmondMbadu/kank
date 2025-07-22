@@ -83,6 +83,13 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   pickerVisible = false;
   pickerDay = ''; // iso string currently picked
   search = '';
+
+  /* ── STATE  ─────────────────────────────────────────────── */
+  taskWeekOffset = 0; // 0 = this week
+  taskWeekLabel = '';
+  taskDays: { date: Date; iso: string; loc?: string }[] = [];
+
+  taskPicker = { visible: false, day: null as any, loc: '' };
   /* 2️⃣ react when @Input locations changes */
   ngOnChanges(changes: SimpleChanges) {
     if ('locations' in changes) {
@@ -115,7 +122,86 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.refresh();
       this.loadAllLocationsCurrentMonth();
     }
+    this.loadTaskForceWeek();
   }
+
+  /* ── ISO‑WEEK utilities (no external libs) ─────────────── */
+  private getISOWeek(d: Date): number {
+    const t = new Date(d.getTime());
+    t.setHours(0, 0, 0, 0);
+    // Thursday = week anchor
+    t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));
+    const week1 = new Date(t.getFullYear(), 0, 4);
+    return (
+      1 +
+      Math.round(
+        ((t.getTime() - week1.getTime()) / 86400000 -
+          3 +
+          ((week1.getDay() + 6) % 7)) /
+          7
+      )
+    );
+  }
+  private isoWeekId(d: Date) {
+    return `${d.getFullYear()}-W${this.getISOWeek(d)
+      .toString()
+      .padStart(2, '0')}`;
+  }
+
+  /* ── navigation ─────────────────────────────────────────── */
+  tfNextWeek() {
+    this.taskWeekOffset++;
+    this.loadTaskForceWeek();
+  }
+  tfPrevWeek() {
+    if (this.taskWeekOffset) {
+      this.taskWeekOffset--;
+      this.loadTaskForceWeek();
+    }
+  }
+
+  /* ── build seven days & fetch Firestore ────────────────── */
+  private loadTaskForceWeek() {
+    // base = Sunday of desired week
+    const base = this.addDays(
+      this.startOfWeek(new Date()),
+      this.taskWeekOffset * 7
+    );
+    const end = this.addDays(base, 6);
+    this.taskWeekLabel = `${base.toLocaleDateString()} – ${end.toLocaleDateString()}`;
+
+    this.taskDays = Array.from({ length: 7 }).map((_, i) => {
+      const d = this.addDays(base, i);
+      return { date: d, iso: this.ymd(d) };
+    });
+
+    /* use the Monday of the same row, not the Sunday */
+    const isoKey = this.isoWeekId(this.addDays(base, 1)); // Monday
+    this.rs.getTaskForce(isoKey).subscribe((doc) => {
+      this.taskDays.forEach((d) => (d.loc = doc?.days?.[d.iso]));
+      this.zone.run(() => this.cdr.markForCheck());
+    });
+  }
+  openTFPicker(day: any) {
+    this.taskPicker = { visible: true, day, loc: day.loc || '' };
+  }
+  closeTFPicker() {
+    this.taskPicker.visible = false;
+  }
+  async saveTF() {
+    /* local optimistic update */
+    this.taskPicker.day.loc = this.taskPicker.loc.trim() || undefined;
+    this.cdr.markForCheck();
+
+    const d = this.taskPicker.day.date;
+    await this.rs.setTaskForce(
+      this.isoWeekId(d),
+      this.taskPicker.day.iso,
+      this.taskPicker.loc.trim() || undefined
+    );
+    this.closeTFPicker();
+  }
+
   /* ─────────── state supplémentaire ─────────── */
   weekOffset = 0; // 0 = cette semaine, 1 = +1 semaine, etc.
   thisWeekLabel = ''; // pour le template

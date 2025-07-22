@@ -133,6 +133,62 @@
       </tbody>
     </table>
   </div>
+<!-- ╭─ ADMIN‑ONLY TASKFORCE BOARD ─────────────────────────────╮ -->
+<section *ngIf="auth.isAdmin" class="mb-8 bg-white p-6 rounded-lg shadow">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-2xl font-bold">TaskForce Schedule</h2>
+    <div class="space-x-2">
+      <button (click)="tfPrevWeek()"
+              [disabled]="taskWeekOffset===0"
+              class="px-2 py-1 bg-gray-100 rounded disabled:opacity-50">‹</button>
+      <button (click)="tfNextWeek()"
+              class="px-2 py-1 bg-gray-100 rounded">›</button>
+    </div>
+  </div>
+
+  <p class="italic mb-4 text-center">{{ taskWeekLabel }}</p>
+
+  <table class="w-full text-sm">
+    <thead>
+      <tr>
+        <th *ngFor="let d of taskDays"
+            class="p-2 bg-gray-50 border">{{ d.date | date:'EEEE' }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td *ngFor="let d of taskDays"
+            (click)="openTFPicker(d)"
+            class="p-4 border hover:bg-gray-50 cursor-pointer">
+          <span *ngIf="d.loc; else empty">🚨 <strong>{{ d.loc }}</strong></span>
+          <ng-template #empty><span class="text-gray-400">—</span></ng-template>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- modal -->
+<div *ngIf="taskPicker.visible"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+     (click)="closeTFPicker()">
+  <div (click)="$event.stopPropagation()"
+       class="bg-white p-4 rounded-lg w-80">
+    <h3 class="font-semibold mb-3">
+      TaskForce&nbsp;—&nbsp;{{ taskPicker.day.date | date:'EEEE d MMMM y' }}
+    </h3>
+
+    <select [(ngModel)]="taskPicker.loc"
+            class="w-full border p-2 rounded mb-4">
+      <option value="">— Pas de TaskForce —</option>
+      <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+    </select>
+
+    <button class="bg-blue-600 text-white px-4 py-1 rounded"
+            (click)="saveTF()">Enregistrer</button>
+  </div>
+</div>
+<!-- ╰───────────────────────────────────────────────────────────╯ -->
 
   <!-- ═════════════ Picker modal (unchanged logic) ═════════════ -->
   <div
