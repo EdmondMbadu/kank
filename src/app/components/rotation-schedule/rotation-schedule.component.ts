@@ -93,6 +93,8 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     iso: string; // '2025‑07‑21'
     loc?: string; // location or undefined
   } | null)[][] = [];
+  /** Task‑Force for the week that contains “today” (updated each reload) */
+  taskWeekSummary: { day: string; loc?: string }[] = [];
 
   taskPicker = { visible: false, day: null as any, loc: '' };
   /* 2️⃣ react when @Input locations changes */
@@ -188,9 +190,16 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.zone.run(() => this.cdr.markForCheck());
     });
   }
-  openTFPicker(day: any) {
-    this.taskPicker = { visible: true, day, loc: day.loc || '' };
+  /* --- replace the current openTFPicker() -------------------- */
+  openTFPicker(cell: { iso: string; loc?: string }) {
+    const dateObj = new Date(cell.iso); // build Date from ISO
+    this.taskPicker = {
+      visible: true,
+      day: { ...cell, date: dateObj }, // now has .date
+      loc: cell.loc || '',
+    };
   }
+
   closeTFPicker() {
     this.taskPicker.visible = false;
   }
@@ -287,6 +296,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     this.year = p.getFullYear();
     this.refresh();
     this.loadAllLocationsCurrentMonth();
+    this.loadTaskForceMonth;
   }
   nextMonth() {
     const n = this.addMonths(new Date(this.year, this.month - 1), 1);
@@ -294,6 +304,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     this.year = n.getFullYear();
     this.refresh();
     this.loadAllLocationsCurrentMonth();
+    this.loadTaskForceMonth();
   }
 
   /* picker helpers — unchanged except service name if you renamed it */
@@ -473,16 +484,23 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       ids.add(this.isoWeekId(d)); // one per week
 
     /* (3) read them all and merge into the grid ------------------- */
+    /* (3) read them all and merge into the grid ------------------- */
     ids.forEach((id) => {
       this.rs.getTaskForce(id).subscribe((doc) => {
         Object.entries(doc?.days ?? {}).forEach(([iso, loc]) => {
           for (const r of this.taskMonthWeeks)
             for (const c of r) if (c && c.iso === iso) c.loc = loc;
         });
-        /* trigger change detection */
+
+        /* ✅ now the grid is filled → recompute summary */
+        this.recomputeTaskWeekSummary();
+
         this.zone.run(() => this.cdr.markForCheck());
       });
     });
+
+    // after you finish merging Firestore data into taskMonthWeeks…
+    this.recomputeTaskWeekSummary(); // ⬅️ add this line
   }
 
   /* Petit util pour retirer d’éventuels doublons */
@@ -524,5 +542,28 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
 
   weekday(d: Date) {
     return ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][d.getDay()];
+  }
+
+  private recomputeTaskWeekSummary(): void {
+    const base = this.startOfWeek(new Date()); // Sunday
+    const names = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+
+    this.taskWeekSummary = Array.from({ length: 7 }).map((_, i) => {
+      const d = this.addDays(base, i);
+      const iso = this.ymd(d);
+      /* look up loc from the already‑filled month grid */
+      let loc: string | undefined;
+      for (const row of this.taskMonthWeeks)
+        for (const cell of row) if (cell?.iso === iso) loc = cell.loc;
+      return { day: names[i], loc };
+    });
   }
 }
