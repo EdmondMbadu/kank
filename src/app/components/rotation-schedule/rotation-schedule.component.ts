@@ -88,6 +88,11 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   taskWeekOffset = 0; // 0 = this week
   taskWeekLabel = '';
   taskDays: { date: Date; iso: string; loc?: string }[] = [];
+  /* ── full‑month TaskForce grid ── */
+  taskMonthWeeks: ({
+    iso: string; // '2025‑07‑21'
+    loc?: string; // location or undefined
+  } | null)[][] = [];
 
   taskPicker = { visible: false, day: null as any, loc: '' };
   /* 2️⃣ react when @Input locations changes */
@@ -122,7 +127,8 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.refresh();
       this.loadAllLocationsCurrentMonth();
     }
-    this.loadTaskForceWeek();
+    // this.loadTaskForceWeek();
+    this.loadTaskForceMonth();
   }
 
   /* ── ISO‑WEEK utilities (no external libs) ─────────────── */
@@ -200,6 +206,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.taskPicker.loc.trim() || undefined
     );
     this.closeTFPicker();
+    this.loadTaskForceMonth();
   }
 
   /* ─────────── state supplémentaire ─────────── */
@@ -440,6 +447,42 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     }
     this.thisWeekRotation = this.dedupe(thisW);
     this.nextWeekRotation = this.dedupe(nextW);
+  }
+  /** Fetch TaskForce for the whole displayed month */
+  private loadTaskForceMonth() {
+    /* (1) skeleton identical to rotation grid --------------------- */
+    const first = this.startOfMonth(new Date(this.year, this.month - 1));
+    const last = this.endOfMonth(first);
+    const weeks: typeof this.taskMonthWeeks = [];
+    let row = new Array(7).fill(null);
+
+    for (let d = first; d <= last; d = this.addDays(d, 1)) {
+      const iso = this.ymd(d);
+      row[d.getDay()] = { iso };
+      if (d.getDay() === 6) {
+        weeks.push(row);
+        row = new Array(7).fill(null);
+      }
+    }
+    if (row.some((c) => c)) weeks.push(row);
+    this.taskMonthWeeks = weeks; // set now (empty)
+
+    /* (2) figure out the ISO‑week documents we must read ---------- */
+    const ids = new Set<string>();
+    for (let d = first; d <= last; d = this.addDays(d, 7))
+      ids.add(this.isoWeekId(d)); // one per week
+
+    /* (3) read them all and merge into the grid ------------------- */
+    ids.forEach((id) => {
+      this.rs.getTaskForce(id).subscribe((doc) => {
+        Object.entries(doc?.days ?? {}).forEach(([iso, loc]) => {
+          for (const r of this.taskMonthWeeks)
+            for (const c of r) if (c && c.iso === iso) c.loc = loc;
+        });
+        /* trigger change detection */
+        this.zone.run(() => this.cdr.markForCheck());
+      });
+    });
   }
 
   /* Petit util pour retirer d’éventuels doublons */
