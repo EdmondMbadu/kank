@@ -134,7 +134,7 @@
     </table>
   </div>
 <!-- ╭─ ADMIN‑ONLY TASKFORCE MONTH BOARD ───────────────────╮ -->
-<section *ngIf="true" class="mb-8 rounded-lg shadow border border-indigo-200 bg-indigo-50 p-6  overflow-x-auto">
+<section *ngIf="auth.isAdmin" class="mb-8 rounded-lg shadow border border-indigo-200 bg-indigo-50 p-6  overflow-x-auto">
  <div class="flex flex-col gap-2 mb-4">
   <div class="flex items-center justify-between">
     <h2 class="text-2xl font-bold">TaskForce – {{ monthNames[month-1] }} {{ year }}</h2>
