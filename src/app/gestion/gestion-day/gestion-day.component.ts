@@ -185,6 +185,9 @@ export class GestionDayComponent implements OnInit {
     actual?: number;
     actualInDollar?: number;
     trackingId: string;
+    // NEW
+    missingReasons?: number; // # comments still absent
+    totalReasons?: number; // # clients to leave a comment
   }> = [];
   overallTotal: number = 0;
   overallTotalReserve: number = 0;
@@ -242,6 +245,22 @@ export class GestionDayComponent implements OnInit {
               );
             }
           );
+          // ───── 1. Séparer ceux qui ont déjà payé aujourd’hui ───────────
+          const unpaidToday: Client[] = this.currentClientsReserve.filter(
+            (cl) => {
+              const paidKeys = Object.keys(cl.payments || {}).filter(
+                (k) => k.startsWith(this.today) // paiement horodaté aujourd’hui
+              );
+              return paidKeys.length === 0; // ⇦ donc pas encore payé
+            }
+          );
+
+          // ───── 2. Compter les raisons manquantes ───────────────────────
+          const totalReasons = unpaidToday.length;
+          const missingReasons = unpaidToday.filter(
+            (c) => !this.getTodaysComment(c)
+          ).length;
+
           reserveTotal = this.compute.computeExpectedPerDate(
             this.currentClientsReserve
           );
@@ -321,6 +340,9 @@ export class GestionDayComponent implements OnInit {
               0
             ),
             trackingId: user.uid!,
+            /* NEW */
+            missingReasons,
+            totalReasons,
           });
 
           // Add to the overall total
@@ -758,6 +780,14 @@ export class GestionDayComponent implements OnInit {
     this.closeBudgetModal();
     this.initalizeInputs(); // refresh dashboard
     alert('Planned expense saved!');
+  }
+  /** Retourne le premier commentaire du jour ou null */
+  private getTodaysComment(client: Client) {
+    if (!client.comments?.length) return null;
+
+    const [mm, dd, yyyy] = this.today.split('-'); // ex. 07-21-2025
+    const normalised = `${Number(mm)}-${Number(dd)}-${yyyy}`;
+    return client.comments.find((c) => c.time?.startsWith(normalised)) || null;
   }
 
   /* ───── click handler for card ───────── */

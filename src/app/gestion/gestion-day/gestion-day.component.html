@@ -132,6 +132,10 @@
                     <th *ngIf="auth.isAdmin" scope="col" class=" px-6 py-3">
                         Paiement Donnée 
                     </th>
+                    <th class="px-6 py-3 text-red-600">
+                     RAISONS&nbsp;manquants
+                    </th>
+
                     
                 </tr>
             </thead>
@@ -149,6 +153,35 @@
                     <td *ngIf="auth.isAdmin" class="px-6 py-4">
                         {{s.payment| number:'1.0-0'}} FC -> {{s.paymentDollar| number:'1.0-0'}} $
                     </td>
+                  <td class="px-6 py-4">
+                    <!-- ✅  Aucun manquant -->
+                    <span
+                      *ngIf="s.missingReasons === 0; else missing"
+                      class="inline-flex items-center gap-1 rounded-full
+                            bg-emerald-100 text-emerald-700 text-xs font-semibold
+                            px-2 py-1"
+                    >
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"
+                          viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 13l4 4L19 7"/>
+                      </svg>
+                      OK
+                    </span>
+
+                    <!-- ❌  Au moins un manquant -->
+                    <ng-template #missing>
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full
+                              bg-red-100 text-red-700 text-xs font-semibold
+                              px-2 py-1"
+                      >
+                        {{ s.missingReasons }}&nbsp;manquant{{ s.missingReasons! > 1 ? 's' : '' }}
+                        &nbsp;sur&nbsp;{{ s.totalReasons }}
+                      </span>
+                    </ng-template>
+                  </td>
+
+
                     
                 </tr>
                 
