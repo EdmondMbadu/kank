@@ -75,6 +75,10 @@ export class GestionDayComponent implements OnInit {
   track: number = 0;
   isAddOperation = false;
   budgetReason = '';
+
+  // ─── add new aggregate just after paymentTotal ──────────────
+  overallMoneyInHands = 0;
+  overallMoneyInHandsDollar = 0;
   public graphMonthPerformance = {
     data: [
       {
@@ -188,6 +192,8 @@ export class GestionDayComponent implements OnInit {
     // NEW
     missingReasons?: number; // # comments still absent
     totalReasons?: number; // # clients to leave a comment
+    moneyInHands: number;
+    moneyInHandsDollar: number;
   }> = [];
   overallTotal: number = 0;
   overallTotalReserve: number = 0;
@@ -208,6 +214,9 @@ export class GestionDayComponent implements OnInit {
     this.paymentTotal = 0;
     this.overallTotalReserve = 0;
 
+    this.overallMoneyInHands = 0;
+    this.overallMoneyInHandsDollar = 0;
+
     let completedRequests = 0;
     const targetDate = this.requestDateRigthFormat; // freeze the value
     this.allUsers.forEach((user) => {
@@ -217,6 +226,7 @@ export class GestionDayComponent implements OnInit {
         cards: this.auth.getClientsCardOfAUser(user.uid!).pipe(take(1)),
       }).subscribe(
         ({ clients, cards }) => {
+          console.log('[DEBUG] user doc:', user);
           let userTotal = 0;
           let reserveTotal = 0;
 
@@ -233,6 +243,11 @@ export class GestionDayComponent implements OnInit {
               userTotal += Number(client.requestAmount);
             }
           }
+          const moneyHandsFC =
+            Number(user.moneyInHands ?? 0) + Number(user.cardsMoney ?? 0);
+          const moneyHandsDollar = Number(
+            this.compute.convertCongoleseFrancToUsDollars(String(moneyHandsFC))
+          );
           // first filter out as everyone and then add some more reasons
           this.currentClientsReserve = this.data.findClientsWithDebts(clients);
           this.currentClientsReserve = this.currentClientsReserve.filter(
@@ -343,12 +358,18 @@ export class GestionDayComponent implements OnInit {
             /* NEW */
             missingReasons,
             totalReasons,
+            /* NEW ↓ */
+            moneyInHands: moneyHandsFC,
+            moneyInHandsDollar: moneyHandsDollar,
           });
 
           // Add to the overall total
           this.overallTotal += userTotal;
           this.overallTotalReserve += reserveTotal;
           this.paymentTotal += payment;
+          // aggregate
+          this.overallMoneyInHands += moneyHandsFC;
+          this.overallMoneyInHandsDollar += moneyHandsDollar;
 
           completedRequests++;
           if (completedRequests === this.allUsers.length) {
@@ -374,6 +395,12 @@ export class GestionDayComponent implements OnInit {
             this.overallTotalReserveInDollars = Number(
               this.compute.convertCongoleseFrancToUsDollars(
                 this.overallTotalReserve.toString()
+              )
+            );
+            // ─── after overallTotalReserveInDollars computation ─────────
+            this.overallMoneyInHandsDollar = Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                this.overallMoneyInHands.toString()
               )
             );
             this.percentage = (

@@ -132,6 +132,9 @@
                     <th *ngIf="auth.isAdmin" scope="col" class=" px-6 py-3">
                         Paiement Donnée 
                     </th>
+                    <th scope="col" class="px-6 py-3">
+                      Argent&nbsp;en&nbsp;main
+                    </th>
                     <th class="px-6 py-3 text-red-600">
                      RAISONS&nbsp;manquants
                     </th>
@@ -152,6 +155,9 @@
                     </td>
                     <td *ngIf="auth.isAdmin" class="px-6 py-4">
                         {{s.payment| number:'1.0-0'}} FC -> {{s.paymentDollar| number:'1.0-0'}} $
+                    </td>
+                    <td class="px-6 py-4">
+                      {{ s.moneyInHands | number:'1.0-0' }} FC&nbsp;→&nbsp;{{ s.moneyInHandsDollar | number:'1.0-0' }} $
                     </td>
                   <td class="px-6 py-4">
                     <!-- ✅  Aucun manquant -->
@@ -193,6 +199,10 @@
                     <td class="px-6 py-3">{{overallTotalReserve | number:'1.0-0'}} FC ->{{overallTotalReserveInDollars| number:'1.0-0'}} $</td>
                     <td class="px-6 py-3">{{dailyReserve| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(dailyReserve)| number:'1.0-0'}} $ </td>
                     <td *ngIf="auth.isAdmin" class="px-6 py-3">{{paymentTotal| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(paymentTotal.toString())| number:'1.0-0'}} $ </td>
+                    <!-- NEW Argent en main total -->
+                    <td class="px-6 py-3">
+                      {{ overallMoneyInHands | number:'1.0-0' }} FC&nbsp;→&nbsp;{{ overallMoneyInHandsDollar | number:'1.0-0' }} $
+                    </td>
                 </tr>
             
             </tfoot>
