@@ -34,6 +34,10 @@ export class NotPaidTodayComponent {
   requestDateCorrectFormat = this.today;
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
 
+  /** NEW: summary counters */
+  missingCount = 0;
+  totalReasons = 0;
+
   // NEW
   view: 'current' | 'away' = 'current';
   haveNotPaidCurrent: Client[] = [];
@@ -168,6 +172,12 @@ export class NotPaidTodayComponent {
 
     this.totalGivenDate = this.compute.computeExpectedPerDate(activeArray);
     this.numberOfPeople = activeArray.length;
+
+    /* NEW ↓ count comments */
+    this.totalReasons = activeArray.length;
+    this.missingCount = activeArray.filter(
+      (c) => !this.getTodaysComment(c)
+    ).length;
   }
   // ─────────────────────────── BUTTON HANDLER
   switchView(mode: 'current' | 'away') {

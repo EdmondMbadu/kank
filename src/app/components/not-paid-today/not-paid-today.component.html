@@ -66,6 +66,57 @@
     </button>
   </div>
 </div>
+<!-- COMMENT‑SUMMARY -->
+<div *ngIf="numberOfPeople > 0" class="container mx-auto mt-4 px-4">
+  <div
+    class="flex flex-col items-center gap-3
+           sm:flex-row sm:justify-center sm:gap-4"
+  >
+    <!-- TITLE -->
+    <h1
+      class="flex items-center gap-2
+             text-base font-semibold tracking-tight
+             text-gray-800 dark:text-gray-100
+             sm:text-lg"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400"
+        viewBox="0 0 24 24" fill="currentColor"
+      >
+        <path
+          d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10
+             -4.477 10-10 10zm0-18a8 8 0 100 16 8 8 0 000-16z"
+        />
+      </svg>
+      Raisons&nbsp;manquantes&nbsp;: {{ missingCount }}
+    </h1>
+
+    <!-- BADGE -->
+    <span
+      *ngIf="missingCount > 0; else allOk"
+      class="inline-flex items-center gap-1 rounded-full
+             bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300
+             text-xs font-semibold px-3 py-1 shadow"
+    >
+      {{ missingCount }}&nbsp;manquant{{ missingCount > 1 ? 's' : '' }}
+      &nbsp;sur&nbsp;{{ totalReasons }}
+    </span>
+
+    <!-- ALL‑GOOD BADGE -->
+    <ng-template #allOk>
+      <span
+        class="inline-flex items-center gap-1 rounded-full
+               bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200
+               text-xs font-semibold px-3 py-1 shadow"
+      >
+        ✓ OK
+      </span>
+    </ng-template>
+  </div>
+</div>
+
+
 
   <!-- ===================== LIST CARD ===================== -->
   <div class="container mx-auto flex justify-center">
