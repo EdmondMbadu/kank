@@ -1775,13 +1775,14 @@ export class ComputationService {
     return this.R * c; // Distance in meters
   }
 
-  // Check if the location is within the specified radius
+  // Returns true if distance minus accuracy is within radius
   checkWithinRadius(
     userLat: number,
     userLng: number,
     targetLat: number,
     targetLng: number,
-    radius: number
+    radius: number,
+    userAccuracy = 0 // meters
   ): boolean {
     const distance = this.calculateDistance(
       userLat,
@@ -1789,9 +1790,74 @@ export class ComputationService {
       targetLat,
       targetLng
     );
-
-    return distance <= radius;
+    const effective = Math.max(0, distance - (userAccuracy || 0));
+    return effective <= radius;
   }
+
+  // computation.service.ts
+  bestEffortGetLocation(maxWaitMs = 15000): Promise<GeolocationPosition> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser.'));
+        return;
+      }
+
+      let best: GeolocationPosition | null = null;
+      let settled = false;
+
+      const cleanup = (watchId?: number) => {
+        if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      };
+
+      // 1) Start watchPosition to collect multiple fixes
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          // Keep the most accurate sample
+          if (!best || pos.coords.accuracy < best.coords.accuracy) {
+            best = pos;
+            // If we reach good accuracy early, resolve immediately
+            if (pos.coords.accuracy <= 50 && !settled) {
+              settled = true;
+              cleanup(watchId);
+              resolve(pos);
+            }
+          }
+        },
+        () => {
+          /* ignore transient errors during watch */
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: maxWaitMs,
+        }
+      );
+
+      // 2) Safety timer: after 12s, use the best we have, or fallback to a quick getCurrentPosition
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup(watchId);
+
+        if (best) {
+          resolve(best);
+          return;
+        }
+
+        // 3) Last fallback: coarse, fast location (helps in low bandwidth)
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve(pos),
+          (err) => reject(err),
+          {
+            enableHighAccuracy: false,
+            maximumAge: 300000, // up to 5 min cached if needed
+            timeout: 8000,
+          }
+        );
+      }, Math.min(12000, maxWaitMs));
+    });
+  }
+
   getMaxLendAmount(creditScore: number): number {
     if (creditScore < 0 || creditScore > 100) {
       throw new Error('Credit score must be between 0 and 100.');

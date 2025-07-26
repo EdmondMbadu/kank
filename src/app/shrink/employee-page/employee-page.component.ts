@@ -68,7 +68,7 @@ export class EmployeePageComponent implements OnInit {
 
   currentLat: number = 0;
   currentLng: number = 0;
-  radius = 1000; //Set your desired radius in meters.
+  radius = 1200; //Set your desired radius in meters.
 
   displayBonus: boolean = false;
   displayPayment: boolean = false;
@@ -1089,82 +1089,174 @@ export class EmployeePageComponent implements OnInit {
       });
   }
   // Method to check if the user is within the set radius
-  checkPresence(): void {
-    if (!this.currentLat || !this.currentLng) {
+  // checkPresence(): void {
+  //   if (!this.currentLat || !this.currentLng) {
+  //     this.errorMessage =
+  //       "Emplacement du travail non défini. Veuillez d'abord définir l'emplacement.";
+  //     return;
+  //   }
+
+  //   this.compute
+  //     .getLocation()
+  //     .then((position) => {
+  //       const { latitude, longitude } = position.coords;
+  //       this.withinRadius = this.compute.checkWithinRadius(
+  //         latitude,
+  //         longitude,
+  //         this.currentLat,
+  //         this.currentLng,
+  //         this.radius
+  //       );
+  //       this.onTime = this.time.isEmployeeOnTime(
+  //         this.limitHour,
+  //         this.limitMinutes
+  //       )
+  //         ? "A L'heure"
+  //         : 'En Retard';
+
+  //       this.errorMessage = null; // Clear any previous error
+  //     })
+  //     .catch((error) => {
+  //       this.errorMessage = error.message;
+  //       this.withinRadius = null;
+  //     });
+  // }
+  // async determineAttendance() {
+  //   let conf = confirm(
+  //     ` Etes-vous sûr de vouloir marquer votre présence pour aujourd'hui ?`
+  //   );
+  //   if (!conf) {
+  //     return;
+  //   }
+  //   let currentAttendance = 'A';
+
+  //   if (this.time.isEmployeeOnTime(this.limitHour, this.limitMinutes)) {
+  //     currentAttendance = 'P';
+  //   } else {
+  //     currentAttendance = 'L';
+  //   }
+  //   await this.compute
+  //     .getLocation()
+  //     .then((position) => {
+  //       const { latitude, longitude } = position.coords;
+  //       this.withinRadius = this.compute.checkWithinRadius(
+  //         latitude,
+  //         longitude,
+  //         this.currentLat,
+  //         this.currentLng,
+  //         this.radius
+  //       );
+
+  //       this.errorMessage = null; // Clear any previous error
+  //     })
+  //     .then(() => {
+  //       if (!this.withinRadius) {
+  //         alert(
+  //           "Vous n'êtes pas sur le lieu de travail. Réessayez quand vous l'êtes"
+  //         );
+  //         return;
+  //       }
+  //       if (this.withinRadius) {
+  //         this.attendance = currentAttendance;
+  //         this.addAttendance(false);
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       this.errorMessage = error.message;
+  //       this.withinRadius = null;
+  //     });
+  // }
+  async checkPresence(): Promise<void> {
+    if (
+      !Number.isFinite(this.currentLat) ||
+      !Number.isFinite(this.currentLng)
+    ) {
       this.errorMessage =
-        "Emplacement du travail non défini. Veuillez d'abord définir l'emplacement.";
+        "Emplacement du travail non défini. Veuillez d'abord le définir.";
       return;
     }
 
-    this.compute
-      .getLocation()
-      .then((position) => {
-        const { latitude, longitude } = position.coords;
-        this.withinRadius = this.compute.checkWithinRadius(
-          latitude,
-          longitude,
-          this.currentLat,
-          this.currentLng,
-          this.radius
-        );
-        this.onTime = this.time.isEmployeeOnTime(
-          this.limitHour,
-          this.limitMinutes
-        )
-          ? "A L'heure"
-          : 'En Retard';
+    try {
+      const pos = await this.compute.bestEffortGetLocation();
+      const { latitude, longitude, accuracy } = pos.coords;
 
-        this.errorMessage = null; // Clear any previous error
-      })
-      .catch((error) => {
-        this.errorMessage = error.message;
-        this.withinRadius = null;
-      });
+      this.withinRadius = this.compute.checkWithinRadius(
+        latitude,
+        longitude,
+        this.currentLat,
+        this.currentLng,
+        this.radius,
+        accuracy
+      );
+
+      // Optional: debug info for the UI
+      const distance = this.compute.calculateDistance(
+        latitude,
+        longitude,
+        this.currentLat,
+        this.currentLng
+      );
+      this.onTime = this.time.isEmployeeOnTime(
+        this.limitHour,
+        this.limitMinutes
+      )
+        ? "À l'heure"
+        : 'En retard';
+
+      // (Nice to have) expose this somewhere in the template:
+      // Distance: {{ lastDistance | number:'1.0-0' }} m — Précision: ±{{ lastAccuracy | number:'1.0-0' }} m
+      (this as any).lastDistance = Math.round(distance);
+      (this as any).lastAccuracy = Math.round(accuracy);
+
+      this.errorMessage = null;
+    } catch (err: any) {
+      this.errorMessage = err?.message || 'Localisation impossible.';
+      this.withinRadius = null;
+    }
   }
-  async determineAttendance() {
-    let conf = confirm(
-      ` Etes-vous sûr de vouloir marquer votre présence pour aujourd'hui ?`
-    );
-    if (!conf) {
+
+  async determineAttendance(): Promise<void> {
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir marquer votre présence pour aujourd'hui ?`
+      )
+    )
       return;
-    }
-    let currentAttendance = 'A';
 
-    if (this.time.isEmployeeOnTime(this.limitHour, this.limitMinutes)) {
-      currentAttendance = 'P';
-    } else {
-      currentAttendance = 'L';
-    }
-    await this.compute
-      .getLocation()
-      .then((position) => {
-        const { latitude, longitude } = position.coords;
-        this.withinRadius = this.compute.checkWithinRadius(
-          latitude,
-          longitude,
-          this.currentLat,
-          this.currentLng,
-          this.radius
+    let currentAttendance: 'P' | 'L' = this.time.isEmployeeOnTime(
+      this.limitHour,
+      this.limitMinutes
+    )
+      ? 'P'
+      : 'L';
+
+    try {
+      const pos = await this.compute.bestEffortGetLocation();
+      const { latitude, longitude, accuracy } = pos.coords;
+
+      this.withinRadius = this.compute.checkWithinRadius(
+        latitude,
+        longitude,
+        this.currentLat,
+        this.currentLng,
+        this.radius,
+        accuracy
+      );
+
+      if (!this.withinRadius) {
+        alert(
+          "Vous n'êtes pas sur le lieu de travail (ou précision trop faible). Réessayez près du site."
         );
+        return;
+      }
 
-        this.errorMessage = null; // Clear any previous error
-      })
-      .then(() => {
-        if (!this.withinRadius) {
-          alert(
-            "Vous n'êtes pas sur le lieu de travail. Réessayez quand vous l'êtes"
-          );
-          return;
-        }
-        if (this.withinRadius) {
-          this.attendance = currentAttendance;
-          this.addAttendance(false);
-        }
-      })
-      .catch((error) => {
-        this.errorMessage = error.message;
-        this.withinRadius = null;
-      });
+      this.attendance = currentAttendance;
+      await this.addAttendance(false);
+      alert('Présence enregistrée.');
+    } catch (err: any) {
+      this.errorMessage = err?.message || 'Localisation impossible.';
+      this.withinRadius = null;
+    }
   }
 
   requestVacation() {
