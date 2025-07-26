@@ -199,7 +199,7 @@
 <!-- === RESET BUTTON === -->
 <div
   *ngIf="auth.isAdmin"
-  class="mx-auto mt-12 flex max-w-7xl justify-center px-4"
+  class="mx-auto mt-12 space-x-6 flex max-w-5xl justify-center px-4"
 >
   <button
     (click)="resetClientsAndEmployees()"
@@ -207,7 +207,16 @@
   >
     Reset Employees &amp; Clients Match
   </button>
+
+  <button
+ 
+  (click)="openTransferModal()"
+  class="rounded-full bg-red-500 px-6 py-3 text-sm font-medium text-white ring-2 ring-white/30 backdrop-blur transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-white/50">
+  Transférer des Clients
+</button>
 </div>
+
+
 
 <!-- === EDIT EMPLOYEE MODALS === -->
 <ng-container *ngFor="let em of employees; let i = index">
@@ -514,3 +523,84 @@
     </div>
   </div>
 </div>
+
+
+
+<!-- === TRANSFER CLIENTS MODAL === -->
+<div
+  *ngIf="transferModalVisible"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div
+    class="w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-gray-800">
+    <h2 class="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-white">
+      Transférer des Clients (A → B)
+    </h2>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <!-- Source -->
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+        Source (Employé A)
+        <select
+          [(ngModel)]="transfer.sourceId"
+          (change)="onSourceChange()"
+          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white">
+          <option [ngValue]="null">Sélectionner…</option>
+          <option *ngFor="let e of employees" [value]="e.uid">
+            {{ e.firstName }} {{ e.lastName }} — {{ e.role }}
+            ({{ (e.currentClients?.length) || (e.clients?.length || 0) }} clients)
+          </option>
+        </select>
+      </label>
+
+      <!-- Target -->
+      <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+        Cible (Employé B)
+        <select
+          [(ngModel)]="transfer.targetId"
+          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white">
+          <option [ngValue]="null">Sélectionner…</option>
+          <option *ngFor="let e of employees" [value]="e.uid">
+            {{ e.firstName }} {{ e.lastName }} — {{ e.role }}
+            ({{ (e.currentClients?.length) || (e.clients?.length || 0) }} clients)
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Preview / safety notes -->
+    <div class="mt-4 rounded-xl bg-yellow-50 p-4 text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-100">
+      <p class="font-medium">Règles :</p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Tous les clients de A seront ajoutés à B (les clients déjà chez B ne seront pas dupliqués).</li>
+        <li>A n’aura plus aucun client dans son tableau <code>clients</code>.</li>
+        <li>Le champ <code>agent</code> de chaque client sera mis à jour vers B pour garder la cohérence.</li>
+      </ul>
+    </div>
+
+    <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+      <div>Clients chez A : <strong>{{ transfer.sourceClientCount }}</strong></div>
+      <div>Clients chez B (avant) : <strong>{{ transfer.targetClientCount }}</strong></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-8 flex justify-center gap-4">
+      <button
+        (click)="closeTransferModal()"
+        class="rounded-full bg-gray-300 px-6 py-2 font-medium text-gray-800 hover:bg-gray-400">
+        Annuler
+      </button>
+
+      <button
+        [disabled]="!canTransfer() || isTransferring"
+        (click)="confirmTransfer()"
+        class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-60">
+        <svg *ngIf="isTransferring" class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
+          <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4"/>
+        </svg>
+        Confirmer le transfert
+      </button>
+    </div>
+  </div>
+</div>
+

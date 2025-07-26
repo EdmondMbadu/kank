@@ -216,6 +216,85 @@ export class DataService {
     return batch.commit();
   }
 
+  // Utility to chunk large arrays for batch writes
+  private chunk<T>(arr: T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  }
+
+  /**
+   * Transfer all clients from employee A -> employee B.
+   * - Clears A.clients
+   * - Adds to B.clients (deduped, not overwritten)
+   * - Updates each client { agent: B }
+   * Returns the count of moved clients.
+   */
+  async transferCurrentClients(
+    sourceEmployeeId: string,
+    targetEmployeeId: string
+  ): Promise<number> {
+    const tenantUid = this.auth.currentUser.uid;
+
+    const srcRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${sourceEmployeeId}`
+    ).ref;
+    const dstRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${targetEmployeeId}`
+    ).ref;
+
+    const [srcSnap, dstSnap] = await Promise.all([srcRef.get(), dstRef.get()]);
+    if (!srcSnap.exists) throw new Error('Source employee not found');
+    if (!dstSnap.exists) throw new Error('Target employee not found');
+
+    const srcData = srcSnap.data() || {};
+    const dstData = dstSnap.data() || {};
+
+    // Prefer stored 'clients'; fall back to 'currentClients' if necessary
+    const rawSrc: string[] = (srcData.clients ??
+      srcData.currentClients ??
+      []) as string[];
+    const rawDst: string[] = (dstData.clients ??
+      dstData.currentClients ??
+      []) as string[];
+
+    // De-duplicate both sides first
+    const srcUnique = Array.from(new Set(rawSrc));
+    const dstSet = new Set(rawDst);
+
+    // What will actually be ADDED to B (not already there)
+    const toAdd = srcUnique.filter((id) => !dstSet.has(id));
+
+    // New target array = union (still deduped)
+    const newDst = Array.from(new Set([...rawDst, ...srcUnique]));
+
+    // 1) Update A (clear) and B (union) atomically
+    await this.afs.firestore.runTransaction(async (tx) => {
+      tx.update(srcRef, { clients: [] });
+      tx.update(dstRef, { clients: newDst });
+    });
+
+    // 2) Reassign each client’s agent to B (use ALL unique from A)
+    const toReassign = srcUnique;
+    const chunk = <T>(arr: T[], size: number) =>
+      arr.reduce<T[][]>(
+        (acc, _, i) => (i % size ? acc : [...acc, arr.slice(i, i + size)]),
+        []
+      );
+
+    for (const ids of chunk(toReassign, 450)) {
+      const batch = this.afs.firestore.batch();
+      ids.forEach((clientId) => {
+        const cRef = this.afs.doc(`users/${tenantUid}/clients/${clientId}`).ref;
+        batch.update(cRef, { agent: targetEmployeeId });
+      });
+      await batch.commit();
+    }
+
+    // Return the number of clients ACTUALLY added to B
+    return toAdd.length;
+  }
+
   updateEmployeeInfo(employee: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`

@@ -29,6 +29,16 @@ export class TeamPageComponent implements OnInit {
   ) {}
   displayEditEmployees: boolean[] = [];
 
+  // ===== Transfer state =====
+  transferModalVisible = false;
+  isTransferring = false;
+  transfer = {
+    sourceId: null as string | null,
+    targetId: null as string | null,
+    sourceClientCount: 0,
+    targetClientCount: 0,
+  };
+
   ngOnInit(): void {
     this.retreiveClients();
   }
@@ -67,6 +77,7 @@ export class TeamPageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
+      console.log('all the employees', this.employees);
       if (this.employees !== null) {
         this.displayEditEmployees = new Array(this.employees.length).fill(
           false
@@ -374,5 +385,63 @@ export class TeamPageComponent implements OnInit {
       console.error('Error uploading file:', error);
       alert('Error occurred while uploading file. Please try again.');
     }
+  }
+
+  openTransferModal() {
+    this.transferModalVisible = true;
+    this.transfer = {
+      sourceId: null,
+      targetId: null,
+      sourceClientCount: 0,
+      targetClientCount: 0,
+    };
+  }
+
+  closeTransferModal() {
+    this.transferModalVisible = false;
+  }
+
+  onSourceChange() {
+    const src = this.employees.find((e) => e.uid === this.transfer.sourceId);
+    this.transfer.sourceClientCount =
+      src?.currentClients?.length ?? src?.clients?.length ?? 0;
+  }
+
+  private updateTargetCount() {
+    const dst = this.employees.find((e) => e.uid === this.transfer.targetId);
+    this.transfer.targetClientCount =
+      dst?.currentClients?.length ?? dst?.clients?.length ?? 0;
+  }
+
+  canTransfer(): boolean {
+    return (
+      !!this.transfer.sourceId &&
+      !!this.transfer.targetId &&
+      this.transfer.sourceId !== this.transfer.targetId &&
+      this.transfer.sourceClientCount > 0
+    );
+  }
+
+  confirmTransfer() {
+    if (!this.canTransfer()) {
+      return;
+    }
+    this.isTransferring = true;
+    const { sourceId, targetId } = this.transfer;
+
+    this.data
+      .transferCurrentClients(sourceId!, targetId!)
+      .then((movedCount) => {
+        this.isTransferring = false;
+        this.closeTransferModal();
+        alert(`${movedCount} client(s) transféré(s) avec succès.`);
+        // Refresh data so UI recomputes currentClients
+        this.retreiveClients();
+      })
+      .catch((err) => {
+        this.isTransferring = false;
+        console.error('Transfer error:', err);
+        alert('Une erreur est survenue lors du transfert. Réessayez.');
+      });
   }
 }
