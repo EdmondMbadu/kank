@@ -159,6 +159,148 @@
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
+<!-- ╭─ Daily Collections (Expandable) ────────────────────────────────╮ -->
+<section class="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
+  <details class="group rounded-3xl ring-1 ring-slate-200 dark:ring-slate-700 overflow-hidden">
+    <!-- Summary (header) -->
+    <summary
+      class="flex cursor-pointer items-center justify-between gap-4 bg-gradient-to-r
+             from-emerald-600 to-green-600 px-5 py-4 text-white hover:brightness-105
+             focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+      <div class="flex flex-col">
+        <span class="text-lg font-extrabold tracking-tight">
+          Routine d’encaissement (08:00–16:30)
+        </span>
+        <span class="text-xs/5 opacity-90">
+          2 agents • court, précis, orienté résultat
+        </span>
+      </div>
+
+      <!-- Principle chips -->
+      <div class="hidden md:flex flex-wrap items-center gap-2">
+        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Partiels acceptés</span>
+        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Heure + montant précis</span>
+        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Retour même jour</span>
+      </div>
+
+      <!-- Chevron -->
+      <svg class="h-5 w-5 shrink-0 transition-transform duration-300 group-open:rotate-180"
+           viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+              clip-rule="evenodd"/>
+      </svg>
+    </summary>
+
+    <!-- Content -->
+    <div class="bg-white dark:bg-slate-800">
+      <!-- quick principles (mobile) -->
+      <div class="md:hidden flex flex-wrap gap-2 px-5 pt-4">
+        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Partiels acceptés</span>
+        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Heure + montant</span>
+        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Retour même jour</span>
+      </div>
+
+      <ol class="grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
+        <!-- 08:00–08:15 -->
+        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:00–08:15</span>
+            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Point rapide</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">Lister <em>Promis</em>, <em>Faciles</em>, <em>Difficiles/UNR</em>. Partager zones A/B.</p>
+        </li>
+
+        <!-- 08:15–08:45 -->
+        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:15–08:45</span>
+            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Appels / SMS</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            Fixer <strong>heure + montant</strong> pour aujourd’hui. Proposer <strong>partiel</strong> si besoin.
+          </p>
+        </li>
+
+        <!-- 08:45–11:50 -->
+        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:45–11:50</span>
+            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Tournée 1</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            D’abord <em>Promis</em>, puis <em>Faciles</em>. Toujours <strong>prendre un partiel</strong>.
+          </p>
+        </li>
+
+        <!-- 11:50–12:00 -->
+        <li class="rounded-2xl border border-amber-200 p-4 hover:shadow-md dark:border-amber-900/40">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">11:50–12:00</span>
+            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Mi‑journée</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            Lister <em>promesses cassées</em> + <em>introuvables</em>; caler le <strong>retour même jour</strong>.
+          </p>
+        </li>
+
+        <!-- 12:00–13:00 Pause -->
+        <li class="rounded-2xl border border-amber-200 bg-amber-50 p-4 hover:shadow-md dark:border-amber-900/40 dark:bg-amber-900/20">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-700 dark:text-amber-300">12:00–13:00</span>
+            <span class="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">Pause / Déjeuner</span>
+          </div>
+          <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">Hydratez‑vous. Préparez la vague d’après‑midi.</p>
+        </li>
+
+        <!-- 13:00–13:20 -->
+        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">13:00–13:20</span>
+            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Appels 2</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            Reconfirmer rendez‑vous. Paiement mobile si possible (tout de suite).
+          </p>
+        </li>
+
+        <!-- 13:20–15:30 -->
+        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">13:20–15:30</span>
+            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Tournée 2</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            Rattraper <em>cassés</em> + <em>difficiles/UNR</em>. Appeler le référent si besoin.
+          </p>
+        </li>
+
+        <!-- 15:30–16:00 -->
+        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">15:30–16:00</span>
+            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Derniers passages</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            Appels courts & fermes. <strong>Prendre tout partiel</strong> disponible aujourd’hui.
+          </p>
+        </li>
+
+        <!-- 16:00–16:30 -->
+        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">16:00–16:30</span>
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-900/30 dark:text-slate-200">Clôture</span>
+          </div>
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+            Noter pour chaque impayé : <em>raison</em> + <strong>heure+montant</strong> du prochain passage (<strong>retour même jour</strong> si possible).
+          </p>
+        </li>
+      </ol>
+    </div>
+  </details>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
 <!-- ╭─ Summary cards ────────────────────────────────────────────────╮ -->
 <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
