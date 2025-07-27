@@ -14,7 +14,7 @@ import { Employee } from '../models/employee';
 import { RotationSchedule } from '../models/management';
 import { map, take } from 'rxjs';
 import firebase from 'firebase/compat/app';
-import { deleteField } from '@angular/fire/firestore';
+import { arrayRemove, arrayUnion, deleteField } from '@angular/fire/firestore';
 
 @Injectable({
   providedIn: 'root',
@@ -414,37 +414,23 @@ export class PerformanceService {
       );
   }
 
-  /** Assign (or clear) one day */
-  // async setAssignment(
-  //   loc: string,
-  //   y: number,
-  //   m: number,
-  //   isoDay: string,
-  //   employeeUid?: string
-  // ) {
-  //   const id = this.docId(loc, y, m);
-  //   const path = `rotations/${id}`;
-  //   const docRef = this.afs.doc<RotationSchedule>(path).ref;
-  //   return this.afs.firestore.runTransaction(async (tx) => {
-  //     const snap = await tx.get(docRef);
-  //     const data: RotationSchedule =
-  //       (snap.exists ? (snap.data() as any) : null) ||
-  //       ({
-  //         location: loc,
-  //         month: m,
-  //         year: y,
-  //         days: {},
-  //         createdAt: Date.now(),
-  //       } as RotationSchedule);
+  // Helper: stable key for a location field path
+  private slug(s: string): string {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // strip accents
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
 
-  //     if (employeeUid) data!.days![isoDay] = employeeUid;
-  //     else delete data!.days![isoDay]; // clear assignment
+  private tfDocPath(isoWeek: string) {
+    return `taskforceSchedules/${isoWeek}`;
+  }
 
-  //     data.updatedAt = Date.now();
-  //     tx.set(docRef, data, { merge: true });
-  //   });
-  // }
-
+  getTaskForce(isoWeek: string) {
+    return this.afs.doc<{ days?: any }>(this.tfDocPath(isoWeek)).valueChanges();
+  }
   async setAssignment(
     loc: string,
     y: number,
@@ -483,28 +469,86 @@ export class PerformanceService {
     }
   }
 
-  /* performance.service.ts — add at bottom of file */
-  private tfDocId(isoWeek: string) {
-    return `taskforceSchedules/${isoWeek}`;
-  }
-
-  getTaskForce(isoWeek: string) {
-    return this.afs
-      .doc<{ days: { [iso: string]: string } }>(this.tfDocId(isoWeek))
-      .valueChanges();
-  }
-  setTaskForce(isoWeek: string, isoDay: string, location?: string) {
-    const ref = this.afs.doc(this.tfDocId(isoWeek));
-
-    const data = {
-      updatedAt: Date.now(),
-      days: {
-        // 👈 real sub‑map
-        [isoDay]: location ? location : deleteField(),
+  /** Replace the whole set of (location → employees[]) for a given day.
+   *  Pass `null` to clear the day entirely. */
+  setTaskForceDay(
+    isoWeek: string,
+    isoDay: string,
+    dayMap: { [locKey: string]: { loc: string; employees: string[] } } | null
+  ) {
+    const ref = this.afs.doc(this.tfDocPath(isoWeek));
+    return ref.set(
+      {
+        updatedAt: Date.now(),
+        days: {
+          [isoDay]: dayMap ?? deleteField(), // clear when null
+        },
       },
-    };
+      { merge: true }
+    );
+  }
 
-    // merge = deep‑merge, so this updates only the given day
-    return ref.set(data, { merge: true });
+  /** Add one employee to a (day, location). Creates location/day if needed. */
+  addTFPerson(isoWeek: string, isoDay: string, location: string, uid: string) {
+    const ref = this.afs.doc(this.tfDocPath(isoWeek));
+    const key = this.slug(location);
+    return ref.set(
+      {
+        updatedAt: Date.now(),
+        days: {
+          [isoDay]: {
+            [key]: {
+              loc: location,
+              // ensure employees array exists, then union
+              employees: arrayUnion(uid),
+            },
+          },
+        },
+      },
+      { merge: true }
+    );
+  }
+
+  /** Remove one employee from a (day, location). Deletes location if empty. */
+  removeTFPerson(
+    isoWeek: string,
+    isoDay: string,
+    location: string,
+    uid: string
+  ) {
+    const ref = this.afs.doc(this.tfDocPath(isoWeek));
+    const key = this.slug(location);
+    // First remove from array; optional cleanup of empty arrays can be handled in client after read.
+    return ref.set(
+      {
+        updatedAt: Date.now(),
+        days: {
+          [isoDay]: {
+            [key]: {
+              loc: location,
+              employees: arrayRemove(uid),
+            },
+          },
+        },
+      },
+      { merge: true }
+    );
+  }
+
+  /** Remove entire location block for a given day (but keep other locations). */
+  clearTFLocation(isoWeek: string, isoDay: string, location: string) {
+    const ref = this.afs.doc(this.tfDocPath(isoWeek));
+    const key = this.slug(location);
+    return ref.set(
+      {
+        updatedAt: Date.now(),
+        days: {
+          [isoDay]: {
+            [key]: deleteField(),
+          },
+        },
+      },
+      { merge: true }
+    );
   }
 }

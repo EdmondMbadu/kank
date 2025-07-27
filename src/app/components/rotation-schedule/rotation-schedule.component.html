@@ -143,21 +143,27 @@
 
 
       <!-- one‑line summary -->
-    <p class="flex flex-wrap gap-2" *ngIf="taskWeekSummary?.length">
-      <ng-container *ngFor="let d of taskWeekSummary">
-        <span
-          class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
-                transition"
-          [class.bg-green-100]="d.loc"
-          [class.text-green-800]="d.loc"
-          [class.bg-gray-100]="!d.loc"
-          [class.text-gray-500]="!d.loc"
-        >
-          {{ d.day }}   <!-- Lun, Mar, … -->
-          <span *ngIf="d.loc">· {{ d.loc }}</span>
-        </span>
+    <!-- one‑line summary -->
+<p class="flex flex-wrap gap-2" *ngIf="taskWeekSummary?.length">
+  <ng-container *ngFor="let d of taskWeekSummary">
+    <span
+      class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
+             bg-gray-100 text-gray-700"
+    >
+      {{ d.day }}
+      <ng-container *ngIf="d.entries?.length; else none">
+        <ng-container *ngFor="let e of d.entries">
+          <span class="inline-flex items-center gap-1 bg-white rounded-full px-2 py-0.5 border">
+            🚨 {{ e.loc }}
+            <span class="text-[11px] opacity-70">({{ e.employees.length }})</span>
+          </span>
+        </ng-container>
       </ng-container>
-    </p>
+      <ng-template #none> · — </ng-template>
+    </span>
+  </ng-container>
+</p>
+
   </div>
 
 
@@ -181,13 +187,31 @@
               {{ c.iso | date:'d' }}
             </span>
 
-            <span *ngIf="c.loc; else dash">
-              🚨 <strong>{{ c.loc }}</strong>
-            </span>
-            <ng-template #dash>
-              <span class="text-gray-300">—</span>
-            </ng-template>
-          </span>
+          <ng-container *ngIf="c.entries?.length; else dash">
+        <div class="space-y-1">
+          <div *ngFor="let e of c.entries" class="rounded bg-white border px-2 py-1">
+            <div class="text-sm font-semibold">🚨 {{ e.loc }}</div>
+            <div class="flex flex-wrap gap-1 mt-1">
+              <span *ngFor="let uid of e.employees | slice:0:4"
+                    class="text-xs bg-gray-100 rounded px-1.5 py-0.5">
+                {{ (byUid(uid)?.firstName) || '—' }} {{ (byUid(uid)?.lastName) || '' }}
+              </span>
+
+              <span
+                *ngIf="(e.employees?.length || 0) > 4"
+                class="text-[11px] opacity-60"
+              >
+                +{{ e.employees.length - 4 }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #dash>
+        <span class="text-gray-300">—</span>
+      </ng-template>
+      <!-- END replacement -->
+    </span>
         </td>
       </tr>
     </tbody>
@@ -196,31 +220,78 @@
 <!-- ╰───────────────────────────────────────────────────────╯ -->
 
 <!-- modal -->
-<div *ngIf="taskPicker.visible"
+ <div *ngIf="taskPicker.visible"
      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
      (click)="closeTFPicker()">
-  <div (click)="$event.stopPropagation()"
-       class="bg-white p-4 rounded-lg w-80">
-    <h3 class="font-semibold mb-3">
-      TaskForce&nbsp;—&nbsp;{{ taskPicker.day.date | date:'EEEE d MMMM y' }}
-    </h3>
-    <button
-      class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg"
-      (click)="closeTFPicker()"
-    >
-      ✕
-    </button>
+      <div (click)="$event.stopPropagation()" class="relative bg-white p-4 rounded-lg w-[28rem] max-h-[80vh] overflow-y-auto">
+        <h3 class="font-semibold mb-3">
+          TaskForce — {{ taskPicker.day?.date | date:'EEEE d MMMM y' }}
+        </h3>
 
-    <select [(ngModel)]="taskPicker.loc"
-            class="w-full border p-2 rounded mb-4">
-      <option value="">— Pas de TaskForce —</option>
-      <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
-    </select>
+        <button class="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-lg" (click)="closeTFPicker()">✕</button>
 
-    <button class="bg-blue-600 text-white px-4 py-1 rounded"
-            (click)="saveTF()">Enregistrer</button>
-  </div>
+        <!-- Current entries -->
+        <div *ngIf="taskPicker.entries.length; else noTF" class="space-y-3 mb-4">
+          <div *ngFor="let e of taskPicker.entries" class="border rounded p-2">
+            <div class="flex items-center justify-between">
+              <div class="font-semibold">🚨 {{ e.loc }}</div>
+              <button class="text-xs text-red-600" (click)="removeLocation(e.loc)">Retirer ce site</button>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-1">
+              <span
+                *ngFor="let uid of e.employees"
+                class="inline-flex items-center gap-1 text-xs bg-gray-100 rounded px-1.5 py-0.5"
+              >
+                {{ (byUid(uid)?.firstName) || '—' }} {{ (byUid(uid)?.lastName) || '' }}
+                <button class="ml-1 text-[11px] text-red-600"
+                        (click)="removeUidFromLoc(e.loc, uid)">✕</button>
+              </span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noTF>
+          <p class="text-sm text-gray-500 mb-4">— Aucune entrée pour cette date —</p>
+        </ng-template>
+
+        <!-- Add people to a (new or existing) location -->
+        <div class="border-t pt-3 mt-3">
+          <label class="block text-sm mb-1">Lieu</label>
+          <select [(ngModel)]="taskPicker.newLoc" class="w-full border p-2 rounded mb-3">
+            <option value="">— Choisir un lieu —</option>
+            <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+          </select>
+
+          <input [(ngModel)]="taskPicker.search" placeholder="Rechercher un agent…" class="w-full border p-2 rounded mb-2" />
+
+          <ul class="border rounded max-h-48 overflow-auto">
+            <li *ngFor="let emp of filteredEmployees()"
+                class="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer"
+                (click)="toggleSelect(emp.uid!)">
+              <input type="checkbox" [checked]="taskPicker.selected.has(emp.uid!)" />
+              <img *ngIf="emp.profilePicture" [src]="emp.profilePicture.downloadURL" class="w-5 h-5 rounded-full" />
+              <span class="truncate text-sm">{{ emp.firstName }} {{ emp.lastName }}</span>
+            </li>
+          </ul>
+
+          <div class="mt-3 flex items-center justify-between">
+            <div class="text-xs text-gray-500">
+              {{ taskPicker.selected.size }} sélectionné(s)
+            </div>
+            <button class="bg-blue-600 text-white px-3 py-1 rounded disabled:opacity-50"
+                    [disabled]="!taskPicker.newLoc || taskPicker.selected.size === 0"
+                    (click)="addSelectedToLocation(taskPicker.newLoc)">
+              Ajouter au lieu
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button class="px-3 py-1 rounded bg-gray-100" (click)="closeTFPicker()">Annuler</button>
+          <button class="px-3 py-1 rounded bg-blue-600 text-white" (click)="saveTF()">Enregistrer</button>
+        </div>
+      </div>
 </div>
+
 <!-- ╰───────────────────────────────────────────────────────────╯ -->
 
   <!-- ═════════════ Picker modal (unchanged logic) ═════════════ -->

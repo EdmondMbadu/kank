@@ -13,6 +13,10 @@ import { combineLatest, Subscription, tap } from 'rxjs';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { PerformanceService } from 'src/app/services/performance.service';
+
+type TFEntry = { loc: string; employees: string[] }; // keep UIDs
+type TFCell = { iso: string; entries?: TFEntry[] };
+
 @Component({
   selector: 'app-rotation-schedule',
   templateUrl: './rotation-schedule.component.html',
@@ -20,6 +24,9 @@ import { PerformanceService } from 'src/app/services/performance.service';
 })
 export class RotationScheduleComponent implements OnInit, OnChanges {
   private schedSub?: Subscription;
+
+  taskMonthWeeks: (TFCell | null)[][] = [];
+  taskWeekSummary: { day: string; entries: TFEntry[] }[] = [];
   /* ---- inputs ---- */
   @Input() employees: Employee[] = [];
   @Input() locations: string[] = [];
@@ -89,14 +96,18 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   taskWeekLabel = '';
   taskDays: { date: Date; iso: string; loc?: string }[] = [];
   /* ── full‑month TaskForce grid ── */
-  taskMonthWeeks: ({
-    iso: string; // '2025‑07‑21'
-    loc?: string; // location or undefined
-  } | null)[][] = [];
-  /** Task‑Force for the week that contains “today” (updated each reload) */
-  taskWeekSummary: { day: string; loc?: string }[] = [];
 
-  taskPicker = { visible: false, day: null as any, loc: '' };
+  taskPicker = {
+    visible: false,
+    day: null as null | { iso: string; date: Date },
+    // editable working copy for the day:
+    entries: [] as { loc: string; employees: string[] }[],
+    // UI inputs for adding a new location + people:
+    newLoc: '',
+    search: '',
+    selected: new Set<string>(), // selected employee UIDs to add
+  };
+
   /* 2️⃣ react when @Input locations changes */
   ngOnChanges(changes: SimpleChanges) {
     if ('locations' in changes) {
@@ -191,31 +202,88 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     });
   }
   /* --- replace the current openTFPicker() -------------------- */
-  openTFPicker(cell: { iso: string; loc?: string }) {
-    const dateObj = this.isoToLocal(cell.iso); // ⬅️ use helper
+  // openTFPicker(cell: { iso: string; loc?: string }) {
+  //   const dateObj = this.isoToLocal(cell.iso); // ⬅️ use helper
+  //   this.taskPicker = {
+  //     visible: true,
+  //     day: { ...cell, date: dateObj },
+  //     loc: cell.loc || '',
+  //   };
+  // }
+  openTFPicker(cell: { iso: string }) {
+    const dateObj = this.isoToLocal(cell.iso);
+    // Read existing entries from grid:
+    let entries: TFEntry[] = [];
+    for (const row of this.taskMonthWeeks)
+      for (const c of row)
+        if (c && c.iso === cell.iso) entries = c.entries ?? [];
+
     this.taskPicker = {
       visible: true,
-      day: { ...cell, date: dateObj },
-      loc: cell.loc || '',
+      day: { iso: cell.iso, date: dateObj },
+      // working copy in uid form
+      entries: entries.map((e) => ({
+        loc: e.loc,
+        employees: [...(e.employees || [])], // already UIDs
+      })),
+
+      newLoc: '',
+      search: '',
+      selected: new Set<string>(),
     };
   }
 
   closeTFPicker() {
     this.taskPicker.visible = false;
   }
-  async saveTF() {
-    /* local optimistic update */
-    this.taskPicker.day.loc = this.taskPicker.loc.trim() || undefined;
-    this.cdr.markForCheck();
 
-    const d = this.taskPicker.day.date;
-    await this.rs.setTaskForce(
-      this.isoWeekId(d),
-      this.taskPicker.day.iso,
-      this.taskPicker.loc.trim() || undefined
+  public byUid(uid?: string) {
+    return this.employees.find((e) => e.uid === uid);
+  }
+  public mapUids(uids: string[] = []): Employee[] {
+    return uids.map((u) => this.byUid(u)).filter(Boolean) as Employee[];
+  }
+
+  // async saveTF() {
+  //   /* local optimistic update */
+  //   this.taskPicker.day.loc = this.taskPicker.loc.trim() || undefined;
+  //   this.cdr.markForCheck();
+
+  //   const d = this.taskPicker.day.date;
+  //   await this.rs.setTaskForce(
+  //     this.isoWeekId(d),
+  //     this.taskPicker.day.iso,
+  //     this.taskPicker.loc.trim() || undefined
+  //   );
+  //   this.closeTFPicker();
+  //   this.loadTaskForceMonth();
+  // }
+  async saveTF() {
+    if (!this.taskPicker.day) return;
+
+    const iso = this.taskPicker.day.iso;
+    const weekId = this.isoWeekId(this.taskPicker.day.date);
+
+    // Build the map expected by the service
+    const map: { [k: string]: { loc: string; employees: string[] } } = {};
+    for (const e of this.taskPicker.entries) {
+      const key = e.loc
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      map[key] = { loc: e.loc, employees: e.employees };
+    }
+
+    await this.rs.setTaskForceDay(
+      weekId,
+      iso,
+      Object.keys(map).length ? map : null
     );
+
     this.closeTFPicker();
-    this.loadTaskForceMonth();
+    this.loadTaskForceMonth(); // refresh grid + summary
   }
 
   /* ─────────── state supplémentaire ─────────── */
@@ -296,7 +364,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     this.year = p.getFullYear();
     this.refresh();
     this.loadAllLocationsCurrentMonth();
-    this.loadTaskForceMonth;
+    this.loadTaskForceMonth();
   }
   nextMonth() {
     const n = this.addMonths(new Date(this.year, this.month - 1), 1);
@@ -487,20 +555,35 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     /* (3) read them all and merge into the grid ------------------- */
     ids.forEach((id) => {
       this.rs.getTaskForce(id).subscribe((doc) => {
-        Object.entries(doc?.days ?? {}).forEach(([iso, loc]) => {
-          for (const r of this.taskMonthWeeks)
-            for (const c of r) if (c && c.iso === iso) c.loc = loc;
-        });
+        const days = doc?.days ?? {};
 
-        /* ✅ now the grid is filled → recompute summary */
+        for (const row of this.taskMonthWeeks) {
+          for (const cell of row) {
+            if (!cell) continue;
+            const val = days[cell.iso];
+
+            if (!val) {
+              cell.entries = [];
+              continue;
+            }
+
+            // Backward compatibility: if it's a string, coerce to map
+            const dayMap =
+              typeof val === 'string'
+                ? { [val.toLowerCase()]: { loc: val, employees: [] } }
+                : (val as Record<string, { loc: string; employees: string[] }>);
+
+            cell.entries = Object.values(dayMap).map((d) => ({
+              loc: d.loc,
+              employees: Array.isArray(d.employees) ? d.employees : [],
+            }));
+          }
+        }
+
         this.recomputeTaskWeekSummary();
-
         this.zone.run(() => this.cdr.markForCheck());
       });
     });
-
-    // after you finish merging Firestore data into taskMonthWeeks…
-    this.recomputeTaskWeekSummary(); // ⬅️ add this line
   }
 
   /* Petit util pour retirer d’éventuels doublons */
@@ -550,6 +633,29 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     return ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][d.getDay()];
   }
 
+  // private recomputeTaskWeekSummary(): void {
+  //   const base = this.startOfWeek(new Date()); // Sunday
+  //   const names = [
+  //     'Dimanche',
+  //     'Lundi',
+  //     'Mardi',
+  //     'Mercredi',
+  //     'Jeudi',
+  //     'Vendredi',
+  //     'Samedi',
+  //   ];
+
+  //   this.taskWeekSummary = Array.from({ length: 7 }).map((_, i) => {
+  //     const d = this.addDays(base, i);
+  //     const iso = this.ymd(d);
+  //     /* look up loc from the already‑filled month grid */
+  //     let loc: string | undefined;
+  //     for (const row of this.taskMonthWeeks)
+  //       for (const cell of row) if (cell && cell.iso === iso) loc = cell.loc;
+
+  //     return { day: names[i], loc };
+  //   });
+  // }
   private recomputeTaskWeekSummary(): void {
     const base = this.startOfWeek(new Date()); // Sunday
     const names = [
@@ -565,12 +671,61 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     this.taskWeekSummary = Array.from({ length: 7 }).map((_, i) => {
       const d = this.addDays(base, i);
       const iso = this.ymd(d);
-      /* look up loc from the already‑filled month grid */
-      let loc: string | undefined;
-      for (const row of this.taskMonthWeeks)
-        for (const cell of row) if (cell && cell.iso === iso) loc = cell.loc;
 
-      return { day: names[i], loc };
+      // find the cell and read entries
+      let entries: TFEntry[] = [];
+      for (const row of this.taskMonthWeeks)
+        for (const c of row) if (c && c.iso === iso) entries = c.entries ?? [];
+
+      return { day: names[i], entries };
     });
+  }
+
+  // toggle a candidate selection while searching
+  toggleSelect(uid: string) {
+    if (this.taskPicker.selected.has(uid)) this.taskPicker.selected.delete(uid);
+    else this.taskPicker.selected.add(uid);
+    this.cdr.markForCheck();
+  }
+
+  // add selected people to a given location (create or merge)
+  addSelectedToLocation(targetLoc: string) {
+    const loc = (targetLoc || '').trim();
+    if (!loc || this.taskPicker.selected.size === 0) return;
+
+    // find or create
+    const found = this.taskPicker.entries.find(
+      (e) => e.loc.toLowerCase() === loc.toLowerCase()
+    );
+    const toAdd = Array.from(this.taskPicker.selected);
+
+    if (found) {
+      const set = new Set(found.employees);
+      toAdd.forEach((u) => set.add(u));
+      found.employees = Array.from(set);
+    } else {
+      this.taskPicker.entries.push({ loc, employees: toAdd });
+    }
+
+    // reset input state
+    this.taskPicker.newLoc = '';
+    this.taskPicker.selected.clear();
+    this.taskPicker.search = '';
+    this.cdr.markForCheck();
+  }
+
+  removeUidFromLoc(loc: string, uid: string) {
+    const e = this.taskPicker.entries.find((x) => x.loc === loc);
+    if (!e) return;
+    e.employees = e.employees.filter((u) => u !== uid);
+    // if empty, keep the location (you can auto-remove if you prefer)
+    this.cdr.markForCheck();
+  }
+
+  removeLocation(loc: string) {
+    this.taskPicker.entries = this.taskPicker.entries.filter(
+      (e) => e.loc !== loc
+    );
+    this.cdr.markForCheck();
   }
 }
