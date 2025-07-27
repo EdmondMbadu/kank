@@ -24,6 +24,8 @@ type TFCell = { iso: string; entries?: TFEntry[] };
 })
 export class RotationScheduleComponent implements OnInit, OnChanges {
   private schedSub?: Subscription;
+  private tfSubs: Subscription[] = [];
+  private tfCellByIso = new Map<string, TFCell>();
 
   taskMonthWeeks: (TFCell | null)[][] = [];
   taskWeekSummary: { day: string; entries: TFEntry[] }[] = [];
@@ -500,8 +502,14 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     this.nextWeekRotation = this.dedupe(nextW);
   }
   /** Fetch TaskForce for the whole displayed month */
+  /** Fetch TaskForce for the whole displayed month */
   private loadTaskForceMonth() {
-    /* (1) skeleton identical to rotation grid --------------------- */
+    // 0) cleanup previous TF subscriptions
+    this.tfSubs.forEach((s) => s.unsubscribe());
+    this.tfSubs = [];
+    this.tfCellByIso.clear();
+
+    // (1) skeleton identical to rotation grid ---------------------
     const first = this.startOfMonth(new Date(this.year, this.month - 1));
     const last = this.endOfMonth(first);
     const weeks: typeof this.taskMonthWeeks = [];
@@ -516,45 +524,55 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       }
     }
     if (row.some((c) => c)) weeks.push(row);
-    this.taskMonthWeeks = weeks; // set now (empty)
 
-    /* (2) figure out the ISO‑week documents we must read ---------- */
+    // create index for fast lookups
+    for (const r of weeks) {
+      for (const c of r) {
+        if (c) this.tfCellByIso.set(c.iso, c);
+      }
+    }
+
+    this.taskMonthWeeks = weeks; // set now (empty grid visible)
+
+    // (2) figure out the ISO‑week documents we must read ----------
     const ids = new Set<string>();
-    for (let d = first; d <= last; d = this.addDays(d, 7))
+    for (let d = first; d <= last; d = this.addDays(d, 7)) {
       ids.add(this.isoWeekId(d)); // one per week
+    }
 
-    /* (3) read them all and merge into the grid ------------------- */
-    /* (3) read them all and merge into the grid ------------------- */
+    // (3) read them all and merge into the grid -------------------
     ids.forEach((id) => {
-      this.rs.getTaskForce(id).subscribe((doc) => {
+      const sub = this.rs.getTaskForce(id).subscribe((doc) => {
         const days = doc?.days ?? {};
 
-        for (const row of this.taskMonthWeeks) {
-          for (const cell of row) {
-            if (!cell) continue;
-            const val = days[cell.iso];
-
-            if (!val) {
-              cell.entries = [];
-              continue;
-            }
-
-            // Backward compatibility: if it's a string, coerce to map
-            const dayMap =
-              typeof val === 'string'
-                ? { [val.toLowerCase()]: { loc: val, employees: [] } }
-                : (val as Record<string, { loc: string; employees: string[] }>);
-
-            cell.entries = Object.values(dayMap).map((d) => ({
-              loc: d.loc,
-              employees: Array.isArray(d.employees) ? d.employees : [],
-            }));
+        // A) clear only the cells that belong to THIS iso week
+        for (const [iso, cell] of this.tfCellByIso) {
+          if (this.isoWeekId(this.isoToLocal(iso)) === id) {
+            cell.entries = [];
           }
         }
+
+        // B) apply fresh data from this doc
+        Object.entries(days).forEach(([iso, val]) => {
+          const cell = this.tfCellByIso.get(iso);
+          if (!cell) return;
+
+          const dayMap =
+            typeof val === 'string'
+              ? { [val.toLowerCase()]: { loc: val, employees: [] } }
+              : (val as Record<string, { loc: string; employees: string[] }>);
+
+          cell.entries = Object.values(dayMap).map((d) => ({
+            loc: d.loc,
+            employees: Array.isArray(d.employees) ? d.employees : [],
+          }));
+        });
 
         this.recomputeTaskWeekSummary();
         this.zone.run(() => this.cdr.markForCheck());
       });
+
+      this.tfSubs.push(sub);
     });
   }
 
