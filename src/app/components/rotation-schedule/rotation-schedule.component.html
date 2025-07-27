@@ -172,26 +172,66 @@
 
 
       <!-- one‑line summary -->
-    <!-- one‑line summary -->
-<p class="flex flex-wrap gap-2" *ngIf="taskWeekSummary?.length">
-  <ng-container *ngFor="let d of taskWeekSummary">
-    <span
-      class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
-             bg-gray-100 text-gray-700"
-    >
-      {{ d.day }}
-      <ng-container *ngIf="d.entries?.length; else none">
-        <ng-container *ngFor="let e of d.entries">
-          <span class="inline-flex items-center gap-1 bg-white rounded-full px-2 py-0.5 border">
-            🚨 {{ e.loc }}
-            <span class="text-[11px] opacity-70">({{ e.employees.length }})</span>
-          </span>
-        </ng-container>
-      </ng-container>
-      <ng-template #none> · — </ng-template>
+<!-- Weekly snapshot (this week only) -->
+<div
+  *ngIf="(auth.isAdmin || auth.isDistributor) && taskWeekSummary?.length"
+  class="mt-1 mb-4"
+>
+  <div class="flex items-center justify-between">
+    <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-600">
+      Semaine en cours — aperçu
+    </h3>
+
+    <!-- Small legend / state -->
+    <span class="text-xs px-2 py-1 rounded border"
+          [ngClass]="tfAuditEditable ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'">
+      {{ tfAuditEditable ? 'Édition audit : OUVERTE' : 'Édition audit : FERMÉE' }}
     </span>
-  </ng-container>
-</p>
+  </div>
+
+  <!-- Day cards -->
+  <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-2">
+    <div
+      *ngFor="let d of taskWeekSummary"
+      class="rounded-xl border bg-white p-3 shadow-sm"
+      [ngClass]="d.entries?.length ? 'ring-1 ring-green-200' : 'opacity-80'"
+    >
+      <div class="text-xs font-semibold text-gray-600 flex items-center justify-between">
+        <span>{{ d.day }}</span>
+        <span class="text-[11px] px-1.5 py-0.5 rounded"
+              [ngClass]="d.entries?.length ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+          {{ d.entries?.length || 0 }} loc.
+        </span>
+      </div>
+
+      <div class="mt-2 space-y-2">
+        <ng-container *ngIf="d.entries?.length; else noEntries">
+          <div *ngFor="let e of d.entries" class="text-xs">
+            <div class="font-semibold">🚨 {{ e.loc }}</div>
+            <div class="flex flex-wrap gap-1 mt-1">
+              <span
+                *ngFor="let uid of e.employees | slice:0:3"
+                class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800"
+              >
+                {{ (byUid(uid)?.firstName) || '—' }} {{ (byUid(uid)?.lastName) || '' }}
+              </span>
+              <span
+                *ngIf="(e.employees?.length || 0) > 3"
+                class="text-[11px] text-gray-600"
+              >
+                +{{ e.employees.length - 3 }}
+              </span>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noEntries>
+          <div class="text-[12px] text-gray-400 italic">—</div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+
 
   </div>
 
