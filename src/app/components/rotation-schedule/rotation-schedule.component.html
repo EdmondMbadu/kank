@@ -194,13 +194,13 @@
     <div
       *ngFor="let d of taskWeekSummary"
       class="rounded-xl border bg-white p-3 shadow-sm"
-      [ngClass]="d.entries?.length ? 'ring-1 ring-green-200' : 'opacity-80'"
+      [ngClass]="d.entries.length ? 'ring-1 ring-green-200' : 'opacity-80'"
     >
       <div class="text-xs font-semibold text-gray-600 flex items-center justify-between">
         <span>{{ d.day }}</span>
         <span class="text-[11px] px-1.5 py-0.5 rounded"
-              [ngClass]="d.entries?.length ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
-          {{ d.entries?.length || 0 }} loc.
+              [ngClass]="d.entries.length ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+          {{ d.entries.length || 0 }} loc.
         </span>
       </div>
 
