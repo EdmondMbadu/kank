@@ -551,4 +551,16 @@ export class PerformanceService {
       { merge: true }
     );
   }
+
+  /** Allow/forbid audit (distributor) edits for a given ISO week. */
+  setAuditEditable(isoWeek: string, value: boolean) {
+    const ref = this.afs.doc(this.tfDocPath(isoWeek));
+    return ref.set(
+      {
+        auditEditable: value,
+        updatedAt: Date.now(),
+      },
+      { merge: true }
+    );
+  }
 }

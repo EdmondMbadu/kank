@@ -142,6 +142,12 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     }
     // this.loadTaskForceWeek();
     this.loadTaskForceMonth();
+    // ⬇️ Read auditEditable (default to true if field missing)
+    this.rs.getTaskForce(this.currentWeekId()).subscribe((doc: any) => {
+      // if undefined => true (open) to avoid locking people out by surprise
+      this.tfAuditEditable = doc?.['auditEditable'] !== false;
+      this.cdr.markForCheck();
+    });
   }
 
   /* ── ISO‑WEEK utilities (no external libs) ─────────────── */
@@ -201,18 +207,11 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.zone.run(() => this.cdr.markForCheck());
     });
   }
-  /* --- replace the current openTFPicker() -------------------- */
-  // openTFPicker(cell: { iso: string; loc?: string }) {
-  //   const dateObj = this.isoToLocal(cell.iso); // ⬅️ use helper
-  //   this.taskPicker = {
-  //     visible: true,
-  //     day: { ...cell, date: dateObj },
-  //     loc: cell.loc || '',
-  //   };
-  // }
+
   openTFPicker(cell: { iso: string }) {
+    if (!this.tfCanEdit) return; // distributors blocked when toggle is OFF
+
     const dateObj = this.isoToLocal(cell.iso);
-    // Read existing entries from grid:
     let entries: TFEntry[] = [];
     for (const row of this.taskMonthWeeks)
       for (const c of row)
@@ -221,12 +220,10 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     this.taskPicker = {
       visible: true,
       day: { iso: cell.iso, date: dateObj },
-      // working copy in uid form
       entries: entries.map((e) => ({
         loc: e.loc,
-        employees: [...(e.employees || [])], // already UIDs
+        employees: [...(e.employees || [])],
       })),
-
       newLoc: '',
       search: '',
       selected: new Set<string>(),
@@ -244,20 +241,6 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     return uids.map((u) => this.byUid(u)).filter(Boolean) as Employee[];
   }
 
-  // async saveTF() {
-  //   /* local optimistic update */
-  //   this.taskPicker.day.loc = this.taskPicker.loc.trim() || undefined;
-  //   this.cdr.markForCheck();
-
-  //   const d = this.taskPicker.day.date;
-  //   await this.rs.setTaskForce(
-  //     this.isoWeekId(d),
-  //     this.taskPicker.day.iso,
-  //     this.taskPicker.loc.trim() || undefined
-  //   );
-  //   this.closeTFPicker();
-  //   this.loadTaskForceMonth();
-  // }
   async saveTF() {
     if (!this.taskPicker.day) return;
 
@@ -394,17 +377,6 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     );
   }
 
-  // async select(emp: Employee) {
-  //   await this.rs.setAssignment(
-  //     this.location,
-  //     this.year,
-  //     this.month,
-  //     this.pickerDay,
-  //     emp.uid
-  //   );
-  //   this.closePicker();
-  //   this.refresh();
-  // }
   async select(emp: Employee) {
     /* 1️⃣ local optimistic update */
     this.applyLocalAssignment(this.pickerDay, emp);
@@ -727,5 +699,26 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       (e) => e.loc !== loc
     );
     this.cdr.markForCheck();
+  }
+
+  /** Whether audit (distributor) can edit the current week. Default: true (open). */
+  tfAuditEditable = true;
+
+  /** Current week id (Sunday within week is OK; the helper computes ISO week). */
+  private currentWeekId(): string {
+    return this.isoWeekId(new Date());
+  }
+
+  /** Who can open the TF editor right now? */
+  get tfCanEdit(): boolean {
+    return (
+      this.auth.isAdmin || (this.auth.isDistributor && this.tfAuditEditable)
+    );
+  }
+
+  /** Admin changes the flag */
+  setTfAuditEditable(v: boolean) {
+    this.tfAuditEditable = v;
+    this.rs.setAuditEditable(this.currentWeekId(), v);
   }
 }
