@@ -532,6 +532,8 @@ export class DataService {
       dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,
       membershipFeePayments: client.membershipFeePayments,
+
+      comments: [],
     };
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`
@@ -562,6 +564,7 @@ export class DataService {
 
       const cycleData = {
         ...clientData,
+        comments: Array.isArray(clientData.comments) ? clientData.comments : [], // ← ensure included
         debtCycle: clientData.debtCycle,
         cycleId: cycleId,
         // Optionally, remove fields that shouldn't be duplicated

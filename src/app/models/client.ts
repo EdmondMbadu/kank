@@ -65,6 +65,7 @@ export class Client {
   birthDate?: string;
   age?: string;
   locationName?: string;
+  archivedAt?: string;
 }
 
 export class Comment {

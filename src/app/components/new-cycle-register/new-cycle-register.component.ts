@@ -368,6 +368,7 @@ export class NewCycleRegisterComponent implements OnInit {
 
     this.client.applicationFeePayments = { [today]: this.applicationFee };
     this.client.membershipFeePayments = { [today]: this.memberShipFee };
+    this.client.comments = [];
   }
   proceed() {
     this.toggle('showConfirmation');
@@ -381,10 +382,11 @@ export class NewCycleRegisterComponent implements OnInit {
     }
 
     this.toggle('isLoading');
-    this.setClientNewDebtCycleValues();
 
     try {
       await this.data.saveCurrentCycle(this.client);
+
+      this.setClientNewDebtCycleValues();
       await this.data.registerNewDebtCycle(this.client);
       await this.data.updateUserInfoForRegisterClientNewDebtCycleOfflineSafe(
         this.client,
