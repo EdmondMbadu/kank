@@ -159,7 +159,7 @@
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
-<!-- ╭─ Daily Collections + Recruiting (Expandable) ────────────────────╮ -->
+<!-- ╭─ Daily Collections (Simple) + Recruiting ────────────────────────╮ -->
 <section class="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
   <details class="group rounded-3xl ring-1 ring-slate-200 dark:ring-slate-700 overflow-hidden">
     <!-- Header -->
@@ -169,18 +169,20 @@
              focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
       <div class="flex flex-col">
         <span class="text-lg font-extrabold tracking-tight">
-          Routine d’encaissement (08:00–16:30)
+          Routine d’encaissement (08:00–16:30) — Version simple
         </span>
-        <span class="text-xs/5 opacity-90">2 agents • court, précis, orienté résultat</span>
+        <span class="text-xs/5 opacity-90">
+         
+        </span>
       </div>
 
-      <!-- Principle chips -->
+      <!-- Principle chips (minimal) -->
       <div class="hidden md:flex flex-wrap items-center gap-2">
-        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Partiels acceptés</span>
-        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Heure + montant précis</span>
+        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Partiels OK</span>
+        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Heure + montant</span>
         <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Retour même jour</span>
 
-        <!-- Recruiting mode (shows if < 50 clients) -->
+        <!-- Recruiting mode (toggle if you want) -->
         <span 
               class="rounded-full bg-yellow-300/30 px-3 py-1 text-[11px] font-extrabold
                      text-yellow-100 ring-1 ring-white/30">
@@ -199,72 +201,47 @@
 
     <!-- Content -->
     <div class="bg-white dark:bg-slate-800">
-      <!-- mobile chips -->
+      <!-- Mobile chips -->
       <div class="md:hidden flex flex-wrap gap-2 px-5 pt-4">
-        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Partiels acceptés</span>
+        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Partiels OK</span>
         <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Heure + montant</span>
         <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Retour même jour</span>
         <span 
-              class="rounded-full bg-yellow-100 px-2.5 py-1 text-[11px] font-semibold text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">🚀 Recrutement prioritaire</span>
+              class="rounded-full bg-yellow-100 px-2.5 py-1 text-[11px] font-semibold text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">🚀 Recrutement</span>
       </div>
 
+      <!-- Simple time blocks -->
       <ol class="grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
-        <!-- 08:00–08:15 -->
+        <!-- 08:00–08:30 Plan -->
         <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:00–08:15</span>
-            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Point rapide</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:00–08:30</span>
+            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Plan du jour</span>
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Lister <em>Promis</em>, <em>Faciles</em>, <em>Difficiles/UNR</em>. Partager zones A/B.
+            Lister à visiter aujourd’hui + reliquats d’hier (à inclure absolument).
           </p>
         </li>
 
-        <!-- 08:15–08:45 -->
+        <!-- 08:30–09:00 Répartition -->
         <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:15–08:45</span>
-            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Appels / SMS</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:30–09:00</span>
+            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Répartition</span>
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Fixer <strong>heure + montant</strong> pour aujourd’hui. Proposer <strong>partiel</strong> si besoin.
+            Qui fait quoi, qui visite qui, et qui reste au bureau (créneaux précis).
           </p>
         </li>
 
-        <!-- 08:45–11:50 -->
+        <!-- 09:00–12:00 Visite 1 + Recrutement -->
         <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:45–11:50</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">09:00–12:00</span>
             <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Tournée 1</span>
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            D’abord <em>Promis</em>, puis <em>Faciles</em>. Toujours <strong>prendre un partiel</strong>.
-          </p>
-        </li>
-
-        <!-- 10:30–11:00 Recrutement 1 (only if <50) -->
-        <li 
-            class="rounded-2xl border border-sky-200 p-4 hover:shadow-md dark:border-sky-900/40">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">10:30–11:00</span>
-            <span class="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">Recrutement 1</span>
-          </div>
-          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Pendant Tournée 1 : demander <strong>parrainages</strong> aux bons payeurs (3 noms), capter 3 stands à fort trafic.
-          </p>
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Cible : <strong>6 leads</strong> / <strong>2 qualifiés</strong> / <strong>1 KYC</strong>.
-          </p>
-        </li>
-
-        <!-- 11:50–12:00 -->
-        <li class="rounded-2xl border border-amber-200 p-4 hover:shadow-md dark:border-amber-900/40">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">11:50–12:00</span>
-            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Mi‑journée</span>
-          </div>
-          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Lister <em>promesses cassées</em> + <em>introuvables</em>; caler le <strong>retour même jour</strong>.
+            Visites en place. <strong>Recruter</strong> en parallèle (parrainages + stands à trafic).
           </p>
         </li>
 
@@ -272,72 +249,38 @@
         <li class="rounded-2xl border border-amber-200 bg-amber-50 p-4 hover:shadow-md dark:border-amber-900/40 dark:bg-amber-900/20">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-amber-700 dark:text-amber-300">12:00–13:00</span>
-            <span class="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">Pause / Déjeuner</span>
+            <span class="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">Pause</span>
           </div>
-          <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">Hydratez‑vous. Préparez la vague d’après‑midi.</p>
+          <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">Déjeuner & préparation après‑midi.</p>
         </li>
 
-        <!-- 13:00–13:20 -->
+        <!-- 13:00–15:00 Visite 2 + Recrutement -->
         <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">13:00–13:20</span>
-            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Appels 2</span>
-          </div>
-          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Reconfirmer rendez‑vous. Paiement mobile si possible (tout de suite).
-          </p>
-        </li>
-
-        <!-- 13:20–15:30 -->
-        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">13:20–15:30</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">13:00–15:00</span>
             <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Tournée 2</span>
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Rattraper <em>cassés</em> + <em>difficiles/UNR</em>. Appeler le référent si besoin.
+            Visites terrain + <strong>recrutement</strong> (mini‑pitch & RDV KYC).
           </p>
         </li>
 
-        <!-- 15:00–15:30 Recrutement 2 (only if <50) -->
-        <li 
-            class="rounded-2xl border border-sky-200 p-4 hover:shadow-md dark:border-sky-900/40">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">15:00–15:30</span>
-            <span class="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">Recrutement 2</span>
-          </div>
-          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Pendant Tournée 2 : revisiter stands à trafic, <strong>1 mini‑pitch</strong> = 1 lead. Caler <strong>RDV KYC</strong> (demain/market‑day).
-          </p>
-          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Rappel cible jour : <strong>6 leads</strong> / <strong>2 qualifiés</strong> / <strong>1 KYC</strong>.
-          </p>
-        </li>
-
-        <!-- 15:30–16:00 -->
+        <!-- 15:00–16:30 Appels finaux + Réserve -->
         <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">15:30–16:00</span>
-            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Derniers passages</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">15:00–16:30</span>
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text[10px] font-bold text-slate-700 dark:bg-slate-900/30 dark:text-slate-200">Clôture</span>
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Appels courts & fermes. <strong>Prendre tout partiel</strong> disponible aujourd’hui.
+            Appels finaux + passages express si besoin. Finaliser le système et <strong>poser la réserve</strong>.
           </p>
-        </li>
-
-        <!-- 16:00–16:30 -->
-        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">16:00–16:30</span>
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:bg-slate-900/30 dark:text-slate-200">Clôture</span>
-          </div>
-          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Pour chaque impayé : <em>raison</em> + <strong>heure+montant</strong> du prochain passage (<strong>retour même jour</strong> si possible).
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            ⚑ <strong>Réserve = 0 / Paiement = 0 → “Néant”.</strong> Maintenir la saisie <strong>temps réel</strong> pendant les encaissements.
           </p>
         </li>
       </ol>
 
-      <!-- Tiny recruiting target footer (only if <50) -->
+      <!-- Compact recruiting target (optional) -->
       <div 
            class="mx-5 mb-5 mt-1 flex flex-wrap items-center gap-2">
         <span class="rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
@@ -351,6 +294,7 @@
   </details>
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+
 
 <!-- ╭─ Summary cards ────────────────────────────────────────────────╮ -->
 <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
