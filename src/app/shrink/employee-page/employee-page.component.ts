@@ -1166,54 +1166,6 @@ export class EmployeePageComponent implements OnInit {
   //       this.withinRadius = null;
   //     });
   // }
-  async checkPresence(): Promise<void> {
-    if (
-      !Number.isFinite(this.currentLat) ||
-      !Number.isFinite(this.currentLng)
-    ) {
-      this.errorMessage =
-        "Emplacement du travail non défini. Veuillez d'abord le définir.";
-      return;
-    }
-
-    try {
-      const pos = await this.compute.bestEffortGetLocation();
-      const { latitude, longitude, accuracy } = pos.coords;
-
-      this.withinRadius = this.compute.checkWithinRadius(
-        latitude,
-        longitude,
-        this.currentLat,
-        this.currentLng,
-        this.radius,
-        accuracy
-      );
-
-      // Optional: debug info for the UI
-      const distance = this.compute.calculateDistance(
-        latitude,
-        longitude,
-        this.currentLat,
-        this.currentLng
-      );
-      this.onTime = this.time.isEmployeeOnTime(
-        this.limitHour,
-        this.limitMinutes
-      )
-        ? "À l'heure"
-        : 'En retard';
-
-      // (Nice to have) expose this somewhere in the template:
-      // Distance: {{ lastDistance | number:'1.0-0' }} m — Précision: ±{{ lastAccuracy | number:'1.0-0' }} m
-      (this as any).lastDistance = Math.round(distance);
-      (this as any).lastAccuracy = Math.round(accuracy);
-
-      this.errorMessage = null;
-    } catch (err: any) {
-      this.errorMessage = err?.message || 'Localisation impossible.';
-      this.withinRadius = null;
-    }
-  }
 
   async determineAttendance(): Promise<void> {
     if (

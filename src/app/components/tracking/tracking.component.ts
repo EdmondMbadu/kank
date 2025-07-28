@@ -5,6 +5,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
+import { LocationCoordinates } from 'src/app/models/user';
 
 @Component({
   selector: 'app-tracking',
@@ -32,6 +33,19 @@ export class TrackingComponent {
   }
   public currentMonth: string = '';
   clients: Client[] = [];
+
+  withinRadius: boolean | null = null;
+  errorMessage: string | null = null;
+  locationSet: boolean = false;
+  currentLat: number = 0;
+  currentLng: number = 0;
+
+  limitHour: number = 9;
+  limitMinutes: number = 0;
+  onTime: string = '';
+
+  locationCoordinate: LocationCoordinates = {};
+  radius = 1200; //Set your desired radius in meters.
   setCurrentMonth() {
     const monthNamesFr = [
       'Janvier',
@@ -201,5 +215,87 @@ export class TrackingComponent {
 
   isNumber(value: string): boolean {
     return !isNaN(Number(value));
+  }
+
+  setLocation(): void {
+    this.compute
+      .getLocation()
+      .then((position) => {
+        this.currentLat = position.coords.latitude;
+        this.currentLng = position.coords.longitude;
+        this.locationSet = true;
+        if (this.locationSet) {
+          alert("l'emplacement a été défini!");
+        }
+        this.errorMessage = null; // Clear any previous error
+        const loc: LocationCoordinates = {
+          longitude: this.currentLng.toString(),
+          lattitude: this.currentLat.toString(),
+        };
+        try {
+          // add location to the database
+          const setL = this.data.setLocation(loc);
+        } catch (error) {
+          alert("Une erreur s'est produite. Veuillez réessayer.");
+          console.error('Error setting location:', error);
+          this.errorMessage = 'Failed to set location. Please try again.';
+        }
+        console.log(
+          `Location set: Latitude ${this.currentLat}, Longitude ${this.currentLng}`
+        );
+      })
+      .catch((error) => {
+        this.errorMessage = error.message;
+        this.locationSet = false;
+      });
+  }
+
+  async checkPresence(): Promise<void> {
+    if (
+      !Number.isFinite(this.currentLat) ||
+      !Number.isFinite(this.currentLng)
+    ) {
+      this.errorMessage =
+        "Emplacement du travail non défini. Veuillez d'abord le définir.";
+      return;
+    }
+
+    try {
+      const pos = await this.compute.bestEffortGetLocation();
+      const { latitude, longitude, accuracy } = pos.coords;
+
+      this.withinRadius = this.compute.checkWithinRadius(
+        latitude,
+        longitude,
+        this.currentLat,
+        this.currentLng,
+        this.radius,
+        accuracy
+      );
+
+      // Optional: debug info for the UI
+      const distance = this.compute.calculateDistance(
+        latitude,
+        longitude,
+        this.currentLat,
+        this.currentLng
+      );
+      this.onTime = this.time.isEmployeeOnTime(
+        this.limitHour,
+        this.limitMinutes
+      )
+        ? "À l'heure"
+        : 'En retard';
+
+      // (Nice to have) expose this somewhere in the template:
+      // Distance: {{ lastDistance | number:'1.0-0' }} m — Précision: ±{{ lastAccuracy | number:'1.0-0' }} m
+      (this as any).lastDistance = Math.round(distance);
+      (this as any).lastAccuracy = Math.round(accuracy);
+
+      this.errorMessage = null;
+    } catch (err: any) {
+      this.errorMessage = err?.message || 'Localisation impossible.';
+      this.withinRadius = null;
+    }
   }
 }

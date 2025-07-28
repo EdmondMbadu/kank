@@ -293,3 +293,41 @@
   </div>
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+
+
+<div *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" class="mt-6 flex flex-col container mx-auto  justify-center  px-4 space-y-2">
+
+         
+    <!-- src/app/presence-check/presence-check.component.html -->
+    <button (click)="setLocation()" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Définir l'emplacement actuel comme lieu de travail</button>
+    <!-- <button class="text-black" (click)="setLocation()">Set Current Location as Workplace</button> -->
+    <div *ngIf="this.auth.isAdmninistrator" class="max-w-sm mx-auto">
+        <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Set The Radius</label>
+        <input [(ngModel)]="radius" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
+       
+    </div>
+    <div *ngIf="this.auth.isAdmninistrator" class="max-w-sm mx-auto">
+        <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Set Limit Hour</label>
+        <input [(ngModel)]="limitHour" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
+       
+    </div>
+    <div class="my-3" *ngIf="locationSet">
+    <p class="mx-auto">L'emplacement a été défini {{ currentLat }}, Longitude {{ currentLng }}</p>
+   
+   
+    </div>
+    <button *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 " (click)="checkPresence()">
+        Vérifiez si vous êtes sur le lieu de travail</button>
+
+    <div class="my-3" *ngIf="withinRadius === true">
+    <p>Vous êtes au lieu du travail {{radius}}, du rayon autorisé. Présence confirmée ! À l'heure</p>
+    <p>{{onTime}}</p>
+    </div>
+    <div class="my-3" *ngIf="withinRadius === false">
+    <p>Vous êtes en dehors du lieu de travail</p>
+    <p>{{onTime}}</p>
+    </div>
+    <div class="my-3" *ngIf="errorMessage">
+    <p>Error: {{ errorMessage }}</p>
+    </div>
+ </div>
