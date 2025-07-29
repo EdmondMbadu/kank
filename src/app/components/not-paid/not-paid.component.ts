@@ -85,10 +85,8 @@ export class NotPaidComponent implements OnInit {
       if (Number(client.debtLeft) <= 0) {
         return false;
       }
-      // filter out clients who died.
-      if (client.vitalStatus === 'Mort') {
-        return false;
-      }
+      // ⬇️ NEW: centralized vital-status rule
+      if (!this.passesVitalStatus(client)) return false;
       const WEEKS_IN_MS = weeks * 7 * 24 * 60 * 60 * 1000;
       const now = new Date();
       // We only filter if the client has a debtCycleStartDate AND payments
@@ -147,7 +145,8 @@ export class NotPaidComponent implements OnInit {
     this.haveNotPaid = this.clients.filter((client) => {
       if (!client.debtCycleStartDate || !client.payments) return false;
       if (+client.debtLeft! <= 0) return false;
-      if (client.vitalStatus === 'Mort') return false;
+      // ⬇️ NEW: centralized vital-status rule
+      if (!this.passesVitalStatus(client)) return false;
 
       /* debt cycle must be older than threshold */
       const [m, d, y] = client.debtCycleStartDate.split('-').map(Number);
@@ -188,6 +187,12 @@ export class NotPaidComponent implements OnInit {
         this.clients!,
         this.datesRange
       );
+
+      // ⬇️ NEW: centralized vital-status rule
+      this.haveNotPaid = this.haveNotPaid.filter((c) =>
+        this.passesVitalStatus(c)
+      );
+
       this.haveNotPaidCopy = structuredClone(this.haveNotPaid);
       this.totalGivenDate = this.compute.computeExpectedPerDate(
         this.haveNotPaid
@@ -255,6 +260,9 @@ export class NotPaidComponent implements OnInit {
       if (!c.debtCycleStartDate) return false;
       if (+c.debtLeft! <= 0) return false;
 
+      // ⬇️ NEW: centralized vital-status rule (applies to cycle tab too)
+      if (!this.passesVitalStatus(c)) return false;
+
       const [mm, dd, yyyy] = c.debtCycleStartDate.split('-').map(Number);
       const start = new Date(yyyy, mm - 1, dd);
       const diffMonths =
@@ -272,5 +280,28 @@ export class NotPaidComponent implements OnInit {
     );
 
     this.cycleNotFinishedCopy = structuredClone(this.cycleNotFinished);
+  }
+
+  includeQuitte = false; // default: do NOT include "Quitté"
+
+  private passesVitalStatus(c: Client): boolean {
+    // Keep excluding Mort as before
+    if (c.vitalStatus === 'Mort') return false;
+
+    // Exclude "Quitté" unless the checkbox is ON
+    if (!this.includeQuitte && c.vitalStatus === 'Quitté') return false;
+
+    return true;
+  }
+
+  onIncludeQuitteChange(): void {
+    // Recompute both lists so switching tabs remains accurate
+    this.computeCycleNotFinished();
+    this.computeNoPayList();
+
+    // If you have an active date-range view, recompute that too
+    if (this.datesRange?.length) {
+      this.searchThoseWhoDidNotPayPerInterval();
+    }
   }
 }

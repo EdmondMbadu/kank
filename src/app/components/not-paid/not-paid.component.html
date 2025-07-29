@@ -62,6 +62,20 @@
   </button>
 </div>
 
+<!-- ░░ Inclure les « Quitté » ░░ -->
+<div class="max-w-6xl mx-auto mt-4 flex items-center gap-2">
+  <input
+    id="includeQuitte"
+    type="checkbox"
+    [(ngModel)]="includeQuitte"
+    (ngModelChange)="onIncludeQuitteChange()"
+    class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+  />
+  <label for="includeQuitte" class="text-sm text-gray-700 dark:text-gray-300">
+    Inclure les clients avec statut «&nbsp;Quitté&nbsp;»
+  </label>
+</div>
+
 <!-- █  COMPTEURS  █ -->
 <h2 class="text-center text-lg md:text-xl font-semibold mt-6">
   <ng-container *ngIf="activeList === 'cycle'; else noPayBloc">
