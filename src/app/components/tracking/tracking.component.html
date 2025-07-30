@@ -296,7 +296,7 @@
 
 
 <!-- Presence / Workplace Location -->
-<div *ngIf="true"
+<div *ngIf="auth.isAdmin || auth.isDistributor"
 class="my-6 px-4 space-y-4 max-w-5xl mx-auto lg:text-center">
 
   <!-- Permission status + tips -->
