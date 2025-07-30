@@ -295,39 +295,109 @@
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
 
-<div *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" class="my-6 flex flex-col container mx-auto  justify-center  px-4 space-y-2">
+<!-- Presence / Workplace Location -->
+<div *ngIf="auth.isAdmninistrator || auth.isDistributor"
+     class="my-6 container mx-auto px-4 space-y-4">
 
-         
-    <!-- src/app/presence-check/presence-check.component.html -->
-    <button (click)="setLocation()" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 ">Définir l'emplacement actuel comme lieu de travail</button>
-    <!-- <button class="text-black" (click)="setLocation()">Set Current Location as Workplace</button> -->
-    <div *ngIf="this.auth.isAdmninistrator" class="max-w-sm mx-auto">
-        <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Set The Radius</label>
-        <input [(ngModel)]="radius" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
-       
-    </div>
-    <div *ngIf="this.auth.isAdmninistrator" class="max-w-sm mx-auto">
-        <label for="number-input" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Set Limit Hour</label>
-        <input [(ngModel)]="limitHour" type="number" id="number-input" aria-describedby="helper-text-explanation" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="90210" required />
-       
-    </div>
-    <div class="my-3" *ngIf="locationSet">
-    <p class="mx-auto">L'emplacement a été défini {{ currentLat }}, Longitude {{ currentLng }}</p>
-   
-   
-    </div>
-    <button *ngIf="this.auth.isAdmninistrator || this.auth.isDistributor" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4 " (click)="checkPresence()">
-        Vérifiez si vous êtes sur le lieu de travail</button>
+  <!-- Permission status + tips -->
+  <div class="rounded-xl ring-1 ring-slate-200 p-4 bg-white"
+       *ngIf="geoStatus !== 'granted'">
+    <h4 class="font-semibold text-slate-900 mb-1">Localisation du navigateur</h4>
+    <p class="text-sm text-slate-600" *ngIf="geoStatus === 'prompt'">
+      Lorsque vous appuierez sur un bouton ci‑dessous, le navigateur demandera
+      l’autorisation de vous localiser. Veuillez choisir <strong>Autoriser</strong>.
+    </p>
+    <p class="text-sm text-amber-700" *ngIf="geoStatus === 'denied'">
+      La localisation est <strong>bloquée</strong>. Ouvrez les paramètres du navigateur
+      (ou du téléphone) et autorisez la localisation pour ce site, puis rechargez la page.
+    </p>
+    <p class="text-xs text-slate-500 mt-2">
+      Astuces : allez près d’une fenêtre / à l’extérieur, activez le GPS, Wi‑Fi & données mobiles.
+    </p>
+  </div>
 
-    <div class="my-3" *ngIf="withinRadius === true">
-    <p>Vous êtes au lieu du travail {{radius}}, du rayon autorisé. Présence confirmée ! À l'heure</p>
-    <p>{{onTime}}</p>
+  <!-- Actions -->
+  <div class="flex flex-col sm:flex-row items-center gap-3">
+
+    <!-- Set workplace location -->
+    <button type="button"
+            (click)="setLocation()"
+            [disabled]="isSettingLocation || isCheckingPresence"
+            class="inline-flex items-center gap-2 text-white bg-green-700 hover:bg-green-800
+                   focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full
+                   text-sm px-5 py-2.5">
+      <svg *ngIf="isSettingLocation" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"/>
+        <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>{{ isSettingLocation ? 'Détection en cours...' : "Définir l'emplacement actuel" }}</span>
+    </button>
+
+    <!-- Check presence -->
+    <button type="button"
+            (click)="checkPresence()"
+            [disabled]="isSettingLocation || isCheckingPresence"
+            class="inline-flex items-center gap-2 text-white bg-green-700 hover:bg-green-800
+                   focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full
+                   text-sm px-5 py-2.5">
+      <svg *ngIf="isCheckingPresence" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"/>
+        <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>{{ isCheckingPresence ? 'Vérification...' : 'Vérifiez si vous êtes sur le lieu de travail' }}</span>
+    </button>
+
+    <!-- Optional: quick warm-up to speed first fix on low connectivity -->
+    <button type="button"
+            (click)="warmUpGps()"
+            [disabled]="warmingUp || isSettingLocation || isCheckingPresence"
+            class="inline-flex items-center gap-2 text-slate-700 bg-slate-100 hover:bg-slate-200
+                   focus:ring-4 focus:outline-none focus:ring-slate-300 font-medium rounded-full
+                   text-sm px-4 py-2">
+      <svg *ngIf="warmingUp" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"/>
+        <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"/>
+      </svg>
+      <span>{{ warmingUp ? 'Pré-chauffage GPS...' : 'Améliorer la précision (10s)' }}</span>
+    </button>
+  </div>
+
+  <!-- Radius & Hour (admin only) -->
+  <div *ngIf="auth.isAdmninistrator" class="grid sm:grid-cols-2 gap-4 max-w-lg">
+    <label class="block">
+      <span class="block mb-1 text-sm font-medium text-gray-900">Rayon autorisé (mètres)</span>
+      <input [(ngModel)]="radius" type="number"
+             class="w-full rounded-lg border bg-gray-50 p-2.5 text-gray-900
+                    focus:border-green-500 focus:ring-2 focus:ring-green-500"/>
+    </label>
+    <label class="block">
+      <span class="block mb-1 text-sm font-medium text-gray-900">Heure limite (0–23)</span>
+      <input [(ngModel)]="limitHour" type="number"
+             class="w-full rounded-lg border bg-gray-50 p-2.5 text-gray-900
+                    focus:border-green-500 focus:ring-2 focus:ring-green-500"/>
+    </label>
+  </div>
+
+  <!-- Status messages -->
+  <div *ngIf="locationSet" class="rounded-xl bg-emerald-50 text-emerald-900 p-3">
+    L’emplacement a été défini : Lat {{ currentLat | number:'1.6-6' }}, Lng {{ currentLng | number:'1.6-6' }}.
+  </div>
+
+  <div *ngIf="withinRadius === true" class="rounded-xl bg-green-50 text-green-900 p-3">
+    ✅ Vous êtes sur le lieu du travail (rayon {{ radius }} m). Présence confirmée — {{ onTime }}.
+    <div class="text-xs mt-1 opacity-80">
+      Précision: ±{{ lastAccuracy }} m • Distance: {{ lastDistance }} m • Fix: {{ lastFixAt | date:'shortTime' }}
     </div>
-    <div class="my-3" *ngIf="withinRadius === false">
-    <p>Vous êtes en dehors du lieu de travail</p>
-    <p>{{onTime}}</p>
+  </div>
+
+  <div *ngIf="withinRadius === false" class="rounded-xl bg-amber-50 text-amber-900 p-3">
+    ⚠️ Vous êtes en dehors du lieu de travail — {{ onTime }}.
+    <div class="text-xs mt-1 opacity-80">
+      Précision: ±{{ lastAccuracy }} m • Distance: {{ lastDistance }} m • Fix: {{ lastFixAt | date:'shortTime' }}
     </div>
-    <div class="my-3" *ngIf="errorMessage">
-    <p>Error: {{ errorMessage }}</p>
-    </div>
- </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="rounded-xl bg-rose-50 text-rose-900 p-3">
+    Erreur: {{ errorMessage }}
+  </div>
+</div>

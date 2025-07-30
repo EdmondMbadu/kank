@@ -6,7 +6,7 @@ import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
 import { LocationCoordinates } from 'src/app/models/user';
-
+type GeoStatus = 'granted' | 'prompt' | 'denied' | 'unknown';
 @Component({
   selector: 'app-tracking',
   templateUrl: './tracking.component.html',
@@ -33,19 +33,28 @@ export class TrackingComponent {
   }
   public currentMonth: string = '';
   clients: Client[] = [];
+  // ---------- existing fields ----------
 
   withinRadius: boolean | null = null;
   errorMessage: string | null = null;
-  locationSet: boolean = false;
-  currentLat: number = 0;
-  currentLng: number = 0;
-
-  limitHour: number = 9;
-  limitMinutes: number = 0;
-  onTime: string = '';
-
+  locationSet = false;
+  currentLat = 0;
+  currentLng = 0;
+  limitHour = 9;
+  limitMinutes = 0;
+  onTime = '';
   locationCoordinate: LocationCoordinates = {};
-  radius = 1200; //Set your desired radius in meters.
+  radius = 1200;
+
+  // ---------- new UI states ----------
+  isSettingLocation = false;
+  isCheckingPresence = false;
+  warmingUp = false;
+  geoStatus: GeoStatus = 'unknown';
+  lastAccuracy?: number;
+  lastDistance?: number;
+  lastFixAt?: Date;
+
   setCurrentMonth() {
     const monthNamesFr = [
       'Janvier',
@@ -217,52 +226,99 @@ export class TrackingComponent {
     return !isNaN(Number(value));
   }
 
-  setLocation(): void {
-    this.compute
-      .getLocation()
-      .then((position) => {
-        this.currentLat = position.coords.latitude;
-        this.currentLng = position.coords.longitude;
-        this.locationSet = true;
-        if (this.locationSet) {
-          alert("l'emplacement a été défini!");
-        }
-        this.errorMessage = null; // Clear any previous error
-        const loc: LocationCoordinates = {
-          longitude: this.currentLng.toString(),
-          lattitude: this.currentLat.toString(),
-        };
-        try {
-          // add location to the database
-          const setL = this.data.setLocation(loc);
-        } catch (error) {
-          alert("Une erreur s'est produite. Veuillez réessayer.");
-          console.error('Error setting location:', error);
-          this.errorMessage = 'Failed to set location. Please try again.';
-        }
-        console.log(
-          `Location set: Latitude ${this.currentLat}, Longitude ${this.currentLng}`
-        );
-      })
-      .catch((error) => {
-        this.errorMessage = error.message;
-        this.locationSet = false;
+  private async checkGeoPermission() {
+    try {
+      // Permissions API is not supported everywhere; guard it.
+      const nav: any = navigator as any;
+      if (!nav.permissions || !nav.permissions.query) {
+        this.geoStatus = 'unknown';
+        return;
+      }
+      const status = await nav.permissions.query({
+        name: 'geolocation' as PermissionName,
       });
+      this.geoStatus = (status.state as GeoStatus) || 'unknown';
+      status.onchange = () => {
+        this.geoStatus = (status.state as GeoStatus) || 'unknown';
+      };
+    } catch {
+      this.geoStatus = 'unknown';
+    }
+  }
+
+  async warmUpGps() {
+    if (this.warmingUp) return;
+    this.warmingUp = true;
+    this.errorMessage = null;
+    try {
+      // Use best-effort watch for ~10 seconds to prime the GPS
+      await this.compute.bestEffortGetLocation(10000);
+    } catch (e: any) {
+      // no-op: warm-up is best effort
+      this.errorMessage = e?.message || null;
+    } finally {
+      this.warmingUp = false;
+    }
+  }
+
+  async setLocation(): Promise<void> {
+    if (this.isSettingLocation || this.isCheckingPresence) return;
+    this.isSettingLocation = true;
+    this.errorMessage = null;
+    this.withinRadius = null;
+
+    try {
+      // Give more time for accurate fix when defining the workplace
+      const pos = await this.compute.bestEffortGetLocation(25000);
+      this.currentLat = pos.coords.latitude;
+      this.currentLng = pos.coords.longitude;
+      this.lastAccuracy = Math.round(pos.coords.accuracy);
+      this.lastFixAt = new Date();
+
+      this.locationSet = true;
+
+      const loc: LocationCoordinates = {
+        longitude: this.currentLng.toString(),
+        lattitude: this.currentLat.toString(),
+      };
+      try {
+        await this.data.setLocation(loc);
+      } catch (err) {
+        this.errorMessage =
+          'Échec d’enregistrement de l’emplacement. Réessayez.';
+        console.error(err);
+      }
+    } catch (err: any) {
+      this.errorMessage = err?.message || 'Localisation impossible.';
+      this.locationSet = false;
+    } finally {
+      this.isSettingLocation = false;
+      this.checkGeoPermission();
+    }
   }
 
   async checkPresence(): Promise<void> {
+    if (this.isSettingLocation || this.isCheckingPresence) return;
+
     if (
       !Number.isFinite(this.currentLat) ||
-      !Number.isFinite(this.currentLng)
+      !Number.isFinite(this.currentLng) ||
+      !this.locationSet
     ) {
       this.errorMessage =
         "Emplacement du travail non défini. Veuillez d'abord le définir.";
+      this.withinRadius = null;
       return;
     }
 
+    this.isCheckingPresence = true;
+    this.errorMessage = null;
     try {
-      const pos = await this.compute.bestEffortGetLocation();
+      const pos = await this.compute.bestEffortGetLocation(15000);
       const { latitude, longitude, accuracy } = pos.coords;
+
+      this.lastAccuracy = Math.round(accuracy);
+      this.lastFixAt = new Date();
 
       this.withinRadius = this.compute.checkWithinRadius(
         latitude,
@@ -273,29 +329,26 @@ export class TrackingComponent {
         accuracy
       );
 
-      // Optional: debug info for the UI
       const distance = this.compute.calculateDistance(
         latitude,
         longitude,
         this.currentLat,
         this.currentLng
       );
+      this.lastDistance = Math.round(distance);
+
       this.onTime = this.time.isEmployeeOnTime(
         this.limitHour,
         this.limitMinutes
       )
         ? "À l'heure"
         : 'En retard';
-
-      // (Nice to have) expose this somewhere in the template:
-      // Distance: {{ lastDistance | number:'1.0-0' }} m — Précision: ±{{ lastAccuracy | number:'1.0-0' }} m
-      (this as any).lastDistance = Math.round(distance);
-      (this as any).lastAccuracy = Math.round(accuracy);
-
-      this.errorMessage = null;
     } catch (err: any) {
       this.errorMessage = err?.message || 'Localisation impossible.';
       this.withinRadius = null;
+    } finally {
+      this.isCheckingPresence = false;
+      this.checkGeoPermission();
     }
   }
 }
