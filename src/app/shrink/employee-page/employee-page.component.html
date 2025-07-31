@@ -105,8 +105,49 @@
                 <div class="flex flex-wrap">
                     <button *ngIf="this.auth.isAdmninistrator"  type="submit" (click)="toggleMakePayment()"  class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Paiement</button>
                     <button *ngIf="this.auth.isAdmninistrator || auth.isDistributor"  type="submit" (click)="toggleAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Présence</button>
-                    <button  type="submit" (click)="determineAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Présence Employée</button>
-               
+                    <!-- <button  type="submit" (click)="determineAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Présence Employée</button> -->
+               <!-- Présence Employée (auto + GPS) -->
+<button
+  type="button"
+  (click)="determineAttendance()"
+  [disabled]="isMarkingPresence"
+  class="inline-flex items-center gap-2 text-white bg-green-700 hover:bg-green-800
+         focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full
+         text-sm px-5 py-2.5 mt-4 ml-4 my-3 disabled:opacity-60 disabled:cursor-not-allowed">
+  <!-- spinner -->
+  <svg *ngIf="isMarkingPresence" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"/>
+    <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"/>
+  </svg>
+  <span>
+    {{
+      isMarkingPresence
+        ? (presenceStatus === 'locating'
+            ? 'Localisation en cours…'
+            : presenceStatus === 'checking'
+              ? 'Vérification du périmètre…'
+              : presenceStatus === 'saving'
+                ? 'Enregistrement…'
+                : 'Traitement…')
+        : 'Présence Employée'
+    }}
+  </span>
+</button>
+
+<!-- (Optionnel) Pré-chauffage GPS pour améliorer la précision en zone à faible réseau -->
+<button type="button"
+        (click)="warmUpGps()"
+        [disabled]="warmingUp || isMarkingPresence"
+        class="inline-flex items-center gap-2 text-slate-700 bg-slate-100 hover:bg-slate-200
+               focus:ring-4 focus:outline-none focus:ring-slate-300 font-medium rounded-full
+               text-sm px-4 py-2 mt-4 ml-2 my-3">
+  <svg *ngIf="warmingUp" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"/>
+    <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"/>
+  </svg>
+  <span>{{ warmingUp ? 'Pré-chauffage GPS (10s)…' : 'Améliorer la précision (10s)' }}</span>
+</button>
+
                     <button  type="submit" (click)="toggle('showRequestVacation')" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Demande Vacances</button>
                     
                 </div>

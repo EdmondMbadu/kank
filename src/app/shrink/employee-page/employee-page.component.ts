@@ -33,6 +33,23 @@ interface AuditReceipt {
   styleUrls: ['./employee-page.component.css'],
 })
 export class EmployeePageComponent implements OnInit {
+  // ── États UI pour le marquage automatique de présence ──
+  isMarkingPresence = false;
+  presenceStatus:
+    | 'idle'
+    | 'locating'
+    | 'checking'
+    | 'saving'
+    | 'done'
+    | 'error' = 'idle';
+  warmingUp = false;
+
+  lastAccuracy?: number;
+  lastDistance?: number;
+  lastFixAt?: Date;
+
+  geoStatus: 'granted' | 'prompt' | 'denied' | 'unknown' = 'unknown';
+
   salaryPaid: string = '';
   showRequestVacation: boolean = false;
   readonly TOTAL_VACATION_DAYS = 7;
@@ -1088,86 +1105,22 @@ export class EmployeePageComponent implements OnInit {
         this.locationSet = false;
       });
   }
-  // Method to check if the user is within the set radius
-  // checkPresence(): void {
-  //   if (!this.currentLat || !this.currentLng) {
-  //     this.errorMessage =
-  //       "Emplacement du travail non défini. Veuillez d'abord définir l'emplacement.";
-  //     return;
-  //   }
-
-  //   this.compute
-  //     .getLocation()
-  //     .then((position) => {
-  //       const { latitude, longitude } = position.coords;
-  //       this.withinRadius = this.compute.checkWithinRadius(
-  //         latitude,
-  //         longitude,
-  //         this.currentLat,
-  //         this.currentLng,
-  //         this.radius
-  //       );
-  //       this.onTime = this.time.isEmployeeOnTime(
-  //         this.limitHour,
-  //         this.limitMinutes
-  //       )
-  //         ? "A L'heure"
-  //         : 'En Retard';
-
-  //       this.errorMessage = null; // Clear any previous error
-  //     })
-  //     .catch((error) => {
-  //       this.errorMessage = error.message;
-  //       this.withinRadius = null;
-  //     });
-  // }
-  // async determineAttendance() {
-  //   let conf = confirm(
-  //     ` Etes-vous sûr de vouloir marquer votre présence pour aujourd'hui ?`
-  //   );
-  //   if (!conf) {
-  //     return;
-  //   }
-  //   let currentAttendance = 'A';
-
-  //   if (this.time.isEmployeeOnTime(this.limitHour, this.limitMinutes)) {
-  //     currentAttendance = 'P';
-  //   } else {
-  //     currentAttendance = 'L';
-  //   }
-  //   await this.compute
-  //     .getLocation()
-  //     .then((position) => {
-  //       const { latitude, longitude } = position.coords;
-  //       this.withinRadius = this.compute.checkWithinRadius(
-  //         latitude,
-  //         longitude,
-  //         this.currentLat,
-  //         this.currentLng,
-  //         this.radius
-  //       );
-
-  //       this.errorMessage = null; // Clear any previous error
-  //     })
-  //     .then(() => {
-  //       if (!this.withinRadius) {
-  //         alert(
-  //           "Vous n'êtes pas sur le lieu de travail. Réessayez quand vous l'êtes"
-  //         );
-  //         return;
-  //       }
-  //       if (this.withinRadius) {
-  //         this.attendance = currentAttendance;
-  //         this.addAttendance(false);
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       this.errorMessage = error.message;
-  //       this.withinRadius = null;
-  //     });
-  // }
 
   async determineAttendance(): Promise<void> {
+    // Vérifie que le lieu de travail est défini ici dans la page employé
+    if (
+      !Number.isFinite(this.currentLat) ||
+      !Number.isFinite(this.currentLng) ||
+      !this.currentLat ||
+      !this.currentLng
+    ) {
+      this.errorMessage =
+        "Emplacement du travail non défini. Demandez d'abord à un administrateur de le définir.";
+      this.withinRadius = null;
+      this.presenceStatus = 'error';
+      return;
+    }
+
     if (
       !confirm(
         `Êtes-vous sûr de vouloir marquer votre présence pour aujourd'hui ?`
@@ -1175,7 +1128,13 @@ export class EmployeePageComponent implements OnInit {
     )
       return;
 
-    let currentAttendance: 'P' | 'L' = this.time.isEmployeeOnTime(
+    this.isMarkingPresence = true;
+    this.presenceStatus = 'locating';
+    this.errorMessage = null;
+    this.withinRadius = null;
+
+    // Calcule P ou L selon l'heure
+    const currentAttendance: 'P' | 'L' = this.time.isEmployeeOnTime(
       this.limitHour,
       this.limitMinutes
     )
@@ -1183,9 +1142,15 @@ export class EmployeePageComponent implements OnInit {
       : 'L';
 
     try {
-      const pos = await this.compute.bestEffortGetLocation();
+      // 1) Localisation robuste (augmente un peu le temps max en zone difficile)
+      const pos = await this.compute.bestEffortGetLocation(20000);
       const { latitude, longitude, accuracy } = pos.coords;
 
+      this.lastAccuracy = Math.round(accuracy);
+      this.lastFixAt = new Date();
+
+      // 2) Vérifie la distance avec marge = accuracy
+      this.presenceStatus = 'checking';
       this.withinRadius = this.compute.checkWithinRadius(
         latitude,
         longitude,
@@ -1195,19 +1160,38 @@ export class EmployeePageComponent implements OnInit {
         accuracy
       );
 
+      // Calcule la distance brute (info UI)
+      this.lastDistance = Math.round(
+        this.compute.calculateDistance(
+          latitude,
+          longitude,
+          this.currentLat,
+          this.currentLng
+        )
+      );
+
       if (!this.withinRadius) {
-        alert(
-          "Vous n'êtes pas sur le lieu de travail (ou précision trop faible). Réessayez près du site."
-        );
+        // Pas d'alerte bloquante : on montre le panneau jaune avec détails
+        this.presenceStatus = 'done';
         return;
       }
 
+      // 3) Enregistre
+      this.presenceStatus = 'saving';
       this.attendance = currentAttendance;
       await this.addAttendance(false);
-      alert('Présence enregistrée.');
+
+      this.onTime = currentAttendance === 'P' ? "À l'heure" : 'En retard';
+      this.presenceStatus = 'done';
+      // (Optionnel) petite notif
+      // alert('Présence enregistrée.');
     } catch (err: any) {
       this.errorMessage = err?.message || 'Localisation impossible.';
       this.withinRadius = null;
+      this.presenceStatus = 'error';
+    } finally {
+      this.isMarkingPresence = false;
+      this.checkGeoPermission();
     }
   }
 
@@ -1464,5 +1448,39 @@ export class EmployeePageComponent implements OnInit {
       .doc(`users/${this.employee.uid}/auditReceipts/${r.docId}`)
       .update({ amount: Number(r.amount) });
     alert('✅ Montant mis à jour'); // ← success toast
+  }
+
+  private async checkGeoPermission() {
+    try {
+      const nav: any = navigator as any;
+      if (!nav.permissions || !nav.permissions.query) {
+        this.geoStatus = 'unknown';
+        return;
+      }
+      const status = await nav.permissions.query({
+        name: 'geolocation' as PermissionName,
+      });
+      this.geoStatus = (status.state as any) ?? 'unknown';
+      status.onchange = () =>
+        (this.geoStatus = (status.state as any) ?? 'unknown');
+    } catch {
+      this.geoStatus = 'unknown';
+    }
+  }
+
+  async warmUpGps() {
+    if (this.warmingUp) return;
+    this.warmingUp = true;
+    this.errorMessage = null;
+    try {
+      // Regarde ~10s pour améliorer la précision avant un marquage
+      await this.compute.bestEffortGetLocation(10000);
+    } catch (e: any) {
+      // best-effort : pas bloquant
+      this.errorMessage = e?.message || null;
+    } finally {
+      this.warmingUp = false;
+      this.checkGeoPermission();
+    }
   }
 }
