@@ -148,6 +148,46 @@
   <span>{{ warmingUp ? 'Pré-chauffage GPS (10s)…' : 'Améliorer la précision (10s)' }}</span>
 </button>
 
+<!-- États & messages de présence -->
+<div class="w-full max-w-2xl mt-2 ml-4 space-y-2">
+  <!-- Permission / tips -->
+  <div *ngIf="geoStatus !== 'granted'" class="rounded-xl ring-1 ring-slate-200 p-3 bg-white">
+    <h4 class="font-semibold text-slate-900 mb-1">Localisation du navigateur</h4>
+    <p class="text-sm text-slate-600" *ngIf="geoStatus === 'prompt'">
+      Au prochain essai, le navigateur demandera l’autorisation. Choisissez <strong>Autoriser</strong>.
+    </p>
+    <p class="text-sm text-amber-700" *ngIf="geoStatus === 'denied'">
+      La localisation est <strong>bloquée</strong>. Autorisez-la dans les réglages du téléphone / navigateur puis rechargez la page.
+    </p>
+    <p class="text-xs text-slate-500 mt-1">Astuce : rapprochez-vous d’une fenêtre / sortez, activez GPS + Wi-Fi + données mobiles.</p>
+  </div>
+
+  <!-- Succès (dans le rayon) -->
+  <div *ngIf="withinRadius === true && presenceStatus === 'done'"
+       class="rounded-xl bg-green-50 text-green-900 p-3">
+    ✅ Présence confirmée (dans {{ radius }} m) — {{ onTime }}.
+    <div class="text-xs mt-1 opacity-80">
+      Précision: ±{{ lastAccuracy }} m • Distance: {{ lastDistance }} m • Fix: {{ lastFixAt | date:'shortTime' }}
+    </div>
+  </div>
+
+  <!-- Hors rayon / précision faible -->
+  <div *ngIf="withinRadius === false && (presenceStatus === 'checking' || presenceStatus === 'done')"
+       class="rounded-xl bg-amber-50 text-amber-900 p-3">
+    ⚠️ En dehors du lieu de travail (ou précision trop faible). Réessayez près du site.
+    <div class="text-xs mt-1 opacity-80">
+      Précision: ±{{ lastAccuracy }} m • Distance: {{ lastDistance }} m • Fix: {{ lastFixAt | date:'shortTime' }}
+    </div>
+  </div>
+
+  <!-- Erreur -->
+  <div *ngIf="presenceStatus === 'error' && errorMessage"
+       class="rounded-xl bg-rose-50 text-rose-900 p-3">
+    ❌ Erreur: {{ errorMessage }}
+  </div>
+</div>
+
+
                     <button  type="submit" (click)="toggle('showRequestVacation')" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Demande Vacances</button>
                     
                 </div>
