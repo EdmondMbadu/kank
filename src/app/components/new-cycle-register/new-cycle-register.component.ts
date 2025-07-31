@@ -77,6 +77,14 @@ export class NewCycleRegisterComponent implements OnInit {
     this.retrieveClient();
     this.retrieveEmployees();
   }
+  phonePattern = /^[0-9]{10}$/;
+
+  canAddRef(): boolean {
+    return (
+      this.newReferenceName?.trim().length > 1 &&
+      this.phonePattern.test((this.newReferencePhone || '').trim())
+    );
+  }
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
@@ -174,6 +182,9 @@ export class NewCycleRegisterComponent implements OnInit {
     let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
       this.requestDate
     );
+    // Just before you compute missingFields, add:
+    this.tryAutoAdd();
+
     let missingFields: string[] = [];
 
     if (!this.client.firstName?.trim()) missingFields.push('Prénom');
@@ -481,34 +492,45 @@ export class NewCycleRegisterComponent implements OnInit {
   }
 
   addReference(): void {
-    const phonePattern = /^[0-9]{10}$/; // Ensures exactly 10 digits
-
     if (this.references.length >= 3) {
       alert("Vous ne pouvez ajouter que jusqu'à 3 références.");
       return;
     }
 
-    if (!this.newReferenceName.trim()) {
+    const name = (this.newReferenceName || '').trim();
+    const phone = (this.newReferencePhone || '').trim();
+
+    if (!name) {
       alert('Veuillez entrer le nom du référent.');
       return;
     }
-
-    if (!this.newReferencePhone.trim()) {
+    if (!phone) {
       alert('Veuillez entrer un numéro de téléphone.');
       return;
     }
-
-    if (!phonePattern.test(this.newReferencePhone.trim())) {
+    if (!this.phonePattern.test(phone)) {
       alert('Le numéro de téléphone doit contenir exactement 10 chiffres.');
       return;
     }
 
-    // Concatenate name and phone number if validation passes
-    const fullReference = `${this.newReferenceName.trim()} - ${this.newReferencePhone.trim()}`;
-    this.references.push(fullReference);
+    // Empêche les doublons exacts
+    const formatted = `${name} - ${phone}`;
+    if (this.references.includes(formatted)) {
+      alert('Cette référence a déjà été ajoutée.');
+      return;
+    }
 
-    // Clear the input fields after adding
+    this.references.push(formatted);
     this.newReferenceName = '';
     this.newReferencePhone = '';
+  }
+  tryAutoAdd(): void {
+    // Ajoute automatiquement si les deux champs sont valides
+    if (this.references.length < 3 && this.canAddRef()) {
+      this.addReference();
+    }
+  }
+  removeReference(index: number): void {
+    this.references.splice(index, 1);
   }
 }
