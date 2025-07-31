@@ -86,29 +86,6 @@
         <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.businessAddress">
     </div> 
 
-    <!-- <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
-        <select id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-        <option [ngValue]="'Monday'">Lundi</option>
-        <option [ngValue]="'Tuesday'">Mardi</option>
-        <option [ngValue]="'Wednesday'">Mercredi</option>
-        <option [ngValue]="'Thursday'">Jeudi</option>
-        <option [ngValue]="'Friday'">Vendredi</option>
-        <option [ngValue]="'Saturday'">Samedi</option>
-        </select>
-    </div> -->
-
-    <!-- <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Agent</label>
-        <select id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-            <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
-     
-       
-        </select>
-    </div> -->
-    
           <div class="mb-6">
           <label class="block mb-2 text-sm font-medium text-gray-900">
             Frais de Dossier
@@ -121,19 +98,46 @@
             disabled
           />
           </div>
+              <div class="mb-6">
+        <label for="newReferenceName" class="block mb-2 text-sm font-medium text-gray-900">
+            Pouvez-vous fournir des références de personnes crédibles?
+        </label>
+        
+        <div *ngFor="let ref of references">
+            {{ ref }}
+        </div>
+    
+        <div class="flex items-center gap-2 mb-4">
+            <!-- Name Input -->
+            <input
+                id="newReferenceName"
+                type="text"
+                [(ngModel)]="newReferenceName"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-1/2"
+                placeholder="Nom du Référent"
+                [disabled]="references.length >= 3"
+            />
+    
+            <!-- Phone Input -->
+            <input
+                id="newReferencePhone"
+                type="tel"
+                [(ngModel)]="newReferencePhone"
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-1/2"
+                placeholder="Téléphone (e.g., 0893258653)"
+                [disabled]="references.length >= 3"
+            />
+    
+            <!-- Add Button -->
+            <button
+                (click)="addReference()"
+                class="px-4 py-2 bg-green-500 text-white rounded-lg"
+                [disabled]="references.length >= 3 || !newReferenceName.trim() || !newReferencePhone.trim()">
+                Ajouter
+            </button>
+        </div>
+    </div>
 
-    <!-- <div class="mb-6">
-        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
-        <select id="applicationFee" [(ngModel)]="applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
-        <option selected>Choose</option>
-        <option [ngValue]="0">FC 0</option>
-        <option [ngValue]="5000">FC 5000</option>
-        <option [ngValue]="10000">FC 10,000</option>
-        <option [ngValue]="20000">FC 20,000</option>
-        <option [ngValue]="30000">FC 30,000</option>
-        <option [ngValue]="">Autre Montant </option>
-        </select>
-    </div> -->
     <div *ngIf="applicationFeeOtherDisplay" class="mb-6">
         <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
         <input type="text" [(ngModel)]="applicationFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
@@ -150,18 +154,7 @@
           disabled
         />
       </div>
-    <!-- <div class="mb-6">
-        <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
-        <select id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaymemberShipFeeOtherAmount()">
-        <option selected>Choose</option>
-        <option [ngValue]="0">FC 0</option>
-        <option [ngValue]="5000">FC 5000</option>
-        <option [ngValue]="10000">FC 10,000</option>
-        <option [ngValue]="20000">FC 20,000</option>
-        <option [ngValue]="30000">FC 30,000</option>
-        <option [ngValue]="">Autre Montant </option>
-        </select>
-    </div> -->
+   
     <div *ngIf="memberShipFeeOtherDisplay" class="mb-6">
         <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais D'Adhesion Autre Montant</label>
         <input type="text" [(ngModel)]="memberShipFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>

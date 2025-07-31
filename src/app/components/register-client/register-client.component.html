@@ -122,46 +122,88 @@
         </select>
     </div>
   
-    <div class="mb-6">
-        <label for="newReferenceName" class="block mb-2 text-sm font-medium text-gray-900">
-            Pouvez-vous fournir des références de personnes crédibles?
-        </label>
-        
-        <div *ngFor="let ref of references">
-            {{ ref }}
-        </div>
-    
-        <div class="flex items-center gap-2 mb-4">
-            <!-- Name Input -->
-            <input
-                id="newReferenceName"
-                type="text"
-                [(ngModel)]="newReferenceName"
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-1/2"
-                placeholder="Nom du Référent"
-                [disabled]="references.length >= 3"
-            />
-    
-            <!-- Phone Input -->
-            <input
-                id="newReferencePhone"
-                type="tel"
-                [(ngModel)]="newReferencePhone"
-                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-1/2"
-                placeholder="Téléphone (e.g., 0893258653)"
-                [disabled]="references.length >= 3"
-            />
-    
-            <!-- Add Button -->
-            <button
-                (click)="addReference()"
-                class="px-4 py-2 bg-green-500 text-white rounded-lg"
-                [disabled]="references.length >= 3 || !newReferenceName.trim() || !newReferencePhone.trim()">
-                Ajouter
-            </button>
-        </div>
+<!-- ── RÉFÉRENCES ─────────────────────────────────────────── -->
+<fieldset class="mb-6">
+  <legend class="block mb-2 text-sm font-medium text-gray-900">
+    Références de confiance (2 à 3 personnes) <span class="text-gray-500">— {{ references.length }}/3</span>
+  </legend>
+
+  <p class="text-xs text-gray-600 mb-3">
+    Ces personnes seront contactées <strong>uniquement</strong> si nous n’arrivons pas à vous joindre.
+    <strong>Évitez la famille proche</strong>. Indiquez le <strong>nom complet</strong> et un <strong>numéro (10 chiffres)</strong>.
+  </p>
+
+  <!-- Liste des références ajoutées -->
+  <div *ngIf="references.length" class="space-y-2 mb-3">
+    <div
+      *ngFor="let ref of references; let i = index"
+      class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
+    >
+      <span class="text-sm font-medium text-gray-900">{{ ref }}</span>
+      <button
+        type="button"
+        (click)="removeReference(i)"
+        class="text-xs text-red-600 hover:underline"
+        aria-label="Retirer la référence"
+      >
+        Retirer
+      </button>
     </div>
-    
+  </div>
+
+  <!-- Saisie + ajout -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+    <!-- Nom -->
+    <div>
+      <label for="newReferenceName" class="sr-only">Nom complet du référent</label>
+      <input
+        id="newReferenceName"
+        type="text"
+        [(ngModel)]="newReferenceName"
+        (keyup.enter)="addReference()"
+        (blur)="tryAutoAdd()"
+        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+        placeholder="Nom complet du référent"
+        [disabled]="references.length >= 3"
+      />
+    </div>
+
+    <!-- Téléphone -->
+    <div>
+      <label for="newReferencePhone" class="sr-only">Téléphone</label>
+      <input
+        id="newReferencePhone"
+        type="tel"
+        [(ngModel)]="newReferencePhone"
+        (keyup.enter)="addReference()"
+        (blur)="tryAutoAdd()"
+        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+        placeholder="Téléphone (ex. 0893258653)"
+        [disabled]="references.length >= 3"
+      />
+      <p *ngIf="newReferencePhone && !phonePattern.test(newReferencePhone.trim())"
+         class="text-xs text-red-600 mt-1">
+        Entrez exactement 10 chiffres (ex. 0893258653).
+      </p>
+    </div>
+
+    <!-- Bouton Ajouter -->
+    <div>
+      <button
+        type="button"
+        (click)="addReference()"
+        class="w-full px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
+        [disabled]="references.length >= 3 || !canAddRef()"
+      >
+        Ajouter la référence
+      </button>
+      <p class="text-xs text-gray-500 mt-1">Maximum&nbsp;: 3 références</p>
+    </div>
+  </div>
+</fieldset>
+
     <div class="mb-6">
         <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Avez-vous des guarantis à offrir aux cas ou vous n'etes pas capable de payer?</label>
         <select id="applicationFee" [(ngModel)]="collateral"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
@@ -175,18 +217,6 @@
     
     
 
-<!-- <div class="mb-6">
-    <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
-    <select id="applicationFee" [(ngModel)]="applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
-    <option selected>Choose</option>
-    <option [ngValue]="0">FC 0</option>
-    <option [ngValue]="5000">FC 5000</option>
-    <option [ngValue]="10000">FC 10,000</option>
-    <option [ngValue]="20000">FC 20,000</option>
-    <option [ngValue]="30000">FC 30,000</option>
-    <option [ngValue]="">Autre Montant </option>
-    </select>
-</div> -->
     <div class="mb-6">
     <label class="block mb-2 text-sm font-medium text-gray-900">
     Frais de Dossier
@@ -204,18 +234,7 @@
     <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
     <input type="text" [(ngModel)]="applicationFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
 </div> 
-<!-- <div class="mb-6">
-    <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
-    <select id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaymemberShipFeeOtherAmount()">
-    <option selected>Choose</option>
-    <option [ngValue]="0">FC 0</option>
-    <option [ngValue]="5000">FC 5000</option>
-    <option [ngValue]="10000">FC 10,000</option>
-    <option [ngValue]="20000">FC 20,000</option>
-    <option [ngValue]="30000">FC 30,000</option>
-    <option [ngValue]="">Autre Montant </option>
-    </select>
-</div> -->
+
     <div class="mb-6">
     <label class="block mb-2 text-sm font-medium text-gray-900">
         Frais d’Adhésion

@@ -524,6 +524,7 @@ export class DataService {
       requestAmount: client.requestAmount,
       requestStatus: 'pending',
       requestType: 'lending',
+      references: client.references,
       isPhoneCorrect: 'true',
       vitalStatus: '',
       agentVerifyingName: '',

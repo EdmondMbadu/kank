@@ -53,6 +53,10 @@ export class NewCycleRegisterComponent implements OnInit {
   maxNumberOfClients: number = 0;
   maxNumberOfDaysToLend: Number = 0;
   numberOfCurrentClients = 0;
+  references: string[] = [];
+  newReference: string = '';
+  newReferenceName: string = '';
+  newReferencePhone: string = '';
 
   /** Normalize text so “  Élodie ” === “elodie” */
   private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
@@ -192,6 +196,8 @@ export class NewCycleRegisterComponent implements OnInit {
       missingFields.push('Montant demandé');
     if (!this.requestDate?.trim())
       missingFields.push("Date de don de l'argent");
+    if (!this.references || this.references.length === 0)
+      missingFields.push('Références');
 
     if (!this.client.profilePicture) missingFields.push('Photo du client');
 
@@ -365,6 +371,7 @@ export class NewCycleRegisterComponent implements OnInit {
     this.client.membershipFee = this.memberShipFee;
     this.client.loanAmount = this.loanAmount;
     this.client.requestAmount = this.loanAmount;
+    this.client.references = [...this.references];
 
     this.client.applicationFeePayments = { [today]: this.applicationFee };
     this.client.membershipFeePayments = { [today]: this.memberShipFee };
@@ -471,5 +478,37 @@ export class NewCycleRegisterComponent implements OnInit {
       a--;
     }
     this.age = a;
+  }
+
+  addReference(): void {
+    const phonePattern = /^[0-9]{10}$/; // Ensures exactly 10 digits
+
+    if (this.references.length >= 3) {
+      alert("Vous ne pouvez ajouter que jusqu'à 3 références.");
+      return;
+    }
+
+    if (!this.newReferenceName.trim()) {
+      alert('Veuillez entrer le nom du référent.');
+      return;
+    }
+
+    if (!this.newReferencePhone.trim()) {
+      alert('Veuillez entrer un numéro de téléphone.');
+      return;
+    }
+
+    if (!phonePattern.test(this.newReferencePhone.trim())) {
+      alert('Le numéro de téléphone doit contenir exactement 10 chiffres.');
+      return;
+    }
+
+    // Concatenate name and phone number if validation passes
+    const fullReference = `${this.newReferenceName.trim()} - ${this.newReferencePhone.trim()}`;
+    this.references.push(fullReference);
+
+    // Clear the input fields after adding
+    this.newReferenceName = '';
+    this.newReferencePhone = '';
   }
 }

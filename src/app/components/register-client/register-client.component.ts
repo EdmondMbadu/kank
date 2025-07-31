@@ -28,6 +28,16 @@ export class RegisterClientComponent implements OnInit {
   allClients: Client[] = [];
   private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
   private readonly FIXED_MEMBERSHIP_FEE = '10000'; // 0 FC
+
+  phonePattern = /^[0-9]{10}$/;
+
+  canAddRef(): boolean {
+    return (
+      this.newReferenceName?.trim().length > 1 &&
+      this.phonePattern.test((this.newReferencePhone || '').trim())
+    );
+  }
+
   ngOnInit() {
     this.auth.getAllClients().subscribe((data: any) => {
       // get current clients directly
@@ -129,6 +139,8 @@ export class RegisterClientComponent implements OnInit {
       this.memberShipFee
     );
     let missingFields: string[] = [];
+    // Just before you compute missingFields, add:
+    this.tryAutoAdd();
 
     if (!this.lastName?.trim()) missingFields.push('Nom');
     if (!this.middleName?.trim()) missingFields.push('Post-nom');
@@ -194,30 +206,6 @@ export class RegisterClientComponent implements OnInit {
       );
       return; // 💥 abort immediately
     }
-
-    // if (
-    //   this.firstName === '' ||
-    //   this.lastName === '' ||
-    //   this.middleName === '' ||
-    //   this.profession === '' ||
-    //   this.businessAddress === '' ||
-    //   this.bussinessCapital === '' ||
-    //   this.homeAddress === '' ||
-    //   this.phoneNumber === '' ||
-    //   this.applicationFee === '' ||
-    //   this.memberShipFee === '' ||
-    //   this.savings === '' ||
-    //   this.requestDate === '' ||
-    //   this.timeInBusiness === '' ||
-    //   this.dailyIncome === '' ||
-    //   this.debtInProcess === '' ||
-    //   this.planToPayDebt === '' ||
-    //   this.collateral === '' ||
-    //   this.references.length === 0
-    // ) {
-    //   alert('Completer tous les données');
-    //   return;
-    // }
     if (this.birthDate === '') {
       alert('Veuillez renseigner la date de naissance.');
       return;
@@ -413,36 +401,37 @@ export class RegisterClientComponent implements OnInit {
     this.client.creditworthinessScore =
       this.calculateCreditworthiness().toFixed(0);
   }
-  // Add a new reference with both name and phone number
-  // Function to add a new reference with validation for the phone number
-  addReference(): void {
-    const phonePattern = /^[0-9]{10}$/; // Ensures exactly 10 digits
 
+  addReference(): void {
     if (this.references.length >= 3) {
       alert("Vous ne pouvez ajouter que jusqu'à 3 références.");
       return;
     }
 
-    if (!this.newReferenceName.trim()) {
+    const name = (this.newReferenceName || '').trim();
+    const phone = (this.newReferencePhone || '').trim();
+
+    if (!name) {
       alert('Veuillez entrer le nom du référent.');
       return;
     }
-
-    if (!this.newReferencePhone.trim()) {
+    if (!phone) {
       alert('Veuillez entrer un numéro de téléphone.');
       return;
     }
-
-    if (!phonePattern.test(this.newReferencePhone.trim())) {
+    if (!this.phonePattern.test(phone)) {
       alert('Le numéro de téléphone doit contenir exactement 10 chiffres.');
       return;
     }
 
-    // Concatenate name and phone number if validation passes
-    const fullReference = `${this.newReferenceName.trim()} - ${this.newReferencePhone.trim()}`;
-    this.references.push(fullReference);
+    // Empêche les doublons exacts
+    const formatted = `${name} - ${phone}`;
+    if (this.references.includes(formatted)) {
+      alert('Cette référence a déjà été ajoutée.');
+      return;
+    }
 
-    // Clear the input fields after adding
+    this.references.push(formatted);
     this.newReferenceName = '';
     this.newReferencePhone = '';
   }
@@ -452,6 +441,17 @@ export class RegisterClientComponent implements OnInit {
     const selectedValue = (event.target as HTMLSelectElement).value;
     console.log('Selected Reference:', selectedValue);
   }
+
+  tryAutoAdd(): void {
+    // Ajoute automatiquement si les deux champs sont valides
+    if (this.references.length < 3 && this.canAddRef()) {
+      this.addReference();
+    }
+  }
+  removeReference(index: number): void {
+    this.references.splice(index, 1);
+  }
+
   calculateCreditworthiness(): number {
     let stabilityScore = 0;
     let financialStabilityScore = 0;
