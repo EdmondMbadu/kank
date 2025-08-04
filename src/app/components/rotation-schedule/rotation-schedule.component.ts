@@ -706,16 +706,38 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
 
   removeUidFromLoc(loc: string, uid: string) {
     const e = this.taskPicker.entries.find((x) => x.loc === loc);
-    if (!e) return;
+    if (!e || !this.taskPicker.day) return;
+
+    // 1) local update
     e.employees = e.employees.filter((u) => u !== uid);
-    // if empty, keep the location (you can auto-remove if you prefer)
+
+    // 2) persist immediately
+    const weekId = this.isoWeekId(this.taskPicker.day.date);
+    this.rs.removeTFPerson(weekId, this.taskPicker.day.iso, loc, uid);
+
+    // optional: if no one left at that location, remove the location entirely
+    if (e.employees.length === 0) {
+      this.taskPicker.entries = this.taskPicker.entries.filter(
+        (x) => x.loc !== loc
+      );
+      this.rs.clearTFLocation(weekId, this.taskPicker.day.iso, loc);
+    }
+
     this.cdr.markForCheck();
   }
 
   removeLocation(loc: string) {
+    if (!this.taskPicker.day) return;
+
+    // 1) local update
     this.taskPicker.entries = this.taskPicker.entries.filter(
       (e) => e.loc !== loc
     );
+
+    // 2) persist immediately
+    const weekId = this.isoWeekId(this.taskPicker.day.date);
+    this.rs.clearTFLocation(weekId, this.taskPicker.day.iso, loc);
+
     this.cdr.markForCheck();
   }
 
