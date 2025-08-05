@@ -115,9 +115,8 @@ export class FinishedDebtComponent implements OnInit {
     // Placeholder until you give me your generic message:
     // Edit freely in the modal; variables are injected here.
     return `Mbote ${c.firstName} ${c.lastName},
-Crédit na yo esilaki malamu mpenza na Fondation Gervais.
-Soki olingi lisusu kozua credit pona mombongo na yo, tozali prè !
-Kende na Fondation Gervais location ${this.auth.currentUser.firstName} pona ba details.
+To sepili mingi na efuteli ya credit na yo na Fondation Gervais. 
+Soki olingi lisusu kozua credit pona mombongo na yo, kende na Fondation Gervais location ${this.auth.currentUser.firstName}.
 Merci pona confiance na Fondation Gervais`;
   }
 
