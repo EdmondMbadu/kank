@@ -29,27 +29,132 @@
         </div>
       </div>
 
-      <!-- CLIENT LIST -->
+    <!-- CLIENT LIST -->
       <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li *ngFor="let s of filteredItems; let i = index" [routerLink]="['/client-portal', s.trackingId]" class="group cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-amber-50 dark:hover:bg-slate-700/60">
+        <li
+          *ngFor="let s of filteredItems; let i = index"
+          [routerLink]="['/client-portal', s.trackingId]"
+          class="relative group cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-amber-50 dark:hover:bg-slate-700/60"
+        >
+          <!-- ADMIN-ONLY HIDDEN ICON (top-right) -->
+          <button
+            *ngIf="auth.isAdmin"
+            type="button"
+            title="Envoyer un message"
+            aria-label="Envoyer un message"
+            (click)="$event.stopPropagation(); openSmsModal(s)"
+            class="absolute right-2 top-2 z-10
+                  md:opacity-0 md:group-hover:opacity-100 focus:opacity-100
+                  transition-opacity duration-150
+                  p-2 rounded-full bg-indigo-600 text-white shadow hover:bg-indigo-700"
+          >
+            <!-- chat bubble icon -->
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/>
+            </svg>
+            <span class="sr-only">Envoyer un SMS</span>
+          </button>
+
           <div class="flex items-center space-x-4">
             <!-- AVATAR -->
-            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">{{ s.firstName?.substring(0, 2) }}</div>
+            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
+              {{ s.firstName?.substring(0, 2) }}
+            </div>
 
             <!-- CLIENT INFO -->
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ s.firstName }} {{ s.lastName }} {{ s.middleName }}</p>
-              <p class="truncate text-xs text-gray-500 dark:text-gray-400">({{ s.phoneNumber | slice:0:3 }}) {{ s.phoneNumber | slice:3:6 }}-{{ s.phoneNumber | slice:6:10 }}</p>
+              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                {{ s.firstName }} {{ s.lastName }} {{ s.middleName }}
+              </p>
+              <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                ({{ s.phoneNumber | slice:0:3 }}) {{ s.phoneNumber | slice:3:6 }}-{{ s.phoneNumber | slice:6:10 }}
+              </p>
             </div>
 
-            <!-- SAVINGS AMOUNT (no credit) -->
+            <!-- SAVINGS -->
             <div class="flex items-center gap-1 text-right">
-              <svg class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M5 5h14M5 12h14M5 19h14"/></svg>
-              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">FC {{ s.savings | number:'1.0-0' }}</p>
+              <svg class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 1v22M5 5h14M5 12h14M5 19h14"/>
+              </svg>
+              <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                FC {{ s.savings | number:'1.0-0' }}
+              </p>
             </div>
           </div>
         </li>
       </ul>
+
     </div>
   </div>
 </section>
+
+
+
+<!-- ==== SMS MODAL ==== -->
+<div
+  *ngIf="smsModal.open"
+  class="fixed inset-0 z-50 flex items-center justify-center"
+  aria-modal="true" role="dialog"
+>
+  <!-- backdrop -->
+  <div class="absolute inset-0 bg-black/50" (click)="closeSmsModal()"></div>
+
+  <!-- dialog -->
+  <div class="relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
+    <div class="flex items-start justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        Envoyer un SMS à {{ smsModal.client?.firstName }} {{ smsModal.client?.lastName }}
+      </h3>
+      <button class="text-gray-500 hover:text-gray-700" (click)="closeSmsModal()">✕</button>
+    </div>
+
+    <!-- Phone -->
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+      📞 {{ formatDisplayPhone(smsModal.client?.phoneNumber) }}
+    </p>
+
+    <!-- Template helper -->
+    <div class="flex items-center gap-2 mb-2">
+      <button
+        class="text-xs rounded-full px-3 py-1 bg-gray-100 dark:bg-slate-700"
+        (click)="applyDefaultTemplate()"
+      >
+        Insérer le message générique
+      </button>
+      <span class="text-xs text-gray-500">Vous pourrez l’éditer ci-dessous</span>
+    </div>
+
+    <!-- Textarea -->
+    <textarea
+      [(ngModel)]="smsModal.message"
+      rows="6"
+      class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 p-3"
+      placeholder="Saisir ou coller le message…"
+    ></textarea>
+
+    <!-- Counters -->
+    <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+      <span>{{ smsModal.message?.length || 0 }} caractères</span>
+      <span>~ {{ estimatedSegments(smsModal.message) }} SMS segment(s)</span>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-4 flex items-center justify-end gap-2">
+      <button class="px-4 py-2 rounded-lg border" (click)="closeSmsModal()">Annuler</button>
+      <button
+        class="px-4 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-60"
+        [disabled]="sending || !smsModal.message?.trim()"
+        (click)="sendSmsToClient()"
+      >
+        {{ sending ? 'Envoi…' : 'Envoyer' }}
+      </button>
+    </div>
+
+    <!-- Toast-ish inline status -->
+    <p *ngIf="sendResult" class="mt-3 text-sm"
+       [class.text-emerald-600]="sendResult.ok"
+       [class.text-rose-600]="!sendResult.ok">
+      {{ sendResult.text }}
+    </p>
+  </div>
+</div>

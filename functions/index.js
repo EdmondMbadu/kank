@@ -178,6 +178,46 @@ function makeValidE164(number) {
 //       return null;
 //     });
 
+
+/**
+ * Callable: send a custom SMS to a single client.
+ * Payload: { phoneNumber: string, message: string, metadata?: {...} }
+ */
+exports.sendCustomSMS = functions.https.onCall(async (data, context) => {
+  // OPTIONAL: lock to signed-in users (and optionally admin role)
+  // if (!context.auth) {
+  //   throw new functions.https.HttpsError('unauthenticated','Sign in required');
+  // }
+  // const isAdmin = context.auth.token?.admin === true;
+  // if (!isAdmin) throw new functions.https.HttpsError('permission-denied','Admin only');
+
+  const {phoneNumber, message, metadata = {}} = data || {};
+  if (!phoneNumber || !message) {
+    throw new functions.https.HttpsError("invalid-argument", "phoneNumber and message are required");
+  }
+
+  const to = makeValidE164(phoneNumber);
+  if (!to) {
+    throw new functions.https.HttpsError("invalid-argument", "Invalid phone number");
+  }
+
+  try {
+    const resp = await sms.send({to: [to], message});
+    // Optional audit trail
+    // await admin.firestore().collection('sms_outbox').add({
+    //   to, message, metadata,
+    //   createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    //   byUid: context.auth?.uid || null
+    // });
+    console.log("SMS medata:", metadata);
+    console.log("SMS sent successfully:", resp || "No response received ");
+    return {ok: true, providerResponse: resp};
+  } catch (err) {
+    console.error("sendCustomSMS failed:", err);
+    throw new functions.https.HttpsError("internal", "SMS send failed");
+  }
+});
+
 /**
  * Helper function to format a date string to DD/MM/YYYY
  */
