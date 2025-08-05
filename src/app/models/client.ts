@@ -88,6 +88,8 @@ export class Comment {
   performance?: number;
   __editingPerf?: boolean;
   __perfDraft?: number;
+  __editingComment?: boolean;
+  __commentDraft?: string;
 
   [key: string]: any;
 }

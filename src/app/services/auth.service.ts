@@ -772,4 +772,14 @@ export class AuthService {
     const docRef = this.afs.doc(`users/${uid}/reviews/${reviewDocId}`);
     return docRef.update({ reviews }); // ← Firestore set-merge
   }
+  /** Écrase complètement le tableau reviews du document reviews/{reviewDocId} */
+  updateReview(reviewDocId: string, reviews: Comment[]): Promise<void> {
+    const uid = this.currentUser.uid; // UID de l’utilisateur connecté
+    const docRef = this.afs.doc<{ reviews: Comment[] }>(
+      `users/${uid}/reviews/${reviewDocId}`
+    );
+
+    // .update() préserve les autres champs éventuels du document
+    return docRef.update({ reviews });
+  }
 }

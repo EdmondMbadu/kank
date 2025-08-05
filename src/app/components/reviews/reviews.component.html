@@ -313,10 +313,50 @@
       </div>
 
 
-            <blockquote *ngIf="c.comment"
-                  class="border-l-4 border-blue-500 pl-4 italic text-gray-800 dark:text-gray-200 whitespace-pre-line break-words">
-        {{ c.comment }}
-      </blockquote>
+         <!-- REVIEW TEXT – view / edit ----------------------------------------- -->
+<div class="space-y-2">
+
+  <!-- ── VIEW mode ─────────────────────────────────────────────────── -->
+  <ng-container *ngIf="!c.__editingComment">
+    <blockquote *ngIf="c.comment"
+                class="border-l-4 border-blue-500 pl-4 italic
+                       text-gray-800 dark:text-gray-200 whitespace-pre-line break-words">
+      {{ c.comment }}
+    </blockquote>
+
+    <!-- pencil icon visible only for admins -->
+    <button *ngIf="auth.isAdmin"
+            (click)="enableEditComment(c)"
+            class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8"
+           viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M16.862 3.487a2 2 0 0 1 2.829 2.83l-9.65 9.65-3.182.353a.5.5 0 0 1-.554-.555l.353-3.182 9.65-9.65z"/>
+      </svg>
+    </button>
+  </ng-container>
+
+  <!-- ── EDIT mode ──────────────────────────────────────────────────── -->
+  <ng-container *ngIf="auth.isAdmin && c.__editingComment">
+    <textarea [(ngModel)]="c.__commentDraft"
+              rows="3"
+              class="w-full p-2.5 rounded-lg border dark:bg-gray-700
+                     dark:border-gray-600 dark:text-white resize-y"></textarea>
+
+    <div class="flex gap-2 mt-2">
+      <button (click)="saveComment(c)"
+              class="px-3 py-1.5 text-xs rounded bg-green-600
+                     hover:bg-green-700 text-white">Enregistrer</button>
+
+      <button (click)="cancelEditComment(c)"
+              class="px-3 py-1.5 text-xs rounded bg-gray-100
+                     dark:bg-gray-700">Annuler</button>
+    </div>
+  </ng-container>
+
+</div>
+
+     
 
       <!-- note globale en étoiles -->
         <div *ngIf="c.starsNumber !== undefined" class="flex items-center gap-0.5">

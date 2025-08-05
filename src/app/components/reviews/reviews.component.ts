@@ -598,4 +598,47 @@ export class ReviewsComponent implements OnInit {
         alert('Impossible d’enregistrer la performance.');
       });
   }
+
+  /** ---------- COMMENT inline-edit helpers ---------- */
+  enableEditComment(c: Comment) {
+    c.__commentDraft = c.comment ?? ''; // seed with current text
+    c.__editingComment = true;
+  }
+
+  cancelEditComment(c: Comment) {
+    c.__editingComment = false;
+  }
+
+  /** Save edited comment, persist whole reviews array */
+  saveComment(c: Comment) {
+    if (!(c.__commentDraft ?? '').trim()) {
+      alert('Le commentaire ne peut pas être vide.');
+      return;
+    }
+
+    /* ① local update */
+    c.comment = c.__commentDraft!.trim();
+    c.__editingComment = false;
+
+    /* ② strip UI-only props & push to Firestore */
+    const cleanReviews: Comment[] = this.reviews.map((r) => {
+      const {
+        __editingPerf,
+        __perfDraft,
+        __editingComment,
+        __commentDraft,
+        timeFormatted,
+        starsNumber,
+        ...rest
+      } = r as any;
+      return rest as Comment;
+    });
+
+    this.auth
+      .updateReview(this.reviewId, cleanReviews) // ⬅️ create once in AuthService
+      .catch((err) => {
+        console.error('Update failed:', err);
+        alert('Impossible d’enregistrer le commentaire.');
+      });
+  }
 }
