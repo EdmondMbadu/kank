@@ -5,6 +5,7 @@ import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { MessagingService } from 'src/app/services/messaging.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 type SendResult = { ok: boolean; text: string };
 @Component({
   selector: 'app-finished-debt',
@@ -26,7 +27,8 @@ export class FinishedDebtComponent implements OnInit {
   constructor(
     private router: Router,
     public auth: AuthService,
-    public messaging: MessagingService
+    public messaging: MessagingService,
+    public computation: ComputationService
   ) {
     this.retrieveClients();
   }
@@ -43,6 +45,14 @@ export class FinishedDebtComponent implements OnInit {
       });
   }
 
+  /** Build the badge style for a given client */
+  creditBadgeStyle(score: string | number | null | undefined) {
+    const val = Number(score) || 0; // cast to number, default 0
+    return {
+      'background-color': this.computation.getGradientColor(val),
+      color: val < 80 ? '#fff' : '#000', // white text for darker hues
+    };
+  }
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;

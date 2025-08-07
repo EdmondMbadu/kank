@@ -62,14 +62,35 @@
             </div>
 
             <!-- CLIENT INFO -->
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ s.firstName }} {{ s.lastName }} {{ s.middleName }}
-              </p>
-              <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                ({{ s.phoneNumber | slice:0:3 }}) {{ s.phoneNumber | slice:3:6 }}-{{ s.phoneNumber | slice:6:10 }}
-              </p>
-            </div>
+           <!-- CLIENT INFO -->
+<div class="min-w-0 flex-1">
+  <!-- Name -->
+  <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+    {{ s.firstName }} {{ s.lastName }} {{ s.middleName }}
+  </p>
+
+          <!-- Phone + Credit Score -->
+          <div class="flex items-center space-x-2">
+            <!-- phone -->
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+              ({{ s.phoneNumber | slice:0:3 }})
+              {{ s.phoneNumber | slice:3:6 }}-{{ s.phoneNumber | slice:6:10 }}
+            </span>
+
+            <!-- credit score badge -->
+           
+            <!-- credit-score badge -->
+           <!-- credit-score badge -->
+              <span
+                *ngIf="s.creditScore != null"
+                class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm tracking-wide"
+                [ngStyle]="creditBadgeStyle(s.creditScore)"
+              >
+                {{ s.creditScore }}
+              </span>
+          </div>
+        </div>
+
 
             <!-- SAVINGS -->
             <div class="flex items-center gap-1 text-right">
