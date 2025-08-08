@@ -47,6 +47,8 @@ export class EmployeePageComponent implements OnInit {
   lastAccuracy?: number;
   lastDistance?: number;
   lastFixAt?: Date;
+  /** Ordre de rotation des statuts */
+  private readonly ATT_STATES = ['P', 'A', 'L', 'V', 'VP', 'N'];
 
   geoStatus: 'granted' | 'prompt' | 'denied' | 'unknown' = 'unknown';
 
@@ -711,7 +713,14 @@ export class EmployeePageComponent implements OnInit {
           }
 
           const attendance = matchedKey ? dict[matchedKey] : undefined;
-
+          // ➜ nouvelle partie : clic administrateur
+          if (this.auth.isAdmninistrator) {
+            cell.classList.add('cursor-pointer'); // curseur main
+            const keyUsed = matchedKey ?? dateStr; // celui qu’on doit ré-écrire
+            cell.addEventListener('click', () =>
+              this.onAttendanceCellClick(keyUsed, attendance)
+            );
+          }
           if (attendance) {
             // Extract hours and minutes from the matched key if available.
             const time = matchedKey!.split('-').slice(3, 5).join(':'); // e.g., "18:54" format
@@ -1481,6 +1490,31 @@ export class EmployeePageComponent implements OnInit {
     } finally {
       this.warmingUp = false;
       this.checkGeoPermission();
+    }
+  }
+
+  /* ─── 2.  Prochain état dans la liste (boucle infinie) ───────── */
+  private nextState(curr?: string): string {
+    const i = this.ATT_STATES.indexOf(curr ?? ''); // -1 si undefined
+    return i === -1
+      ? 'P' // case vide ⇒ P
+      : this.ATT_STATES[(i + 1) % this.ATT_STATES.length];
+  }
+  /* ─── 3.  Clic sur la cellule ────────────────────────────────── */
+  private async onAttendanceCellClick(dateKey: string, curr?: string) {
+    if (!this.auth.isAdmninistrator) return;
+
+    const next = this.nextState(curr); // plus jamais « '' »
+    const newAtt = { ...(this.employee.attendance ?? {}) };
+    newAtt[dateKey] = next; // on écrase toujours
+
+    try {
+      await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
+      this.employee.attendance = newAtt;
+      this.generateAttendanceTable(this.givenMonth, this.givenYear);
+    } catch (e) {
+      alert('❌ Impossible de mettre à jour la présence');
+      console.error(e);
     }
   }
 }
