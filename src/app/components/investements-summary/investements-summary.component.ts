@@ -83,7 +83,7 @@ export class InvestementsSummaryComponent implements OnInit {
     },
   };
 
-  isOpen = false;
+  isOpen = true;
   maxRange = this.auth.currentUser.dailyReimbursement.length;
   maxRangePerformance = this.auth.currentUser.performances.length;
   totalPayGraphics: number = 0;
