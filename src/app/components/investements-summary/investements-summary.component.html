@@ -65,6 +65,188 @@
   </div>
 </section>
 
+<section>
+  <div class="p-4">
+    <div class="max-w-3xl mx-auto">
+
+      <!-- Toggleable band header -->
+      <button
+        type="button"
+        (click)="toggleOpen()"
+        [attr.aria-expanded]="isOpen"
+        class="mb-4 sm:mb-6 w-full rounded-xl shadow-lg ring-1 ring-emerald-500/30 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+      >
+        <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 px-5 py-4 text-white flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 3v18h18"/>
+                <path d="M7 13l3-3 2 2 4-4 3 3"/>
+              </svg>
+            </span>
+            <div>
+              <h3 class="text-lg sm:text-xl font-bold tracking-tight">
+                Score Crédit & Montant Éligible d’Emprunt
+              </h3>
+              <p class="hidden sm:block text-sm text-white/85">
+                Cliquez pour afficher / masquer le tableau.
+              </p>
+            </div>
+          </div>
+
+          <!-- Arrow (rotates when closed) -->
+          <svg class="h-5 w-5 shrink-0 transition-transform duration-200"
+               [ngClass]="{ 'rotate-180': !isOpen }"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Collapsible panel -->
+      <div class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-200" *ngIf="isOpen">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-slate-700">
+            <colgroup>
+              <col class="w-1/2" />
+              <col class="w-1/2" />
+            </colgroup>
+
+            <thead class="bg-slate-900 text-white">
+              <tr>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10">
+                  Score Crédit
+                </th>
+                <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10">
+                  Montant Max (FC)
+                </th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-slate-200">
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-emerald-50 text-emerald-800 font-semibold border-l-4 border-emerald-500">
+                  100%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">2M+</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-emerald-100 text-emerald-800 font-semibold border-l-4 border-emerald-400">
+                  95-99%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">1.5M</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-teal-100 text-teal-800 font-semibold border-l-4 border-teal-400">
+                  90-94%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">1.4M</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-cyan-100 text-cyan-800 font-semibold border-l-4 border-cyan-400">
+                  85-89%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">1.3M</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-sky-100 text-sky-800 font-semibold border-l-4 border-sky-400">
+                  80-84%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">1.2M</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-sky-50 text-sky-800 font-semibold border-l-4 border-sky-300">
+                  75-79%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">1.1M</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-blue-50 text-blue-800 font-semibold border-l-4 border-blue-300">
+                  70-74%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">1M</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-amber-50 text-amber-800 font-semibold border-l-4 border-amber-300">
+                  65-69%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">700K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-amber-100 text-amber-800 font-semibold border-l-4 border-amber-400">
+                  60-64%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">600K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-amber-100 text-amber-900 font-semibold border-l-4 border-amber-500">
+                  55-59%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">500K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-orange-50 text-orange-800 font-semibold border-l-4 border-orange-300">
+                  50-54%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">400K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-orange-100 text-orange-800 font-semibold border-l-4 border-orange-400">
+                  45-49%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">300K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-orange-100 text-orange-900 font-semibold border-l-4 border-orange-500">
+                  40-44%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">200K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-amber-200 text-amber-900 font-semibold border-l-4 border-amber-600">
+                  35-39%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">150K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-rose-100 text-rose-800 font-semibold border-l-4 border-rose-400">
+                  20-34%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">100K</td>
+              </tr>
+
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500">
+                  0-19%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">0 FC</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
 <!-- 3. charts ------------------------------------------------------------->
 <section class="mx-auto mt-20 max-w-7xl px-4 sm:px-6 lg:px-8 space-y-24">
 
