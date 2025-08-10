@@ -22,6 +22,7 @@ export class RegiserPortalComponent {
   url: string = '';
   agentVerifyingName: string = '';
   agentSubmmittedVerification: string = '';
+  age: number | null = null; // ← nouveau
 
   showAuditConfirmation: boolean = false;
   isConfirmed: boolean = false;
@@ -151,6 +152,7 @@ export class RegiserPortalComponent {
     this.auth.getAllClients().subscribe((data: any) => {
       const idx = Number(this.id); // position du client courant
       this.client = data[idx];
+      this.age = this.compute.computeAge(this.client.birthDate);
       // … (votre logique existante) …
       this.detectSuspicious(idx, data);
       console.log('the client', this.client);

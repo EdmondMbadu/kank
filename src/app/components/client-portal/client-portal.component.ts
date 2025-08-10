@@ -142,7 +142,7 @@ export class ClientPortalComponent {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
       console.log('the client', this.client);
-      this.age = this.computeAge(this.client.birthDate);
+      this.age = this.compute.computeAge(this.client.birthDate);
 
       this.minimumPayment();
       this.client.frenchPaymentDay = this.time.translateDayInFrench(
@@ -724,19 +724,5 @@ export class ClientPortalComponent {
         console.error(error);
         alert('Erreur lors de la publication du commentaire.');
       });
-  }
-  /* --- utilitaire simple --- */
-  private computeAge(birth: string | undefined): number | null {
-    if (!birth) {
-      return null;
-    } // sécurité
-    const [d, m, y] = birth.split('-').map(Number); // jj-mm-aaaa
-    const dob = new Date(y, m - 1, d);
-    const today = new Date();
-    let a = today.getFullYear() - dob.getFullYear();
-    const diff =
-      today.getMonth() - dob.getMonth() || today.getDate() - dob.getDate();
-    if (diff < 0) a--;
-    return a;
   }
 }

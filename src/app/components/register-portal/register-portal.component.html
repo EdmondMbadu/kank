@@ -156,6 +156,14 @@
         Membre depuis {{ dateJoined}}
       </p>
     </div>
+    <!-- Age -->
+    <div
+      *ngIf="age !== null"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Âge</dt>
+      <dd class="mt-1 text-3xl font-bold">{{ age }}</dd>
+    </div>
 
     <!-- PHONE -->
     <a [routerLink]="['/update-client-info', id]" class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50">
