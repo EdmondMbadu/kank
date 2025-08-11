@@ -377,14 +377,26 @@ export class GestionDayComponent implements OnInit {
             this.userRequestTotals = this.userRequestTotals.filter((client) => {
               return client.total > 0;
             });
-            this.reserveTotals = this.reserveTotals.filter((client) => {
-              return client.total > 0;
+            // this.reserveTotals = this.reserveTotals.filter((client) => {
+            //   return client.total > 0;
+            // });
+            this.reserveTotals = this.reserveTotals.filter((row) => {
+              const t = row.total ?? 0;
+              const a = row.actual ?? 0;
+              const p = row.payment ?? 0; // optional: keep if a payment was recorded
+              return t > 0 || a > 0 || p > 0;
             });
             this.userRequestTotals.sort((a, b) => {
               return b.total - a.total;
             });
+            // this.reserveTotals.sort((a, b) => {
+            //   return b.total - a.total;
+            // });
+            // Sort by the stronger of the two metrics (or sum — pick what you prefer)
             this.reserveTotals.sort((a, b) => {
-              return b.total - a.total;
+              const aKey = Math.max(a.total ?? 0, a.actual ?? 0);
+              const bKey = Math.max(b.total ?? 0, b.actual ?? 0);
+              return bKey - aKey;
             });
 
             this.overallTotalInDollars = Number(
