@@ -24,11 +24,10 @@ export class GestionMonthComponent {
       this.updateReserveGraphics(this.graphicsRange);
     });
   }
-  week: number = 4;
-  mTime = 8;
+
   day: number = 1;
-  graphicsRange: number = this.week;
-  graphicsRangeServe: number = this.week;
+  graphicsRange: number = this.compute.quarter1;
+  graphicsRangeServe: number = this.compute.quarter1;
   maxRange = 0;
   public graph = {
     data: [{}],

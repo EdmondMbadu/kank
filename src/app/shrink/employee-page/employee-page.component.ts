@@ -165,7 +165,7 @@ export class EmployeePageComponent implements OnInit {
     private data: DataService,
     public auth: AuthService,
     public time: TimeService,
-    private compute: ComputationService,
+    public compute: ComputationService,
     private performance: PerformanceService,
     public activatedRoute: ActivatedRoute,
     private storage: AngularFireStorage,

@@ -266,13 +266,19 @@
                          text-gray-700 dark:text-gray-100
                          rounded-l-lg transition
                          hover:bg-green-600 hover:text-white">
-            Semaine
+            1S
           </button>
-          <button (click)="updatePaymentGraphics(20)"
+          <button (click)="updatePaymentGraphics(compute.month)"
                   class="px-4 py-2 text-sm font-medium
                          text-gray-700 dark:text-gray-100
                          transition hover:bg-green-600 hover:text-white">
-            Mois
+            1M
+          </button>
+            <button (click)="updatePaymentGraphics(compute.year)"
+                  class="px-4 py-2 text-sm font-medium
+                         text-gray-700 dark:text-gray-100
+                         transition hover:bg-green-600 hover:text-white">
+            1A
           </button>
           <button (click)="updatePaymentGraphics(maxRange)"
                   class="px-4 py-2 text-sm font-medium
@@ -301,13 +307,19 @@
                          text-gray-700 dark:text-gray-100
                          rounded-l-lg transition
                          hover:bg-green-600 hover:text-white">
-            Semaine
+           1S
           </button>
           <button (click)="updateLendingGraphics(compute.month)"
                   class="px-4 py-2 text-sm font-medium
                          text-gray-700 dark:text-gray-100
                          transition hover:bg-green-600 hover:text-white">
-            Mois
+            1M
+          </button>
+           <button (click)="updateLendingGraphics(compute.year)"
+                  class="px-4 py-2 text-sm font-medium
+                         text-gray-700 dark:text-gray-100
+                         transition hover:bg-green-600 hover:text-white">
+            1A
           </button>
           <button (click)="updateLendingGraphics(maxRange)"
                   class="px-4 py-2 text-sm font-medium
@@ -337,13 +349,19 @@
                        text-gray-700 dark:text-gray-100
                        rounded-l-lg transition
                        hover:bg-green-600 hover:text-white">
-          Semaine
+          1S
         </button>
-        <button (click)="updatePerformanceGraphics(20)"
+        <button (click)="updatePerformanceGraphics(compute.month)"
                 class="px-4 py-2 text-sm font-medium
                        text-gray-700 dark:text-gray-100
                        transition hover:bg-green-600 hover:text-white">
-          Mois
+          1M
+        </button>
+         <button (click)="updatePerformanceGraphics(compute.year)"
+                class="px-4 py-2 text-sm font-medium
+                       text-gray-700 dark:text-gray-100
+                       transition hover:bg-green-600 hover:text-white">
+          1A
         </button>
         <button (click)="updatePerformanceGraphics(maxRange)"
                 class="px-4 py-2 text-sm font-medium

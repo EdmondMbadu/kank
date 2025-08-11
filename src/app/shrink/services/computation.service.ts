@@ -19,6 +19,11 @@ export class ComputationService {
   rateDollar: number = 2900;
   week: number = 6;
   month: number = 26;
+  year: number = 320;
+  quarter1: number = 3;
+  quarter2: number = 6;
+  quarter3: number = 9;
+  quarter4: number = 12;
   private R = 6371e3; // Earth's radius in meters
   today = this.time.todaysDateMonthDayYear();
   convertCongoleseFrancToUsDollars(value: string) {
