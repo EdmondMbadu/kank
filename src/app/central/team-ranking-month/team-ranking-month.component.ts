@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { Client } from 'src/app/models/client';
-import { Employee } from 'src/app/models/employee';
+import { AttendanceAttachment, Employee } from 'src/app/models/employee';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -387,40 +387,147 @@ export class TeamRankingMonthComponent {
     return [sortedKeys, values];
   }
   // In team-ranking-month.component.ts
+  // async addAttendanceForEmployee(
+  //   employee: Employee,
+  //   attendanceValue: string,
+  //   date: string = ''
+  // ) {
+  //   if (!attendanceValue || attendanceValue === '') {
+  //     alert('Remplissez la présence, Réessayez');
+  //     return;
+  //   }
+  //   try {
+  //     // Build the attendance record object
+  //     let attendanceRecord: any = { [this.time.todaysDate()]: attendanceValue };
+  //     if (date !== '') {
+  //       attendanceRecord = { [date]: attendanceValue };
+  //     }
+
+  //     if (!employee.tempUser || !employee.tempUser.uid) {
+  //       alert('Aucun utilisateur associé à cet employé.');
+  //       return;
+  //     }
+
+  //     await this.data.updateEmployeeAttendanceForUser(
+  //       attendanceRecord,
+  //       employee.uid!,
+  //       employee.tempUser.uid
+  //     );
+  //     // add a success message here
+  //     alert('Présence ajoutée avec succès');
+
+  //     // Optionally show a success message here
+  //   } catch (err) {
+  //     alert("Une erreur s'est produite lors de l'attendance, Réessayez");
+  //     return;
+  //   }
+  //   // Optionally clear inputs or do other post-submission tasks here
+  // }
+
+  onAttachmentSelected(em: any, evt: Event) {
+    const input = evt.target as HTMLInputElement;
+    const file = input.files?.[0];
+    em._attachmentError = '';
+    em._attachmentFile = null;
+    em._attachmentPreview = null;
+    em._attachmentType = null;
+    em._attachmentSize = null;
+
+    if (!file) return;
+
+    // Enforce type & size
+    const isOkType =
+      file.type.startsWith('image/') || file.type.startsWith('video/');
+    const maxBytes = 10 * 1024 * 1024; // 10MB
+    if (!isOkType) {
+      em._attachmentError = 'Seuls les fichiers image ou vidéo sont autorisés.';
+      return;
+    }
+    if (file.size > maxBytes) {
+      em._attachmentError = 'Fichier trop volumineux (max 10 Mo).';
+      return;
+    }
+
+    em._attachmentFile = file;
+    em._attachmentType = file.type;
+    em._attachmentSize = file.size;
+
+    const reader = new FileReader();
+    reader.onload = () => (em._attachmentPreview = reader.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  clearAttachment(em: any) {
+    em._attachmentError = '';
+    em._attachmentFile = null;
+    em._attachmentPreview = null;
+    em._attachmentType = null;
+    em._attachmentSize = null;
+  }
+
   async addAttendanceForEmployee(
-    employee: Employee,
+    employee: any,
     attendanceValue: string,
-    date: string = ''
+    dateLabel: string = ''
   ) {
-    if (!attendanceValue || attendanceValue === '') {
+    if (!attendanceValue) {
       alert('Remplissez la présence, Réessayez');
       return;
     }
-    try {
-      // Build the attendance record object
-      let attendanceRecord: any = { [this.time.todaysDate()]: attendanceValue };
-      if (date !== '') {
-        attendanceRecord = { [date]: attendanceValue };
-      }
 
-      if (!employee.tempUser || !employee.tempUser.uid) {
+    try {
+      const label =
+        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // your existing format
+      const now = new Date();
+      const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
+
+      if (!employee.tempUser?.uid) {
         alert('Aucun utilisateur associé à cet employé.');
         return;
       }
 
+      // 1) legacy map (keeps current UI working)
       await this.data.updateEmployeeAttendanceForUser(
-        attendanceRecord,
+        { [label]: attendanceValue },
         employee.uid!,
         employee.tempUser.uid
       );
-      // add a success message here
-      alert('Présence ajoutée avec succès');
 
-      // Optionally show a success message here
-    } catch (err) {
+      // 2) scalable doc + subcollection
+      await this.data.setAttendanceEntry(
+        employee.tempUser.uid,
+        employee.uid!,
+        dateISO,
+        attendanceValue as any,
+        label,
+        this.auth.currentUser?.uid || 'unknown'
+      );
+
+      // 3) optional attachment to subcollection only (no more giant map on employee doc)
+      if (employee._attachmentFile) {
+        employee._uploading = true;
+        const att = await this.data.uploadAttendanceAttachment(
+          employee._attachmentFile,
+          employee.uid!,
+          employee.tempUser.uid,
+          dateISO,
+          this.auth.currentUser?.uid || 'unknown',
+          label
+        );
+        await this.data.addAttendanceAttachmentDoc(
+          employee.tempUser.uid,
+          employee.uid!,
+          dateISO,
+          att
+        );
+        employee._uploading = false;
+        this.clearAttachment(employee);
+      }
+
+      alert('Présence ajoutée avec succès');
+    } catch (e) {
+      console.error(e);
       alert("Une erreur s'est produite lors de l'attendance, Réessayez");
-      return;
     }
-    // Optionally clear inputs or do other post-submission tasks here
   }
 }

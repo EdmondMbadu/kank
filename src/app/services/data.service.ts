@@ -5,12 +5,17 @@ import {
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore/';
 import { LocationCoordinates, User } from '../models/user';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthService } from './auth.service';
 import { Client, Comment } from '../models/client';
 import { TimeService } from './time.service';
-import { Avatar, Certificate, Employee } from '../models/employee';
+import {
+  AttendanceAttachment,
+  Avatar,
+  Certificate,
+  Employee,
+} from '../models/employee';
 import { ComputationService } from '../shrink/services/computation.service';
 import { Card } from '../models/card';
 import { doc, increment, writeBatch } from 'firebase/firestore';
@@ -900,6 +905,92 @@ export class DataService {
     );
     const data = { attendance: attendance };
     return employeeRef.set(data, { merge: true });
+  }
+
+  /** ===== Scalable structure ===== */
+
+  private attendanceDoc(userId: string, employeeId: string, dateISO: string) {
+    return this.afs.doc(
+      `users/${userId}/employees/${employeeId}/attendance/${dateISO}`
+    );
+  }
+
+  setAttendanceEntry(
+    userId: string,
+    employeeId: string,
+    dateISO: string,
+    status: 'P' | 'A' | 'L' | 'N',
+    dateLabel: string,
+    createdBy: string
+  ) {
+    const ref = this.attendanceDoc(userId, employeeId, dateISO);
+    const payload = {
+      status,
+      dateISO,
+      dateLabel,
+      createdAt: new Date(),
+      createdBy,
+    };
+    return ref.set(payload, { merge: true });
+  }
+
+  async uploadAttendanceAttachment(
+    file: File,
+    employeeId: string,
+    userId: string,
+    dateISO: string,
+    uploaderId: string,
+    dateLabel: string
+  ): Promise<AttendanceAttachment> {
+    const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    const path = `attendance_proofs/${userId}/${employeeId}/${dateISO}/${Date.now()}.${ext}`;
+
+    await this.storage.upload(path, file, {
+      contentType: file.type || undefined,
+      customMetadata: { userId, employeeId, dateISO, dateLabel, uploaderId },
+    });
+
+    const url = await firstValueFrom(this.storage.ref(path).getDownloadURL());
+
+    return {
+      url,
+      path,
+      size: file.size,
+      contentType: file.type || 'application/octet-stream',
+      uploadedAt: new Date().toISOString(),
+      uploaderId,
+    };
+  }
+
+  addAttendanceAttachmentDoc(
+    userId: string,
+    employeeId: string,
+    dateISO: string,
+    attachment: AttendanceAttachment
+  ) {
+    const ref = this.attendanceDoc(userId, employeeId, dateISO)
+      .collection('attachments')
+      .doc(); // autoId
+    return ref.set(attachment);
+  }
+
+  // NEW: write parallel map attendanceAttachments[date] = attachment
+  updateEmployeeAttendanceAttachment(
+    employeeId: string,
+    userId: string,
+    date: string,
+    attachment: any
+  ) {
+    const employeeRef: AngularFirestoreDocument = this.afs.doc(
+      `users/${userId}/employees/${employeeId}`
+    );
+    // Merge nested map (Firestore merges nested objects on set with merge:true)
+    const payload = {
+      attendanceAttachments: {
+        [date]: attachment,
+      },
+    };
+    return employeeRef.set(payload, { merge: true });
   }
 
   updateEmployeeAttendanceRejection(attendance: any, employeeId: string) {

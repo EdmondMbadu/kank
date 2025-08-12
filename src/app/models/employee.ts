@@ -59,6 +59,16 @@ export class Employee {
   paidThisMonth?: boolean;
   paymentBankFee?: string;
   paymentLate?: string;
+  // NEW: parallel map of attachments by date
+  attendanceAttachments?: { [date: string]: AttendanceAttachment };
+
+  // ---------- UI-only transient fields (not saved) ----------
+  _attachmentFile?: File | null;
+  _attachmentPreview?: string | null;
+  _attachmentType?: string | null;
+  _attachmentSize?: number | null;
+  _attachmentError?: string | null;
+  _uploading?: boolean;
 }
 export class Avatar {
   path?: string;
@@ -83,3 +93,11 @@ export class Certificate {
   bestManagerCertificatePath?: string;
   bestManagerCertificateDownloadUrl?: string;
 }
+export type AttendanceAttachment = {
+  url: string;
+  path: string;
+  size: number;
+  contentType: string;
+  uploadedAt: string; // ISO string
+  uploaderId: string;
+};

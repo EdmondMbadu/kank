@@ -160,6 +160,55 @@
                       
                      
                   </div>
+                  <!-- Attachment (photo/video) -->
+                    <div class="mt-2 sm:col-span-2">
+                      <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Pièce jointe (image ou vidéo, max 10 Mo)
+                      </label>
+
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        (change)="onAttachmentSelected(em, $event)"
+                        class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+                      />
+
+                      <!-- Size/type error -->
+                      <p *ngIf="em._attachmentError"
+                        class="mt-2 text-sm text-red-600">
+                        {{ em._attachmentError }}
+                      </p>
+
+                      <!-- Preview (image or video) -->
+                      <div *ngIf="em._attachmentPreview" class="mt-3">
+                        <img
+                          *ngIf="em._attachmentType?.startsWith('image/')"
+                          [src]="em._attachmentPreview"
+                          alt="Preview"
+                          class="max-h-48 rounded-lg border"
+                        />
+                        <video
+                          *ngIf="em._attachmentType?.startsWith('video/')"
+                          [src]="em._attachmentPreview"
+                          controls
+                          class="w-full max-h-64 rounded-lg border"
+                        ></video>
+
+                        <div class="mt-2 flex items-center gap-3">
+                          <span class="text-xs text-gray-500">
+                            {{ (em._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
+                          </span>
+                          <button
+                            type="button"
+                            (click)="clearAttachment(em)"
+                            class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                   <div class="flex flex-row mx-auto justify-center space-x-4">
                       <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="em.showAttendance = false">Annuler</button>
                       <button type="submit" (click)="addAttendanceForEmployee(em, attendanceSelect.value); em.showAttendance = false" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " >Confirmer</button>

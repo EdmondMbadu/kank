@@ -17,6 +17,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { LocationCoordinates } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { firstValueFrom } from 'rxjs';
 // import heic2any from 'heic2any';
 /* ─── Audit-receipt model ───────────────────────── */
 interface AuditReceipt {
@@ -33,6 +34,9 @@ interface AuditReceipt {
   styleUrls: ['./employee-page.component.css'],
 })
 export class EmployeePageComponent implements OnInit {
+  // Map: 'M-D-YYYY' -> array of attachments for that day
+  monthAttachmentsByLabel: Record<string, any[]> = {};
+
   // ── États UI pour le marquage automatique de présence ──
   isMarkingPresence = false;
   presenceStatus:
@@ -321,8 +325,8 @@ export class EmployeePageComponent implements OnInit {
     this.totalPayments = amount + bankFee + increase - absent - late - nothing;
     return this.totalPayments;
   }
-  retrieveEmployees(): void {
-    this.auth.getAllEmployees().subscribe((data: any) => {
+  async retrieveEmployees(): Promise<void> {
+    this.auth.getAllEmployees().subscribe(async (data: any) => {
       this.employees = data;
       this.paymentCodeLoaded = true; // we now know employee.paymentCode
 
@@ -417,6 +421,12 @@ export class EmployeePageComponent implements OnInit {
         // console.log('hello', this.employee.attendance[this.today]);
         this.attendanceComplete = false;
       }
+      // ⬇️  Load this month’s attachments first
+      await this.loadMonthAttendanceAttachments(
+        this.givenMonth,
+        this.givenYear
+      );
+
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
 
       this.updatePerformanceGraphics(this.graphicPerformanceTimeRange);
@@ -787,6 +797,24 @@ export class EmployeePageComponent implements OnInit {
             cell.classList.add('border', 'border-black', 'p-4');
             cell.innerHTML = date.toString();
           }
+          // Build a plain date label "M-D-YYYY" (already have dateStr)
+          const dateLabel = dateStr;
+
+          // If an attachment exists for this date, append a small icon
+          const att = this.findAttachmentForDay(dateLabel);
+          if (att) {
+            const btn = document.createElement('button');
+            btn.className =
+              'inline-flex items-center justify-center ml-1 mt-1 px-1.5 py-0.5 rounded bg-white/80 hover:bg-white ring-1 ring-black/10';
+            btn.title = 'Voir la pièce jointe';
+            btn.innerHTML = '📎'; // replace with an <svg> if you prefer
+            btn.addEventListener('click', (ev) => {
+              ev.stopPropagation(); // don't trigger cell click (admin edit)
+              this.openAttachmentViewer(att, dateLabel);
+            });
+            cell.appendChild(btn);
+          }
+
           date++;
         }
         row.appendChild(cell);
@@ -1516,5 +1544,129 @@ export class EmployeePageComponent implements OnInit {
       alert('❌ Impossible de mettre à jour la présence');
       console.error(e);
     }
+  }
+
+  /* ===== Viewer state ===== */
+  attachmentViewer = {
+    open: false,
+    url: '',
+    kind: '' as 'image' | 'video',
+    dateLabel: '',
+  };
+
+  public closeAttachmentViewer() {
+    this.attachmentViewer = {
+      open: false,
+      url: '',
+      kind: '' as any,
+      dateLabel: '',
+    };
+  }
+
+  private openAttachmentViewer(att: any, dateLabel: string) {
+    const isImage = (att?.contentType || '').startsWith('image/');
+    const isVideo = (att?.contentType || '').startsWith('video/');
+    if (!isImage && !isVideo) return; // safety
+
+    this.attachmentViewer = {
+      open: true,
+      url: att.url,
+      kind: isImage ? 'image' : 'video',
+      dateLabel,
+    };
+  }
+
+  // Helper to build ISO range for Firestore query
+  private monthIsoRange(month: number, year: number) {
+    const m = String(month).padStart(2, '0');
+    const startISO = `${year}-${m}-01`;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const endISO = `${year}-${m}-${String(daysInMonth).padStart(2, '0')}`;
+    return { startISO, endISO };
+  }
+
+  private async loadMonthAttendanceAttachments(month: number, year: number) {
+    this.monthAttachmentsByLabel = {};
+
+    const userId = this.auth.currentUser?.uid; // your current choice
+    const employeeId = this.employee?.uid;
+    if (!userId || !employeeId) return;
+
+    const { startISO, endISO } = this.monthIsoRange(month, year);
+
+    const attendanceColl = this.afs.collection(
+      `users/${userId}/employees/${employeeId}/attendance`,
+      (ref) =>
+        ref.where('dateISO', '>=', startISO).where('dateISO', '<=', endISO)
+    );
+
+    const monthSnap = await firstValueFrom(attendanceColl.get());
+    const tasks = monthSnap.docs.map(async (dayDoc) => {
+      const d = dayDoc.data() as any;
+      const label = this.normalizeLabel(d?.dateLabel, d?.dateISO);
+      if (!label) return;
+
+      const attSnap = await firstValueFrom(
+        this.afs
+          .collection(
+            `users/${userId}/employees/${employeeId}/attendance/${dayDoc.id}/attachments`
+          )
+          .get()
+      );
+      const atts = attSnap.docs.map((s) => s.data());
+      if (!atts.length) return;
+
+      if (!this.monthAttachmentsByLabel[label]) {
+        this.monthAttachmentsByLabel[label] = [];
+      }
+      this.monthAttachmentsByLabel[label].push(...atts);
+    });
+
+    await Promise.all(tasks);
+
+    // Debug: ensure keys match your table labels like "8-12-2025"
+    console.log(
+      'attachments cache keys:',
+      Object.keys(this.monthAttachmentsByLabel)
+    );
+  }
+
+  /** Normalize any of:
+   * "8-12-2025"                -> "8-12-2025"
+   * "8-12-2025-11-56-21"       -> "8-12-2025"
+   * and if missing, use dateISO "2025-08-12" -> "8-12-2025"
+   */
+  private normalizeLabel(dateLabel?: string, dateISO?: string): string {
+    if (dateLabel) {
+      const p = dateLabel.split('-');
+      if (p.length >= 3) return `${+p[0]}-${+p[1]}-${p[2]}`;
+    }
+    if (dateISO) {
+      const [y, m, d] = dateISO.split('-').map(Number);
+      return `${m}-${d}-${y}`;
+    }
+    return '';
+  }
+
+  /** Subcollection-first, then legacy map fallback */
+  private findAttachmentForDay(dateLabel: string) {
+    // 1) subcollection cache
+    const list = this.monthAttachmentsByLabel[dateLabel];
+    if (list && list.length) return list[0];
+
+    // 2) legacy map on employee doc
+    const legacy = (this.employee as any)?.attendanceAttachments || {};
+    const keys = Object.keys(legacy).filter((k) => k.startsWith(dateLabel));
+    if (!keys.length) return null;
+
+    // pick latest time
+    const bestKey = keys.reduce((prev, curr) => {
+      const P = prev.split('-'),
+        C = curr.split('-');
+      const tp = (+P[3] || 0) * 3600 + (+P[4] || 0) * 60 + (+P[5] || 0);
+      const tc = (+C[3] || 0) * 3600 + (+C[4] || 0) * 60 + (+C[5] || 0);
+      return tc > tp ? curr : prev;
+    });
+    return legacy[bestKey];
   }
 }

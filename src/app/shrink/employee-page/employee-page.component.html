@@ -866,3 +866,36 @@
 
 
 
+<!-- Attachment viewer -->
+<div *ngIf="attachmentViewer.open"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl">
+    <div class="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
+      <h4 class="font-semibold text-gray-900 dark:text-gray-100">
+        Pièce jointe — {{ attachmentViewer.dateLabel }}
+      </h4>
+      <button (click)="closeAttachmentViewer()"
+              class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+        ✕
+      </button>
+    </div>
+
+    <div class="p-4">
+      <img *ngIf="attachmentViewer.kind === 'image'"
+           [src]="attachmentViewer.url"
+           class="w-full max-h-[70vh] object-contain rounded-lg border dark:border-gray-700" />
+
+      <video *ngIf="attachmentViewer.kind === 'video'"
+             [src]="attachmentViewer.url"
+             controls
+             class="w-full max-h-[70vh] rounded-lg border dark:border-gray-700"></video>
+    </div>
+
+    <div class="px-4 pb-4">
+      <a [href]="attachmentViewer.url" target="_blank"
+         class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-700 rounded-lg hover:bg-green-800">
+        Ouvrir dans un nouvel onglet
+      </a>
+    </div>
+  </div>
+</div>
