@@ -610,6 +610,7 @@
                         <span class="sr-only">Close modal</span>
                     </button>
                 </div>
+                
                 <!-- Modal body -->
                 <div>
                     <div class="grid gap-4 mb-4 sm:grid-cols-2">
@@ -617,13 +618,12 @@
               
                         <div>
                             <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Présence</label>
-                            <select [(ngModel)]="attendance" id="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                                <option selected=""></option>
-                                <option [ngValue]="'P'" >Present</option>
-                                <option [ngValue]="'A'" >Absent</option>
-                                <option [ngValue]="'L'" >Retard</option>
-                                <option [ngValue]="'N'" >Néant</option>
-                               
+                           <select #attendanceSelect [(ngModel)]="attendance">
+                              <option value=""></option>
+                              <option value="P">Present</option>
+                              <option value="A">Absent</option>
+                              <option value="L">Retard</option>
+                              <option value="N">Néant</option>
                             </select>
                         </div>
                         
@@ -632,9 +632,61 @@
                         
                        
                     </div>
+                    <!-- Attachment (photo/video) -->
+                    <div class="my-4 sm:col-span-2">
+                      <label class="block mb-4 text-sm font-medium text-gray-900 dark:text-white">
+                        Pièce jointe (image ou vidéo, max 10 Mo)
+                      </label>
+
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        (change)="onAttachmentSelected(employee, $event)"
+                        class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+                      />
+
+                      <!-- Size/type error -->
+                      <p *ngIf="employee._attachmentError"
+                        class="mt-2 text-sm text-red-600">
+                        {{ employee._attachmentError }}
+                      </p>
+
+                      <!-- Preview (image or video) -->
+                      <div *ngIf="employee._attachmentPreview" class="mt-3">
+                        <img
+                          *ngIf="employee._attachmentType?.startsWith('image/')"
+                          [src]="employee._attachmentPreview"
+                          alt="Preview"
+                          class="max-h-48 rounded-lg border"
+                        />
+                        <video
+                          *ngIf="employee._attachmentType?.startsWith('video/')"
+                          [src]="employee._attachmentPreview"
+                          controls
+                          class="w-full max-h-64 rounded-lg border"
+                        ></video>
+
+                        <div class="mt-2 flex items-center gap-3">
+                          <span class="text-xs text-gray-500">
+                            {{ (employee._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
+                          </span>
+                          <button
+                            type="button"
+                            (click)="clearAttachment(employee)"
+                            class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                     <div class="flex flex-row mx-auto justify-center space-x-4">
                         <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleAttendance()">Annuler</button>
-                        <button type="submit" (click)="addAttendance()" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " >Confirmer</button>
+                          <button
+                            type="submit"
+                            (click)="addAttendanceForEmployee(employee, attendanceSelect.value); employee.showAttendance = false">
+                            Confirmer
+                          </button>
                     
                     </div>
                   

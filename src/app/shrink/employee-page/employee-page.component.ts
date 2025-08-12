@@ -18,6 +18,7 @@ import { LocationCoordinates } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { firstValueFrom } from 'rxjs';
+import { faL } from '@fortawesome/free-solid-svg-icons';
 // import heic2any from 'heic2any';
 /* ─── Audit-receipt model ───────────────────────── */
 interface AuditReceipt {
@@ -807,7 +808,7 @@ export class EmployeePageComponent implements OnInit {
             btn.className =
               'inline-flex items-center justify-center ml-1 mt-1 px-1.5 py-0.5 rounded bg-white/80 hover:bg-white ring-1 ring-black/10';
             btn.title = 'Voir la pièce jointe';
-            btn.innerHTML = '📎'; // replace with an <svg> if you prefer
+            btn.innerHTML = '📷'; // replace with an <svg> if you prefer
             btn.addEventListener('click', (ev) => {
               ev.stopPropagation(); // don't trigger cell click (admin edit)
               this.openAttachmentViewer(att, dateLabel);
@@ -1006,6 +1007,80 @@ export class EmployeePageComponent implements OnInit {
     this.attendance = '';
     if (toggle) {
       this.toggleAttendance();
+    }
+  }
+
+  clearAttachment(em: any) {
+    em._attachmentError = '';
+    em._attachmentFile = null;
+    em._attachmentPreview = null;
+    em._attachmentType = null;
+    em._attachmentSize = null;
+  }
+  async addAttendanceForEmployee(
+    employee: any,
+    attendanceValue: string,
+    dateLabel: string = ''
+  ) {
+    if (!attendanceValue) {
+      alert('Remplissez la présence, Réessayez');
+      return;
+    }
+
+    try {
+      const label =
+        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // your existing format
+      const now = new Date();
+      const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
+
+      if (!this.auth.currentUser.uid) {
+        alert('Aucun utilisateur associé à cet employé.');
+        return;
+      }
+
+      // 1) legacy map (keeps current UI working)
+      await this.data.updateEmployeeAttendanceForUser(
+        { [label]: attendanceValue },
+        employee.uid!,
+        this.auth.currentUser.uid
+      );
+
+      // 2) scalable doc + subcollection
+      await this.data.setAttendanceEntry(
+        this.auth.currentUser.uid,
+        employee.uid!,
+        dateISO,
+        attendanceValue as any,
+        label,
+        this.auth.currentUser?.uid || 'unknown'
+      );
+
+      // 3) optional attachment to subcollection only (no more giant map on employee doc)
+      if (employee._attachmentFile) {
+        employee._uploading = true;
+        const att = await this.data.uploadAttendanceAttachment(
+          employee._attachmentFile,
+          employee.uid!,
+          this.auth.currentUser.uid,
+          dateISO,
+          this.auth.currentUser?.uid || 'unknown',
+          label
+        );
+        await this.data.addAttendanceAttachmentDoc(
+          this.auth.currentUser.uid,
+          employee.uid!,
+          dateISO,
+          att
+        );
+        employee._uploading = false;
+        this.clearAttachment(employee);
+      }
+      this.displayAttendance = false;
+
+      alert('Présence ajoutée avec succès');
+    } catch (e) {
+      console.error(e);
+      alert("Une erreur s'est produite lors de l'attendance, Réessayez");
     }
   }
   acceptVacation(date: string) {
@@ -1668,5 +1743,37 @@ export class EmployeePageComponent implements OnInit {
       return tc > tp ? curr : prev;
     });
     return legacy[bestKey];
+  }
+  onAttachmentSelected(em: any, evt: Event) {
+    const input = evt.target as HTMLInputElement;
+    const file = input.files?.[0];
+    em._attachmentError = '';
+    em._attachmentFile = null;
+    em._attachmentPreview = null;
+    em._attachmentType = null;
+    em._attachmentSize = null;
+
+    if (!file) return;
+
+    // Enforce type & size
+    const isOkType =
+      file.type.startsWith('image/') || file.type.startsWith('video/');
+    const maxBytes = 10 * 1024 * 1024; // 10MB
+    if (!isOkType) {
+      em._attachmentError = 'Seuls les fichiers image ou vidéo sont autorisés.';
+      return;
+    }
+    if (file.size > maxBytes) {
+      em._attachmentError = 'Fichier trop volumineux (max 10 Mo).';
+      return;
+    }
+
+    em._attachmentFile = file;
+    em._attachmentType = file.type;
+    em._attachmentSize = file.size;
+
+    const reader = new FileReader();
+    reader.onload = () => (em._attachmentPreview = reader.result as string);
+    reader.readAsDataURL(file);
   }
 }
