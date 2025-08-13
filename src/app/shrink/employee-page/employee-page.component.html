@@ -618,13 +618,13 @@
               
                         <div>
                             <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Présence</label>
-                           <select #attendanceSelect [(ngModel)]="attendance">
-                              <option value=""></option>
-                              <option value="P">Present</option>
-                              <option value="A">Absent</option>
-                              <option value="L">Retard</option>
-                              <option value="N">Néant</option>
-                            </select>
+                      <select #attendanceSelect [(ngModel)]="attendance" [disabled]=" !!savingAttendance || !!employee._uploading">
+                      <option value=""></option>
+                      <option value="P">Present</option>
+                      <option value="A">Absent</option>
+                      <option value="L">Retard</option>
+                      <option value="N">Néant</option>
+                    </select>
                         </div>
                         
                       
@@ -682,12 +682,16 @@
                     </div>
                     <div class="flex flex-row mx-auto justify-center space-x-4">
                         <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleAttendance()">Annuler</button>
-                          <button
-                            type="submit"
-                            (click)="addAttendanceForEmployee(employee, attendanceSelect.value); employee.showAttendance = false">
-                            Confirmer
-                          </button>
-                    
+                          <button type="button"
+                                [disabled]="savingAttendance || employee._uploading"
+                                (click)="addAttendanceForEmployee(employee, attendanceSelect.value); employee.showAttendance = false"
+                                class="inline-flex items-center gap-2 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto px-5 py-2.5">
+                          <svg *ngIf="savingAttendance" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"></circle>
+                            <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"></path>
+                          </svg>
+                          <span>{{ savingAttendance ? 'Enregistrement…' : 'Confirmer' }}</span>
+                        </button>
                     </div>
                   
                 </div>

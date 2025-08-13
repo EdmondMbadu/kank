@@ -35,6 +35,14 @@ interface AuditReceipt {
   styleUrls: ['./employee-page.component.css'],
 })
 export class EmployeePageComponent implements OnInit {
+  // state
+  savingAttendance = false;
+
+  // tiny sleep for UI smoothing (optional)
+  private sleep(ms: number) {
+    return new Promise((res) => setTimeout(res, ms));
+  }
+
   // Map: 'M-D-YYYY' -> array of attachments for that day
   monthAttachmentsByLabel: Record<string, any[]> = {};
 
@@ -990,24 +998,23 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
     try {
-      let val: any = { [this.time.todaysDate()]: this.attendance };
-      if (date !== '') {
-        val = { [date]: this.attendance };
-      }
+      const key = date ? date : this.time.todaysDate(); // if plain date, fine; if with time, great
+      const update = { [key]: this.attendance };
 
-      const value = await this.data.updateEmployeeAttendance(
-        val,
-        this.employee.uid!
-      );
-      // alert('Remplis avec succès!');
+      await this.data.updateEmployeeAttendance(update, this.employee.uid!);
+
+      // 🔵 local refresh
+      this.employee.attendance = {
+        ...(this.employee.attendance ?? {}),
+        ...update,
+      };
+      this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (err) {
       alert("Une erreur s'est produite lors de l'attendance, Réessayez");
       return;
     }
     this.attendance = '';
-    if (toggle) {
-      this.toggleAttendance();
-    }
+    if (toggle) this.toggleAttendance();
   }
 
   clearAttachment(em: any) {
@@ -1027,25 +1034,27 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
 
+    this.savingAttendance = true;
     try {
       const label =
-        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // your existing format
+        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // M-D-YYYY-HH-mm-ss
       const now = new Date();
       const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      const plainLabel = this.normalizeLabel(label, dateISO); // e.g. "8-12-2025"
 
       if (!this.auth.currentUser.uid) {
         alert('Aucun utilisateur associé à cet employé.');
         return;
       }
 
-      // 1) legacy map (keeps current UI working)
+      // 1) write legacy map
       await this.data.updateEmployeeAttendanceForUser(
         { [label]: attendanceValue },
         employee.uid!,
         this.auth.currentUser.uid
       );
 
-      // 2) scalable doc + subcollection
+      // 2) write day doc
       await this.data.setAttendanceEntry(
         this.auth.currentUser.uid,
         employee.uid!,
@@ -1055,10 +1064,11 @@ export class EmployeePageComponent implements OnInit {
         this.auth.currentUser?.uid || 'unknown'
       );
 
-      // 3) optional attachment to subcollection only (no more giant map on employee doc)
+      // 3) optional attachment
+      let attMeta: any = null;
       if (employee._attachmentFile) {
         employee._uploading = true;
-        const att = await this.data.uploadAttendanceAttachment(
+        attMeta = await this.data.uploadAttendanceAttachment(
           employee._attachmentFile,
           employee.uid!,
           this.auth.currentUser.uid,
@@ -1070,19 +1080,36 @@ export class EmployeePageComponent implements OnInit {
           this.auth.currentUser.uid,
           employee.uid!,
           dateISO,
-          att
+          attMeta
         );
         employee._uploading = false;
         this.clearAttachment(employee);
       }
-      this.displayAttendance = false;
 
+      // 🔵 Optimistic local update so the table refreshes immediately
+      this.employee.attendance = this.employee.attendance || {};
+      this.employee.attendance[label] = attendanceValue; // keep time-stamped key
+      if (attMeta) {
+        this.monthAttachmentsByLabel[plainLabel] = [
+          ...(this.monthAttachmentsByLabel[plainLabel] ?? []),
+          attMeta,
+        ];
+      }
+      this.generateAttendanceTable(this.givenMonth, this.givenYear);
+
+      // small delay so users can perceive the save
+      await this.sleep(350);
+
+      this.displayAttendance = false;
       alert('Présence ajoutée avec succès');
     } catch (e) {
       console.error(e);
       alert("Une erreur s'est produite lors de l'attendance, Réessayez");
+    } finally {
+      this.savingAttendance = false;
     }
   }
+
   acceptVacation(date: string) {
     if (!this.employee.attendance || this.employee.attendance[date] !== 'VP') {
       console.error(`Date ${date} not in progress or not found.`);
