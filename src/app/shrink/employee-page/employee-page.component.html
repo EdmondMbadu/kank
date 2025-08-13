@@ -104,7 +104,7 @@
             
                 <div class="flex flex-wrap">
                     <button *ngIf="this.auth.isAdmninistrator"  type="submit" (click)="toggleMakePayment()"  class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Paiement</button>
-                    <button *ngIf="this.auth.isAdmninistrator || auth.isDistributor"  type="submit" (click)="toggleAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Présence</button>
+                    <button *ngIf="true"  type="submit" (click)="toggleAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Présence</button>
                     <!-- <button  type="submit" (click)="determineAttendance()" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mt-4 ml-4  my-3">Présence Employée</button> -->
                <!-- Présence Employée (auto + GPS) -->
 <button
@@ -670,6 +670,10 @@
                           <span class="text-xs text-gray-500">
                             {{ (employee._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
                           </span>
+                          <div class="mt-1 text-xs text-gray-500" *ngIf="employee._attachmentTakenAt">
+                            📅 Pris le : {{ employee._attachmentTakenAt | date:'medium' }}
+                          </div>
+
                           <button
                             type="button"
                             (click)="clearAttachment(employee)"
@@ -927,9 +931,20 @@
      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-3xl">
     <div class="flex items-center justify-between px-4 py-3 border-b dark:border-gray-700">
-      <h4 class="font-semibold text-gray-900 dark:text-gray-100">
+    <h4 class="font-semibold text-gray-900 dark:text-gray-100">
         Pièce jointe — {{ attachmentViewer.dateLabel }}
+        <span *ngIf="attachmentViewer.takenAt"
+              class="ml-3 text-xs font-normal text-gray-500 dark:text-gray-300">
+          • Pris le : {{ attachmentViewer.takenAt | date:'medium' }}
+          <ng-container *ngIf="attachmentViewer.takenAtSource === 'storageUploadedAt'">
+            (date de téléversement)
+          </ng-container>
+          <ng-container *ngIf="attachmentViewer.takenAtSource === 'fileLastModified'">
+            (date du fichier)
+          </ng-container>
+        </span>
       </h4>
+
       <button (click)="closeAttachmentViewer()"
               class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
         ✕

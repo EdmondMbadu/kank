@@ -18,6 +18,9 @@ import { LocationCoordinates } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { firstValueFrom } from 'rxjs';
+// at the top, with other imports
+import exifr from 'exifr'; // if TS complains, use: import * as exifr from 'exifr';
+
 import { faL } from '@fortawesome/free-solid-svg-icons';
 // import heic2any from 'heic2any';
 /* ─── Audit-receipt model ───────────────────────── */
@@ -35,6 +38,19 @@ interface AuditReceipt {
   styleUrls: ['./employee-page.component.css'],
 })
 export class EmployeePageComponent implements OnInit {
+  attachmentViewer = {
+    open: false,
+    url: '',
+    kind: '' as 'image' | 'video',
+    dateLabel: '',
+    takenAt: null as Date | null,
+    takenAtSource: '' as
+      | 'exif'
+      | 'fileLastModified'
+      | 'storageUploadedAt'
+      | 'unknown'
+      | '',
+  };
   // state
   savingAttendance = false;
 
@@ -1024,6 +1040,91 @@ export class EmployeePageComponent implements OnInit {
     em._attachmentType = null;
     em._attachmentSize = null;
   }
+  // async addAttendanceForEmployee(
+  //   employee: any,
+  //   attendanceValue: string,
+  //   dateLabel: string = ''
+  // ) {
+  //   if (!attendanceValue) {
+  //     alert('Remplissez la présence, Réessayez');
+  //     return;
+  //   }
+
+  //   this.savingAttendance = true;
+  //   try {
+  //     const label =
+  //       dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // M-D-YYYY-HH-mm-ss
+  //     const now = new Date();
+  //     const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  //     const plainLabel = this.normalizeLabel(label, dateISO); // e.g. "8-12-2025"
+
+  //     if (!this.auth.currentUser.uid) {
+  //       alert('Aucun utilisateur associé à cet employé.');
+  //       return;
+  //     }
+
+  //     // 1) write legacy map
+  //     await this.data.updateEmployeeAttendanceForUser(
+  //       { [label]: attendanceValue },
+  //       employee.uid!,
+  //       this.auth.currentUser.uid
+  //     );
+
+  //     // 2) write day doc
+  //     await this.data.setAttendanceEntry(
+  //       this.auth.currentUser.uid,
+  //       employee.uid!,
+  //       dateISO,
+  //       attendanceValue as any,
+  //       label,
+  //       this.auth.currentUser?.uid || 'unknown'
+  //     );
+
+  //     // 3) optional attachment
+  //     let attMeta: any = null;
+  //     if (employee._attachmentFile) {
+  //       employee._uploading = true;
+  //       attMeta = await this.data.uploadAttendanceAttachment(
+  //         employee._attachmentFile,
+  //         employee.uid!,
+  //         this.auth.currentUser.uid,
+  //         dateISO,
+  //         this.auth.currentUser?.uid || 'unknown',
+  //         label
+  //       );
+  //       await this.data.addAttendanceAttachmentDoc(
+  //         this.auth.currentUser.uid,
+  //         employee.uid!,
+  //         dateISO,
+  //         attMeta
+  //       );
+  //       employee._uploading = false;
+  //       this.clearAttachment(employee);
+  //     }
+
+  //     // 🔵 Optimistic local update so the table refreshes immediately
+  //     this.employee.attendance = this.employee.attendance || {};
+  //     this.employee.attendance[label] = attendanceValue; // keep time-stamped key
+  //     if (attMeta) {
+  //       this.monthAttachmentsByLabel[plainLabel] = [
+  //         ...(this.monthAttachmentsByLabel[plainLabel] ?? []),
+  //         attMeta,
+  //       ];
+  //     }
+  //     this.generateAttendanceTable(this.givenMonth, this.givenYear);
+
+  //     // small delay so users can perceive the save
+  //     await this.sleep(350);
+
+  //     this.displayAttendance = false;
+  //     alert('Présence ajoutée avec succès');
+  //   } catch (e) {
+  //     console.error(e);
+  //     alert("Une erreur s'est produite lors de l'attendance, Réessayez");
+  //   } finally {
+  //     this.savingAttendance = false;
+  //   }
+  // }
   async addAttendanceForEmployee(
     employee: any,
     attendanceValue: string,
@@ -1037,24 +1138,17 @@ export class EmployeePageComponent implements OnInit {
     this.savingAttendance = true;
     try {
       const label =
-        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // M-D-YYYY-HH-mm-ss
+        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate();
       const now = new Date();
-      const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
-      const plainLabel = this.normalizeLabel(label, dateISO); // e.g. "8-12-2025"
+      const dateISO = now.toISOString().slice(0, 10);
+      const plainLabel = this.normalizeLabel(label, dateISO);
 
-      if (!this.auth.currentUser.uid) {
-        alert('Aucun utilisateur associé à cet employé.');
-        return;
-      }
-
-      // 1) write legacy map
+      // 1) legacy + day-doc writes (existing code) ...
       await this.data.updateEmployeeAttendanceForUser(
         { [label]: attendanceValue },
         employee.uid!,
         this.auth.currentUser.uid
       );
-
-      // 2) write day doc
       await this.data.setAttendanceEntry(
         this.auth.currentUser.uid,
         employee.uid!,
@@ -1064,10 +1158,14 @@ export class EmployeePageComponent implements OnInit {
         this.auth.currentUser?.uid || 'unknown'
       );
 
-      // 3) optional attachment
+      // 2) optional attachment (ENRICH WITH takenAt)
       let attMeta: any = null;
       if (employee._attachmentFile) {
         employee._uploading = true;
+
+        // read the “first created” date BEFORE uploading
+        const when = await this.readFirstCreated(employee._attachmentFile);
+
         attMeta = await this.data.uploadAttendanceAttachment(
           employee._attachmentFile,
           employee.uid!,
@@ -1076,19 +1174,30 @@ export class EmployeePageComponent implements OnInit {
           this.auth.currentUser?.uid || 'unknown',
           label
         );
+
+        // persist takenAt + source with the attachment document
+        if (when.date) {
+          attMeta = {
+            ...attMeta,
+            takenAt: when.date.getTime(),
+            takenAtSource: when.source,
+          };
+        }
+
         await this.data.addAttendanceAttachmentDoc(
           this.auth.currentUser.uid,
           employee.uid!,
           dateISO,
           attMeta
         );
+
         employee._uploading = false;
         this.clearAttachment(employee);
       }
 
-      // 🔵 Optimistic local update so the table refreshes immediately
+      // local refresh (existing) ...
       this.employee.attendance = this.employee.attendance || {};
-      this.employee.attendance[label] = attendanceValue; // keep time-stamped key
+      this.employee.attendance[label] = attendanceValue;
       if (attMeta) {
         this.monthAttachmentsByLabel[plainLabel] = [
           ...(this.monthAttachmentsByLabel[plainLabel] ?? []),
@@ -1097,9 +1206,7 @@ export class EmployeePageComponent implements OnInit {
       }
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
 
-      // small delay so users can perceive the save
       await this.sleep(350);
-
       this.displayAttendance = false;
       alert('Présence ajoutée avec succès');
     } catch (e) {
@@ -1648,34 +1755,40 @@ export class EmployeePageComponent implements OnInit {
     }
   }
 
-  /* ===== Viewer state ===== */
-  attachmentViewer = {
-    open: false,
-    url: '',
-    kind: '' as 'image' | 'video',
-    dateLabel: '',
-  };
-
   public closeAttachmentViewer() {
     this.attachmentViewer = {
       open: false,
       url: '',
       kind: '' as any,
       dateLabel: '',
+      takenAt: null,
+      takenAtSource: '',
     };
   }
 
   private openAttachmentViewer(att: any, dateLabel: string) {
     const isImage = (att?.contentType || '').startsWith('image/');
     const isVideo = (att?.contentType || '').startsWith('video/');
-    if (!isImage && !isVideo) return; // safety
+    if (!isImage && !isVideo) return;
 
     this.attachmentViewer = {
       open: true,
       url: att.url,
       kind: isImage ? 'image' : 'video',
       dateLabel,
+      takenAt: att?.takenAt ? new Date(att.takenAt) : null,
+      takenAtSource: (att?.takenAtSource as any) || '',
     };
+
+    // Fallback (old items): show Storage upload time as a hint
+    if (!this.attachmentViewer.takenAt && att?.url) {
+      this.storageUploadedAt(att.url).then((d) => {
+        if (d && !this.attachmentViewer.takenAt) {
+          this.attachmentViewer.takenAt = d;
+          this.attachmentViewer.takenAtSource = 'storageUploadedAt';
+        }
+      });
+    }
   }
 
   // Helper to build ISO range for Firestore query
@@ -1779,13 +1892,15 @@ export class EmployeePageComponent implements OnInit {
     em._attachmentPreview = null;
     em._attachmentType = null;
     em._attachmentSize = null;
+    em._attachmentTakenAt = null;
+    em._attachmentTakenAtSource = '';
 
     if (!file) return;
 
-    // Enforce type & size
+    // validate type/size (existing code)
     const isOkType =
       file.type.startsWith('image/') || file.type.startsWith('video/');
-    const maxBytes = 10 * 1024 * 1024; // 10MB
+    const maxBytes = 10 * 1024 * 1024;
     if (!isOkType) {
       em._attachmentError = 'Seuls les fichiers image ou vidéo sont autorisés.';
       return;
@@ -1795,6 +1910,7 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
 
+    // keep file + preview
     em._attachmentFile = file;
     em._attachmentType = file.type;
     em._attachmentSize = file.size;
@@ -1802,5 +1918,53 @@ export class EmployeePageComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => (em._attachmentPreview = reader.result as string);
     reader.readAsDataURL(file);
+
+    // NEW: read original capture date for preview
+    this.readFirstCreated(file).then((info) => {
+      em._attachmentTakenAt = info.date;
+      em._attachmentTakenAtSource = info.source;
+    });
+  }
+
+  /** Try to read the original capture/creation date from EXIF/QuickTime.
+   *  Falls back to the file's lastModified when EXIF isn't present. */
+  private async readFirstCreated(file: File): Promise<{
+    date: Date | null;
+    source: 'exif' | 'fileLastModified' | 'storageUploadedAt' | 'unknown';
+  }> {
+    try {
+      const tags: any = await exifr.parse(file); // no options needed
+      const candidates: (Date | undefined)[] = [
+        tags?.DateTimeOriginal, // photos
+        tags?.CreateDate, // photos/videos
+        tags?.MediaCreateDate, // videos
+        tags?.TrackCreateDate, // videos
+        tags?.ModifyDate,
+      ];
+      const valid = candidates.filter(
+        (d): d is Date => d instanceof Date && !isNaN(d.getTime())
+      );
+      if (valid.length) {
+        const earliest = valid.reduce((a, b) =>
+          a.getTime() <= b.getTime() ? a : b
+        );
+        return { date: earliest, source: 'exif' };
+      }
+    } catch {
+      /* ignore */
+    }
+    if (file.lastModified)
+      return { date: new Date(file.lastModified), source: 'fileLastModified' };
+    return { date: null, source: 'unknown' };
+  }
+
+  /** For older attachments that don’t have EXIF saved yet, use Storage upload time */
+  private async storageUploadedAt(url: string): Promise<Date | null> {
+    try {
+      const meta = await this.storage.storage.refFromURL(url).getMetadata();
+      return meta?.timeCreated ? new Date(meta.timeCreated) : null;
+    } catch {
+      return null;
+    }
   }
 }

@@ -69,6 +69,7 @@ export class Employee {
   _attachmentSize?: number | null;
   _attachmentError?: string | null;
   _uploading?: boolean;
+  _attachmentTakenAt?: string;
 }
 export class Avatar {
   path?: string;
