@@ -957,7 +957,7 @@ export class DataService {
       path,
       size: file.size,
       contentType: file.type || 'application/octet-stream',
-      uploadedAt: new Date().toISOString(),
+      uploadedAt: Date.now(), // ⟵ change from ISO string to number
       uploaderId,
     };
   }
@@ -972,6 +972,16 @@ export class DataService {
       .collection('attachments')
       .doc(); // autoId
     return ref.set(attachment);
+  }
+  // DataService
+  updateAttendanceKey(
+    userId: string,
+    employeeId: string,
+    label: string,
+    status: 'P' | 'A' | 'L' | 'N' | 'V' | 'VP'
+  ) {
+    const ref = this.afs.doc(`users/${userId}/employees/${employeeId}`);
+    return ref.update({ [`attendance.${label}`]: status });
   }
 
   // NEW: write parallel map attendanceAttachments[date] = attachment

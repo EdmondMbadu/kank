@@ -1018,6 +1018,7 @@ export class EmployeePageComponent implements OnInit {
       const update = { [key]: this.attendance };
 
       await this.data.updateEmployeeAttendance(update, this.employee.uid!);
+      // await. this.data.updateAttendanceKey()
 
       // 🔵 local refresh
       this.employee.attendance = {
@@ -1821,14 +1822,23 @@ export class EmployeePageComponent implements OnInit {
       const label = this.normalizeLabel(d?.dateLabel, d?.dateISO);
       if (!label) return;
 
-      const attSnap = await firstValueFrom(
-        this.afs
-          .collection(
-            `users/${userId}/employees/${employeeId}/attendance/${dayDoc.id}/attachments`
-          )
-          .get()
+      const attColl = this.afs.collection(
+        `users/${userId}/employees/${employeeId}/attendance/${dayDoc.id}/attachments`,
+        (ref) => ref.orderBy('uploadedAt', 'desc') // works with numeric uploadedAt
       );
-      const atts = attSnap.docs.map((s) => s.data());
+      const attSnap = await firstValueFrom(attColl.get());
+      // let atts = attSnap.docs.map((s) => s.data());
+      const atts = attSnap.docs
+        .map((s) => s.data() as any)
+        .sort((a, b) => {
+          const ta = typeof a.takenAt === 'number' ? a.takenAt : -Infinity;
+          const tb = typeof b.takenAt === 'number' ? b.takenAt : -Infinity;
+          const ua = this.ts(a.uploadedAt);
+          const ub = this.ts(b.uploadedAt);
+          // Prefer takenAt; if missing, fall back to uploadedAt
+          return (tb !== -Infinity ? tb : ub) - (ta !== -Infinity ? ta : ua);
+        });
+
       if (!atts.length) return;
 
       if (!this.monthAttachmentsByLabel[label]) {
@@ -1862,25 +1872,31 @@ export class EmployeePageComponent implements OnInit {
     }
     return '';
   }
+  private pickLatestAttachment(list: any[]) {
+    return list.slice().sort((a, b) => {
+      const ta = typeof a.takenAt === 'number' ? a.takenAt : -Infinity;
+      const tb = typeof b.takenAt === 'number' ? b.takenAt : -Infinity;
+      const ua = this.ts(a.uploadedAt);
+      const ub = this.ts(b.uploadedAt);
+      return (tb !== -Infinity ? tb : ub) - (ta !== -Infinity ? ta : ua);
+    })[0];
+  }
 
-  /** Subcollection-first, then legacy map fallback */
   private findAttachmentForDay(dateLabel: string) {
     // 1) subcollection cache
     const list = this.monthAttachmentsByLabel[dateLabel];
-    if (list && list.length) return list[0];
+    if (list?.length) return this.pickLatestAttachment(list);
 
-    // 2) legacy map on employee doc
+    // 2) legacy fallback (your existing code below) ...
     const legacy = (this.employee as any)?.attendanceAttachments || {};
     const keys = Object.keys(legacy).filter((k) => k.startsWith(dateLabel));
     if (!keys.length) return null;
-
-    // pick latest time
-    const bestKey = keys.reduce((prev, curr) => {
-      const P = prev.split('-'),
-        C = curr.split('-');
+    const bestKey = keys.reduce((p, c) => {
+      const P = p.split('-'),
+        C = c.split('-');
       const tp = (+P[3] || 0) * 3600 + (+P[4] || 0) * 60 + (+P[5] || 0);
       const tc = (+C[3] || 0) * 3600 + (+C[4] || 0) * 60 + (+C[5] || 0);
-      return tc > tp ? curr : prev;
+      return tc > tp ? c : p;
     });
     return legacy[bestKey];
   }
@@ -1966,5 +1982,14 @@ export class EmployeePageComponent implements OnInit {
     } catch {
       return null;
     }
+  }
+  // Put this near your other helpers
+  private ts(v: any): number {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const n = Date.parse(v);
+      return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
   }
 }

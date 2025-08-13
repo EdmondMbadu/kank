@@ -99,6 +99,6 @@ export type AttendanceAttachment = {
   path: string;
   size: number;
   contentType: string;
-  uploadedAt: string; // ISO string
+  uploadedAt: number; // ISO string
   uploaderId: string;
 };
