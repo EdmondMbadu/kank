@@ -179,34 +179,27 @@
                         {{ em._attachmentError }}
                       </p>
 
-                      <!-- Preview (image or video) -->
-                      <div *ngIf="em._attachmentPreview" class="mt-3">
-                        <img
-                          *ngIf="em._attachmentType?.startsWith('image/')"
-                          [src]="em._attachmentPreview"
-                          alt="Preview"
-                          class="max-h-48 rounded-lg border"
-                        />
-                        <video
-                          *ngIf="em._attachmentType?.startsWith('video/')"
-                          [src]="em._attachmentPreview"
-                          controls
-                          class="w-full max-h-64 rounded-lg border"
-                        ></video>
+                     <div class="mt-3" *ngIf="em._attachmentPreview">
+                        <img *ngIf="em._attachmentType?.startsWith('image/')" [src]="em._attachmentPreview" class="max-h-48 rounded-lg border" />
+                        <video *ngIf="em._attachmentType?.startsWith('video/')" [src]="em._attachmentPreview" controls class="w-full max-h-64 rounded-lg border"></video>
 
                         <div class="mt-2 flex items-center gap-3">
                           <span class="text-xs text-gray-500">
                             {{ (em._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
                           </span>
-                          <button
-                            type="button"
-                            (click)="clearAttachment(em)"
-                            class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100"
-                          >
+
+                          <!-- 🔵 NEW: show the original capture date -->
+                          <div class="mt-1 text-xs text-gray-500" *ngIf="em._attachmentTakenAt">
+                            📅 Pris le : {{ em._attachmentTakenAt | date:'medium' }}
+                          </div>
+
+                          <button type="button" (click)="clearAttachment(em)"
+                            class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-gray-300">
                             Retirer
                           </button>
                         </div>
                       </div>
+
                     </div>
 
                   <div class="flex flex-row mx-auto justify-center space-x-4">

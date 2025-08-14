@@ -9,6 +9,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { DataService } from 'src/app/services/data.service';
+import exifr from 'exifr';
 
 @Component({
   selector: 'app-team-ranking-month',
@@ -427,18 +428,22 @@ export class TeamRankingMonthComponent {
   onAttachmentSelected(em: any, evt: Event) {
     const input = evt.target as HTMLInputElement;
     const file = input.files?.[0];
+
     em._attachmentError = '';
     em._attachmentFile = null;
     em._attachmentPreview = null;
     em._attachmentType = null;
     em._attachmentSize = null;
 
+    // NEW: init preview date fields
+    em._attachmentTakenAt = null;
+    em._attachmentTakenAtSource = '';
+
     if (!file) return;
 
-    // Enforce type & size
     const isOkType =
       file.type.startsWith('image/') || file.type.startsWith('video/');
-    const maxBytes = 10 * 1024 * 1024; // 10MB
+    const maxBytes = 10 * 1024 * 1024;
     if (!isOkType) {
       em._attachmentError = 'Seuls les fichiers image ou vidéo sont autorisés.';
       return;
@@ -455,6 +460,12 @@ export class TeamRankingMonthComponent {
     const reader = new FileReader();
     reader.onload = () => (em._attachmentPreview = reader.result as string);
     reader.readAsDataURL(file);
+
+    // 🔵 NEW: figure out the original capture date, for display
+    this.readFirstCreated(file).then((info) => {
+      em._attachmentTakenAt = info.date;
+      em._attachmentTakenAtSource = info.source; // optional if you want to surface the source
+    });
   }
 
   clearAttachment(em: any) {
@@ -477,9 +488,9 @@ export class TeamRankingMonthComponent {
 
     try {
       const label =
-        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // your existing format
+        dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate();
       const now = new Date();
-      const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
+      const dateISO = now.toISOString().slice(0, 10);
 
       if (!employee.tempUser?.uid) {
         alert('Aucun utilisateur associé à cet employé.');
@@ -493,7 +504,7 @@ export class TeamRankingMonthComponent {
         employee.tempUser.uid
       );
 
-      // 2) scalable doc + subcollection
+      // 2) scalable day doc
       await this.data.setAttendanceEntry(
         employee.tempUser.uid,
         employee.uid!,
@@ -503,9 +514,13 @@ export class TeamRankingMonthComponent {
         this.auth.currentUser?.uid || 'unknown'
       );
 
-      // 3) optional attachment to subcollection only (no more giant map on employee doc)
+      // 3) optional attachment
       if (employee._attachmentFile) {
         employee._uploading = true;
+
+        // 🔵 NEW: read original capture date BEFORE upload
+        const when = await this.readFirstCreated(employee._attachmentFile);
+
         const att = await this.data.uploadAttendanceAttachment(
           employee._attachmentFile,
           employee.uid!,
@@ -514,12 +529,21 @@ export class TeamRankingMonthComponent {
           this.auth.currentUser?.uid || 'unknown',
           label
         );
+
+        // 🔵 NEW: persist takenAt (+ source) alongside your existing metadata
+        let attMeta: any = { ...att };
+        if (when.date) {
+          attMeta.takenAt = when.date.getTime();
+          attMeta.takenAtSource = when.source; // 'exif' | 'fileLastModified' | 'unknown'
+        }
+
         await this.data.addAttendanceAttachmentDoc(
           employee.tempUser.uid,
           employee.uid!,
           dateISO,
-          att
+          attMeta
         );
+
         employee._uploading = false;
         this.clearAttachment(employee);
       }
@@ -529,5 +553,39 @@ export class TeamRankingMonthComponent {
       console.error(e);
       alert("Une erreur s'est produite lors de l'attendance, Réessayez");
     }
+  }
+
+  /** Read original capture/creation date for image/video.
+   *  Falls back to file.lastModified when metadata isn't present. */
+  private async readFirstCreated(file: File): Promise<{
+    date: Date | null;
+    source: 'exif' | 'fileLastModified' | 'unknown';
+  }> {
+    try {
+      const tags: any = await exifr.parse(file);
+      const candidates: (Date | undefined)[] = [
+        tags?.DateTimeOriginal, // photos
+        tags?.CreateDate, // photos/videos
+        tags?.MediaCreateDate, // videos (QuickTime/MP4)
+        tags?.TrackCreateDate, // videos
+        tags?.ModifyDate,
+      ];
+      const valid = candidates.filter(
+        (d): d is Date => d instanceof Date && !isNaN(d.getTime())
+      );
+      if (valid.length) {
+        const earliest = valid.reduce((a, b) =>
+          a.getTime() <= b.getTime() ? a : b
+        );
+        return { date: earliest, source: 'exif' };
+      }
+    } catch {
+      /* ignore */
+    }
+
+    if (file.lastModified) {
+      return { date: new Date(file.lastModified), source: 'fileLastModified' };
+    }
+    return { date: null, source: 'unknown' };
   }
 }
