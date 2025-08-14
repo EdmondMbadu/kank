@@ -1946,15 +1946,23 @@ export class EmployeePageComponent implements OnInit {
    *  Falls back to the file's lastModified when EXIF isn't present. */
   private async readFirstCreated(file: File): Promise<{
     date: Date | null;
-    source: 'exif' | 'fileLastModified' | 'storageUploadedAt' | 'unknown';
+    source:
+      | 'exif'
+      | 'filename'
+      | 'mp4-mvhd'
+      | 'mp4-mdhd'
+      | 'fileLastModified'
+      | 'storageUploadedAt'
+      | 'unknown';
   }> {
+    // 1) Try EXIF / QuickTime metadata via exifr
     try {
-      const tags: any = await exifr.parse(file); // no options needed
+      const tags: any = await exifr.parse(file);
       const candidates: (Date | undefined)[] = [
-        tags?.DateTimeOriginal, // photos
-        tags?.CreateDate, // photos/videos
-        tags?.MediaCreateDate, // videos
-        tags?.TrackCreateDate, // videos
+        tags?.DateTimeOriginal,
+        tags?.CreateDate,
+        tags?.MediaCreateDate,
+        tags?.TrackCreateDate,
         tags?.ModifyDate,
       ];
       const valid = candidates.filter(
@@ -1969,8 +1977,21 @@ export class EmployeePageComponent implements OnInit {
     } catch {
       /* ignore */
     }
+
+    // 2) Filename heuristics (very common on Android)
+    const fromName = this.parseTakenAtFromFilename(file.name);
+    if (fromName) return { date: fromName, source: 'filename' };
+
+    // 3) MP4 container (mvhd/mdhd). Read small chunk only; good last resort.
+    if (file.type.startsWith('video/')) {
+      const mp4 = await this.parseMp4CreationTime(file);
+      if (mp4.date) return mp4;
+    }
+
+    // 4) Fallback: file system timestamp (often "now" on Android galleries)
     if (file.lastModified)
       return { date: new Date(file.lastModified), source: 'fileLastModified' };
+
     return { date: null, source: 'unknown' };
   }
 
@@ -1991,5 +2012,95 @@ export class EmployeePageComponent implements OnInit {
       return Number.isFinite(n) ? n : 0;
     }
     return 0;
+  }
+
+  /** Try common Android/Gallery filename patterns to recover the timestamp. */
+  private parseTakenAtFromFilename(name: string): Date | null {
+    const n = name;
+
+    const pats: RegExp[] = [
+      // VID_YYYYMMDD_HHMMSS.mp4   (Samsung, many Android)
+      /VID[_-]?(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})/i,
+      // PXL_YYYYMMDD_HHMMSS.*.MP4 (Google Camera / Pixel)
+      /PXL[_-]?(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})/i,
+      // WhatsApp Video 2024-06-01 at 12.34.56.mp4
+      /WhatsApp\s+Video\s+(\d{4})-(\d{2})-(\d{2})\s+at\s+(\d{2})\.(\d{2})\.(\d{2})/i,
+      // Generic YYYYMMDD_HHMMSS
+      /(\d{4})(\d{2})(\d{2})[_-](\d{2})(\d{2})(\d{2})/,
+    ];
+
+    for (const rx of pats) {
+      const m = n.match(rx);
+      if (m) {
+        const [, y, mo, d, h, mi, s] = m;
+        const dt = new Date(
+          Number(y),
+          Number(mo) - 1,
+          Number(d),
+          Number(h),
+          Number(mi),
+          Number(s)
+        );
+        if (Number.isFinite(+dt)) return dt;
+      }
+    }
+    return null;
+  }
+
+  /** Optional: light MP4 parser to read creation time from mvhd/mdhd (seconds since 1904-01-01 UTC). */
+  private async parseMp4CreationTime(file: File): Promise<{
+    date: Date | null;
+    source: 'mp4-mvhd' | 'mp4-mdhd' | 'unknown';
+  }> {
+    try {
+      // Read only the first few MB to keep it snappy; most phones place 'moov' up front.
+      const CHUNK = Math.min(file.size, 2 * 1024 * 1024);
+      const buf = await file.slice(0, CHUNK).arrayBuffer();
+      const data = new DataView(buf);
+      const len = data.byteLength;
+      let offset = 0;
+      const MP4_EPOCH = Math.floor(Date.UTC(1904, 0, 1) / 1000);
+
+      const u32 = (o: number) => data.getUint32(o);
+      const u64 = (o: number) =>
+        data.getUint32(o) * 2 ** 32 + data.getUint32(o + 4);
+      const typeAt = (o: number) =>
+        String.fromCharCode(
+          data.getUint8(o + 4),
+          data.getUint8(o + 5),
+          data.getUint8(o + 6),
+          data.getUint8(o + 7)
+        );
+
+      while (offset + 8 <= len) {
+        const size = u32(offset);
+        if (!size || size < 8) break;
+        const type = typeAt(offset);
+
+        if (type === 'mvhd' || type === 'mdhd') {
+          const boxStart = offset + 8;
+          const version = data.getUint8(boxStart);
+          let secs: number;
+          if (version === 1) {
+            // creation_time is 8 bytes at boxStart+4
+            secs = Number(u64(boxStart + 4)) - MP4_EPOCH;
+          } else {
+            // version 0: creation_time is 4 bytes at boxStart+4
+            secs = u32(boxStart + 4) - MP4_EPOCH;
+          }
+          if (secs > 0 && secs < 1e12) {
+            return {
+              date: new Date(secs * 1000),
+              source: type === 'mvhd' ? 'mp4-mvhd' : 'mp4-mdhd',
+            };
+          }
+        }
+
+        offset += size; // jump to next box
+      }
+    } catch {
+      // ignore
+    }
+    return { date: null, source: 'unknown' };
   }
 }
