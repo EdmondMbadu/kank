@@ -1772,16 +1772,24 @@ export class EmployeePageComponent implements OnInit {
     const isVideo = (att?.contentType || '').startsWith('video/');
     if (!isImage && !isVideo) return;
 
+    const takenAtDate =
+      this.coerceToDate(att?.takenAt) ||
+      this.coerceToDate(att?.createdAt) ||
+      this.coerceToDate(att?.uploadedAt) ||
+      null;
+
     this.attachmentViewer = {
       open: true,
       url: att.url,
       kind: isImage ? 'image' : 'video',
       dateLabel,
-      takenAt: att?.takenAt ? new Date(att.takenAt) : null,
-      takenAtSource: (att?.takenAtSource as any) || '',
+      takenAt: takenAtDate,
+      takenAtSource:
+        (att?.takenAtSource as any) ||
+        (att?.createdAt ? 'createdAt' : att?.uploadedAt ? 'uploadedAt' : ''),
     };
 
-    // Fallback (old items): show Storage upload time as a hint
+    // Fallback (older items): use Storage metadata if still missing
     if (!this.attachmentViewer.takenAt && att?.url) {
       this.storageUploadedAt(att.url).then((d) => {
         if (d && !this.attachmentViewer.takenAt) {
@@ -2102,5 +2110,54 @@ export class EmployeePageComponent implements OnInit {
       // ignore
     }
     return { date: null, source: 'unknown' };
+  }
+  private coerceToDate(v: any): Date | null {
+    if (!v) return null;
+    if (v instanceof Date && !isNaN(+v)) return v;
+
+    if (typeof v === 'number') {
+      // handle seconds vs milliseconds
+      const ms = v < 1e12 ? v * 1000 : v;
+      const d = new Date(ms);
+      return isNaN(+d) ? null : d;
+    }
+
+    if (typeof v === 'string') {
+      const n = Date.parse(v);
+      return Number.isFinite(n) ? new Date(n) : null;
+    }
+
+    // Firestore Timestamp (both compat and mod SDKs expose .toDate())
+    if (v && typeof v.toDate === 'function') {
+      try {
+        const d = v.toDate();
+        return d instanceof Date && !isNaN(+d) ? d : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  formatKinshasa(val: any, locale = 'fr'): string {
+    const d = this.coerceToDate(val);
+    if (!d) return ''; // keep empty so your UI shows only the label
+
+    try {
+      return new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'medium',
+        timeZone: 'Africa/Kinshasa',
+      }).format(d);
+    } catch {
+      // Fallback for rare environments lacking the IANA zone:
+      // show Kinshasa by formatting UTC after adding +1h
+      const plus1h = new Date(d.getTime() + 60 * 60 * 1000);
+      return new Intl.DateTimeFormat(locale, {
+        dateStyle: 'medium',
+        timeStyle: 'medium',
+        timeZone: 'UTC',
+      }).format(plus1h);
+    }
   }
 }

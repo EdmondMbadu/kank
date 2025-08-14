@@ -678,7 +678,7 @@
                             {{ (employee._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
                           </span>
                           <div class="mt-1 text-xs text-gray-500" *ngIf="employee._attachmentTakenAt">
-                            📅 Pris le : {{ employee._attachmentTakenAt | date:'medium' }}
+                            📅 Pris le :  {{ formatKinshasa(employee._attachmentTakenAt) }}
                           </div>
 
                           <button
@@ -942,13 +942,15 @@
         Pièce jointe — {{ attachmentViewer.dateLabel }}
         <span *ngIf="attachmentViewer.takenAt"
               class="ml-3 text-xs font-normal text-gray-500 dark:text-gray-300">
-          • Pris le : {{ attachmentViewer.takenAt | date:'medium' }}
+         • Pris le : {{ formatKinshasa(attachmentViewer.takenAt) }}
+         <span class="ml-1 text-xs text-gray-500">(heure de Kinshasa, UTC+01:00)</span>
           <ng-container *ngIf="attachmentViewer.takenAtSource === 'storageUploadedAt'">
             (date de téléversement)
           </ng-container>
           <ng-container *ngIf="attachmentViewer.takenAtSource === 'fileLastModified'">
             (date du fichier)
           </ng-container>
+
         </span>
       </h4>
 
