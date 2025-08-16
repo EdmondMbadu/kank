@@ -806,7 +806,7 @@ export class EmployeePageComponent implements OnInit {
                 'border-black',
                 'text-white'
               );
-              cell.innerHTML = `${date}<br>À vérifier${
+              cell.innerHTML = `${date}<br>Anomalie${
                 time ? `<br><span class="small-time">${time}</span>` : ''
               }`;
             } else if (attendance === 'L') {
