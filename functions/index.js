@@ -293,7 +293,7 @@ exports.sendClientCompletionSMS = functions.firestore
 
         // Construct your message
         const message = `${fullName},
-Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. En cas de probleme ou d'erreurs benga 0825333567. Merci pona confiance na Fondation Gervais`;
+Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. En cas de probleme ou d'erreurs benga 0825333567. Merci pona confiance na FONDATION GERVAIS`;
 
         console.log(`Constructed message: ${message}`);
 
@@ -366,7 +366,7 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
       lastName || "Client"
     },\n` +
     `Ozali programmer lelo pona kofuta  FC ${minPayment}. Otikali na niongo ya FC ${debtLeft}. Epargnes na yo ezali: FC ${savings}.\n` +
-    `Merci pona confiance na Fondation Gervais.`;
+    `Merci pona confiance na FONDATION GERVAIS.`;
 
     try {
       // Send SMS via Africa's Talking
@@ -424,7 +424,7 @@ exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
   const code = generate4DigitCode();
 
   // Construct your message in Lingala or French as you prefer
-  const message = `${code} ezali code na yo - Fondation Gervais.`;
+  const message = `${code} ezali code na yo - FONDATION GERVAIS.`;
 
   console.log(`Sending code '${code}' to phone: ${formattedPhone}`);
 
@@ -531,7 +531,7 @@ exports.sendClientRegistrationSMS = functions.firestore
 Osengi niongo ya ${montant} FC. Niongo okozua yango le ${requestDate}.
 Ofuti mobongo ya frais nionso ${frais} FC. Epargnes na yo otie ezali ${savings} FC.
 En cas de probleme ou d'erreurs benga 0825333567.
-Merci pona confiance na Fondation Gervais`;
+Merci pona confiance na FONDATION GERVAIS`;
 
       console.log("Registration SMS message:", message);
       console.log("Sending to:", formattedNumber);
@@ -625,7 +625,7 @@ Merci pona confiance na Fondation Gervais`;
         } else {
         // Construct the auditor SMS
           const auditorMessage = `${chosenAudit.name},
-Oponami pona ko verifier ba information ya client ${fullName} ya location ${clientLocation}. Numero na ye ezali ${phoneNumber}. Benga ye pe verifier ba information na ye. Merci pona mosala malamu na Fondation Gervais`;
+Oponami pona ko verifier ba information ya client ${fullName} ya location ${clientLocation}. Numero na ye ezali ${phoneNumber}. Benga ye pe verifier ba information na ye. Merci pona mosala malamu na FONDATION GERVAIS`;
 
           try {
             const response = await sms.send({
@@ -829,7 +829,7 @@ exports.scheduledSendReminders = functions.pubsub
           `Otikali na niongo ya ${debtLeft} FC. ` +
           `Epargnes na yo ezali: ${savings}FC.\n` +
           `En cas de probleme ou d'erreurs benga 0825333567.`+
-          `Merci pona confiance na Fondation Gervais.`;
+          `Merci pona confiance na FONDATION GERVAIS.`;
 
           try {
           // Send SMS via Africa's Talking
@@ -970,7 +970,7 @@ exports.sendPaymentOrSavingsUpdateSMS = functions.firestore
         message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
 En cas de probleme ou d'erreurs benga 0825333567.
-Merci pona confiance na Fondation Gervais.`;
+Merci pona confiance na FONDATION GERVAIS.`;
       }
 
       // CASE 2 or 3: Only savings changed
@@ -981,14 +981,14 @@ Merci pona confiance na Fondation Gervais.`;
           message = `${fullName}, Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
 En cas de probleme ou d'erreurs benga 0825333567.
-Merci pona confiance na Fondation Gervais.`;
+Merci pona confiance na FONDATION GERVAIS.`;
         } else {
         // CASE 3: savings removed
         // {firstname}{lastname}, Olongoli epargnes na yo ya {savingsRemoved} FC
           message = `${fullName}, Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
 En cas de probleme ou d'erreurs benga 0825333567.
-Merci pona confiance na Fondation Gervais.`;
+Merci pona confiance na FONDATION GERVAIS.`;
         }
       }
 
@@ -1002,14 +1002,14 @@ Merci pona confiance na Fondation Gervais.`;
           message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
 En cas de probleme ou d'erreurs benga 0825333567.
-Merci pona confiance na Fondation Gervais.`;
+Merci pona confiance na FONDATION GERVAIS.`;
         } else {
         // If you need a "removal" version, do:
         // "Ofuti mombongo ya {paymentJustPaid} FC. Olongoli epargnes na yo ya {savingsRemoved} FC"
           message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
 En cas de probleme ou d'erreurs benga 0825333567. 
-Merci pona confiance na Fondation Gervais.`;
+Merci pona confiance na FONDATION GERVAIS.`;
         }
       }
 
@@ -1051,14 +1051,13 @@ Merci pona confiance na Fondation Gervais.`;
           congratsMessage =
 `${fullName},
 🎉 Félicitations! Osilisi niongo (solde: 0 FC).
-Merci pona confiance na Fondation Gervais.`;
+Merci pona confiance na FONDATION GERVAIS.`;
         } else {
         // Short invite to come back + perks summary
           congratsMessage =
 `${fullName},
-🎉 Félicitations! Osilisi niongo (solde: 0 FC). Score Crédit: ${creditScore}.
-Okoki kozwa lisusu niongo epayi na biso. 70+: prêt à tout moment; 90+: +5% épargne; 100: tombola. Rappel: 30% épargne.
-Merci pona confiance na Fondation Gervais.`;
+🎉 Félicitations! Osilisi kofuta (solde: 0 FC). Okoki kozua lisusu. Soki obongisi efuteli makambo ya kitoko eza: leka na bureau po oyeba nyoso. Merci pona confiance.
+Merci pona confiance na FONDATION GERVAIS.`;
         }
 
         try {
@@ -1093,7 +1092,7 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
     if (!to) {failed++; continue;}
 
     const msg =
-  `Fondation Gervais : ${e.firstName} ${e.lastName}, ` +
+  `FONDATION GERVAIS : ${e.firstName} ${e.lastName}, ` +
   `votre ${type} est disponible. ` +
   `Allez le SIGNER dans l’appli pour déclencher le virement. ` +
   `Montant incorrect? Contactez +1 2156877614.`;
