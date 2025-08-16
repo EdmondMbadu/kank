@@ -943,10 +943,12 @@ exports.sendPaymentOrSavingsUpdateSMS = functions.firestore
 
       // We'll need the latest payment if 'payments' changed
       let paymentJustPaid = null;
+      let latestPaymentKey = null;
       if (paymentsChanged) {
         const latest = findLatestPayment(paymentsAfter);
         if (latest) {
           paymentJustPaid = Number(latest.amount) || 0;
+          latestPaymentKey = latest.key;
         }
       }
 
@@ -1023,6 +1025,55 @@ Merci pona confiance na Fondation Gervais.`;
       } catch (error) {
         console.error("Error sending SMS:", error);
       }
+
+
+      // ─────────────────────────────────────────────────────────────
+      // NEW: Detect "just finished" transition (after a payment)
+      //      Only when debtLeft went from > 0 to <= 0 AND payments changed.
+      // ─────────────────────────────────────────────────────────────
+      const debtBefore = Number(beforeData.debtLeft) || 0;
+      const debtAfter = Number(afterData.debtLeft) || 0;
+
+      const finishedNow =
+      paymentsChanged &&
+      debtBefore > 0 &&
+      debtAfter <= 0;
+
+
+      if (finishedNow) {
+        console.log("🎉 Client just finished their debt. latestPaymentKey:", latestPaymentKey);
+
+        const creditScore = Number(afterData.creditScore) || 0;
+
+        let congratsMessage = "";
+        if (creditScore < 20) {
+        // Short congrats only
+          congratsMessage =
+`${fullName},
+🎉 Félicitations! Osilisi niongo (solde: 0 FC).
+Merci pona confiance na Fondation Gervais.`;
+        } else {
+        // Short invite to come back + perks summary
+          congratsMessage =
+`${fullName},
+🎉 Félicitations! Osilisi niongo (solde: 0 FC). Score Crédit: ${creditScore}.
+Okoki kozwa lisusu niongo epayi na biso. 70+: prêt à tout moment; 90+: +5% épargne; 100: tombola. Rappel: 30% épargne.
+Merci pona confiance na Fondation Gervais.`;
+        }
+
+        try {
+          const resp2 = await sms.send({
+            to: [formattedNumber],
+            message: congratsMessage,
+          });
+          console.log(`Congrats SMS sent to ${formattedNumber} =>`, resp2);
+        } catch (err) {
+          console.error("Error sending Congrats SMS:", err);
+        }
+      } else {
+        console.log("No 'finished debt' transition detected for this update.");
+      }
+
 
       return null;
     });
