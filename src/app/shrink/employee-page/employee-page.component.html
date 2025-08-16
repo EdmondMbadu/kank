@@ -653,8 +653,9 @@
                             </ng-template>
 
                             <span class="text-xs text-gray-500">
-                              Règle : ≤ 09:05 → Présent • &gt; 09:05 → En retard • autre jour → Fraude
+                              Règle : ≤ {{ todayCutoffLabel }} → Présent • &gt; {{ todayCutoffLabel }} → En retard • autre jour → Anomalie
                             </span>
+
                           </div>
                         </div>
 

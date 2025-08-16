@@ -1393,11 +1393,8 @@ export class EmployeePageComponent implements OnInit {
     this.errorMessage = null;
     this.withinRadius = null;
 
-    // Calcule P ou L selon l'heure
-    const currentAttendance: 'P' | 'L' = this.time.isEmployeeOnTime(
-      this.limitHour,
-      this.limitMinutes
-    )
+    const { hour: cutH, minute: cutM } = this.getCutoffFor(new Date());
+    const currentAttendance: 'P' | 'L' = this.time.isEmployeeOnTime(cutH, cutM)
       ? 'P'
       : 'L';
 
@@ -2226,12 +2223,13 @@ export class EmployeePageComponent implements OnInit {
     const today = new Date();
     if (!this.sameKinDay(takenAt, today)) return 'F';
 
-    const p = this.kinParts(takenAt);
-    if (p.hh < this.limitHour) return 'P';
-    if (p.hh > this.limitHour) return 'L';
-    // p.hh === 9
-    return p.mm <= this.limitMinutes ? 'P' : 'L';
+    const { hour: H, minute: M } = this.getCutoffFor(takenAt);
+    const p = this.kinParts(takenAt); // expects p.hh / p.mm in Kinshasa time
+    if (p.hh < H) return 'P';
+    if (p.hh > H) return 'L';
+    return p.mm <= M ? 'P' : 'L';
   }
+
   // async confirmPhotoAttendance(employee: any) {
   //   if (!employee._attachmentFile) {
   //     alert("Ajoutez d'abord une photo (obligatoire).");
@@ -2282,5 +2280,30 @@ export class EmployeePageComponent implements OnInit {
     this.attendance = status; // used by your pipeline
     // 🔴 Do NOT pass a dateLabel → will use submission time for the key
     await this.addAttendanceForEmployee(employee, status);
+  }
+
+  /** Kinshasa-localized Date from a UTC/Local Date */
+  private kinDate(d: Date): Date {
+    return new Date(d.toLocaleString('en-US', { timeZone: 'Africa/Kinshasa' }));
+  }
+
+  /** Saturday in Kinshasa? (0=Sun…6=Sat) */
+  private isKinSaturday(d: Date): boolean {
+    return this.kinDate(d).getDay() === 6;
+  }
+
+  /** Returns the cutoff (hour, minute) for a given Kinshasa day */
+  private getCutoffFor(d: Date): { hour: number; minute: number } {
+    return this.isKinSaturday(d)
+      ? { hour: 11, minute: 5 }
+      : { hour: this.limitHour, minute: this.limitMinutes };
+  }
+
+  /** Label for today's cutoff in Kinshasa (e.g., "09:05" or "11:05" on Saturday) */
+  get todayCutoffLabel(): string {
+    const { hour, minute } = this.getCutoffFor(new Date());
+    const hh = String(hour).padStart(2, '0');
+    const mm = String(minute).padStart(2, '0');
+    return `${hh}:${mm}`;
   }
 }
