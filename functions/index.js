@@ -1050,13 +1050,13 @@ Merci pona confiance na Fondation Gervais.`;
         // Short congrats only
           congratsMessage =
 `${fullName},
-🎉 Félicitations! Osilisi niongo (solde: 0 FC).
+🎉 Félicitations ${fullName}! Osilisi niongo (solde: 0 FC).
 Merci pona confiance na Fondation Gervais.`;
         } else {
         // Short invite to come back + perks summary
           congratsMessage =
 `${fullName},
-🎉 Félicitations! Osilisi niongo (solde: 0 FC). Score Crédit: ${creditScore}.
+🎉 Félicitations ${fullName}! Osilisi niongo (solde: 0 FC). Score Crédit: ${creditScore}.
 Okoki kozwa lisusu niongo epayi na biso. 70+: prêt à tout moment; 90+: +5% épargne; 100: tombola. Rappel: 30% épargne.
 Merci pona confiance na Fondation Gervais.`;
         }
