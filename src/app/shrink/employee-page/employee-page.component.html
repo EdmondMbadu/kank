@@ -616,7 +616,7 @@
                 <div>
                     <div class="grid gap-4 mb-4 sm:grid-cols-2">
                      
-              
+<!--               
                         <div>
                             <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Présence</label>
                       <select #attendanceSelect [(ngModel)]="attendance" [disabled]=" !!savingAttendance || !!employee._uploading">
@@ -626,7 +626,38 @@
                       <option value="L">Retard</option>
                       <option value="N">Néant</option>
                     </select>
+                        </div> -->
+                        <!-- Computed status preview (no manual choice) -->
+                        <div class="sm:col-span-2">
+                          <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Statut (calculé)</label>
+
+                          <div class="flex items-center gap-3">
+                           <ng-container *ngIf="employee._attachmentTakenAt as t; else noPhotoYet">
+                              <ng-container *ngIf="computeAttendanceFromPhoto($any(t)) as s">
+                                <span
+                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                  [ngClass]="{
+                                    'bg-green-100 text-green-800': s === 'P',
+                                    'bg-orange-100 text-orange-800': s === 'L',
+                                    'bg-gray-200 text-gray-800': s === 'F'
+                                  }"
+                                >
+                                  {{ s === 'P' ? 'Présent' : s === 'L' ? 'En retard' : 'À vérifier' }}
+                                </span>
+                              </ng-container>
+                            </ng-container>
+
+
+                            <ng-template #noPhotoYet>
+                              <span class="text-xs text-gray-500">Ajoutez une photo pour calculer le statut…</span>
+                            </ng-template>
+
+                            <span class="text-xs text-gray-500">
+                              Règle : ≤ 09:05 → Présent • &gt; 09:05 → En retard • autre jour → Fraude
+                            </span>
+                          </div>
                         </div>
+
                         
                       
                        
@@ -692,7 +723,7 @@
                       </div>
                     </div>
                     <div class="flex flex-row mx-auto justify-center space-x-4">
-                        <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleAttendance()">Annuler</button>
+                        <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleAttendance()">Annuler</button>
                           <button type="button"
                                 [disabled]="savingAttendance || employee._uploading"
                                 (click)="addAttendanceForEmployee(employee, attendanceSelect.value); employee.showAttendance = false"
@@ -702,7 +733,18 @@
                             <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"></path>
                           </svg>
                           <span>{{ savingAttendance ? 'Enregistrement…' : 'Confirmer' }}</span>
-                        </button>
+                        </button> -->
+                        <button type="button"
+                            [disabled]="savingAttendance || employee._uploading || !employee._attachmentFile"
+                            (click)="confirmPhotoAttendance(employee)"
+                            class="inline-flex items-center gap-2 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto px-5 py-2.5">
+                      <svg *ngIf="savingAttendance" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"></circle>
+                        <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"></path>
+                      </svg>
+                      <span>{{ savingAttendance ? 'Enregistrement…' : 'Confirmer' }}</span>
+                    </button>
+
                     </div>
                   
                 </div>

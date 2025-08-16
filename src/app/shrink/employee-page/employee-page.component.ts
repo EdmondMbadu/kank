@@ -76,6 +76,9 @@ export class EmployeePageComponent implements OnInit {
   lastAccuracy?: number;
   lastDistance?: number;
   lastFixAt?: Date;
+  // Cutoff for "on time"
+  // limitHour = 9;
+  // limitMinutes = 5; // 09:05
   /** Ordre de rotation des statuts */
   private readonly ATT_STATES = ['P', 'A', 'L', 'V', 'VP', 'N'];
 
@@ -103,7 +106,7 @@ export class EmployeePageComponent implements OnInit {
   // today = this.time.todaysDateMonthDayYear();
 
   limitHour: number = 9;
-  limitMinutes: number = 0;
+  limitMinutes: number = 5;
   onTime: string = '';
 
   locationCoordinate: LocationCoordinates = {};
@@ -796,6 +799,16 @@ export class EmployeePageComponent implements OnInit {
                 'text-white'
               );
               cell.innerHTML = `${date}<br>Vacance`;
+            } else if (attendance === 'F') {
+              cell.classList.add(
+                'bg-gray-700',
+                'border',
+                'border-black',
+                'text-white'
+              );
+              cell.innerHTML = `${date}<br>À vérifier${
+                time ? `<br><span class="small-time">${time}</span>` : ''
+              }`;
             } else if (attendance === 'L') {
               cell.classList.add(
                 'bg-orange-600',
@@ -2159,5 +2172,115 @@ export class EmployeePageComponent implements OnInit {
         timeZone: 'UTC',
       }).format(plus1h);
     }
+  }
+
+  /** Turn a Date into Kinshasa local parts */
+  private kinParts(d: Date) {
+    const fmt = new Intl.DateTimeFormat('fr-CD', {
+      timeZone: 'Africa/Kinshasa',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const map: any = {};
+    fmt.forEach((p) => (map[p.type] = p.value));
+    return {
+      y: Number(map.year),
+      m: Number(map.month),
+      d: Number(map.day),
+      hh: Number(map.hour),
+      mm: Number(map.minute),
+      ss: Number(map.second),
+    };
+  }
+
+  private sameKinDay(a: Date, b: Date): boolean {
+    const A = this.kinParts(a),
+      B = this.kinParts(b);
+    return A.y === B.y && A.m === B.m && A.d === B.d;
+  }
+
+  /** Build your "M-D-YYYY-HH-mm-ss" label from Kinshasa local time */
+  private kinLabelFromDate(d: Date): string {
+    const p = this.kinParts(d);
+    const M = String(p.m); // no leading zero as in your keys
+    const D = String(p.d);
+    const Y = String(p.y);
+    const HH = String(p.hh).padStart(2, '0');
+    const MM = String(p.mm).padStart(2, '0');
+    const SS = String(p.ss).padStart(2, '0');
+    return `${M}-${D}-${Y}-${HH}-${MM}-${SS}`;
+  }
+
+  /** Core rule:
+   *  - same Kinshasa day & time <= 09:05 → 'P'
+   *  - same Kinshasa day & time  > 09:05 → 'L'
+   *  - any other day (past/future)       → 'F'
+   */
+  computeAttendanceFromPhoto(takenAt: Date | null): 'P' | 'L' | 'F' | '' {
+    if (!takenAt) return '';
+    const today = new Date();
+    if (!this.sameKinDay(takenAt, today)) return 'F';
+
+    const p = this.kinParts(takenAt);
+    if (p.hh < this.limitHour) return 'P';
+    if (p.hh > this.limitHour) return 'L';
+    // p.hh === 9
+    return p.mm <= this.limitMinutes ? 'P' : 'L';
+  }
+  // async confirmPhotoAttendance(employee: any) {
+  //   if (!employee._attachmentFile) {
+  //     alert("Ajoutez d'abord une photo (obligatoire).");
+  //     return;
+  //   }
+  //   const when: Date | null = employee._attachmentTakenAt || null;
+  //   if (!when) {
+  //     alert(
+  //       'Impossible de lire la date de la photo (EXIF/dern. modif). Réessayez.'
+  //     );
+  //     return;
+  //   }
+
+  //   const status = this.computeAttendanceFromPhoto(when);
+  //   if (!status) {
+  //     alert('Statut non déterminé. Ajoutez une photo valide.');
+  //     return;
+  //   }
+
+  //   // Label corresponds to the photo’s local Kinshasa time
+  //   const labelFromPhoto = this.kinLabelFromDate(when);
+
+  //   // Reuse your existing pipeline (it will upload the image + write takenAt)
+  //   this.attendance = status; // used inside addAttendanceForEmployee
+  //   await this.addAttendanceForEmployee(employee, status, labelFromPhoto);
+  // }
+
+  async confirmPhotoAttendance(employee: any) {
+    if (!employee._attachmentFile) {
+      alert("Ajoutez d'abord une photo (obligatoire).");
+      return;
+    }
+
+    const when: Date | null = employee._attachmentTakenAt || null;
+    if (!when) {
+      alert(
+        'Impossible de lire la date de la photo (EXIF/dern. modif). Réessayez.'
+      );
+      return;
+    }
+
+    const status = this.computeAttendanceFromPhoto(when);
+    if (!status) {
+      alert('Statut non déterminé. Ajoutez une photo valide.');
+      return;
+    }
+
+    this.attendance = status; // used by your pipeline
+    // 🔴 Do NOT pass a dateLabel → will use submission time for the key
+    await this.addAttendanceForEmployee(employee, status);
   }
 }
