@@ -770,7 +770,7 @@ export class EmployeePageComponent implements OnInit {
                 'border-black',
                 'text-white'
               );
-              cell.innerHTML = `${date}<br>Present${
+              cell.innerHTML = `${date}<br>Présent${
                 time ? `<br><span class="small-time">${time}</span>` : ''
               }`;
             } else if (attendance === 'A') {
