@@ -628,25 +628,27 @@
                     </select>
                         </div> -->
                         <!-- Computed status preview (no manual choice) -->
+                       <!-- Computed status preview (no manual choice) -->
                         <div class="sm:col-span-2">
-                          <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Statut (calculé)</label>
+                          <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Statut (calculé)
+                          </label>
 
                           <div class="flex items-center gap-3">
-                           <ng-container *ngIf="employee._attachmentTakenAt as t; else noPhotoYet">
+                            <ng-container *ngIf="employee._attachmentTakenAt as t; else noPhotoYet">
                               <ng-container *ngIf="computeAttendanceFromPhoto($any(t)) as s">
                                 <span
                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                   [ngClass]="{
-                                    'bg-green-100 text-green-800': s === 'P',
-                                    'bg-orange-100 text-orange-800': s === 'L',
+                                    'bg-green-100 text-green-700': s === 'P',
+                                    'bg-orange-100 text-orange-700': s === 'L',
                                     'bg-gray-200 text-gray-800': s === 'F'
                                   }"
                                 >
-                                  {{ s === 'P' ? 'Présent' : s === 'L' ? 'Retard' : 'Anomalie' }}
+                                  {{ s === 'P' ? 'Present' : s === 'L' ? 'Retard' : 'Anomalie' }}
                                 </span>
                               </ng-container>
                             </ng-container>
-
 
                             <ng-template #noPhotoYet>
                               <span class="text-xs text-gray-500">Ajoutez une photo pour calculer le statut…</span>
@@ -655,9 +657,50 @@
                             <span class="text-xs text-gray-500">
                               Règle : ≤ {{ todayCutoffLabel }} → Présent • &gt; {{ todayCutoffLabel }} → En retard • autre jour → Anomalie
                             </span>
-
                           </div>
+
+                          <!-- Impact sur la paie (UI only; no code changes) -->
+                          <ng-container *ngIf="employee._attachmentTakenAt as t2">
+                            <ng-container *ngIf="computeAttendanceFromPhoto($any(t2)) as s2">
+                              <div
+                                class="mt-3 p-4 rounded-2xl ring-1 ring-gray-200 dark:ring-gray-700
+                                      bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900"
+                              >
+                                <div class="flex items-center justify-between">
+                                  <div class="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full
+                                                ring-1 ring-gray-200 dark:ring-gray-700">💰</span>
+                                    Impact sur la paie
+                                  </div>
+                                  <div class="text-lg font-semibold"
+                                      [ngClass]="{
+                                        'text-green-600': s2 === 'P',
+                                        'text-orange-600': s2 === 'L',
+                                        'text-rose-600': s2 === 'F'
+                                      }">
+                                    {{ s2 === 'P' ? 'OK' : s2 === 'L' ? '-$1' : '-$3' }}
+                                  </div>
+                                </div>
+
+                                <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                  <div class="rounded-xl px-2 py-1 text-center
+                                              ring-1 ring-green-200 bg-green-50 text-green-700">
+                                    OK • +$0
+                                  </div>
+                                  <div class="rounded-xl px-2 py-1 text-center
+                                              ring-1 ring-orange-200 bg-orange-50 text-orange-700">
+                                    Retard • -$1
+                                  </div>
+                                  <div class="rounded-xl px-2 py-1 text-center
+                                              ring-1 ring-rose-200 bg-rose-50 text-rose-700">
+                                    Anomalie • -$3
+                                  </div>
+                                </div>
+                              </div>
+                            </ng-container>
+                          </ng-container>
                         </div>
+
 
                         
                       
