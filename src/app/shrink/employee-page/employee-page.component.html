@@ -596,205 +596,220 @@
   />
   </div>
 
+      <div *ngIf="displayAttendance"
+          class="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-4">
+        <!-- Modal shell -->
+        <div class="w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-2xl shadow-xl
+                    ring-1 ring-black/5 dark:ring-white/10 flex flex-col overflow-hidden">
 
-    <div *ngIf="displayAttendance" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6">
-        <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
-            <!-- Modal content -->
-            <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
-                <!-- Modal header -->
-                <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                       Presence Pour le {{frenchDate}}
-                    </h3>
-                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" data-modal-toggle="defaultModal" (click)="toggleAttendance()">
-                        <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
-                        <span class="sr-only">Close modal</span>
-                    </button>
+          <!-- Header (sticky) -->
+          <div class="sticky top-0 z-10 flex items-center justify-between px-4 py-3
+                      border-b bg-white/95 dark:bg-gray-800/95 backdrop-blur
+                      border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Présence — {{ frenchDate }}
+            </h3>
+            <button type="button"
+                    class="text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700
+                          rounded-lg p-1.5"
+                    (click)="toggleAttendance()">
+              <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clip-rule="evenodd"></path></svg>
+              <span class="sr-only">Fermer</span>
+            </button>
+          </div>
+
+          <!-- Body (scrollable) -->
+          <div class="px-4 sm:px-5 py-4 overflow-y-auto">
+            <div class="grid gap-4 sm:grid-cols-2">
+
+              <div class="sm:col-span-2">
+                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                  Statut (calculé)
+                </label>
+
+                <div class="flex items-center gap-3">
+                  <ng-container *ngIf="employee._attachmentTakenAt as t; else noPhotoYet">
+                    <ng-container *ngIf="computeAttendanceFromPhoto($any(t)) as s">
+                      <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="{
+                          'bg-green-100 text-green-700': s === 'P',
+                          'bg-orange-100 text-orange-700': s === 'L',
+                          'bg-rose-200 text-rose-800': s === 'F'
+                        }"
+                      >
+                        {{ s === 'P' ? 'OK' : s === 'L' ? 'Retard' : 'Anomalie' }}
+                      </span>
+                    </ng-container>
+                  </ng-container>
+
+                  <ng-template #noPhotoYet>
+                    <span class="text-xs text-gray-500">
+                      Ajoutez une photo prise <strong>sur le site (Fondation Gervais)</strong> pour calculer le statut…
+                    </span>
+                  </ng-template>
+
+                  <span class="text-xs text-gray-500">
+                    Règle : ≤ {{ todayCutoffLabel }} → Présent • &gt; {{ todayCutoffLabel }} → En retard • autre jour → Anomalie
+                  </span>
                 </div>
-                
-                <!-- Modal body -->
-                <div>
-                    <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                     
-<!--               
-                        <div>
-                            <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Présence</label>
-                      <select #attendanceSelect [(ngModel)]="attendance" [disabled]=" !!savingAttendance || !!employee._uploading">
-                      <option value=""></option>
-                      <option value="P">Present</option>
-                      <option value="A">Absent</option>
-                      <option value="L">Retard</option>
-                      <option value="N">Néant</option>
-                    </select>
-                        </div> -->
-                        <!-- Computed status preview (no manual choice) -->
-                       <!-- Computed status preview (no manual choice) -->
-                        <div class="sm:col-span-2">
-                          <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                            Statut (calculé)
-                          </label>
 
-                          <div class="flex items-center gap-3">
-                            <ng-container *ngIf="employee._attachmentTakenAt as t; else noPhotoYet">
-                              <ng-container *ngIf="computeAttendanceFromPhoto($any(t)) as s">
-                                <span
-                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                  [ngClass]="{
-                                    'bg-green-100 text-green-700': s === 'P',
-                                    'bg-orange-100 text-orange-700': s === 'L',
-                                    'bg-gray-200 text-gray-800': s === 'F'
-                                  }"
-                                >
-                                  {{ s === 'P' ? 'Present' : s === 'L' ? 'Retard' : 'Anomalie' }}
-                                </span>
-                              </ng-container>
-                            </ng-container>
-
-                            <ng-template #noPhotoYet>
-                              <span class="text-xs text-gray-500">Ajoutez une photo pour calculer le statut…</span>
-                            </ng-template>
-
-                            <span class="text-xs text-gray-500">
-                              Règle : ≤ {{ todayCutoffLabel }} → Présent • &gt; {{ todayCutoffLabel }} → En retard • autre jour → Anomalie
-                            </span>
-                          </div>
-
-                          <!-- Impact sur la paie (UI only; no code changes) -->
-                          <ng-container *ngIf="employee._attachmentTakenAt as t2">
-                            <ng-container *ngIf="computeAttendanceFromPhoto($any(t2)) as s2">
-                              <div
-                                class="mt-3 p-4 rounded-2xl ring-1 ring-gray-200 dark:ring-gray-700
-                                      bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900"
-                              >
-                                <div class="flex items-center justify-between">
-                                  <div class="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full
-                                                ring-1 ring-gray-200 dark:ring-gray-700">💰</span>
-                                    Impact sur la paie
-                                  </div>
-                                  <div class="text-lg font-semibold"
-                                      [ngClass]="{
-                                        'text-green-600': s2 === 'P',
-                                        'text-orange-600': s2 === 'L',
-                                        'text-rose-600': s2 === 'F'
-                                      }">
-                                    {{ s2 === 'P' ? 'OK' : s2 === 'L' ? '-$1' : '-$3' }}
-                                  </div>
-                                </div>
-
-                                <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
-                                  <div class="rounded-xl px-2 py-1 text-center
-                                              ring-1 ring-green-200 bg-green-50 text-green-700">
-                                    OK • +$0
-                                  </div>
-                                  <div class="rounded-xl px-2 py-1 text-center
-                                              ring-1 ring-orange-200 bg-orange-50 text-orange-700">
-                                    Retard • -$1
-                                  </div>
-                                  <div class="rounded-xl px-2 py-1 text-center
-                                              ring-1 ring-rose-200 bg-rose-50 text-rose-700">
-                                    Anomalie • -$3
-                                  </div>
-                                </div>
-                              </div>
-                            </ng-container>
-                          </ng-container>
+                <!-- Impact sur la paie -->
+                <ng-container *ngIf="employee._attachmentTakenAt as t2">
+                  <ng-container *ngIf="computeAttendanceFromPhoto($any(t2)) as s2">
+                    <div
+                      class="mt-3 p-4 rounded-2xl ring-1 ring-gray-200 dark:ring-gray-700
+                            bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+                      <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full
+                                      ring-1 ring-gray-200 dark:ring-gray-700">💰</span>
+                          Impact sur la paie
                         </div>
+                        <div class="text-lg font-semibold"
+                            [ngClass]="{
+                              'text-green-600': s2 === 'P',
+                              'text-orange-600': s2 === 'L',
+                              'text-rose-600': s2 === 'F'
+                            }">
+                          {{ s2 === 'P' ? 'OK' : s2 === 'L' ? '-$1' : '-$3' }}
+                        </div>
+                      </div>
 
-
-                        
-                      
-                       
-                        
-                       
-                    </div>
-                    <!-- Attachment (photo/video) -->
-                    <div class="my-4 sm:col-span-2">
-                      <label class="block mb-4 text-sm font-medium text-gray-900 dark:text-white">
-                        Pièce jointe (image  max 10 Mo)
-                      </label>
-
-                       <!-- <input
-                        type="file"
-                        accept="image/*,video/*"
-                        (change)="onAttachmentSelected(employee, $event)"
-                        class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
-                      /> -->
-                      <input
-                        type="file"
-                        accept="image/*"
-                        (change)="onAttachmentSelected(employee, $event)"
-                        class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
-                      />
-
-                      <!-- Size/type error -->
-                      <p *ngIf="employee._attachmentError"
-                        class="mt-2 text-sm text-red-600">
-                        {{ employee._attachmentError }}
-                      </p>
-
-                      <!-- Preview (image or video) -->
-                      <div *ngIf="employee._attachmentPreview" class="mt-3">
-                        <img
-                          *ngIf="employee._attachmentType?.startsWith('image/')"
-                          [src]="employee._attachmentPreview"
-                          alt="Preview"
-                          class="max-h-48 rounded-lg border"
-                        />
-                        <video
-                          *ngIf="employee._attachmentType?.startsWith('video/')"
-                          [src]="employee._attachmentPreview"
-                          controls
-                          class="w-full max-h-64 rounded-lg border"
-                        ></video>
-
-                        <div class="mt-2 flex items-center gap-3">
-                          <span class="text-xs text-gray-500">
-                            {{ (employee._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
-                          </span>
-                          <div class="mt-1 text-xs text-gray-500" *ngIf="employee._attachmentTakenAt">
-                            📅 Pris le :  {{ formatKinshasa(employee._attachmentTakenAt) }}
-                          </div>
-
-                          <button
-                            type="button"
-                            (click)="clearAttachment(employee)"
-                            class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100"
-                          >
-                            Retirer
-                          </button>
+                      <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                        <div class="rounded-xl px-2 py-1 text-center ring-1 ring-green-200 bg-green-50 text-green-700">
+                          OK • +$0
+                        </div>
+                        <div class="rounded-xl px-2 py-1 text-center ring-1 ring-orange-200 bg-orange-50 text-orange-700">
+                          Retard • -$1
+                        </div>
+                        <div class="rounded-xl px-2 py-1 text-center ring-1 ring-rose-200 bg-rose-50 text-rose-700">
+                          Anomalie • -$3
                         </div>
                       </div>
                     </div>
-                    <div class="flex flex-row mx-auto justify-center space-x-4">
-                        <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " (click)="toggleAttendance()">Annuler</button>
-                          <button type="button"
-                                [disabled]="savingAttendance || employee._uploading"
-                                (click)="addAttendanceForEmployee(employee, attendanceSelect.value); employee.showAttendance = false"
-                                class="inline-flex items-center gap-2 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto px-5 py-2.5">
-                          <svg *ngIf="savingAttendance" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"></circle>
-                            <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"></path>
-                          </svg>
-                          <span>{{ savingAttendance ? 'Enregistrement…' : 'Confirmer' }}</span>
-                        </button> -->
-                        <button type="button"
-                            [disabled]="savingAttendance || employee._uploading || !employee._attachmentFile"
-                            (click)="confirmPhotoAttendance(employee)"
-                            class="inline-flex items-center gap-2 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto px-5 py-2.5">
-                      <svg *ngIf="savingAttendance" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"></circle>
-                        <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"></path>
-                      </svg>
-                      <span>{{ savingAttendance ? 'Enregistrement…' : 'Confirmer' }}</span>
-                    </button>
+                  </ng-container>
+                </ng-container>
 
+                <!-- Rappel lieu (avec nuance "pas de photo par un tiers") -->
+                <div
+                  class="mt-3 p-4 rounded-2xl ring-1 ring-blue-200 dark:ring-blue-800
+                        bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-900
+                        dark:from-blue-900/40 dark:to-indigo-900/40 dark:text-blue-100">
+                  <div class="flex items-start gap-3">
+                    <span
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full
+                            bg-white/70 text-blue-700 ring-1 ring-blue-200
+                            dark:bg-blue-800/60 dark:text-blue-100">📍</span>
+                    <div class="text-xs leading-5">
+                      <p>
+                        <strong>Obligatoire&nbsp;:</strong> la photo doit être prise
+                        <strong>sur le site</strong> <em>(Fondation Gervais)</em>.
+                      </p>
+                      <ul class="mt-2 grid gap-1">
+                        <li class="flex items-start gap-2">
+                          <span>🏷️</span>
+                          <span>Hors site ⇒ <strong>Anomalie (-$3)</strong>.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                          <span>🚫</span>
+                          <span>
+                            Les photos prises par un <strong>tiers</strong> (ami/collègue) ou
+                            sans votre présence réelle sont une <strong>fraude</strong> et peuvent
+                            entraîner des <strong>mesures disciplinaires</strong> si constatées.
+                          </span>
+                        </li>
+                      </ul>
+                      <p class="mt-2 opacity-80">
+                        La répétition peut entraîner des sanctions plus sévères.
+                      </p>
                     </div>
-                  
+                  </div>
                 </div>
+              </div>
+
             </div>
+
+            <!-- Attachment -->
+            <div class="my-4 sm:col-span-2">
+              <label class="block mb-4 text-sm font-medium text-gray-900 dark:text-white">
+                Pièce jointe (image max 10 Mo)
+              </label>
+
+              <input
+                type="file"
+                accept="image/*"
+                (change)="onAttachmentSelected(employee, $event)"
+                class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer
+                      bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700
+                      dark:border-gray-600 dark:placeholder-gray-400"
+              />
+
+              <p *ngIf="employee._attachmentError" class="mt-2 text-sm text-red-600">
+                {{ employee._attachmentError }}
+              </p>
+
+              <div *ngIf="employee._attachmentPreview" class="mt-3">
+                <img *ngIf="employee._attachmentType?.startsWith('image/')"
+                    [src]="employee._attachmentPreview" alt="Preview"
+                    class="max-h-48 rounded-lg border" />
+                <video *ngIf="employee._attachmentType?.startsWith('video/')"
+                      [src]="employee._attachmentPreview" controls
+                      class="w-full max-h-64 rounded-lg border"></video>
+
+                <div class="mt-2 flex items-center gap-3">
+                  <span class="text-xs text-gray-500">
+                    {{ (employee._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
+                  </span>
+                  <div class="mt-1 text-xs text-gray-500" *ngIf="employee._attachmentTakenAt">
+                    📅 Pris le : {{ formatKinshasa(employee._attachmentTakenAt) }}
+                  </div>
+
+                  <button type="button"
+                          (click)="clearAttachment(employee)"
+                          class="px-3 py-1 text-sm rounded-full bg-gray-200 hover:bg-gray-300
+                                dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-100">
+                    Retirer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer (sticky) -->
+          <div class="sticky bottom-0 z-10 px-4 sm:px-5 py-3 border-t
+                      bg-white/95 dark:bg-gray-800/95 backdrop-blur
+                      border-gray-200 dark:border-gray-700">
+            <div class="flex justify-center gap-3">
+              <button type="button"
+                      class="px-5 py-2.5 rounded-full text-sm font-medium
+                            bg-gray-100 hover:bg-gray-200 text-gray-800
+                            dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
+                      (click)="toggleAttendance()">
+                Annuler
+              </button>
+
+              <button type="button"
+                      [disabled]="savingAttendance || employee._uploading || !employee._attachmentFile"
+                      (click)="confirmPhotoAttendance(employee)"
+                      class="inline-flex items-center gap-2 text-white bg-green-700 hover:bg-green-800
+                            focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-full
+                            text-sm px-5 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed">
+                <svg *ngIf="savingAttendance" class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"></circle>
+                  <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-linecap="round"></path>
+                </svg>
+                <span>{{ savingAttendance ? 'Enregistrement…' : 'Confirmer' }}</span>
+              </button>
+            </div>
+          </div>
+
         </div>
-    </div>
+      </div>
+
 
     <div *ngIf="displayBonus" id="defaultModal" tabindex="-1" class="w-full max-w-md max-h-full  fixed inset-x-0 mx-auto top-10 z-50 p-4 flex pb-6">
         <div class="mt-6 grow sm:mt-8 lg:mt-0">
