@@ -103,7 +103,7 @@ export class RegisterClientComponent implements OnInit {
   savingsOtherDisplay: boolean = false;
   newReferenceName: string = '';
   newReferencePhone: string = '';
-  maxLendAmount: number = 200000;
+  maxLendAmount: number = 400000;
 
   code: string = '';
   blockChangeNumber: boolean = false;
