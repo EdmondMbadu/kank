@@ -65,7 +65,7 @@
         <!-- Rank -->
         <div class="text-center w-12 font-bold text-2xl">{{ i + 1 }}</div>
         <!-- Profile Image -->
-        <div  (click)="em.showAttendance = !em.showAttendance &&  (this.auth.isAdmin || this.auth.isDistributor)" class="w-24 h-24">
+        <div  (click)="em.showAttendance = !em.showAttendance &&  (this.auth.isAdmin)" class="w-24 h-24">
           <img
           
             *ngIf="!em.profilePicture"
