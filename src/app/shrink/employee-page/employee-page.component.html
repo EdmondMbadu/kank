@@ -742,6 +742,7 @@
               <input
                 type="file"
                 accept="image/*"
+                 capture="environment"
                 (change)="onAttachmentSelected(employee, $event)"
                 class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer
                       bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700
@@ -764,8 +765,30 @@
                   <span class="text-xs text-gray-500">
                     {{ (employee._attachmentSize || 0) / (1024 * 1024) | number:'1.1-1' }} Mo
                   </span>
-                  <div class="mt-1 text-xs text-gray-500" *ngIf="employee._attachmentTakenAt">
-                    📅 Pris le : {{ formatKinshasa(employee._attachmentTakenAt) }}
+                  <div
+                    class="mt-1 text-xs text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-1"
+                    *ngIf="employee._attachmentTakenAt || employee._attachmentDeviceInfo || employee._attachmentHash"
+                  >
+                    <span *ngIf="employee._attachmentTakenAt">
+                      📅 Pris le : {{ formatKinshasa(employee._attachmentTakenAt) }}
+                    </span>
+
+                    <!-- phone (EXIF) -->
+                    <span *ngIf="employee._attachmentDeviceInfo as d">
+                      • 📱 {{ compactDevice(d) }}
+                    </span>
+
+                    <!-- fallback phone (UA platform) -->
+                  <!-- fallback phone (UA platform) -->
+                  <span *ngIf="!employee._attachmentDeviceInfo && $any(employee._attachmentUA)?.platform">
+                    • 📱 {{ $any(employee._attachmentUA)?.platform }}
+                  </span>
+
+
+                    <!-- short hash w/ tooltip for full -->
+                    <span *ngIf="employee._attachmentHash as h" [title]="h">
+                      • 🔑 {{ h | slice:0:7 }}
+                    </span>
                   </div>
 
                   <button type="button"
@@ -1044,7 +1067,7 @@
         <span *ngIf="attachmentViewer.takenAt"
               class="ml-3 text-xs font-normal text-gray-500 dark:text-gray-300">
          • Pris le : {{ formatKinshasa(attachmentViewer.takenAt) }}
-         <span class="ml-1 text-xs text-gray-500">(heure de Kinshasa, UTC+01:00)</span>
+         <span class="ml-1 text-xs text-gray-500">(heure de Kinshasa)</span>
           <ng-container *ngIf="attachmentViewer.takenAtSource === 'storageUploadedAt'">
             (date de téléversement)
           </ng-container>
@@ -1052,6 +1075,13 @@
             (date du fichier)
           </ng-container>
 
+        </span>
+        <!-- add these: -->
+        <span *ngIf="attachmentViewer.deviceLabel" class="ml-2 text-xs text-gray-500 dark:text-gray-300">
+          • 📱 {{ attachmentViewer.deviceLabel }}
+        </span>
+        <span *ngIf="attachmentViewer.photoHash" class="ml-2 text-[10px] text-gray-500 dark:text-gray-300 opacity-80" [title]="attachmentViewer.photoHash">
+          • 🔑 {{ attachmentViewer.photoHash | slice:0:7 }}
         </span>
       </h4>
 

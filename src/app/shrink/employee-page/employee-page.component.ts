@@ -50,6 +50,8 @@ export class EmployeePageComponent implements OnInit {
       | 'storageUploadedAt'
       | 'unknown'
       | '',
+    deviceLabel: '', // 👈 NEW
+    photoHash: '' as string | undefined, // 👈 NEW
   };
   // state
   savingAttendance = false;
@@ -1197,7 +1199,17 @@ export class EmployeePageComponent implements OnInit {
             takenAtSource: when.source,
           };
         }
-
+        attMeta = {
+          ...attMeta,
+          device: employee._attachmentDeviceInfo || null,
+          ua: employee._attachmentUA || this.getUaInfo(),
+          softDeviceId: employee._attachmentSoftId || this.ensureSoftDeviceId(),
+          photoHash:
+            employee._attachmentHash ||
+            (employee._attachmentFile
+              ? await this.hashFile(employee._attachmentFile)
+              : null),
+        };
         await this.data.addAttendanceAttachmentDoc(
           this.auth.currentUser.uid,
           employee.uid!,
@@ -1774,12 +1786,31 @@ export class EmployeePageComponent implements OnInit {
       dateLabel: '',
       takenAt: null,
       takenAtSource: '',
+      deviceLabel: '', // 👈 NEW
+      photoHash: '' as string | undefined, // 👈 NEW
     };
   }
+  compactDevice(dev: any): string {
+    if (!dev) return '';
+    const make = (dev.make || '').toString().trim();
+    const model = (dev.model || '').toString().trim();
+    // Common vendors sometimes put brand in model; this keeps it short and nice.
+    const label = [make, model].filter(Boolean).join(' ');
+    return label || 'Appareil';
+  }
 
+  private buildDeviceLabel(device?: any, ua?: any): string {
+    const make = device?.make?.toString().trim();
+    const model = device?.model?.toString().trim();
+    if (make || model) return [make, model].filter(Boolean).join(' ');
+    return ua?.platform || '';
+  }
+
+  // 🔧 REPLACE your current method with this:
   private openAttachmentViewer(att: any, dateLabel: string) {
-    const isImage = (att?.contentType || '').startsWith('image/');
-    const isVideo = (att?.contentType || '').startsWith('video/');
+    const ct = (att?.contentType || '').toString();
+    const isImage = ct.startsWith('image/');
+    const isVideo = ct.startsWith('video/');
     if (!isImage && !isVideo) return;
 
     const takenAtDate =
@@ -1788,20 +1819,46 @@ export class EmployeePageComponent implements OnInit {
       this.coerceToDate(att?.uploadedAt) ||
       null;
 
+    // Map any non-union source into the allowed set
+    const proposedSource =
+      (att?.takenAtSource as string) ||
+      (att?.createdAt
+        ? 'fileLastModified'
+        : att?.uploadedAt
+        ? 'storageUploadedAt'
+        : 'unknown');
+
+    const allowed = new Set([
+      'exif',
+      'fileLastModified',
+      'storageUploadedAt',
+      'unknown',
+      '',
+    ]);
+    const normalizedSource = allowed.has(proposedSource)
+      ? proposedSource
+      : 'unknown';
+
     this.attachmentViewer = {
       open: true,
       url: att.url,
       kind: isImage ? 'image' : 'video',
       dateLabel,
       takenAt: takenAtDate,
-      takenAtSource:
-        (att?.takenAtSource as any) ||
-        (att?.createdAt ? 'createdAt' : att?.uploadedAt ? 'uploadedAt' : ''),
+      takenAtSource: normalizedSource as
+        | 'exif'
+        | 'fileLastModified'
+        | 'storageUploadedAt'
+        | 'unknown'
+        | '',
+      // ✅ include the new fields so the object matches the type
+      deviceLabel: this.buildDeviceLabel(att?.device, att?.ua),
+      photoHash: att?.photoHash || '',
     };
 
-    // Fallback (older items): use Storage metadata if still missing
+    // Fallback to Storage upload time if still missing
     if (!this.attachmentViewer.takenAt && att?.url) {
-      this.storageUploadedAt(att.url).then((d) => {
+      this.storageUploadedAt(att.url).then((d: Date | null) => {
         if (d && !this.attachmentViewer.takenAt) {
           this.attachmentViewer.takenAt = d;
           this.attachmentViewer.takenAtSource = 'storageUploadedAt';
@@ -2305,5 +2362,78 @@ export class EmployeePageComponent implements OnInit {
     const hh = String(hour).padStart(2, '0');
     const mm = String(minute).padStart(2, '0');
     return `${hh}:${mm}`;
+  }
+
+  /** Persist a soft, per-browser device id (clears if user wipes storage). */
+  private ensureSoftDeviceId(): string {
+    const KEY = 'fg_device_id';
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      // crypto.randomUUID() supported in modern browsers
+      id = crypto.randomUUID();
+      localStorage.setItem(KEY, id);
+    }
+    return id;
+  }
+
+  /** User-agent info without permissions (falls back on navigator.userAgent). */
+  private getUaInfo() {
+    const nav: any = navigator as any;
+    // UA-CH if available
+    const uaData = nav.userAgentData || null;
+    return {
+      // High-level hints
+      brands: uaData?.brands || null,
+      mobile: uaData?.mobile ?? null,
+      platform: uaData?.platform || null,
+
+      // Legacy UA fallback
+      ua: navigator.userAgent,
+
+      // Some extra non-identifying signals
+      language: navigator.language,
+      screen: {
+        w: window.screen?.width,
+        h: window.screen?.height,
+        dpr: window.devicePixelRatio || 1,
+      },
+    };
+  }
+
+  /** Read useful EXIF fields from an image file. */
+  private async readExifDeviceInfo(file: File) {
+    try {
+      const tags = await (exifr as any).parse(file, {
+        pick: [
+          'Make',
+          'Model',
+          'Software',
+          'ImageUniqueID',
+          'BodySerialNumber',
+          'LensModel',
+          'CreateDate',
+          'DateTimeOriginal',
+        ],
+      });
+      return {
+        make: tags?.Make || null,
+        model: tags?.Model || null,
+        software: tags?.Software || null,
+        imageUniqueId: tags?.ImageUniqueID || null, // often missing
+        serial: tags?.BodySerialNumber || null, // almost always missing
+        lens: tags?.LensModel || null,
+      };
+    } catch (e) {
+      console.warn('EXIF parse failed', e);
+      return null;
+    }
+  }
+
+  /** SHA-256 of the file (detects re-uploads/reuse; not perceptual). */
+  private async hashFile(file: File): Promise<string> {
+    const buf = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    const bytes = Array.from(new Uint8Array(digest));
+    return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
 }

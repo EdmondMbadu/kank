@@ -70,6 +70,10 @@ export class Employee {
   _attachmentError?: string | null;
   _uploading?: boolean;
   _attachmentTakenAt?: string;
+  _attachmentDeviceInfo?: string;
+  _attachmentUA?: string;
+  _attachmentSoftId?: string;
+  _attachmentHash?: string;
 }
 export class Avatar {
   path?: string;
