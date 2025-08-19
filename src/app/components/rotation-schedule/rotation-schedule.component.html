@@ -106,7 +106,7 @@
 
                 <!-- slightly bigger ✕ -->
                 <button
-                    *ngIf="auth.isAdmin && cell.employee"
+                    *ngIf="auth.isAdmin && (cell.employees?.length)"
                     class="text-red-500 text-base leading-none"                  
                     (click)="clearAssignmentFromCell(cell.iso, $event)"
                     title="Retirer l’assignation"
@@ -115,7 +115,7 @@
                 </button>
                 </div>
 
-                <div
+                <!-- <div
                     class="truncate"
                     [class.cursor-pointer]="auth.isAdmin"
                     (click)="auth.isAdmin && openPicker(cell.iso)"
@@ -125,7 +125,30 @@
                     ? cell.employee.firstName + ' ' + cell.employee.lastName
                     : '—'
                 }}
-                </div>
+                </div> -->
+                <!-- AFTER: chips + overflow count -->
+                  <div
+                    class="mt-1 flex flex-wrap gap-1"
+                    [class.cursor-pointer]="auth.isAdmin"
+                    (click)="auth.isAdmin && openPicker(cell.iso)"
+                  >
+                    <ng-container *ngIf="cell.employees?.length; else dash">
+                      <span
+                        *ngFor="let e of cell.employees | slice:0:3"
+                        class="text-xs bg-gray-100 rounded px-1.5 py-0.5"
+                      >
+                        {{ e.firstName }} {{ e.lastName }}
+                      </span>
+                      <span
+                        *ngIf="cell.employees.length > 3"
+                        class="text-[11px] text-gray-500"
+                      >
+                        +{{ cell.employees.length - 3 }}
+                      </span>
+                    </ng-container>
+                    <ng-template #dash>—</ng-template>
+                  </div>
+
             </div>
         </td>
 
@@ -377,6 +400,24 @@
       <h3 class="font-semibold mb-2">
         Assigner pour {{ pickerDay | date:'d MMMM y' }}
       </h3>
+
+      <!-- Current assignees for this day -->
+        <div class="mb-2" *ngIf="currentPickerEmployees().length">
+          <div class="text-xs text-gray-500 mb-1">Déjà assignés</div>
+          <div class="flex flex-wrap gap-1">
+            <span
+              *ngFor="let e of currentPickerEmployees()"
+              class="text-xs bg-indigo-50 text-indigo-800 rounded px-1.5 py-0.5"
+            >
+              {{ e.firstName }} {{ e.lastName }}
+              <button
+                class="ml-1 text-[11px] text-red-600"
+                (click)="removeUidFromRotationDay(e.uid!)"
+              >✕</button>
+            </span>
+          </div>
+        </div>
+
       <!-- close icon -->
     <button
         class="text-gray-400 hover:text-gray-700 text-xl leading-none"

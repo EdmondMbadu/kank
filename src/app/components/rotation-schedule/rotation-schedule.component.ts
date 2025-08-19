@@ -16,6 +16,7 @@ import { PerformanceService } from 'src/app/services/performance.service';
 
 type TFEntry = { loc: string; employees: string[] }; // keep UIDs
 type TFCell = { iso: string; entries?: TFEntry[] };
+type RotCell = { iso: string; employeeUids: string[]; employees: Employee[] };
 
 @Component({
   selector: 'app-rotation-schedule',
@@ -41,11 +42,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     'Vendredi',
     'Samedi',
   ];
-  monthWeeks: ({
-    iso: string;
-    employeeUid?: string;
-    employee?: Employee;
-  } | null)[][] = [];
+  monthWeeks: (RotCell | null)[][] = [];
   public readonly monthNames: string[] = [
     'Janvier',
     'Février',
@@ -306,7 +303,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     let weekRow = new Array(7).fill(null);
     for (let d = first; d <= last; d = this.addDays(d, 1)) {
       const iso = this.ymd(d);
-      weekRow[d.getDay()] = { iso };
+      weekRow[d.getDay()] = { iso, employeeUids: [], employees: [] };
       if (d.getDay() === 6) {
         weeks.push(weekRow);
         weekRow = new Array(7).fill(null);
@@ -324,9 +321,16 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
         for (const row of weeks) {
           for (const cell of row) {
             if (cell) {
-              const uid = s.days?.[cell.iso];
-              cell.employeeUid = uid;
-              cell.employee = this.employees.find((e) => e.uid === uid);
+              const val = s.days?.[cell.iso];
+              const uids = Array.isArray(val)
+                ? val.filter(Boolean)
+                : val
+                ? [val]
+                : [];
+              cell.employeeUids = uids;
+              cell.employees = uids
+                .map((u: string) => this.employees.find((e) => e.uid === u))
+                .filter(Boolean) as Employee[];
             }
           }
         }
@@ -380,11 +384,13 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   }
 
   async select(emp: Employee) {
-    /* 1️⃣ local optimistic update */
-    this.applyLocalAssignment(this.pickerDay, emp);
+    if (!this.pickerDay) return;
 
-    this.closePicker(); // close instantly
-    /* 2️⃣ async save to Firestore */
+    // 1) local optimistic append
+    this.applyLocalAssignment(this.pickerDay, emp);
+    this.cdr.markForCheck();
+
+    // 2) persist (append in Firestore)
     await this.rs.setAssignment(
       this.location,
       this.year,
@@ -392,7 +398,6 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.pickerDay,
       emp.uid
     );
-    // optional: this.refresh(); // Firestore listener will sync anyway
   }
   /** CLEAR from ✕ in the modal or cell */
   async clearAssignmentFromCell(iso: string, ev: Event) {
@@ -412,12 +417,22 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     );
   }
   /* helper (one place only) */
+  // AFTER (append or clear-all)
   private applyLocalAssignment(iso: string, emp?: Employee) {
     for (const row of this.monthWeeks) {
       for (const cell of row) {
         if (cell && cell.iso === iso) {
-          cell.employee = emp;
-          cell.employeeUid = emp?.uid;
+          if (!emp) {
+            // clear all
+            cell.employeeUids = [];
+            cell.employees = [];
+          } else {
+            // append unique
+            if (!cell.employeeUids.includes(emp.uid!)) {
+              cell.employeeUids = [...cell.employeeUids, emp.uid!];
+              cell.employees = [...cell.employees, emp];
+            }
+          }
         }
       }
     }
@@ -451,11 +466,20 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     const month$ = this.locations.map((loc) =>
       this.rs.getSchedule(loc, this.year, this.month).pipe(
         tap((sched) => {
-          Object.entries(sched.days ?? {}).forEach(([iso, uid]) => {
-            const emp = this.employees.find((e) => e.uid === uid);
-            if (emp)
-              this.allSchedules.push({ iso, location: loc, employee: emp });
-          });
+          Object.entries(sched.days ?? {}).forEach(
+            ([iso, val]: [string, any]) => {
+              const uids = Array.isArray(val)
+                ? val.filter(Boolean)
+                : val
+                ? [val]
+                : [];
+              uids.forEach((uid: string) => {
+                const emp = this.employees.find((e) => e.uid === uid);
+                if (emp)
+                  this.allSchedules.push({ iso, location: loc, employee: emp });
+              });
+            }
+          );
         })
       )
     );
@@ -760,5 +784,39 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   setTfAuditEditable(v: boolean) {
     this.tfAuditEditable = v;
     this.rs.setAuditEditable(this.currentWeekId(), v);
+  }
+
+  currentPickerEmployees(): Employee[] {
+    const iso = this.pickerDay;
+    if (!iso) return [];
+    for (const row of this.monthWeeks) {
+      for (const cell of row) {
+        if (cell && cell.iso === iso) return cell.employees || [];
+      }
+    }
+    return [];
+  }
+
+  async removeUidFromRotationDay(uid: string) {
+    if (!this.pickerDay) return;
+    // 1) local update
+    for (const row of this.monthWeeks) {
+      for (const cell of row) {
+        if (cell && cell.iso === this.pickerDay) {
+          cell.employeeUids = cell.employeeUids.filter((u) => u !== uid);
+          cell.employees = cell.employees.filter((e) => e.uid !== uid);
+        }
+      }
+    }
+    this.cdr.markForCheck();
+
+    // 2) persist
+    await this.rs.removeRotationUid(
+      this.location,
+      this.year,
+      this.month,
+      this.pickerDay,
+      uid
+    );
   }
 }
