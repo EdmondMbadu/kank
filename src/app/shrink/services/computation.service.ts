@@ -1864,19 +1864,39 @@ export class ComputationService {
   }
 
   getMaxLendAmount(creditScore: number): number {
-    if (creditScore < 0 || creditScore > 100) {
-      throw new Error('Credit score must be between 0 and 100.');
+    if (!Number.isFinite(creditScore)) {
+      throw new Error('Credit score must be a finite number.');
+    }
+    if (creditScore > 100) {
+      throw new Error('Credit score must be ≤ 100.');
     }
 
-    const scoreRanges = [
-      19, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 84, 89, 94, 99, 100,
+    // Thresholds are inclusive (<=). 0 or less → 0 FC.
+    const scoreLimits = [
+      0, 19, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 84, 89, 94, 99, 100,
     ];
     const amounts = [
-      0, 100000, 150000, 200000, 300000, 400000, 500000, 600000, 700000,
-      1000000, 1100000, 1200000, 1300000, 1400000, 1500000, 2000000,
+      0, // <= 0%
+      50000, // 1–19%
+      100000, // 20–34%
+      150000, // 35–39%
+      200000, // 40–44%
+      300000, // 45–49%
+      400000, // 50–54%
+      500000, // 55–59%
+      600000, // 60–64%
+      700000, // 65–69%
+      1000000, // 70–74%
+      1100000, // 75–79%
+      1200000, // 80–84%
+      1300000, // 85–89%
+      1400000, // 90–94%
+      1500000, // 95–99%
+      2000000, // 100%
     ];
 
-    return amounts[scoreRanges.findIndex((limit) => creditScore <= limit)];
+    const idx = scoreLimits.findIndex((limit) => creditScore <= limit);
+    return amounts[idx];
   }
 
   yearsSinceJoining(dateJoined: string): number {
