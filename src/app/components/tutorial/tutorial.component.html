@@ -998,7 +998,9 @@
                   <li>Si le remboursement est en retard, <strong>-2 points</strong> sont retirés pour chaque semaine de retard.</li>
               </ul>
               <em>Exemple :</em> Si un client devait rembourser sa dette avant le <strong>11 mars</strong> mais termine le <strong>1er avril</strong>, il accumule <strong>3 semaines de retard</strong> et perd <strong>6 points</strong>.
-          
+           <p>
+              Lorsqu’un client atteint un <strong>Score Crédit de 0 ou mois</strong>, il doit attendre apres 6 mois pour emprunter a nouveau. Son score credit va retourner a 50 apres 6 mois d'avoir finit sa dette.
+          </p>
           <p>
               Lorsqu’un client atteint un <strong>Score Crédit de 70</strong>, il bénéficie d’un accès permanent à un prêt chaque fois qu'il en a besoin, à condition de ne pas avoir de dette en cours. De plus, l'argent prêté ne sera pas déduit de votre budget.
           </p>
@@ -1148,12 +1150,18 @@
               <td class="px-5 py-3 font-mono tabular-nums">100K</td>
             </tr>
 
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500">
-                0-19%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">0 FC</td>
-            </tr>
+              <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500">
+                  1-19%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">50K</td>
+              </tr>
+               <tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500">
+                  -Infinity - 0%
+                </td>
+                <td class="px-5 py-3 font-mono tabular-nums">0 FC</td>
+              </tr>
           </tbody>
         </table>
       </div>
