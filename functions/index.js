@@ -1056,7 +1056,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
         // Short invite to come back + perks summary
           congratsMessage =
 `${fullName},
-🎉 Félicitations! Osilisi kofuta (solde: 0 FC). Okoki kozua lisusu. Soki obongisi efuteli makambo ya kitoko eza: leka na bureau po oyeba nyoso. Merci pona confiance.
+🎉 Félicitations! Osilisi kofuta (solde: 0 FC). Okoki kozua lisusu. Soki obongisi efuteli makambo ya kitoko eza: leka na bureau po oyeba nionso.
 Merci pona confiance na FONDATION GERVAIS.`;
         }
 
