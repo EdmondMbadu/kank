@@ -102,7 +102,8 @@ export class NewCycleRegisterComponent implements OnInit {
       )
         ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
         : this.data.generalMaxNumberOfDaysToLend;
-
+      // ✅ NEW: six-month grace reset for score ≤ 0
+      this.maybeResetCreditScoreFromDormancy();
       // get credit score to find maxLoanAmount
       if (this.client && this.client.creditScore !== undefined) {
         this.maxLoanAmount = this.compute.getMaxLendAmount(
@@ -532,5 +533,49 @@ export class NewCycleRegisterComponent implements OnInit {
   }
   removeReference(index: number): void {
     this.references.splice(index, 1);
+  }
+
+  /** Parse payment key "M-D-YYYY-HH-mm-ss" (no leading zeros needed) into Date */
+  private parsePaymentKey(key: string): Date | null {
+    const parts = key.split('-').map((n) => Number(n));
+    if (parts.length !== 6 || parts.some((n) => !Number.isFinite(n)))
+      return null;
+    const [M, D, Y, h, m, s] = parts;
+    const d = new Date(Y, M - 1, D, h, m, s);
+    return Number.isNaN(+d) ? null : d;
+  }
+
+  /** Find the most recent payment date from client.payments keys */
+  private getLastPaymentDate(
+    payments: Record<string, any> | undefined
+  ): Date | null {
+    if (!payments || typeof payments !== 'object') return null;
+    let latest: Date | null = null;
+    for (const k of Object.keys(payments)) {
+      const d = this.parsePaymentKey(k);
+      if (d && (!latest || d > latest)) latest = d;
+    }
+    return latest;
+  }
+
+  /** Returns true if at least 6 calendar months have passed since `since` */
+  private sixMonthsHavePassed(since: Date): boolean {
+    const plus6 = new Date(since);
+    plus6.setMonth(plus6.getMonth() + 6);
+    return new Date() >= plus6;
+  }
+
+  /**
+   * If creditScore ≤ 0 and the last payment is ≥ 6 months ago, set score to 50 (once).
+   * This updates `this.client.creditScore` so later validations & save calls persist it.
+   */
+  private maybeResetCreditScoreFromDormancy(): void {
+    const score = Number(this.client?.creditScore ?? 0);
+    if (score <= 0) {
+      const last = this.getLastPaymentDate(this.client?.payments);
+      if (last && this.sixMonthsHavePassed(last)) {
+        this.client.creditScore = '50';
+      }
+    }
   }
 }

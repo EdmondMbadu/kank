@@ -511,6 +511,7 @@ export class DataService {
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
       businessAddress: client.businessAddress,
+      creditScore: client.creditScore, // in case they went to 0 and 6 months has passed since they finished. in other case, it does nothing
       debtCycle: (Number(client.debtCycle) + 1).toString(),
       membershipFee: client.membershipFee,
       applicationFee: client.applicationFee,
