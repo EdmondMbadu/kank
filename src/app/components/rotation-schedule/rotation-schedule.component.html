@@ -22,39 +22,271 @@
   </button>
 </div>
 
-    <!-- ╭─ RÉCAPITULATIF DES ROTATIONS ────────────────────────────────╮ -->
-<div class="grid grid-cols-1  gap-4 mb-6">
+<!-- ╭─ RÉCAPITULATIF DES ROTATIONS — élégant & lisible ─────────────╮ -->
+<section class="space-y-6">
+  <!-- Section header -->
+  <header class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+      Récapitulatif des rotations
+    </h2>
 
-  <!-- Semaine courante -->
-  <div class="bg-green-50 p-4 rounded-lg shadow">
-    <h3 class="text-lg font-bold "> Rotation en cours durant la semaine du</h3>
-    <h4 class="text-md text-center my-2 italic mb-4">{{ thisWeekLabel }}</h4>
-    <ul>
-      <li *ngFor="let r of thisWeekRotation" class="flex justify-between">
-        <span>{{ r.employee.firstName }} {{ r.employee.lastName }}</span>
-        <span class="text-sm text-gray-600">{{ r.location }}</span>
-      </li>
-      <li *ngIf="!thisWeekRotation.length" class="italic text-gray-400">
-        — Aucune rotation —
-      </li>
-    </ul>
+    <!-- quick jump pills (anchors only) -->
+    <nav class="flex gap-2">
+      <a 
+         class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm
+                border-slate-200 bg-white text-slate-700 shadow-sm
+                hover:bg-slate-50 active:scale-[.98]
+                dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+        <span>🗓️</span> Semaine en cours
+      </a>
+      <a 
+         class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm
+                border-slate-200 bg-white text-slate-700 shadow-sm
+                hover:bg-slate-50 active:scale-[.98]
+                dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+        <span>⏭️</span> Semaine suivante
+      </a>
+    </nav>
+  </header>
+
+  <!-- Grid: This Week / Next Week -->
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+    <!-- ── SEMAINE COURANTE ───────────────────────────────────────── -->
+    <div id="week-now"
+         class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5
+                dark:border-slate-700 dark:bg-slate-800">
+      <!-- decorative glow -->
+      <div aria-hidden="true"
+           class="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full
+                  bg-emerald-400/15 blur-3xl"></div>
+      <div aria-hidden="true"
+           class="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full
+                  bg-sky-400/10 blur-3xl"></div>
+
+      <!-- header -->
+      <div class="flex items-center justify-between gap-2 px-5 pt-5">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🗓️</span>
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+            Rotation en cours
+          </h3>
+        </div>
+
+        <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium
+                     border-slate-200 bg-gradient-to-r from-slate-50 to-white text-slate-700 shadow-sm
+                     dark:border-slate-600 dark:from-slate-700 dark:to-slate-800 dark:text-slate-200">
+          Total <strong class="ml-1">{{ thisWeekRotation?.length || 0 }}</strong>
+        </span>
+      </div>
+
+      <p class="px-5 pb-2 pt-1 text-center text-sm italic text-slate-500 dark:text-slate-300">
+        {{ thisWeekLabel }}
+      </p>
+
+      <!-- empty -->
+      <div *ngIf="!thisWeekRotation?.length" class="px-5 pb-6 pt-3 text-center">
+        <div class="inline-flex items-center gap-2 rounded-xl border border-dashed px-4 py-3 text-slate-400
+                    dark:border-slate-600">
+          <span>— Aucune rotation —</span>
+        </div>
+      </div>
+
+      <!-- table -->
+      <div *ngIf="thisWeekRotation?.length" class="overflow-hidden pb-4">
+        <div class="max-h-[420px] overflow-auto">
+          <table class="min-w-full table-fixed divide-y divide-slate-200 dark:divide-slate-700">
+            <thead class="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-white text-left text-sm font-semibold
+                          text-slate-700 shadow-sm dark:from-slate-700 dark:to-slate-700/60 dark:text-slate-200">
+              <tr>
+                <th class="w-2/3 px-5 py-3">
+                  <div class="flex items-center gap-2">
+                    <span>👤</span> Employé
+                  </div>
+                </th>
+                <th class="w-1/3 px-5 py-3">
+                  <div class="flex items-center gap-2">
+                    <span>📍</span> Lieu
+                  </div>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+              <tr *ngFor="let r of thisWeekRotation; let i = index"
+                  class="transition hover:-translate-x-[1px] hover:bg-slate-50/80
+                         dark:hover:bg-slate-700/50"
+                  [class.bg-slate-50]="i % 2 === 0"
+                  [class.dark:bg-slate-800]="i % 2 === 0">
+                <!-- employee -->
+                <td class="px-5 py-3">
+                  <div class="flex items-center gap-3">
+                    <!-- avatar -->
+                    <div class="grid h-9 w-9 place-items-center rounded-full text-sm font-semibold
+                                bg-slate-900/5 text-slate-700 ring-2 ring-slate-200 ring-offset-2
+                                dark:bg-white/10 dark:text-slate-200 dark:ring-slate-700 dark:ring-offset-slate-800">
+                      {{ (r.employee?.firstName?.[0] || '').toUpperCase() }}{{ (r.employee?.lastName?.[0] || '').toUpperCase() }}
+                    </div>
+
+                    <div class="min-w-0">
+                      <div class="truncate font-medium text-slate-900 dark:text-white">
+                        {{ r.employee?.firstName }} {{ r.employee?.lastName }}
+                      </div>
+                      <div class="text-xs text-slate-500 dark:text-slate-300">Affectation en cours</div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- location -->
+                <td class="px-5 py-3">
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset
+                           shadow-sm"
+                    [ngClass]="[
+                      ['bg-emerald-50 text-emerald-700 ring-emerald-200',
+                       'bg-amber-50 text-amber-700 ring-amber-200',
+                       'bg-sky-50 text-sky-700 ring-sky-200',
+                       'bg-rose-50 text-rose-700 ring-rose-200',
+                       'bg-violet-50 text-violet-700 ring-violet-200',
+                       'bg-indigo-50 text-indigo-700 ring-indigo-200'
+                      ][(r.location?.length || 0) % 6]
+                    ]"
+                    [attr.title]="r.location || '—'">
+                    <span class="text-base leading-none">•</span> {{ r.location || '—' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- tiny legend -->
+        <div class="px-5 pt-2">
+          <p class="text-xs text-slate-400 dark:text-slate-400">
+            Astuce : la couleur aide à repérer visuellement le même lieu dans la liste.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SEMAINE PROCHAINE ──────────────────────────────────────── -->
+    <div id="week-next"
+         class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5
+                dark:border-slate-700 dark:bg-slate-800">
+      <!-- decorative glow -->
+      <div aria-hidden="true"
+           class="pointer-events-none absolute -top-16 -right-12 h-44 w-44 rounded-full
+                  bg-violet-400/15 blur-3xl"></div>
+      <div aria-hidden="true"
+           class="pointer-events-none absolute -bottom-16 -left-16 h-44 w-44 rounded-full
+                  bg-rose-400/10 blur-3xl"></div>
+
+      <!-- header -->
+      <div class="flex items-center justify-between gap-2 px-5 pt-5">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">⏭️</span>
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+            En rotation la semaine suivante
+          </h3>
+        </div>
+
+        <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium
+                     border-slate-200 bg-gradient-to-r from-slate-50 to-white text-slate-700 shadow-sm
+                     dark:border-slate-600 dark:from-slate-700 dark:to-slate-800 dark:text-slate-200">
+          Total <strong class="ml-1">{{ nextWeekRotation?.length || 0 }}</strong>
+        </span>
+      </div>
+
+      <!-- empty -->
+      <div *ngIf="!nextWeekRotation?.length" class="px-5 pb-6 pt-3 text-center">
+        <div class="inline-flex items-center gap-2 rounded-xl border border-dashed px-4 py-3 text-slate-400
+                    dark:border-slate-600">
+          <span>— Aucune rotation —</span>
+        </div>
+      </div>
+
+      <!-- table -->
+      <div *ngIf="nextWeekRotation?.length" class="overflow-hidden pb-4">
+        <div class="max-h-[420px] overflow-auto">
+          <table class="min-w-full table-fixed divide-y divide-slate-200 dark:divide-slate-700">
+            <thead class="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-white text-left text-sm font-semibold
+                          text-slate-700 shadow-sm dark:from-slate-700 dark:to-slate-700/60 dark:text-slate-200">
+              <tr>
+                <th class="w-2/3 px-5 py-3">
+                  <div class="flex items-center gap-2">
+                    <span>👤</span> Employé
+                  </div>
+                </th>
+                <th class="w-1/3 px-5 py-3">
+                  <div class="flex items-center gap-2">
+                    <span>📍</span> Lieu
+                  </div>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+              <tr *ngFor="let r of nextWeekRotation; let i = index"
+                  class="transition hover:-translate-x-[1px] hover:bg-slate-50/80
+                         dark:hover:bg-slate-700/50"
+                  [class.bg-slate-50]="i % 2 === 0"
+                  [class.dark:bg-slate-800]="i % 2 === 0">
+                <!-- employee -->
+                <td class="px-5 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="grid h-9 w-9 place-items-center rounded-full text-sm font-semibold
+                                bg-slate-900/5 text-slate-700 ring-2 ring-slate-200 ring-offset-2
+                                dark:bg-white/10 dark:text-slate-200 dark:ring-slate-700 dark:ring-offset-slate-800">
+                      {{ (r.employee?.firstName?.[0] || '').toUpperCase() }}{{ (r.employee?.lastName?.[0] || '').toUpperCase() }}
+                    </div>
+
+                    <div class="min-w-0">
+                      <div class="truncate font-medium text-slate-900 dark:text-white">
+                        {{ r.employee?.firstName }} {{ r.employee?.lastName }}
+                      </div>
+                      <div class="text-xs text-slate-500 dark:text-slate-300">Affectation prévue</div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- location -->
+                <td class="px-5 py-3">
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset
+                           shadow-sm"
+                    [ngClass]="[
+                      ['bg-emerald-50 text-emerald-700 ring-emerald-200',
+                       'bg-amber-50 text-amber-700 ring-amber-200',
+                       'bg-sky-50 text-sky-700 ring-sky-200',
+                       'bg-rose-50 text-rose-700 ring-rose-200',
+                       'bg-violet-50 text-violet-700 ring-violet-200',
+                       'bg-indigo-50 text-indigo-700 ring-indigo-200'
+                      ][(r.location?.length || 0) % 6]
+                    ]"
+                    [attr.title]="r.location || '—'">
+                    <span class="text-base leading-none">•</span> {{ r.location || '—' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="px-5 pt-2">
+          <p class="text-xs text-slate-400 dark:text-slate-400">
+            Astuce : la couleur aide à repérer visuellement le même lieu dans la liste.
+          </p>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Semaine prochaine -->
-  <div class="bg-blue-50 p-4 rounded-lg shadow">
-    <h3 class="text-lg font-bold mb-2">En rotation la semaine suivante</h3>
-    <ul>
-      <li *ngFor="let r of nextWeekRotation" class="flex justify-between">
-        <span>{{ r.employee.firstName }} {{ r.employee.lastName }}</span>
-        <span class="text-sm text-gray-600">{{ r.location }}</span>
-      </li>
-      <li *ngIf="!nextWeekRotation.length" class="italic text-gray-400">
-        — Aucune rotation —
-      </li>
-    </ul>
-  </div>
-</div>
+
+ 
+</section>
 <!-- ╰──────────────────────────────────────────────────────────────╯ -->
+
+
   <!-- ═════════════ Header & controls ═════════════ -->
   <div class="flex flex-wrap items-center justify-between mb-4 gap-2">
     <h2 class="text-3xl font-bold">
