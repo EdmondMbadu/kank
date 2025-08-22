@@ -66,13 +66,14 @@ export class RequestClientCardComponent {
 
     // Check if total paid today is >= 40% of the amount to return
     // this condtion is because of PUMBU. will be monitoring this.
-    else if (this.totalPaidToday >= 0.4 * amountToReturnNum) {
-      alert(
-        'Vous avez déjà donné beaucoup d’argent aujourd’hui. ' +
-          'Vous devriez attendre demain pour demander votre argent.'
-      );
-      return;
-    } else if (!checkDate) {
+    // else if (this.totalPaidToday >= 0.4 * amountToReturnNum) {
+    //   alert(
+    //     'Vous avez déjà donné beaucoup d’argent aujourd’hui. ' +
+    //       'Vous devriez attendre demain pour demander votre argent.'
+    //   );
+    //   return;
+    // }
+    else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
         - Est Dans L'intervalle D'Une Semaine\n
         - N'est Pas Aujourdhui ou au Passé
