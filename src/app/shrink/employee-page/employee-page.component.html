@@ -1110,3 +1110,80 @@
     </div>
   </div>
 </div>
+
+
+
+<!-- ───────────────── Attendance State Picker (Admin) ───────────────── -->
+<div *ngIf="showStatePickerModal"
+     class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Choisir l’état — {{ friendlyFromKey(statePickerKey) }}
+      </h3>
+      <button class="text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-lg p-1.5"
+              (click)="closeStatePicker()"
+              aria-label="Fermer">
+        ✕
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="px-4 py-4 space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+              <button
+          *ngFor="let s of pickerStates"
+          type="button"
+          (click)="selectedState = s.code"
+          class="w-full rounded-xl px-3 py-2 text-sm text-left ring-1 transition hover:shadow"
+          [ngClass]="{
+            'bg-green-50 ring-green-300': selectedState === 'P'  && s.code === 'P',
+            'bg-red-50 ring-red-300':     selectedState === 'A'  && s.code === 'A',
+            'bg-orange-50 ring-orange-300': selectedState === 'L' && s.code === 'L',
+            'bg-yellow-50 ring-yellow-300': selectedState === 'V' && s.code === 'V',
+            'bg-blue-50 ring-blue-300':   selectedState === 'VP' && s.code === 'VP',
+            'bg-gray-100 ring-gray-300':  (selectedState === ''   && s.code === '') ||
+                                          (selectedState === 'N'  && s.code === 'N')
+          }"
+        >
+          <div class="font-semibold text-gray-900 dark:text-gray-100">{{ s.label }}</div>
+          <div *ngIf="s.hint" class="text-xs text-gray-500 dark:text-gray-400">{{ s.hint }}</div>
+        </button>
+
+      </div>
+
+      <div class="text-xs text-gray-500 dark:text-gray-400">
+        Astuce : <strong>— Aucun</strong> efface la valeur de cette journée.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <button *ngIf="statePickerCurr"
+              type="button"
+              (click)="deleteAttendanceStateForKey()"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+                     text-white bg-rose-600 hover:bg-rose-700">
+        🗑️ Supprimer l’état
+      </button>
+
+      <div class="ml-auto flex gap-2">
+        <button type="button"
+                (click)="closeStatePicker()"
+                class="px-4 py-2 rounded-full text-sm font-medium
+                       bg-gray-100 hover:bg-gray-200 text-gray-800
+                       dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100">
+          Annuler
+        </button>
+        <button type="button"
+                (click)="applySelectedAttendanceState()"
+                class="px-4 py-2 rounded-full text-sm font-medium
+                       text-white bg-green-700 hover:bg-green-800">
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ────────────────────────────────────────────────────────────── -->

@@ -38,6 +38,36 @@ interface AuditReceipt {
   styleUrls: ['./employee-page.component.css'],
 })
 export class EmployeePageComponent implements OnInit {
+  // ── Attendance state picker (admin) ─────────────────────────────
+  showStatePickerModal = false;
+  public statePickerKey = ''; // key we will edit (e.g. "8-23-2025" or "8-23-2025-09-15-02")
+  public statePickerCurr: string | undefined; // current state at that key, if any
+  selectedState: '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' = '';
+
+  pickerStates: Array<{
+    code: '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N';
+    label: string;
+    hint?: string;
+  }> = [
+    { code: '', label: '— Aucun', hint: 'Effacer la valeur' },
+    { code: 'P', label: 'Présent' },
+    { code: 'A', label: 'Absent' },
+    { code: 'L', label: 'Retard' },
+    { code: 'V', label: 'Vacances' },
+    { code: 'VP', label: 'Vacances en cours' },
+    { code: 'N', label: 'Néant' },
+  ];
+
+  public friendlyFromKey(key: string): string {
+    // key examples: "8-23-2025" or "8-23-2025-09-15-02" → show DD/MM/YYYY
+    const [m, d, y] = key
+      .split('-')
+      .slice(0, 3)
+      .map((n) => parseInt(n, 10));
+    if (!m || !d || !y) return key;
+    return `${d}/${m}/${y}`;
+  }
+
   attachmentViewer = {
     open: false,
     url: '',
@@ -1753,29 +1783,13 @@ export class EmployeePageComponent implements OnInit {
     }
   }
 
-  /* ─── 2.  Prochain état dans la liste (boucle infinie) ───────── */
-  private nextState(curr?: string): string {
-    const i = this.ATT_STATES.indexOf(curr ?? ''); // -1 si undefined
-    return i === -1
-      ? 'P' // case vide ⇒ P
-      : this.ATT_STATES[(i + 1) % this.ATT_STATES.length];
-  }
-  /* ─── 3.  Clic sur la cellule ────────────────────────────────── */
-  private async onAttendanceCellClick(dateKey: string, curr?: string) {
+  /* ─── 3.  Clic sur la cellule → ouvrir le modal ──────────────── */
+  private onAttendanceCellClick(dateKey: string, curr?: string) {
     if (!this.auth.isAdmninistrator) return;
-
-    const next = this.nextState(curr); // plus jamais « '' »
-    const newAtt = { ...(this.employee.attendance ?? {}) };
-    newAtt[dateKey] = next; // on écrase toujours
-
-    try {
-      await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
-      this.employee.attendance = newAtt;
-      this.generateAttendanceTable(this.givenMonth, this.givenYear);
-    } catch (e) {
-      alert('❌ Impossible de mettre à jour la présence');
-      console.error(e);
-    }
+    this.statePickerKey = dateKey;
+    this.statePickerCurr = curr;
+    this.selectedState = (curr as any) ?? ''; // preselect current (or empty)
+    this.showStatePickerModal = true;
   }
 
   public closeAttachmentViewer() {
@@ -2435,5 +2449,63 @@ export class EmployeePageComponent implements OnInit {
     const digest = await crypto.subtle.digest('SHA-256', buf);
     const bytes = Array.from(new Uint8Array(digest));
     return bytes.map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /* ─── Appliquer le choix du modal ────────────────────────────── */
+  async applySelectedAttendanceState() {
+    if (!this.auth.isAdmninistrator || !this.statePickerKey) return;
+
+    const key = this.statePickerKey;
+    const choice = this.selectedState; // '' means "empty" → delete
+    const newAtt = { ...(this.employee.attendance ?? {}) };
+
+    if (!choice) {
+      // empty ⇒ delete entry if present
+      if (newAtt[key] !== undefined) delete newAtt[key];
+    } else {
+      newAtt[key] = choice;
+    }
+
+    try {
+      await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
+      this.employee.attendance = newAtt;
+      this.generateAttendanceTable(this.givenMonth, this.givenYear);
+    } catch (e) {
+      alert('❌ Impossible de mettre à jour la présence');
+      console.error(e);
+    } finally {
+      this.closeStatePicker();
+    }
+  }
+
+  /* ─── Supprimer explicitement l’état courant ─────────────────── */
+  async deleteAttendanceStateForKey() {
+    if (!this.auth.isAdmninistrator || !this.statePickerKey) return;
+
+    const key = this.statePickerKey;
+    const newAtt = { ...(this.employee.attendance ?? {}) };
+    if (newAtt[key] === undefined) {
+      this.closeStatePicker();
+      return;
+    }
+
+    try {
+      delete newAtt[key];
+      await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
+      this.employee.attendance = newAtt;
+      this.generateAttendanceTable(this.givenMonth, this.givenYear);
+    } catch (e) {
+      alert('❌ Impossible de supprimer cet état');
+      console.error(e);
+    } finally {
+      this.closeStatePicker();
+    }
+  }
+
+  public closeStatePicker() {
+    this.showStatePickerModal = false;
+    this.statePickerKey = '';
+    this.statePickerCurr = undefined;
+    this.selectedState = '';
   }
 }
