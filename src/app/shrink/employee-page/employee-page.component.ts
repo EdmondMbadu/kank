@@ -2500,8 +2500,10 @@ export class EmployeePageComponent implements OnInit {
     }
 
     try {
+      //  delete this.employee.attendance[date];
       delete newAtt[key];
-      await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
+      this.data.updateEmployeeAttendanceRejection(newAtt, this.employee.uid!);
+      // await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
       this.employee.attendance = newAtt;
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (e) {

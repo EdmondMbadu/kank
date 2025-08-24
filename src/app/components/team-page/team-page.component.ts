@@ -42,7 +42,7 @@ export class TeamPageComponent implements OnInit {
   ngOnInit(): void {
     this.retreiveClients();
   }
-
+  readonly TOTAL_VACATION_DAYS = 7;
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
@@ -67,6 +67,7 @@ export class TeamPageComponent implements OnInit {
   displayAddNewEmployee: boolean = false;
   displayEditEmployee: boolean = false;
   agentClientMap: any = {};
+  vacation: number = 0;
 
   toggleAddNewEmployee() {
     this.displayAddNewEmployee = !this.displayAddNewEmployee;
@@ -218,6 +219,13 @@ export class TeamPageComponent implements OnInit {
       );
     }
   }
+  /** Met à jour this.vacation (= jours restants) */
+  findNumberOfVacationDaysLeft() {
+    const acceptedDays =
+      Number(this.employee.vacationAcceptedNumberOfDays) || 0;
+    this.vacation = this.TOTAL_VACATION_DAYS - acceptedDays;
+  }
+
   getAgentsWithClients() {
     const agentClientMap: any = {};
 
