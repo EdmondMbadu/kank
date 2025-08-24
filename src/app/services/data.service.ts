@@ -316,6 +316,8 @@ export class DataService {
       status: employee.status,
       role: employee.role,
       vacationAcceptedNumberOfDays: employee.vacationAcceptedNumberOfDays,
+      arrivalHour: employee.arrivalHour,
+      arrivalMinute: employee.arrivalMinute,
     };
 
     return employeeRef.set(data, { merge: true });

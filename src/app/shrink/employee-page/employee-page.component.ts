@@ -1096,91 +1096,7 @@ export class EmployeePageComponent implements OnInit {
     em._attachmentType = null;
     em._attachmentSize = null;
   }
-  // async addAttendanceForEmployee(
-  //   employee: any,
-  //   attendanceValue: string,
-  //   dateLabel: string = ''
-  // ) {
-  //   if (!attendanceValue) {
-  //     alert('Remplissez la présence, Réessayez');
-  //     return;
-  //   }
 
-  //   this.savingAttendance = true;
-  //   try {
-  //     const label =
-  //       dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate(); // M-D-YYYY-HH-mm-ss
-  //     const now = new Date();
-  //     const dateISO = now.toISOString().slice(0, 10); // YYYY-MM-DD
-  //     const plainLabel = this.normalizeLabel(label, dateISO); // e.g. "8-12-2025"
-
-  //     if (!this.auth.currentUser.uid) {
-  //       alert('Aucun utilisateur associé à cet employé.');
-  //       return;
-  //     }
-
-  //     // 1) write legacy map
-  //     await this.data.updateEmployeeAttendanceForUser(
-  //       { [label]: attendanceValue },
-  //       employee.uid!,
-  //       this.auth.currentUser.uid
-  //     );
-
-  //     // 2) write day doc
-  //     await this.data.setAttendanceEntry(
-  //       this.auth.currentUser.uid,
-  //       employee.uid!,
-  //       dateISO,
-  //       attendanceValue as any,
-  //       label,
-  //       this.auth.currentUser?.uid || 'unknown'
-  //     );
-
-  //     // 3) optional attachment
-  //     let attMeta: any = null;
-  //     if (employee._attachmentFile) {
-  //       employee._uploading = true;
-  //       attMeta = await this.data.uploadAttendanceAttachment(
-  //         employee._attachmentFile,
-  //         employee.uid!,
-  //         this.auth.currentUser.uid,
-  //         dateISO,
-  //         this.auth.currentUser?.uid || 'unknown',
-  //         label
-  //       );
-  //       await this.data.addAttendanceAttachmentDoc(
-  //         this.auth.currentUser.uid,
-  //         employee.uid!,
-  //         dateISO,
-  //         attMeta
-  //       );
-  //       employee._uploading = false;
-  //       this.clearAttachment(employee);
-  //     }
-
-  //     // 🔵 Optimistic local update so the table refreshes immediately
-  //     this.employee.attendance = this.employee.attendance || {};
-  //     this.employee.attendance[label] = attendanceValue; // keep time-stamped key
-  //     if (attMeta) {
-  //       this.monthAttachmentsByLabel[plainLabel] = [
-  //         ...(this.monthAttachmentsByLabel[plainLabel] ?? []),
-  //         attMeta,
-  //       ];
-  //     }
-  //     this.generateAttendanceTable(this.givenMonth, this.givenYear);
-
-  //     // small delay so users can perceive the save
-  //     await this.sleep(350);
-
-  //     this.displayAttendance = false;
-  //     alert('Présence ajoutée avec succès');
-  //   } catch (e) {
-  //     console.error(e);
-  //     alert("Une erreur s'est produite lors de l'attendance, Réessayez");
-  //   } finally {
-  //     this.savingAttendance = false;
-  //   }
-  // }
   async addAttendanceForEmployee(
     employee: any,
     attendanceValue: string,
@@ -2311,33 +2227,6 @@ export class EmployeePageComponent implements OnInit {
     return p.mm <= M ? 'P' : 'L';
   }
 
-  // async confirmPhotoAttendance(employee: any) {
-  //   if (!employee._attachmentFile) {
-  //     alert("Ajoutez d'abord une photo (obligatoire).");
-  //     return;
-  //   }
-  //   const when: Date | null = employee._attachmentTakenAt || null;
-  //   if (!when) {
-  //     alert(
-  //       'Impossible de lire la date de la photo (EXIF/dern. modif). Réessayez.'
-  //     );
-  //     return;
-  //   }
-
-  //   const status = this.computeAttendanceFromPhoto(when);
-  //   if (!status) {
-  //     alert('Statut non déterminé. Ajoutez une photo valide.');
-  //     return;
-  //   }
-
-  //   // Label corresponds to the photo’s local Kinshasa time
-  //   const labelFromPhoto = this.kinLabelFromDate(when);
-
-  //   // Reuse your existing pipeline (it will upload the image + write takenAt)
-  //   this.attendance = status; // used inside addAttendanceForEmployee
-  //   await this.addAttendanceForEmployee(employee, status, labelFromPhoto);
-  // }
-
   async confirmPhotoAttendance(employee: any) {
     if (!employee._attachmentFile) {
       alert("Ajoutez d'abord une photo (obligatoire).");
@@ -2375,9 +2264,12 @@ export class EmployeePageComponent implements OnInit {
 
   /** Returns the cutoff (hour, minute) for a given Kinshasa day */
   private getCutoffFor(d: Date): { hour: number; minute: number } {
+    // added the new set time for the employee for a particularone.
+    let lH = Number(this.employee.arrivalHour) || this.limitHour;
+    let lM = Number(this.employee.arrivalMinute) || this.limitMinutes;
     return this.isKinSaturday(d)
       ? { hour: 11, minute: 5 }
-      : { hour: this.limitHour, minute: this.limitMinutes };
+      : { hour: lH, minute: lM };
   }
 
   /** Label for today's cutoff in Kinshasa (e.g., "09:05" or "11:05" on Saturday) */

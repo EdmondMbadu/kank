@@ -62,6 +62,9 @@ export class Employee {
   // NEW: parallel map of attachments by date
   attendanceAttachments?: { [date: string]: AttendanceAttachment };
 
+  arrivalHour?: string;
+  arrivalMinute?: string;
+
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;
   _attachmentPreview?: string | null;

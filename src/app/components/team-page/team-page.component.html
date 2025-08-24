@@ -133,6 +133,12 @@
         <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Jour de Vacances Restants: {{ numberOfVacationDaysLeft(em) }}
           </p>
+          <p  *ngIf="auth.isAdmin" class="mt-1 text-sm text-gray-500 dark:text-white">
+            Arrival Hour: {{ em.arrivalHour }}
+          </p>
+          <p  *ngIf="auth.isAdmin" class="mt-1 text-sm text-gray-500 dark:text-white">
+            Arrival Minute: {{ em.arrivalMinute}}
+          </p>
           <!-- docs links -->
           <div
             class="mt-3 flex flex-wrap gap-3"
@@ -295,6 +301,22 @@
           Jour De Vacances Accepter
           <input
             [(ngModel)]="employees[i].vacationAcceptedNumberOfDays"
+            type="text"
+            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+          />
+        </label>
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+         Arrival Hour
+          <input
+            [(ngModel)]="employees[i].arrivalHour"
+            type="text"
+            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+          />
+        </label>
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+          Arrival Minute
+          <input
+            [(ngModel)]="employees[i].arrivalMinute"
             type="text"
             class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
           />
