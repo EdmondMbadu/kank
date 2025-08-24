@@ -434,20 +434,24 @@
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
-<!-- ╭─ Credits & transports ───────────────────────────────────────────╮ -->
-<section class="mx-auto mt-16 max-w-md px-4 sm:px-6 lg:px-8">
-  <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+<!-- ╭─ Credits & transports (modern, minimal) ───────────────╮ -->
+<section class="mx-auto mt-16 max-w-md md:max-w-lg px-4 sm:px-6 lg:px-8">
+  <div class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10">
 
-    <!-- heading + search -->
-    <div class="mb-6 flex items-center justify-between">
-      <h3 class="text-xl font-bold text-gray-900 dark:text-gray-50">
-        Credits &amp; Transports
-      </h3>
+    <!-- Header: soft gradient + search -->
+    <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600">
+      <div class="flex items-center gap-2 text-white">
+        <!-- ticket icon -->
+        <svg class="h-5 w-5 opacity-90" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"/>
+        </svg>
+        <h3 class="text-base font-semibold tracking-wide">Crédits & Transports</h3>
+      </div>
 
       <div class="relative w-44">
         <svg
-          class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400"
-          fill="none" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+          class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/80"
+          viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M8 14a6 6 0 100-12 6 6 0 000 12zm5 1l3 3"/>
         </svg>
@@ -455,93 +459,127 @@
           id="search-code"
           [(ngModel)]="searchText"
           placeholder="Filtrer par date…"
-          class="w-full rounded-lg border bg-gray-50 py-2 pl-9 pr-3 text-sm
-                 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
-                 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          class="w-full rounded-lg bg-white/15 py-1.5 pl-8 pr-3 text-sm text-white placeholder-white/70
+                 ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none"
         />
       </div>
     </div>
 
-    <!-- upload (admin) -->
-    <div *ngIf="auth.isAdmin" class="mb-6 flex items-center gap-4">
-      <label
-        class="inline-flex cursor-pointer items-center gap-2 rounded-lg
-               bg-green-600 px-3 py-1.5 text-sm font-medium text-white
-               hover:bg-green-700">
-        📷 Joindre un reçu
+    <!-- Body -->
+    <div class="p-4">
+      <!-- upload (admin only) -->
+      <div *ngIf="auth.isAdmin" class="mb-5 flex items-center gap-3">
+        <label
+          class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2
+                 text-sm font-medium text-white hover:bg-emerald-700">
+          <!-- camera -->
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>
+          Joindre un reçu
+          <input type="file" hidden accept="image/*,application/pdf"
+                 (change)="uploadReceipt($any($event.target).files)" />
+        </label>
+
         <input
-          type="file" hidden accept="image/*,application/pdf"
-          (change)="uploadReceipt($any($event.target).files)" />
-      </label>
-      <input
-        type="number" min="0" step="0.01"
-        placeholder="Montant"
-        class="w-24 rounded-lg border bg-gray-50 p-2.5 text-sm
-               focus:border-green-500 focus:ring-2 focus:ring-green-500
-               dark:bg-gray-700 dark:text-white dark:border-gray-600"
-        [(ngModel)]="newReceiptAmount" />
-    </div>
+          type="number" min="0" step="0.01"
+          placeholder="Montant"
+          class="w-28 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm
+                 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500
+                 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          [(ngModel)]="newReceiptAmount" />
 
-    <!-- list -->
-    <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-      <li *ngFor="let r of filteredReceipts(); let i = index"
-          class="py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg px-2">
-        <div class="flex items-center gap-4">
-          <!-- initials -->
-          <div class="relative inline-flex h-10 w-10 items-center justify-center rounded-full
-                      bg-gray-100 text-sm font-medium text-gray-600 dark:bg-slate-600 dark:text-gray-300">
-            {{ auth.currentUser.firstName?.substring(0,2) }}
-          </div>
+        <!-- small admin badge -->
+        <span class="ml-auto hidden items-center gap-1 rounded-full px-2 py-0.5 text-xs
+                     ring-1 ring-emerald-300 bg-emerald-50 text-emerald-700
+                     dark:ring-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 sm:inline-flex">
+          Admin
+        </span>
+      </div>
 
-          <!-- date -->
-          <p class="flex-1 truncate text-sm font-medium
-                    text-gray-900 dark:text-gray-50">
-            {{ r.frenchDate }}
+      <!-- list (or empty state) -->
+      <ng-container *ngIf="filteredReceipts().length > 0; else emptyState">
+        <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
+          <li *ngFor="let r of filteredReceipts(); let i = index"
+              class="group rounded-lg px-2 py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+            <div class="flex items-center gap-4">
+              <!-- initials -->
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full
+                          bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-semibold text-slate-700
+                          ring-1 ring-black/5 dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 dark:ring-white/10">
+                {{ auth.currentUser.firstName?.substring(0,2) }}
+              </div>
+
+              <!-- date + sublabel -->
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-900 dark:text-slate-50">
+                  {{ r.frenchDate }}
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Reçu</p>
+              </div>
+
+              <!-- amount / edit -->
+              <ng-container *ngIf="!auth.isAdmin; else amountEdit">
+                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs
+                             bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200
+                             dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800">
+                  {{ r.amount | number:'1.0-2' }} $
+                </span>
+              </ng-container>
+              <ng-template #amountEdit>
+                <input
+                  type="number" min="0" step="0.01"
+                  class="w-24 rounded border border-slate-200 bg-slate-50 p-1.5 text-xs
+                         focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500
+                         dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  [(ngModel)]="r.amount"
+                  (blur)="updateAmount(r)" />
+              </ng-template>
+
+              <!-- receipt link -->
+              <a [href]="r.url" target="_blank" title="Voir le reçu" class="shrink-0">
+                <img src="../../../assets/img/validating-ticket.png"
+                     class="h-12 w-12 rounded-md border border-slate-200 object-cover bg-white
+                            dark:border-slate-700 dark:invert dark:brightness-110"
+                     alt="Reçu" />
+              </a>
+
+              <!-- admin ‘changer’ -->
+              <button
+                *ngIf="auth.isAdmin"
+                class="ml-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white
+                       hover:bg-blue-700"
+                (click)="prepareUpdate(r)">
+                Changer
+              </button>
+            </div>
+          </li>
+        </ul>
+      </ng-container>
+
+      <!-- empty state -->
+      <ng-template #emptyState>
+        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed
+                    border-slate-200 p-8 text-center dark:border-slate-700">
+          <svg class="h-8 w-8 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7 3h10l4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7l4-4zm8 0v4h4"/>
+          </svg>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            Aucun reçu pour l’instant.
           </p>
-
-          <!-- amount -->
-          <ng-container *ngIf="!auth.isAdmin; else amountEdit">
-            <p class="text-sm font-semibold text-green-700 dark:text-green-400">
-              {{ r.amount | number:'1.0-2' }} $
-            </p>
-          </ng-container>
-          <ng-template #amountEdit>
-            <input
-              type="number" min="0" step="0.01"
-              class="w-24 rounded border p-1 text-xs
-                     focus:border-green-500 focus:ring-2 focus:ring-green-500"
-              [(ngModel)]="r.amount"
-              (blur)="updateAmount(r)" />
-          </ng-template>
-
-          <!-- receipt link -->
-          <a [href]="r.url" target="_blank" title="Voir le reçu"
-             class="shrink-0">
-            <img src="../../../assets/img/validating-ticket.png"
-                 class="h-12 w-12 rounded-md border object-cover
-                        filter dark:invert dark:brightness-125"
-                 alt="Reçu" />
-          </a>
-
-          <!-- admin ‘changer’ -->
-          <button
-            *ngIf="auth.isAdmin"
-            class="ml-2 rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white
-                   hover:bg-blue-700"
-            (click)="prepareUpdate(r)">
-            Changer
-          </button>
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            Ajoutez un reçu ou affinez votre recherche.
+          </p>
         </div>
-      </li>
-    </ul>
+      </ng-template>
 
-    <!-- hidden file input for “Changer” -->
-    <input
-      #fileInput type="file" hidden accept="image/*,application/pdf"
-      (change)="replaceReceipt($any($event.target).files)" />
+      <!-- hidden file input for “Changer” -->
+      <input
+        #fileInput type="file" hidden accept="image/*,application/pdf"
+        (change)="replaceReceipt($any($event.target).files)" />
+    </div>
   </div>
 </section>
-<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+<!-- ╰─────────────────────────────────────────────────────────╯ -->
+
 <!-- ╔═══ Déverrouiller les paiements ═══╗ -->
 <div *ngIf="showCodeModal && !isPayUnlocked"
      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
