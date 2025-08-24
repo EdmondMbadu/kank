@@ -1132,24 +1132,27 @@
     <!-- Body -->
     <div class="px-4 py-4 space-y-3">
       <div class="grid grid-cols-2 gap-2">
-              <button
-          *ngFor="let s of pickerStates"
-          type="button"
-          (click)="selectedState = s.code"
-          class="w-full rounded-xl px-3 py-2 text-sm text-left ring-1 transition hover:shadow"
-          [ngClass]="{
-            'bg-green-50 ring-green-300': selectedState === 'P'  && s.code === 'P',
-            'bg-red-50 ring-red-300':     selectedState === 'A'  && s.code === 'A',
-            'bg-orange-50 ring-orange-300': selectedState === 'L' && s.code === 'L',
-            'bg-yellow-50 ring-yellow-300': selectedState === 'V' && s.code === 'V',
-            'bg-blue-50 ring-blue-300':   selectedState === 'VP' && s.code === 'VP',
-            'bg-gray-100 ring-gray-300':  (selectedState === ''   && s.code === '') ||
-                                          (selectedState === 'N'  && s.code === 'N')
-          }"
-        >
-          <div class="font-semibold text-gray-900 dark:text-gray-100">{{ s.label }}</div>
-          <div *ngIf="s.hint" class="text-xs text-gray-500 dark:text-gray-400">{{ s.hint }}</div>
-        </button>
+            <button
+            *ngFor="let s of pickerStates"
+            type="button"
+            (click)="selectedState = s.code"
+            class="w-full rounded-xl px-3 py-2 text-sm text-left ring-1 transition hover:shadow text-gray-900"
+            [ngClass]="{
+              'bg-green-50 ring-green-300':  selectedState === 'P'  && s.code === 'P',
+              'bg-red-50 ring-red-300':      selectedState === 'A'  && s.code === 'A',
+              'bg-orange-50 ring-orange-300': selectedState === 'L' && s.code === 'L',
+              'bg-yellow-50 ring-yellow-300': selectedState === 'V' && s.code === 'V',
+              'bg-blue-50 ring-blue-300':    selectedState === 'VP' && s.code === 'VP',
+              'bg-gray-100 ring-gray-300':   (selectedState === '' && s.code === '') || (selectedState === 'N' && s.code === 'N'),
+             
+              'dark:text-gray-900': selectedState === s.code,
+              'dark:text-gray-100': selectedState !== s.code
+            }"
+          >
+            <div class="font-semibold">{{ s.label }}</div>
+            <div *ngIf="s.hint" class="text-xs opacity-80">{{ s.hint }}</div>
+          </button>
+
 
       </div>
 
