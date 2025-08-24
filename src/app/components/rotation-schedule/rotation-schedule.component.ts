@@ -28,6 +28,22 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   private tfSubs: Subscription[] = [];
   private tfCellByIso = new Map<string, TFCell>();
 
+  // 🔸 Objectives store (week + employee + locationKey → bullets[])
+  private objectivesSubs: Subscription[] = [];
+  private objectivesByKey = new Map<string, string[]>();
+  thisWeekId = '';
+  nextWeekId = '';
+
+  objModal = {
+    visible: false,
+    weekId: '',
+    employee: null as Employee | null,
+    location: '',
+    bullets: [] as string[],
+    textarea: '', // admin editor source; one bullet per line
+  };
+  savingObj = false;
+
   taskMonthWeeks: (TFCell | null)[][] = [];
   taskWeekSummary: { day: string; entries: TFEntry[] }[] = [];
   /* ---- inputs ---- */
@@ -344,6 +360,8 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   /* good hygiene: tear-down when component is destroyed */
   ngOnDestroy() {
     this.schedSub?.unsubscribe();
+    this.objectivesSubs.forEach((s) => s.unsubscribe());
+    this.tfSubs.forEach((s) => s.unsubscribe());
   }
 
   /* month navigation — unchanged */
@@ -524,6 +542,20 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     }
     this.thisWeekRotation = this.dedupe(thisW);
     this.nextWeekRotation = this.dedupe(nextW);
+
+    // compute ISO-week ids (use Monday within the span)
+    const startThisAgain = this.addDays(
+      this.startOfWeek(new Date()),
+      this.weekOffset * 7
+    );
+    const mondayThis = this.addDays(startThisAgain, 1);
+    const mondayNext = this.addDays(mondayThis, 7);
+
+    this.thisWeekId = this.isoWeekId(mondayThis);
+    this.nextWeekId = this.isoWeekId(mondayNext);
+
+    // (re)load objectives for both weeks
+    this.loadObjectivesForWeeks([this.thisWeekId, this.nextWeekId]);
   }
   /** Fetch TaskForce for the whole displayed month */
   /** Fetch TaskForce for the whole displayed month */
@@ -647,29 +679,6 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     return ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][d.getDay()];
   }
 
-  // private recomputeTaskWeekSummary(): void {
-  //   const base = this.startOfWeek(new Date()); // Sunday
-  //   const names = [
-  //     'Dimanche',
-  //     'Lundi',
-  //     'Mardi',
-  //     'Mercredi',
-  //     'Jeudi',
-  //     'Vendredi',
-  //     'Samedi',
-  //   ];
-
-  //   this.taskWeekSummary = Array.from({ length: 7 }).map((_, i) => {
-  //     const d = this.addDays(base, i);
-  //     const iso = this.ymd(d);
-  //     /* look up loc from the already‑filled month grid */
-  //     let loc: string | undefined;
-  //     for (const row of this.taskMonthWeeks)
-  //       for (const cell of row) if (cell && cell.iso === iso) loc = cell.loc;
-
-  //     return { day: names[i], loc };
-  //   });
-  // }
   private recomputeTaskWeekSummary(): void {
     const base = this.startOfWeek(new Date()); // Sunday
     const names = [
@@ -818,5 +827,101 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       this.pickerDay,
       uid
     );
+  }
+
+  private slugify(s: string): string {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+  private objKey(weekId: string, uid?: string, loc?: string): string {
+    return `${weekId}::${uid || ''}::${this.slugify(loc || '')}`;
+  }
+
+  hasObjectives(weekId: string, uid?: string, loc?: string): boolean {
+    return this.objectivesByKey.has(this.objKey(weekId, uid, loc));
+  }
+
+  openObjectives(weekId: string, employee: Employee, location: string) {
+    const key = this.objKey(weekId, employee?.uid, location);
+    const bullets = this.objectivesByKey.get(key) || [];
+    this.objModal = {
+      visible: true,
+      weekId,
+      employee,
+      location,
+      bullets: [...bullets],
+      textarea: bullets.join('\n'),
+    };
+    this.cdr.markForCheck();
+  }
+
+  closeObjectives() {
+    this.objModal.visible = false;
+    this.cdr.markForCheck();
+  }
+
+  // sanitize: only bullet points (non-empty lines)
+  previewBullets(src: string): string[] {
+    return (src || '')
+      .split('\n')
+      .map((s) => s.replace(/^\s*[-•]\s*/, '').trim())
+      .filter(Boolean);
+  }
+
+  async saveObjectives() {
+    if (!this.auth.isAdmin || !this.objModal.visible || !this.objModal.employee)
+      return;
+
+    const bullets = this.previewBullets(this.objModal.textarea);
+    const key = this.objKey(
+      this.objModal.weekId,
+      this.objModal.employee.uid,
+      this.objModal.location
+    );
+    this.savingObj = true;
+    this.cdr.markForCheck();
+    try {
+      await this.rs.setRotationObjectives(
+        this.objModal.weekId,
+        key,
+        bullets.length ? bullets : null
+      );
+      // local cache update (optimistic)
+      if (bullets.length) this.objectivesByKey.set(key, bullets);
+      else this.objectivesByKey.delete(key);
+      this.closeObjectives();
+    } finally {
+      this.savingObj = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  private loadObjectivesForWeeks(weekIds: string[]) {
+    // clear previous subs for objectives
+    this.objectivesSubs.forEach((s) => s.unsubscribe());
+    this.objectivesSubs = [];
+
+    weekIds.forEach((weekId) => {
+      const sub = this.rs.getRotationObjectives(weekId).subscribe((map) => {
+        // remove any existing keys for this week
+        const prefix = `${weekId}::`;
+        for (const k of Array.from(this.objectivesByKey.keys())) {
+          if (k.startsWith(prefix)) this.objectivesByKey.delete(k);
+        }
+        // merge fresh
+        Object.entries(map || {}).forEach(([key, val]) => {
+          const arr = Array.isArray(val)
+            ? (val as string[]).filter(Boolean)
+            : [];
+          if (arr.length) this.objectivesByKey.set(key, arr);
+        });
+        this.cdr.markForCheck();
+      });
+      this.objectivesSubs.push(sub);
+    });
   }
 }

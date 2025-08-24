@@ -12,7 +12,7 @@ import {
 import { User } from '../models/user';
 import { Employee } from '../models/employee';
 import { RotationSchedule } from '../models/management';
-import { map, take } from 'rxjs';
+import { map, Observable, take } from 'rxjs';
 import firebase from 'firebase/compat/app';
 import { arrayRemove, arrayUnion, deleteField } from '@angular/fire/firestore';
 
@@ -605,5 +605,35 @@ export class PerformanceService {
       },
       { merge: true }
     );
+  }
+
+  // 🔹 Live map of objectives for a given ISO week (doc: rotationObjectives/{weekId})
+  getRotationObjectives(weekId: string): Observable<Record<string, string[]>> {
+    // Firestore shape suggestion:
+    // doc path: rotationObjectives/{weekId}
+    // fields:  "<weekId>::<uid>::<location-slug>": string[]
+    return this.afs
+      .doc<Record<string, string[]>>(`rotationObjectives/${weekId}`)
+      .valueChanges()
+      .pipe(map((v) => v || {}));
+  }
+
+  // 🔹 Set/clear bullets for a single key within a week
+  async setRotationObjectives(
+    weekId: string,
+    key: string,
+    bullets: string[] | null
+  ): Promise<void> {
+    const ref = this.afs.doc(`rotationObjectives/${weekId}`).ref;
+    return this.afs.firestore.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const data = (snap.data() || {}) as Record<string, string[]>;
+      if (bullets && bullets.length) {
+        data[key] = bullets;
+      } else {
+        delete data[key];
+      }
+      tx.set(ref, data, { merge: true });
+    });
   }
 }
