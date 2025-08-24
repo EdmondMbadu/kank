@@ -58,10 +58,10 @@
                     </span>
 
                    <span
-                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs ring-1"
-                    [style.--tw-ring-color]="perfColor"
-                    [ngStyle]="{ 'background-color': perfBg }"
-                  >
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs
+                            ring-1 ring-amber-200 bg-amber-50 text-amber-700
+                            dark:ring-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                  
                     <!-- spark -->
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" [ngStyle]="{ color: perfColor }">
                       <path d="M12 2l1.9 6H20l-4.9 3.6L17 18l-5-3.6L7 18l1.9-6L4 8h6.1L12 2z"/>
@@ -557,180 +557,220 @@
 </div>
 
 
-     <!-- ╔══════════ Reçus d’Audit ══════════╗ -->
-<div    class="mt-8 flex container mx-auto justify-center">
-  <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow
-              sm:p-8 dark:bg-gray-800 dark:border-gray-700">
+<!-- ╔══════════ Reçus d’Audit (modern card) ══════════╗ -->
+<div class="mt-8 container mx-auto px-4">
+  <div class="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 bg-white dark:bg-slate-900">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600">
+      <div class="flex items-center gap-2 text-white">
+        <!-- ticket icon -->
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"/></svg>
+        <h5 class="text-sm sm:text-base font-semibold tracking-wide">Crédits & Transports</h5>
+      </div>
 
-    <!-- header + quick-search -->
-    <div class="flex items-center justify-between mb-4">
-      <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">
-        Credits & Transports
-      </h5>
-      <input type="text" [(ngModel)]="auditSearch"
-             placeholder="Filtrer par date…"
-             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                    focus:ring-green-500 focus:border-green-500 p-2.5 dark:bg-gray-700
-                    dark:border-gray-600 dark:text-white">
+      <!-- search -->
+      <div class="relative">
+        <svg class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/80" viewBox="0 0 24 24" fill="currentColor"><path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z"/></svg>
+        <input type="text"
+               [(ngModel)]="auditSearch"
+               placeholder="Filtrer par date…"
+               class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white
+                      ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none" />
+      </div>
     </div>
 
-    <!-- upload (admin / audit only) -->
-    <div *ngIf="auth.isAdmin" class="mb-4">
-      <label class="cursor-pointer inline-flex items-center px-3 py-1.5 text-sm
-                     font-medium bg-green-700 text-white rounded-lg hover:bg-green-800">
-        📷 Joindre un reçu
-        <input type="file"  accept="image/*,application/pdf" hidden
-               (change)="auditUpload($any($event.target).files)">
-      </label>
-      <input type="number" min="0" step="0.01" [(ngModel)]="auditNewAmount"
-             placeholder="Montant"
-             class="ml-2 w-24 p-2.5 border rounded-lg bg-gray-50
-                    focus:ring-green-500 focus:border-green-500">
-    </div>
+    <!-- Body -->
+    <div class="p-4">
+      <!-- upload (admin only) -->
+      <div *ngIf="auth.isAdmin" class="mb-4 flex items-center gap-3">
+        <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-sm
+                       font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700">
+          <!-- camera -->
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>
+          Joindre un reçu
+          <input type="file" accept="image/*,application/pdf" hidden
+                 (change)="auditUpload($any($event.target).files)" />
+        </label>
 
-    <!-- list -->
-    <div class="flow-root">
-      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li *ngFor="let a of auditFiltered()"
-            class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600">
-          <div class="flex items-center space-x-4">
-            <div class="inline-flex items-center justify-center w-10 h-10 rounded-full
-                        bg-gray-100 dark:bg-gray-600">
-              <span class="font-medium text-gray-600 dark:text-gray-300">
-                {{ employee.firstName?.substring(0,2) }}
-              </span>
+        <input type="number" min="0" step="0.01" [(ngModel)]="auditNewAmount"
+               placeholder="Montant"
+               class="w-28 p-2 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+                      focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100" />
+      </div>
+
+      <!-- list -->
+      <ul class="divide-y divide-slate-200 dark:divide-slate-700">
+        <li *ngFor="let a of auditFiltered()" class="py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-lg">
+          <div class="flex items-center gap-4 px-1">
+            <div class="flex-shrink-0">
+              <div class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600
+                          flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10">
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-100">
+                  {{ employee.firstName?.substring(0,2) }}
+                </span>
+              </div>
             </div>
 
-            <p class="flex-1 text-sm font-medium truncate dark:text-white">
-              {{ a.frenchDate }}
-            </p>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                {{ a.frenchDate }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Reçu</p>
+            </div>
 
             <!-- amount -->
             <ng-container *ngIf="!auth.isAdmin; else editAmt">
-              <p class="text-sm font-semibold text-green-700">
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs
+                           bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200
+                           dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800">
                 {{ a.amount | number:'1.0-2' }} $
-              </p>
+              </span>
             </ng-container>
             <ng-template #editAmt>
               <input type="number" min="0" step="0.01" [(ngModel)]="a.amount"
                      (blur)="auditUpdateAmount(a)"
-                     class="w-24 p-1 text-xs border rounded
-                            focus:ring-green-500 focus:border-green-500">
+                     class="w-24 p-1.5 text-xs rounded border
+                            bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700
+                            focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500
+                            text-slate-900 dark:text-slate-100" />
             </ng-template>
 
-            <a [href]="a.url" target="_blank">
+            <a [href]="a.url" target="_blank" class="flex-shrink-0">
               <img src="../../../assets/img/validating-ticket.png"
-                   class="w-12 h-12 object-cover rounded-md border" />
+                   class="w-11 h-11 object-cover rounded-md border border-slate-200 dark:border-slate-700 bg-white" />
             </a>
 
             <button *ngIf="auth.isAdmin"
-                    class="ml-2 px-2 py-1 text-xs font-medium text-white
-                           bg-blue-600 rounded hover:bg-blue-700"
+                    class="ml-1 px-2.5 py-1.5 text-xs font-medium text-white rounded-lg
+                           bg-blue-600 hover:bg-blue-700"
                     (click)="auditPrepareReplace(a)">
               Changer
             </button>
           </div>
         </li>
       </ul>
-    </div>
 
-    <!-- hidden input for “Changer” -->
-    <input type="file" #auditFileInput hidden  accept="image/*,application/pdf"
-           (change)="auditReplace($any($event.target).files)">
+      <!-- hidden input for “Changer” -->
+      <input type="file" #auditFileInput hidden accept="image/*,application/pdf"
+             (change)="auditReplace($any($event.target).files)" />
+    </div>
   </div>
 </div>
-<!-- ╚══════════════════════════════════════╝ -->
+<!-- ╚════════════════════════════════════════════════╝ -->
 
-<div class=" mt-6 flex container mx-auto  justify-center">
 
-    <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-        <div class="flex items-center justify-between mb-4">
-            <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Paiements</h5>
-            <div class="flex items-center">   
-                <label for="simple-search" class="sr-only">Chercher</label>
-                <div class="relative w-full">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-                        </svg>
-                    </div>
-                    <input type="text" [(ngModel)]="code" id="simple-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Entrer Le Code..." required>
-                </div>
-                <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                    
-                    <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                    </svg>
+<!-- ╔══════════ Paiements (modern card) ══════════╗ -->
+<div class="mt-6 container mx-auto px-4">
+  <div class="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 bg-white dark:bg-slate-900">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-sky-600">
+      <div class="flex items-center gap-2 text-white">
+        <!-- receipt icon -->
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h12l2 3v17l-4-2-4 2-4-2-4 2V5l2-3zm4 6h8M6 10h12M6 14h12M6 18h6"/></svg>
+        <h5 class="text-sm sm:text-base font-semibold tracking-wide">Paiements</h5>
+      </div>
 
-                    <span class="sr-only">Chercher</span>
-                </button>
+      <!-- code input + button (unchanged behavior) -->
+      <div class="flex items-center">
+        <label for="simple-search" class="sr-only">Chercher</label>
+        <div class="relative w-48 sm:w-56">
+          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5">
+            <svg class="h-4 w-4 text-white/80" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 10a8 8 0 1 1 14.32 4.906l1.387 1.387-1.415 1.415-1.387-1.387A8 8 0 0 1 2 10z"/>
+            </svg>
+          </div>
+          <input type="text" [(ngModel)]="code" id="simple-search"
+                 class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white
+                        ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none w-full"
+                 placeholder="Entrer Le Code..." required />
+        </div>
+        <button type="submit"
+                class="ml-2 p-2.5 text-sm font-medium text-white bg-white/15 rounded-lg border border-white/20
+                       hover:bg-white/25 focus:ring-2 focus:ring-white/60">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+            <path d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+          </svg>
+          <span class="sr-only">Chercher</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div *ngIf="code===paymentCode" class="p-4">
+      <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
+        <li class="py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-lg"
+            *ngFor="let p of paymentAmounts; let i=index">
+          <div class="flex items-center gap-4 px-1">
+            <!-- avatar -->
+            <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden
+                        bg-slate-100 rounded-full dark:bg-slate-700 ring-1 ring-black/5 dark:ring-white/10">
+              <span class="font-medium text-slate-700 dark:text-slate-100">
+                {{ this.auth.currentUser.firstName?.substring(0,2) }}
+              </span>
             </div>
-            
+
+            <!-- date -->
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-900 truncate dark:text-white">
+                {{ paymentDates[i] }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Virement</p>
+            </div>
+
+            <!-- amount -->
+            <div class="inline-flex items-center">
+              <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs
+                           bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200
+                           dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800">
+                $ {{ paymentAmounts[i] | number:'1.0-0' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- thumbnails / actions -->
+          <div class="mt-2 flex items-center justify-center gap-6">
+            <!-- generated invoice / picture -->
+            <a [href]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]" target="_blank"
+               class="group inline-flex items-center gap-2">
+              <img src="../../../assets/img/receipt.png"
+                   class="w-12 h-12 object-cover rounded-md border bg-white border-slate-200 dark:border-slate-700" alt="">
+              <span class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline">Facture</span>
+            </a>
+
+            <!-- bank receipt -->
+            <ng-container *ngIf="employee.receipts && employee.receipts[paymentAmounts.length - 1 - i]">
+              <a [href]="employee.receipts[paymentAmounts.length - 1 - i]" target="_blank"
+                 class="group inline-flex items-center gap-2">
+                <img src="../../../assets/img/validating-ticket.png"
+                     class="w-12 h-12 object-cover rounded-md border border-slate-200 dark:border-slate-700" alt="Bank Transfer Receipt" />
+                <span class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline">Reçu</span>
+              </a>
+              <button *ngIf="this.auth.isAdmin"
+                      (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                      class="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                Changer Reçu
+              </button>
+            </ng-container>
+
+            <!-- attach when missing -->
+            <ng-container *ngIf="!employee.receipts || !employee.receipts[paymentAmounts.length - 1 - i]">
+              <button *ngIf="this.auth.isAdmin"
+                      (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                      class="px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700">
+                Attacher Reçu
+              </button>
+            </ng-container>
+          </div>
+        </li>
+      </ul>
     </div>
-    <div *ngIf="code===paymentCode" class="flow-root">
-            <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-                <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let p of paymentAmounts; let i=index">
 
-                    <div class="flex items-center space-x-4">
-                     <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                         <span class="font-medium text-gray-600 dark:text-gray-300">{{this.auth.currentUser.firstName?.substring(0,2)}}</span>
-                     </div>
-                        <div class="flex-1 min-w-0">
-                         <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                             {{paymentDates[i]}}
-                         </p>
-                         <!-- <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                         {{paymentDates[i].replaceAll('-','/').substring(0,9)}}
-                         </p> -->
-                     </div>
-                  
-                        <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                            
-                         $ {{paymentAmounts[i] | number:'1.0-0'}}
-                        </div>
-
-                    </div>
-                    <div class="container flex flex-row items-center space-x-8 mx-auto justify-center">
-
-                            
-                                    <a [href]="employee.paymentsPicturePath![paymentAmounts.length - 1 - i]"target="_blank">
-                                        <img src="../../../assets/img/receipt.png" class="w-12 h-12 object-cover rounded-md border bg-white" alt="">
-                                    </a>
-                                    <!-- If receipt[i] is set, show an image/link + "Change" button -->
-                        <ng-container *ngIf="employee.receipts && employee.receipts[paymentAmounts.length - 1 - i]">
-                        <a [href]="employee.receipts[paymentAmounts.length - 1 - i]" target="_blank">
-                            <img src="../../../assets/img/validating-ticket.png"
-                                class="w-12 h-12 object-cover rounded-md border"
-                                alt="Bank Transfer Receipt" />
-                        </a>
-                        <button *ngIf="this.auth.isAdmin" (click)="attachReceipt(paymentAmounts.length - 1 - i)"
-                        class="px-2 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 my-2 mx-auto">
-                        Changer Reçu
-                        </button>
-                        </ng-container>
-
-                        <!-- Otherwise, if no receipt, show "Attach" button -->
-                        <ng-container *ngIf="!employee.receipts ||
-                                    !employee.receipts[paymentAmounts.length - 1 - i]">
-                        <button *ngIf="this.auth.isAdmin" (click)="attachReceipt(paymentAmounts.length - 1 - i)"
-                        class="px-2 py-1 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700 my-2 mx-auto">
-                        Attacher Reçu
-                        </button>
-                        </ng-container>
-                    </div>
-                </li>
-            </ul>
-    </div>
-    
-    </div>
-    
-    <input
-    type="file"
-    id="receiptFileInput"
-    style="display: none;"
-    (change)="onReceiptFileSelected($any($event.target).files)"
-  />
+    <!-- hidden input for receipts -->
+    <input type="file" id="receiptFileInput" style="display: none;"
+           (change)="onReceiptFileSelected($any($event.target).files)" />
   </div>
+</div>
+<!-- ╚═══════════════════════════════════════════════╝ -->
 
       <div *ngIf="displayAttendance"
           class="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-4">
