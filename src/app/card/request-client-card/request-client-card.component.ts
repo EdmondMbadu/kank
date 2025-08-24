@@ -73,7 +73,8 @@ export class RequestClientCardComponent {
     //   );
     //   return;
     // }
-    else if (!checkDate) {
+    // only check the date if the perosn logged in is not the admin
+    else if (!checkDate && !this.auth.isAdmin) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
         - Est Dans L'intervalle D'Une Semaine\n
         - N'est Pas Aujourdhui ou au Passé
