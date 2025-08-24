@@ -220,10 +220,15 @@ export class TeamPageComponent implements OnInit {
     }
   }
   /** Met à jour this.vacation (= jours restants) */
-  findNumberOfVacationDaysLeft() {
-    const acceptedDays =
-      Number(this.employee.vacationAcceptedNumberOfDays) || 0;
-    this.vacation = this.TOTAL_VACATION_DAYS - acceptedDays;
+  numberOfVacationDaysLeft(employee: Employee) {
+    const acceptedDays = Number(employee.vacationAcceptedNumberOfDays) || 0;
+    console.log(
+      ' employee accepted number of days',
+      employee.firstName,
+      acceptedDays
+    );
+
+    return this.TOTAL_VACATION_DAYS - acceptedDays;
   }
 
   getAgentsWithClients() {
