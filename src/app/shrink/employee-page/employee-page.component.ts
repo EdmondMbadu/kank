@@ -297,6 +297,16 @@ export class EmployeePageComponent implements OnInit {
     this.vacation = this.TOTAL_VACATION_DAYS - acceptedDays;
   }
 
+  get perfColor(): string {
+    const n = Number(this.performancePercentageMonth) || 0;
+    return this.compute.getGradientColor(n); // e.g. "rgb(255, 0, 0)"
+  }
+
+  get perfBg(): string {
+    // light tint for the chip background
+    return this.perfColor.replace('rgb(', 'rgba(').replace(')', ',0.12)');
+  }
+
   toggle(property: 'showRequestVacation' | 'isLoading') {
     this[property] = !this[property];
   }

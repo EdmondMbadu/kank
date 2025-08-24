@@ -57,22 +57,27 @@
                       Vacances : <strong class="ml-0.5">{{vacation}}</strong>
                     </span>
 
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs
-                            ring-1 ring-amber-200 bg-amber-50 text-amber-700
-                            dark:ring-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                      <!-- spark -->
-                      <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 6H20l-4.9 3.6L17 18l-5-3.6L7 18l1.9-6L4 8h6.1L12 2z"/></svg>
-                      Perf. {{preposition}} {{time.monthFrenchNames[givenMonth-1]}} :
-                      <strong class="ml-0.5">{{performancePercentageMonth}}%</strong>
-                    </span>
+                   <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs ring-1"
+                    [style.--tw-ring-color]="perfColor"
+                    [ngStyle]="{ 'background-color': perfBg }"
+                  >
+                    <!-- spark -->
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" [ngStyle]="{ color: perfColor }">
+                      <path d="M12 2l1.9 6H20l-4.9 3.6L17 18l-5-3.6L7 18l1.9-6L4 8h6.1L12 2z"/>
+                    </svg>
+                    Perf. {{ preposition }} {{ time.monthFrenchNames[givenMonth-1] }} :
+                    <strong class="ml-0.5" [ngStyle]="{ color: perfColor }">{{ performancePercentageMonth }}%</strong>
+                  </span>
+
                   </div>
 
-                  <!-- slim progress (visual only, bound to existing percent) -->
-                  <div class="mt-2 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-sky-500"
-                        [style.width.%]="performancePercentageMonth"></div>
-                  </div>
+                 <div class="mt-2 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div class="h-full rounded-full transition-all"
+                      [style.width.%]="performancePercentageMonth"
+                      [ngStyle]="{ 'background-color': perfColor }"></div>
+                </div>
+
 
                   <!-- Contract chip -->
                   <div class="mt-2">
