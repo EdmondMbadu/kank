@@ -30,7 +30,7 @@ export class AuthService {
   currentUser: any = {};
   managementInfo: any = {};
   word: string = 'synergie';
-  distributor: string = 'geste';
+  distributor: string = 'plan';
   public isAdmninistrator: boolean = false;
   public isDistributoring: boolean = false;
   clientId: string = '';
