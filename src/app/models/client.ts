@@ -92,4 +92,21 @@ export class Comment {
   __commentDraft?: string;
 
   [key: string]: any;
+  // NEW:
+  attachments?: Array<{
+    type: 'image' | 'video';
+    url: string;
+    mimeType: string;
+    size: number; // bytes
+    width?: number; // px (image/video)
+    height?: number; // px (image/video)
+    durationSec?: number; // video only
+    captureTimeOriginalISO?: string; // exact original timestamp
+    captureTimeSource?:
+      | 'exif'
+      | 'mediainfo'
+      | 'fileLastModified'
+      | 'uploadTime';
+    gps?: { lat: number; lng: number; alt?: number }; // if available from EXIF
+  }>;
 }

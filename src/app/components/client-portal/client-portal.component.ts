@@ -7,6 +7,34 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import exifr from 'exifr';
+import MediaInfo from 'mediainfo.js';
+
+type ImageAttachment = {
+  type: 'image';
+  url: string;
+  mimeType: string;
+  size: number;
+  width?: number;
+  height?: number;
+  captureTimeOriginalISO?: string;
+  captureTimeSource?: 'exif' | 'fileLastModified' | 'uploadTime';
+  gps?: { lat: number; lng: number; alt?: number };
+};
+
+type VideoAttachment = {
+  type: 'video';
+  url: string;
+  mimeType: string;
+  size: number;
+  width?: number;
+  height?: number;
+  durationSec?: number;
+  captureTimeOriginalISO?: string;
+  captureTimeSource?: 'mediainfo' | 'fileLastModified' | 'uploadTime';
+};
+
+type MediaAttachment = ImageAttachment | VideoAttachment;
 
 @Component({
   selector: 'app-client-portal',
@@ -71,6 +99,22 @@ export class ClientPortalComponent {
   debtStart = '';
   debtEnd = '';
   savingsText: string = 'Transfer Epargne vers Paiement';
+
+  // Image selection
+  selectedImageFile?: File;
+  selectedImagePreviewURL?: string;
+  imageCaptureTimeISO?: string;
+  imageCaptureTimeSource?: 'exif' | 'fileLastModified' | 'uploadTime';
+  imageMetaWH?: { width: number; height: number } | null;
+  imageGPS?: { lat: number; lng: number; alt?: number } | null;
+
+  // Video selection
+  selectedVideoFile?: File;
+  selectedVideoPreviewURL?: string;
+  videoCaptureTimeISO?: string;
+  videoCaptureTimeSource?: 'mediainfo' | 'fileLastModified' | 'uploadTime';
+  videoMeta?: { width?: number; height?: number; durationSec?: number } | null;
+
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -616,39 +660,154 @@ export class ClientPortalComponent {
       });
   }
 
+  // addCommentWithAudioFile() {
+  //   // 1) Must have a name
+  //   if (!this.personPostingComment || !this.personPostingComment.trim()) {
+  //     alert('Veuillez saisir votre nom.');
+  //     return;
+  //   }
+
+  //   // 2) Check for text or audio
+  //   const hasText = this.comment && this.comment.trim().length > 0;
+  //   const hasRecordedAudio = !!this.recordedBlob; // if user used mic
+  //   const hasUploadedAudio = !!this.selectedAudioFile; // if user selected a file
+
+  //   if (!hasText && !hasRecordedAudio && !hasUploadedAudio) {
+  //     alert(
+  //       'Veuillez saisir un commentaire OU un fichier audio (enregistré ou téléversé).'
+  //     );
+  //     return;
+  //   }
+
+  //   // 3) Confirm
+  //   if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) {
+  //     return;
+  //   }
+
+  //   // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
+  //   if (hasRecordedAudio) {
+  //     this.uploadRecordedBlobAndThenPostComment();
+  //   } else if (hasUploadedAudio) {
+  //     this.uploadSelectedFileAndThenPostComment();
+  //   } else {
+  //     // just text
+  //     this.postCommentToFirestore('');
+  //   }
+  // }
+
+  // Keep backward compatibility with your template call if needed:
   addCommentWithAudioFile() {
-    // 1) Must have a name
+    this.addCommentWithMedia();
+  }
+
+  async addCommentWithMedia() {
+    // 1) validate author name
     if (!this.personPostingComment || !this.personPostingComment.trim()) {
       alert('Veuillez saisir votre nom.');
       return;
     }
 
-    // 2) Check for text or audio
     const hasText = this.comment && this.comment.trim().length > 0;
-    const hasRecordedAudio = !!this.recordedBlob; // if user used mic
-    const hasUploadedAudio = !!this.selectedAudioFile; // if user selected a file
+    const hasRecordedAudio = !!this.recordedBlob;
+    const hasUploadedAudio = !!this.selectedAudioFile;
+    const hasImage = !!this.selectedImageFile;
+    const hasVideo = !!this.selectedVideoFile;
 
-    if (!hasText && !hasRecordedAudio && !hasUploadedAudio) {
-      alert(
-        'Veuillez saisir un commentaire OU un fichier audio (enregistré ou téléversé).'
+    if (
+      !hasText &&
+      !hasRecordedAudio &&
+      !hasUploadedAudio &&
+      !hasImage &&
+      !hasVideo
+    ) {
+      alert('Ajoutez un texte, un audio, une image ou une vidéo.');
+      return;
+    }
+
+    if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) return;
+
+    try {
+      // 2) Upload audio if present (reusing your existing functions)
+      let audioUrl = '';
+      if (hasRecordedAudio) {
+        audioUrl = await this.uploadRecordedBlobReturnUrl();
+      } else if (hasUploadedAudio) {
+        audioUrl = await this.uploadSelectedAudioFileReturnUrl();
+      }
+
+      // 3) Upload media (image/video) in parallel
+      const [imgAtt, vidAtt] = await Promise.all([
+        this.uploadImageForComment(),
+        this.uploadVideoForComment(),
+      ]);
+
+      const attachments: MediaAttachment[] = [imgAtt, vidAtt].filter(
+        (x): x is MediaAttachment => x !== null
       );
-      return;
-    }
 
-    // 3) Confirm
-    if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) {
-      return;
-    }
+      // 4) Post to Firestore with attachments + audio
+      this.postCommentToFirestoreWithAttachments(audioUrl, attachments);
 
-    // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
-    if (hasRecordedAudio) {
-      this.uploadRecordedBlobAndThenPostComment();
-    } else if (hasUploadedAudio) {
-      this.uploadSelectedFileAndThenPostComment();
-    } else {
-      // just text
-      this.postCommentToFirestore('');
+      // 5) Reset local UI state
+      this.clearSelectedImage();
+      this.clearSelectedVideo();
+      this.discardAudio(); // clears audio previews as you already do
+    } catch (e) {
+      console.error(e);
+      alert('Erreur lors de l’envoi des pièces jointes.');
     }
+  }
+
+  // helpers to reuse your upload paths for audio
+  private async uploadRecordedBlobReturnUrl(): Promise<string> {
+    const fileName = `recorded-${Date.now()}.webm`;
+    const audioFile = new File([this.recordedBlob!], fileName, {
+      type: this.recordedBlob!.type,
+    });
+    const path = `clients-audio/${this.client.uid}-${fileName}`;
+    const uploadTask = await this.storage.upload(path, audioFile);
+    return await uploadTask.ref.getDownloadURL();
+  }
+
+  private async uploadSelectedAudioFileReturnUrl(): Promise<string> {
+    const fileName = `upload-${Date.now()}-${this.selectedAudioFile?.name}`;
+    const path = `clients-audio/${this.client.uid}-${fileName}`;
+    const uploadTask = await this.storage.upload(path, this.selectedAudioFile!);
+    return await uploadTask.ref.getDownloadURL();
+  }
+
+  private postCommentToFirestoreWithAttachments(
+    audioUrl: string,
+    attachments: MediaAttachment[]
+  ) {
+    const newComment: any = {
+      name: this.personPostingComment!, // required
+      time: this.time.todaysDate(), // required
+      ...(this.comment && this.comment.trim()
+        ? { comment: this.comment.trim() }
+        : {}),
+      ...(audioUrl ? { audioUrl } : {}),
+      ...(attachments.length ? { attachments } : {}),
+    };
+
+    // Build the new array and strip undefined everywhere
+    const updated = [...this.comments, newComment];
+    const sanitized = this.stripUndefinedDeep(updated);
+
+    // Use sanitized for UI and for Firestore write
+    this.comments = sanitized;
+
+    this.data
+      .addCommentToClientProfile(this.client, sanitized)
+      .then(() => {
+        this.personPostingComment = '';
+        this.comment = '';
+        alert('Commentaire publié avec succès !');
+      })
+      .catch((error) => {
+        console.error(error);
+        alert('Erreur lors de la publication du commentaire.');
+      });
   }
 
   private async uploadRecordedBlobAndThenPostComment() {
@@ -702,19 +861,22 @@ export class ClientPortalComponent {
   }
 
   private postCommentToFirestore(audioUrl: string) {
-    const newComment: Comment = {
-      name: this.personPostingComment,
-      comment: this.comment,
+    const newComment: any = {
+      name: this.personPostingComment!,
       time: this.time.todaysDate(),
-      audioUrl: audioUrl, // could be '' if none
+      ...(this.comment && this.comment.trim()
+        ? { comment: this.comment.trim() }
+        : {}),
+      ...(audioUrl ? { audioUrl } : {}),
     };
 
-    // Add locally
-    this.comments.push(newComment);
+    const updated = [...this.comments, newComment];
+    const sanitized = this.stripUndefinedDeep(updated);
 
-    // Save to Firestore
+    this.comments = sanitized;
+
     this.data
-      .addCommentToClientProfile(this.client, this.comments)
+      .addCommentToClientProfile(this.client, sanitized)
       .then(() => {
         this.personPostingComment = '';
         this.comment = '';
@@ -724,5 +886,324 @@ export class ClientPortalComponent {
         console.error(error);
         alert('Erreur lors de la publication du commentaire.');
       });
+  }
+
+  formatISOToDRC(iso?: string): string {
+    if (!iso) return '';
+    try {
+      // Use your existing service if you prefer:
+      // return this.time.formatDateForDRCFromISO(iso);
+      const d = new Date(iso);
+      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
+      return `${pad(d.getDate())}/${pad(
+        d.getMonth() + 1
+      )}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
+        d.getSeconds()
+      )}`;
+    } catch {
+      return iso;
+    }
+  }
+
+  private toISO(d: Date | string | undefined | null): string | undefined {
+    if (!d) return undefined;
+    if (d instanceof Date) return d.toISOString();
+    const maybe = new Date(d);
+    return isNaN(maybe.getTime()) ? undefined : maybe.toISOString();
+  }
+
+  async onImageSelected(fileList: FileList | null) {
+    if (!fileList || !fileList.length) return;
+    const file = fileList[0];
+
+    if (file.size > 10 * 1024 * 1024) {
+      // 10 MB
+      alert("L'image dépasse 10MB.");
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez choisir un fichier image.');
+      return;
+    }
+
+    this.selectedImageFile = file;
+    this.selectedImagePreviewURL = URL.createObjectURL(file);
+    this.imageMetaWH = null;
+    this.imageGPS = null;
+    this.imageCaptureTimeISO = undefined;
+    this.imageCaptureTimeSource = undefined;
+
+    // Read width/height quickly
+    await new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        this.imageMetaWH = { width: img.width, height: img.height };
+        resolve();
+      };
+      img.src = this.selectedImagePreviewURL!;
+    });
+
+    // Extract EXIF (DateTimeOriginal, GPS)
+    try {
+      const exif: any = await exifr.parse(file, {
+        gps: true,
+        tiff: true,
+        exif: true,
+        ifd1: false,
+        xmp: true,
+      });
+      const dt = exif?.DateTimeOriginal || exif?.CreateDate || exif?.ModifyDate;
+      const iso = this.toISO(dt);
+      if (iso) {
+        this.imageCaptureTimeISO = iso;
+        this.imageCaptureTimeSource = 'exif';
+      } else {
+        // fallback: file last modified
+        this.imageCaptureTimeISO = new Date(file.lastModified).toISOString();
+        this.imageCaptureTimeSource = 'fileLastModified';
+      }
+
+      if (
+        typeof exif?.latitude === 'number' &&
+        typeof exif?.longitude === 'number'
+      ) {
+        this.imageGPS = {
+          lat: exif.latitude,
+          lng: exif.longitude,
+          alt: exif.altitude,
+        };
+      }
+    } catch {
+      // EXIF stripped; fallback
+      this.imageCaptureTimeISO = new Date(file.lastModified).toISOString();
+      this.imageCaptureTimeSource = 'fileLastModified';
+    }
+
+    // reset input so picking the same file later triggers change
+    const input = document.getElementById('imageFile') as HTMLInputElement;
+    if (input) input.value = '';
+  }
+
+  clearSelectedImage() {
+    if (this.selectedImagePreviewURL)
+      URL.revokeObjectURL(this.selectedImagePreviewURL);
+    this.selectedImageFile = undefined;
+    this.selectedImagePreviewURL = undefined;
+    this.imageCaptureTimeISO = undefined;
+    this.imageCaptureTimeSource = undefined;
+    this.imageMetaWH = null;
+    this.imageGPS = null;
+  }
+
+  async onVideoSelected(fileList: FileList | null) {
+    if (!fileList || !fileList.length) return;
+    const file = fileList[0];
+
+    if (file.size > 100 * 1024 * 1024) {
+      // 100 MB
+      alert('La vidéo dépasse 100MB.');
+      return;
+    }
+    if (!file.type.startsWith('video/')) {
+      alert('Veuillez choisir un fichier vidéo.');
+      return;
+    }
+
+    this.selectedVideoFile = file;
+    this.selectedVideoPreviewURL = URL.createObjectURL(file);
+    this.videoMeta = {};
+
+    // MediaInfo (heavy-ish, but client-side)
+    try {
+      const mediaInfo = await MediaInfo({ format: 'object' });
+
+      const getSize = () => file.size;
+      const readChunk = (size: number, offset: number) =>
+        new Promise<Uint8Array>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () =>
+            resolve(new Uint8Array(reader.result as ArrayBuffer));
+          reader.readAsArrayBuffer(file.slice(offset, offset + size));
+        });
+
+      const res: any = await mediaInfo.analyzeData(getSize, readChunk);
+      const tracks: any[] = res?.media?.track || [];
+      const general =
+        tracks.find((t) => (t['@type'] || t.Type) === 'General') || {};
+      const videoTrack =
+        tracks.find((t) => (t['@type'] || t.Type) === 'Video') || {};
+
+      // Dates come like "UTC 2024-06-30 14:22:10"
+      const rawDate: string | undefined =
+        general.Encoded_Date ||
+        general.Tagged_Date ||
+        general.Mastered_Date ||
+        general.File_Last_Modified_Date;
+
+      const parseUtcLike = (s?: string): string | undefined => {
+        if (!s) return undefined;
+        const m = s.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+        if (!m) return undefined;
+        const [_, Y, M, D, h, m2, s2] = m.map(Number);
+        return new Date(Date.UTC(Y, M - 1, D, h, m2, s2)).toISOString();
+      };
+
+      const isoMaybe = parseUtcLike(rawDate);
+      if (isoMaybe) {
+        this.videoCaptureTimeISO = isoMaybe;
+        this.videoCaptureTimeSource = 'mediainfo';
+      } else {
+        this.videoCaptureTimeISO = new Date(file.lastModified).toISOString();
+        this.videoCaptureTimeSource = 'fileLastModified';
+      }
+
+      // Dimensions / duration
+      const width = Number(videoTrack?.Width) || undefined;
+      const height = Number(videoTrack?.Height) || undefined;
+      // MediaInfo duration often ms
+      const durationMs =
+        Number(general?.Duration) || Number(videoTrack?.Duration) || undefined;
+      const durationSec =
+        typeof durationMs === 'number' && !isNaN(durationMs)
+          ? Math.round(durationMs / 1000)
+          : undefined;
+
+      this.videoMeta = { width, height, durationSec };
+    } catch {
+      // fallback
+      this.videoCaptureTimeISO = new Date(file.lastModified).toISOString();
+      this.videoCaptureTimeSource = 'fileLastModified';
+      this.videoMeta = {};
+    }
+
+    // reset input
+    const input = document.getElementById('videoFile') as HTMLInputElement;
+    if (input) input.value = '';
+  }
+
+  clearSelectedVideo() {
+    if (this.selectedVideoPreviewURL)
+      URL.revokeObjectURL(this.selectedVideoPreviewURL);
+    this.selectedVideoFile = undefined;
+    this.selectedVideoPreviewURL = undefined;
+    this.videoCaptureTimeISO = undefined;
+    this.videoCaptureTimeSource = undefined;
+    this.videoMeta = null;
+  }
+  private async uploadImageForComment(): Promise<ImageAttachment | null> {
+    if (!this.selectedImageFile) return null;
+
+    const file = this.selectedImageFile;
+    const captureISO = this.imageCaptureTimeISO || new Date().toISOString();
+    const captureSrc = this.imageCaptureTimeSource || 'uploadTime';
+
+    const path = `clients-media/images/${this.client.uid}-${Date.now()}-${
+      file.name
+    }`;
+    const metadata = {
+      contentType: file.type,
+      customMetadata: {
+        captureTimeOriginalISO: captureISO,
+        captureTimeSource: captureSrc,
+        width: this.imageMetaWH?.width?.toString() || '',
+        height: this.imageMetaWH?.height?.toString() || '',
+        gps_lat: this.imageGPS?.lat?.toString() || '',
+        gps_lng: this.imageGPS?.lng?.toString() || '',
+        gps_alt: this.imageGPS?.alt?.toString() || '',
+      },
+    };
+
+    const uploadTask = await this.storage.upload(path, file, metadata);
+    const url = await uploadTask.ref.getDownloadURL();
+
+    const att: ImageAttachment = {
+      type: 'image',
+      url,
+      mimeType: file.type,
+      size: file.size,
+      ...(this.imageMetaWH?.width !== undefined
+        ? { width: this.imageMetaWH.width }
+        : {}),
+      ...(this.imageMetaWH?.height !== undefined
+        ? { height: this.imageMetaWH.height }
+        : {}),
+      ...(captureISO ? { captureTimeOriginalISO: captureISO } : {}),
+      ...(captureSrc ? { captureTimeSource: captureSrc } : {}),
+      ...(this.imageGPS
+        ? {
+            gps: {
+              lat: this.imageGPS.lat,
+              lng: this.imageGPS.lng,
+              ...(this.imageGPS.alt !== undefined
+                ? { alt: this.imageGPS.alt }
+                : {}),
+            },
+          }
+        : {}),
+    };
+
+    return att;
+  }
+
+  private async uploadVideoForComment(): Promise<VideoAttachment | null> {
+    if (!this.selectedVideoFile) return null;
+
+    const file = this.selectedVideoFile;
+    const captureISO = this.videoCaptureTimeISO || new Date().toISOString();
+    const captureSrc = this.videoCaptureTimeSource || 'uploadTime';
+
+    const path = `clients-media/videos/${this.client.uid}-${Date.now()}-${
+      file.name
+    }`;
+    const metadata = {
+      contentType: file.type,
+      customMetadata: {
+        captureTimeOriginalISO: captureISO,
+        captureTimeSource: captureSrc,
+        width: this.videoMeta?.width?.toString() || '',
+        height: this.videoMeta?.height?.toString() || '',
+        durationSec: this.videoMeta?.durationSec?.toString() || '',
+      },
+    };
+
+    const uploadTask = await this.storage.upload(path, file, metadata);
+    const url = await uploadTask.ref.getDownloadURL();
+
+    const att: VideoAttachment = {
+      type: 'video',
+      url,
+      mimeType: file.type,
+      size: file.size,
+      ...(this.videoMeta?.width !== undefined
+        ? { width: this.videoMeta.width }
+        : {}),
+      ...(this.videoMeta?.height !== undefined
+        ? { height: this.videoMeta.height }
+        : {}),
+      ...(this.videoMeta?.durationSec !== undefined
+        ? { durationSec: this.videoMeta.durationSec }
+        : {}),
+      ...(captureISO ? { captureTimeOriginalISO: captureISO } : {}),
+      ...(captureSrc ? { captureTimeSource: captureSrc } : {}),
+    };
+
+    return att;
+  }
+
+  private stripUndefinedDeep<T>(value: T): T {
+    if (Array.isArray(value)) {
+      return value
+        .map((v) => this.stripUndefinedDeep(v))
+        .filter((v) => v !== undefined) as unknown as T;
+    }
+    if (value && typeof value === 'object') {
+      const out: any = {};
+      for (const [k, v] of Object.entries(value as any)) {
+        if (v === undefined) continue;
+        out[k] = this.stripUndefinedDeep(v as any);
+      }
+      return out;
+    }
+    return value;
   }
 }

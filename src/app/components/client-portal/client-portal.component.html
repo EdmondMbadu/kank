@@ -810,6 +810,96 @@
         </div>
       </div>
 
+<!-- Attach images / videos -->
+<div class="my-6 grid gap-4 md:grid-cols-2">
+  <!-- Image picker -->
+  <label for="imageFile"
+         class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors">
+    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+      <svg class="w-8 h-8 mb-2 text-gray-500" aria-hidden="true"
+           xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5
+                 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0
+                 0 8h2.167M10 15V6m0 0L7 9m3-3 3 3"/>
+      </svg>
+      <p class="text-sm text-gray-500">
+        <span class="font-semibold">Ajouter une image</span> (JPG, PNG, HEIC…)
+      </p>
+      <p class="text-xs text-gray-500">Max 10&nbsp;MB</p>
+    </div>
+    <input id="imageFile" type="file" accept="image/*"
+           (change)="onImageSelected($any($event.target).files)" class="hidden"/>
+  </label>
+
+  <!-- Video picker -->
+  <label for="videoFile"
+         class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors">
+    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+      <svg class="w-8 h-8 mb-2 text-gray-500" viewBox="0 0 24 24" fill="none"
+           xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="3" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <p class="text-sm text-gray-500">
+        <span class="font-semibold">Ajouter une vidéo</span> (MP4, MOV…)
+      </p>
+      <p class="text-xs text-gray-500">Max 100&nbsp;MB</p>
+    </div>
+    <input id="videoFile" type="file" accept="video/*"
+           (change)="onVideoSelected($any($event.target).files)" class="hidden"/>
+  </label>
+</div>
+
+<!-- Image preview + exact capture time -->
+<div *ngIf="selectedImagePreviewURL" class="my-3 rounded-lg border p-3 bg-gray-50">
+  <div class="flex items-start gap-4">
+    <img [src]="selectedImagePreviewURL" class="h-24 w-24 object-cover rounded-lg shadow"/>
+    <div class="text-sm text-gray-700">
+      <div *ngIf="imageCaptureTimeISO">
+        <strong>Prise le&nbsp;:</strong>
+        {{ formatISOToDRC(imageCaptureTimeISO) }}
+        <span class="text-gray-400">({{ imageCaptureTimeSource }})</span>
+      </div>
+      <div *ngIf="imageMetaWH?.width">
+        <strong>Taille&nbsp;:</strong> {{ imageMetaWH?.width }}×{{ imageMetaWH?.height }} px
+      </div>
+      <div *ngIf="imageGPS">
+        <strong>GPS&nbsp;:</strong> {{ imageGPS.lat }}, {{ imageGPS.lng }}
+      </div>
+      <button type="button" (click)="clearSelectedImage()"
+              class="mt-2 inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200">
+        Retirer l’image
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Video preview + exact capture time -->
+<div *ngIf="selectedVideoPreviewURL" class="my-3 rounded-lg border p-3 bg-gray-50">
+  <div class="flex flex-col gap-2">
+    <video [src]="selectedVideoPreviewURL" controls class="w-full max-w-md rounded-lg shadow"></video>
+    <div class="text-sm text-gray-700">
+      <div *ngIf="videoCaptureTimeISO">
+        <strong>Filmé le&nbsp;:</strong>
+        {{ formatISOToDRC(videoCaptureTimeISO) }}
+        <span class="text-gray-400">({{ videoCaptureTimeSource }})</span>
+      </div>
+      <div *ngIf="videoMeta?.width">
+        <strong>Taille&nbsp;:</strong> {{ videoMeta!.width }}×{{ videoMeta!.height }} px
+      </div>
+      <div *ngIf="videoMeta?.durationSec">
+        <strong>Durée&nbsp;:</strong> {{ videoMeta!.durationSec | number:'1.0-0' }} s
+      </div>
+      <button type="button" (click)="clearSelectedVideo()"
+              class="mt-2 inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200">
+        Retirer la vidéo
+      </button>
+    </div>
+  </div>
+</div>
+
       <button (click)="addCommentWithAudioFile()" type="submit"
           class="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-green-700 rounded-lg focus:ring-4 focus:ring-green-200 dark:focus:ring-green-900 hover:bg-green-800">
           Poster commentaire
@@ -878,6 +968,34 @@
         class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"
       ></audio>
     </div>
+    <!-- attachments (images / videos) -->
+    <div *ngIf="c.attachments?.length" class="mt-4 ml-6 grid gap-4">
+      <ng-container *ngFor="let att of c.attachments">
+        <!-- image -->
+        <figure *ngIf="att.type === 'image'" class="rounded-lg overflow-hidden">
+          <img [src]="att.url" class="max-h-64 rounded-lg shadow object-contain"/>
+          <figcaption class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+            Prise le&nbsp;
+            <span *ngIf="att.captureTimeOriginalISO">{{ formatISOToDRC(att.captureTimeOriginalISO) }}</span>
+            <span *ngIf="!att.captureTimeOriginalISO">—</span>
+            <span class="text-gray-400" *ngIf="att.captureTimeSource">&nbsp;({{ att.captureTimeSource }})</span>
+          </figcaption>
+        </figure>
+
+        <!-- video -->
+        <figure *ngIf="att.type === 'video'" class="rounded-lg overflow-hidden">
+          <video [src]="att.url" controls class="w-full max-w-lg rounded-lg shadow"></video>
+          <figcaption class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+            Filmé le&nbsp;
+            <span *ngIf="att.captureTimeOriginalISO">{{ formatISOToDRC(att.captureTimeOriginalISO) }}</span>
+            <span *ngIf="!att.captureTimeOriginalISO">—</span>
+            <span class="text-gray-400" *ngIf="att.captureTimeSource">&nbsp;({{ att.captureTimeSource }})</span>
+            <span *ngIf="att.durationSec">&nbsp;•&nbsp;{{ att.durationSec | number:'1.0-0' }} s</span>
+          </figcaption>
+        </figure>
+      </ng-container>
+    </div>
+
   </blockquote>
 </article>
 
