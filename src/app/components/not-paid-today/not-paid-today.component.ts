@@ -286,28 +286,22 @@ export class NotPaidTodayComponent {
     );
   }
 
-  /** Render a compact summary for a comment:
-   *  - If text exists, return a truncated text (<= 40 chars)
-   *  - Else show "image+" / "video+" / "audio+" depending on attachments/audio
-   */
-  commentSummary(com: any): string {
-    if (!com) return '—';
+  /** Truncate comment text like before (<= 40 chars) */
+  commentSnippet(com: any): string {
+    const text = (com?.comment ?? '').toString().trim();
+    return text.length > 30 ? text.slice(0, 30) + '…' : text;
+  }
 
-    const text = (com.comment ?? '').toString().trim();
-    if (text) {
-      return text.length > 40 ? text.slice(0, 40) + '…' : text;
-    }
-
-    const attachments = Array.isArray(com.attachments) ? com.attachments : [];
-    const hasImage = attachments.some((a: any) => a?.type === 'image');
-    const hasVideo = attachments.some((a: any) => a?.type === 'video');
-    const hasAudio = !!com.audioUrl;
-
-    const parts: string[] = [];
-    if (hasImage) parts.push('image+');
-    if (hasVideo) parts.push('video+');
-    if (hasAudio) parts.push('audio+');
-
-    return parts.length ? parts.join(' ') : '—';
+  /** Media flags (safe for undefined) */
+  hasImage(com: any): boolean {
+    const a = Array.isArray(com?.attachments) ? com.attachments : [];
+    return a.some((x: any) => x?.type === 'image');
+  }
+  hasVideo(com: any): boolean {
+    const a = Array.isArray(com?.attachments) ? com.attachments : [];
+    return a.some((x: any) => x?.type === 'video');
+  }
+  hasAudio(com: any): boolean {
+    return !!com?.audioUrl;
   }
 }
