@@ -843,7 +843,7 @@ export class EmployeePageComponent implements OnInit {
               cell.innerHTML = `${date}<br>Vacance`;
             } else if (attendance === 'F') {
               cell.classList.add(
-                'bg-gray-700',
+                'bg-rose-700',
                 'border',
                 'border-black',
                 'text-white'
