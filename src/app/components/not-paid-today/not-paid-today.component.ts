@@ -285,4 +285,29 @@ export class NotPaidTodayComponent {
       client.comments.find((c) => c.time!.startsWith(normalisedReq)) || null
     );
   }
+
+  /** Render a compact summary for a comment:
+   *  - If text exists, return a truncated text (<= 40 chars)
+   *  - Else show "image+" / "video+" / "audio+" depending on attachments/audio
+   */
+  commentSummary(com: any): string {
+    if (!com) return '—';
+
+    const text = (com.comment ?? '').toString().trim();
+    if (text) {
+      return text.length > 40 ? text.slice(0, 40) + '…' : text;
+    }
+
+    const attachments = Array.isArray(com.attachments) ? com.attachments : [];
+    const hasImage = attachments.some((a: any) => a?.type === 'image');
+    const hasVideo = attachments.some((a: any) => a?.type === 'video');
+    const hasAudio = !!com.audioUrl;
+
+    const parts: string[] = [];
+    if (hasImage) parts.push('image+');
+    if (hasVideo) parts.push('video+');
+    if (hasAudio) parts.push('audio+');
+
+    return parts.length ? parts.join(' ') : '—';
+  }
 }
