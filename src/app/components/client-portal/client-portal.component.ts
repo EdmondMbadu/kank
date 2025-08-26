@@ -74,6 +74,8 @@ export class ClientPortalComponent {
   age: number | null = null; // ← nouveau
   dateJoined: string = '';
 
+  isPosting = false;
+
   public graphCredit = {
     data: [
       {
@@ -725,7 +727,7 @@ export class ClientPortalComponent {
     }
 
     if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) return;
-
+    this.isPosting = true;
     try {
       // 2) Upload audio if present (reusing your existing functions)
       let audioUrl = '';
@@ -755,6 +757,9 @@ export class ClientPortalComponent {
     } catch (e) {
       console.error(e);
       alert('Erreur lors de l’envoi des pièces jointes.');
+    } finally {
+      this.isPosting = false; // ⬅️ stop UI feedback
+      this.cd.detectChanges();
     }
   }
 

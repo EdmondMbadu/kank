@@ -900,10 +900,21 @@
   </div>
 </div>
 
-      <button (click)="addCommentWithAudioFile()" type="submit"
-          class="inline-flex items-center py-2.5 px-4 text-xs font-medium text-center text-white bg-green-700 rounded-lg focus:ring-4 focus:ring-green-200 dark:focus:ring-green-900 hover:bg-green-800">
-          Poster commentaire
-      </button>
+     <button
+      (click)="addCommentWithAudioFile()"
+      type="button"
+      class="inline-flex items-center gap-2 py-2.5 px-4 text-xs font-medium text-white bg-green-700 rounded-lg focus:ring-4 focus:ring-green-200 dark:focus:ring-green-900 hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
+      [disabled]="isPosting"
+      aria-live="polite"
+    >
+      <!-- spinner while posting -->
+      <svg *ngIf="isPosting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+      </svg>
+      <span>{{ isPosting ? 'Envoi…' : 'Poster commentaire' }}</span>
+    </button>
+
     </div>
 <!--  modern block-quote style for each comment  -->
 <article
@@ -1004,6 +1015,13 @@
   
 </section>
 
-
-
-
+<!-- Posting overlay -->
+<div *ngIf="isPosting" class="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm">
+  <div class="flex items-center gap-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 px-5 py-3 shadow-2xl ring-1 ring-black/10 dark:ring-white/10">
+    <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+    </svg>
+    <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Envoi du commentaire…</span>
+  </div>
+</div>
