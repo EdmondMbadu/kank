@@ -180,21 +180,21 @@
               <!-- COMMENT (or missing) -->
               <ng-container *ngIf="getTodaysComment(c) as com; else noComment">
                 <span
-                  class="mt-3 inline-flex max-w-full items-center gap-2 rounded-lg
+                  class="mt-3 inline-flex w-full items-center gap-2 rounded-lg
                         bg-emerald-100/80 px-3 py-1.5 text-[11px] font-medium
                         text-emerald-800 shadow-sm ring-1 ring-emerald-200/50
                         transition-opacity duration-200 group-hover:opacity-90
                         dark:bg-emerald-700/40 dark:text-emerald-100 dark:ring-emerald-600/40">
 
-                  <!-- leading tick/plus icon (kept from your design) -->
+                  <!-- leading plus icon -->
                   <svg xmlns="http://www.w3.org/2000/svg"
                       class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 11H5m7 8V5" stroke="currentColor"
                           stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                   </svg>
 
-                  <!-- media icon cluster (only shows the ones present) -->
-                  <span class="inline-flex items-center gap-1.5">
+                  <!-- media icons cluster -->
+                  <span class="inline-flex items-center gap-1.5 shrink-0">
                     <!-- image -->
                     <ng-container *ngIf="hasImage(com)">
                       <svg class="h-4 w-4 text-emerald-700 dark:text-emerald-200"
@@ -222,14 +222,26 @@
                     </ng-container>
                   </span>
 
-                  <!-- text (exactly like before) -->
-                  <span class="truncate max-w-xl">
-                    “{{ commentSnippet(com) }}”
+                  <!-- text area (grows & truncates) -->
+                  <span class="flex-1 min-w-0">
+                    <span *ngIf="hasText(com)" class="block truncate">
+                      “{{ commentSnippet(com) }}”
+                    </span>
                   </span>
 
-                  <!-- author -->
-                  <span class="max-w-lg">— {{ com.name }}</span>
+                  <!-- author badge pinned right -->
+                  <span
+                    class="ml-auto inline-flex items-center gap-1 shrink-0
+                          rounded-full bg-white/70 px-2 py-0.5 text-[10px]
+                          text-emerald-800 ring-1 ring-emerald-200/60
+                          dark:bg-emerald-900/30 dark:text-emerald-100 dark:ring-emerald-700/40">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z"/>
+                    </svg>
+                    <span class="font-semibold whitespace-nowrap">{{ com.name }}</span>
+                  </span>
                 </span>
+
 
               </ng-container>
 

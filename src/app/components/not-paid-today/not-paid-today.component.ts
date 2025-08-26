@@ -289,7 +289,7 @@ export class NotPaidTodayComponent {
   /** Truncate comment text like before (<= 40 chars) */
   commentSnippet(com: any): string {
     const text = (com?.comment ?? '').toString().trim();
-    return text.length > 30 ? text.slice(0, 30) + '…' : text;
+    return text.length > 40 ? text.slice(0, 40) + '…' : text;
   }
 
   /** Media flags (safe for undefined) */
@@ -303,5 +303,8 @@ export class NotPaidTodayComponent {
   }
   hasAudio(com: any): boolean {
     return !!com?.audioUrl;
+  }
+  hasText(com: any): boolean {
+    return !!(com?.comment && com.comment.toString().trim().length);
   }
 }
