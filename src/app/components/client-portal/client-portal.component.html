@@ -973,12 +973,16 @@
 
     <!-- audio (if any) -->
     <div *ngIf="c.audioUrl" class="mt-4 ml-6">
-      <audio
-        [src]="c.audioUrl"
-        controls
-        class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"
-      ></audio>
+      <audio [src]="c.audioUrl" controls class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"></audio>
+      <div *ngIf="c['audioMeta']?.captureTimeOriginalISO" class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+        Enregistré le&nbsp;{{ formatISOToDRC(c['audioMeta'].captureTimeOriginalISO) }}
+        <span *ngIf="c['audioMeta']?.captureTimeSource" class="text-gray-400">
+          ({{ c['audioMeta'].captureTimeSource }})
+        </span>
+        <span *ngIf="c['audioMeta']?.durationSec">&nbsp;•&nbsp;{{ c['audioMeta'].durationSec | number:'1.0-0' }} s</span>
+      </div>
     </div>
+
     <!-- attachments (images / videos) -->
     <div *ngIf="c.attachments?.length" class="mt-4 ml-6 grid gap-4">
       <ng-container *ngFor="let att of c.attachments">

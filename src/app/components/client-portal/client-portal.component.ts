@@ -34,6 +34,18 @@ type VideoAttachment = {
   captureTimeSource?: 'mediainfo' | 'fileLastModified' | 'uploadTime';
 };
 
+type AudioMeta = {
+  mimeType?: string;
+  durationSec?: number;
+  bitrateKbps?: number;
+  captureTimeOriginalISO?: string;
+  captureTimeSource?:
+    | 'mediainfo'
+    | 'fileLastModified'
+    | 'recordTime'
+    | 'uploadTime';
+};
+
 type MediaAttachment = ImageAttachment | VideoAttachment;
 
 @Component({
@@ -135,34 +147,28 @@ export class ClientPortalComponent {
   elapsedTime = '00:00';
   recordingProgress = 0;
   private recordingTimer: any;
-
   onAudioFileSelected(fileList: FileList | null) {
-    if (!fileList || fileList.length === 0) {
-      return;
-    }
-
+    if (!fileList || fileList.length === 0) return;
     const file = fileList[0];
 
-    // Optional: Check size, type, etc.
-    if (file.size >= 20000000) {
+    // Keep your size limit (20 MB). Adjust if you want to allow bigger audio.
+    if (file.size >= 20 * 1024 * 1024) {
       alert('Le fichier audio dépasse la limite de 20MB.');
       return;
     }
 
-    if (file.type.split('/')[0] !== 'audio') {
-      alert('Veuillez choisir un fichier audio valide.');
-      return;
-    }
-
+    // Accept files even if type is empty or non-standard (Safari/WhatsApp cases).
+    // We'll validate/parse metadata later with MediaInfo.
     this.selectedAudioFile = file;
 
-    // Create a local preview URL for immediate playback
+    // Local preview for immediate playback
     this.selectedAudioPreviewURL = URL.createObjectURL(file);
-    // ⚠️ IMPORTANT: Reset the input value so that picking the same file again re-triggers change.
-    const input = document.getElementById('audioFile') as HTMLInputElement;
-    if (input) {
-      input.value = ''; // Clear out so a re-selection fires change
-    }
+
+    // Reset input so re-selecting same file triggers change
+    const input = document.getElementById(
+      'audioFile'
+    ) as HTMLInputElement | null;
+    if (input) input.value = '';
   }
 
   ngOnInit(): void {
@@ -729,12 +735,12 @@ export class ClientPortalComponent {
     if (!confirm('Êtes-vous sûr de vouloir publier ce commentaire ?')) return;
     this.isPosting = true;
     try {
-      // 2) Upload audio if present (reusing your existing functions)
-      let audioUrl = '';
+      // 2) Upload audio if present
+      let audio: { url: string; meta: AudioMeta } | null = null;
       if (hasRecordedAudio) {
-        audioUrl = await this.uploadRecordedBlobReturnUrl();
+        audio = await this.uploadRecordedBlobReturnUrl();
       } else if (hasUploadedAudio) {
-        audioUrl = await this.uploadSelectedAudioFileReturnUrl();
+        audio = await this.uploadSelectedAudioFileReturnUrl();
       }
 
       // 3) Upload media (image/video) in parallel
@@ -742,66 +748,107 @@ export class ClientPortalComponent {
         this.uploadImageForComment(),
         this.uploadVideoForComment(),
       ]);
-
       const attachments: MediaAttachment[] = [imgAtt, vidAtt].filter(
         (x): x is MediaAttachment => x !== null
       );
 
-      // 4) Post to Firestore with attachments + audio
-      this.postCommentToFirestoreWithAttachments(audioUrl, attachments);
+      // 4) Post to Firestore with attachments + audio (+audio meta)
+      this.postCommentToFirestoreWithAttachments(audio, attachments);
 
       // 5) Reset local UI state
       this.clearSelectedImage();
       this.clearSelectedVideo();
-      this.discardAudio(); // clears audio previews as you already do
+      this.discardAudio();
     } catch (e) {
       console.error(e);
       alert('Erreur lors de l’envoi des pièces jointes.');
     } finally {
-      this.isPosting = false; // ⬅️ stop UI feedback
+      this.isPosting = false;
       this.cd.detectChanges();
     }
   }
 
-  // helpers to reuse your upload paths for audio
-  private async uploadRecordedBlobReturnUrl(): Promise<string> {
+  // Recorded audio -> return URL + meta with capture time = now
+  private async uploadRecordedBlobReturnUrl(): Promise<{
+    url: string;
+    meta: AudioMeta;
+  }> {
     const fileName = `recorded-${Date.now()}.webm`;
+    const mimeType = this.recordedBlob?.type || 'audio/webm';
+    const durationSec = this.recordedBlob
+      ? await this.getAudioDurationFromBlob(this.recordedBlob)
+      : undefined;
+
     const audioFile = new File([this.recordedBlob!], fileName, {
-      type: this.recordedBlob!.type,
+      type: mimeType,
     });
+
+    const meta: AudioMeta = {
+      mimeType,
+      durationSec,
+      captureTimeOriginalISO: new Date().toISOString(),
+      captureTimeSource: 'recordTime',
+    };
+
     const path = `clients-audio/${this.client.uid}-${fileName}`;
-    const uploadTask = await this.storage.upload(path, audioFile);
-    return await uploadTask.ref.getDownloadURL();
+    const uploadTask = await this.storage.upload(path, audioFile, {
+      customMetadata: {
+        captureTimeOriginalISO: meta.captureTimeOriginalISO!,
+        captureTimeSource: meta.captureTimeSource!,
+        durationSec: (meta.durationSec ?? '').toString(),
+        mimeType: mimeType,
+      },
+      contentType: mimeType,
+    });
+    const url = await uploadTask.ref.getDownloadURL();
+    return { url, meta };
   }
 
-  private async uploadSelectedAudioFileReturnUrl(): Promise<string> {
-    const fileName = `upload-${Date.now()}-${this.selectedAudioFile?.name}`;
+  // Uploaded audio file -> return URL + meta read via MediaInfo (fallback to lastModified)
+  private async uploadSelectedAudioFileReturnUrl(): Promise<{
+    url: string;
+    meta: AudioMeta;
+  }> {
+    const file = this.selectedAudioFile!;
+    const fileName = `upload-${Date.now()}-${file.name}`;
     const path = `clients-audio/${this.client.uid}-${fileName}`;
-    const uploadTask = await this.storage.upload(path, this.selectedAudioFile!);
-    return await uploadTask.ref.getDownloadURL();
+
+    const meta = await this.analyzeAudioFile(file);
+
+    const uploadTask = await this.storage.upload(path, file, {
+      customMetadata: {
+        captureTimeOriginalISO:
+          meta.captureTimeOriginalISO || new Date().toISOString(),
+        captureTimeSource: meta.captureTimeSource || 'uploadTime',
+        durationSec: (meta.durationSec ?? '').toString(),
+        bitrateKbps: (meta.bitrateKbps ?? '').toString(),
+        mimeType: meta.mimeType || '',
+      },
+      contentType: file.type || undefined,
+    });
+    const url = await uploadTask.ref.getDownloadURL();
+    return { url, meta };
   }
 
   private postCommentToFirestoreWithAttachments(
-    audioUrl: string,
+    audio: { url: string; meta?: AudioMeta } | null,
     attachments: MediaAttachment[]
   ) {
     const newComment: any = {
-      name: this.personPostingComment!, // required
-      time: this.time.todaysDate(), // required
+      name: this.personPostingComment!,
+      time: this.time.todaysDate(),
       ...(this.comment && this.comment.trim()
         ? { comment: this.comment.trim() }
         : {}),
-      ...(audioUrl ? { audioUrl } : {}),
+      ...(audio?.url ? { audioUrl: audio.url } : {}),
+      ...(audio?.meta ? { audioMeta: audio.meta } : {}),
       ...(attachments.length ? { attachments } : {}),
     };
 
-    // Build the new array and strip undefined everywhere
     const updated = [...this.comments, newComment];
     const sanitized = this.stripUndefinedDeep(updated);
 
-    // Use sanitized for UI and for Firestore write
     this.comments = sanitized;
-
     this.data
       .addCommentToClientProfile(this.client, sanitized)
       .then(() => {
@@ -1210,5 +1257,87 @@ export class ClientPortalComponent {
       return out;
     }
     return value;
+  }
+
+  /** Re-usable parser for "UTC 2024-06-30 14:22:10" like strings from MediaInfo */
+  private parseUtcLike(s?: string): string | undefined {
+    if (!s) return undefined;
+    const m = s.match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+    if (!m) return undefined;
+    const [_, Y, M, D, h, m2, s2] = m.map(Number);
+    return new Date(Date.UTC(Y, M - 1, D, h, m2, s2)).toISOString();
+  }
+
+  /** Decode duration using Web Audio API when we have a Blob (for recordings) */
+  private async getAudioDurationFromBlob(
+    blob: Blob
+  ): Promise<number | undefined> {
+    try {
+      const arrayBuf = await blob.arrayBuffer();
+      const audioCtx = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+      const decoded = await audioCtx.decodeAudioData(arrayBuf.slice(0));
+      return Math.round(decoded.duration);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Read audio metadata (duration/bitrate/capture date) using mediainfo.js */
+  private async analyzeAudioFile(file: File): Promise<AudioMeta> {
+    try {
+      const mediaInfo = await MediaInfo({ format: 'object' });
+      const getSize = () => file.size;
+      const readChunk = (size: number, offset: number) =>
+        new Promise<Uint8Array>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () =>
+            resolve(new Uint8Array(reader.result as ArrayBuffer));
+          reader.readAsArrayBuffer(file.slice(offset, offset + size));
+        });
+
+      const res: any = await mediaInfo.analyzeData(getSize, readChunk);
+      const tracks: any[] = res?.media?.track || [];
+      const general =
+        tracks.find((t) => (t['@type'] || t.Type) === 'General') || {};
+      const audio =
+        tracks.find((t) => (t['@type'] || t.Type) === 'Audio') || {};
+
+      const rawDate: string | undefined =
+        general.Encoded_Date ||
+        general.Tagged_Date ||
+        general.Mastered_Date ||
+        general.File_Last_Modified_Date;
+
+      const captureISO =
+        this.parseUtcLike(rawDate) || new Date(file.lastModified).toISOString();
+
+      const durationMs = Number(general.Duration) || Number(audio.Duration);
+      const durationSec = Number.isFinite(durationMs)
+        ? Math.round(durationMs / 1000)
+        : undefined;
+
+      const bitrate = Number(audio.BitRate) || Number(general.OverallBitRate);
+      const bitrateKbps = Number.isFinite(bitrate)
+        ? Math.round(bitrate / 1000)
+        : undefined;
+
+      return {
+        mimeType: file.type || undefined,
+        durationSec,
+        bitrateKbps,
+        captureTimeOriginalISO: captureISO,
+        captureTimeSource: this.parseUtcLike(rawDate)
+          ? 'mediainfo'
+          : 'fileLastModified',
+      };
+    } catch {
+      // Fall back to file modified time only
+      return {
+        mimeType: file.type || undefined,
+        captureTimeOriginalISO: new Date(file.lastModified).toISOString(),
+        captureTimeSource: 'fileLastModified',
+      };
+    }
   }
 }
