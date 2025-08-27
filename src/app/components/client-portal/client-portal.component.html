@@ -799,13 +799,14 @@
               </p>
               <p class="text-xs text-gray-500">Format supporté: audio (MP3, WAV, etc.)</p>
             </div>
-            <input
+           <input
               type="file"
               id="audioFile"
-              accept="audio/*"
+              accept=".m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*"
               (change)="onAudioFileSelected($any($event.target).files)"
               class="hidden"
             />
+
           </label>
         </div>
       </div>
