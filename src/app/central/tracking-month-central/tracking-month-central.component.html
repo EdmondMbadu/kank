@@ -137,15 +137,15 @@
                        {{i+1}}.  {{s.firstName}}
                         </th>
                         <td class="px-6 py-4">
-                        {{s.totalReserve | number:'1.0-0'}} FC
+                        {{s.totalPayment | number:'1.0-0'}} FC
                         </td>
                        
                         <td class="px-6 py-4">
-                            {{s.totalReserveInDollars | number:'1.0-0'}} $
+                            {{s.totalPaymentInDollars| number:'1.0-0'}} $
                         </td>
                         <td class="px-6 py-4">
                           
-                            {{sortedGrowthRateMonth[i].growthRate | number:'1.0-0'}} %
+                            {{ sortedGrowthRatePaymentMonth[i].growthRate | number:'1.0-0' }} %
                             </td>
                         
                     </tr>
@@ -155,9 +155,9 @@
                 <tfoot>
                     <tr class="font-semibold ">
                         <th scope="row" class="px-6 py-3 text-base">Total</th>
-                        <td class="px-6 py-3">{{givenMonthTotalPaymentAmount| number:'1.0-0'}} FC</td>
-                        <td class="px-6 py-3">{{ givenMonthTotalPaymentAmountDollars| number:'1.0-0'}} $</td>
-                        <td class="px-6 py-3">{{growthRateTotal | number:'1.0-0'}} %</td>
+                        <td class="px-6 py-3">{{ givenMonthTotalPaymentAmount | number:'1.0-0' }} FC</td>
+                        <td class="px-6 py-3">{{ givenMonthTotalPaymentAmountDollars | number:'1.0-0' }} $</td>
+                        <td class="px-6 py-3">{{ growthRateTotalPayments | number:'1.0-0' }} %</td>
                     </tr>
                 </tfoot>
                 

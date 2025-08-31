@@ -98,8 +98,8 @@ export class TrackingMonthCentralComponent {
   }[] = [];
   sortedPaymentMonth: {
     firstName: string;
-    totalReserve: number;
-    totalReserveInDollars: string;
+    totalPayment: number;
+    totalPaymentInDollars: string;
   }[] = [];
   sortedReservePreviousMonth: {
     firstName: string;
@@ -115,6 +115,25 @@ export class TrackingMonthCentralComponent {
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   growthRateTotal: string = '';
+
+  // Add next to your other fields
+
+  sortedPaymentPreviousMonth: {
+    firstName: string;
+    totalPayment: number;
+    totalPaymentInDollars: string;
+  }[] = [];
+
+  sortedGrowthRatePaymentMonth: {
+    firstName: string;
+    totalPayment: number;
+    totalPaymentInDollars: string;
+    growthRate: string;
+  }[] = [];
+
+  previousMonthTotalPayment: string = '';
+  growthRateTotalPayments: string = '';
+
   setPreviousMonth() {
     if (this.givenMonth === 1) {
       // January
@@ -171,6 +190,15 @@ export class TrackingMonthCentralComponent {
         this.previousMonth,
         this.previousYear
       );
+
+    this.previousMonthTotalPayment =
+      this.compute.findTotalGivenMonthForAllUsers(
+        this.allUsers,
+        'dailyReimbursement',
+        this.previousMonth,
+        this.previousYear
+      );
+
     this.growthRateTotal = (
       ((Number(this.givenMonthTotalReserveAmount) -
         Number(this.previousMonthTotalReserve)) /
@@ -213,12 +241,26 @@ export class TrackingMonthCentralComponent {
         this.givenMonth,
         this.givenYear
       );
-    this.sortedPaymentMonth =
+    const paymentCurrentRaw =
       this.compute.findTotalGivenMonthForAllUsersSortedDescending(
         this.allUsers,
         'dailyReimbursement',
         this.givenMonth,
         this.givenYear
+      );
+
+    this.sortedPaymentMonth = paymentCurrentRaw.map((x: any) => ({
+      firstName: x.firstName,
+      totalPayment: x.totalReserve,
+      totalPaymentInDollars: x.totalReserveInDollars,
+    }));
+
+    const paymentPrevRaw =
+      this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+        this.allUsers,
+        'dailyReimbursement',
+        this.previousMonth,
+        this.previousYear
       );
     this.sortedReservePreviousMonth =
       this.compute.findTotalGivenMonthForAllUsersSortedDescending(
@@ -227,6 +269,43 @@ export class TrackingMonthCentralComponent {
         this.previousMonth,
         this.previousYear
       );
+    this.sortedPaymentPreviousMonth = paymentPrevRaw.map((x: any) => ({
+      firstName: x.firstName,
+      totalPayment: x.totalReserve,
+      totalPaymentInDollars: x.totalReserveInDollars,
+    }));
+
+    // (C) Compute per-user growth rate for Payments
+    this.sortedGrowthRatePaymentMonth = this.sortedPaymentMonth.map((curr) => {
+      const prev = this.sortedPaymentPreviousMonth.find(
+        (p) => p.firstName === curr.firstName
+      );
+      const prevVal = prev ? Number(prev.totalPayment) : 0;
+      const currVal = Number(curr.totalPayment);
+
+      // Avoid divide-by-zero; choose behavior you prefer:
+      // - If prev is 0 and current > 0 → 100 (or use 0 if you prefer)
+      const growth =
+        prevVal > 0
+          ? ((currVal - prevVal) / prevVal) * 100
+          : currVal > 0
+          ? 100
+          : 0;
+
+      return {
+        ...curr,
+        growthRate: growth.toString(),
+      };
+    });
+    const prevTotal = Number(this.previousMonthTotalPayment || 0);
+    const currTotal = Number(this.givenMonthTotalPaymentAmount || 0);
+    this.growthRateTotalPayments =
+      prevTotal > 0
+        ? (((currTotal - prevTotal) / prevTotal) * 100).toString()
+        : currTotal > 0
+        ? '100'
+        : '0';
+
     // Initialize sortedGrowthRateMonth
     this.sortedGrowthRateMonth = this.sortedReserveMonth.map((currentMonth) => {
       // Find the matching entry for the previous month by firstName
