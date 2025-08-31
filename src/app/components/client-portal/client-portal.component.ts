@@ -943,18 +943,82 @@ export class ClientPortalComponent {
   formatISOToDRC(iso?: string): string {
     if (!iso) return '';
     try {
-      // Use your existing service if you prefer:
-      // return this.time.formatDateForDRCFromISO(iso);
       const d = new Date(iso);
-      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-      return `${pad(d.getDate())}/${pad(
-        d.getMonth() + 1
-      )}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(
-        d.getSeconds()
-      )}`;
+      const fmt = new Intl.DateTimeFormat('fr-CD', {
+        timeZone: 'Africa/Kinshasa',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      // Build "dd/MM/yyyy HH:mm:ss"
+      const parts = fmt.formatToParts(d).reduce((acc: any, p) => {
+        acc[p.type] = p.value;
+        return acc;
+      }, {});
+      return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}:${parts.second}`;
     } catch {
-      return iso;
+      return iso!;
     }
+  }
+
+  /** Parse "+01:00" / "-07:00" -> minutes offset */
+  private parseTZOffset(str?: string): number | undefined {
+    if (!str) return undefined;
+    const m = str.match(/^([+-])(\d{2}):?(\d{2})?$/);
+    if (!m) return undefined;
+    const sign = m[1] === '-' ? -1 : 1;
+    const hh = parseInt(m[2], 10);
+    const mm = m[3] ? parseInt(m[3], 10) : 0;
+    return sign * (hh * 60 + mm);
+  }
+
+  /** Extract Y/M/D/h/m/s from a Date or EXIF-like string "YYYY:MM:DD HH:mm:ss" */
+  private extractYMDHMS(dt: any): {
+    Y: number;
+    M: number;
+    D: number;
+    h: number;
+    mi: number;
+    s: number;
+  } | null {
+    if (!dt) return null;
+    if (dt instanceof Date) {
+      return {
+        Y: dt.getFullYear(),
+        M: dt.getMonth() + 1,
+        D: dt.getDate(),
+        h: dt.getHours(),
+        mi: dt.getMinutes(),
+        s: dt.getSeconds(),
+      };
+    }
+    const m = String(dt).match(
+      /(\d{4})[:\-](\d{2})[:\-](\d{2})[ T](\d{2}):(\d{2}):(\d{2})/
+    );
+    if (!m) return null;
+    const [, Y, M, D, h, mi, s] = m.map(Number);
+    return { Y, M, D, h, mi, s };
+  }
+
+  /**
+   * Convert an EXIF local time (no tz) to a true ISO by assuming it was taken
+   * in a given timezone. Default: Africa/Kinshasa (UTC+1, no DST).
+   */
+  private exifLocalToISO(
+    dt: any,
+    assumedOffsetMinutes = 60
+  ): string | undefined {
+    const parts = this.extractYMDHMS(dt);
+    if (!parts) return undefined;
+    const { Y, M, D, h, mi, s } = parts;
+    // EXIF local time -> UTC instant = local - offset
+    const utcMs =
+      Date.UTC(Y, M - 1, D, h, mi, s) - assumedOffsetMinutes * 60 * 1000;
+    return new Date(utcMs).toISOString();
   }
 
   private toISO(d: Date | string | undefined | null): string | undefined {
@@ -1004,13 +1068,30 @@ export class ClientPortalComponent {
         ifd1: false,
         xmp: true,
       });
+
       const dt = exif?.DateTimeOriginal || exif?.CreateDate || exif?.ModifyDate;
-      const iso = this.toISO(dt);
+
+      // Prefer embedded offset if present; else assume Kinshasa (+01:00 = 60 min)
+      let offsetMin = this.parseTZOffset(
+        exif?.OffsetTimeOriginal || exif?.OffsetTime
+      );
+      // Some cameras store TimeZoneOffset as number or array of hours
+      if (offsetMin == null) {
+        const tzo: any = exif?.TimeZoneOffset;
+        if (typeof tzo === 'number') offsetMin = tzo * 60;
+        else if (Array.isArray(tzo) && typeof tzo[0] === 'number')
+          offsetMin = tzo[0] * 60;
+      }
+      if (offsetMin == null) offsetMin = 60; // default Africa/Kinshasa
+
+      let iso: string | undefined;
+      if (dt) iso = this.exifLocalToISO(dt, offsetMin);
+
       if (iso) {
         this.imageCaptureTimeISO = iso;
         this.imageCaptureTimeSource = 'exif';
       } else {
-        // fallback: file last modified
+        // fallback: file last modified (as UTC ISO)
         this.imageCaptureTimeISO = new Date(file.lastModified).toISOString();
         this.imageCaptureTimeSource = 'fileLastModified';
       }
