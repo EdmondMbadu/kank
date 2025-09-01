@@ -145,9 +145,9 @@ export class FinishedDebtComponent implements OnInit {
     // Placeholder until you give me your generic message:
     // Edit freely in the modal; variables are injected here.
     return `Mbote ${c.firstName} ${c.lastName},
-To sepili mingi na efuteli ya credit na yo na Fondation Gervais. 
-Soki olingi lisusu kozua credit pona mombongo na yo, kende na Fondation Gervais location ${this.auth.currentUser.firstName}.
-Merci pona confiance na Fondation Gervais`;
+To sepili mingi na efuteli ya credit na yo na FONDATION GERVAIS. 
+Soki olingi lisusu kozua credit pona mombongo na yo, kende na FONDATION GERVAIS location ${this.auth.currentUser.firstName}.
+Merci pona confiance na FONDATION GERVAIS`;
   }
 
   async sendSmsToClient() {
@@ -210,9 +210,9 @@ Merci pona confiance na Fondation Gervais`;
   }
   applyDefaultBulkTemplate() {
     this.bulkModal.message = `Mbote {{FULL_NAME}},
-To sepili mingi na efuteli ya credit na yo na Fondation Gervais. 
-Soki olingi lisusu kozua credit pona mombongo na yo, kende na Fondation Gervais location ${this.auth.currentUser.firstName}.
-Merci pona confiance na Fondation Gervais`;
+To sepili mingi na efuteli ya credit na yo na FONDATION GERVAIS. 
+Soki olingi lisusu kozua credit pona mombongo na yo, kende na FONDATION GERVAIS location ${this.auth.currentUser.firstName}.
+Merci pona confiance na FONDATION GERVAIS`;
   }
 
   updateBulkRecipients() {
