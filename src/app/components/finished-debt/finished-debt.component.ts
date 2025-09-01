@@ -7,6 +7,14 @@ import { AuthService } from 'src/app/services/auth.service';
 import { MessagingService } from 'src/app/services/messaging.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 type SendResult = { ok: boolean; text: string };
+
+type BulkFailure = { client: Client; error: string };
+type BulkResult = {
+  total: number;
+  succeeded: number;
+  failed: number;
+  failures: BulkFailure[];
+};
 @Component({
   selector: 'app-finished-debt',
   templateUrl: './finished-debt.component.html',
@@ -24,6 +32,18 @@ export class FinishedDebtComponent implements OnInit {
   };
   sending = false;
   sendResult: SendResult | null = null;
+
+  bulkModal = {
+    open: false,
+    minScore: 60, // default threshold
+    message: '' as string, // shared message for everyone
+    recipients: [] as Client[], // computed list
+    excludedNoPhone: 0, // count of no-phone excluded
+    result: null as BulkResult | null,
+  };
+  placeholderTokens = ['{{FULL_NAME}}', '{{firstName}}', '{{lastName}}'];
+
+  bulkSending = false;
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -171,5 +191,104 @@ Merci pona confiance na Fondation Gervais`;
     const len = text.length;
     const segSize = 160;
     return Math.max(1, Math.ceil(len / segSize));
+  }
+
+  openBulkModal() {
+    this.bulkModal.open = true;
+    this.bulkModal.result = null;
+    this.bulkModal.minScore = 60;
+    this.applyDefaultBulkTemplate();
+    this.updateBulkRecipients();
+  }
+
+  closeBulkModal() {
+    this.bulkModal.open = false;
+    this.bulkModal.message = '';
+    this.bulkModal.recipients = [];
+    this.bulkModal.result = null;
+    this.bulkSending = false;
+  }
+  applyDefaultBulkTemplate() {
+    this.bulkModal.message = `Mbote {{FULL_NAME}},
+To sepili mingi na efuteli ya credit na yo na Fondation Gervais. 
+Soki olingi lisusu kozua credit pona mombongo na yo, kende na Fondation Gervais location ${this.auth.currentUser.firstName}.
+Merci pona confiance na Fondation Gervais`;
+  }
+
+  updateBulkRecipients() {
+    // Base: vos "currentClients" sont déjà ceux qui ont tout remboursé (debtLeft == 0)
+    const base = this.currentClients ?? [];
+    const min = Number(this.bulkModal.minScore) || 0;
+
+    const withPhones: Client[] = [];
+    let excludedNoPhone = 0;
+
+    for (const c of base) {
+      const score = Number(c.creditScore ?? 0);
+      const hasPhone = !!(
+        c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
+      );
+      if (!hasPhone) {
+        excludedNoPhone += 1;
+        continue;
+      }
+      if (score >= min) {
+        withPhones.push(c);
+      }
+    }
+
+    this.bulkModal.recipients = withPhones;
+    this.bulkModal.excludedNoPhone = excludedNoPhone;
+  }
+
+  async sendBulkSms() {
+    if (
+      !this.bulkModal.message?.trim() ||
+      this.bulkModal.recipients.length === 0
+    )
+      return;
+
+    this.bulkSending = true;
+    const failures: BulkFailure[] = [];
+    let succeeded = 0;
+
+    for (const c of this.bulkModal.recipients) {
+      try {
+        const text = this.personalizeMessage(this.bulkModal.message, c); // 👈 personalize here
+        await this.messaging.sendCustomSMS(c.phoneNumber!, text, {
+          reason: 'invite_back_for_funding_bulk',
+          clientId: c.trackingId || null,
+          clientName: `${c.firstName} ${c.lastName}`.trim(),
+          minCreditScore: this.bulkModal.minScore,
+        });
+        succeeded += 1;
+      } catch (e: any) {
+        console.error('Bulk SMS error', e);
+        failures.push({ client: c, error: e?.message || 'Échec d’envoi' });
+      }
+    }
+
+    const total = this.bulkModal.recipients.length;
+    this.bulkModal.result = {
+      total,
+      succeeded,
+      failed: failures.length,
+      failures,
+    };
+    this.bulkSending = false;
+  }
+
+  private personalizeMessage(msg: string, c: Client): string {
+    const fullName = `${c.firstName ?? ''} ${c.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+    return msg
+      .replace(/\{\{\s*FULL_NAME\s*\}\}/g, fullName)
+      .replace(/\{\{\s*firstName\s*\}\}/g, c.firstName ?? '')
+      .replace(/\{\{\s*lastName\s*\}\}/g, c.lastName ?? '');
+  }
+  previewPersonalized() {
+    const first = this.bulkModal.recipients?.[0];
+    return first ? this.personalizeMessage(this.bulkModal.message, first) : '—';
   }
 }

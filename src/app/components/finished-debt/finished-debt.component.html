@@ -105,6 +105,23 @@
         </li>
       </ul>
 
+      <!-- ADMIN TOOLBAR (bulk) -->
+<div *ngIf="auth.isAdmin" class="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end">
+  <button
+    type="button"
+    (click)="openBulkModal()"
+    class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition hover:scale-[1.02] hover:bg-indigo-700"
+  >
+    <!-- megaphone -->
+    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 10v4a3 3 0 0 0 3 3h1l7 4v-18l-7 4H6a3 3 0 0 0-3 3z" />
+      <path d="M14 7s5-2 7-3v16c-2-1-7-3-7-3" />
+    </svg>
+    Relancer en masse
+  </button>
+</div>
+
+
     </div>
   </div>
 </section>
@@ -177,5 +194,159 @@
        [class.text-rose-600]="!sendResult.ok">
       {{ sendResult.text }}
     </p>
+  </div>
+</div>
+
+
+<!-- ==== BULK SMS MODAL ==== -->
+<div *ngIf="bulkModal.open" class="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true" role="dialog">
+  <!-- backdrop -->
+  <div class="absolute inset-0 bg-black/50" (click)="closeBulkModal()"></div>
+
+  <!-- dialog -->
+  <div class="relative z-10 w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
+    <div class="flex items-start justify-between">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Relancer en masse (clients solvables)</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Filtrez par score minimal, éditez le message commun, puis envoyez à tout le monde d’un coup.
+        </p>
+      </div>
+      <button class="text-gray-500 hover:text-gray-700" (click)="closeBulkModal()">✕</button>
+    </div>
+
+    <!-- Controls -->
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Filter panel -->
+      <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Critères</h4>
+        <label for="minScore" class="mt-3 block text-xs text-gray-500 dark:text-gray-400">Score de crédit minimal</label>
+        <div class="mt-1 flex items-center gap-2">
+          <input id="minScore" type="number" min="0" max="100" step="1"
+                 [(ngModel)]="bulkModal.minScore"
+                 (input)="updateBulkRecipients()"
+                 class="w-20 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-700 px-2 py-1 text-sm text-gray-900 dark:text-gray-100">
+          <input type="range" min="0" max="100" step="1"
+                 [(ngModel)]="bulkModal.minScore"
+                 (input)="updateBulkRecipients()"
+                 class="flex-1">
+        </div>
+
+        <div class="mt-3 space-y-1 text-xs text-gray-600 dark:text-gray-300">
+          <div class="flex items-center justify-between">
+            <span>Bénéficiaires</span>
+            <span class="font-semibold">{{ bulkModal.recipients.length }}</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span>Sans téléphone exclu</span>
+            <span class="font-semibold">{{ bulkModal.excludedNoPhone }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message panel -->
+      <div class="lg:col-span-2 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Message pour tous</h4>
+          <button
+            class="text-xs rounded-full px-3 py-1 bg-gray-100 dark:bg-slate-700 dark:text-white"
+            (click)="applyDefaultBulkTemplate()"
+          >
+            Insérer le message générique
+          </button>
+        </div>
+
+        <textarea
+          [(ngModel)]="bulkModal.message"
+          rows="6"
+          class="mt-2 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 p-3"
+          placeholder="Saisir le message commun pour tous…"
+        ></textarea>
+        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Variables disponibles :
+          <ng-container *ngFor="let t of placeholderTokens; let last = last">
+            <code>{{ t }}</code><span *ngIf="!last">, </span>
+          </ng-container>
+        </div>
+
+
+        <div class="mt-2 rounded-lg bg-gray-50 dark:bg-slate-700 p-2 text-xs text-gray-700 dark:text-gray-100">
+          <span class="font-medium">Aperçu (1er destinataire) :</span>
+          <pre class="whitespace-pre-wrap">{{ previewPersonalized() }}</pre>
+        </div>
+
+        <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span>{{ bulkModal.message.length || 0 }} caractères</span>
+          <span>~ {{ estimatedSegments(bulkModal.message) }} segment(s) SMS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recipients preview -->
+    <div class="mt-4 rounded-xl border border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between px-4 py-3">
+        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          {{ bulkModal.recipients.length }} client(s) ciblé(s)
+        </h4>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Cliquez un client pour ouvrir son portail</span>
+      </div>
+      <div class="max-h-64 overflow-auto divide-y divide-gray-200 dark:divide-gray-700">
+        <div *ngFor="let c of bulkModal.recipients"
+             class="px-4 py-3 flex items-center justify-between hover:bg-amber-50 dark:hover:bg-slate-700/60">
+          <div class="min-w-0">
+            <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+              {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+            </p>
+            <div class="mt-0.5 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span>{{ formatDisplayPhone(c.phoneNumber) }}</span>
+              <span
+                *ngIf="c.creditScore != null"
+                class="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm tracking-wide"
+                [ngStyle]="creditBadgeStyle(c.creditScore)">
+                {{ c.creditScore }}
+              </span>
+            </div>
+          </div>
+          <a class="text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+             [routerLink]="['/client-portal', c.trackingId]">
+            Ouvrir le portail →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions & results -->
+    <div class="mt-4 flex items-center justify-end gap-2">
+      <button class="px-4 py-2 rounded-lg border dark:text-white hover:bg-slate-300 hover:dark:bg-slate-500"
+              (click)="closeBulkModal()">
+        Annuler
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-60"
+        [disabled]="bulkSending || !bulkModal.message?.trim() || bulkModal.recipients.length === 0"
+        (click)="sendBulkSms()">
+        {{ bulkSending ? 'Envoi en cours…' : ('Envoyer à ' + bulkModal.recipients.length + ' client(s)') }}
+      </button>
+    </div>
+
+    <!-- Summary -->
+    <div *ngIf="bulkModal.result" class="mt-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <p class="text-sm"
+         [class.text-emerald-600]="bulkModal.result.succeeded > 0 && bulkModal.result.failed === 0"
+         [class.text-amber-600]="bulkModal.result.failed > 0">
+        Envoyés: <strong>{{ bulkModal.result.succeeded }}</strong> /
+        Ciblés: <strong>{{ bulkModal.result.total }}</strong>
+        <span *ngIf="bulkModal.result.failed > 0"> | Échecs: <strong>{{ bulkModal.result.failed }}</strong></span>
+      </p>
+
+      <div *ngIf="bulkModal.result.failures?.length" class="mt-3">
+        <h5 class="text-xs font-semibold text-rose-600">Détails des échecs</h5>
+        <ul class="mt-1 list-disc pl-5 text-xs text-gray-600 dark:text-gray-300">
+          <li *ngFor="let f of bulkModal.result.failures">
+            {{ f.client.firstName }} {{ f.client.lastName }} ({{ formatDisplayPhone(f.client.phoneNumber) }}) — {{ f.error }}
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
