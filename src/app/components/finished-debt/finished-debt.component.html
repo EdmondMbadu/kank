@@ -323,7 +323,7 @@
       </button>
       <button
         class="px-4 py-2 rounded-lg bg-indigo-600 text-white disabled:opacity-60"
-        [disabled]="bulkSending || !bulkModal.message?.trim() || bulkModal.recipients.length === 0"
+        [disabled]="bulkSending || !bulkModal.message.trim() || bulkModal.recipients.length === 0"
         (click)="sendBulkSms()">
         {{ bulkSending ? 'Envoi en cours…' : ('Envoyer à ' + bulkModal.recipients.length + ' client(s)') }}
       </button>
