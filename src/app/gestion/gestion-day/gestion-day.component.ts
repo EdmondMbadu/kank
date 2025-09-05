@@ -76,6 +76,17 @@ export class GestionDayComponent implements OnInit {
   isAddOperation = false;
   budgetReason = '';
 
+  userServeTodayTotals: Array<{
+    firstName: string;
+    total: number;
+    totalInDollar: number;
+    trackingId: string;
+  }> = [];
+
+  // NEW: grand totals for “today”
+  overallTotalToday: number = 0;
+  overallTotalTodayInDollars: number = 0;
+
   // ─── add new aggregate just after paymentTotal ──────────────
   overallMoneyInHands = 0;
   overallMoneyInHandsDollar = 0;
@@ -214,6 +225,10 @@ export class GestionDayComponent implements OnInit {
     this.paymentTotal = 0;
     this.overallTotalReserve = 0;
 
+    // NEW: reset today's structures
+    this.userServeTodayTotals = [];
+    this.overallTotalToday = 0;
+
     this.overallMoneyInHands = 0;
     this.overallMoneyInHandsDollar = 0;
 
@@ -229,20 +244,29 @@ export class GestionDayComponent implements OnInit {
           console.log('[DEBUG] user doc:', user);
           let userTotal = 0;
           let reserveTotal = 0;
+          let userTotalToday = 0;
 
           // Process clients
           for (let client of clients) {
-            if (
+            const meetsTypeGate =
               client.requestStatus !== undefined &&
               ((client.requestType === 'lending' &&
                 client.agentSubmittedVerification === 'true') ||
                 client.requestType === 'savings' ||
-                client.requestType === 'rejection') &&
-              client.requestDate === targetDate
-            ) {
-              userTotal += Number(client.requestAmount);
+                client.requestType === 'rejection');
+
+            if (meetsTypeGate) {
+              // existing target date (tomorrow / requestDateRigthFormat)
+              if (client.requestDate === targetDate) {
+                userTotal += Number(client.requestAmount);
+              }
+              // NEW: today
+              if (client.requestDate === this.today) {
+                userTotalToday += Number(client.requestAmount);
+              }
             }
           }
+
           const moneyHandsFC =
             Number(user.moneyInHands ?? 0) + Number(user.cardsMoney ?? 0);
           const moneyHandsDollar = Number(
@@ -284,10 +308,15 @@ export class GestionDayComponent implements OnInit {
           for (let card of cards) {
             if (
               card.requestStatus !== undefined &&
-              card.requestType === 'card' &&
-              card.requestDate === this.requestDateRigthFormat
+              card.requestType === 'card'
             ) {
-              userTotal += Number(card.requestAmount);
+              if (card.requestDate === this.requestDateRigthFormat) {
+                userTotal += Number(card.requestAmount);
+              }
+              // NEW: today
+              if (card.requestDate === this.today) {
+                userTotalToday += Number(card.requestAmount);
+              }
             }
           }
 
@@ -299,6 +328,17 @@ export class GestionDayComponent implements OnInit {
             totalInDollar: Number(
               this.compute.convertCongoleseFrancToUsDollars(
                 userTotal.toString()
+              )
+            ),
+            trackingId: user.uid!,
+          });
+          //  NEW: today row
+          this.userServeTodayTotals.push({
+            firstName: user.firstName!,
+            total: userTotalToday,
+            totalInDollar: Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                userTotalToday.toString()
               )
             ),
             trackingId: user.uid!,
@@ -365,6 +405,7 @@ export class GestionDayComponent implements OnInit {
 
           // Add to the overall total
           this.overallTotal += userTotal;
+          this.overallTotalToday += userTotalToday;
           this.overallTotalReserve += reserveTotal;
           this.paymentTotal += payment;
           // aggregate
@@ -377,6 +418,18 @@ export class GestionDayComponent implements OnInit {
             this.userRequestTotals = this.userRequestTotals.filter((client) => {
               return client.total > 0;
             });
+            // NEW: keep only rows with > 0 for today and sort
+            this.userServeTodayTotals = this.userServeTodayTotals
+              .filter((row) => row.total > 0)
+              .sort((a, b) => b.total - a.total);
+
+            // NEW: compute today's grand total in $
+            this.overallTotalTodayInDollars = Number(
+              this.compute.convertCongoleseFrancToUsDollars(
+                this.overallTotalToday.toString()
+              )
+            );
+
             // this.reserveTotals = this.reserveTotals.filter((client) => {
             //   return client.total > 0;
             // });
