@@ -199,7 +199,7 @@
 
 
 <!-- ==== BULK SMS MODAL ==== -->
-<div *ngIf="bulkModal.open" class="fixed inset-0 z-50 flex items-center justify-center" aria-modal="true" role="dialog">
+<div *ngIf="bulkModal.open" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto" aria-modal="true" role="dialog">
   <!-- backdrop -->
   <div class="absolute inset-0 bg-black/50" (click)="closeBulkModal()"></div>
 
