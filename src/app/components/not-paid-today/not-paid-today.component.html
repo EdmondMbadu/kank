@@ -170,12 +170,30 @@
             <!-- CLIENT + COMMENT ───────────────────────────────────── -->
             <div class="flex-1">
               <!-- Name & Agent -->
-              <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                Agent : {{ c.employee?.firstName }} {{ c.employee?.lastName }}
-              </p>
+           <!-- Client FIRST (slightly larger/bolder) -->
+            <p class="text-sm md:text-[15px] font-bold tracking-tight text-gray-900 dark:text-gray-100">
+              {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+            </p>
+
+            <!-- Agent emphasis (subtle emerald chip, no blue) -->
+            <div class="mt-1">
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full
+                      bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold
+                      text-emerald-800 ring-1 ring-emerald-200/60 shadow-sm
+                      group-hover:ring-emerald-300/70
+                      dark:bg-emerald-900/30 dark:text-emerald-100 dark:ring-emerald-600/40">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z"/>
+                </svg>
+                <span class="opacity-90">Agent :</span>
+                <span class="ml-1 tracking-tight">
+                  {{ c.employee?.firstName }} {{ c.employee?.lastName }}
+                </span>
+              </span>
+            </div>
+
+
 
               <!-- COMMENT (or missing) -->
               <ng-container *ngIf="getTodaysComment(c) as com; else noComment">
