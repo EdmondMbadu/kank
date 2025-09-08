@@ -199,12 +199,12 @@
 
 
 <!-- ==== BULK SMS MODAL ==== -->
-<div *ngIf="bulkModal.open" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto" aria-modal="true" role="dialog">
+<div *ngIf="bulkModal.open" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4" aria-modal="true" role="dialog">
   <!-- backdrop -->
   <div class="absolute inset-0 bg-black/50" (click)="closeBulkModal()"></div>
 
   <!-- dialog -->
-  <div class="relative z-10 w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl">
+  <div class="relative z-10 w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl max-h-screen overflow-y-auto">
     <div class="flex items-start justify-between">
       <div>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Relancer en masse (clients solvables)</h3>
