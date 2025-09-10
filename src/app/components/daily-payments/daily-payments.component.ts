@@ -29,6 +29,7 @@ export class DailyPaymentsComponent implements OnInit {
   numberOfPeople: string = '0';
   totalGivenDate: string = '0';
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
+  agentRanking: AgentRank[] = [];
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -103,6 +104,7 @@ export class DailyPaymentsComponent implements OnInit {
         this.fillDailyPayment(client, filteredValues, filteredKeys);
       }
     }
+    this.computeAgentRanking();
   }
 
   fillDailyPayment(client: Client, values: string[], keys: string[]) {
@@ -181,6 +183,33 @@ export class DailyPaymentsComponent implements OnInit {
     this.extractTodayPayments();
     // this.initalizeInputs();
   }
+
+  // Add this method inside the component
+  private computeAgentRanking(): void {
+    const agg = new Map<string, AgentRank>();
+
+    for (const p of this.dailyPaymentsCopy || []) {
+      const id = p.employee?.uid || 'no-agent';
+      const name = p.employee
+        ? `${p.employee.firstName ?? ''} ${p.employee.lastName ?? ''}`.trim()
+        : 'Sans agent';
+
+      const amount = Number(p.amount || 0);
+
+      if (!agg.has(id)) {
+        agg.set(id, { id, name: name || 'Sans agent', total: 0, count: 0 });
+      }
+      const curr = agg.get(id)!;
+      curr.total += amount;
+      curr.count += 1;
+    }
+
+    // sort by total desc, then count desc, then name asc
+    this.agentRanking = Array.from(agg.values()).sort(
+      (a, b) =>
+        b.total - a.total || b.count - a.count || a.name.localeCompare(b.name)
+    );
+  }
 }
 
 export class Filtered {
@@ -193,4 +222,11 @@ export class Filtered {
   timeFormatted?: string;
   employee?: Employee;
   trackingId?: string;
+}
+// Add this interface near your other interfaces/classes
+interface AgentRank {
+  id: string; // employee uid or 'no-agent'
+  name: string; // display name
+  total: number; // total FC
+  count: number; // number of payments
 }
