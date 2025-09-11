@@ -36,47 +36,48 @@
     </h2>
   </div>
 
-  <!-- ===================== LIST CARD ===================== -->
-  <div class="container mx-auto flex justify-center">
-    <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
-      <!-- CARD HEADER -->
-      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Paiements</h5>
+<!-- ===================== LIST CARD (with per-client progress) ===================== -->
+<div class="container mx-auto flex justify-center">
+  <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
+    <!-- CARD HEADER -->
+    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+      <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Paiements</h5>
 
-        <!-- SEARCH -->
-        <form class="flex items-center" (submit)="$event.preventDefault()">
-          <label for="simple-search" class="sr-only">Chercher</label>
-          <div class="relative w-44 sm:w-56 md:w-64">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-            </div>
-            <input
-              id="simple-search"
-              type="text"
-              [formControl]="searchControl"
-              placeholder="Chercher un client ..."
-              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
+      <!-- SEARCH -->
+      <form class="flex items-center" (submit)="$event.preventDefault()">
+        <label for="simple-search" class="sr-only">Chercher</label>
+        <div class="relative w-44 sm:w-56 md:w-64">
+          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
           </div>
-        </form>
-      </div>
+          <input
+            id="simple-search"
+            type="text"
+            [formControl]="searchControl"
+            placeholder="Chercher un client ..."
+            class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
+        </div>
+      </form>
+    </div>
 
-      <!-- LIST -->
-      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li
-          *ngFor="let c of dailyPayments; let i = index"
-          [routerLink]="['/client-portal', c.trackingId]"
-          class="group relative cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
-          <div class="flex items-center space-x-4">
-            <!-- AVATAR -->
+    <!-- LIST -->
+    <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+      <li
+        *ngFor="let c of dailyPayments; let i = index"
+        [routerLink]="['/client-portal', c.trackingId]"
+        class="group relative cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <!-- Left: Avatar + Client -->
+          <div class="flex items-center gap-4 min-w-0">
             <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
               {{ c.firstName!.substring(0, 2) }}
             </div>
 
-            <!-- CLIENT INFO -->
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0">
               <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                 {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
               </p>
@@ -87,16 +88,55 @@
                 {{ c.timeFormatted }}
               </p>
             </div>
+          </div>
 
-            <!-- AMOUNT -->
-            <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
-              FC {{ c.amount | number: '1.0-0' }}
+          <!-- Middle: Progress vs minimum due today -->
+          <div class="w-full sm:w-64 md:w-80">
+            <div class="flex items-baseline justify-between">
+              <span class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Min dû (aujourd’hui)</span>
+              <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">FC {{ c.expectedToday | number:'1.0-0' }}</span>
+            </div>
+
+            <div class="mt-1 relative h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+              <div class="absolute left-0 top-0 h-2 rounded-full"
+                   [ngClass]="(c.paidToday ?? 0) >= (c.expectedToday ?? 0) ? 'bg-emerald-500' : 'bg-amber-500'"
+                   [style.width.%]="(c.progressPct ?? 0)">
+              </div>
+            </div>
+
+            <div class="mt-1 flex items-center justify-between text-[11px]">
+              <span class="text-slate-500 dark:text-slate-400">Payé aujourd’hui</span>
+              <span class="font-semibold text-slate-700 dark:text-slate-200">FC {{ c.paidToday | number:'1.0-0' }}</span>
+            </div>
+
+            <div class="mt-1">
+              <span *ngIf="(c.paidToday ?? 0) >= (c.expectedToday ?? 0); else manque"
+                    class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[11px] font-semibold">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 13l4 4L19 7"/>
+                </svg>
+                OK
+              </span>
+              <ng-template #manque>
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[11px] font-semibold">
+                  Manque FC {{ ((c.expectedToday ?? 0) - (c.paidToday ?? 0)) | number:'1.0-0' }}
+                </span>
+              </ng-template>
             </div>
           </div>
-        </li>
-      </ul>
-    </div>
+
+          <!-- Right: this particular payment -->
+          <div class="text-right">
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Ce paiement</p>
+            <p class="text-base font-extrabold text-emerald-700 dark:text-emerald-300">
+              FC {{ c.amount | number:'1.0-0' }}
+            </p>
+          </div>
+        </div>
+      </li>
+    </ul>
   </div>
+</div>
 
   <!-- ===================== AGENT RANKING ===================== -->
 <div class="container mx-auto mt-6 flex justify-center">

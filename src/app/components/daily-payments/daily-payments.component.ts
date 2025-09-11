@@ -79,79 +79,109 @@ export class DailyPaymentsComponent implements OnInit {
     this.totalGivenDate = '0';
     this.numberOfPeople = '0';
     this.trackingIds = [];
+    this.dailyPayments = [];
+    this.dailyPaymentsCopy = [];
+
     for (let client of this.clients!) {
-      // Ensure client.payments and client.previousPayments are not undefined or null
       const paymentsEntries = client.payments
         ? Object.entries(client.payments)
         : [];
       const previousPaymentsEntries = client.previousPayments
         ? Object.entries(client.previousPayments)
         : [];
-
-      // Combine entries from both payments and previousPayments
       const combinedEntries = [...paymentsEntries, ...previousPaymentsEntries];
 
-      // Filter the combined entries
       const filteredDict = Object.fromEntries(
-        combinedEntries.filter(([key, value]) =>
+        combinedEntries.filter(([key]) =>
           key.startsWith(this.requestDateCorrectFormat)
         )
       );
 
-      const filteredValues = Object.values(filteredDict);
+      const filteredValues = Object.values(filteredDict); // strings
       const filteredKeys = Object.keys(filteredDict);
+
       if (filteredValues.length !== 0) {
-        this.fillDailyPayment(client, filteredValues, filteredKeys);
+        // sum paid today for this client
+        const paidToday = filteredValues.reduce((acc, v) => acc + this.n(v), 0);
+        const expectedToday = this.computeExpectedMin(client);
+        const progressPct =
+          expectedToday > 0
+            ? Math.min((paidToday / expectedToday) * 100, 100)
+            : 100;
+
+        this.fillDailyPayment(
+          client,
+          filteredValues,
+          filteredKeys,
+          paidToday,
+          expectedToday,
+          progressPct
+        );
       }
     }
+
     this.computeAgentRanking();
   }
 
-  fillDailyPayment(client: Client, values: string[], keys: string[]) {
+  fillDailyPayment(
+    client: Client,
+    values: string[],
+    keys: string[],
+    paidToday: number,
+    expectedToday: number,
+    progressPct: number
+  ) {
     let i = 0;
 
     for (let v of values) {
-      let middleName = client.middleName === undefined ? '' : client.middleName;
-      let filt = {
+      const middleName =
+        client.middleName === undefined ? '' : client.middleName;
+
+      const filt: Filtered = {
         firstName: client.firstName,
         lastName: client.lastName,
-        middleName: middleName,
-        amount: v,
+        middleName,
+        amount: this.n(v), // store as number for formatting
         time: keys[i++],
         timeFormatted: this.time.convertDateToDesiredFormat(keys[i - 1]),
         employee: client.employee,
         trackingId: client.trackingId,
+        // NEW: progress context for the client (same on each of today’s rows)
+        expectedToday,
+        paidToday,
+        progressPct,
+        delta: paidToday - expectedToday,
       };
 
-      if (Number(v) != 0) {
-        this.dailyPayments?.push(filt);
+      if (this.n(v) !== 0) {
+        this.dailyPayments!.push(filt);
         this.totalGivenDate = (
-          Number(v) + Number(this.totalGivenDate)
+          this.n(v) + this.n(this.totalGivenDate)
         ).toString();
-
-        this.dailyPaymentsCopy?.push(filt);
+        this.dailyPaymentsCopy!.push(filt);
       }
     }
 
-    // Remove duplicates
+    // Dedup + counts
     this.dailyPayments = this.data.removeDuplicates(this.dailyPayments!);
     this.dailyPaymentsCopy = this.data.removeDuplicates(
       this.dailyPaymentsCopy!
     );
     this.numberOfPeople = this.dailyPayments!.length.toString();
 
-    // Sort them
+    // Sort by time desc
     this.dailyPayments!.sort(
       (a, b) =>
-        this.time.parseDate(b.time).getTime() -
-        this.time.parseDate(a.time).getTime()
+        this.time.parseDate(b.time!).getTime() -
+        this.time.parseDate(a.time!).getTime()
     );
     this.dailyPaymentsCopy!.sort(
       (a, b) =>
-        this.time.parseDate(b.time).getTime() -
-        this.time.parseDate(a.time).getTime()
+        this.time.parseDate(b.time!).getTime() -
+        this.time.parseDate(a.time!).getTime()
     );
   }
+
   search(value: string) {
     if (value) {
       const lowerCaseValue = value.toLowerCase();
@@ -266,6 +296,19 @@ export class DailyPaymentsComponent implements OnInit {
         b.total - a.total || b.count - a.count || a.name.localeCompare(b.name)
     );
   }
+  private n(v: any): number {
+    const num = Number(v);
+    return isNaN(num) ? 0 : num;
+  }
+
+  /** Min due today: min( amountToPay / paymentPeriodRange, debtLeft ) */
+  private computeExpectedMin(client: Client): number {
+    const amountToPay = this.n(client.amountToPay);
+    const period = Math.max(this.n(client.paymentPeriodRange), 1); // avoid /0
+    const perPeriod = amountToPay / period;
+    const debtLeft = Math.max(this.n((client as any).debtLeft), 0); // tolerate missing field
+    return Math.min(perPeriod, debtLeft);
+  }
 }
 
 export class Filtered {
@@ -273,12 +316,19 @@ export class Filtered {
   lastName?: string;
   middleName?: string;
   date?: string;
-  amount?: string;
+  amount?: number; // ← numeric now for easy formatting
   time?: string;
   timeFormatted?: string;
   employee?: Employee;
   trackingId?: string;
+
+  // NEW
+  expectedToday?: number; // min due today
+  paidToday?: number; // sum of today's payments for this client
+  progressPct?: number; // 0..100
+  delta?: number; // paidToday - expectedToday
 }
+
 // Add this interface near your other interfaces/classes
 interface AgentRank {
   id: string; // employee uid or special bucket id
