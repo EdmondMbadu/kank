@@ -71,6 +71,17 @@ export class TimeService {
     let date = `${month}-${day}-${year}`;
     return date;
   }
+  yesterdaysDateMonthDayYear(): string {
+    const yesterday = new Date(); // Start with today's date
+    yesterday.setDate(yesterday.getDate() - 1); // Subtract one day
+
+    const year = yesterday.getFullYear();
+    const month = yesterday.getMonth() + 1; // getMonth() is 0-indexed, so add 1
+    const day = yesterday.getDate();
+
+    let date = `${month}-${day}-${year}`;
+    return date;
+  }
   findPrepositionStartWithVowelOrConsonant(str: string) {
     if (!str) {
       return 'De';

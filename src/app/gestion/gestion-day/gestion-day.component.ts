@@ -232,6 +232,17 @@ export class GestionDayComponent implements OnInit {
     this.overallMoneyInHands = 0;
     this.overallMoneyInHandsDollar = 0;
 
+    this.input = this.compute
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'investments',
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.inputDOllars = this.compute
+      .convertCongoleseFrancToUsDollars(this.input)
+      .toString();
+
     let completedRequests = 0;
     const targetDate = this.requestDateRigthFormat; // freeze the value
     this.allUsers.forEach((user) => {
@@ -489,6 +500,7 @@ export class GestionDayComponent implements OnInit {
     });
   }
 
+  yesterday = this.time.yesterdaysDateMonthDayYear();
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
@@ -502,6 +514,10 @@ export class GestionDayComponent implements OnInit {
   givenMonthTotalLossAmountDollar: string = '';
   givenMonthTotalReserveAmount: string = '';
   lossRatio: number = 0;
+  input: string = '0';
+  inputDOllars: string = '0';
+  plannedToServeToday: string = '0';
+  plannedToServeTodayDollars: string = '0';
   initalizeInputs() {
     // this is to compute the loss ratio of the month which will serve for bonus for rebecca
     this.givenMonthTotalReserveAmount = this.compute.findTotalGiventMonth(
@@ -555,6 +571,13 @@ export class GestionDayComponent implements OnInit {
         this.managementInfo?.moneyGiven!,
         this.requestDateCorrectFormat
       )
+      .toString();
+    this.plannedToServeToday = this.compute
+      .findTotalForToday(this.managementInfo?.moneyGiven!, this.yesterday)
+      .toString();
+
+    this.plannedToServeTodayDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.plannedToServeToday)
       .toString();
     this.dollarLoss = this.compute
       .findTotalForToday(
