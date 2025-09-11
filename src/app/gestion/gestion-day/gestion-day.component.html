@@ -69,199 +69,278 @@
     </div>
    
 </div>
-<div class="container  flex flex-wrap  items-center justify-center  mx-auto md:flex-row">
-   <!-- Argent planifié à servir aujourd’hui -->
-    <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl ">
-      <h1 class="text-2xl font-bold text-center mx-4 mb-4 underline">
-       Argent Restant à Servir Aujourd’hui {{ frenchDate }}
-      </h1>
+<div class="container mx-auto flex flex-wrap items-start justify-center gap-6 md:flex-row">
 
-      <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-        <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-          <tr>
-            <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-            <th scope="col" class="py-3 px-6">Argent planifié aujourd’hui (FC)</th>
-            <th scope="col" class="px-6 py-3">Argent planifié aujourd’hui ($)</th>
-          </tr>
-        </thead>
+  <!-- ===================== SUMMARY VERIFICATION ===================== -->
+  <div class="w-full max-w-5xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 shadow-xl p-5">
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Contrôle quotidien — {{ frenchDate }}
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400">
+          <span class="font-medium">Règle :</span> <em>Entrée du jour</em> doit être égale à <em>À servir aujourd’hui</em>.
+        </p>
+      </div>
 
-        <tbody>
-          <tr *ngFor="let s of userServeTodayTotals; let i=index" class="bg-white dark:bg-gray-800">
-            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-              {{ i + 1 }}. {{ s.firstName }}
-            </th>
-            <td class="px-6 py-4">
-              {{ s.total | number:'1.0-0' }} FC
-            </td>
-            <td class="px-6 py-4">
-              {{ s.totalInDollar | number:'1.0-0' }} $
-            </td>
-          </tr>
-        </tbody>
-
-        <tfoot>
-          <tr class="font-semibold">
-            <th scope="row" class="px-6 py-3 text-base">Restant Pour Servir</th>
-            <td class="px-6 py-3">{{ overallTotalToday | number:'1.0-0' }} FC</td>
-            <td class="px-6 py-3">{{ overallTotalTodayInDollars | number:'1.0-0' }} $</td>
-          </tr>
-          <tr class="font-semibold">
-            <th scope="row" class="px-6 py-3 text-base">Entree Du Jour</th>
-            <td class="px-6 py-3">{{input| number:'1.0-0' }} FC</td>
-            <td class="px-6 py-3">{{ inputDOllars | number:'1.0-0' }} $</td>
-          </tr>
-           <tr class="font-semibold">
-            <th scope="row" class="px-6 py-3 text-base">A Servir Aujourhui</th>
-            <td class="px-6 py-3">{{plannedToServeToday| number:'1.0-0' }} FC</td>
-            <td class="px-6 py-3">{{ plannedToServeTodayDollars | number:'1.0-0' }} $</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-    <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl ">
-        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Argent Demandé  Demain {{frenchDateTomorrow}}</h1>
-        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th scope="col" class="px-6 py-3 rounded-s-lg">
-                        Équipe
-                    </th>
-                    <th scope="col" class=" py-3 px-6">
-                        Argent Demandé Demain(FC)
-                    </th>
-                    <th scope="col" class=" px-6 py-3">
-                        Argent Demandé Demain($)
-                    </th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let s of  userRequestTotals; let i=index" class="bg-white dark:bg-gray-800">
-                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {{i+1}}.  {{s.firstName}}
-                    </th>
-                    <td class="px-6 py-4">
-                    {{s.total | number:'1.0-0'}} FC
-                    </td>
-                    <td class="px-6 py-4">
-                        {{s.totalInDollar | number:'1.0-0'}} $
-                    </td>
-                    
-                </tr>
-                
-                
-            </tbody>
-            <tfoot>
-                <tr class="font-semibold ">
-                    <th scope="row" class="px-6 py-3 text-base">Total</th>
-                    <td class="px-6 py-3">{{overallTotal | number:'1.0-0'}} FC</td>
-                    <td class="px-6 py-3">{{overallTotalInDollars| number:'1.0-0'}} $</td>
-                </tr>
-            
-            </tfoot>
-            
-        
-        </table>
+      <!-- Status badge -->
+      <div class="flex items-center gap-3">
+        <ng-container *ngIf="+input === +plannedToServeToday && +inputDOllars === +plannedToServeTodayDollars; else mismatchBadge">
+          <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-sm font-semibold">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            OK — équilibré
+          </span>
+        </ng-container>
+        <ng-template #mismatchBadge>
+          <span class="inline-flex items-center gap-2 rounded-full bg-red-100 text-red-700 px-3 py-1 text-sm font-semibold">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+            Écart détecté
+          </span>
+        </ng-template>
+      </div>
     </div>
 
-   
-
-    <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl ">
-        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Reserve Attendu Aujourdhui </h1>
-        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th scope="col" class="px-6 py-3 rounded-s-lg">
-                        Équipe
-                    </th>
-                    <th scope="col" class=" py-3 px-6">
-                        Reserve Attendu 
-                    </th>
-                    <th scope="col" class=" px-6 py-3">
-                        Reserve Donnée 
-                    </th>
-                    <th *ngIf="auth.isAdmin" scope="col" class=" px-6 py-3">
-                        Paiement Donnée 
-                    </th>
-                    <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">
-                      Argent&nbsp;en&nbsp;main
-                    </th>
-                    <th *ngIf="auth.isAdmin" class="px-6 py-3 text-red-600">
-                     RAISONS&nbsp;manquants
-                    </th>
-
-                    
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let s of  reserveTotals; let i=index" class="bg-white dark:bg-gray-800">
-                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {{i+1}}.  {{s.firstName}}
-                    </th>
-                    <td class="px-6 py-4">
-                    {{s.total | number:'1.0-0'}} FC ->{{s.totalInDollar | number:'1.0-0'}} $
-                    </td>
-                    <td class="px-6 py-4">
-                        {{s.actual | number:'1.0-0'}} FC -> {{s.actualInDollar | number:'1.0-0'}} $
-                    </td>
-                    <td *ngIf="auth.isAdmin" class="px-6 py-4">
-                        {{s.payment| number:'1.0-0'}} FC -> {{s.paymentDollar| number:'1.0-0'}} $
-                    </td>
-                    <td *ngIf="auth.isAdmin" class="px-6 py-4">
-                      {{ s.moneyInHands | number:'1.0-0' }} FC&nbsp;→&nbsp;{{ s.moneyInHandsDollar | number:'1.0-0' }} $
-                    </td>
-                  <td *ngIf="auth.isAdmin" class="px-6 py-4">
-                    <!-- ✅  Aucun manquant -->
-                    <span
-                      *ngIf="s.missingReasons === 0; else missing"
-                      class="inline-flex items-center gap-1 rounded-full
-                            bg-emerald-100 text-emerald-700 text-xs font-semibold
-                            px-2 py-1"
-                    >
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"
-                          viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 13l4 4L19 7"/>
-                      </svg>
-                      OK
-                    </span>
-
-                    <!-- ❌  Au moins un manquant -->
-                    <ng-template #missing>
-                      <span
-                        class="inline-flex items-center gap-1 rounded-full
-                              bg-red-100 text-red-700 text-xs font-semibold
-                              px-2 py-1"
-                      >
-                        {{ s.missingReasons }}&nbsp;manquant{{ s.missingReasons! > 1 ? 's' : '' }}
-                        &nbsp;sur&nbsp;{{ s.totalReasons }}
-                      </span>
-                    </ng-template>
-                  </td>
-
-
-                    
-                </tr>
-                
-                
-            </tbody>
-            <tfoot>
-                <tr class="font-semibold ">
-                    <th scope="row" class="px-6 py-3 text-base">Total ({{percentage}} %)</th>
-                    <td class="px-6 py-3">{{overallTotalReserve | number:'1.0-0'}} FC ->{{overallTotalReserveInDollars| number:'1.0-0'}} $</td>
-                    <td class="px-6 py-3">{{dailyReserve| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(dailyReserve)| number:'1.0-0'}} $ </td>
-                    <td *ngIf="auth.isAdmin" class="px-6 py-3">{{paymentTotal| number:'1.0-0'}} FC ->{{compute.convertCongoleseFrancToUsDollars(paymentTotal.toString())| number:'1.0-0'}} $ </td>
-                    <!-- NEW Argent en main total -->
-                    <td *ngIf="auth.isAdmin" class="px-6 py-3">
-                      {{ overallMoneyInHands | number:'1.0-0' }} FC&nbsp;→&nbsp;{{ overallMoneyInHandsDollar | number:'1.0-0' }} $
-                    </td>
-                </tr>
-            
-            </tfoot>
-            
-        
-        </table>
+    <!-- KPI strip -->
+    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">Entrée du jour (reçue)</div>
+        <div class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+          {{ (+input || 0) | number:'1.0-0' }} FC · {{ (+inputDOllars || 0) | number:'1.0-0' }} $
+        </div>
+      </div>
+      <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">À servir aujourd’hui (prévu)</div>
+        <div class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+          {{ (+plannedToServeToday || 0) | number:'1.0-0' }} FC · {{ (+plannedToServeTodayDollars || 0) | number:'1.0-0' }} $
+        </div>
+      </div>
+      <div class="rounded-xl p-4"
+           [ngClass]="{
+             'bg-emerald-50 dark:bg-emerald-900/30' : +input === +plannedToServeToday && +inputDOllars === +plannedToServeTodayDollars,
+             'bg-amber-50 dark:bg-amber-900/30' : +input !== +plannedToServeToday || +inputDOllars !== +plannedToServeTodayDollars
+           }">
+        <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">Δ (Entrée − À servir)</div>
+        <div class="mt-1 text-lg font-bold"
+             [ngClass]="{
+               'text-emerald-700 dark:text-emerald-300' : +input === +plannedToServeToday && +inputDOllars === +plannedToServeTodayDollars,
+               'text-amber-700 dark:text-amber-300' : +input !== +plannedToServeToday || +inputDOllars !== +plannedToServeTodayDollars
+             }">
+          {{ ((+input || 0) - (+plannedToServeToday || 0)) | number:'1.0-0' }} FC ·
+          {{ ((+inputDOllars || 0) - (+plannedToServeTodayDollars || 0)) | number:'1.0-0' }} $
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- ===================== RESTANT À SERVIR AUJOURD’HUI ===================== -->
+  <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <h1 class="text-xl md:text-2xl font-bold text-center mx-4 my-4 underline decoration-indigo-400/60">
+      Restant à servir aujourd’hui — {{ frenchDate }}
+    </h1>
+
+    <table class="w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300">
+      <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300">
+        <tr>
+          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+          <th scope="col" class="py-3 px-6">Restant (FC)</th>
+          <th scope="col" class="px-6 py-3">Restant ($)</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let s of userServeTodayTotals; let i=index" class="bg-white dark:bg-gray-800/40">
+          <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+            {{ i + 1 }}.&nbsp;{{ s.firstName }}
+          </th>
+          <td class="px-6 py-4">{{ (+s.total || 0) | number:'1.0-0' }} FC</td>
+          <td class="px-6 py-4">{{ (+s.totalInDollar || 0) | number:'1.0-0' }} $</td>
+        </tr>
+      </tbody>
+
+      <tfoot>
+        <tr class="font-semibold">
+          <th scope="row" class="px-6 py-3 text-base">Total restant à servir</th>
+          <td class="px-6 py-3">{{ (+overallTotalToday || 0) | number:'1.0-0' }} FC</td>
+          <td class="px-6 py-3">{{ (+overallTotalTodayInDollars || 0) | number:'1.0-0' }} $</td>
+        </tr>
+
+        <tr class="font-semibold">
+          <th scope="row" class="px-6 py-3 text-base">Entrée du jour (reçue)</th>
+          <td class="px-6 py-3">{{ (+input || 0) | number:'1.0-0' }} FC</td>
+          <td class="px-6 py-3">{{ (+inputDOllars || 0) | number:'1.0-0' }} $</td>
+        </tr>
+
+        <tr class="font-semibold"
+            [ngClass]="{
+              'bg-emerald-50 dark:bg-emerald-900/30' : +input === +plannedToServeToday && +inputDOllars === +plannedToServeTodayDollars,
+              'bg-red-50 dark:bg-red-900/30' : +input !== +plannedToServeToday || +inputDOllars !== +plannedToServeTodayDollars
+            }">
+          <th scope="row" class="px-6 py-3 text-base">À servir aujourd’hui (prévu)</th>
+          <td class="px-6 py-3">
+            {{ (+plannedToServeToday || 0) | number:'1.0-0' }} FC
+            <span *ngIf="+input !== +plannedToServeToday"
+                  class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5">
+              Δ {{ ((+input || 0) - (+plannedToServeToday || 0)) | number:'1.0-0' }} FC
+            </span>
+          </td>
+          <td class="px-6 py-3">
+            {{ (+plannedToServeTodayDollars || 0) | number:'1.0-0' }} $
+            <span *ngIf="+inputDOllars !== +plannedToServeTodayDollars"
+                  class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5">
+              Δ {{ ((+inputDOllars || 0) - (+plannedToServeTodayDollars || 0)) | number:'1.0-0' }} $
+            </span>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- Legend -->
+    <div class="px-6 py-3 text-xs text-slate-500 dark:text-slate-400 flex gap-3">
+      <span class="inline-flex items-center gap-1"><span class="h-3 w-3 rounded-sm bg-emerald-400/60"></span> OK</span>
+      <span class="inline-flex items-center gap-1"><span class="h-3 w-3 rounded-sm bg-red-400/60"></span> Écart</span>
+    </div>
+  </div>
+
+  <!-- ===================== ARGENT DEMANDÉ DEMAIN ===================== -->
+  <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <h1 class="text-xl md:text-2xl font-bold text-center mx-4 my-4 underline decoration-indigo-400/60">
+      Argent demandé demain — {{ frenchDateTomorrow }}
+    </h1>
+
+    <table class="w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300">
+      <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300">
+        <tr>
+          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+          <th scope="col" class="py-3 px-6">Demande (FC)</th>
+          <th scope="col" class="px-6 py-3">Demande ($)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of userRequestTotals; let i=index" class="bg-white dark:bg-gray-800/40">
+          <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+            {{ i + 1 }}.&nbsp;{{ s.firstName }}
+          </th>
+          <td class="px-6 py-4">{{ (+s.total || 0) | number:'1.0-0' }} FC</td>
+          <td class="px-6 py-4">{{ (+s.totalInDollar || 0) | number:'1.0-0' }} $</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="font-semibold">
+          <th scope="row" class="px-6 py-3 text-base">Total</th>
+          <td class="px-6 py-3">{{ (+overallTotal || 0) | number:'1.0-0' }} FC</td>
+          <td class="px-6 py-3">{{ (+overallTotalInDollars || 0) | number:'1.0-0' }} $</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- ===================== RÉSERVE ATTENDUE AUJOURD’HUI ===================== -->
+  <div class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <h1 class="text-xl md:text-2xl font-bold text-center mx-4 my-4 underline decoration-indigo-400/60">
+      Réserve attendue aujourd’hui
+    </h1>
+
+    <table class="w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300">
+      <thead class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300">
+        <tr>
+          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+          <th scope="col" class="py-3 px-6">Attendu</th>
+          <th scope="col" class="px-6 py-3">Donnée</th>
+          <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">Paiement donné</th>
+          <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">Argent en main</th>
+          <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">Avancement</th>
+          <th *ngIf="auth.isAdmin" class="px-6 py-3 text-red-600">Manquants</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let s of reserveTotals; let i=index" class="bg-white dark:bg-gray-800/40">
+          <th scope="row" class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+            {{ i + 1 }}.&nbsp;{{ s.firstName }}
+          </th>
+
+          <td class="px-6 py-4">
+            {{ (+s.total || 0) | number:'1.0-0' }} FC → {{ (+s.totalInDollar || 0) | number:'1.0-0' }} $
+          </td>
+
+          <td class="px-6 py-4">
+            {{ (+s.actual! || 0) | number:'1.0-0' }} FC → {{ (+s.actualInDollar! || 0) | number:'1.0-0' }} $
+          </td>
+
+          <td *ngIf="auth.isAdmin" class="px-6 py-4">
+            {{ (+s.payment! || 0) | number:'1.0-0' }} FC → {{ (+s.paymentDollar! || 0) | number:'1.0-0' }} $
+          </td>
+
+          <td *ngIf="auth.isAdmin" class="px-6 py-4">
+            {{ (+s.moneyInHands || 0) | number:'1.0-0' }} FC → {{ (+s.moneyInHandsDollar || 0) | number:'1.0-0' }} $
+          </td>
+
+          <!-- Tiny progress bar (no Math.*) -->
+          <td *ngIf="auth.isAdmin" class="px-6 py-4">
+            <ng-container *ngIf="+s.total > 0; else noBase">
+              <div class="w-32">
+                <div class="relative w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div class="absolute left-0 top-0 h-2 rounded-full bg-emerald-500"
+                       [style.width.%]="((((+s.actual! || 0) / (+s.total || 1)) * 100) > 100 ? 100 : (((+s.actual! || 0) / (+s.total || 1)) * 100))">
+                  </div>
+                </div>
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {{ (((+s.actual! || 0) / (+s.total || 1)) * 100) | number:'1.0-0' }}%
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #noBase>
+              <span class="text-xs text-slate-400">—</span>
+            </ng-template>
+          </td>
+
+          <!-- Manquants badge -->
+          <td *ngIf="auth.isAdmin" class="px-6 py-4">
+            <span *ngIf="s.missingReasons === 0; else missing"
+                  class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-1">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 13l4 4L19 7"/>
+              </svg>
+              OK
+            </span>
+            <ng-template #missing>
+              <span class="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-1">
+                {{ s.missingReasons }}&nbsp;manquant{{ s.missingReasons! > 1 ? 's' : '' }}&nbsp;/&nbsp;{{ s.totalReasons }}
+              </span>
+            </ng-template>
+          </td>
+        </tr>
+      </tbody>
+
+      <tfoot>
+        <tr class="font-semibold">
+          <th scope="row" class="px-6 py-3 text-base">Total ({{ percentage }} %)</th>
+          <td class="px-6 py-3">
+            {{ (+overallTotalReserve || 0) | number:'1.0-0' }} FC → {{ (+overallTotalReserveInDollars || 0) | number:'1.0-0' }} $
+          </td>
+          <td class="px-6 py-3">
+            {{ (+dailyReserve || 0) | number:'1.0-0' }} FC →
+            {{ compute.convertCongoleseFrancToUsDollars(dailyReserve) | number:'1.0-0' }} $
+          </td>
+          <td *ngIf="auth.isAdmin" class="px-6 py-3">
+            {{ (+paymentTotal || 0) | number:'1.0-0' }} FC →
+            {{ compute.convertCongoleseFrancToUsDollars(paymentTotal.toString()) | number:'1.0-0' }} $
+          </td>
+          <td *ngIf="auth.isAdmin" class="px-6 py-3">
+            {{ (+overallMoneyInHands || 0) | number:'1.0-0' }} FC → {{ (+overallMoneyInHandsDollar || 0) | number:'1.0-0' }} $
+          </td>
+          <td *ngIf="auth.isAdmin"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 </div>
+
+
 <div class=" container lg:block  flex mx-auto shadow-xl  flex-col md:justify-center md:flex-row  ">
         <!-- COMBINED CHART -->
 <div class="flex flex-col">
