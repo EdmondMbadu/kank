@@ -30,8 +30,6 @@ export class DailyPaymentsComponent implements OnInit {
   totalGivenDate: string = '0';
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   agentRanking: AgentRank[] = [];
-  private readonly INACTIVE_ID = 'inactive';
-  private readonly INACTIVE_LABEL = 'Autre';
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -186,33 +184,77 @@ export class DailyPaymentsComponent implements OnInit {
     // this.initalizeInputs();
   }
 
+  // Add these helpers inside the component class
+  private isWorkingStatus(status?: string | null): boolean {
+    const s = (status ?? '')
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .trim();
+    // tolerate variations: "travail", "travaille", "working", "actif"
+    return (
+      s === 'travail' ||
+      s === 'travaille' ||
+      s === 'working' ||
+      s === 'actif' ||
+      s.includes('travail')
+    );
+  }
+
+  private getCurrentWorkingEmployee(): Employee | undefined {
+    const working = (this.employees ?? []).filter((e) =>
+      this.isWorkingStatus(e.status)
+    );
+    if (working.length === 1) return working[0];
+
+    // tie-breaker: prefer the logged-in employee if they’re marked working
+    const meUid = (this.auth?.currentUser as any)?.uid;
+    if (meUid) {
+      const me = working.find((e) => e.uid === meUid);
+      if (me) return me;
+    }
+    // otherwise, just pick the first working employee (stable/fallback)
+    return working[0];
+  }
+
+  // Replace your computeAgentRanking with this
   private computeAgentRanking(): void {
     const agg = new Map<string, AgentRank>();
 
+    const currentWorking = this.getCurrentWorkingEmployee(); // may be undefined
+
     for (const p of this.dailyPaymentsCopy || []) {
-      const status = (p.employee?.status || '').toLowerCase();
-      const isWorking = status === 'travaille';
+      const assigned = p.employee;
+      const assignedIsWorking = this.isWorkingStatus(assigned?.status);
 
-      let id: string;
-      let name: string;
-      let inactive = false;
-
-      if (!isWorking) {
-        // bucket for all non-working employees
-        id = this.INACTIVE_ID;
-        name = this.INACTIVE_LABEL;
-        inactive = true;
+      // choose the target employee for aggregation
+      let target: Employee | undefined;
+      if (assignedIsWorking) {
+        target = assigned!;
+      } else if (currentWorking) {
+        // re-route to the currently working employee
+        target = currentWorking;
       } else {
-        // working: keep their identity (or "Sans agent" if missing)
-        id = p.employee?.uid || 'no-agent';
-        name = p.employee
-          ? `${p.employee.firstName ?? ''} ${p.employee.lastName ?? ''}`.trim()
-          : 'Sans agent';
+        // no one marked working -> keep original (but never bucket as "Other")
+        target = assigned;
       }
 
+      const id = target?.uid || 'no-agent';
+      const name = target
+        ? `${target.firstName ?? ''} ${target.lastName ?? ''}`.trim() ||
+          'Sans agent'
+        : 'Sans agent';
+
       const amount = Number(p.amount || 0);
+
       if (!agg.has(id)) {
-        agg.set(id, { id, name, total: 0, count: 0, inactive });
+        agg.set(id, {
+          id,
+          name,
+          total: 0,
+          count: 0,
+          inactive: target ? !this.isWorkingStatus(target.status) : false,
+        });
       }
       const curr = agg.get(id)!;
       curr.total += amount;
