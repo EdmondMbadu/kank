@@ -9,6 +9,7 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ElementRef } from '@angular/core';
 import { FormControl } from '@angular/forms';
+import { Card } from 'src/app/models/card';
 interface Receipt {
   docId: string;
   url: string;
@@ -25,6 +26,17 @@ export class TodayComponent {
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   newReceiptAmount: number | null = null; // ➋ binds the upload field
 
+  // === Simplified verification state (no Math in template) ===
+  moneyInHands: string = '0';
+  moneyInHandsN: number = 0; // numeric version for comparisons
+  requestTotalToday: number = 0; // identical logic to "Total" in request-today
+  moneyInHandsTotalN: number = 0;
+  okMoney: boolean = true;
+  okRequested: boolean = true;
+  okCount: number = 0;
+
+  cards: Card[] = [];
+
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -40,6 +52,12 @@ export class TodayComponent {
       this.clients = data;
 
       this.findClientsWithDebts();
+      this.computeRequestTotalSameAsRequestToday(); // NEW
+    });
+
+    this.auth.getAllClientsCard().subscribe((cards: any) => {
+      this.cards = cards;
+      this.computeRequestTotalSameAsRequestToday(); // NEW
     });
     this.loadReceipts();
   }
@@ -173,6 +191,13 @@ export class TodayComponent {
     // ➊ clef de date déjà au bon format « MM-DD-YYYY »
     this.todayKey = this.requestDateCorrectFormat;
 
+    // ✅ Argent en main = moneyInHands + cardsMoney (both can be string or undefined)
+    const moneyInHandsStr = this.auth.currentUser?.moneyInHands ?? '0';
+    const cardsMoneyStr = this.auth.currentUser?.cardsMoney ?? '0';
+    this.moneyInHandsTotalN =
+      (Number(moneyInHandsStr) || 0) + (Number(cardsMoneyStr) || 0);
+
+    this.updateOkChips(); // reflect any immediate change
     this.dailyLending =
       this.auth.currentUser?.dailyLending?.[this.requestDateCorrectFormat] ??
       '0';
@@ -286,6 +311,7 @@ export class TodayComponent {
     );
 
     this.initalizeInputs();
+    this.computeRequestTotalSameAsRequestToday(); // NEW
   }
   findClientsWithDebts() {
     let total = 0;
@@ -448,5 +474,51 @@ export class TodayComponent {
     } catch {
       alert('Erreur lors de la mise à jour du montant');
     }
+  }
+
+  private computeRequestTotalSameAsRequestToday() {
+    const target = this.requestDateCorrectFormat;
+    let total = 0;
+
+    // Clients (lending/savings/rejection)
+    if (this.clients?.length) {
+      for (const c of this.clients) {
+        if (c.requestStatus && c.requestDate === target) {
+          // lending only if verified by agent (mirrors your request-today)
+          if (
+            c.requestType === 'lending' &&
+            c.agentSubmittedVerification === 'true'
+          ) {
+            total += Number(c.requestAmount ?? 0);
+          } else if (c.requestType === 'savings') {
+            total += Number(c.requestAmount ?? 0);
+          } else if (c.requestType === 'rejection') {
+            total += Number(c.requestAmount ?? 0);
+          }
+        }
+      }
+    }
+
+    // Cards
+    if (this.cards?.length) {
+      for (const k of this.cards) {
+        if (
+          k.requestStatus &&
+          k.requestType === 'card' &&
+          k.requestDate === target
+        ) {
+          total += Number(k.requestAmount ?? 0);
+        }
+      }
+    }
+
+    this.requestTotalToday = total;
+    this.updateOkChips();
+  }
+
+  private updateOkChips() {
+    this.okMoney = this.moneyInHandsTotalN === 0;
+    this.okRequested = this.requestTotalToday === 0;
+    this.okCount = (this.okMoney ? 1 : 0) + (this.okRequested ? 1 : 0);
   }
 }

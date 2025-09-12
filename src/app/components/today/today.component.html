@@ -39,6 +39,144 @@
 
 </section>
 
+<!-- ╭─ Contrôle quotidien (collapsible) ─────────────────────────────╮ -->
+<details
+  class="group mx-auto mt-6 max-w-5xl rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden"
+>
+  <!-- Header -->
+  <summary
+    class="flex cursor-pointer flex-col gap-3 bg-gradient-to-r from-emerald-600 to-green-600
+           px-4 py-3 text-white sm:flex-row sm:items-center sm:justify-between
+           sm:px-6 sm:py-4 hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+  >
+    <!-- Left: icon + title -->
+    <div class="flex items-start sm:items-center gap-2 min-w-0">
+      <svg class="h-5 w-5 opacity-90 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"/>
+      </svg>
+      <div class="min-w-0">
+        <h3 class="truncate text-sm sm:text-base font-semibold tracking-wide">
+          Vérification quotidienne — {{ frenchDate }}
+        </h3>
+        <p class="text-[11px] sm:text-xs/5 opacity-90">
+          Fin de journée : <em>Argent en main = 0</em> et <em>Argent demandé = 0</em>.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right: chips scroller + chevron -->
+    <div class="flex items-center gap-2 sm:gap-3 justify-between sm:justify-end w-full sm:w-auto">
+      <!-- chips: scroll on xs, wrap on sm+ -->
+      <div class="chips no-scrollbar -mx-1 flex max-w-[75%] sm:max-w-none items-center gap-2 overflow-x-auto px-1 sm:flex-wrap">
+        <span
+          class="whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold ring-1"
+          [ngClass]="okCount === 2
+            ? 'bg-white/15 text-white ring-white/40'
+            : 'bg-yellow-300/30 text-yellow-100 ring-1 ring-white/30'"
+        >
+          {{ okCount }}/2 OK
+        </span>
+
+        <span
+          *ngIf="okCount < 2"
+          class="whitespace-nowrap rounded-full bg-red-600/30 px-3 py-1 text-[11px] font-extrabold text-red-50 ring-1 ring-white/30"
+        >
+          Anomalies détectées
+        </span>
+      </div>
+
+      <!-- Chevron -->
+      <svg
+        class="ml-1 h-5 w-5 shrink-0 transition-transform duration-300 group-open:rotate-180"
+        viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+      >
+        <path fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+              clip-rule="evenodd"/>
+      </svg>
+    </div>
+  </summary>
+
+  <!-- KPI strip -->
+  <div class="bg-white dark:bg-slate-800">
+    <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 sm:gap-4 sm:p-5">
+      <!-- En main (calculé) -->
+      <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-3 sm:p-4">
+        <div class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+          Argent en main (calculé)
+        </div>
+        <div class="mt-1 text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+          {{ moneyInHandsTotalN | number:'1.0-0' }} FC ·
+          {{ compute.convertCongoleseFrancToUsDollars(moneyInHandsTotalN.toString()) | number:'1.0-0' }} $
+        </div>
+      </div>
+
+      <!-- Demandé (Total du jour) -->
+      <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-3 sm:p-4">
+        <div class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+          Argent demandé (Total du jour)
+        </div>
+        <div class="mt-1 text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+          {{ requestTotalToday | number:'1.0-0' }} FC ·
+          {{ compute.convertCongoleseFrancToUsDollars(requestTotalToday.toString()) | number:'1.0-0' }} $
+        </div>
+      </div>
+
+      <!-- Statut global + deltas -->
+      <div
+        class="rounded-xl p-3 sm:p-4"
+        [ngClass]="{
+          'bg-emerald-50 dark:bg-emerald-900/30' : okCount === 2,
+          'bg-amber-50 dark:bg-amber-900/30' : okCount < 2
+        }"
+      >
+        <div class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">Statut global</div>
+        <div
+          class="mt-1 text-base sm:text-lg font-bold"
+          [ngClass]="{
+            'text-emerald-700 dark:text-emerald-300' : okCount === 2,
+            'text-amber-700 dark:text-amber-300' : okCount < 2
+          }"
+        >
+          {{ okCount === 2 ? 'OK — prêt à clôturer' : 'À traiter avant clôture' }}
+        </div>
+
+        <!-- Dual deltas -->
+        <div class="mt-3 space-y-2 text-[12px] sm:text-sm">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-slate-600 dark:text-slate-300">Δ En main</span>
+            <span
+              class="inline-flex items-center rounded-full px-2.5 py-0.5 ring-1"
+              [ngClass]="moneyInHandsTotalN === 0
+                ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                : 'bg-amber-100 text-amber-700 ring-amber-200'"
+            >
+              {{ moneyInHandsTotalN | number:'1.0-0' }} FC ·
+              {{ compute.convertCongoleseFrancToUsDollars(moneyInHandsTotalN.toString()) | number:'1.0-0' }} $
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-slate-600 dark:text-slate-300">Δ Demandé</span>
+            <span
+              class="inline-flex items-center rounded-full px-2.5 py-0.5 ring-1"
+              [ngClass]="requestTotalToday === 0
+                ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                : 'bg-amber-100 text-amber-700 ring-amber-200'"
+            >
+              {{ requestTotalToday | number:'1.0-0' }} FC ·
+              {{ compute.convertCongoleseFrancToUsDollars(requestTotalToday.toString()) | number:'1.0-0' }} $
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</details>
+<!-- ╰──────────────────────────────────────────────────────────────╯ -->
+
+
+
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
 <!-- ╭─ Performance & reserve ──────────────────────────────────────────╮ -->
