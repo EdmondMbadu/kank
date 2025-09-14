@@ -62,6 +62,34 @@ export class TimeService {
 
     return date;
   }
+  isSaturday(): boolean {
+    return new Date().getDay() === 6;
+  }
+
+  /** Tomorrow's key using the SAME format as todaysDate(): M-D-YYYY-H-m-s */
+  tomorrowsDateKeyLikeToday(): string {
+    const now = new Date();
+    const tmr = new Date(now);
+    tmr.setDate(now.getDate() + 1);
+
+    const year = tmr.getFullYear();
+    const month = tmr.getMonth() + 1;
+    const day = tmr.getDate();
+
+    // keep today's time-of-day so the format matches exactly
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+
+    return `${month}-${day}-${year}-${hours}-${minutes}-${seconds}`;
+  }
+
+  /** Use today unless it's Saturday → then use Sunday (same format as todaysDate) */
+  reserveTargetDateKey(): string {
+    return this.isSaturday()
+      ? this.tomorrowsDateKeyLikeToday()
+      : this.todaysDate();
+  }
   todaysDateMonthDayYear(): string {
     const now = new Date();
     const year = now.getFullYear();

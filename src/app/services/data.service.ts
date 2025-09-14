@@ -758,12 +758,13 @@ export class DataService {
       `management/${this.auth.managementInfo.id}`
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const dateKey = this.time.reserveTargetDateKey();
+
     const data = {
       moneyInHands: (
         Number(this.auth.managementInfo.moneyInHands) - Number(amount)
       ).toString(),
-
-      moneyGiven: { [this.time.todaysDate()]: amount },
+      moneyGiven: { [dateKey]: amount },
     };
 
     return managementRef.set(data, { merge: true });
