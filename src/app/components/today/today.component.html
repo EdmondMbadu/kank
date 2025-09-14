@@ -77,7 +77,9 @@
           [ngClass]="okCount === 3
             ? 'bg-white/15 text-white ring-white/40'
             : 'bg-yellow-300/30 text-yellow-100 ring-1 ring-white/30'">
-          {{ okCount }}/3 OK
+          {{ okCount }}/3
+          <ng-container *ngIf="okCount === 3">&nbsp;OK</ng-container>
+        <ng-container *ngIf="okCount < 3">&nbsp;à corriger</ng-container>
         </span>
 
         <span
