@@ -105,6 +105,123 @@ export class DataService {
     this.updateUserInfoForClientPayment(client, savings, date, payment);
     return clientRef.set(data, { merge: true });
   }
+  // data.service.ts
+  clientPaymentAndStats(
+    client: Client,
+    savings: string,
+    dayKey: string, // e.g. "2025-09-09" (you can pass the same value as `date`)
+    payment: string
+  ) {
+    const ownerUid = this.auth.currentUser.uid;
+    const amount = Number(payment || 0);
+    const savingsNum = Number(savings || 0);
+    const agentUid: string | null =
+      (client as any)?.employee?.uid || (client as any)?.agent || null;
+
+    const db = this.afs.firestore;
+
+    // Refs
+    const clientRef = this.afs.doc(
+      `users/${ownerUid}/clients/${client.uid}`
+    ).ref;
+    const ownerDailyRef = this.afs.doc(
+      `users/${ownerUid}/stats/dailyReimbursement`
+    ).ref;
+    const empDayTotalsRef = agentUid
+      ? this.afs.doc(
+          `users/${ownerUid}/employees/${agentUid}/dayTotals/${dayKey}`
+        ).ref
+      : null;
+    const empLedgerRef = agentUid
+      ? this.afs
+          .collection(`users/${ownerUid}/employees/${agentUid}/payments`)
+          .doc().ref
+      : null;
+
+    // 1) Run the transaction (reads first, then writes — only numbers/strings)
+    const txPromise = db.runTransaction(async (tx) => {
+      // ===== READS =====
+      const ownerSnap = await tx.get(ownerDailyRef);
+      const prevOwnerVal = ownerSnap.exists ? ownerSnap.get(dayKey) : 0;
+      const prevOwner =
+        typeof prevOwnerVal === 'number'
+          ? prevOwnerVal
+          : Number(prevOwnerVal || 0);
+
+      let prevTotal = 0;
+      let prevCount = 0;
+      if (empDayTotalsRef) {
+        const daySnap = await tx.get(empDayTotalsRef);
+        if (daySnap.exists) {
+          const d: any = daySnap.data();
+          prevTotal = Number(d?.total || 0);
+          prevCount = Number(d?.count || 0);
+        }
+      }
+
+      // Precompute primitive time fields (avoid Timestamp/serverTimestamp)
+      const now = new Date();
+      const startOfDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+      const dayStartMs = startOfDay.getTime();
+      const nowMs = Date.now();
+      const monthKey = `${now.getFullYear()}-${String(
+        now.getMonth() + 1
+      ).padStart(2, '0')}`;
+
+      // ===== WRITES =====
+      tx.set(
+        clientRef,
+        {
+          amountPaid: client.amountPaid,
+          creditScore: client.creditScore,
+          numberOfPaymentsMade: client.numberOfPaymentsMade,
+          numberOfPaymentsMissed: client.numberOfPaymentsMissed,
+          payments: client.payments,
+          savings: client.savings,
+          savingsPayments: client.savingsPayments,
+          debtLeft: client.debtLeft,
+        },
+        { merge: true }
+      );
+
+      tx.set(ownerDailyRef, { [dayKey]: prevOwner + amount }, { merge: true });
+
+      if (empDayTotalsRef && empLedgerRef) {
+        tx.set(
+          empDayTotalsRef,
+          {
+            total: prevTotal + amount,
+            count: prevCount + 1,
+            dayKey,
+            dayStartMs,
+            monthKey,
+            updatedAtMs: nowMs,
+          },
+          { merge: true }
+        );
+
+        tx.set(empLedgerRef, {
+          amount: amount,
+          dayKey,
+          clientUid: client.uid,
+          trackingId: client.trackingId || null,
+          createdAtMs: nowMs,
+          savings: savingsNum || 0,
+        });
+      }
+    });
+
+    // 2) After the transaction succeeds, call your existing helper
+    //    (we pass `dayKey` as the `date` argument).
+    return txPromise.then(() =>
+      this.updateUserInfoForClientPayment(client, savings, dayKey, payment)
+    );
+  }
+
   clientDeposit(client: Client, savings: string, date: string) {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`

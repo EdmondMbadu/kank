@@ -136,7 +136,12 @@ export class PaymentComponent {
     }
     let date = this.time.todaysDateMonthDayYear();
     this.data
-      .clientPayment(this.client, this.savingsAmount, date, this.paymentAmount)
+      .clientPaymentAndStats(
+        this.client,
+        this.savingsAmount,
+        date,
+        this.paymentAmount
+      )
       .then(() => {
         this.performance.updateUserPerformance(this.client, this.paymentAmount);
       });
