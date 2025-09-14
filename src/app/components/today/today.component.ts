@@ -41,6 +41,7 @@ export class TodayComponent {
   okReasons: boolean = true; // true when reasonsMissing === 0
 
   cards: Card[] = [];
+  detailOpen = false;
 
   constructor(
     private router: Router,
@@ -53,6 +54,7 @@ export class TodayComponent {
   ) {}
   ngOnInit() {
     this.initalizeInputs();
+    this.detailOpen = new Date().getHours() >= 15;
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
 
@@ -193,6 +195,9 @@ export class TodayComponent {
       this.payErrMsg = 'Code incorrect – réessayez !';
       this.payCodeInput.setValue('');
     }
+  }
+  onDetailsToggle(evt: Event) {
+    this.detailOpen = (evt.target as HTMLDetailsElement).open;
   }
   initalizeInputs() {
     // ➊ clef de date déjà au bon format « MM-DD-YYYY »
