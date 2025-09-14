@@ -122,7 +122,7 @@
   <!-- Entrées -->
   <div class="mt-1.5 flex items-start gap-2">
     <span class="mt-0.5 shrink-0 rounded-full bg-emerald-100 text-emerald-700
-                 ring-1 ring-emerald-200 px-2 py-0.5 text-[10px]">Entrées</span>
+                 ring-1 ring-emerald-200 px-2 py-0.5 text-[10px]">Entrées:</span>
     <div class="flex flex-wrap gap-1.5">
       <ng-container *ngFor="let p of formulaPlus">
         <span class="rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200
@@ -136,11 +136,11 @@
 
   <!-- Sorties -->
   <div class="mt-1 flex items-start gap-2">
-    <span class="mt-0.5 shrink-0 rounded-full bg-rose-100 text-rose-700
-                 ring-1 ring-rose-200 px-2 py-0.5 text-[10px]">Sorties</span>
+    <span class="mt-0.5 shrink-0 rounded-full bg-blue-100 text-blue-700
+                 ring-1 ring-blue-200 px-2 py-0.5 text-[10px]">Sorties:</span>
     <div class="flex flex-wrap gap-1.5">
       <ng-container *ngFor="let m of formulaMinus">
-        <span class="rounded-full bg-rose-50 text-rose-700 ring-1 ring-rose-200
+        <span class="rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200
                      px-2 py-0.5 text-[11px]">
           {{ m.label }} −{{ m.v | number:'1.0-0' }}
         </span>

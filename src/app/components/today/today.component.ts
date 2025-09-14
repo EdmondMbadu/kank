@@ -280,7 +280,7 @@ export class TodayComponent {
         this.requestDateCorrectFormat
       )
       .toString();
-
+    this.dailyInvestment = this.dailyInvestment ? '0' : this.dailyInvestment;
     this.dailyMoneyRequests =
       this.dailyMoneyRequests === undefined ? '0' : this.dailyMoneyRequests;
     this.tomorrowMoneyRequests =
