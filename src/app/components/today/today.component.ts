@@ -35,6 +35,11 @@ export class TodayComponent {
   okRequested: boolean = true;
   okCount: number = 0;
 
+  // ── NEW: reasons (comments) completeness summary ────────────────
+  reasonsMissing: number = 0; // number of clients w/o comment for the date
+  reasonsTotal: number = 0; // number of clients who should have paid but didn't
+  okReasons: boolean = true; // true when reasonsMissing === 0
+
   cards: Card[] = [];
 
   constructor(
@@ -50,6 +55,8 @@ export class TodayComponent {
     this.initalizeInputs();
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+
+      this.recomputeHeaderReasons();
 
       this.findClientsWithDebts();
       this.computeRequestTotalSameAsRequestToday(); // NEW
@@ -301,7 +308,6 @@ export class TodayComponent {
       // )}`,
     ];
   }
-
   findDailyActivitiesAmount() {
     this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.requestDate
@@ -310,9 +316,13 @@ export class TodayComponent {
       this.requestDateCorrectFormat
     );
 
+    this.day = this.time.getDayOfWeek(this.requestDateCorrectFormat); // ✅ same as good page
+
     this.initalizeInputs();
-    this.computeRequestTotalSameAsRequestToday(); // NEW
+    this.recomputeHeaderReasons(); // ⬅ use new function
+    this.computeRequestTotalSameAsRequestToday();
   }
+
   findClientsWithDebts() {
     let total = 0;
 
@@ -519,6 +529,127 @@ export class TodayComponent {
   private updateOkChips() {
     this.okMoney = this.moneyInHandsTotalN === 0;
     this.okRequested = this.requestTotalToday === 0;
-    this.okCount = (this.okMoney ? 1 : 0) + (this.okRequested ? 1 : 0);
+
+    // include the new reasons criterion
+    this.okCount =
+      (this.okMoney ? 1 : 0) +
+      (this.okRequested ? 1 : 0) +
+      (this.okReasons ? 1 : 0);
+  }
+
+  /** Did this client register any payment on the selected date? */
+  private hasPaidOnDate(c: Client, dateKey: string): boolean {
+    const req = this.normDateOnly(dateKey);
+    const keys = Object.keys(c?.payments || {});
+    return keys.some((k) => {
+      const nk = this.normDateOnly(k);
+      // accept exact normalized match, OR literal startsWith to match your older pattern
+      return nk === req || k.startsWith(dateKey);
+    });
+  }
+
+  private getTodaysComment(client: Client) {
+    if (!client?.comments?.length) return null;
+    const req = this.normDateOnly(this.requestDateCorrectFormat);
+    return (
+      client.comments.find((c: any) => {
+        const t = (c?.time || c?.date || '').toString();
+        const nt = this.normDateOnly(t);
+        return nt === req || t.startsWith(this.requestDateCorrectFormat);
+      }) || null
+    );
+  }
+
+  /** Normalise a "MM-DD-YYYY" string to "M-D-YYYY" (no leading zeros). */
+  /** Normalize any date-ish string (MM-DD-YYYY, M/D/YYYY, YYYY-MM-DD, with or without time) to "M-D-YYYY". */
+  private normDateOnly(s?: string): string {
+    if (!s) return '';
+    const nums = (s.match(/\d+/g) || []).map(Number);
+    if (nums.length < 3) return '';
+    let y: number, m: number, d: number;
+    if (String(nums[0]).length === 4) {
+      // YYYY-...
+      y = nums[0];
+      m = nums[1];
+      d = nums[2];
+    } else {
+      // M-D-YYYY ...
+      m = nums[0];
+      d = nums[1];
+      y = nums[2];
+    }
+    if (!y || !m || !d) return '';
+    return `${m}-${d}-${y}`;
+  }
+
+  /** True if client’s debt cycle started >6 days before the selected date. */
+  private startedBeforeSelectedWeek(c: Client): boolean {
+    const s = this.normDateOnly((c as any).debtCycleStartDate || '');
+    if (!s) return true;
+    const [sm, sd, sy] = s.split('-').map(Number);
+
+    const [tm, td, ty] = this.normDateOnly(this.requestDateCorrectFormat)
+      .split('-')
+      .map(Number);
+    const ref = new Date(ty, tm - 1, td); // selected day
+    ref.setDate(ref.getDate() - 6); // a week window
+
+    const start = new Date(sy, sm - 1, sd);
+    return start <= ref;
+  }
+
+  private buildShouldPayToday(): Client[] {
+    const dayName = this.time.getDayOfWeek(this.requestDateCorrectFormat);
+    return (this.clients || []).filter((c) => c.paymentDay === dayName);
+  }
+  /** Mirror NotPaidToday's pipeline to drive Δ Raisons in the header */
+  private recomputeHeaderReasons() {
+    if (!this.clients?.length) {
+      this.reasonsMissing = 0;
+      this.reasonsTotal = 0;
+      this.okReasons = true;
+      this.updateOkChips();
+      return;
+    }
+
+    // 1) who should pay today
+    const shouldPay = this.buildShouldPayToday();
+
+    // 2) who already paid today
+    const paidTodaySet = new Set(
+      shouldPay
+        .filter((c) => this.hasPaidOnDate(c, this.requestDateCorrectFormat))
+        .map((c) => c.uid || c.trackingId || `${c.firstName}|${c.lastName}`)
+    );
+
+    const idOf = (c: Client) =>
+      c.uid || c.trackingId || `${c.firstName}|${c.lastName}`;
+    const isAlive = (c: Client) =>
+      !c.vitalStatus || c.vitalStatus.toLowerCase() === 'vivant';
+
+    // 3) common criteria (same spirit as NotPaidToday)
+    const notStartedToday = (c: Client) =>
+      this.normDateOnly((c as any).debtCycleStartDate || '') !==
+      this.normDateOnly(this.requestDateCorrectFormat);
+
+    const common = (c: Client) =>
+      !paidTodaySet.has(idOf(c)) &&
+      Number(c.debtLeft ?? 0) > 0 &&
+      notStartedToday(c) &&
+      this.startedBeforeSelectedWeek(c);
+
+    // 4) split like the good page (current vs away), then merge for global check
+    const notPaidCurrent = shouldPay.filter((c) => common(c) && isAlive(c));
+    // const notPaidAway = shouldPay.filter((c) => common(c) && !isAlive(c));
+    const notPaidAll = [...notPaidCurrent];
+
+    // 5) header numbers
+    this.reasonsTotal = notPaidAll.length;
+    this.reasonsMissing = notPaidAll.filter(
+      (c) => !this.getTodaysComment(c)
+    ).length;
+    this.okReasons = this.reasonsMissing === 0;
+
+    this.updateOkChips();
   }
 }

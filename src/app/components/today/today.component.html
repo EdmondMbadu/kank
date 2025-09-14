@@ -70,19 +70,18 @@
       <div class="chips no-scrollbar -mx-1 flex max-w-[75%] sm:max-w-none items-center gap-2 overflow-x-auto px-1 sm:flex-wrap">
         <span
           class="whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold ring-1"
-          [ngClass]="okCount === 2
+          [ngClass]="okCount === 3
             ? 'bg-white/15 text-white ring-white/40'
-            : 'bg-yellow-300/30 text-yellow-100 ring-1 ring-white/30'"
-        >
-          {{ okCount }}/2 OK
+            : 'bg-yellow-300/30 text-yellow-100 ring-1 ring-white/30'">
+          {{ okCount }}/3 OK
         </span>
 
         <span
-          *ngIf="okCount < 2"
-          class="whitespace-nowrap rounded-full bg-red-600/30 px-3 py-1 text-[11px] font-extrabold text-red-50 ring-1 ring-white/30"
-        >
+          *ngIf="okCount < 3"
+          class="whitespace-nowrap rounded-full bg-red-600/30 px-3 py-1 text-[11px] font-extrabold text-red-50 ring-1 ring-white/30">
           Anomalies détectées
         </span>
+
       </div>
 
       <!-- Chevron -->
@@ -126,19 +125,25 @@
       <div
         class="rounded-xl p-3 sm:p-4"
         [ngClass]="{
-          'bg-emerald-50 dark:bg-emerald-900/30' : okCount === 2,
-          'bg-amber-50 dark:bg-amber-900/30' : okCount < 2
+          'bg-emerald-50 dark:bg-emerald-900/30' : okCount === 3,
+          'bg-amber-50 dark:bg-amber-900/30' : okCount < 3
         }"
       >
         <div class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">Statut global</div>
         <div
-          class="mt-1 text-base sm:text-lg font-bold"
+          class="rounded-xl p-3 sm:p-4"
           [ngClass]="{
-            'text-emerald-700 dark:text-emerald-300' : okCount === 2,
-            'text-amber-700 dark:text-amber-300' : okCount < 2
-          }"
-        >
-          {{ okCount === 2 ? 'OK — prêt à clôturer' : 'À traiter avant clôture' }}
+            'bg-emerald-50 dark:bg-emerald-900/30' : okCount === 3,
+            'bg-amber-50 dark:bg-amber-900/30'     : okCount < 3
+          }">
+          <div
+            class="mt-1 text-base sm:text-lg font-bold"
+            [ngClass]="{
+              'text-emerald-700 dark:text-emerald-300' : okCount === 3,
+              'text-amber-700 dark:text-amber-300'     : okCount < 3
+            }">
+            {{ okCount === 3 ? 'OK — prêt à clôturer' : 'À traiter avant clôture' }}
+          </div>
         </div>
 
         <!-- Dual deltas -->
@@ -166,6 +171,20 @@
             >
               {{ requestTotalToday | number:'1.0-0' }} FC ·
               {{ compute.convertCongoleseFrancToUsDollars(requestTotalToday.toString()) | number:'1.0-0' }} $
+            </span>
+          </div>
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-slate-600 dark:text-slate-300">Δ Raisons</span>
+            <span
+              class="inline-flex items-center rounded-full px-2.5 py-0.5 ring-1"
+              [ngClass]="reasonsMissing === 0
+                ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                : 'bg-amber-100 text-amber-700 ring-amber-200'">
+              <!-- Show ✓ OK when complete; otherwise X/Y missing -->
+              <ng-container *ngIf="reasonsMissing === 0; else missingTpl">✓ OK</ng-container>
+              <ng-template #missingTpl>
+                {{ reasonsMissing }} / {{ reasonsTotal }} manquante{{ reasonsMissing > 1 ? 's' : '' }}
+              </ng-template>
             </span>
           </div>
         </div>
