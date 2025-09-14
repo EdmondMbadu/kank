@@ -43,6 +43,14 @@ export class TodayComponent {
   cards: Card[] = [];
   detailOpen = false;
 
+  dailyCardPayments: string = '0'; // for + side (carte)
+  dailyCardReturns: string = '0'; // for + side (carte)
+  formulaPlus: { label: string; v: number }[] = [];
+  formulaMinus: { label: string; v: number }[] = [];
+  formulaPlusSumN = 0;
+  formulaMinusSumN = 0;
+  formulaNetN = 0;
+
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -203,6 +211,15 @@ export class TodayComponent {
     // ➊ clef de date déjà au bon format « MM-DD-YYYY »
     this.todayKey = this.requestDateCorrectFormat;
 
+    this.dailyCardPayments =
+      this.auth.currentUser?.dailyCardPayments?.[
+        this.requestDateCorrectFormat
+      ] ?? '0';
+    this.dailyCardReturns =
+      this.auth.currentUser?.dailyCardReturns?.[
+        this.requestDateCorrectFormat
+      ] ?? '0';
+
     // ✅ Argent en main = moneyInHands + cardsMoney (both can be string or undefined)
     const moneyInHandsStr = this.auth.currentUser?.moneyInHands ?? '0';
     const cardsMoneyStr = this.auth.currentUser?.cardsMoney ?? '0';
@@ -312,7 +329,39 @@ export class TodayComponent {
       //   this.tomorrowMoneyRequests
       // )}`,
     ];
+    this.recomputeMoneyInHandsTrace();
   }
+
+  private recomputeMoneyInHandsTrace() {
+    const n = (x: any) => Number(x) || 0;
+
+    const plusRaw = [
+      { label: 'Paiement', v: n(this.dailyPayment) },
+      { label: 'Frais', v: n(this.dailyFees) },
+      { label: 'Entrée', v: n(this.dailyInvestment) },
+      { label: 'Épargne', v: n(this.dailySaving) },
+      { label: 'Paiement carte', v: n(this.dailyCardPayments) },
+    ];
+
+    const minusRaw = [
+      { label: 'Emprunts', v: n(this.dailyLending) },
+      { label: 'Retrait épargne', v: n(this.dailySavingReturns) },
+      { label: 'Retrait frais', v: n(this.dailyFeesReturns) },
+      { label: 'Dépenses', v: n(this.dailyExpense) },
+      { label: 'Pertes', v: n(this.dailyLoss) },
+      { label: 'Retrait carte', v: n(this.dailyCardReturns) },
+      { label: 'Reserve', v: n(this.dailyReserve) },
+    ];
+
+    // keep only non-zero entries (trace stays compact)
+    this.formulaPlus = plusRaw.filter((i) => i.v > 0);
+    this.formulaMinus = minusRaw.filter((i) => i.v > 0);
+
+    this.formulaPlusSumN = this.formulaPlus.reduce((a, b) => a + b.v, 0);
+    this.formulaMinusSumN = this.formulaMinus.reduce((a, b) => a + b.v, 0);
+    this.formulaNetN = this.formulaPlusSumN - this.formulaMinusSumN;
+  }
+
   findDailyActivitiesAmount() {
     this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.requestDate
