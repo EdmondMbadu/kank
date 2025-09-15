@@ -693,4 +693,42 @@ export class TeamRankingMonthComponent {
       badgeClass: 'bg-slate-500',
     };
   }
+  // Returns a safe number (0–100-ish) from any string/number
+  toNum(v: any): number {
+    const n = parseFloat(v ?? '0');
+    return isNaN(n) ? 0 : n;
+  }
+
+  // Use your gradient color for borders (single color based on %)
+  colorForPerf(p: any): string {
+    return this.compute.getGradientColor(Number(p || 0)); // e.g. "#22c55e"
+  }
+
+  // Subtle podium highlight for top 3 (different from daily podium)
+  perfPodiumClass(rank: number): string {
+    switch (rank) {
+      case 1:
+        return 'bg-gradient-to-br from-amber-50 to-white ring-amber-200';
+      case 2:
+        return 'bg-gradient-to-br from-slate-50 to-white ring-slate-200';
+      case 3:
+        return 'bg-gradient-to-br from-orange-50 to-white ring-orange-200';
+      default:
+        return 'bg-white ring-gray-200';
+    }
+  }
+
+  // Badge color for the rank number chip
+  perfBadgeClass(rank: number): string {
+    switch (rank) {
+      case 1:
+        return 'bg-amber-500';
+      case 2:
+        return 'bg-slate-500';
+      case 3:
+        return 'bg-orange-500';
+      default:
+        return 'bg-gray-400';
+    }
+  }
 }
