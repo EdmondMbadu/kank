@@ -77,6 +77,10 @@ export class Employee {
   _attachmentUA?: string;
   _attachmentSoftId?: string;
   _attachmentHash?: string;
+
+  // 🆕 Daily payments ranking (transient)
+  _dailyTotal?: number;
+  _dailyCount?: number;
 }
 export class Avatar {
   path?: string;

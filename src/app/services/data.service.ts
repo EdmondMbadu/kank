@@ -338,6 +338,36 @@ export class DataService {
     return batch.commit();
   }
 
+  // data.service.ts
+  getEmployeeDayTotalsForDay(
+    ownerUid: string,
+    empUid: string,
+    dayKey: string
+  ): Promise<{ total: number; count: number }> {
+    const basePath = `users/${ownerUid}/employees/${empUid}/dayTotals`;
+    const tryGet = (key: string) =>
+      this.afs
+        .doc(`${basePath}/${key}`)
+        .ref.get()
+        .then((snap) => {
+          if (!snap.exists) return null;
+          const d: any = snap.data() || {};
+          return { total: Number(d?.total || 0), count: Number(d?.count || 0) };
+        });
+
+    // first try exact key
+    return tryGet(dayKey).then(async (res) => {
+      if (res) return res;
+      // fallback: remove leading zeros from M/D if your stored docs use "9-5-2025"
+      const altKey = dayKey.replace(/\b0(\d)/g, '$1'); // "09-05-2025" -> "9-5-2025"
+      if (altKey !== dayKey) {
+        const alt = await tryGet(altKey);
+        if (alt) return alt;
+      }
+      return { total: 0, count: 0 };
+    });
+  }
+
   // Utility to chunk large arrays for batch writes
   private chunk<T>(arr: T[], size: number): T[][] {
     const out: T[][] = [];

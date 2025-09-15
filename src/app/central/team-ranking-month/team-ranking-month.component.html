@@ -6,16 +6,6 @@
     <div  class="flex container mx-auto justify-center text-center mb-8">
       <h2 class="text-2xl md:text-4xl font-bold"> <span>Classement</span> Des Employée Du Mois</h2>
     </div>
- 
-    <!-- Average Performance Percentage -->
-    <!-- <div class="flex container mx-auto justify-center text-center mb-8">
-      <div class="bg-green-100 p-6 rounded-lg shadow-md">
-        <h3 class="text-xl font-semibold text-green-800">Performance Moyenne</h3>
-        <p class="text-2xl font-bold text-green-900 mt-2">
-          {{ averagePerformancePercentage }}%
-        </p>
-      </div>
-    </div> -->
       <div class=" container  flex mx-auto   flex-col md:justify-center md:flex-row  ">
 
         <div class="flex flex-col ">
@@ -28,6 +18,38 @@
 
 
     </div>
+<!-- Mode switch -->
+<div *ngIf="auth.isAdmin" class="flex justify-center mb-6">
+  <div class="inline-flex rounded-full bg-gray-100 p-1 shadow-inner">
+    <button
+      (click)="setRankingMode('performance')"
+      class="px-4 py-2 text-sm font-medium rounded-full transition"
+      [class.bg-white]="rankingMode==='performance'"
+      [class.text-gray-900]="rankingMode==='performance'"
+      [class.text-gray-600]="rankingMode!=='performance'">
+      Performance
+    </button>
+    <button
+      (click)="setRankingMode('dailyPayments')"
+      class="px-4 py-2 text-sm font-medium rounded-full transition"
+      [class.bg-white]="rankingMode==='dailyPayments'"
+      [class.text-gray-900]="rankingMode==='dailyPayments'"
+      [class.text-gray-600]="rankingMode!=='dailyPayments'">
+      Paiements du jour
+    </button>
+  </div>
+</div>
+
+<div *ngIf="rankingMode==='dailyPayments' && loadingDaily" class="flex justify-center mb-4">
+  <div class="inline-flex items-center gap-2 text-sm text-gray-500">
+    <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle>
+      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.9"></path>
+    </svg>
+    Chargement des paiements du {{ todayDayKey }}…
+  </div>
+</div>
+
 
     <!-- Filters -->
     <div   class="flex container mx-auto justify-center text-center space-x-8 mb-6">
@@ -62,6 +84,15 @@
         *ngFor="let em of allEmployees; let i = index"
         class="flex bg-gray-50 rounded-lg shadow items-center p-4"
       >
+      <!-- Daily payments ribbon (only when that mode is active) -->
+<div *ngIf="rankingMode==='dailyPayments'" class="mt-2">
+  <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1 text-xs font-semibold">
+    FC {{ (em._dailyTotal || 0) | number:'1.0-0' }}
+    <span class="h-1 w-1 rounded-full bg-emerald-600"></span>
+    {{ em._dailyCount || 0 }} paiement{{ (em._dailyCount || 0) > 1 ? 's' : '' }}
+  </span>
+</div>
+
         <!-- Rank -->
         <div class="text-center w-12 font-bold text-2xl">{{ i + 1 }}</div>
         <!-- Profile Image -->

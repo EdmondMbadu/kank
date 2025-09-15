@@ -34,6 +34,11 @@ export class TeamRankingMonthComponent {
   showPresent: boolean = false;
   yearsList: number[] = this.time.yearsList;
 
+  // team-ranking-month.component.ts (add near top-level props)
+  rankingMode: 'performance' | 'dailyPayments' = 'performance';
+  loadingDaily = false;
+  todayDayKey: string = this.time.todaysDateMonthDayYear(); // e.g. "9-15-2025"
+
   allLocations: any[] = [];
   constructor(
     private router: Router,
@@ -133,6 +138,12 @@ export class TeamRankingMonthComponent {
         if (completedRequests === this.allUsers.length) {
           this.filterAndInitializeEmployees(tempEmployees, this.currentClients);
           this.isFetchingClients = false;
+          // after this.filterAndInitializeEmployees(...);
+          if (this.rankingMode === 'dailyPayments') {
+            this.loadDailyTotalsForEmployees();
+          } else {
+            this.sortEmployeesByPerformance();
+          }
         }
         this.setGraphics();
       });
@@ -587,5 +598,64 @@ export class TeamRankingMonthComponent {
       return { date: new Date(file.lastModified), source: 'fileLastModified' };
     }
     return { date: null, source: 'unknown' };
+  }
+
+  // team-ranking-month.component.ts (add these methods inside the class)
+  setRankingMode(mode: 'performance' | 'dailyPayments') {
+    if (this.rankingMode === mode) return;
+    this.rankingMode = mode;
+
+    if (mode === 'dailyPayments') {
+      this.loadDailyTotalsForEmployees();
+    } else {
+      // restore performance ordering
+      this.sortEmployeesByPerformance();
+    }
+  }
+
+  private async loadDailyTotalsForEmployees() {
+    if (!this.allEmployees?.length) return;
+    this.loadingDaily = true;
+
+    try {
+      const promises = this.allEmployees.map(async (em: any) => {
+        if (!em?.uid) return;
+        const ownerUid = em?.tempUser?.uid || this.auth.currentUser.uid; // <<< use the employee’s owner
+        const { total, count } = await this.data.getEmployeeDayTotalsForDay(
+          ownerUid,
+          em.uid,
+          this.todayDayKey
+        );
+        em._dailyTotal = total;
+        em._dailyCount = count;
+      });
+      await Promise.all(promises);
+
+      // sort after values loaded
+      this.allEmployees.sort((a: any, b: any) => {
+        const ta = Number(a._dailyTotal || 0),
+          tb = Number(b._dailyTotal || 0);
+        const ca = Number(a._dailyCount || 0),
+          cb = Number(b._dailyCount || 0);
+        if (tb !== ta) return tb - ta;
+        if (cb !== ca) return cb - ca;
+        const an = `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim();
+        const bn = `${b.firstName ?? ''} ${b.lastName ?? ''}`.trim();
+        return an.localeCompare(bn);
+      });
+    } finally {
+      this.loadingDaily = false;
+    }
+  }
+
+  // Keep your existing performance sorting, but factor it out for reuse
+  private sortEmployeesByPerformance() {
+    this.allEmployees.sort((a, b) => {
+      const aVal = parseFloat(a.performancePercentageMonth ?? '0');
+      const bVal = parseFloat(b.performancePercentageMonth ?? '0');
+      const aPerf = isNaN(aVal) ? 0 : aVal;
+      const bPerf = isNaN(bVal) ? 0 : bVal;
+      return bPerf - aPerf;
+    });
   }
 }
