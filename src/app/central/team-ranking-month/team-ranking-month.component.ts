@@ -39,6 +39,8 @@ export class TeamRankingMonthComponent {
   loadingDaily = false;
   todayDayKey: string = this.time.todaysDateMonthDayYear(); // e.g. "9-15-2025"
 
+  allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
+
   allLocations: any[] = [];
   constructor(
     private router: Router,
@@ -160,16 +162,16 @@ export class TeamRankingMonthComponent {
         // this.currentEmployees = employees;
         completedRequests++;
         if (completedRequests === this.allUsers.length) {
+          this.allEmployeesAll = tempEmployees; // 👈 keep everyone
           this.filterAndInitializeEmployees(tempEmployees, this.currentClients);
           this.isFetchingClients = false;
-          // after this.filterAndInitializeEmployees(...);
           if (this.rankingMode === 'dailyPayments') {
             this.loadDailyTotalsForEmployees();
           } else {
             this.sortEmployeesByPerformance();
           }
+          this.setGraphics();
         }
-        this.setGraphics();
       });
     });
     this.total = (Number(this.total) + Number(this.totalHouse)).toString();
@@ -638,24 +640,81 @@ export class TeamRankingMonthComponent {
   }
 
   private async loadDailyTotalsForEmployees() {
-    if (!this.allEmployees?.length) return;
+    if (!this.allEmployees?.length) return; // visible list = actives
     this.loadingDaily = true;
 
     try {
-      const promises = this.allEmployees.map(async (em: any) => {
-        if (!em?.uid) return;
-        const ownerUid = em?.tempUser?.uid || this.auth.currentUser.uid; // <<< use the employee’s owner
-        const { total, count } = await this.data.getEmployeeDayTotalsForDay(
-          ownerUid,
-          em.uid,
-          this.todayDayKey
-        );
-        em._dailyTotal = total;
-        em._dailyCount = count;
-      });
-      await Promise.all(promises);
+      // Use the full set (active + inactive) to fetch day totals
+      const everyone = (
+        this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees
+      ) as any[];
 
-      // sort after values loaded
+      // 1) Fetch day totals for ALL employees (by owner/location)
+      const totalsById = new Map<
+        string,
+        { total: number; count: number; ownerUid: string; status: string }
+      >();
+      await Promise.all(
+        everyone.map(async (e) => {
+          if (!e?.uid) return;
+          const ownerUid = e?.tempUser?.uid || this.auth.currentUser.uid;
+          const { total, count } = await this.data.getEmployeeDayTotalsForDay(
+            ownerUid,
+            e.uid,
+            this.todayDayKey
+          );
+          totalsById.set(e.uid, {
+            total,
+            count,
+            ownerUid,
+            status: e.status || 'Travaille',
+          });
+        })
+      );
+
+      // 2) Seed adjusted map with each ACTIVE employee’s own totals
+      const adjusted = new Map<string, { total: number; count: number }>();
+      for (const e of this.allEmployees) {
+        const base = totalsById.get(e.uid!) || {
+          total: 0,
+          count: 0,
+          ownerUid: e?.tempUser?.uid,
+          status: e.status,
+        };
+        adjusted.set(e.uid!, { total: base.total, count: base.count });
+      }
+
+      // 3) For every INACTIVE employee, add their totals to the first ACTIVE coworker at the same location
+      for (const donor of everyone) {
+        const meta = totalsById.get(donor.uid!);
+        if (!meta) continue;
+
+        const isInactive = (donor.status || '') !== 'Travaille';
+        if (!isInactive) continue;
+
+        const ownerUid = meta.ownerUid;
+        // Find a recipient: any active employee in the visible list with same owner/location
+        const recipient = this.allEmployees.find(
+          (r: any) =>
+            (r?.tempUser?.uid || this.auth.currentUser.uid) === ownerUid &&
+            (r.status || '') === 'Travaille'
+        );
+        if (!recipient) continue; // nobody active at this location → skip
+
+        const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
+        rec.total += meta.total;
+        rec.count += meta.count;
+        adjusted.set(recipient.uid!, rec);
+      }
+
+      // 4) Write the adjusted totals back to the ACTIVE employees and sort
+      this.allEmployees.forEach((e: any) => {
+        const a = adjusted.get(e.uid!) || { total: 0, count: 0 };
+        e._dailyTotal = a.total;
+        e._dailyCount = a.count;
+      });
+
+      // Sort by adjusted totals: total desc, then count desc, then name asc
       this.allEmployees.sort((a: any, b: any) => {
         const ta = Number(a._dailyTotal || 0),
           tb = Number(b._dailyTotal || 0);
