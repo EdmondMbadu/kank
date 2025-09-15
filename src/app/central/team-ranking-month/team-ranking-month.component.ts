@@ -659,9 +659,8 @@ export class TeamRankingMonthComponent {
     });
   }
 
-  // team-ranking-month.component.ts (inside the class)
   trophyMeta(rank: number) {
-    // user asked: 1 = Gold, 2 = Bronze, 3 = Silver
+    // 1 = Gold (Or), 2 = Bronze, 3 = Silver (Argent)
     if (rank === 1) {
       return {
         emoji: '🥇',
@@ -670,6 +669,7 @@ export class TeamRankingMonthComponent {
         ringClass: 'ring-amber-400',
         labelClass: 'text-amber-700',
         avatarClass: 'bg-amber-500',
+        badgeClass: 'bg-amber-500',
       };
     }
     if (rank === 2) {
@@ -680,9 +680,9 @@ export class TeamRankingMonthComponent {
         ringClass: 'ring-orange-400',
         labelClass: 'text-orange-700',
         avatarClass: 'bg-orange-500',
+        badgeClass: 'bg-orange-500',
       };
     }
-    // rank 3
     return {
       emoji: '🥈',
       label: 'ARGENT',
@@ -690,6 +690,7 @@ export class TeamRankingMonthComponent {
       ringClass: 'ring-slate-400',
       labelClass: 'text-slate-700',
       avatarClass: 'bg-slate-500',
+      badgeClass: 'bg-slate-500',
     };
   }
 }

@@ -252,55 +252,70 @@
   </div>
 
   <!-- Podium for top 3 -->
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <div
+    *ngFor="let em of allEmployees | slice:0:3; let idx = index"
+    class="relative rounded-2xl p-5 shadow-xl ring-1"
+    [ngClass]="trophyMeta(idx+1).cardClass"
+  >
+    <!-- 🆕 Rank number badge -->
     <div
-      *ngFor="let em of allEmployees | slice:0:3; let idx = index"
-      class="rounded-2xl p-5 shadow-xl ring-1"
-      [ngClass]="trophyMeta(idx+1).cardClass"
+      class="absolute -top-3 -left-3 h-10 w-10 rounded-full flex items-center justify-center text-lg font-extrabold text-white shadow-lg ring-4 ring-white"
+      [ngClass]="trophyMeta(idx+1).badgeClass"
+      [attr.aria-label]="'Rang ' + (idx+1)"
     >
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-2xl">{{ trophyMeta(idx+1).emoji }}</span>
-        <span class="text-xs font-semibold uppercase tracking-wide"
-              [ngClass]="trophyMeta(idx+1).labelClass">
-          {{ trophyMeta(idx+1).label }}
-        </span>
-      </div>
+      {{ idx + 1 }}
+    </div>
 
-      <div class="flex items-center gap-3">
-        <img
-          *ngIf="em?.profilePicture?.downloadURL; else avatarFallback"
-          [src]="em.profilePicture?.downloadURL"
-          class="h-12 w-12 rounded-full object-cover ring-2"
-          [ngClass]="trophyMeta(idx+1).ringClass"
-          alt="avatar"
-        />
-        <ng-template #avatarFallback>
-          <div class="h-12 w-12 rounded-full flex items-center justify-center font-bold text-white"
-               [ngClass]="trophyMeta(idx+1).avatarClass">
-            {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
-          </div>
-        </ng-template>
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-2xl">{{ trophyMeta(idx+1).emoji }}</span>
+      <span
+        class="text-xs font-semibold uppercase tracking-wide"
+        [ngClass]="trophyMeta(idx+1).labelClass"
+      >
+        {{ trophyMeta(idx+1).label }}
+      </span>
+    </div>
 
-        <div class="min-w-0">
-          <div class="font-semibold text-gray-900 truncate">
-            {{ em.firstName }} {{ em.lastName }}
-          </div>
-          <div class="text-xs text-gray-500 truncate">
-            {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
-          </div>
+    <div class="flex items-center gap-3">
+      <img
+        *ngIf="em?.profilePicture?.downloadURL; else avatarFallback"
+        [src]="em.profilePicture?.downloadURL"
+        class="h-12 w-12 rounded-full object-cover ring-2"
+        [ngClass]="trophyMeta(idx+1).ringClass"
+        alt="avatar"
+      />
+      <ng-template #avatarFallback>
+        <div
+          class="h-12 w-12 rounded-full flex items-center justify-center font-bold text-white"
+          [ngClass]="trophyMeta(idx+1).avatarClass"
+        >
+          {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
         </div>
-      </div>
+      </ng-template>
 
-      <div *ngIf="this.auth.isAdmin" class="mt-4 flex items-baseline gap-2">
-        <div class="text-lg font-bold">
-          FC {{ (em._dailyTotal || 0) | number:'1.0-0' }}
+      <div class="min-w-0">
+        <div class="font-semibold text-gray-900 truncate">
+          {{ em.firstName }} {{ em.lastName }}
         </div>
-        <div class="text-xs text-gray-500">
-          ({{ em._dailyCount || 0 }} paiement{{ (em._dailyCount || 0) > 1 ? 's' : '' }})
+        <div class="text-xs text-gray-500 truncate">
+          {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
         </div>
       </div>
     </div>
+
+    <div *ngIf="auth.isAdmin" class="mt-4 flex items-baseline gap-2">
+      <div class="text-lg font-bold">
+        FC {{ (em._dailyTotal || 0) | number:'1.0-0' }}
+      </div>
+      <div class="text-xs text-gray-500">
+        ({{ em._dailyCount || 0 }} paiement{{ (em._dailyCount || 0) > 1 ? 's' : '' }})
+      </div>
+    </div>
   </div>
+</div>
+
+
 
   <!-- The rest (rank #4+) -->
   <div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm">
