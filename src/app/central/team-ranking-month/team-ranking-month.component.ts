@@ -658,4 +658,38 @@ export class TeamRankingMonthComponent {
       return bPerf - aPerf;
     });
   }
+
+  // team-ranking-month.component.ts (inside the class)
+  trophyMeta(rank: number) {
+    // user asked: 1 = Gold, 2 = Bronze, 3 = Silver
+    if (rank === 1) {
+      return {
+        emoji: '🥇',
+        label: 'OR',
+        cardClass: 'bg-gradient-to-br from-amber-50 to-white ring-amber-200',
+        ringClass: 'ring-amber-400',
+        labelClass: 'text-amber-700',
+        avatarClass: 'bg-amber-500',
+      };
+    }
+    if (rank === 2) {
+      return {
+        emoji: '🥉',
+        label: 'BRONZE',
+        cardClass: 'bg-gradient-to-br from-orange-50 to-white ring-orange-200',
+        ringClass: 'ring-orange-400',
+        labelClass: 'text-orange-700',
+        avatarClass: 'bg-orange-500',
+      };
+    }
+    // rank 3
+    return {
+      emoji: '🥈',
+      label: 'ARGENT',
+      cardClass: 'bg-gradient-to-br from-slate-50 to-white ring-slate-200',
+      ringClass: 'ring-slate-400',
+      labelClass: 'text-slate-700',
+      avatarClass: 'bg-slate-500',
+    };
+  }
 }
