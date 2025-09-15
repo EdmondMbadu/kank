@@ -45,7 +45,33 @@
    
 
 <button class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
-    <button  (click)="makePayment()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumettre</button>
+   <button
+  (click)="makePayment()"
+  [disabled]="isSubmitting"
+  class="relative text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center disabled:opacity-60 disabled:cursor-not-allowed"
+>
+  <span *ngIf="!isSubmitting; else loadingBtn">Soumettre</span>
+  <ng-template #loadingBtn>
+    <span class="inline-flex items-center gap-2">
+      Traitement…
+      <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle>
+        <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.9"></path>
+      </svg>
+    </span>
+  </ng-template>
+</button>
+
+<!-- Blocking overlay while submitting -->
+<div *ngIf="isSubmitting"
+     class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+  <div class="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl text-center max-w-xs">
+    <div class="mx-auto mb-3 h-10 w-10 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
+    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium">Enregistrement du paiement…</p>
+    <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Veuillez patienter, ne fermez pas la page.</p>
+  </div>
+</div>
+
    
 </div>
 

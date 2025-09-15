@@ -22,6 +22,8 @@ export class PaymentComponent {
   paymentAmount: string = '';
   numberOfPaymentToday = 0;
   minPayment: string = '';
+  isSubmitting = false;
+
   client: Client = new Client();
   constructor(
     private activatedRoute: ActivatedRoute,
@@ -64,6 +66,7 @@ export class PaymentComponent {
   }
 
   makePayment() {
+    if (this.isSubmitting) return; // hard guard against double clicks
     if (this.paymentAmount === '' || this.savingsAmount === '') {
       alert('Remplissez toutes les données');
       return;
@@ -135,6 +138,7 @@ export class PaymentComponent {
       this.client.creditScore = this.computeCreditScore();
     }
     let date = this.time.todaysDateMonthDayYear();
+    this.isSubmitting = true; // 👉 show loader + disable button immediately
     this.data
       .clientPaymentAndStats(
         this.client,
@@ -144,8 +148,15 @@ export class PaymentComponent {
       )
       .then(() => {
         this.performance.updateUserPerformance(this.client, this.paymentAmount);
+        this.router.navigate(['/client-portal', this.id]);
+      })
+      .catch((err) => {
+        console.error('Failed to write payment+stats', err);
+        alert("Le paiement n'a pas pu être enregistré. Réessayez.");
+      })
+      .finally(() => {
+        this.isSubmitting = false; // safety in case navigation doesn’t happen
       });
-    this.router.navigate(['/client-portal/' + this.id]);
   }
 
   computeCreditScore() {
