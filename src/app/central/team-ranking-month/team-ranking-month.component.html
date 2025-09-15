@@ -103,7 +103,7 @@
 
     </div>
 <!-- Mode switch -->
-<div  class="flex justify-center mb-6">
+<div *ngIf="auth.isAdmin"  class="flex justify-center mb-6">
   <div class="inline-flex rounded-full bg-gray-100 p-1 shadow-inner">
     <button
       (click)="setRankingMode('performance')"
