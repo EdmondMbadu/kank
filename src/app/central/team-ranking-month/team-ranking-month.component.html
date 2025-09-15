@@ -10,9 +10,93 @@
 
         <div class="flex flex-col ">
          
-            <div class="w-full max-w-sm   mx-auto mt-0 md:-mt-8 mb-2">
-                <plotly-plot [data]="graphMonthPerformance.data" [layout]="graphMonthPerformance.layout"></plotly-plot>
-              </div>
+            <!-- PERFORMANCE RING (replaces the plotly-plot block) -->
+<div class="w-full max-w-sm mx-auto mt-0 md:-mt-8 mb-4">
+  <div class="relative flex items-center justify-center">
+    <svg
+      [attr.width]="size"
+      [attr.height]="size"
+      [attr.viewBox]="'0 0 ' + size + ' ' + size"
+      class="drop-shadow-sm"
+    >
+      <defs>
+        <!-- gradient for the arc -->
+        <linearGradient [attr.id]="gradId" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#34d399" />
+          <stop offset="50%" stop-color="#22c55e" />
+          <stop offset="100%" stop-color="#10b981" />
+        </linearGradient>
+
+        <!-- soft glow -->
+        <filter id="perfGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      <!-- subtle background ring -->
+      <circle
+        [attr.cx]="center"
+        [attr.cy]="center"
+        [attr.r]="radius"
+        stroke="#e5e7eb"
+        [attr.stroke-width]="strokeWidth"
+        fill="none"
+      ></circle>
+
+      <!-- dotted guide (optional, faint) -->
+      <circle
+        [attr.cx]="center"
+        [attr.cy]="center"
+        [attr.r]="radius"
+        stroke="#eef2f7"
+        [attr.stroke-width]="2"
+        stroke-dasharray="2 10"
+        fill="none"
+      ></circle>
+
+      <!-- progress arc -->
+     <!-- progress arc -->
+    <circle
+      [attr.cx]="center"
+      [attr.cy]="center"
+      [attr.r]="radius"
+      [attr.stroke]="colorForPerf(avgPerf)"   
+      [attr.stroke-width]="strokeWidth"
+      stroke-linecap="round"
+      fill="none"
+      [attr.stroke-dasharray]="progressDasharray()" 
+      [attr.stroke-dashoffset]="0"                   
+      [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'"
+      filter="url(#perfGlow)"
+      class="transition-all duration-700 ease-out"
+    />
+    </svg>
+
+    <!-- center label -->
+    <div class="absolute inset-0 flex flex-col items-center justify-center">
+      <div class="text-4xl font-extrabold text-gray-900">
+        {{ avgPerf | number:'1.0-0' }}%
+      </div>
+      <div class="text-xs uppercase tracking-wide text-gray-500">
+        Performance Moyenne
+      </div>
+    </div>
+
+    <!-- tiny status chip -->
+    <div class="absolute -bottom-2 right-1 flex items-center gap-1 text-[11px]">
+      <span
+        class="inline-block h-2.5 w-2.5 rounded-full"
+        [ngStyle]="{ background: colorForPerf(avgPerf) }"
+      ></span>
+      <span class="text-gray-500">aujourd’hui</span>
+    </div>
+  </div>
+</div>
+
             
         </div>
 

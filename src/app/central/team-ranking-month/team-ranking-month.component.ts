@@ -61,6 +61,30 @@ export class TeamRankingMonthComponent {
       if (this.allUsers.length > 1) this.getAllEmployees();
     });
   }
+  // --- Performance ring geometry ---
+  size = 220; // svg canvas
+  strokeWidth = 14; // arc thickness
+  center = this.size / 2;
+  radius = this.center - this.strokeWidth - 6; // a bit of padding
+  gradId = 'gradPerf-' + Math.random().toString(36).slice(2, 8);
+
+  get circumference(): number {
+    return 2 * Math.PI * this.radius;
+  }
+
+  // clamp + parse the avg string you already compute
+  get avgPerf(): number {
+    const n = parseFloat(this.averagePerformancePercentage || '0');
+    return Math.min(100, Math.max(0, isNaN(n) ? 0 : n));
+  }
+
+  // stroke offset for the arc
+  progressOffset(): number {
+    const pct = this.avgPerf / 100;
+    return this.circumference * (1 - pct);
+  }
+
+  // use your existing gradient color logic to tint chips/accents
 
   allEmployees: Employee[] = [];
   public graphMonthPerformance = {
@@ -730,5 +754,20 @@ export class TeamRankingMonthComponent {
       default:
         return 'bg-gray-400';
     }
+  }
+  // Replace the old offset method with this:
+  progressDasharray(): string {
+    // clamp and compute the lengths
+    const pct = Math.max(0, Math.min(100, this.avgPerf)) / 100;
+    let filled = pct * this.circumference;
+    let empty = this.circumference - filled;
+
+    // tiny nudge so round linecap looks nice at 0% / 100%
+    if (pct > 0 && pct < 1) {
+      filled = Math.max(filled, 0.001);
+      empty = Math.max(empty, 0.001);
+    }
+
+    return `${filled} ${empty}`;
   }
 }
