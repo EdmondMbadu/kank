@@ -33,6 +33,8 @@ export class TeamRankingMonthComponent {
   totalBonus: string = '';
   showPresent: boolean = false;
   yearsList: number[] = this.time.yearsList;
+  // top-level props
+  paidEmployeesToday: any[] = [];
 
   // team-ranking-month.component.ts (add near top-level props)
   rankingMode: 'performance' | 'dailyPayments' = 'performance';
@@ -726,6 +728,10 @@ export class TeamRankingMonthComponent {
         const bn = `${b.firstName ?? ''} ${b.lastName ?? ''}`.trim();
         return an.localeCompare(bn);
       });
+      // keep only employees with > 0 for today's payments
+      this.paidEmployeesToday = this.allEmployees.filter(
+        (e: any) => Number(e._dailyTotal || 0) > 0
+      );
     } finally {
       this.loadingDaily = false;
     }

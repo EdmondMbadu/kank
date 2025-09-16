@@ -299,11 +299,15 @@
     </h3>
     <p class="text-sm text-gray-500 mt-1">Somme des paiements inscrits par employé</p>
   </div>
+  <div *ngIf="!loadingDaily && paidEmployeesToday.length === 0" class="text-center text-sm text-gray-500 mt-2">
+    Aucun paiement enregistré aujourd’hui.
+  </div>
+
 
   <!-- Podium for top 3 -->
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
   <div
-    *ngFor="let em of allEmployees | slice:0:3; let idx = index"
+    *ngFor="let em of paidEmployeesToday | slice:0:3; let idx = index"
     class="relative rounded-2xl p-5 shadow-xl ring-1"
     [ngClass]="trophyMeta(idx+1).cardClass"
   >
@@ -367,12 +371,12 @@
 
 
   <!-- The rest (rank #4+) -->
-  <div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm">
-    <ul class="divide-y divide-gray-100">
-      <li
-        *ngFor="let em of allEmployees | slice:3; let i = index"
-        class="flex items-center justify-between p-4"
-      >
+<div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm">
+  <ul class="divide-y divide-gray-100">
+    <li
+      *ngFor="let em of paidEmployeesToday | slice:3; let i = index"
+      class="flex items-center justify-between p-4"
+    >
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-8 text-center font-semibold text-gray-500">
             {{ i + 4 }}
