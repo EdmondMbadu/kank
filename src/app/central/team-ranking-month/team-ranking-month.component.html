@@ -103,7 +103,7 @@
 
     </div>
 <!-- Mode switch -->
-<div *ngIf="auth.isAdmin"  class="flex justify-center mb-6">
+<div *ngIf="auth.isAdmin" class="flex justify-center mb-6">
   <div class="inline-flex rounded-full bg-gray-100 p-1 shadow-inner">
     <button
       (click)="setRankingMode('performance')"
@@ -113,6 +113,7 @@
       [class.text-gray-600]="rankingMode!=='performance'">
       Performance
     </button>
+
     <button
       (click)="setRankingMode('dailyPayments')"
       class="px-4 py-2 text-sm font-medium rounded-full transition"
@@ -121,8 +122,19 @@
       [class.text-gray-600]="rankingMode!=='dailyPayments'">
       Paiements du jour
     </button>
+
+    <!-- 🆕 Monthly -->
+    <button
+      (click)="setRankingMode('monthlyPayments')"
+      class="px-4 py-2 text-sm font-medium rounded-full transition"
+      [class.bg-white]="rankingMode==='monthlyPayments'"
+      [class.text-gray-900]="rankingMode==='monthlyPayments'"
+      [class.text-gray-600]="rankingMode!=='monthlyPayments'">
+      Paiements du mois
+    </button>
   </div>
 </div>
+
 
 <div *ngIf="rankingMode==='dailyPayments' && loadingDaily" class="flex justify-center mb-4">
   <div class="inline-flex items-center gap-2 text-sm text-gray-500">
@@ -133,6 +145,16 @@
     Chargement des paiements du {{ todayDayKey }}…
   </div>
 </div>
+<div *ngIf="rankingMode==='monthlyPayments' && loadingMonthly" class="flex justify-center mb-4">
+  <div class="inline-flex items-center gap-2 text-sm text-gray-500">
+    <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle>
+      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.9"></path>
+    </svg>
+    Chargement des paiements de {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}…
+  </div>
+</div>
+
 
 
     <!-- Filters -->
@@ -415,6 +437,115 @@
     </ul>
   </div>
 </div>
+
+<!-- 🆕 MONTHLY PAYMENTS SECTION -->
+<div *ngIf="rankingMode==='monthlyPayments'" class="space-y-6">
+  <!-- Header -->
+  <div class="text-center">
+    <h3 class="text-2xl md:text-3xl font-bold">
+      Classement — Paiements du mois ({{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }})
+    </h3>
+    <p class="text-sm text-gray-500 mt-1">Somme des paiements du mois par employé</p>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loadingMonthly && paidEmployeesMonth.length === 0" class="text-center text-sm text-gray-500">
+    Aucun paiement enregistré pour ce mois.
+  </div>
+
+  <!-- Podium (top 3) -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" *ngIf="paidEmployeesMonth.length > 0">
+    <div
+      *ngFor="let em of paidEmployeesMonth | slice:0:3; let idx = index"
+      class="relative rounded-2xl p-5 shadow-xl ring-1"
+      [ngClass]="trophyMeta(idx+1).cardClass"
+    >
+      <div class="absolute -top-3 -left-3 h-10 w-10 rounded-full flex items-center justify-center text-lg font-extrabold text-white shadow-lg ring-4 ring-white"
+           [ngClass]="trophyMeta(idx+1).badgeClass">
+        {{ idx + 1 }}
+      </div>
+
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-2xl">{{ trophyMeta(idx+1).emoji }}</span>
+        <span class="text-xs font-semibold uppercase tracking-wide" [ngClass]="trophyMeta(idx+1).labelClass">
+          {{ trophyMeta(idx+1).label }}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <img *ngIf="em?.profilePicture?.downloadURL; else mAvatarFallback"
+             [src]="em.profilePicture?.downloadURL"
+             class="h-12 w-12 rounded-full object-cover ring-2"
+             [ngClass]="trophyMeta(idx+1).ringClass"
+             alt="avatar" />
+        <ng-template #mAvatarFallback>
+          <div class="h-12 w-12 rounded-full flex items-center justify-center font-bold text-white"
+               [ngClass]="trophyMeta(idx+1).avatarClass">
+            {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
+          </div>
+        </ng-template>
+
+        <div class="min-w-0">
+          <div class="font-semibold text-gray-900 truncate">
+            {{ em.firstName }} {{ em.lastName }}
+          </div>
+          <div class="text-xs text-gray-500 truncate">
+            {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="auth.isAdmin" class="mt-4 flex items-baseline gap-2">
+        <div class="text-lg font-bold">
+          FC {{ (em._monthTotal || 0) | number:'1.0-0' }}
+        </div>
+        <div class="text-xs text-gray-500">
+          ({{ em._monthCount || 0 }} paiement{{ (em._monthCount || 0) > 1 ? 's' : '' }})
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rest (rank #4+) -->
+  <div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm" *ngIf="paidEmployeesMonth.length > 3">
+    <ul class="divide-y divide-gray-100">
+      <li *ngFor="let em of paidEmployeesMonth | slice:3; let i = index" class="flex items-center justify-between p-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 text-center font-semibold text-gray-500">
+            {{ i + 4 }}
+          </div>
+          <img *ngIf="em?.profilePicture?.downloadURL; else mSmallFallback"
+               [src]="em.profilePicture?.downloadURL"
+               class="h-10 w-10 rounded-full object-cover" alt="avatar" />
+          <ng-template #mSmallFallback>
+            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
+              {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
+            </div>
+          </ng-template>
+
+          <div class="min-w-0">
+            <div class="font-medium text-gray-900 truncate">
+              {{ em.firstName }} {{ em.lastName }}
+            </div>
+            <div class="text-xs text-gray-500 truncate">
+              {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="this.auth.isAdmin" class="text-right">
+          <div class="text-sm font-semibold">
+            FC {{ (em._monthTotal || 0) | number:'1.0-0' }}
+          </div>
+          <div class="text-xs text-gray-500">
+            {{ em._monthCount || 0 }} paiement{{ (em._monthCount || 0) > 1 ? 's' : '' }}
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
 
     <!-- Payments Table -->
     <div *ngIf="auth.isAdmninistrator" class="relative overflow-x-auto mt-12">

@@ -37,11 +37,14 @@ export class TeamRankingMonthComponent {
   paidEmployeesToday: any[] = [];
 
   // team-ranking-month.component.ts (add near top-level props)
-  rankingMode: 'performance' | 'dailyPayments' = 'performance';
+  rankingMode: 'performance' | 'dailyPayments' | 'monthlyPayments' =
+    'performance';
   loadingDaily = false;
   todayDayKey: string = this.time.todaysDateMonthDayYear(); // e.g. "9-15-2025"
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
+  loadingMonthly = false;
+  paidEmployeesMonth: any[] = [];
 
   allLocations: any[] = [];
   constructor(
@@ -169,50 +172,19 @@ export class TeamRankingMonthComponent {
           this.isFetchingClients = false;
           if (this.rankingMode === 'dailyPayments') {
             this.loadDailyTotalsForEmployees();
+          } else if (this.rankingMode === 'monthlyPayments') {
+            this.loadMonthlyTotalsForEmployees();
           } else {
             this.sortEmployeesByPerformance();
           }
+
           this.setGraphics();
         }
       });
     });
     this.total = (Number(this.total) + Number(this.totalHouse)).toString();
   }
-  // filterAndInitializeEmployees(
-  //   allEmployees: Employee[],
-  //   currentClients: Client[]
-  // ) {
-  //   // Use a Map or Set to ensure uniqueness. Here, a Map is used to easily access clients by their ID.
-  //   let uniqueEmployees = new Map<string, Client>();
-  //   this.allEmployees = [];
-  //   allEmployees.forEach((employee) => {
-  //     employee.currentClients =
-  //       this.compute.filterClientsWithoutDebtFollowedByEmployee(
-  //         currentClients,
-  //         employee
-  //       );
-  //     // Assuming client.id is the unique identifier
-  //     if (!uniqueEmployees.has(employee.uid!)) {
-  //       uniqueEmployees.set(employee.uid!, employee);
-  //     }
-  //   });
 
-  //   // Convert the Map values back to an array for further processing
-  //   this.allEmployees = Array.from(uniqueEmployees.values());
-  //   this.allEmployees.sort((a, b) => {
-  //     const aPerformance = a.performancePercentageMonth
-  //       ? parseFloat(a.performancePercentageMonth)
-  //       : 0;
-  //     const bPerformance = b.performancePercentageMonth
-  //       ? parseFloat(b.performancePercentageMonth)
-  //       : 0;
-  //     return bPerformance - aPerformance;
-  //   });
-  //   this.allEmployees = this.allEmployees.filter((data) => {
-  //     return data.status === 'Travaille';
-  //   });
-  //   this.calculateAveragePerformancePercentage();
-  // }
   filterAndInitializeEmployees(
     allEmployees: Employee[],
     currentClients: Client[]
@@ -629,14 +601,15 @@ export class TeamRankingMonthComponent {
   }
 
   // team-ranking-month.component.ts (add these methods inside the class)
-  setRankingMode(mode: 'performance' | 'dailyPayments') {
+  setRankingMode(mode: 'performance' | 'dailyPayments' | 'monthlyPayments') {
     if (this.rankingMode === mode) return;
     this.rankingMode = mode;
 
     if (mode === 'dailyPayments') {
       this.loadDailyTotalsForEmployees();
+    } else if (mode === 'monthlyPayments') {
+      this.loadMonthlyTotalsForEmployees();
     } else {
-      // restore performance ordering
       this.sortEmployeesByPerformance();
     }
   }
@@ -834,5 +807,115 @@ export class TeamRankingMonthComponent {
     }
 
     return `${filled} ${empty}`;
+  }
+  private dayKeysForMonth(month: number, year: number): string[] {
+    // month is 1–12
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const keys: string[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      keys.push(`${month}-${d}-${year}`); // matches your dayKey format "M-D-YYYY"
+    }
+    return keys;
+  }
+  private async loadMonthlyTotalsForEmployees() {
+    if (!this.allEmployees?.length) return;
+    this.loadingMonthly = true;
+
+    try {
+      const everyone = (
+        this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees
+      ) as any[];
+      const monthKeys = this.dayKeysForMonth(this.givenMonth, this.givenYear);
+
+      // 1) collect raw per-employee monthly totals
+      const monthTotalsById = new Map<
+        string,
+        { total: number; count: number; ownerUid: string; status: string }
+      >();
+
+      await Promise.all(
+        everyone.map(async (e) => {
+          if (!e?.uid) return;
+          const ownerUid = e?.tempUser?.uid || this.auth.currentUser.uid;
+
+          let sumTotal = 0;
+          let sumCount = 0;
+          await Promise.all(
+            monthKeys.map(async (k) => {
+              const { total, count } =
+                await this.data.getEmployeeDayTotalsForDay(ownerUid, e.uid, k);
+              sumTotal += Number(total || 0);
+              sumCount += Number(count || 0);
+            })
+          );
+
+          monthTotalsById.set(e.uid, {
+            total: sumTotal,
+            count: sumCount,
+            ownerUid,
+            status: e.status || 'Travaille',
+          });
+        })
+      );
+
+      // 2) seed active employees with their own totals
+      const adjusted = new Map<string, { total: number; count: number }>();
+      for (const e of this.allEmployees) {
+        const base = monthTotalsById.get(e.uid!) || {
+          total: 0,
+          count: 0,
+          ownerUid: e?.tempUser?.uid,
+          status: e.status,
+        };
+        adjusted.set(e.uid!, { total: base.total, count: base.count });
+      }
+
+      // 3) add INACTIVE employees’ totals to the first ACTIVE coworker at same owner/location
+      for (const donor of everyone) {
+        const meta = monthTotalsById.get(donor.uid!);
+        if (!meta) continue;
+
+        const isInactive = (donor.status || '') !== 'Travaille';
+        if (!isInactive) continue;
+
+        const recipient = this.allEmployees.find(
+          (r: any) =>
+            (r?.tempUser?.uid || this.auth.currentUser.uid) === meta.ownerUid &&
+            (r.status || '') === 'Travaille'
+        );
+        if (!recipient) continue;
+
+        const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
+        rec.total += meta.total;
+        rec.count += meta.count;
+        adjusted.set(recipient.uid!, rec);
+      }
+
+      // 4) write back to ACTIVE employees and sort
+      this.allEmployees.forEach((e: any) => {
+        const a = adjusted.get(e.uid!) || { total: 0, count: 0 };
+        e._monthTotal = a.total;
+        e._monthCount = a.count;
+      });
+
+      this.allEmployees.sort((a: any, b: any) => {
+        const ta = Number(a._monthTotal || 0),
+          tb = Number(b._monthTotal || 0);
+        if (tb !== ta) return tb - ta;
+        const ca = Number(a._monthCount || 0),
+          cb = Number(b._monthCount || 0);
+        if (cb !== ca) return cb - ca;
+        const an = `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim();
+        const bn = `${b.firstName ?? ''} ${b.lastName ?? ''}`.trim();
+        return an.localeCompare(bn);
+      });
+
+      // 5) show only those who actually have > 0 this month
+      this.paidEmployeesMonth = this.allEmployees.filter(
+        (e: any) => Number(e._monthTotal || 0) > 0
+      );
+    } finally {
+      this.loadingMonthly = false;
+    }
   }
 }
