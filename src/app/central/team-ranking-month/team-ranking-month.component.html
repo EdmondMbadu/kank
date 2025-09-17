@@ -327,69 +327,104 @@
   </div>
 
 
-  <!-- Podium for top 3 -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<!-- Podium for top 3 (order kept: 1,2,3) -->
+<!-- Podium 1 • 2 • 3 (winner a bit smaller; wider gaps on large screens) -->
+<!-- Podium 1 • 2 • 3 (slightly bigger cards; tighter gaps) -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-3 md:gap-x-4 lg:gap-x-6 xl:gap-x-8 items-end">
   <div
     *ngFor="let em of paidEmployeesToday | slice:0:3; let idx = index"
-    class="relative rounded-2xl p-5 shadow-xl ring-1"
-    [ngClass]="trophyMeta(idx+1).cardClass"
+    class="relative rounded-2xl p-5 shadow-xl ring-1 bg-white transition"
+    [ngClass]="[
+      trophyMeta(idx+1).cardClass,
+
+      
+      (idx+1) === 1 ? 'scale-[1.04] ring-2 shadow-2xl border border-amber-100' : '',
+
+    
+      (idx+1) === 1 ? 'lg:mr-4 xl:mr-6' : '',
+      (idx+1) === 2 ? 'lg:ml-4 xl:ml-6' : '',
+
+     
+      (idx+1) === 2 ? 'sm:translate-y-1' : '',
+      (idx+1) === 3 ? 'sm:translate-y-2' : ''
+    ]"
   >
-    <!-- 🆕 Rank number badge -->
+    <!-- Rank badge -->
     <div
-      class="absolute -top-3 -left-3 h-10 w-10 rounded-full flex items-center justify-center text-lg font-extrabold text-white shadow-lg ring-4 ring-white"
-      [ngClass]="trophyMeta(idx+1).badgeClass"
+      class="absolute -top-3 -left-3 rounded-full flex items-center justify-center font-extrabold text-white shadow-lg ring-4 ring-white"
+      [ngClass]="[(idx+1) === 1 ? 'h-10 w-10 text-lg' : 'h-9 w-9 text-base', trophyMeta(idx+1).badgeClass]"
       [attr.aria-label]="'Rang ' + (idx+1)"
     >
       {{ idx + 1 }}
     </div>
 
-    <div class="flex items-center justify-between mb-3">
-      <span class="text-2xl">{{ trophyMeta(idx+1).emoji }}</span>
+    <!-- Winner ribbon -->
+    <div *ngIf="(idx+1) === 1" class="absolute -top-3 right-3 rotate-3">
+      <span class="inline-block px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white
+                   bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 rounded shadow">
+        Vainqueur
+      </span>
+    </div>
+
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xl">{{ trophyMeta(idx+1).emoji }}</span>
       <span
-        class="text-xs font-semibold uppercase tracking-wide"
-        [ngClass]="trophyMeta(idx+1).labelClass"
+        class="text-[11px] font-semibold uppercase tracking-wide"
+        [ngClass]="(idx+1) === 1
+          ? 'bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500'
+          : trophyMeta(idx+1).labelClass"
       >
         {{ trophyMeta(idx+1).label }}
       </span>
     </div>
 
     <div class="flex items-center gap-3">
-      <img
-        *ngIf="em?.profilePicture?.downloadURL; else avatarFallback"
-        [src]="em.profilePicture?.downloadURL"
-        class="h-12 w-12 rounded-full object-cover ring-2"
-        [ngClass]="trophyMeta(idx+1).ringClass"
-        alt="avatar"
-      />
+      <!-- Avatars: cards slightly bigger (everyone h-12); winner keeps thicker ring -->
+      <div class="rounded-full p-[2px]"
+           [ngClass]="(idx+1) === 1
+             ? 'bg-gradient-to-br from-amber-300 via-yellow-300 to-amber-500'
+             : (idx+1) === 2
+               ? 'bg-gradient-to-br from-orange-300 to-orange-600'
+               : 'bg-gradient-to-br from-slate-300 to-slate-500'">
+        <img *ngIf="em?.profilePicture?.downloadURL; else avatarFallback"
+             [src]="em.profilePicture?.downloadURL"
+             class="rounded-full object-cover"
+             [ngClass]="[(idx+1) === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2', trophyMeta(idx+1).ringClass]"
+             alt="avatar" />
+      </div>
+
       <ng-template #avatarFallback>
-        <div
-          class="h-12 w-12 rounded-full flex items-center justify-center font-bold text-white"
-          [ngClass]="trophyMeta(idx+1).avatarClass"
-        >
+        <div class="flex items-center justify-center font-bold text-white rounded-full"
+             [ngClass]="[(idx+1) === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2', trophyMeta(idx+1).avatarClass, trophyMeta(idx+1).ringClass]">
           {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
         </div>
       </ng-template>
 
       <div class="min-w-0">
-        <div class="font-semibold text-gray-900 truncate">
+        <div [ngClass]="(idx+1) === 1 ? 'text-base font-extrabold text-gray-900 truncate' : 'font-semibold text-gray-900 truncate'">
           {{ em.firstName }} {{ em.lastName }}
         </div>
-        <div class="text-xs text-gray-500 truncate">
+        <div class="text-[11px] text-gray-500 truncate">
           {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
         </div>
       </div>
     </div>
 
-    <div *ngIf="auth.isAdmin" class="mt-4 flex items-baseline gap-2">
-      <div class="text-lg font-bold">
+    <div *ngIf="auth.isAdmin" class="mt-3 flex items-baseline gap-2">
+      <div [ngClass]="(idx+1) === 1
+            ? 'text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500'
+            : 'text-base font-bold text-gray-900'">
         FC {{ (em._dailyTotal || 0) | number:'1.0-0' }}
       </div>
-      <div class="text-xs text-gray-500">
+      <div class="text-[11px]" [ngClass]="(idx+1) === 1 ? 'text-amber-700' : 'text-gray-500'">
         ({{ em._dailyCount || 0 }} paiement{{ (em._dailyCount || 0) > 1 ? 's' : '' }})
       </div>
     </div>
   </div>
 </div>
+
+
+
 
 
 
