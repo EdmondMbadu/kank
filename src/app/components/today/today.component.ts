@@ -62,7 +62,7 @@ export class TodayComponent {
   ) {}
   ngOnInit() {
     this.initalizeInputs();
-    this.detailOpen = new Date().getHours() >= 15;
+    this.detailOpen = new Date().getHours() >= 16; // 4pm works better
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
 
