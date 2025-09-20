@@ -34,7 +34,17 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   thisWeekId = '';
   nextWeekId = '';
   showLocations = false;
+
   pwVisible: Record<string, boolean> = {};
+  liveMsg = '';
+
+  copied: {
+    email: Record<string, boolean>;
+    password: Record<string, boolean>;
+  } = {
+    email: {},
+    password: {},
+  };
 
   locationsPasswords = [
     {
@@ -42,11 +52,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       email: 'georginektkuta@gmail.com',
       password: 'Gervais@2001',
     },
-    {
-      name: 'Pumbu',
-      email: 'rebeccambadu1@gmail.com',
-      password: 'pumbu@01',
-    },
+    { name: 'Pumbu', email: 'rebeccambadu1@gmail.com', password: 'pumbu@01' },
     {
       name: 'Mitendi',
       email: 'mitendikank@gmail.com',
@@ -57,26 +63,10 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
       email: 'masangambilakank@gmail.com',
       password: 'masangambila@01',
     },
-    {
-      name: 'UPN',
-      email: 'upnkank@gmail.com',
-      password: 'upnkank@10',
-    },
-    {
-      name: 'Delvo',
-      email: 'delvokank@gmail.com',
-      password: 'delvokank@87',
-    },
-    {
-      name: 'Barre',
-      email: 'barrekank@gmail.com',
-      password: 'barrekank@01',
-    },
-    {
-      name: 'Regi',
-      email: 'regikank@gmail.com',
-      password: 'regikank@12',
-    },
+    { name: 'UPN', email: 'upnkank@gmail.com', password: 'upnkank@10' },
+    { name: 'Delvo', email: 'delvokank@gmail.com', password: 'delvokank@87' },
+    { name: 'Barre', email: 'barrekank@gmail.com', password: 'barrekank@01' },
+    { name: 'Regi', email: 'regikank@gmail.com', password: 'regikank@12' },
     {
       name: 'Badiadingi',
       email: 'badiadingikank@gmail.com',
@@ -86,13 +76,36 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
 
   trackByName = (_: number, item: { name: string }) => item.name;
 
-  async copy(text?: string) {
+  async copy(
+    text: string | undefined,
+    kind: 'email' | 'password',
+    key: string
+  ) {
     if (!text) return;
+
+    // 1) Optimistic UI: show "Copié" immediately
+    this.setCopied(kind, key); // sets the checkmark state for ~1.2s
+
+    // 2) Try clipboard with a short timeout so it never “hangs”
+    const write = navigator.clipboard?.writeText(text);
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 200)); // safety cap
     try {
-      await navigator.clipboard.writeText(text);
+      await Promise.race([write as Promise<void>, timeout]);
     } catch {
-      /* no-op */
+      // ignore; UI already shows copied
     }
+
+    // 3) Announce for screen readers (clears itself)
+    this.liveMsg = `${
+      kind === 'email' ? 'Email' : 'Mot de passe'
+    } copié pour ${key}`;
+    setTimeout(() => (this.liveMsg = ''), 120);
+  }
+
+  private setCopied(kind: 'email' | 'password', key: string) {
+    if (!this.copied[kind]) this.copied[kind] = {};
+    this.copied[kind][key] = true;
+    setTimeout(() => (this.copied[kind][key] = false), 1200);
   }
 
   objModal = {
