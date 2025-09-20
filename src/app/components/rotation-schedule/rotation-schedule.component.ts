@@ -38,13 +38,26 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   pwVisible: Record<string, boolean> = {};
   liveMsg = '';
 
+  // add "summary" to your copied state
   copied: {
     email: Record<string, boolean>;
     password: Record<string, boolean>;
+    summary: Record<string, boolean>;
   } = {
     email: {},
     password: {},
+    summary: {},
   };
+
+  // helper to build the formatted text
+  summaryText(loc: { name: string; email?: string; password?: string }) {
+    return `Rotation: ${loc.name}
+============
+lien: https://kank-4bbbc.web.app/
+
+email: ${loc.email ?? '—'}
+mot de passe: ${loc.password ?? '—'}`;
+  }
 
   locationsPasswords = [
     {
