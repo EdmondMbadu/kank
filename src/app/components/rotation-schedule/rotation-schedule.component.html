@@ -21,6 +21,77 @@
     ›
   </button>
 </div>
+<!-- Toggle: Locations directory -->
+<div class="mb-3 flex items-center justify-end">
+  <button
+    (click)="showLocations = !showLocations"
+    class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-medium
+           hover:bg-gray-50 active:scale-[.98] transition"
+    
+    aria-controls="locations-panel"
+    title="Afficher la liste des sites"
+  >
+    <!-- chevron svg -->
+    <svg [class.rotate-180]="showLocations" class="h-4 w-4 transition-transform"
+         viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd"
+            d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+            clip-rule="evenodd"/>
+    </svg>
+    <span>{{ showLocations ? 'Masquer' : 'Afficher' }} les sites</span>
+  </button>
+</div>
+
+<!-- Panel -->
+<div *ngIf="showLocations" id="locations-panel"
+     class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+  <h3 class="mb-3 text-lg font-semibold">Liste des sites</h3>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full table-auto text-sm">
+      <thead class="text-left text-gray-600">
+        <tr>
+          <th class="py-2 pr-4">Location</th>
+          <th class="py-2 pr-4">Email</th>
+          <th class="py-2 pr-4">Password</th>
+         
+        </tr>
+      </thead>
+      <tbody class="align-top">
+        <tr *ngFor="let loc of locationsPasswords; trackBy: trackByName" class="border-t">
+          <td class="py-2 pr-4 font-medium">{{ loc.name }}</td>
+
+          <td class="py-2 pr-4">
+            <div class="flex items-center gap-2">
+              <span class="break-all">{{ loc.email || '—' }}</span>
+              <button (click)="copy(loc.email)"
+                      class="rounded-md border px-2 py-0.5 text-xs hover:bg-gray-50"
+                      title="Copier l’email">Copier</button>
+            </div>
+          </td>
+
+          <td class="py-2 pr-4">
+            <div class="flex items-center gap-2">
+              <span *ngIf="!pwVisible[loc.name]" class="font-mono select-none">••••••••</span>
+              <span *ngIf="pwVisible[loc.name]" class="font-mono break-all">{{ loc.password || '—' }}</span>
+              <button (click)="pwVisible[loc.name] = !pwVisible[loc.name]"
+                      class="rounded-md border px-2 py-0.5 text-xs hover:bg-gray-50"
+                      title="Afficher/masquer">Voir</button>
+              <button (click)="copy(loc.password)"
+                      class="rounded-md border px-2 py-0.5 text-xs hover:bg-gray-50"
+                      title="Copier le mot de passe">Copier</button>
+            </div>
+          </td>
+
+          
+
+          
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 
 <!-- ╭─ RÉCAPITULATIF DES ROTATIONS — élégant & lisible ─────────────╮ -->
 <section class="space-y-6">

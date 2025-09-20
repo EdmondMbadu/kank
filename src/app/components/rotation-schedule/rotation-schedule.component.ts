@@ -33,6 +33,67 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
   private objectivesByKey = new Map<string, string[]>();
   thisWeekId = '';
   nextWeekId = '';
+  showLocations = false;
+  pwVisible: Record<string, boolean> = {};
+
+  locationsPasswords = [
+    {
+      name: 'Matadikibala',
+      email: 'georginektkuta@gmail.com',
+      password: 'Gervais@2001',
+    },
+    {
+      name: 'Pumbu',
+      email: 'rebeccambadu1@gmail.com',
+      password: 'pumbu@01',
+    },
+    {
+      name: 'Mitendi',
+      email: 'mitendikank@gmail.com',
+      password: 'mitendikank@15',
+    },
+    {
+      name: 'Masangambila',
+      email: 'masangambilakank@gmail.com',
+      password: 'masangambila@01',
+    },
+    {
+      name: 'UPN',
+      email: 'upnkank@gmail.com',
+      password: 'upnkank@10',
+    },
+    {
+      name: 'Delvo',
+      email: 'delvokank@gmail.com',
+      password: 'delvokank@87',
+    },
+    {
+      name: 'Barre',
+      email: 'barrekank@gmail.com',
+      password: 'barrekank@01',
+    },
+    {
+      name: 'Regi',
+      email: 'regikank@gmail.com',
+      password: 'regikank@12',
+    },
+    {
+      name: 'Badiadingi',
+      email: 'badiadingikank@gmail.com',
+      password: 'badiadingi@01',
+    },
+  ];
+
+  trackByName = (_: number, item: { name: string }) => item.name;
+
+  async copy(text?: string) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      /* no-op */
+    }
+  }
 
   objModal = {
     visible: false,
