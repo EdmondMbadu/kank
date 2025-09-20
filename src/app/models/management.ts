@@ -12,6 +12,7 @@ export class Management {
   bankDepositDollars?: { [key: string]: string } = {};
   bankDepositFrancs?: { [key: string]: string } = {};
   budgetedExpenses?: { [date: string]: string };
+  moneyInHandsTracking?: { [key: string]: string } = {};
 }
 
 export class Audit {

@@ -906,12 +906,12 @@ export class DataService {
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
     const dateKey = this.time.reserveTargetDateKey();
-
+    const newMoneyInHands =
+      Number(this.auth.managementInfo.moneyInHands) - Number(amount);
     const data = {
-      moneyInHands: (
-        Number(this.auth.managementInfo.moneyInHands) - Number(amount)
-      ).toString(),
+      moneyInHands: newMoneyInHands.toString(),
       moneyGiven: { [dateKey]: amount },
+      moneyInHandsTracking: { [dateKey]: newMoneyInHands.toString() },
     };
 
     return managementRef.set(data, { merge: true });

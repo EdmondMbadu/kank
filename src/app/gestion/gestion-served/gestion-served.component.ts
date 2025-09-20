@@ -13,11 +13,18 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class GestionServedComponent {
   reserveAmount: string = '';
-  moneyGiven: any = [];
+  moneyGiven: Record<string, string> = {};
   moneyGivenAmounts: string[] = [];
   moneyGivenDates: string[] = [];
   currentUser: any = {};
   managementInfo?: Management = {};
+  records: Array<{
+    dateKey: string;
+    dateLabel: string;
+    amount: number;
+    leftAfter: number | null;
+  }> = [];
+
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -35,36 +42,86 @@ export class GestionServedComponent {
     if (this.reserveAmount === '') {
       alert('Fill all fields!');
       return;
-    } else if (isNaN(Number(this.reserveAmount))) {
+    }
+    if (isNaN(Number(this.reserveAmount))) {
       alert('Enter a valid number!');
       return;
-    } else {
-      let conf = confirm(
-        ` Vous allez servir ${this.reserveAmount} FC pour demain/aujouduio. Voulez-vous quand même continuer ?`
-      );
-      if (!conf) {
-        return;
-      }
-      try {
-        const updateManagement =
-          await this.data.updateManagementInfoForMoneyGiven(this.reserveAmount);
-        this.router.navigate(['/gestion-today']);
-      } catch (err: any) {
-        alert("Une erreur s'est produite lors de l'initialization, Réessayez");
-        console.log('error ocorred while entering reserve amount', err);
-        return;
-      }
+    }
+
+    const conf = confirm(
+      `Vous allez marquer ${Number(
+        this.reserveAmount
+      ).toLocaleString()} FC comme "Argent à servir" (demain/aujourd'hui). Continuer ?`
+    );
+    if (!conf) return;
+
+    try {
+      await this.data.updateManagementInfoForMoneyGiven(this.reserveAmount);
+      this.router.navigate(['/gestion-today']);
+    } catch (err) {
+      alert("Une erreur s'est produite. Réessayez.");
+      console.error('reserve amount error', err);
     }
   }
-  getCurrentServed() {
-    this.moneyGiven = this.managementInfo!.moneyGiven;
 
-    let currentMoneyGiven = this.compute.sortArrayByDateDescendingOrder(
-      Object.entries(this.managementInfo!.moneyGiven!)
-    );
-    this.moneyGivenAmounts = currentMoneyGiven.map((entry) => entry[1]);
-    this.moneyGivenDates = currentMoneyGiven.map((entry) =>
-      this.time.convertTimeFormat(entry[0])
+  getCurrentServed() {
+    if (!this.managementInfo?.moneyGiven) {
+      this.moneyGiven = {};
+      this.records = [];
+      return;
+    }
+
+    this.moneyGiven = this.managementInfo.moneyGiven as Record<string, string>;
+    const tracking =
+      (this.managementInfo.moneyInHandsTracking as Record<string, string>) ||
+      {};
+
+    // Sort by your existing util (descending, newest first)
+    const currentMoneyGiven = this.compute.sortArrayByDateDescendingOrder(
+      Object.entries(this.moneyGiven)
+    ) as Array<[string, string]>; // [dateKey, amountStr]
+
+    this.records = currentMoneyGiven.map(([dateKey, amountStr]) => {
+      const leftStr = tracking?.[dateKey];
+      return {
+        dateKey,
+        dateLabel: this.time.convertTimeFormat(dateKey),
+        amount: Number(amountStr),
+        leftAfter: leftStr != null ? Number(leftStr) : null, // graceful if not present
+      };
+    });
+    this.onQuery();
+  }
+  trackByDateKey(index: number, r: { dateKey: string }) {
+    return r?.dateKey ?? index;
+  }
+  // add these fields
+  query: string = '';
+  filtered: Array<{
+    dateKey: string;
+    dateLabel: string;
+    amount: number;
+    leftAfter: number | null;
+  }> = [];
+
+  // helper: enable/disable "Ajouter"
+  canSubmit(): boolean {
+    const n = Number(this.reserveAmount);
+    return !!this.reserveAmount && !isNaN(n) && n > 0;
+  }
+
+  // live filter (search by amount or date label)
+  onQuery() {
+    const q = (this.query || '').trim().toLowerCase();
+    if (!q) {
+      this.filtered = [...this.records];
+      return;
+    }
+    this.filtered = this.records.filter(
+      (r) =>
+        r.dateLabel.toLowerCase().includes(q) ||
+        ('' + r.amount).includes(q) ||
+        (r.leftAfter !== null && ('' + r.leftAfter).includes(q))
     );
   }
 }
