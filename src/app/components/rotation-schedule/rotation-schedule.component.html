@@ -54,7 +54,7 @@
 
     <!-- ── SEMAINE COURANTE ───────────────────────────────────────── -->
     <div id="week-now"
-         class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5
+         class="relative overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5
                 dark:border-slate-700 dark:bg-slate-800">
       <!-- decorative glow -->
       <div aria-hidden="true"
@@ -93,10 +93,10 @@
       </div>
 
       <!-- table -->
-      <div *ngIf="thisWeekRotation?.length" class="overflow-hidden pb-4">
-        <div class="max-h-[420px] overflow-auto">
+      <div *ngIf="thisWeekRotation?.length" class="overflow-visible pb-4">
+        <div class=" overflow-visible">
           <table class="min-w-full table-fixed divide-y divide-slate-200 dark:divide-slate-700">
-            <thead class="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-white text-left text-sm font-semibold
+            <thead class=" bg-gradient-to-r from-slate-50 to-white text-left text-sm font-semibold
                           text-slate-700 shadow-sm dark:from-slate-700 dark:to-slate-700/60 dark:text-slate-200">
               <tr>
                 <th class="w-2/3 px-5 py-3">
@@ -191,7 +191,7 @@
 
     <!-- ── SEMAINE PROCHAINE ──────────────────────────────────────── -->
     <div id="week-next"
-         class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5
+         class="relative overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm ring-1 ring-black/5
                 dark:border-slate-700 dark:bg-slate-800">
       <!-- decorative glow -->
       <div aria-hidden="true"
@@ -226,10 +226,10 @@
       </div>
 
       <!-- table -->
-      <div *ngIf="nextWeekRotation.length" class="overflow-hidden pb-4">
-        <div class="max-h-[420px] overflow-auto">
+      <div *ngIf="nextWeekRotation.length" class="overflow-visible pb-4">
+        <div class=" overflow-visible">
           <table class="min-w-full table-fixed divide-y divide-slate-200 dark:divide-slate-700">
-            <thead class="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-white text-left text-sm font-semibold
+            <thead class=" bg-gradient-to-r from-slate-50 to-white text-left text-sm font-semibold
                           text-slate-700 shadow-sm dark:from-slate-700 dark:to-slate-700/60 dark:text-slate-200">
               <tr>
                 <th class="w-2/3 px-5 py-3">
