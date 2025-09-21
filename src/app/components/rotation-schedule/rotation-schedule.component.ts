@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { combineLatest, Subscription, tap } from 'rxjs';
 import { Employee } from 'src/app/models/employee';
+import { LocationCred } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 
@@ -59,7 +60,42 @@ email: ${loc.email ?? '—'}
 mot de passe: ${loc.password ?? '—'}`;
   }
 
-  locationsPasswords = [
+  private initialLocations = [
+    {
+      name: 'Matadikibala',
+      email: 'georginektkuta@gmail.com',
+      password: 'Gervais@2001',
+    },
+    { name: 'Pumbu', email: 'rebeccambadu1@gmail.com', password: 'pumbu@01' },
+    {
+      name: 'Mitendi',
+      email: 'mitendikank@gmail.com',
+      password: 'mitendikank@15',
+    },
+    {
+      name: 'Masangambila',
+      email: 'masangambilakank@gmail.com',
+      password: 'masangambila@01',
+    },
+    { name: 'UPN', email: 'upnkank@gmail.com', password: 'upnkank@10' },
+    { name: 'Delvo', email: 'delvokank@gmail.com', password: 'delvokank@87' },
+    { name: 'Barre', email: 'barrekank@gmail.com', password: 'barrekank@01' },
+    { name: 'Regi', email: 'regikank@gmail.com', password: 'regikank@12' },
+    {
+      name: 'Badiadingi',
+      email: 'badiadingikank@gmail.com',
+      password: 'badiadingi@01',
+    },
+  ];
+
+  locationsPasswords: LocationCred[] = []; // now realtime from Firestore
+  editing: Record<string, boolean> = {}; // id → editing?
+  drafts: Record<string, { email: string; password: string }> = {};
+  savingRow: Record<string, boolean> = {};
+  adding = false;
+  newRow = { name: '', email: '', password: '' };
+
+  locationsPasswordss = [
     {
       name: 'Matadikibala',
       email: 'georginektkuta@gmail.com',
@@ -236,6 +272,7 @@ mot de passe: ${loc.password ?? '—'}`;
     return match ?? list[0]; // fallback to first item
   }
   // ───────────────────────────────────────────────
+
   ngOnInit() {
     if (!this.location && this.locations.length) {
       this.location = this.chooseDefaultLocation(this.locations);
@@ -250,6 +287,33 @@ mot de passe: ${loc.password ?? '—'}`;
       this.tfAuditEditable = doc?.['auditEditable'] !== false;
       this.cdr.markForCheck();
     });
+    this.rs.streamLocationCreds().subscribe((rows) => {
+      this.locationsPasswords = rows;
+      // keep edit drafts in sync when not editing
+      rows.forEach((r) => {
+        if (!this.editing[r.id]) {
+          this.drafts[r.id] = {
+            email: r.email || '',
+            password: r.password || '',
+          };
+        }
+      });
+      this.cdr.markForCheck();
+    });
+
+    // 2) (optional) one-time seed if collection is empty (admin only)
+    // Comment this after the first run
+    if (this.auth.isAdmin) {
+      const sub = this.rs.streamLocationCreds().subscribe(async (rows) => {
+        if (!rows.length) {
+          await this.rs.seedLocationCreds(
+            this.initialLocations,
+            this.auth.currentUser?.uid || ''
+          );
+        }
+        sub.unsubscribe();
+      });
+    }
   }
 
   /* ── ISO‑WEEK utilities (no external libs) ─────────────── */
@@ -1010,5 +1074,79 @@ mot de passe: ${loc.password ?? '—'}`;
       });
       this.objectivesSubs.push(sub);
     });
+  }
+
+  // Begin editing a row
+  startEdit(row: LocationCred) {
+    this.editing[row.id] = true;
+    this.drafts[row.id] = {
+      email: row.email || '',
+      password: row.password || '',
+    };
+    this.cdr.markForCheck();
+  }
+
+  // Cancel editing
+  cancelEdit(row: LocationCred) {
+    this.editing[row.id] = false;
+    // reset draft to live data
+    this.drafts[row.id] = {
+      email: row.email || '',
+      password: row.password || '',
+    };
+    this.cdr.markForCheck();
+  }
+
+  // Save a row (admin only)
+  async saveRow(row: LocationCred) {
+    if (!this.auth.isAdmin) return;
+    const draft = this.drafts[row.id] || { email: '', password: '' };
+    this.savingRow[row.id] = true;
+    this.cdr.markForCheck();
+    try {
+      await this.rs.setLocationCred(
+        row.id,
+        {
+          email: (draft.email || '').trim(),
+          password: (draft.password || '').trim(),
+        },
+        this.auth.currentUser?.uid || ''
+      );
+      this.editing[row.id] = false; // realtime listener will refresh row
+    } finally {
+      this.savingRow[row.id] = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  // Add a new location (admin only)
+  async addNewLocation() {
+    if (!this.auth.isAdmin) return;
+    const name = (this.newRow.name || '').trim();
+    if (!name) return;
+    const id = this.slugify(name);
+    this.adding = true;
+    this.cdr.markForCheck();
+    try {
+      await this.rs.setLocationCred(
+        id,
+        {
+          name,
+          email: (this.newRow.email || '').trim(),
+          password: (this.newRow.password || '').trim(),
+        },
+        this.auth.currentUser?.uid || ''
+      );
+      this.newRow = { name: '', email: '', password: '' };
+    } finally {
+      this.adding = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  // Delete (optional)
+  async deleteLocation(row: LocationCred) {
+    if (!this.auth.isAdmin) return;
+    await this.rs.deleteLocationCred(row.id);
   }
 }

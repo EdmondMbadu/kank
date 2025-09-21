@@ -55,6 +55,14 @@ export class LocationCoordinates {
   longitude?: string;
   lattitude?: string;
 }
+export interface LocationCred {
+  id: string; // slug id (doc id)
+  name: string;
+  email?: string;
+  password?: string;
+  updatedAt?: any;
+  updatedBy?: string;
+}
 
 export type UserDailyField =
   | 'dailyLending'

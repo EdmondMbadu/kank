@@ -45,16 +45,35 @@
 <!-- Panel -->
 <div *ngIf="showLocations" id="locations-panel"
      class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-  <h3 class="mb-4 text-lg font-semibold">Liste des sites</h3>
 
-  <!-- Desktop / md+: table -->
+  <div class="mb-2 flex items-center justify-between">
+    <h3 class="text-lg font-semibold">Liste des sites</h3>
+
+    <!-- Add new (admin) -->
+    <div *ngIf="auth.isAdmin" class="flex items-center gap-2">
+      <input [(ngModel)]="newRow.name" placeholder="Nom du site"
+             class="w-36 border rounded px-2 py-1 text-sm" />
+      <input [(ngModel)]="newRow.email" placeholder="Email"
+             class="w-44 border rounded px-2 py-1 text-sm" />
+      <input [(ngModel)]="newRow.password" placeholder="Mot de passe"
+             class="w-36 border rounded px-2 py-1 text-sm" />
+      <button (click)="addNewLocation()"
+              [disabled]="adding || !newRow.name"
+              class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white disabled:opacity-60">
+        {{ adding ? 'Ajout…' : 'Ajouter' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Desktop -->
   <div class="hidden md:block overflow-x-auto">
     <table class="min-w-full table-auto text-sm">
       <thead class="text-left text-gray-600">
         <tr class="border-b">
           <th class="py-2 pr-4 w-48">Location</th>
           <th class="py-2 pr-4">Email</th>
-          <th class="py-2 pr-0">Password</th>
+          <th class="py-2 pr-4">Password</th>
+          <th *ngIf="auth.isAdmin" class="py-2 pr-0 w-40 text-right">Actions</th>
         </tr>
       </thead>
 
@@ -63,9 +82,9 @@
           <!-- Location -->
           <td class="py-3 pr-4 font-medium">{{ loc.name }}</td>
 
-          <!-- Email -->
+          <!-- Email (view / edit) -->
           <td class="py-3 pr-4">
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap" *ngIf="!editing[loc.id]; else editEmail">
               <span class="px-2 py-1 rounded-md bg-gray-100 font-mono break-all">
                 {{ loc.email || '—' }}
               </span>
@@ -73,74 +92,82 @@
                 (click)="copy(loc.email, 'email', loc.name)"
                 class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50 active:scale-[.98] transition"
                 [disabled]="copied.email[loc.name]"
-                aria-live="polite"
-                title="Copier l’email"
-              >
-                <ng-container *ngIf="copied.email[loc.name]; else copyEmail">
-                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.415 0L3.296 9.462a1 1 0 111.414-1.415l3.035 3.035 6.543-6.543a1 1 0 011.416 0z" clip-rule="evenodd"/>
-                  </svg>
-                  Copié
-                </ng-container>
+                title="Copier l’email">
+                <ng-container *ngIf="copied.email[loc.name]; else copyEmail">✔ Copié</ng-container>
                 <ng-template #copyEmail>Copier</ng-template>
               </button>
             </div>
+            <ng-template #editEmail>
+              <input [(ngModel)]="drafts[loc.id].email"
+                     (keyup.enter)="saveRow(loc)"
+                     placeholder="Email"
+                     class="w-full max-w-xs border rounded px-2 py-1" />
+            </ng-template>
           </td>
 
-          <!-- Password + résumé -->
-          <td class="py-3 pr-0">
-            <div class="flex items-center gap-2 flex-wrap">
+          <!-- Password (view / edit) -->
+          <td class="py-3 pr-4">
+            <div class="flex items-center gap-2 flex-wrap" *ngIf="!editing[loc.id]; else editPw">
               <span *ngIf="!pwVisible[loc.name]" class="px-2 py-1 rounded-md bg-gray-100 font-mono select-none">••••••••</span>
               <span *ngIf="pwVisible[loc.name]" class="px-2 py-1 rounded-md bg-gray-100 font-mono break-all">
                 {{ loc.password || '—' }}
               </span>
 
-              <button
-                (click)="pwVisible[loc.name] = !pwVisible[loc.name]"
-                class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50 active:scale-[.98] transition"
-                title="Afficher / masquer"
-              >
+              <button (click)="pwVisible[loc.name] = !pwVisible[loc.name]"
+                      class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50">
                 <span>{{ pwVisible[loc.name] ? 'Masquer' : 'Voir' }}</span>
               </button>
 
               <button
                 (click)="copy(loc.password, 'password', loc.name)"
-                class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50 active:scale-[.98] transition"
+                class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
                 [disabled]="copied.password[loc.name]"
-                aria-live="polite"
-                title="Copier le mot de passe"
-              >
-                <ng-container *ngIf="copied.password[loc.name]; else copyPw">
-                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.415 0L3.296 9.462a1 1 0 111.414-1.415l3.035 3.035 6.543-6.543a1 1 0 011.416 0z" clip-rule="evenodd"/></svg>
-                  Copié
-                </ng-container>
+                title="Copier le mot de passe">
+                <ng-container *ngIf="copied.password[loc.name]; else copyPw">✔ Copié</ng-container>
                 <ng-template #copyPw>Copier</ng-template>
               </button>
 
-              <!-- Résumé (desktop) -->
+              <!-- Résumé -->
               <button
-             
                 (click)="copy(summaryText(loc), 'email', loc.name)"
-                class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50 active:scale-[.98] transition"
+                class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-gray-50"
                 [disabled]="copied.summary[loc.name]"
-                title="Copier le résumé"
-              >
-                <ng-container *ngIf="copied.summary[loc.name]; else copySum">
-                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.415 0L3.296 9.462a1 1 0 111.414-1.415l3.035 3.035 6.543-6.543a1 1 0 011.416 0z" clip-rule="evenodd"/></svg>
-                  Résumé copié
-                </ng-container>
+                title="Copier le résumé">
+                <ng-container *ngIf="copied.summary[loc.name]; else copySum">✔ Résumé copié</ng-container>
                 <ng-template #copySum>Copier résumé</ng-template>
               </button>
+            </div>
+            <ng-template #editPw>
+              <input [(ngModel)]="drafts[loc.id].password"
+                     (keyup.enter)="saveRow(loc)"
+                     placeholder="Mot de passe"
+                     class="w-full max-w-xs border rounded px-2 py-1" />
+            </ng-template>
+          </td>
+
+          <!-- Actions -->
+          <td *ngIf="auth.isAdmin" class="py-3 pr-0">
+            <div class="flex items-center justify-end gap-2">
+              <button *ngIf="!editing[loc.id]"
+                      (click)="startEdit(loc)"
+                      class="text-xs rounded-md border px-2 py-1 hover:bg-gray-50">Éditer</button>
+              <ng-container *ngIf="editing[loc.id]">
+                <button (click)="cancelEdit(loc)"
+                        class="text-xs rounded-md border px-2 py-1 hover:bg-gray-50">Annuler</button>
+                <button (click)="saveRow(loc)"
+                        [disabled]="savingRow[loc.id]"
+                        class="text-xs rounded-md bg-indigo-600 text-white px-2 py-1 disabled:opacity-60">
+                  {{ savingRow[loc.id] ? 'Enreg…' : 'Enregistrer' }}
+                </button>
+              </ng-container>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- SR-only live region -->
     <span class="sr-only" aria-live="polite">{{ liveMsg }}</span>
   </div>
-
   <!-- Mobile / < md: stacked cards with horizontal scroll on values -->
   <div class="md:hidden space-y-3">
     <div *ngFor="let loc of locationsPasswords; trackBy: trackByName"

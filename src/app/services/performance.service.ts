@@ -9,7 +9,7 @@ import {
   AngularFirestore,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
-import { User } from '../models/user';
+import { LocationCred, User } from '../models/user';
 import { Employee } from '../models/employee';
 import { RotationSchedule } from '../models/management';
 import { map, Observable, take } from 'rxjs';
@@ -635,5 +635,68 @@ export class PerformanceService {
       }
       tx.set(ref, data, { merge: true });
     });
+  }
+  // Realtime stream stays the same
+  streamLocationCreds(): Observable<LocationCred[]> {
+    return this.afs
+      .collection<LocationCred>('locationCreds', (ref) => ref.orderBy('name'))
+      .valueChanges({ idField: 'id' }); // now typed as LocationCred[]
+  }
+
+  // WRITE with compat + plain Date
+  async setLocationCred(
+    id: string,
+    payload: { name?: string; email?: string; password?: string },
+    uid: string
+  ): Promise<void> {
+    const meta = {
+      updatedAt: new Date(), // ✅ plain JS Date (safe across SDKs)
+      updatedBy: uid || 'system',
+    };
+
+    // ✅ write using compat doc().set (not modular setDoc)
+    await this.afs
+      .doc(`locationCreds/${id}`)
+      .set({ ...payload, ...meta }, { merge: true });
+  }
+
+  // DELETE (optional)
+  async deleteLocationCred(id: string): Promise<void> {
+    await this.afs.doc(`locationCreds/${id}`).delete();
+  }
+
+  // SEED with plain Date + compat batch
+  async seedLocationCreds(
+    rows: { name: string; email?: string; password?: string }[],
+    uid: string
+  ) {
+    const batch = this.afs.firestore.batch(); // compat
+    const slug = (s: string) =>
+      (s || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+
+    const now = new Date(); // ✅ plain Date
+
+    rows.forEach((r) => {
+      const id = slug(r.name);
+      const ref = this.afs.firestore.doc(`locationCreds/${id}`); // compat
+      batch.set(
+        ref,
+        {
+          name: r.name,
+          email: r.email || '',
+          password: r.password || '',
+          updatedAt: now, // ✅ plain Date
+          updatedBy: uid || 'seed',
+        },
+        { merge: true }
+      );
+    });
+
+    await batch.commit();
   }
 }
