@@ -60,68 +60,12 @@ email: ${loc.email ?? '—'}
 mot de passe: ${loc.password ?? '—'}`;
   }
 
-  private initialLocations = [
-    {
-      name: 'Matadikibala',
-      email: 'georginektkuta@gmail.com',
-      password: 'Gervais@2001',
-    },
-    { name: 'Pumbu', email: 'rebeccambadu1@gmail.com', password: 'pumbu@01' },
-    {
-      name: 'Mitendi',
-      email: 'mitendikank@gmail.com',
-      password: 'mitendikank@15',
-    },
-    {
-      name: 'Masangambila',
-      email: 'masangambilakank@gmail.com',
-      password: 'masangambila@01',
-    },
-    { name: 'UPN', email: 'upnkank@gmail.com', password: 'upnkank@10' },
-    { name: 'Delvo', email: 'delvokank@gmail.com', password: 'delvokank@87' },
-    { name: 'Barre', email: 'barrekank@gmail.com', password: 'barrekank@01' },
-    { name: 'Regi', email: 'regikank@gmail.com', password: 'regikank@12' },
-    {
-      name: 'Badiadingi',
-      email: 'badiadingikank@gmail.com',
-      password: 'badiadingi@01',
-    },
-  ];
-
   locationsPasswords: LocationCred[] = []; // now realtime from Firestore
   editing: Record<string, boolean> = {}; // id → editing?
   drafts: Record<string, { email: string; password: string }> = {};
   savingRow: Record<string, boolean> = {};
   adding = false;
   newRow = { name: '', email: '', password: '' };
-
-  locationsPasswordss = [
-    {
-      name: 'Matadikibala',
-      email: 'georginektkuta@gmail.com',
-      password: 'Gervais@2001',
-    },
-    { name: 'Pumbu', email: 'rebeccambadu1@gmail.com', password: 'pumbu@01' },
-    {
-      name: 'Mitendi',
-      email: 'mitendikank@gmail.com',
-      password: 'mitendikank@15',
-    },
-    {
-      name: 'Masangambila',
-      email: 'masangambilakank@gmail.com',
-      password: 'masangambila@01',
-    },
-    { name: 'UPN', email: 'upnkank@gmail.com', password: 'upnkank@10' },
-    { name: 'Delvo', email: 'delvokank@gmail.com', password: 'delvokank@87' },
-    { name: 'Barre', email: 'barrekank@gmail.com', password: 'barrekank@01' },
-    { name: 'Regi', email: 'regikank@gmail.com', password: 'regikank@12' },
-    {
-      name: 'Badiadingi',
-      email: 'badiadingikank@gmail.com',
-      password: 'badiadingi@01',
-    },
-  ];
 
   trackByName = (_: number, item: { name: string }) => item.name;
 
@@ -300,20 +244,6 @@ mot de passe: ${loc.password ?? '—'}`;
       });
       this.cdr.markForCheck();
     });
-
-    // 2) (optional) one-time seed if collection is empty (admin only)
-    // Comment this after the first run
-    if (this.auth.isAdmin) {
-      const sub = this.rs.streamLocationCreds().subscribe(async (rows) => {
-        if (!rows.length) {
-          await this.rs.seedLocationCreds(
-            this.initialLocations,
-            this.auth.currentUser?.uid || ''
-          );
-        }
-        sub.unsubscribe();
-      });
-    }
   }
 
   /* ── ISO‑WEEK utilities (no external libs) ─────────────── */
