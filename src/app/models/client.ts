@@ -9,6 +9,7 @@ export class Client {
   middleName?: string;
   profession?: string;
   phoneNumber?: string;
+  previousPhoneNumbers?: string[];
   paymentDay?: string;
   minPayment?: string;
   frenchPaymentDay?: string;

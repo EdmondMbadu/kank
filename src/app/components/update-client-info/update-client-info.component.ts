@@ -18,6 +18,8 @@ export class UpdateClientInfoComponent {
   agent?: Employee = {};
   previousClientAgent?: string;
   employees: Employee[] = [];
+
+  private originalPhoneNumber?: string;
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
@@ -35,6 +37,7 @@ export class UpdateClientInfoComponent {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
       this.previousClientAgent = this.client.agent!;
+      this.originalPhoneNumber = this.client.phoneNumber || ''; // 👈 keep the original
     });
   }
   retrieveEmployees(): void {
@@ -49,6 +52,11 @@ export class UpdateClientInfoComponent {
       }
     }
   }
+  /** compare numbers without spaces/dashes/etc. */
+  private normalizePhone(p?: string): string {
+    return (p || '').replace(/\D+/g, ''); // digits only
+  }
+
   findAgentWithId(id: string) {
     for (let em of this.employees) {
       if (em.uid === id) {
@@ -77,6 +85,25 @@ export class UpdateClientInfoComponent {
       alert('Completer toutes les données');
       return;
     } else {
+      // ✅ Add old phone to the history if it changed and isn't already there
+      const oldNorm = this.normalizePhone(this.originalPhoneNumber);
+      const newNorm = this.normalizePhone(this.client.phoneNumber);
+      if (oldNorm && newNorm && oldNorm !== newNorm) {
+        const list = Array.isArray(this.client.previousPhoneNumbers)
+          ? [...this.client.previousPhoneNumbers]
+          : [];
+
+        const alreadyInList = list.some(
+          (p) => this.normalizePhone(p) === oldNorm
+        );
+
+        if (!alreadyInList && this.originalPhoneNumber) {
+          list.push(this.originalPhoneNumber); // store the exact old formatting
+        }
+
+        this.client.previousPhoneNumbers = list;
+      }
+
       this.findAgent();
       this.updateAgentClients();
       this.updatePreviousClientAgentInfo();

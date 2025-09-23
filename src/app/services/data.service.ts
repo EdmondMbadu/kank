@@ -294,6 +294,7 @@ export class DataService {
       lastName: client.lastName,
       middleName: client.middleName,
       phoneNumber: client.phoneNumber,
+      previousPhoneNumbers: client.previousPhoneNumbers || [], // 👈 history
       businessAddress: client.businessAddress,
       homeAddress: client.homeAddress,
       profession: client.profession,

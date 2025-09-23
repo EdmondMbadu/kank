@@ -1,4 +1,10 @@
-import { ChangeDetectorRef, Component } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  HostListener,
+  ViewChild,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Client, Comment } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
@@ -71,6 +77,11 @@ export class ClientPortalComponent {
   commentAudioUrl: string = ''; // Final upload URL from Firebase
   agentVerifyingName: string = '';
   numberOfPaymentsMade: string = '';
+
+  showPhoneHistory = false;
+  copied?: string;
+
+  @ViewChild('phoneHistory', { static: false }) phoneHistoryRef?: ElementRef;
 
   loanAmount: string = '0';
   debtLeft: string = '0';
@@ -1420,5 +1431,60 @@ export class ClientPortalComponent {
         captureTimeSource: 'fileLastModified',
       };
     }
+  }
+
+  get allPhones(): string[] {
+    // Current first, then previous; normalize + dedupe
+    const raw = [
+      this.client?.phoneNumber || '',
+      ...(this.client?.previousPhoneNumbers || []),
+    ].filter(Boolean);
+
+    const norm = (x: string) => x.replace(/\D+/g, '');
+    const out: string[] = [];
+    for (const p of raw) {
+      if (!out.some((q) => norm(q) === norm(p))) out.push(p);
+    }
+    return out;
+  }
+
+  togglePhoneHistory(): void {
+    if (!this.allPhones.length) return;
+    this.showPhoneHistory = !this.showPhoneHistory;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocClick(ev: Event) {
+    if (!this.showPhoneHistory) return;
+    const host = this.phoneHistoryRef?.nativeElement as HTMLElement | undefined;
+    if (host && !host.contains(ev.target as Node))
+      this.showPhoneHistory = false;
+  }
+
+  async copy(p: string) {
+    try {
+      await navigator.clipboard.writeText(p);
+      this.copied = p;
+      setTimeout(() => (this.copied = undefined), 1200);
+    } catch {
+      alert('Impossible de copier.');
+    }
+  }
+
+  formatPhone(val?: string): string {
+    const d = (val || '').replace(/\D+/g, '');
+    if (!d) return '—';
+    // (XXX) XXX-XXXX for 10 digits
+    if (d.length === 10)
+      return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6, 10)}`;
+    // E.164-ish: split country / rest for 11–13 digits
+    if (d.length >= 11 && d.length <= 13) {
+      return `+${d.slice(0, d.length - 9)} ${d.slice(-9, -6)} ${d.slice(
+        -6,
+        -3
+      )} ${d.slice(-3)}`;
+    }
+    // Fallback: group by 3s from the end
+    return d.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
 }
