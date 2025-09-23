@@ -18,6 +18,14 @@ import { PerformanceService } from 'src/app/services/performance.service';
 type TFEntry = { loc: string; employees: string[] }; // keep UIDs
 type TFCell = { iso: string; entries?: TFEntry[] };
 type RotCell = { iso: string; employeeUids: string[]; employees: Employee[] };
+// Add near the other types
+type WeekRotationItem = {
+  employee: Employee;
+  location: string;
+  daysCount: number; // how many distinct days this week
+  weekdays: string[]; // e.g., ['Lun', 'Mer', 'Ven']
+  dates: string[]; // ISO 'YYYY-MM-DD' for internal sort/debug
+};
 
 @Component({
   selector: 'app-rotation-schedule',
@@ -555,8 +563,10 @@ mot de passe: ${loc.password ?? '—'}`;
   }[] = [];
 
   /** Listes prêtes pour le template */
-  thisWeekRotation: { employee: Employee; location: string }[] = [];
-  nextWeekRotation: { employee: Employee; location: string }[] = [];
+
+  // Replace existing fields’ types
+  thisWeekRotation: WeekRotationItem[] = [];
+  nextWeekRotation: WeekRotationItem[] = [];
   private loadAllLocationsCurrentMonth(): void {
     this.allSchedules = [];
     /* Fermer d’éventuelles souscriptions précédentes */
@@ -592,8 +602,8 @@ mot de passe: ${loc.password ?? '—'}`;
   }
   private computeWeekRotations(): void {
     const baseStart = this.addDays(
-      this.startOfWeek(new Date()), // dimanche de la semaine courante
-      this.weekOffset * 7 // décale selon l’offset
+      this.startOfWeek(new Date()),
+      this.weekOffset * 7
     );
     const startThis = baseStart;
     const endThis = this.addDays(startThis, 6);
@@ -601,43 +611,79 @@ mot de passe: ${loc.password ?? '—'}`;
     const startNext = this.addDays(endThis, 1);
     const endNext = this.addDays(startNext, 6);
 
-    /* MàJ du label à afficher */
     this.thisWeekLabel = `${this.frDate(startThis)} au ${this.frDate(endThis)}`;
-    const uniq = new Map<string, { employee: Employee; location: string }>();
 
-    const inSpan = (d: Date, a: Date, b: Date) => d >= a && d <= b;
+    // NEW: build detailed weekly lists
+    this.thisWeekRotation = this.buildWeeklyAssignments(startThis, endThis);
+    this.nextWeekRotation = this.buildWeeklyAssignments(startNext, endNext);
 
-    const thisW: typeof this.thisWeekRotation = [];
-    const nextW: typeof this.nextWeekRotation = [];
-
-    for (const a of this.allSchedules) {
-      const d = new Date(a.iso);
-      const key = `${a.employee.uid}-${a.location}`; // dé-doublonnage
-
-      if (!uniq.has(key)) {
-        if (inSpan(d, startThis, endThis)) thisW.push(a);
-        else if (inSpan(d, startNext, endNext)) nextW.push(a);
-
-        uniq.set(key, a);
-      }
-    }
-    this.thisWeekRotation = this.dedupe(thisW);
-    this.nextWeekRotation = this.dedupe(nextW);
-
-    // compute ISO-week ids (use Monday within the span)
-    const startThisAgain = this.addDays(
+    // compute ISO-week ids (use Monday inside each span)
+    const mondayThis = this.addDays(
       this.startOfWeek(new Date()),
-      this.weekOffset * 7
+      this.weekOffset * 7 + 1
     );
-    const mondayThis = this.addDays(startThisAgain, 1);
     const mondayNext = this.addDays(mondayThis, 7);
-
     this.thisWeekId = this.isoWeekId(mondayThis);
     this.nextWeekId = this.isoWeekId(mondayNext);
 
     // (re)load objectives for both weeks
     this.loadObjectivesForWeeks([this.thisWeekId, this.nextWeekId]);
   }
+
+  private buildWeeklyAssignments(start: Date, end: Date): WeekRotationItem[] {
+    // key = employeeUid|location
+    const bucket = new Map<
+      string,
+      { emp: Employee; loc: string; dates: Set<string> }
+    >();
+
+    for (const a of this.allSchedules) {
+      const d = this.isoToLocal(a.iso);
+      if (d >= start && d <= end) {
+        const key = `${a.employee.uid}|${a.location}`;
+        let rec = bucket.get(key);
+        if (!rec) {
+          rec = { emp: a.employee, loc: a.location, dates: new Set<string>() };
+          bucket.set(key, rec);
+        }
+        rec.dates.add(a.iso);
+      }
+    }
+
+    // order weekdays Sun..Sat for stable display
+    const dayOrder = (iso: string) => this.isoToLocal(iso).getDay();
+
+    const toShort = (iso: string) =>
+      ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'][
+        this.isoToLocal(iso).getDay()
+      ];
+
+    const items: WeekRotationItem[] = [];
+    bucket.forEach(({ emp, loc, dates }) => {
+      const sorted = Array.from(dates).sort(
+        (a, b) => dayOrder(a) - dayOrder(b)
+      );
+      items.push({
+        employee: emp,
+        location: loc,
+        daysCount: sorted.length,
+        weekdays: sorted.map(toShort),
+        dates: sorted,
+      });
+    });
+
+    // optional: sort by employee name then location
+    items.sort((a, b) => {
+      const an = (a.employee.lastName || '').localeCompare(
+        b.employee.lastName || ''
+      );
+      if (an !== 0) return an;
+      return (a.location || '').localeCompare(b.location || '');
+    });
+
+    return items;
+  }
+
   /** Fetch TaskForce for the whole displayed month */
   /** Fetch TaskForce for the whole displayed month */
   private loadTaskForceMonth() {
