@@ -626,68 +626,174 @@
 </div>
 
 
-    <!-- Payments Table -->
-    <div *ngIf="auth.isAdmninistrator" class="relative overflow-x-auto mt-12">
-      <h1 class="text-2xl font-bold text-center mb-6">Paiements Employée</h1>
-      <table class="w-full text-sm text-gray-500">
-        <thead class="bg-gray-100 text-xs uppercase text-gray-700">
-          <tr>
-            <th class="px-6 py-3">Nom</th>
-            <th class="px-6 py-3">Salaire ($)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let em of allEmployees; let i = index" class="bg-white">
-            <td class="px-6 py-4 font-medium">{{ i + 1 }}. {{ em.firstName }} {{ em.lastName }}</td>
-            <td class="px-6 py-4">{{ em.paymentAmount | number: '1.0-0' }} $</td>
-          </tr>
-          <h1 class="text-center text-2xl font-bold underline mx-auto">Maisons Loyer</h1>
-          <tr *ngFor="let u of allUsers; let i=index" class="bg-white dark:bg-gray-800">
-            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-            {{i+1}}.  {{u.firstName}} 
-            </th>
-            
-            <td class="px-6 py-4">
-                {{u.housePayment | number:'1.0-0'}} $
-                </td>
-            
-        </tr>
-        </tbody>
-        <tfoot>
-          <tr class="font-semibold bg-gray-50">
-            <td class="px-6 py-3 text-lg">Total</td>
-            <td class="px-6 py-3 text-lg">{{ total | number: '1.0-0' }} $</td>
-          </tr>
-         
-       
-        </tfoot>
-      </table>
-    </div>
+    <!-- Ranking: Payroll + Bonus -->
+<section *ngIf="auth.isAdmninistrator" class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+  <!-- ── PAIEMENTS EMPLOYÉ·E ───────────────────────────────────────── -->
+  <div
+    class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5
+           dark:border-slate-800 dark:bg-slate-900/70 dark:text-white">
+    <!-- Card header -->
+    <header
+      class="flex items-center justify-between gap-3 rounded-t-2xl
+             bg-gradient-to-r from-slate-50 to-white px-5 py-4
+             dark:from-slate-800 dark:to-slate-900">
+      <h2 class="text-base font-semibold tracking-tight">Paiements Employé·e</h2>
+      <span class="text-xs text-slate-500 dark:text-slate-400">Vue mensuelle</span>
+    </header>
 
-    <!-- Bonus Table -->
-    <div *ngIf="auth.isAdmninistrator" class="relative overflow-x-auto mt-12">
-      <h1 class="text-2xl font-bold text-center mb-6">Bonus Employée</h1>
-      <table class="w-full text-sm text-gray-500">
-        <thead class="bg-gray-100 text-xs uppercase text-gray-700">
-          <tr>
-            <th class="px-6 py-3">Nom</th>
-            <th class="px-6 py-3">Bonus ($)</th>
+    <!-- Main table -->
+    <div class="px-4 pb-4">
+      <table
+        class="w-full table-auto border-collapse text-[13px] text-slate-600
+               dark:text-slate-300">
+        <thead
+          class="select-none text-[11px] uppercase tracking-wide text-slate-500
+                 dark:text-slate-400">
+          <tr class="border-b border-slate-200 dark:border-slate-800">
+            <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
+            <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
+            <th scope="col" class="px-3 py-2 text-right font-medium">Salaire&nbsp;($)</th>
           </tr>
         </thead>
-        <tbody>
-          <tr *ngFor="let em of allEmployees; let i = index"  class="bg-white">
-            <td class="px-6 py-4 font-medium">{{ i + 1 }}. {{ em.firstName }} {{ em.lastName }}</td>
-            <td class="px-6 py-4">{{ em.totalBonusThisMonth | number: '1.0-0' }} $</td>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <tr
+            *ngFor="let em of allEmployees; let i = index"
+            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
+            <td class="px-3 py-2">
+              <span
+                class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
+                       bg-slate-100 text-[11px] font-semibold text-slate-700
+                       dark:bg-slate-800 dark:text-slate-200">
+                {{ i + 1 }}
+              </span>
+            </td>
+            <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
+              {{ em.firstName }} {{ em.lastName }}
+            </td>
+            <td class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50">
+              {{ em.paymentAmount | number:'1.0-0' }} $
+            </td>
           </tr>
         </tbody>
         <tfoot>
-          <tr class="font-semibold bg-gray-50">
-            <td class="px-6 py-3 text-lg">Total</td>
-            <td class="px-6 py-3 text-lg">{{ totalBonus | number: '1.0-0' }} $</td>
+          <tr class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
+            <td class="px-3 py-2"></td>
+            <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
+            <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
+              {{ total | number:'1.0-0' }} $
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Subsection: Maisons Loyer (optional list kept, semantic & compact) -->
+      <div class="mt-6">
+        <h3 class="mb-2 text-sm font-semibold tracking-tight text-slate-700 dark:text-slate-200">
+          Maisons&nbsp;—&nbsp;Loyer
+        </h3>
+          <table class="w-full table-auto text-[13px]">
+          <thead class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <th class="px-3 py-2 text-left font-medium">#</th>
+              <th class="px-3 py-2 text-left font-medium">Nom</th>
+              <th class="px-3 py-2 text-right font-medium">Loyer&nbsp;($)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr
+              *ngFor="let u of allUsers; let i = index"
+              class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
+              <td class="px-3 py-2">
+                <span class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
+                            bg-slate-100 text-[11px] font-semibold text-slate-700
+                            dark:bg-slate-800 dark:text-slate-200">
+                  {{ i + 1 }}
+                </span>
+              </td>
+              <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
+                {{ u.firstName }}
+              </td>
+              <td class="px-3 py-2 text-right tabular-nums font-medium">
+                {{ u.housePayment | number:'1.0-0' }} $
+              </td>
+            </tr>
+          </tbody>
+
+          <!-- NEW: total row -->
+          <tfoot>
+            <tr class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
+              <td class="px-3 py-2"></td>
+              <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
+              <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
+                {{ totalLoyer | number:'1.0-0' }} $
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BONUS EMPLOYÉ·E ──────────────────────────────────────────── -->
+  <div
+    class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5
+           dark:border-slate-800 dark:bg-slate-900/70 dark:text-white">
+    <header
+      class="flex items-center justify-between gap-3 rounded-t-2xl
+             bg-gradient-to-r from-slate-50 to-white px-5 py-4
+             dark:from-slate-800 dark:to-slate-900">
+      <h2 class="text-base font-semibold tracking-tight">Bonus Employé·e</h2>
+      <span class="text-xs text-slate-500 dark:text-slate-400">Ce mois</span>
+    </header>
+
+    <div class="px-4 pb-4">
+      <table
+        class="w-full table-auto border-collapse text-[13px] text-slate-600
+               dark:text-slate-300">
+        <thead
+          class="select-none text-[11px] uppercase tracking-wide text-slate-500
+                 dark:text-slate-400">
+          <tr class="border-b border-slate-200 dark:border-slate-800">
+            <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
+            <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
+            <th scope="col" class="px-3 py-2 text-right font-medium">Bonus&nbsp;($)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <tr
+            *ngFor="let em of allEmployees; let i = index"
+            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
+            <td class="px-3 py-2">
+              <span
+                class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
+                       bg-emerald-100 text-[11px] font-semibold text-emerald-800
+                       dark:bg-emerald-900/40 dark:text-emerald-200">
+                {{ i + 1 }}
+              </span>
+            </td>
+            <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
+              {{ em.firstName }} {{ em.lastName }}
+            </td>
+            <td class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50">
+              {{ em.totalBonusThisMonth | number:'1.0-0' }} $
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="border-t border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
+            <td class="px-3 py-2"></td>
+            <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
+            <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
+              {{ totalBonus | number:'1.0-0' }} $
+            </td>
           </tr>
         </tfoot>
       </table>
     </div>
+  </div>
+</section>
+
   </div>
 </section>
 

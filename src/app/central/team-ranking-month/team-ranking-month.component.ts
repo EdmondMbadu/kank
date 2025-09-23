@@ -760,6 +760,12 @@ export class TeamRankingMonthComponent {
     const n = parseFloat(v ?? '0');
     return isNaN(n) ? 0 : n;
   }
+  get totalLoyer(): number {
+    return (this.allUsers ?? []).reduce(
+      (sum, u: any) => sum + (Number(u?.housePayment) || 0),
+      0
+    );
+  }
 
   // Use your gradient color for borders (single color based on %)
   colorForPerf(p: any): string {
