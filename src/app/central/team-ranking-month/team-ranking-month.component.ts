@@ -47,6 +47,18 @@ export class TeamRankingMonthComponent {
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
 
+  // state: all closed initially
+  collapse: Record<'payroll' | 'bonus' | 'loyer', boolean> = {
+    payroll: false,
+    bonus: false,
+    loyer: false,
+  };
+
+  // single toggle function
+  toggle(section: 'payroll' | 'bonus' | 'loyer') {
+    this.collapse[section] = !this.collapse[section];
+  }
+
   allLocations: any[] = [];
   constructor(
     private router: Router,

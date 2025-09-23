@@ -626,23 +626,39 @@
 </div>
 
 
-    <!-- Ranking: Payroll + Bonus -->
+<!-- Ranking: Payroll + Bonus -->
 <section *ngIf="auth.isAdmninistrator" class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+
   <!-- ── PAIEMENTS EMPLOYÉ·E ───────────────────────────────────────── -->
   <div
     class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5
            dark:border-slate-800 dark:bg-slate-900/70 dark:text-white">
-    <!-- Card header -->
+
+    <!-- Card header (click to toggle) -->
     <header
-      class="flex items-center justify-between gap-3 rounded-t-2xl
+      role="button"
+      tabindex="0"
+      (click)="toggle('payroll')"
+      (keydown.enter)="toggle('payroll')"
+      (keydown.space)="toggle('payroll')"
+      [attr.aria-expanded]="collapse.payroll"
+      class="flex items-center justify-between gap-3 rounded-t-2xl cursor-pointer select-none
              bg-gradient-to-r from-slate-50 to-white px-5 py-4
              dark:from-slate-800 dark:to-slate-900">
-      <h2 class="text-base font-semibold tracking-tight">Paiements Employé·e</h2>
+      <div class="flex items-center gap-2">
+        <svg class="h-4 w-4 transition-transform duration-200"
+             [class.rotate-90]="collapse.payroll" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clip-rule="evenodd" />
+        </svg>
+        <h2 class="text-base font-semibold tracking-tight">Paiements Employé·e</h2>
+      </div>
       <span class="text-xs text-slate-500 dark:text-slate-400">Vue mensuelle</span>
     </header>
 
-    <!-- Main table -->
-    <div class="px-4 pb-4">
+    <!-- Collapsible body -->
+    <div class="px-4 pb-4" [class.hidden]="!collapse.payroll">
       <table
         class="w-full table-auto border-collapse text-[13px] text-slate-600
                dark:text-slate-300">
@@ -678,7 +694,7 @@
         <tfoot>
           <tr class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
             <td class="px-3 py-2"></td>
-            <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
+            <td class="px-3 py-2 text-right text-[13px] font-semibold">Salaire total</td>
             <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
               {{ totalSalary | number:'1.0-0' }} $
             </td>
@@ -686,63 +702,78 @@
         </tfoot>
       </table>
 
-      <!-- Subsection: Maisons Loyer (optional list kept, semantic & compact) -->
+      <!-- Subsection: Maisons Loyer (own toggle, optional) -->
       <div class="mt-6">
-        <h3 class="mb-2 text-sm font-semibold tracking-tight text-slate-700 dark:text-slate-200">
-          Maisons&nbsp;—&nbsp;Loyer
-        </h3>
+        <div
+          role="button"
+          tabindex="0"
+          (click)="toggle('loyer')"
+          (keydown.enter)="toggle('loyer')"
+          (keydown.space)="toggle('loyer')"
+          [attr.aria-expanded]="collapse.loyer"
+          class="mb-2 flex items-center gap-2 cursor-pointer select-none">
+          <svg class="h-4 w-4 transition-transform duration-200"
+               [class.rotate-90]="collapse.loyer" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd" />
+          </svg>
+          <h3 class="text-sm font-semibold tracking-tight text-slate-700 dark:text-slate-200">
+            Maisons&nbsp;—&nbsp;Loyer
+          </h3>
+        </div>
+
+        <div [class.hidden]="!collapse.loyer">
           <table class="w-full table-auto text-[13px]">
-          <thead class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            <tr class="border-b border-slate-200 dark:border-slate-800">
-              <th class="px-3 py-2 text-left font-medium">#</th>
-              <th class="px-3 py-2 text-left font-medium">Nom</th>
-              <th class="px-3 py-2 text-right font-medium">Loyer&nbsp;($)</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr
-              *ngFor="let u of allUsers; let i = index"
-              class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
-              <td class="px-3 py-2">
-                <span class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
-                            bg-slate-100 text-[11px] font-semibold text-slate-700
-                            dark:bg-slate-800 dark:text-slate-200">
-                  {{ i + 1 }}
-                </span>
-              </td>
-              <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
-                {{ u.firstName }}
-              </td>
-              <td class="px-3 py-2 text-right tabular-nums font-medium">
-                {{ u.housePayment | number:'1.0-0' }} $
-              </td>
-            </tr>
-          </tbody>
+            <thead class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <tr class="border-b border-slate-200 dark:border-slate-800">
+                <th class="px-3 py-2 text-left font-medium">#</th>
+                <th class="px-3 py-2 text-left font-medium">Nom</th>
+                <th class="px-3 py-2 text-right font-medium">Loyer&nbsp;($)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let u of allUsers; let i = index"
+                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
+                <td class="px-3 py-2">
+                  <span class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
+                              bg-slate-100 text-[11px] font-semibold text-slate-700
+                              dark:bg-slate-800 dark:text-slate-200">
+                    {{ i + 1 }}
+                  </span>
+                </td>
+                <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
+                  {{ u.firstName }}
+                </td>
+                <td class="px-3 py-2 text-right tabular-nums font-medium">
+                  {{ u.housePayment | number:'1.0-0' }} $
+                </td>
+              </tr>
+            </tbody>
 
-          <!-- NEW: total row -->
-          <tfoot>
-            <tr class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
-              <td class="px-3 py-2"></td>
-              <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
-              <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-                {{ totalHouse| number:'1.0-0' }} $
-              </td>
-            </tr>
+            <tfoot>
+              <tr class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
+                <td class="px-3 py-2"></td>
+                <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
+                <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
+                  {{ totalHouse | number:'1.0-0' }} $
+                </td>
+              </tr>
 
-
-          <!-- Existing: global total (salary + loyer) -->
-          <tr class="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/60">
-            <td class="px-3 py-2"></td>
-            <td class="px-3 py-2 text-right text-[13px] font-semibold">
-              Total global <span class="text-xs font-normal text-slate-500">(Salaire + Loyer)</span>
-            </td>
-            <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-              {{ total | number:'1.0-0' }} $
-            </td>
-          </tr>
-          </tfoot>
-        </table>
-
+              <!-- Global total -->
+              <tr class="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/60">
+                <td class="px-3 py-2"></td>
+                <td class="px-3 py-2 text-right text-[13px] font-semibold">
+                  Total global <span class="text-xs font-normal text-slate-500">(Salaire + Loyer)</span>
+                </td>
+                <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
+                  {{ total | number:'1.0-0' }} $
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -751,15 +782,30 @@
   <div
     class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5
            dark:border-slate-800 dark:bg-slate-900/70 dark:text-white">
+
     <header
-      class="flex items-center justify-between gap-3 rounded-t-2xl
+      role="button"
+      tabindex="0"
+      (click)="toggle('bonus')"
+      (keydown.enter)="toggle('bonus')"
+      (keydown.space)="toggle('bonus')"
+      [attr.aria-expanded]="collapse.bonus"
+      class="flex items-center justify-between gap-3 rounded-t-2xl cursor-pointer select-none
              bg-gradient-to-r from-slate-50 to-white px-5 py-4
              dark:from-slate-800 dark:to-slate-900">
-      <h2 class="text-base font-semibold tracking-tight">Bonus Employé·e</h2>
+      <div class="flex items-center gap-2">
+        <svg class="h-4 w-4 transition-transform duration-200"
+             [class.rotate-90]="collapse.bonus" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clip-rule="evenodd" />
+        </svg>
+        <h2 class="text-base font-semibold tracking-tight">Bonus Employé·e</h2>
+      </div>
       <span class="text-xs text-slate-500 dark:text-slate-400">Ce mois</span>
     </header>
 
-    <div class="px-4 pb-4">
+    <div class="px-4 pb-4" [class.hidden]="!collapse.bonus">
       <table
         class="w-full table-auto border-collapse text-[13px] text-slate-600
                dark:text-slate-300">
@@ -804,6 +850,7 @@
       </table>
     </div>
   </div>
+
 </section>
 
   </div>
