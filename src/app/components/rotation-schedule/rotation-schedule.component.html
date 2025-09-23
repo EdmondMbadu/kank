@@ -368,7 +368,23 @@
                       <div class="truncate font-medium text-slate-900 dark:text-white">
                         {{ r.employee.firstName }} {{ r.employee.lastName }}
                       </div>
-                      <div class="text-xs text-slate-500 dark:text-slate-300">Affectation en cours</div>
+                     <!-- replace your <div> with this -->
+                    <span
+                      class="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium
+                            bg-slate-50 ring-1 ring-inset ring-slate-200 shadow-sm
+                            dark:bg-slate-700/50 dark:ring-slate-600 dark:text-slate-100"
+                      [attr.aria-label]="r.daysCount + ' jours: ' + r.weekdays.join(', ')"
+                      [attr.title]="r.dates.join(', ')"
+                    >
+                      <!-- tiny calendar dot -->
+                      <span class="inline-block h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-300"></span>
+                      <span class="tabular-nums">{{ r.daysCount }}&nbsp;j</span>
+                      <span class="opacity-50">•</span>
+                      <span class="tracking-tight">{{ r.weekdays.join(', ') }}</span>
+                    </span>
+
+
+                      <!-- <div class="text-xs text-slate-500 dark:text-slate-300">Affectation en cours</div> -->
                     </div>
                   </div>
                 </td>
@@ -393,13 +409,7 @@
                   <span class="text-base leading-none">•</span> {{ r.location || '—' }}
                 </span>
 
-                <!-- NEW: days summary chip -->
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium
-                        bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-200
-                        dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-600">
-                  {{ r.daysCount }} j · {{ r.weekdays.join(', ') }}
-                </span>
+           
 
                 <!-- 🎯 Objectifs chip (unchanged logic) -->
                 <button
@@ -505,42 +515,63 @@
                       <div class="truncate font-medium text-slate-900 dark:text-white">
                         {{ r.employee.firstName }} {{ r.employee.lastName }}
                       </div>
-                      <div class="text-xs text-slate-500 dark:text-slate-300">Affectation prévue</div>
+                    <!-- replace your <div> with this -->
+                      <span
+                        class="mt-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium
+                              bg-slate-50 ring-1 ring-inset ring-slate-200 shadow-sm
+                              dark:bg-slate-700/50 dark:ring-slate-600 dark:text-slate-100"
+                        [attr.aria-label]="r.daysCount + ' jours: ' + r.weekdays.join(', ')"
+                        [attr.title]="r.dates.join(', ')"
+                      >
+                        <!-- tiny calendar dot -->
+                        <span class="inline-block h-1.5 w-1.5 rounded-full bg-slate-400 dark:bg-slate-300"></span>
+                        <span class="tabular-nums">{{ r.daysCount }}&nbsp;j</span>
+                        <span class="opacity-50">•</span>
+                        <span class="tracking-tight">{{ r.weekdays.join(', ') }}</span>
+                      </span>
+
+
+                      <!-- <div class="text-xs text-slate-500 dark:text-slate-300">Affectation prévue</div> -->
                     </div>
                   </div>
                 </td>
 
-              <!-- location + objectifs chip (NEXT WEEK) -->
-                <td class="px-5 py-3">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset shadow-sm"
-                      [ngClass]="[
-                        ['bg-emerald-50 text-emerald-700 ring-emerald-200',
-                        'bg-amber-50 text-amber-700 ring-amber-200',
-                        'bg-sky-50 text-sky-700 ring-sky-200',
-                        'bg-rose-50 text-rose-700 ring-rose-200',
-                        'bg-violet-50 text-violet-700 ring-violet-200',
-                        'bg-indigo-50 text-indigo-700 ring-indigo-200'
-                        ][(r.location.length || 0) % 6]
-                      ]"
-                      [attr.title]="r.location || '—'">
-                      <span class="text-base leading-none">•</span> {{ r.location || '—' }}
-                    </span>
+                  <!-- location + objectifs chip (NEXT WEEK) -->
+              <td class="px-5 py-3">
+                <div class="flex items-start gap-2 flex-col sm:flex-row sm:items-center sm:flex-wrap">
+                  <!-- Location pill (unchanged) -->
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset shadow-sm"
+                    [ngClass]="[
+                      ['bg-emerald-50 text-emerald-700 ring-emerald-200',
+                      'bg-amber-50 text-amber-700 ring-amber-200',
+                      'bg-sky-50 text-sky-700 ring-sky-200',
+                      'bg-rose-50 text-rose-700 ring-rose-200',
+                      'bg-violet-50 text-violet-700 ring-violet-200',
+                      'bg-indigo-50 text-indigo-700 ring-indigo-200'
+                      ][(r.location.length || 0) % 6]
+                    ]"
+                    [attr.title]="r.location || '—'">
+                    <span class="text-base leading-none">•</span> {{ r.location || '—' }}
+                  </span>
 
-                    <button
-                      *ngIf="auth.isAdmin || hasObjectives(nextWeekId, r.employee.uid, r.location)"
-                      (click)="openObjectives(nextWeekId, r.employee, r.location)"
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset
-                            transition active:scale-[.98]"
-                      [ngClass]="hasObjectives(nextWeekId, r.employee.uid, r.location)
-                        ? 'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200 hover:bg-fuchsia-100'
-                        : 'bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100 border border-dashed'">
-                      <span class="text-base leading-none">🎯</span>
-                      <span>{{ hasObjectives(nextWeekId, r.employee.uid, r.location) ? 'Objectifs' : 'Ajouter objectifs' }}</span>
-                    </button>
-                  </div>
-                </td>
+                  
+
+                  <!-- 🎯 Objectifs chip (unchanged) -->
+                  <button
+                    *ngIf="auth.isAdmin || hasObjectives(nextWeekId, r.employee.uid, r.location)"
+                    (click)="openObjectives(nextWeekId, r.employee, r.location)"
+                    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset
+                          transition active:scale-[.98]"
+                    [ngClass]="hasObjectives(nextWeekId, r.employee.uid, r.location)
+                      ? 'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200 hover:bg-fuchsia-100'
+                      : 'bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100 border border-dashed'">
+                    <span class="text-base leading-none">🎯</span>
+                    <span>{{ hasObjectives(nextWeekId, r.employee.uid, r.location) ? 'Objectifs' : 'Ajouter objectifs' }}</span>
+                  </button>
+                </div>
+              </td>
+
 
               </tr>
             </tbody>
