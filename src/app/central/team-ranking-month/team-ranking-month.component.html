@@ -680,7 +680,7 @@
             <td class="px-3 py-2"></td>
             <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
             <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-              {{ total | number:'1.0-0' }} $
+              {{ totalSalary | number:'1.0-0' }} $
             </td>
           </tr>
         </tfoot>
@@ -725,9 +725,21 @@
               <td class="px-3 py-2"></td>
               <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
               <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-                {{ totalLoyer | number:'1.0-0' }} $
+                {{ totalHouse| number:'1.0-0' }} $
               </td>
             </tr>
+
+
+          <!-- Existing: global total (salary + loyer) -->
+          <tr class="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/60">
+            <td class="px-3 py-2"></td>
+            <td class="px-3 py-2 text-right text-[13px] font-semibold">
+              Total global <span class="text-xs font-normal text-slate-500">(Salaire + Loyer)</span>
+            </td>
+            <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
+              {{ total | number:'1.0-0' }} $
+            </td>
+          </tr>
           </tfoot>
         </table>
 

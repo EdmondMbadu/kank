@@ -31,6 +31,7 @@ export class TeamRankingMonthComponent {
   performancePercentageMonth: string = '';
   totalPointsMonth: string = '';
   totalBonus: string = '';
+  totalSalary: string = '0'; // NEW: salaries only
   showPresent: boolean = false;
   yearsList: number[] = this.time.yearsList;
   // top-level props
@@ -117,7 +118,6 @@ export class TeamRankingMonthComponent {
   valuesConvertedToDollars: string[] = [];
 
   // toggle property in general
-
   getAllEmployees() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -125,19 +125,25 @@ export class TeamRankingMonthComponent {
     let tempEmployees: Employee[] = [];
     this.allEmployees = [];
     let completedRequests = 0;
+
+    // reset
     this.total = '0';
+    this.totalSalary = '0';
     this.totalHouse = '0';
     this.totalBonus = '0';
-    this.allUsers.forEach((user) => {
-      if (user.housePayment)
+
+    // 1) sum loyer
+    (this.allUsers ?? []).forEach((user) => {
+      if (user?.housePayment) {
         this.totalHouse = (
-          Number(user.housePayment) + Number(this.totalHouse)
+          Number(this.totalHouse) + Number(user.housePayment)
         ).toString();
+      }
     });
 
-    this.allUsers.forEach((user) => {
+    // 2) fetch employees and sum salaries/bonus
+    (this.allUsers ?? []).forEach((user) => {
       this.currentClients = [];
-
       this.currentEmployees = [];
 
       this.auth.getAllEmployeesGivenUser(user).subscribe((employees) => {
@@ -146,45 +152,48 @@ export class TeamRankingMonthComponent {
 
         this.currentEmployees.forEach((em: any) => {
           this.computePerformances(employees, em);
-          if (em.paymentAmount) {
-            this.total = (
-              Number(em.paymentAmount) + Number(this.total)
-            ).toString();
-          }
-          if (em.totalBonusThisMonth) {
-            this.totalBonus = (
-              Number(em.totalBonusThisMonth) + Number(this.totalBonus)
+
+          if (em?.paymentAmount) {
+            // NEW: add to salary-only bucket
+            this.totalSalary = (
+              Number(this.totalSalary) + Number(em.paymentAmount)
             ).toString();
           }
 
-          // Assign location
-          em.tempUser = user; // attach the user info to the employee
+          if (em?.totalBonusThisMonth) {
+            this.totalBonus = (
+              Number(this.totalBonus) + Number(em.totalBonusThisMonth)
+            ).toString();
+          }
+
+          // attach location + UI flags
+          em.tempUser = user;
           em.tempLocationHolder = user.firstName;
-          // Initialize the toggle property
           em.showAttendance = false;
         });
 
-        // this.currentEmployees = employees;
         completedRequests++;
         if (completedRequests === this.allUsers.length) {
-          this.allEmployeesAll = tempEmployees; // 👈 keep everyone
+          this.allEmployeesAll = tempEmployees;
           this.filterAndInitializeEmployees(tempEmployees, this.currentClients);
           this.isFetchingClients = false;
-          if (this.rankingMode === 'dailyPayments') {
+
+          if (this.rankingMode === 'dailyPayments')
             this.loadDailyTotalsForEmployees();
-          } else if (this.rankingMode === 'monthlyPayments') {
+          else if (this.rankingMode === 'monthlyPayments')
             this.loadMonthlyTotalsForEmployees();
-          } else {
-            this.sortEmployeesByPerformance();
-          }
+          else this.sortEmployeesByPerformance();
 
           this.setGraphics();
+
+          // 3) compute Actual total = salaries + loyers
+          this.total = (
+            Number(this.totalSalary) + Number(this.totalHouse)
+          ).toString();
         }
       });
     });
-    this.total = (Number(this.total) + Number(this.totalHouse)).toString();
   }
-
   filterAndInitializeEmployees(
     allEmployees: Employee[],
     currentClients: Client[]
@@ -759,12 +768,6 @@ export class TeamRankingMonthComponent {
   toNum(v: any): number {
     const n = parseFloat(v ?? '0');
     return isNaN(n) ? 0 : n;
-  }
-  get totalLoyer(): number {
-    return (this.allUsers ?? []).reduce(
-      (sum, u: any) => sum + (Number(u?.housePayment) || 0),
-      0
-    );
   }
 
   // Use your gradient color for borders (single color based on %)
