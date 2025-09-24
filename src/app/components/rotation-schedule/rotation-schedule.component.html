@@ -22,7 +22,7 @@
   </button>
 </div>
 <!-- Toggle: Locations directory -->
-<div class="mb-3 flex items-center justify-end">
+<div *ngIf="auth.isAdmin" class="mb-3 flex items-center justify-end">
   <button
     (click)="showLocations = !showLocations"
     class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-medium
