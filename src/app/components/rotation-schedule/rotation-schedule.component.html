@@ -1054,13 +1054,13 @@
           <dd class="font-mono bg-white/70 dark:bg-slate-800/60 rounded px-2 py-0.5 break-all">
             {{ objModal.cred?.email || '—' }}
           </dd>
-          <button
+          <!-- <button
             *ngIf="objModal.cred?.email"
             (click)="copy(objModal.cred!.email, 'email', objModal.cred!.name)"
             class="text-xs rounded border px-2 py-0.5 bg-white hover:bg-slate-50
                   dark:bg-slate-800 dark:border-slate-600">
             Copier
-          </button>
+          </button> -->
         </div>
 
         <div class="flex items-center gap-2">
@@ -1068,13 +1068,13 @@
           <dd class="font-mono bg-white/70 dark:bg-slate-800/60 rounded px-2 py-0.5 break-all">
             {{ objModal.cred?.password || '—' }}
           </dd>
-          <button
+          <!-- <button
             *ngIf="objModal.cred?.password"
             (click)="copy(objModal.cred!.password, 'password', objModal.cred!.name)"
             class="text-xs rounded border px-2 py-0.5 bg-white hover:bg-slate-50
                   dark:bg-slate-800 dark:border-slate-600">
             Copier
-          </button>
+          </button> -->
         </div>
       </dl>
 
