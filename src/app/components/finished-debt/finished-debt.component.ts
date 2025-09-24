@@ -142,11 +142,13 @@ export class FinishedDebtComponent implements OnInit {
   }
 
   buildDefaultTemplate(c: Client): string {
-    // Placeholder until you give me your generic message:
-    // Edit freely in the modal; variables are injected here.
+    const max = this.maxAmountFor(c);
+    const maxLine =
+      max != null ? `\nOkoki kozua ${this.formatFc(max)} FC.` : '';
+
     return `Mbote ${c.firstName} ${c.lastName},
 To sepili mingi na efuteli ya credit na yo na FONDATION GERVAIS. 
-Soki olingi lisusu kozua credit pona mombongo na yo, kende na FONDATION GERVAIS location ${this.auth.currentUser.firstName}.
+Soki olingi lisusu kozua credit pona mombongo na yo, kende na FONDATION GERVAIS location ${this.auth.currentUser.firstName}.${maxLine}
 Merci pona confiance na FONDATION GERVAIS`;
   }
 
@@ -212,6 +214,7 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.bulkModal.message = `Mbote {{FULL_NAME}},
 To sepili mingi na efuteli ya credit na yo na FONDATION GERVAIS. 
 Soki olingi lisusu kozua credit pona mombongo na yo, kende na FONDATION GERVAIS location ${this.auth.currentUser.firstName}.
+Okoki kozua {{MAX_AMOUNT}} FC.
 Merci pona confiance na FONDATION GERVAIS`;
   }
 
@@ -282,13 +285,48 @@ Merci pona confiance na FONDATION GERVAIS`;
     const fullName = `${c.firstName ?? ''} ${c.lastName ?? ''}`
       .trim()
       .replace(/\s+/g, ' ');
-    return msg
+
+    let out = msg
       .replace(/\{\{\s*FULL_NAME\s*\}\}/g, fullName)
       .replace(/\{\{\s*firstName\s*\}\}/g, c.firstName ?? '')
       .replace(/\{\{\s*lastName\s*\}\}/g, c.lastName ?? '');
+
+    // Inject MAX_AMOUNT or remove the line gracefully if not available
+    if (/\{\{\s*MAX_AMOUNT\s*\}\}/.test(out)) {
+      const max = this.maxAmountFor(c);
+      if (max != null) {
+        out = out.replace(/\{\{\s*MAX_AMOUNT\s*\}\}/g, this.formatFc(max));
+      } else {
+        // remove the whole “Okoki kozua … {{MAX_AMOUNT}} FC.” line if present
+        out = out.replace(
+          /[ \t]*\r?\n?Okoki kozua\s+\{\{\s*MAX_AMOUNT\s*\}\}\s+FC\.?\s*/i,
+          ''
+        );
+        // and any leftover token just in case
+        out = out.replace(/\{\{\s*MAX_AMOUNT\s*\}\}/g, '');
+      }
+    }
+
+    return out;
   }
+
   previewPersonalized() {
     const first = this.bulkModal.recipients?.[0];
     return first ? this.personalizeMessage(this.bulkModal.message, first) : '—';
+  }
+  /** Format FC amounts with thousands separators */
+  private formatFc(n: number | string): string {
+    return Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+  }
+
+  /** Safely compute max amount from creditScore using your computation service */
+  private maxAmountFor(c: Client): number | null {
+    const score = Number(c.creditScore);
+    if (!Number.isFinite(score)) return null;
+    try {
+      return this.computation.getMaxLendAmount(score);
+    } catch {
+      return null; // score out of range or any thrown error
+    }
   }
 }
