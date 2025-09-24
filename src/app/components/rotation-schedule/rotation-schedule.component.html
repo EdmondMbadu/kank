@@ -1039,7 +1039,7 @@
       </div>
 
       <!-- Pretty key/value layout -->
-      <dl class="mt-3 space-y-2 text-sm">
+      <dl class="mt-3 space-y-2 text-sm dark:text-white">
         <div class="flex items-start gap-2">
           <dt class="w-28 shrink-0 text-slate-600 dark:text-slate-300">Lien</dt>
           <dd>
@@ -1119,7 +1119,7 @@
 
     <!-- Employee read-only -->
     <ng-template #readonlyView>
-      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+      <div class="rounded-xl border dark:text-white border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
         <ul class="list-disc pl-5 space-y-1">
           <li *ngFor="let b of objModal.bullets">{{ b }}</li>
           <li *ngIf="!objModal.bullets?.length" class="text-slate-400">— Aucun objectif —</li>
@@ -1170,7 +1170,7 @@
       {{ passModal.error }}
     </p>
 
-    <div class="mt-4 flex items-center justify-end gap-2">
+    <div class="mt-4 flex items-center justify-end gap-2 dark:text-white">
       <button class="rounded-lg border px-3 py-1.5 text-sm dark:border-slate-700"
               (click)="closePass()">Annuler</button>
       <button class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white"
