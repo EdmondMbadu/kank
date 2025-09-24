@@ -316,15 +316,24 @@ export class NotPaidTodayComponent {
       .toUpperCase();
   }
 
-  // ⬇️ returns "Firstname Lastname (min: 12 345 FC, dette: 67 890 FC)"
+  // ⬇️ returns "Firstname Lastname — 099 12 34 567 (min: 12 345 FC, dette: 67 890 FC)"
   private formatClientLine(c: Client): string {
     const min = this.data.minimumPayment(c);
     const debt = Number(c.debtLeft || 0);
     const fmt = (n: number | string) =>
       Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
-    return `${c.firstName} ${c.lastName} (min: ${fmt(min)} FC, dette: ${fmt(
-      debt
-    )} FC)`;
+
+    const phone = this.displayPhone(c.phoneNumber);
+
+    return `${c.firstName} ${c.lastName} — ${phone} (min: ${fmt(
+      min
+    )} FC, dette: ${fmt(debt)} FC)`;
+  }
+
+  /** Safe phone display for messages */
+  private displayPhone(p?: string): string {
+    const raw = (p ?? '').toString().trim();
+    return raw.length ? raw : 'numéro indisponible';
   }
 
   /**
