@@ -375,7 +375,6 @@ export class NotPaidTodayComponent {
     this.sendingAgents = true;
 
     try {
-      // ensure the latest counters reflect the current tab
       this.updateSummary();
 
       const byAgent = this.buildAgentFollowups();
@@ -384,26 +383,47 @@ export class NotPaidTodayComponent {
         return;
       }
 
-      // Compose and send a message to each agent having a phone number
       const callable = this.fns.httpsCallable('sendCustomSMS');
 
-      // We’ll send all in parallel, but cap any UI errors individually
-      const jobs: Promise<any>[] = [];
+      // Counters & jobs
+      let sent = 0;
+      let skippedNoWork = 0;
+      let skippedNoPhone = 0;
+      let skippedNoClients = 0;
+
+      const jobs: Promise<unknown>[] = [];
+
       for (const { employee, current, away } of byAgent.values()) {
+        // 1) Status check
+        if (!this.isWorkingEmployee(employee)) {
+          skippedNoWork++;
+          continue;
+        }
+
+        // 2) Phone check
         const phone =
-          (employee as any).phoneNumber || (employee as any).telephone || ''; // adjust if your model uses another field
-        if (!phone) continue;
+          (employee as any).phoneNumber || (employee as any).telephone || '';
+        if (!phone) {
+          skippedNoPhone++;
+          continue;
+        }
 
-        const header = `Bonjour ${
-          employee.firstName || ''
-        }, voici les suivis du ${this.frenchDate} :`;
-
+        // 3) Any clients to follow?
         const linesCurrent = current.map(
           (c) => `• ${this.formatClientLine(c)}`
         );
         const linesAway = away.map((c) => `• ${this.formatClientLine(c)}`);
+        if (!linesCurrent.length && !linesAway.length) {
+          skippedNoClients++;
+          continue;
+        }
 
+        // 4) Build message
+        const header = `Bonjour ${
+          employee.firstName || ''
+        }, voici les suivis du ${this.frenchDate} :`;
         const bodyParts: string[] = [header];
+
         if (linesCurrent.length) {
           bodyParts.push(
             '',
@@ -415,11 +435,10 @@ export class NotPaidTodayComponent {
           bodyParts.push('', `À l’écart (${linesAway.length}) :`, ...linesAway);
         }
 
-        // 👇 add this line (with a blank line before)
         bodyParts.push('', 'Merci pour la confiance à la FONDATION GERVAIS.');
-
         const message = bodyParts.join('\n');
 
+        // 5) Enqueue job
         jobs.push(
           callable({
             phoneNumber: phone,
@@ -430,20 +449,45 @@ export class NotPaidTodayComponent {
             },
           }).toPromise()
         );
+        sent++;
       }
 
       if (!jobs.length) {
-        alert('Aucun agent avec numéro de téléphone valide.');
+        alert(
+          `Aucun envoi effectué.
+Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}, Sans clients: ${skippedNoClients}.`
+        );
         return;
       }
 
-      await Promise.allSettled(jobs);
-      alert('Listes envoyées aux agents.');
+      // Wait & compute failures
+      const results = await Promise.allSettled(jobs);
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      const succeeded = sent - failed;
+
+      alert(
+        `Listes envoyées: ${succeeded} (échecs: ${failed}).
+Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}, Sans clients: ${skippedNoClients}.`
+      );
     } catch (err) {
       console.error('sendFollowupsToAgents error:', err);
       alert('Erreur lors de l’envoi des listes aux agents.');
     } finally {
       this.sendingAgents = false;
     }
+  }
+
+  /** Returns true iff the employee is currently working ("Travaille"). */
+  private isWorkingEmployee(e?: Employee): boolean {
+    if (!e) return false;
+    // try a few common field names; normalize and compare
+    const raw =
+      (e as any).status ??
+      (e as any).workStatus ??
+      (e as any).employmentStatus ??
+      '';
+    const val = String(raw).trim().toLowerCase();
+    // Accept only "travaille" as working
+    return val === 'travaille';
   }
 }
