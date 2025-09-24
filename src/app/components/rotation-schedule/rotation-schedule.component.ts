@@ -77,33 +77,30 @@ mot de passe: ${loc.password ?? '—'}`;
 
   trackByName = (_: number, item: { name: string }) => item.name;
 
+  // add 'summary' everywhere we reference the kind
   async copy(
     text: string | undefined,
-    kind: 'email' | 'password',
+    kind: 'email' | 'password' | 'summary',
     key: string
   ) {
     if (!text) return;
-
-    // 1) Optimistic UI: show "Copié" immediately
-    this.setCopied(kind, key); // sets the checkmark state for ~1.2s
-
-    // 2) Try clipboard with a short timeout so it never “hangs”
+    this.setCopied(kind, key);
     const write = navigator.clipboard?.writeText(text);
-    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 200)); // safety cap
+    const timeout = new Promise<void>((resolve) => setTimeout(resolve, 200));
     try {
       await Promise.race([write as Promise<void>, timeout]);
-    } catch {
-      // ignore; UI already shows copied
-    }
-
-    // 3) Announce for screen readers (clears itself)
+    } catch {}
     this.liveMsg = `${
-      kind === 'email' ? 'Email' : 'Mot de passe'
+      kind === 'summary'
+        ? 'Résumé'
+        : kind === 'email'
+        ? 'Email'
+        : 'Mot de passe'
     } copié pour ${key}`;
     setTimeout(() => (this.liveMsg = ''), 120);
   }
 
-  private setCopied(kind: 'email' | 'password', key: string) {
+  private setCopied(kind: 'email' | 'password' | 'summary', key: string) {
     if (!this.copied[kind]) this.copied[kind] = {};
     this.copied[kind][key] = true;
     setTimeout(() => (this.copied[kind][key] = false), 1200);
@@ -115,8 +112,10 @@ mot de passe: ${loc.password ?? '—'}`;
     employee: null as Employee | null,
     location: '',
     bullets: [] as string[],
-    textarea: '', // admin editor source; one bullet per line
+    textarea: '',
+    cred: null as LocationCred | null, // 👈 add
   };
+
   savingObj = false;
 
   taskMonthWeeks: (TFCell | null)[][] = [];
@@ -971,7 +970,6 @@ mot de passe: ${loc.password ?? '—'}`;
   hasObjectives(weekId: string, uid?: string, loc?: string): boolean {
     return this.objectivesByKey.has(this.objKey(weekId, uid, loc));
   }
-
   openObjectives(weekId: string, employee: Employee, location: string) {
     const key = this.objKey(weekId, employee?.uid, location);
     const bullets = this.objectivesByKey.get(key) || [];
@@ -982,6 +980,7 @@ mot de passe: ${loc.password ?? '—'}`;
       location,
       bullets: [...bullets],
       textarea: bullets.join('\n'),
+      cred: this.findCredByLocation(location), // 👈 add
     };
     this.cdr.markForCheck();
   }
@@ -1124,5 +1123,15 @@ mot de passe: ${loc.password ?? '—'}`;
   async deleteLocation(row: LocationCred) {
     if (!this.auth.isAdmin) return;
     await this.rs.deleteLocationCred(row.id);
+  }
+
+  private findCredByLocation(name: string): LocationCred | null {
+    const key = this.slugify(name || '');
+    // Prefer matching id; fallback to slugified display name
+    return (
+      this.locationsPasswords.find(
+        (r) => r.id === key || this.slugify(r.name || '') === key
+      ) || null
+    );
   }
 }
