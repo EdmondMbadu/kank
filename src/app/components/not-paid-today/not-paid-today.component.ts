@@ -38,6 +38,7 @@ export class NotPaidTodayComponent {
   missingCount = 0;
   totalReasons = 0;
 
+  sendingAgents = false; // NEW
   // NEW
   view: 'current' | 'away' = 'current';
   haveNotPaidCurrent: Client[] = [];
@@ -313,5 +314,127 @@ export class NotPaidTodayComponent {
     return (parts[0]?.[0] || '' + (parts[1]?.[0] || ''))
       .slice(0, 2)
       .toUpperCase();
+  }
+
+  // ⬇️ returns "Firstname Lastname (min: 12 345 FC, dette: 67 890 FC)"
+  private formatClientLine(c: Client): string {
+    const min = this.data.minimumPayment(c);
+    const debt = Number(c.debtLeft || 0);
+    const fmt = (n: number | string) =>
+      Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+    return `${c.firstName} ${c.lastName} (min: ${fmt(min)} FC, dette: ${fmt(
+      debt
+    )} FC)`;
+  }
+
+  /**
+   * Build per-agent lists for TODAY.
+   * Includes both "En cours" and "À l’écart" buckets so agents see everything at a glance.
+   */
+  private buildAgentFollowups() {
+    // Map agentUid -> { employee, current[], away[] }
+    const map = new Map<
+      string,
+      {
+        employee: Employee;
+        current: Client[];
+        away: Client[];
+      }
+    >();
+
+    const push = (bucket: 'current' | 'away', c: Client) => {
+      const emp = c.employee; // you assigned this in addIdToFilterItems()
+      if (!emp || !emp.uid) return; // skip if missing
+      if (!map.has(emp.uid))
+        map.set(emp.uid, { employee: emp, current: [], away: [] });
+      map.get(emp.uid)![bucket].push(c);
+    };
+
+    for (const c of this.haveNotPaidCurrent) push('current', c);
+    for (const c of this.haveNotPaidAway) push('away', c);
+
+    return map;
+  }
+
+  /**
+   * NEW: Send follow-up lists to each agent (admin-only).
+   * Uses your `sendCustomSMS` callable so no new Cloud Function is required.
+   */
+  async sendFollowupsToAgents() {
+    if (!this.auth.isAdmin) return;
+
+    this.sendingAgents = true;
+
+    try {
+      // ensure the latest counters reflect the current tab
+      this.updateSummary();
+
+      const byAgent = this.buildAgentFollowups();
+      if (byAgent.size === 0) {
+        alert('Aucun client à suivre aujourd’hui.');
+        return;
+      }
+
+      // Compose and send a message to each agent having a phone number
+      const callable = this.fns.httpsCallable('sendCustomSMS');
+
+      // We’ll send all in parallel, but cap any UI errors individually
+      const jobs: Promise<any>[] = [];
+      for (const { employee, current, away } of byAgent.values()) {
+        const phone =
+          (employee as any).phoneNumber || (employee as any).telephone || ''; // adjust if your model uses another field
+        if (!phone) continue;
+
+        const header = `Bonjour ${
+          employee.firstName || ''
+        }, voici les suivis du ${this.frenchDate} :`;
+
+        const linesCurrent = current.map(
+          (c) => `• ${this.formatClientLine(c)}`
+        );
+        const linesAway = away.map((c) => `• ${this.formatClientLine(c)}`);
+
+        const bodyParts: string[] = [header];
+        if (linesCurrent.length) {
+          bodyParts.push(
+            '',
+            `En cours (${linesCurrent.length}) :`,
+            ...linesCurrent
+          );
+        }
+        if (linesAway.length) {
+          bodyParts.push('', `À l’écart (${linesAway.length}) :`, ...linesAway);
+        }
+
+        // 👇 add this line (with a blank line before)
+        bodyParts.push('', 'Merci pour la confiance à la FONDATION GERVAIS.');
+
+        const message = bodyParts.join('\n');
+
+        jobs.push(
+          callable({
+            phoneNumber: phone,
+            message,
+            metadata: {
+              kind: 'agent-followups',
+              date: this.requestDateCorrectFormat,
+            },
+          }).toPromise()
+        );
+      }
+
+      if (!jobs.length) {
+        alert('Aucun agent avec numéro de téléphone valide.');
+        return;
+      }
+
+      await Promise.allSettled(jobs);
+      alert('Listes envoyées aux agents.');
+    } catch (err) {
+      console.error('sendFollowupsToAgents error:', err);
+      alert('Erreur lors de l’envoi des listes aux agents.');
+    } finally {
+      this.sendingAgents = false;
+    }
   }
 }
