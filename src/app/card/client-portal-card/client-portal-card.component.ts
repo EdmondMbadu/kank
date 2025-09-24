@@ -61,10 +61,29 @@ export class ClientPortalCardComponent {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
+    this.initEmptyForm();
     this.retrieveClientCard();
 
     this.loadCreditClients(); // 👈 new
     this.setupLiveSearch();
+  }
+
+  private initEmptyForm() {
+    this.editForm = this.fb.group({
+      firstName: ['', [Validators.required]],
+      middleName: [''], // Post-nom
+      lastName: [''], // Nom
+      phoneNumber: ['', [Validators.minLength(7)]],
+      businessAddress: [''],
+      homeAddress: [''],
+      profession: [''],
+      amountPaid: [0, [Validators.min(0)]],
+      amountToPay: [0, [Validators.min(0)]],
+      cardCycle: [0, [Validators.min(0)]],
+      numberOfPaymentsMade: [0, [Validators.min(0)]],
+      clientCardStatus: [''],
+      dateJoined: [''],
+    });
   }
 
   /* ---------- open / close ---------- */

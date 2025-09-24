@@ -337,19 +337,24 @@
       </button>
     </div>
 
-    <form [formGroup]="editForm" (ngSubmit)="saveCardEdits()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <!-- Names -->
+    <form *ngIf="editForm"
+      [formGroup]="editForm"
+      (ngSubmit)="saveCardEdits()"
+      class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+
+     <!-- Names (corrected labels) -->
       <div>
         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Prénom</label>
         <input formControlName="firstName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
       </div>
       <div>
         <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Post-nom</label>
-        <input formControlName="lastName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+        <input formControlName="middleName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
       </div>
       <div>
-        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Deuxième nom</label>
-        <input formControlName="middleName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Nom</label>
+        <input formControlName="lastName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
       </div>
 
       <!-- Phone -->
