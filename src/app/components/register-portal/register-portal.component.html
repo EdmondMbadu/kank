@@ -165,11 +165,90 @@
       <dd class="mt-1 text-3xl font-bold">{{ age }}</dd>
     </div>
 
-    <!-- PHONE -->
-    <a [routerLink]="['/update-client-info', id]" class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50">
-      <dt class="text-lg font-semibold">Téléphone</dt>
-      <dd class="mt-1 text-xl font-bold text-center">({{ client.phoneNumber | slice:0:3 }})-{{ client.phoneNumber | slice:3:6 }}-{{ client.phoneNumber | slice:6:10 }}</dd>
-    </a>
+   <!-- Phone number (centered) + history -->
+<div
+  class="relative flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
+  #phoneHistory
+>
+  <dt class="text-lg font-semibold">Téléphone</dt>
+
+  <dd class="mt-1 w-full">
+    <div class="flex flex-col items-center justify-center gap-2">
+      <!-- main number -->
+      <a
+        [href]="'tel:' + client.phoneNumber"
+        class="text-xl font-bold tracking-wide text-center whitespace-nowrap max-w-[90%] overflow-hidden text-ellipsis hover:underline"
+      >
+        {{ formatPhone(client.phoneNumber) }}
+      </a>
+
+      <!-- toggle (isolated in a relative wrapper so the menu centers correctly) -->
+      <div *ngIf="allPhones.length > 1" class="relative">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium
+                 border-slate-200 bg-white/70 shadow-sm ring-1 ring-black/5
+                 dark:border-slate-700 dark:bg-slate-800"
+          (click)="$event.stopPropagation(); togglePhoneHistory()"
+          [title]="allPhones.length > 1 ? 'Historique (' + allPhones.length + ')' : 'Historique vide'"
+        >
+          <span>Historique</span>
+          <span *ngIf="allPhones.length > 1"
+                class="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[11px] font-semibold text-white">
+            {{ allPhones.length }}
+          </span>
+          <svg class="ml-1 h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
+          </svg>
+        </button>
+
+        <!-- centered dropdown -->
+        <div
+          *ngIf="showPhoneHistory && allPhones.length"
+          class="absolute left-1/2 z-20 mt-2 w-72 max-w-[90vw] -translate-x-1/2 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl ring-1 ring-black/5
+                 dark:border-slate-700 dark:bg-slate-800"
+        >
+          <div class="px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
+            Historique des numéros
+          </div>
+
+          <ul class="max-h-60 overflow-auto divide-y divide-slate-100 dark:divide-slate-700">
+            <li *ngFor="let p of allPhones; let i = index" class="flex items-center justify-between gap-2 px-2 py-2">
+              <div class="min-w-0">
+                <a [href]="'tel:' + p" class="font-mono text-sm text-slate-800 hover:underline dark:text-slate-100">
+                  {{ formatPhone(p) }}
+                </a>
+                <span *ngIf="i===0"
+                      class="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800">
+                  Actuel
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <a [href]="'sms:' + p"
+                   class="rounded-md px-2 py-1 text-[11px] ring-1 ring-inset ring-slate-200 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-700/60">
+                  SMS
+                </a>
+                <button
+                  type="button"
+                  (click)="copy(p)"
+                  class="rounded-md px-2 py-1 text-[11px] ring-1 ring-inset ring-slate-200 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-700/60"
+                >
+                  {{ copied === p ? 'Copié ✓' : 'Copier' }}
+                </button>
+              </div>
+            </li>
+          </ul>
+
+          <div class="px-2 pt-1 text-[11px] text-slate-400 dark:text-slate-400">
+            Astuce : les numéros en double sont regroupés automatiquement.
+          </div>
+        </div>
+      </div>
+    </div>
+  </dd>
+</div>
+
 
     <!-- BUSINESS ADDRESS -->
     <a [routerLink]="['/update-client-info', id]" class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50">

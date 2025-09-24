@@ -34,6 +34,8 @@ export class NewCycleRegisterComponent implements OnInit {
   private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
   private readonly FIXED_MEMBERSHIP_FEE = '0'; // 0 FC
 
+  /** phone the client had when this page loaded */
+  private originalPhoneNumberAtLoad: string = '';
   birthDateInput: string = ''; // yyyy-mm-dd (si saisie)
   age: number | null = null; // affichage uniquement
 
@@ -90,6 +92,11 @@ export class NewCycleRegisterComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.allClients = data;
       this.client = data[Number(this.id)];
+      this.originalPhoneNumberAtLoad = this.client?.phoneNumber || '';
+      // Guarantee the array exists so later merges are predictable
+      if (!Array.isArray(this.client.previousPhoneNumbers)) {
+        this.client.previousPhoneNumbers = [];
+      }
       this.updateAge(); // calcule l’âge si birthDate existe déjà
       this.numberOfCurrentClients = this.data.findClientsWithDebts(data).length; // clients with debt number
       this.middleName =
@@ -405,6 +412,9 @@ export class NewCycleRegisterComponent implements OnInit {
     try {
       await this.data.saveCurrentCycle(this.client);
 
+      // Make sure we capture the old phone into history if it changed in this form
+      this.ensurePhoneHistoryIfChanged();
+
       this.setClientNewDebtCycleValues();
       await this.data.registerNewDebtCycle(this.client);
       await this.data.updateUserInfoForRegisterClientNewDebtCycleOfflineSafe(
@@ -577,5 +587,31 @@ export class NewCycleRegisterComponent implements OnInit {
         this.client.creditScore = '50';
       }
     }
+  }
+
+  /** compare numbers without spaces/dashes/etc. */
+  private normalizePhone(p?: string): string {
+    return (p || '').replace(/\D+/g, '');
+  }
+
+  /** If phone changed vs when the page loaded, push old phone into history (no dups) */
+  private ensurePhoneHistoryIfChanged(): void {
+    const oldNorm = this.normalizePhone(this.originalPhoneNumberAtLoad);
+    const newNorm = this.normalizePhone(this.client?.phoneNumber);
+
+    if (!oldNorm || !newNorm || oldNorm === newNorm) return;
+
+    const list = Array.isArray(this.client.previousPhoneNumbers)
+      ? [...this.client.previousPhoneNumbers]
+      : [];
+
+    const alreadyInList = list.some((p) => this.normalizePhone(p) === oldNorm);
+
+    if (!alreadyInList && this.originalPhoneNumberAtLoad) {
+      // store the exact old formatting
+      list.push(this.originalPhoneNumberAtLoad);
+    }
+
+    this.client.previousPhoneNumbers = list;
   }
 }

@@ -658,6 +658,7 @@ export class DataService {
       lastName: client.lastName,
       middleName: client.middleName,
       phoneNumber: client.phoneNumber,
+      previousPhoneNumbers: client.previousPhoneNumbers || [], // 👈 persist history
       birthDate: client.birthDate, // ex. 05-21-1985
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
