@@ -1,36 +1,54 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<app-navbar [email]="this.auth.currentUser.email" [firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+
 <div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl mr-4">Dépôt De Carte Par {{clientCard.firstName}} {{clientCard.middleName}} {{clientCard.lastName}}</h1>
+  <h1 class="text-xl md:text-3xl mr-4">
+    Dépôt De Carte Par {{clientCard.firstName}} {{clientCard.middleName}} {{clientCard.lastName}}
+  </h1>
 </div>
 
 <div class="flex container justify-center mx-auto">
+  <div class="border-2 border-green-800 rounded-lg p-12">
 
-<div class=" border-2 border-green-800 rounded-lg p-12">
-  
-    
+    <div class="mb-6">
+      <label for="payment" class="block mb-2 text-sm font-medium text-red-700">Montant De Dépôt</label>
+      <select
+        id="payment"
+        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+        [(ngModel)]="depositAmount"
+        [disabled]="loading">
+        <option [ngValue]="depositAmount">FC {{clientCard.amountToPay}}</option>
+      </select>
+    </div>
 
+    <button
+      class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm
+             w-auto sm:w-auto px-5 py-2.5 text-center disabled:opacity-60"
+      [routerLink]="['/client-portal-card', id]"
+      [disabled]="loading">
+      Annuler
+    </button>
 
-
-
-
-
-<div class="mb-6">
-    <label for="payment" class="block mb-2 text-sm font-medium text-red-700">Montant De Dépôt</label>
-    <select id="payment" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="depositAmount"selected>
-    <option [ngValue]=depositAmount>FC {{clientCard.amountToPay}}</option>
-
-    <!-- <option [ngValue]="">Autre Montant </option> -->
-    </select>
+    <button
+      (click)="makePayment()"
+      class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm
+             w-auto sm:w-auto px-5 py-2.5 text-center disabled:opacity-60"
+      [disabled]="loading">
+      {{ loading ? 'Traitement…' : 'Soumettre' }}
+    </button>
+  </div>
 </div>
 
-
-
-   
-
-<button class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal-card',id ]">Annuler</button>
-    <button  (click)="makePayment()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumettre</button>
-   
-</div>
-
-
+<!-- ===== FULLSCREEN LOADING OVERLAY ===== -->
+<div *ngIf="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="rounded-2xl bg-white dark:bg-slate-800 p-8 shadow-2xl ring-1 ring-white/10 flex flex-col items-center">
+    <!-- spinner -->
+    <svg class="h-10 w-10 animate-spin mb-4" viewBox="0 0 24 24" fill="none" role="status" aria-label="Chargement">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+    </svg>
+    <p class="text-sm font-medium text-gray-700 dark:text-gray-200 text-center">
+      Enregistrement du dépôt…<br />Veuillez patienter.
+    </p>
+  </div>
 </div>

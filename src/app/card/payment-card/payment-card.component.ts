@@ -21,6 +21,8 @@ export class PaymentCardComponent {
   depositAmount: string = '';
   numberOfPaymentToday = 0;
   clientCard: Card = new Card();
+
+  loading = false;
   constructor(
     private activatedRoute: ActivatedRoute,
     public auth: AuthService,
@@ -55,45 +57,40 @@ export class PaymentCardComponent {
       );
       return;
     } else {
-      let conf = confirm(
+      const conf = confirm(
         ` Vous avez effectué ${this.numberOfPaymentToday} dépôt(s) aujourd'hui. Voulez-vous quand même continuer ?`
       );
-      if (!conf) {
-        return;
-      }
+      if (!conf) return;
+
+      // Prepare local state
       this.clientCard.amountPaid = (
         Number(this.clientCard.amountPaid) + Number(this.depositAmount)
       ).toString();
       this.clientCard.numberOfPaymentsMade = (
         Number(this.clientCard.numberOfPaymentsMade) + 1
       ).toString();
-
       this.clientCard.payments = {
         [this.time.todaysDate()]: this.depositAmount,
       };
     }
 
+    this.loading = true; // 👈 show overlay
     try {
-      // 1. Use the new atomic method
       await this.data.atomicClientCardAndUserUpdate(
         this.clientCard,
         this.depositAmount
       );
-
-      // 2. If it all succeeded, proceed
-      this.router.navigate(['/client-portal-card/' + this.id]);
+      this.router.navigate(['/client-portal-card', this.id]); // component unmounts; overlay goes away
     } catch (err) {
-      alert("Une erreur s'est produite lors d'un paiement, Réessayez");
       console.error(err);
+      alert("Une erreur s'est produite lors d'un paiement, Réessayez");
+      this.loading = false; // 👈 hide overlay on error
       return;
     }
   }
 
   howManyTimesPaidToday() {
-    const filteredObj = Object.keys(this.clientCard.payments!).filter((key) =>
-      key.startsWith(this.today)
-    );
-    let number = filteredObj.length;
-    return number;
+    const keys = Object.keys(this.clientCard.payments || {});
+    return keys.filter((k) => k.startsWith(this.today)).length;
   }
 }
