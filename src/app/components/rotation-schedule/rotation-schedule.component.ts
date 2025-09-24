@@ -57,6 +57,14 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     password: {},
     summary: {},
   };
+  passModal = {
+    visible: false,
+    weekId: '',
+    employee: null as Employee | null,
+    location: '',
+    input: '',
+    error: '',
+  };
 
   // helper to build the formatted text
   summaryText(loc: { name: string; email?: string; password?: string }) {
@@ -1133,5 +1141,53 @@ mot de passe: ${loc.password ?? '—'}`;
         (r) => r.id === key || this.slugify(r.name || '') === key
       ) || null
     );
+  }
+
+  requestObjectivesWithPass(
+    weekId: string,
+    employee: Employee,
+    location: string
+  ) {
+    if (this.auth.isAdmin) {
+      this.openObjectives(weekId, employee, location);
+      return;
+    }
+
+    this.passModal = {
+      visible: true,
+      weekId,
+      employee,
+      location,
+      input: '',
+      error: '',
+    };
+    this.cdr.markForCheck();
+  }
+  submitPass() {
+    const emp = this.passModal.employee;
+    const entered = (this.passModal.input || '').trim();
+
+    // Guard: if no employee or no code configured
+    if (!emp || !emp.paymentCode) {
+      this.passModal.error = "Aucun code n'est configuré pour cet employé.";
+      this.cdr.markForCheck();
+      return;
+    }
+
+    if (entered === emp.paymentCode) {
+      // success → close pass modal, open objectifs
+      const { weekId, location } = this.passModal;
+      this.passModal.visible = false;
+      this.cdr.markForCheck();
+      this.openObjectives(weekId, emp, location);
+    } else {
+      this.passModal.error = 'Mot de passe incorrect. Veuillez réessayer.';
+      this.cdr.markForCheck();
+    }
+  }
+
+  closePass() {
+    this.passModal.visible = false;
+    this.cdr.markForCheck();
   }
 }
