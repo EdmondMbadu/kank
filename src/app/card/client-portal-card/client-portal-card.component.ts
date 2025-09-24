@@ -8,7 +8,12 @@ import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
 /* ✨  NEW imports */
-import { FormControl, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import {
   debounceTime,
   distinctUntilChanged,
@@ -16,6 +21,7 @@ import {
   of,
   switchMap,
 } from 'rxjs';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 @Component({
   selector: 'app-client-portal-card',
@@ -38,12 +44,19 @@ export class ClientPortalCardComponent {
   search = new FormControl('');
   amount = new FormControl('', [Validators.required, Validators.min(1)]);
 
+  editForm!: FormGroup;
+  saving = false;
+  saveMsg = '';
+  saveOk = false;
+
   constructor(
     public auth: AuthService,
     public activatedRoute: ActivatedRoute,
     private router: Router,
     private time: TimeService,
-    private data: DataService
+    private data: DataService,
+    private fb: FormBuilder,
+    private afs: AngularFirestore
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -72,18 +85,32 @@ export class ClientPortalCardComponent {
   closeModal() {
     this.modalOpen = false;
   }
+  // retrieveClientCard(): void {
+  //   this.auth.getAllClientsCard().subscribe((data: any) => {
+  //     this.clientCard = data[Number(this.id)];
+  //     this.dateJoined = this.time.formatDateForDRC(this.clientCard.dateJoined);
+
+  //     this.status = !!this.clientCard.clientCardStatus
+  //       ? 'Terminé'
+  //       : this.status;
+  //     this.computeAmountToGiveClient();
+  //   });
+  // }
+
   retrieveClientCard(): void {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
       this.dateJoined = this.time.formatDateForDRC(this.clientCard.dateJoined);
-
       this.status = !!this.clientCard.clientCardStatus
         ? 'Terminé'
         : this.status;
       this.computeAmountToGiveClient();
+
+      // (Re)build or patch the form with fresh data
+      if (!this.editForm) this.initEditForm();
+      else this.editForm.patchValue(this.toFormValues(this.clientCard));
     });
   }
-
   computeAmountToGiveClient() {
     this.amountToGiveClient =
       this.clientCard.amountPaid === '0'
@@ -239,5 +266,123 @@ export class ClientPortalCardComponent {
       console.error('Erreur transfert:', error);
       alert('Une erreur est survenue lors du transfert.');
     }
+  }
+
+  // Build the form once we have clientCard loaded
+  private initEditForm() {
+    this.editForm = this.fb.group({
+      firstName: [this.clientCard.firstName ?? '', [Validators.required]],
+      lastName: [this.clientCard.lastName ?? ''],
+      middleName: [this.clientCard.middleName ?? ''],
+
+      phoneNumber: [
+        this.clientCard.phoneNumber ?? '',
+        [Validators.minLength(7)],
+      ],
+
+      businessAddress: [this.clientCard.businessAddress ?? ''],
+      homeAddress: [this.clientCard.homeAddress ?? ''],
+      profession: [this.clientCard.profession ?? ''],
+
+      amountPaid: [
+        Number(this.clientCard.amountPaid ?? 0),
+        [Validators.min(0)],
+      ],
+      amountToPay: [
+        Number(this.clientCard.amountToPay ?? 0),
+        [Validators.min(0)],
+      ],
+      cardCycle: [Number(this.clientCard.cardCycle ?? 0), [Validators.min(0)]],
+      numberOfPaymentsMade: [
+        Number(this.clientCard.numberOfPaymentsMade ?? 0),
+        [Validators.min(0)],
+      ],
+
+      clientCardStatus: [this.clientCard.clientCardStatus ?? ''],
+      dateJoined: [this.clientCard.dateJoined ?? ''],
+    });
+  }
+
+  /** Map model -> form raw values (used by reset button) */
+  toFormValues(c: Card) {
+    return {
+      firstName: c.firstName ?? '',
+      lastName: c.lastName ?? '',
+      middleName: c.middleName ?? '',
+      phoneNumber: c.phoneNumber ?? '',
+      businessAddress: c.businessAddress ?? '',
+      homeAddress: c.homeAddress ?? '',
+      profession: c.profession ?? '',
+      amountPaid: Number(c.amountPaid ?? 0),
+      amountToPay: Number(c.amountToPay ?? 0),
+      cardCycle: Number(c.cardCycle ?? 0),
+      numberOfPaymentsMade: Number(c.numberOfPaymentsMade ?? 0),
+      clientCardStatus: c.clientCardStatus ?? '',
+      dateJoined: c.dateJoined ?? '',
+    };
+  }
+
+  /** Save edits (admin) — excludes the payments map */
+  async saveCardEdits() {
+    if (!this.auth.isAdmin || this.editForm.invalid) return;
+
+    this.saving = true;
+    this.saveMsg = '';
+    this.saveOk = false;
+
+    try {
+      const docId = (this.clientCard as any)?.uid;
+      if (!docId) throw new Error('clientCard.uid manquant');
+
+      // Prepare payload (keep payments untouched; coerce numerics back to strings if your schema uses strings)
+      const v = this.editForm.value;
+
+      const updatePayload: Partial<Card> = {
+        firstName: v.firstName?.trim(),
+        lastName: v.lastName?.trim(),
+        middleName: v.middleName?.trim(),
+        phoneNumber: v.phoneNumber?.trim(),
+        businessAddress: v.businessAddress?.trim(),
+        homeAddress: v.homeAddress?.trim(),
+        profession: v.profession?.trim(),
+
+        // If your Firestore schema stores these as strings, stringify:
+        amountPaid: String(v.amountPaid ?? '0'),
+        amountToPay: String(v.amountToPay ?? '0'),
+        cardCycle: String(v.cardCycle ?? '0'),
+        numberOfPaymentsMade: String(v.numberOfPaymentsMade ?? '0'),
+
+        clientCardStatus: v.clientCardStatus ?? '',
+        dateJoined: v.dateJoined ?? this.clientCard.dateJoined,
+        // payments:  // ← intentionally omitted
+      };
+
+      const path = `users/${this.auth.currentUser.uid}/cards/${docId}`;
+      await this.afs.doc(path).update(updatePayload);
+
+      // Update local model (so UI above reflects instantly)
+      Object.assign(this.clientCard, updatePayload);
+      this.computeAmountToGiveClient();
+
+      this.saveOk = true;
+      this.saveMsg = 'Modifications enregistrées ✅';
+    } catch (e: any) {
+      console.error(e);
+      this.saveOk = false;
+      this.saveMsg =
+        'Échec de l’enregistrement : ' + (e?.message || 'Erreur inconnue');
+    } finally {
+      this.saving = false;
+    }
+  }
+
+  reloadFromServer() {
+    // Reuse your existing loader; it will patch the form on completion.
+    this.retrieveClientCard();
+
+    // Optional: small UX hint
+    this.saveOk = true;
+    this.saveMsg = 'Données rechargées.';
+    setTimeout(() => (this.saveMsg = ''), 2000);
   }
 }

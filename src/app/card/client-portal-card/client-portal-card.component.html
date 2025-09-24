@@ -321,3 +321,106 @@
 <!-- -------------------------------------------------------------------- -->
 
 </section>
+
+
+<!-- ============ ADMIN INLINE EDITOR (only for admins) ============ -->
+<div *ngIf="auth.isAdmin" class="mt-10">
+  <div class="max-w-4xl mx-auto rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 p-6 shadow">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+        Modifier les informations (Admin)
+      </h3>
+      <button type="button"
+              (click)="reloadFromServer()"
+              class="text-xs rounded-full px-3 py-1 bg-gray-100 dark:bg-slate-700 dark:text-white">
+        Recharger
+      </button>
+    </div>
+
+    <form [formGroup]="editForm" (ngSubmit)="saveCardEdits()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <!-- Names -->
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Prénom</label>
+        <input formControlName="firstName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Post-nom</label>
+        <input formControlName="lastName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Deuxième nom</label>
+        <input formControlName="middleName" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+
+      <!-- Phone -->
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Téléphone</label>
+        <input formControlName="phoneNumber" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+
+      <!-- Addresses -->
+      <div class="sm:col-span-2">
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Adresse Business</label>
+        <input formControlName="businessAddress" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Adresse Domicile</label>
+        <input formControlName="homeAddress" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+
+      <!-- Profession -->
+      <div class="sm:col-span-2">
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Profession</label>
+        <input formControlName="profession" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+
+      <!-- Numeric fields -->
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Montant perçu (FC)</label>
+        <input type="number" formControlName="amountPaid" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Montant à verser (FC)</label>
+        <input type="number" formControlName="amountToPay" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Cycle de carte</label>
+        <input type="number" formControlName="cardCycle" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Paiements reçus (compteur)</label>
+        <input type="number" formControlName="numberOfPaymentsMade" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+
+      <!-- Status / Date (optional fields you already show) -->
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Statut (raw)</label>
+        <input formControlName="clientCardStatus" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Date d’adhésion (raw)</label>
+        <input formControlName="dateJoined" class="w-full rounded border px-3 py-2 dark:text-slate-700" />
+      </div>
+
+      <!-- Actions -->
+      <div class="sm:col-span-2 flex items-center justify-end gap-2 mt-2">
+        <button type="button"
+                (click)="editForm.reset(toFormValues(clientCard))"
+                class="rounded px-4 py-2 text-sm border hover:bg-gray-100 dark:hover:bg-slate-700 dark:text-white">
+          Réinitialiser
+        </button>
+        <button type="submit"
+                [disabled]="editForm.invalid || saving"
+                class="rounded px-4 py-2 text-sm font-medium text-white bg-indigo-600 disabled:opacity-60">
+          {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+
+    <p *ngIf="saveMsg" class="mt-3 text-xs"
+       [class.text-emerald-600]="saveOk"
+       [class.text-rose-600]="!saveOk">
+      {{ saveMsg }}
+    </p>
+  </div>
+</div>
