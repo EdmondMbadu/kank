@@ -369,7 +369,7 @@ export class NotPaidTodayComponent {
    * NEW: Send follow-up lists to each agent (admin-only).
    * Uses your `sendCustomSMS` callable so no new Cloud Function is required.
    */
-  async sendFollowupsToAgents() {
+  async sendFollowupsToAgents(): Promise<void> {
     if (!this.auth.isAdmin) return;
 
     this.sendingAgents = true;
@@ -377,68 +377,80 @@ export class NotPaidTodayComponent {
     try {
       this.updateSummary();
 
+      // Build buckets from today's clients, but we'll still loop over *all* employees
       const byAgent = this.buildAgentFollowups();
-      if (byAgent.size === 0) {
-        alert('Aucun client à suivre aujourd’hui.');
-        return;
-      }
-
       const callable = this.fns.httpsCallable('sendCustomSMS');
 
       // Counters & jobs
       let sent = 0;
       let skippedNoWork = 0;
       let skippedNoPhone = 0;
-      let skippedNoClients = 0;
 
       const jobs: Promise<unknown>[] = [];
 
-      for (const { employee, current, away } of byAgent.values()) {
+      // ── Loop over *all* employees so those with zero clients are handled
+      for (const emp of this.employees) {
+        if (!emp?.uid) continue;
+
         // 1) Status check
-        if (!this.isWorkingEmployee(employee)) {
+        if (!this.isWorkingEmployee(emp)) {
           skippedNoWork++;
           continue;
         }
 
         // 2) Phone check
-        const phone =
-          (employee as any).phoneNumber || (employee as any).telephone || '';
+        const phone = (emp as any).phoneNumber || (emp as any).telephone || '';
         if (!phone) {
           skippedNoPhone++;
           continue;
         }
 
-        // 3) Any clients to follow?
-        const linesCurrent = current.map(
+        // 3) Retrieve buckets (may be empty if this employee has no clients today)
+        const buckets = byAgent.get(emp.uid) ?? {
+          employee: emp,
+          current: [],
+          away: [],
+        };
+        const linesCurrent = buckets.current.map(
           (c) => `• ${this.formatClientLine(c)}`
         );
-        const linesAway = away.map((c) => `• ${this.formatClientLine(c)}`);
+        const linesAway = buckets.away.map(
+          (c) => `• ${this.formatClientLine(c)}`
+        );
+
+        // 4) If no clients today → send recruitment prompt
         if (!linesCurrent.length && !linesAway.length) {
-          skippedNoClients++;
+          const message = this.buildRecruitmentMessage(emp);
+          jobs.push(
+            callable({
+              phoneNumber: phone,
+              message,
+              metadata: {
+                kind: 'agent-recruitment',
+                date: this.requestDateCorrectFormat,
+              },
+            }).toPromise()
+          );
+          sent++;
           continue;
         }
 
-        // 4) Build message
-        const header = `Bonjour ${
-          employee.firstName || ''
-        }, voici les suivis du ${this.frenchDate} :`;
+        // 5) Otherwise send normal follow-up list
+        const header = `Bonjour ${emp.firstName || ''}, voici les suivis du ${
+          this.frenchDate
+        } :`;
         const bodyParts: string[] = [header];
-
-        if (linesCurrent.length) {
+        if (linesCurrent.length)
           bodyParts.push(
             '',
             `En cours (${linesCurrent.length}) :`,
             ...linesCurrent
           );
-        }
-        if (linesAway.length) {
+        if (linesAway.length)
           bodyParts.push('', `À l’écart (${linesAway.length}) :`, ...linesAway);
-        }
-
         bodyParts.push('', 'Merci pour la confiance à la FONDATION GERVAIS.');
         const message = bodyParts.join('\n');
 
-        // 5) Enqueue job
         jobs.push(
           callable({
             phoneNumber: phone,
@@ -452,11 +464,10 @@ export class NotPaidTodayComponent {
         sent++;
       }
 
+      // If no jobs, still show a meaningful summary
       if (!jobs.length) {
-        alert(
-          `Aucun envoi effectué.
-Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}, Sans clients: ${skippedNoClients}.`
-        );
+        alert(`Aucun envoi effectué.
+Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}.`);
         return;
       }
 
@@ -465,10 +476,8 @@ Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}, Sans
       const failed = results.filter((r) => r.status === 'rejected').length;
       const succeeded = sent - failed;
 
-      alert(
-        `Listes envoyées: ${succeeded} (échecs: ${failed}).
-Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}, Sans clients: ${skippedNoClients}.`
-      );
+      alert(`Messages envoyés: ${succeeded} (échecs: ${failed}).
+Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}.`);
     } catch (err) {
       console.error('sendFollowupsToAgents error:', err);
       alert('Erreur lors de l’envoi des listes aux agents.');
@@ -478,16 +487,29 @@ Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}, Sans
   }
 
   /** Returns true iff the employee is currently working ("Travaille"). */
+  /** Returns true iff the employee is currently working ("Travaille"). */
   private isWorkingEmployee(e?: Employee): boolean {
     if (!e) return false;
-    // try a few common field names; normalize and compare
     const raw =
       (e as any).status ??
       (e as any).workStatus ??
       (e as any).employmentStatus ??
       '';
     const val = String(raw).trim().toLowerCase();
-    // Accept only "travaille" as working
-    return val === 'travaille';
+    // Accept common variants / typos
+    return ['travaille', 'tavaille', 'en travail', 'working', 'work'].includes(
+      val
+    );
+  }
+
+  /** Message if agent is working but has no clients to follow today */
+  private buildRecruitmentMessage(emp: Employee): string {
+    return [
+      `Bonjour ${emp.firstName || ''},`,
+      `Ozali na client programmé te lelo.`,
+      `Profitez pona Marketting pe kolouka ba clients ya sika pe kotala ba clients oyo bafutaki te lobi.`,
+      ``,
+      `Merci pour la confiance à la FONDATION GERVAIS.`,
+    ].join('\n');
   }
 }
