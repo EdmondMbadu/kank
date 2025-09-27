@@ -1,42 +1,41 @@
 <app-navbar
   [email]="auth.currentUser.email"
   [firstName]="auth.currentUser.firstName"
-  [path]="'home'">
+  [path]="'home'"
+>
 </app-navbar>
 
 <!-- ╭─ Header & date picker ───────────────────────────────────────────╮ -->
 <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-8 space-y-6">
-
   <!-- headline + quick link (now centred) -->
-  <div class="flex flex-col lg:flex-row items-center justify-center gap-6 text-center">
-    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight
-               text-green-800 ">
+  <div
+    class="flex flex-col lg:flex-row items-center justify-center gap-6 text-center"
+  >
+    <h1
+      class="text-3xl md:text-4xl font-extrabold tracking-tight text-green-800"
+    >
       Activités du&nbsp;{{ frenchDate }}
     </h1>
 
     <button
       routerLink="/client-info-current"
-      class="inline-flex items-center gap-2 rounded-full
-             bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow
-             hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+      class="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+    >
       Info Clients
     </button>
   </div>
 
   <!-- date picker (centered) -->
-<!-- date picker (now truly centered) -->
-<div class="flex justify-center">
-  <input
-    [(ngModel)]="requestDate"
-    type="date"
-    class="mx-auto max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5
-           text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
-           dark:bg-gray-700 dark:text-white dark:border-gray-600"
-    (change)="findDailyActivitiesAmount()"
-    required
-  />
-</div>
-
+  <!-- date picker (now truly centered) -->
+  <div class="flex justify-center">
+    <input
+      [(ngModel)]="requestDate"
+      type="date"
+      class="mx-auto max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+      (change)="findDailyActivitiesAmount()"
+      required
+    />
+  </div>
 </section>
 
 <!-- ╭─ Contrôle quotidien (collapsible) ─────────────────────────────╮ -->
@@ -47,14 +46,21 @@
 >
   <!-- Header -->
   <summary
-    class="flex cursor-pointer flex-col gap-3 bg-gradient-to-r from-emerald-600 to-green-600
-           px-4 py-3 text-white sm:flex-row sm:items-center sm:justify-between
-           sm:px-6 sm:py-4 hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+    class="flex cursor-pointer flex-col gap-3 bg-gradient-to-r from-emerald-600 to-green-600 px-4 py-3 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4 hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
   >
     <!-- Left: icon + title + objective (center on mobile) -->
-    <div class="flex flex-1 min-w-0 items-center justify-center gap-2 sm:justify-start">
-      <svg class="h-5 w-5 opacity-90 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"/>
+    <div
+      class="flex flex-1 min-w-0 items-center justify-center gap-2 sm:justify-start"
+    >
+      <svg
+        class="h-5 w-5 opacity-90 shrink-0"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"
+        />
       </svg>
 
       <div class="min-w-0 text-center sm:text-left">
@@ -63,22 +69,33 @@
         </h3>
 
         <!-- Objective line: turns slightly red when not OK; centered on mobile -->
-        <p class="text-[11px] sm:text-xs/5 mt-0.5"
-           [ngClass]="okCount === 3 ? 'text-white/90' : 'text-red-100 font-semibold'">
+        <p
+          class="text-[11px] sm:text-xs/5 mt-0.5"
+          [ngClass]="
+            okCount === 3 ? 'text-white/90' : 'text-red-100 font-semibold'
+          "
+        >
           Objectif de clôture : En main = 0 · Demandé = 0 · Raisons = 0
         </p>
       </div>
     </div>
 
     <!-- Right: chips + chevron -->
-    <div class="flex items-center gap-2 sm:gap-3 justify-center sm:justify-end w-full sm:w-auto">
+    <div
+      class="flex items-center gap-2 sm:gap-3 justify-center sm:justify-end w-full sm:w-auto"
+    >
       <!-- chips: scroll on xs, wrap on sm+ -->
-      <div class="chips no-scrollbar -mx-1 flex max-w-full sm:max-w-none items-center gap-2 overflow-x-auto px-1 sm:flex-wrap">
+      <div
+        class="chips no-scrollbar -mx-1 flex max-w-full sm:max-w-none items-center gap-2 overflow-x-auto px-1 sm:flex-wrap"
+      >
         <span
           class="whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold ring-1"
-          [ngClass]="okCount === 3
-            ? 'bg-white/15 text-white ring-white/40'
-            : 'bg-yellow-300/30 text-yellow-100 ring-white/30'">
+          [ngClass]="
+            okCount === 3
+              ? 'bg-white/15 text-white ring-white/40'
+              : 'bg-yellow-300/30 text-yellow-100 ring-white/30'
+          "
+        >
           {{ okCount }}/3
           <ng-container *ngIf="okCount === 3">&nbsp;OK</ng-container>
           <ng-container *ngIf="okCount < 3">&nbsp;à corriger</ng-container>
@@ -86,7 +103,8 @@
 
         <span
           *ngIf="okCount < 3"
-          class="whitespace-nowrap rounded-full bg-red-600/30 px-3 py-1 text-[11px] font-extrabold text-red-50 ring-1 ring-white/30">
+          class="whitespace-nowrap rounded-full bg-red-600/30 px-3 py-1 text-[11px] font-extrabold text-red-50 ring-1 ring-white/30"
+        >
           Anomalies détectées
         </span>
       </div>
@@ -94,125 +112,191 @@
       <!-- Chevron -->
       <svg
         class="ml-1 h-5 w-5 shrink-0 transition-transform duration-300 group-open:rotate-180"
-        viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path fill-rule="evenodd"
-              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-              clip-rule="evenodd"/>
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+          clip-rule="evenodd"
+        />
       </svg>
     </div>
   </summary>
   <!-- KPI strip -->
   <div class="bg-white dark:bg-slate-800">
     <div class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 sm:gap-4 sm:p-5">
-    <!-- En main (calculé) -->
+      <!-- En main (calculé) -->
       <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-3 sm:p-4">
-        <div class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+        <div
+          class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300"
+        >
           Argent en main (calculé)
         </div>
 
         <!-- Top total: aligned, non-wrapping -->
-        <div class="mt-1 text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
-          <span class="whitespace-nowrap">{{ moneyInHandsTotalN | number:'1.0-0' }}&nbsp;FC</span>
+        <div
+          class="mt-1 text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums"
+        >
+          <span class="whitespace-nowrap"
+            >{{ moneyInHandsTotalN | number : "1.0-0" }}&nbsp;FC</span
+          >
           <span class="mx-1 opacity-60">·</span>
-          <span class="whitespace-nowrap">{{ compute.convertCongoleseFrancToUsDollars(moneyInHandsTotalN.toString()) | number:'1.0-0' }}&nbsp;$</span>
+          <span class="whitespace-nowrap"
+            >{{
+              compute.convertCongoleseFrancToUsDollars(
+                moneyInHandsTotalN.toString()
+              ) | number : "1.0-0"
+            }}&nbsp;$</span
+          >
         </div>
 
         <!-- Traceability -->
-        <div class="mt-2 rounded-lg bg-white/80 ring-1 ring-white/50 dark:bg-slate-800/40 dark:ring-white/10">
-          <div class="px-2.5 pt-2 text-[10px] sm:text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-300">
+        <div
+          class="mt-2 rounded-lg bg-white/80 ring-1 ring-white/50 dark:bg-slate-800/40 dark:ring-white/10"
+        >
+          <div
+            class="px-2.5 pt-2 text-[10px] sm:text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-300"
+          >
             Traçabilité
           </div>
 
           <!-- Entrées (two-column mini-ledger) -->
           <div class="px-2.5 mt-1.5">
-            <div class="mb-1 inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 px-2 py-0.5 text-[10px]">
+            <div
+              class="mb-1 inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 px-2 py-0.5 text-[10px]"
+            >
               Entrées
             </div>
             <div class="grid gap-1.5">
               <ng-container *ngFor="let p of formulaPlus">
                 <div class="grid grid-cols-[1fr_auto] items-center gap-x-3">
-                  <div class="text-[12px] sm:text-[13px] text-slate-700 dark:text-slate-200 truncate">
+                  <div
+                    class="text-[12px] sm:text-[13px] text-slate-700 dark:text-slate-200 truncate"
+                  >
                     {{ p.label }}
                   </div>
-                  <div class="text-[12px] sm:text-[13px] font-bold text-emerald-700 dark:text-emerald-300 font-mono tabular-nums whitespace-nowrap">
-                    +{{ p.v | number:'1.0-0' }}&nbsp;FC
+                  <div
+                    class="text-[12px] sm:text-[13px] font-bold text-emerald-700 dark:text-emerald-300 font-mono tabular-nums whitespace-nowrap"
+                  >
+                    +{{ p.v | number : "1.0-0" }}&nbsp;FC
                   </div>
                 </div>
               </ng-container>
-              <div *ngIf="formulaPlus.length === 0" class="text-slate-400 text-[12px]">—</div>
+              <div
+                *ngIf="formulaPlus.length === 0"
+                class="text-slate-400 text-[12px]"
+              >
+                —
+              </div>
             </div>
           </div>
 
           <!-- Sorties (two-column mini-ledger) -->
           <div class="px-2.5 mt-2">
-            <div class="mb-1 inline-flex items-center rounded-full bg-blue-100 text-blue-800 ring-1 ring-blue-200 px-2 py-0.5 text-[10px]">
+            <div
+              class="mb-1 inline-flex items-center rounded-full bg-blue-100 text-blue-800 ring-1 ring-blue-200 px-2 py-0.5 text-[10px]"
+            >
               Sorties
             </div>
             <div class="grid gap-1.5">
               <ng-container *ngFor="let m of formulaMinus">
                 <div class="grid grid-cols-[1fr_auto] items-center gap-x-3">
-                  <div class="text-[12px] sm:text-[13px] text-slate-700 dark:text-slate-200 truncate">
+                  <div
+                    class="text-[12px] sm:text-[13px] text-slate-700 dark:text-slate-200 truncate"
+                  >
                     {{ m.label }}
                   </div>
-                  <div class="text-[12px] sm:text-[13px] font-bold text-blue-700 dark:text-blue-300 font-mono tabular-nums whitespace-nowrap">
-                    −{{ m.v | number:'1.0-0' }}&nbsp;FC
+                  <div
+                    class="text-[12px] sm:text-[13px] font-bold text-blue-700 dark:text-blue-300 font-mono tabular-nums whitespace-nowrap"
+                  >
+                    −{{ m.v | number : "1.0-0" }}&nbsp;FC
                   </div>
                 </div>
               </ng-container>
-              <div *ngIf="formulaMinus.length === 0" class="text-slate-400 text-[12px]">—</div>
+              <div
+                *ngIf="formulaMinus.length === 0"
+                class="text-slate-400 text-[12px]"
+              >
+                —
+              </div>
             </div>
           </div>
 
-       <!-- Σ row (wraps nicely on xs, single line on sm+) -->
-          <div class="mt-2 border-t border-white/70 dark:border-white/10 px-2.5 py-1.5">
+          <!-- Σ row (wraps nicely on xs, single line on sm+) -->
+          <div
+            class="mt-2 border-t border-white/70 dark:border-white/10 px-2.5 py-1.5"
+          >
             <div class="grid gap-1 min-w-0">
-              <div class="text-[12px] sm:text-[13px] text-slate-600 dark:text-slate-300">
+              <div
+                class="text-[12px] sm:text-[13px] text-slate-600 dark:text-slate-300"
+              >
                 Σ Entrées – Σ Sorties
               </div>
 
-              <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1
-                          font-mono tabular-nums text-[12px] sm:text-sm leading-tight">
+              <div
+                class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 font-mono tabular-nums text-[12px] sm:text-sm leading-tight"
+              >
                 <!-- equation (wraps as needed) -->
-                <div class="flex flex-wrap items-center gap-x-1 gap-y-1 min-w-0">
-                  <span class="font-semibold text-slate-900 dark:text-slate-100">
-                    {{ formulaPlusSumN | number:'1.0-0' }} FC
+                <div
+                  class="flex flex-wrap items-center gap-x-1 gap-y-1 min-w-0"
+                >
+                  <span
+                    class="font-semibold text-slate-900 dark:text-slate-100"
+                  >
+                    {{ formulaPlusSumN | number : "1.0-0" }} FC
                   </span>
                   <span class="opacity-60">–</span>
-                  <span class="font-semibold text-slate-900 dark:text-slate-100">
-                    {{ formulaMinusSumN | number:'1.0-0' }} FC
+                  <span
+                    class="font-semibold text-slate-900 dark:text-slate-100"
+                  >
+                    {{ formulaMinusSumN | number : "1.0-0" }} FC
                   </span>
                   <span class="opacity-60">=</span>
-                  <span class="font-bold"
-                        [ngClass]="formulaNetN === moneyInHandsTotalN
-                          ? 'text-slate-900 dark:text-slate-100'
-                          : 'text-amber-700 dark:text-amber-300'">
-                    {{ formulaNetN | number:'1.0-0' }} FC
+                  <span
+                    class="font-bold"
+                    [ngClass]="
+                      formulaNetN === moneyInHandsTotalN
+                        ? 'text-slate-900 dark:text-slate-100'
+                        : 'text-amber-700 dark:text-amber-300'
+                    "
+                  >
+                    {{ formulaNetN | number : "1.0-0" }} FC
                   </span>
                 </div>
 
                 <!-- ecart pill (floats right on sm+, wraps under on xs) -->
-                <div *ngIf="formulaNetN !== moneyInHandsTotalN"
-                    class="inline-flex items-center rounded-full bg-amber-100 text-amber-800
-                            ring-1 ring-amber-200 px-2 py-0.5 text-[10px] sm:text-[11px]
-                            font-mono tabular-nums">
-                  écart {{ (formulaNetN - moneyInHandsTotalN) | number:'1.0-0' }} FC
+                <div
+                  *ngIf="formulaNetN !== moneyInHandsTotalN"
+                  class="inline-flex items-center rounded-full bg-amber-100 text-amber-800 ring-1 ring-amber-200 px-2 py-0.5 text-[10px] sm:text-[11px] font-mono tabular-nums"
+                >
+                  écart
+                  {{ formulaNetN - moneyInHandsTotalN | number : "1.0-0" }} FC
                 </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
-
       <!-- Demandé (Total du jour) -->
       <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-3 sm:p-4">
-        <div class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">
+        <div
+          class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300"
+        >
           Argent demandé (Total du jour)
         </div>
-        <div class="mt-1 text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-          {{ requestTotalToday | number:'1.0-0' }} FC ·
-          {{ compute.convertCongoleseFrancToUsDollars(requestTotalToday.toString()) | number:'1.0-0' }} $
+        <div
+          class="mt-1 text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100"
+        >
+          {{ requestTotalToday | number : "1.0-0" }} FC ·
+          {{
+            compute.convertCongoleseFrancToUsDollars(
+              requestTotalToday.toString()
+            ) | number : "1.0-0"
+          }}
+          $
         </div>
       </div>
 
@@ -220,24 +304,32 @@
       <div
         class="rounded-xl p-3 sm:p-4"
         [ngClass]="{
-          'bg-emerald-50 dark:bg-emerald-900/30' : okCount === 3,
-          'bg-amber-50 dark:bg-amber-900/30' : okCount < 3
+          'bg-emerald-50 dark:bg-emerald-900/30': okCount === 3,
+          'bg-amber-50 dark:bg-amber-900/30': okCount < 3
         }"
       >
-        <div class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">Statut global</div>
+        <div
+          class="text-[11px] sm:text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300"
+        >
+          Statut global
+        </div>
         <div
           class="rounded-xl p-3 sm:p-4"
           [ngClass]="{
-            'bg-emerald-50 dark:bg-emerald-900/30' : okCount === 3,
-            'bg-amber-50 dark:bg-amber-900/30'     : okCount < 3
-          }">
+            'bg-emerald-50 dark:bg-emerald-900/30': okCount === 3,
+            'bg-amber-50 dark:bg-amber-900/30': okCount < 3
+          }"
+        >
           <div
             class="mt-1 text-base sm:text-lg font-bold"
             [ngClass]="{
-              'text-emerald-700 dark:text-emerald-300' : okCount === 3,
-              'text-amber-700 dark:text-amber-300'     : okCount < 3
-            }">
-            {{ okCount === 3 ? 'OK — prêt à clôturer' : 'À traiter avant clôture' }}
+              'text-emerald-700 dark:text-emerald-300': okCount === 3,
+              'text-amber-700 dark:text-amber-300': okCount < 3
+            }"
+          >
+            {{
+              okCount === 3 ? "OK — prêt à clôturer" : "À traiter avant clôture"
+            }}
           </div>
         </div>
 
@@ -247,12 +339,19 @@
             <span class="text-slate-600 dark:text-slate-300">Δ En main</span>
             <span
               class="inline-flex items-center rounded-full px-2.5 py-0.5 ring-1"
-              [ngClass]="moneyInHandsTotalN === 0
-                ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
-                : 'bg-amber-100 text-amber-700 ring-amber-200'"
+              [ngClass]="
+                moneyInHandsTotalN === 0
+                  ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                  : 'bg-amber-100 text-amber-700 ring-amber-200'
+              "
             >
-              {{ moneyInHandsTotalN | number:'1.0-0' }} FC ·
-              {{ compute.convertCongoleseFrancToUsDollars(moneyInHandsTotalN.toString()) | number:'1.0-0' }} $
+              {{ moneyInHandsTotalN | number : "1.0-0" }} FC ·
+              {{
+                compute.convertCongoleseFrancToUsDollars(
+                  moneyInHandsTotalN.toString()
+                ) | number : "1.0-0"
+              }}
+              $
             </span>
           </div>
 
@@ -260,25 +359,39 @@
             <span class="text-slate-600 dark:text-slate-300">Δ Demandé</span>
             <span
               class="inline-flex items-center rounded-full px-2.5 py-0.5 ring-1"
-              [ngClass]="requestTotalToday === 0
-                ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
-                : 'bg-amber-100 text-amber-700 ring-amber-200'"
+              [ngClass]="
+                requestTotalToday === 0
+                  ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                  : 'bg-amber-100 text-amber-700 ring-amber-200'
+              "
             >
-              {{ requestTotalToday | number:'1.0-0' }} FC ·
-              {{ compute.convertCongoleseFrancToUsDollars(requestTotalToday.toString()) | number:'1.0-0' }} $
+              {{ requestTotalToday | number : "1.0-0" }} FC ·
+              {{
+                compute.convertCongoleseFrancToUsDollars(
+                  requestTotalToday.toString()
+                ) | number : "1.0-0"
+              }}
+              $
             </span>
           </div>
           <div class="flex items-center justify-between gap-3">
             <span class="text-slate-600 dark:text-slate-300">Δ Raisons</span>
             <span
               class="inline-flex items-center rounded-full px-2.5 py-0.5 ring-1"
-              [ngClass]="reasonsMissing === 0
-                ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
-                : 'bg-amber-100 text-amber-700 ring-amber-200'">
+              [ngClass]="
+                reasonsMissing === 0
+                  ? 'bg-emerald-100 text-emerald-700 ring-emerald-200'
+                  : 'bg-amber-100 text-amber-700 ring-amber-200'
+              "
+            >
               <!-- Show ✓ OK when complete; otherwise X/Y missing -->
-              <ng-container *ngIf="reasonsMissing === 0; else missingTpl">✓ OK</ng-container>
+              <ng-container *ngIf="reasonsMissing === 0; else missingTpl"
+                >✓ OK</ng-container
+              >
               <ng-template #missingTpl>
-                {{ reasonsMissing }} / {{ reasonsTotal }} manquante{{ reasonsMissing > 1 ? 's' : '' }}
+                {{ reasonsMissing }} / {{ reasonsTotal }} manquante{{
+                  reasonsMissing > 1 ? "s" : ""
+                }}
               </ng-template>
             </span>
           </div>
@@ -288,93 +401,120 @@
   </div>
 </details>
 <!-- ╰──────────────────────────────────────────────────────────────╯ -->
-
-<!-- ╭─ Bandeau motivation (après Vérification quotidienne) ───────────╮ -->
-<ng-container >
+<ng-container>
   <div class="mx-auto mt-6 max-w-5xl px-4 sm:px-6 lg:px-8">
     <div
-      class="relative overflow-hidden rounded-2xl ring-1 border-l-8 p-5 sm:p-6"
+      class="relative overflow-hidden rounded-2xl ring-1 border-l-8 p-5 sm:p-6 antialiased"
       [style.borderLeftColor]="compute.getGradientColor(clampedPerc)"
       [ngClass]="{
-        'bg-red-600 text-white ring-red-500'            : clampedPerc === 0,
-        'bg-red-500 text-white ring-red-400'            : clampedPerc > 0 && clampedPerc < 30,
-        'bg-orange-500 text-white ring-orange-400'      : clampedPerc >= 30 && clampedPerc < 50,
-        'bg-amber-500 text-black ring-amber-400'        : clampedPerc >= 50 && clampedPerc < 70,
-        'bg-yellow-400 text-black ring-yellow-300'      : clampedPerc >= 70 && clampedPerc < 80,
-        'bg-green-500 text-white ring-green-400'        : clampedPerc >= 80 && clampedPerc < 90,
-        'bg-emerald-600 text-white ring-emerald-500'    : clampedPerc >= 90
+        'bg-red-700 text-slate-200 ring-red-600': clampedPerc === 0,
+        'bg-rose-50 text-rose-800 ring-rose-300':
+          clampedPerc > 0 && clampedPerc < 30,
+        'bg-orange-50 text-orange-800 ring-orange-300':
+          clampedPerc >= 30 && clampedPerc < 50,
+        'bg-amber-50 text-amber-900 ring-amber-300':
+          clampedPerc >= 50 && clampedPerc < 70,
+        'bg-yellow-50 text-yellow-900 ring-yellow-300':
+          clampedPerc >= 70 && clampedPerc < 80,
+        'bg-green-600 text-white ring-green-500':
+          clampedPerc >= 80 && clampedPerc < 90,
+        'bg-emerald-700 text-white ring-emerald-600': clampedPerc >= 90
       }"
     >
-      <!-- Ligne titre + chip du % -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div class="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-2">
-          <!-- Titres selon palier -->
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+      >
+        <div
+          class="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-2"
+        >
           <ng-container [ngSwitch]="true">
-            <span *ngSwitchCase="clampedPerc === 0">🚨 0 % — Pas encore de paiement</span>
-            <span *ngSwitchCase="clampedPerc > 0 && clampedPerc < 30">🧭 Encore loin</span>
-            <span *ngSwitchCase="clampedPerc >= 30 && clampedPerc < 50">👍 Bon début</span>
-            <span *ngSwitchCase="clampedPerc >= 50 && clampedPerc < 70">💪 Bien joué</span>
-            <span *ngSwitchCase="clampedPerc >= 70 && clampedPerc < 80">✅ Très bien</span>
-            <span *ngSwitchCase="clampedPerc >= 80 && clampedPerc < 90">🌟 Super travail</span>
+            <span *ngSwitchCase="clampedPerc === 0"
+              >🚨 0 % — Pas encore de paiement</span
+            >
+            <span *ngSwitchCase="clampedPerc > 0 && clampedPerc < 30"
+              >🧭 Encore loin</span
+            >
+            <span *ngSwitchCase="clampedPerc >= 30 && clampedPerc < 50"
+              >👍 Bon début</span
+            >
+            <span *ngSwitchCase="clampedPerc >= 50 && clampedPerc < 70"
+              >💪 Bien joué</span
+            >
+            <span *ngSwitchCase="clampedPerc >= 70 && clampedPerc < 80"
+              >✅ Très bien</span
+            >
+            <span *ngSwitchCase="clampedPerc >= 80 && clampedPerc < 90"
+              >🌟 Super travail</span
+            >
             <span *ngSwitchDefault>🏆 Excellent</span>
           </ng-container>
         </div>
 
-        <!-- Chip % -->
         <span
-          class="inline-flex items-center rounded-full px-3 py-1 text-[12px] sm:text-sm font-bold ring-1 bg-white/15"
+          class="inline-flex items-center rounded-full px-3 py-1 text-[12px] sm:text-sm font-bold ring-1 ring-inset bg-white text-slate-900 shadow-sm"
           [style.borderColor]="compute.getGradientColor(clampedPerc)"
-          [style.color]="'#fff'"
-          [style.boxShadow]="'inset 0 0 0 9999px rgba(255,255,255,0.08)'"
+          aria-label="Statut du jour"
         >
           {{ percentage }} %
         </span>
       </div>
 
-      <!-- Sous-texte motivant -->
-      <p class="mt-1 text-sm sm:text-base font-medium opacity-90">
+      <p class="mt-1 text-sm sm:text-base font-medium opacity-95">
         <ng-container [ngSwitch]="true">
-          <span *ngSwitchCase="clampedPerc === 0">On s’y met maintenant : vous pouvez le faire 💪</span>
-          <span *ngSwitchCase="clampedPerc > 0 && clampedPerc < 30">C’est un début ; continuez, chaque visite compte.</span>
-          <span *ngSwitchCase="clampedPerc >= 30 && clampedPerc < 50">Beau rythme — cap sur 50 %, puis 70 %.</span>
-          <span *ngSwitchCase="clampedPerc >= 50 && clampedPerc < 70">Vous êtes sur la bonne voie — poussez jusqu’à 70 %.</span>
-          <span *ngSwitchCase="clampedPerc >= 70 && clampedPerc < 80">Dernière ligne droite vers 80 %.</span>
-          <span *ngSwitchCase="clampedPerc >= 80 && clampedPerc < 90">Plus que quelques pas vers 90 %.</span>
-          <span *ngSwitchDefault>Vous êtes une inspiration — cap sur 100 % !</span>
+          <span *ngSwitchCase="clampedPerc === 0"
+            >On s’y met maintenant : vous pouvez le faire 💪</span
+          >
+          <span *ngSwitchCase="clampedPerc > 0 && clampedPerc < 30"
+            >C’est un début ; continuez, chaque visite compte.</span
+          >
+          <span *ngSwitchCase="clampedPerc >= 30 && clampedPerc < 50"
+            >Beau rythme — cap sur 50 %, puis 70 %.</span
+          >
+          <span *ngSwitchCase="clampedPerc >= 50 && clampedPerc < 70"
+            >Vous êtes sur la bonne voie — poussez jusqu’à 70 %.</span
+          >
+          <span *ngSwitchCase="clampedPerc >= 70 && clampedPerc < 80"
+            >Dernière ligne droite vers 80 %.</span
+          >
+          <span *ngSwitchCase="clampedPerc >= 80 && clampedPerc < 90"
+            >Plus que quelques pas vers 90 %.</span
+          >
+          <span *ngSwitchDefault
+            >Vous êtes une inspiration — cap sur 100 % !</span
+          >
         </ng-container>
       </p>
 
-      <!-- Barre de progression (teintée via getGradientColor) -->
       <div class="mt-4">
-        <div class="h-2 w-full rounded-full bg-black/20 dark:bg-white/20 overflow-hidden">
+        <div
+          class="h-2 w-full rounded-full overflow-hidden"
+          [ngClass]="{
+            'bg-white/30': clampedPerc === 0 || clampedPerc >= 80,
+            'bg-black/10': clampedPerc > 0 && clampedPerc < 80
+          }"
+        >
           <div
             class="h-2 rounded-full"
             [style.width.%]="clampedPerc"
             [style.background]="compute.getGradientColor(clampedPerc)"
           ></div>
         </div>
-        <div class="mt-2 text-xs opacity-90">
+        <div class="mt-2 text-xs opacity-95">
           Objectif du jour atteint à <strong>{{ percentage }} %</strong>.
         </div>
       </div>
     </div>
   </div>
 </ng-container>
-<!-- ╰──────────────────────────────────────────────────────────────╯ -->
-
-
 
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
 <!-- ╭─ Performance & reserve ──────────────────────────────────────────╮ -->
 <section class="mx-auto mt-12 max-w-3xl px-4 sm:px-6 lg:px-8">
-
   <!-- ── Performance cards ─────────────────────────────────────────── -->
-  <ng-container *ngIf="isPayUnlocked ||auth.isAdmin; else perfMasked">
-
+  <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else perfMasked">
     <ng-container *ngIf="expectedReserve === '0'">
-      <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow
-                  ">
+      <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow">
         <h2 class="text-xl font-semibold text-green-800 dark:text-green-300">
           Performance Paiement du Jour
         </h2>
@@ -403,23 +543,23 @@
         </p>
       </div>
     </ng-container>
-
   </ng-container>
 
   <!-- masked version with padlock -->
   <ng-template #perfMasked>
-    <div class="relative mb-8 rounded-2xl bg-gray-100 p-6 text-center shadow
-                dark:bg-slate-700">
+    <div
+      class="relative mb-8 rounded-2xl bg-gray-100 p-6 text-center shadow dark:bg-slate-700"
+    >
       <h2 class="text-xl font-semibold text-gray-500 dark:text-gray-300">
         Performance Paiement du Jour
       </h2>
       <p class="mt-2 text-3xl font-extrabold text-gray-400">•••</p>
 
       <!-- padlock -->
-      <button (click)="openCodeModal()"
-              class="absolute top-3 right-3 rounded-full bg-gray-300/70 p-2
-                     text-gray-700 hover:bg-gray-400 dark:bg-slate-600
-                     dark:text-gray-100">
+      <button
+        (click)="openCodeModal()"
+        class="absolute top-3 right-3 rounded-full bg-gray-300/70 p-2 text-gray-700 hover:bg-gray-400 dark:bg-slate-600 dark:text-gray-100"
+      >
         🔒
       </button>
     </div>
@@ -428,8 +568,9 @@
 
   <!-- ── Reserve card ──────────────────────────────────────────────── -->
   <div class="rounded-2xl bg-white p-8 shadow dark:bg-slate-800">
-    <h3 class="mb-6 text-center text-2xl font-bold text-green-800 underline
-               dark:text-green-300">
+    <h3
+      class="mb-6 text-center text-2xl font-bold text-green-800 underline dark:text-green-300"
+    >
       Reserve
     </h3>
 
@@ -439,9 +580,9 @@
         Reserve Attendue du Jour
       </h4>
       <p class="text-xl font-bold text-green-900 dark:text-green-200">
-        {{ expectedReserve | number:'1.0-0' }} FC
+        {{ expectedReserve | number : "1.0-0" }} FC
         <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-        {{ expectedReserveInDollars | number:'1.0-0' }} $
+        {{ expectedReserveInDollars | number : "1.0-0" }} $
       </p>
     </div>
 
@@ -449,22 +590,27 @@
     <div class="rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-slate-700">
       <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
         Paiement du Jour
-        <button *ngIf="!isPayUnlocked && !auth.isAdmin"
-                (click)="openCodeModal()"
-                class="ml-2 rounded bg-gray-300/70 px-2 py-0.5 text-xs
-                       text-gray-700 hover:bg-gray-400 dark:bg-slate-600
-                       dark:text-gray-100">
+        <button
+          *ngIf="!isPayUnlocked && !auth.isAdmin"
+          (click)="openCodeModal()"
+          class="ml-2 rounded bg-gray-300/70 px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-400 dark:bg-slate-600 dark:text-gray-100"
+        >
           🔒
         </button>
       </h4>
 
-      <p class="mb-3 text-xl font-bold"
-         [ngClass]="isPayUnlocked || auth.isAdmin ? 'text-green-900 dark:text-green-200'
-                                  : 'text-gray-400 dark:text-gray-500'">
+      <p
+        class="mb-3 text-xl font-bold"
+        [ngClass]="
+          isPayUnlocked || auth.isAdmin
+            ? 'text-green-900 dark:text-green-200'
+            : 'text-gray-400 dark:text-gray-500'
+        "
+      >
         <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else payDash">
-          {{ dailyPayment | number:'1.0-0' }} FC
+          {{ dailyPayment | number : "1.0-0" }} FC
           <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-          {{ dailyPaymentDollars | number:'1.0-0' }} $
+          {{ dailyPaymentDollars | number : "1.0-0" }} $
         </ng-container>
         <ng-template #payDash>•••</ng-template>
       </p>
@@ -473,10 +619,13 @@
         Reserve du Jour
       </h4>
       <p class="text-xl font-bold text-green-900 dark:text-green-200">
-        {{ dailyReserve | number:'1.0-0' }} FC
+        {{ dailyReserve | number : "1.0-0" }} FC
         <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-        {{ compute.convertCongoleseFrancToUsDollars(dailyReserve)
-           | number:'1.0-0' }} $
+        {{
+          compute.convertCongoleseFrancToUsDollars(dailyReserve)
+            | number : "1.0-0"
+        }}
+        $
       </p>
     </div>
   </div>
@@ -486,41 +635,55 @@
 
 <!-- ╭─ Daily Collections (Simple) + Recruiting ────────────────────────╮ -->
 <section class="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
-  <details class="group rounded-3xl ring-1 ring-slate-200 dark:ring-slate-700 overflow-hidden">
+  <details
+    class="group rounded-3xl ring-1 ring-slate-200 dark:ring-slate-700 overflow-hidden"
+  >
     <!-- Header -->
     <summary
-      class="flex cursor-pointer items-center justify-between gap-4 bg-gradient-to-r
-             from-emerald-600 to-green-600 px-5 py-4 text-white hover:brightness-105
-             focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60">
+      class="flex cursor-pointer items-center justify-between gap-4 bg-gradient-to-r from-emerald-600 to-green-600 px-5 py-4 text-white hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+    >
       <div class="flex flex-col">
         <span class="text-lg font-extrabold tracking-tight">
           Programme de la journée (08:30–16:30) — Version simple
         </span>
-        <span class="text-xs/5 opacity-90">
-         
-        </span>
+        <span class="text-xs/5 opacity-90"> </span>
       </div>
 
       <!-- Principle chips (minimal) -->
       <div class="hidden md:flex flex-wrap items-center gap-2">
-        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Partiels OK</span>
-        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Heure + montant</span>
-        <span class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold">✓ Retour même jour</span>
+        <span
+          class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold"
+          >✓ Partiels OK</span
+        >
+        <span
+          class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold"
+          >✓ Heure + montant</span
+        >
+        <span
+          class="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold"
+          >✓ Retour même jour</span
+        >
 
         <!-- Recruiting mode (toggle if you want) -->
-        <span 
-              class="rounded-full bg-yellow-300/30 px-3 py-1 text-[11px] font-extrabold
-                     text-yellow-100 ring-1 ring-white/30">
+        <span
+          class="rounded-full bg-yellow-300/30 px-3 py-1 text-[11px] font-extrabold text-yellow-100 ring-1 ring-white/30"
+        >
           🚀 Recrutement prioritaire
         </span>
       </div>
 
       <!-- Chevron -->
-      <svg class="h-5 w-5 shrink-0 transition-transform duration-300 group-open:rotate-180"
-           viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path fill-rule="evenodd"
-              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-              clip-rule="evenodd"/>
+      <svg
+        class="h-5 w-5 shrink-0 transition-transform duration-300 group-open:rotate-180"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+          clip-rule="evenodd"
+        />
       </svg>
     </summary>
 
@@ -528,25 +691,44 @@
     <div class="bg-white dark:bg-slate-800">
       <!-- Mobile chips -->
       <div class="md:hidden flex flex-wrap gap-2 px-5 pt-4">
-        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Partiels OK</span>
-        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Heure + montant</span>
-        <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">✓ Retour même jour</span>
-        <span 
-              class="rounded-full bg-yellow-100 px-2.5 py-1 text-[11px] font-semibold text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200">🚀 Recrutement</span>
+        <span
+          class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+          >✓ Partiels OK</span
+        >
+        <span
+          class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+          >✓ Heure + montant</span
+        >
+        <span
+          class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+          >✓ Retour même jour</span
+        >
+        <span
+          class="rounded-full bg-yellow-100 px-2.5 py-1 text-[11px] font-semibold text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200"
+          >🚀 Recrutement</span
+        >
       </div>
 
       <!-- Simple time blocks -->
       <ol class="grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
         <!-- 08:00–08:30 Plan -->
-        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+        <li
+          class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">08:30–09:05</span>
-            <span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">Plan du jour</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400"
+              >08:30–09:05</span
+            >
+            <span
+              class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300"
+              >Plan du jour</span
+            >
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Lister les clients à visiter aujourd’hui + restant d’hier (à inclure absolument).
+            Lister les clients à visiter aujourd’hui + restant d’hier (à inclure
+            absolument).
           </p>
-           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
+          <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
             Qui fait quoi, qui visite qui, et qui reste au bureau.
           </p>
         </li>
@@ -561,10 +743,17 @@
         </li> -->
 
         <!-- 09:00–12:00 Visite 1 + Recrutement -->
-        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+        <li
+          class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">09:00–12:00</span>
-            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Tournée 1</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400"
+              >09:00–12:00</span
+            >
+            <span
+              class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+              >Tournée 1</span
+            >
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
             Visites sur terrain. <strong>Recruter</strong> en parallèle.
@@ -572,19 +761,35 @@
         </li>
 
         <!-- 12:00–13:00 Pause -->
-        <li class="rounded-2xl border border-amber-200 bg-amber-50 p-4 hover:shadow-md dark:border-amber-900/40 dark:bg-amber-900/20">
+        <li
+          class="rounded-2xl border border-amber-200 bg-amber-50 p-4 hover:shadow-md dark:border-amber-900/40 dark:bg-amber-900/20"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-amber-700 dark:text-amber-300">12:00–13:00</span>
-            <span class="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200">Pause</span>
+            <span class="text-xs font-bold text-amber-700 dark:text-amber-300"
+              >12:00–13:00</span
+            >
+            <span
+              class="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200"
+              >Pause</span
+            >
           </div>
-          <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">Déjeuner & préparation après‑midi.</p>
+          <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">
+            Déjeuner & préparation après‑midi.
+          </p>
         </li>
 
         <!-- 13:00–15:00 Visite 2 + Recrutement -->
-        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+        <li
+          class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">13:00–15:00</span>
-            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Tournée 2</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400"
+              >13:00–15:00</span
+            >
+            <span
+              class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+              >Tournée 2</span
+            >
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
             Visites terrain + <strong>recrutement</strong> (mini‑pitch).
@@ -592,28 +797,41 @@
         </li>
 
         <!-- 15:00–16:30 Appels finaux + Réserve -->
-        <li class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700">
+        <li
+          class="rounded-2xl border border-slate-200 p-4 hover:shadow-md dark:border-slate-700"
+        >
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-500 dark:text-slate-400">15:00–16:30</span>
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text[10px] font-bold text-slate-700 dark:bg-slate-900/30 dark:text-slate-200">Clôture</span>
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400"
+              >15:00–16:30</span
+            >
+            <span
+              class="rounded-full bg-slate-100 px-2 py-0.5 text[10px] font-bold text-slate-700 dark:bg-slate-900/30 dark:text-slate-200"
+              >Clôture</span
+            >
           </div>
           <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">
-            Appels finaux + passages express si besoin. Finaliser le système et <strong>mettre la réserve</strong>.
+            Appels finaux + passages express si besoin. Finaliser le système et
+            <strong>mettre la réserve</strong>.
           </p>
           <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            ⚑ <strong>Réserve = 0 / Paiement = 0 → “Néant”.</strong> Maintenir la saisie <strong>temps réel</strong> pendant les encaissements.
+            ⚑ <strong>Réserve = 0 / Paiement = 0 → “Néant”.</strong> Maintenir
+            la saisie <strong>temps réel</strong> pendant les encaissements.
           </p>
         </li>
       </ol>
 
       <!-- Compact recruiting target (optional) -->
-      <div 
-           class="mx-5 mb-5 mt-1 flex flex-wrap items-center gap-2">
-        <span class="rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">
-          🎯 Objectif Recrutement : 6 leads / 2 qualifiés 
+      <div class="mx-5 mb-5 mt-1 flex flex-wrap items-center gap-2">
+        <span
+          class="rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+        >
+          🎯 Objectif Recrutement : 6 leads / 2 qualifiés
         </span>
-        <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
-         « Le but, ce n’est pas la perfection, c’est le progrès : le but, c’est de s’améliorer. »
+        <span
+          class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-100"
+        >
+          « Le but, ce n’est pas la perfection, c’est le progrès : le but, c’est
+          de s’améliorer. »
         </span>
       </div>
     </div>
@@ -621,51 +839,52 @@
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
-
 <!-- ╭─ Summary cards ────────────────────────────────────────────────╮ -->
 <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-
+  <div
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+  >
     <!-- Tile #1 : « Paiement Du Jour » ----------------------------- -->
     <ng-container *ngIf="true">
       <!-- unlocked : normal link -->
-      <a *ngIf="isPayUnlocked || auth.isAdmin"
-         routerLink="{{ linkPaths[1] }}"
-         class="group block rounded-2xl bg-white dark:bg-slate-800
-                ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
-                hover:-translate-y-1 hover:shadow-lg
-                hover:ring-green-400 dark:hover:ring-green-500 transition">
+      <a
+        *ngIf="isPayUnlocked || auth.isAdmin"
+        routerLink="{{ linkPaths[1] }}"
+        class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+      >
+        <img
+          [src]="imagePaths[1]"
+          class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
+        />
 
-        <img [src]="imagePaths[1]"
-             class="mx-auto mb-4 h-16 w-16 object-contain
-                    filter dark:invert dark:brightness-125" />
-
-        <h5 class="mb-2 text-center text-xl font-semibold
-                   text-gray-900 dark:text-gray-50
-                   group-hover:text-green-700 dark:group-hover:text-green-400">
+        <h5
+          class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
+        >
           {{ summary[1] }}
         </h5>
 
-        <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
-          FC&nbsp;{{ summaryContent[1] | number:'1.0-0' }}
+        <p
+          class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+        >
+          FC&nbsp;{{ summaryContent[1] | number : "1.0-0" }}
         </p>
-        <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
-          $&nbsp;{{ valuesConvertedToDollars[1] | number:'1.0-0' }}
+        <p
+          class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
+        >
+          $&nbsp;{{ valuesConvertedToDollars[1] | number : "1.0-0" }}
         </p>
       </a>
 
       <!-- locked : whole card is a button -->
-      <button *ngIf="!isPayUnlocked && !auth.isAdmin"
-              (click)="openCodeModal()"
-              class="group relative flex flex-col items-center justify-center
-                     rounded-2xl bg-gray-100 p-6 shadow transition
-                     hover:-translate-y-1 hover:shadow-lg
-                     dark:bg-slate-700/50 w-full">
-
-        <img [src]="imagePaths[1]"
-             class="mx-auto mb-4 h-16 w-16 object-contain opacity-40
-                    filter group-hover:opacity-50
-                    dark:invert dark:brightness-75" />
+      <button
+        *ngIf="!isPayUnlocked && !auth.isAdmin"
+        (click)="openCodeModal()"
+        class="group relative flex flex-col items-center justify-center rounded-2xl bg-gray-100 p-6 shadow transition hover:-translate-y-1 hover:shadow-lg dark:bg-slate-700/50 w-full"
+      >
+        <img
+          [src]="imagePaths[1]"
+          class="mx-auto mb-4 h-16 w-16 object-contain opacity-40 filter group-hover:opacity-50 dark:invert dark:brightness-75"
+        />
 
         <h5 class="mb-2 text-center text-xl font-semibold text-gray-500">
           {{ summary[1] }}
@@ -675,8 +894,9 @@
         <p class="text-center text-base font-semibold text-gray-400">•••</p>
 
         <!-- centred padlock for visual cue -->
-        <span class="absolute top-3 right-3 text-xl text-gray-600
-                     group-hover:text-gray-800 dark:text-gray-200">
+        <span
+          class="absolute top-3 right-3 text-xl text-gray-600 group-hover:text-gray-800 dark:text-gray-200"
+        >
           🔒
         </span>
       </button>
@@ -686,50 +906,57 @@
     <!-- All other tiles -------------------------------------------- -->
     <ng-container *ngFor="let s of summary; let i = index">
       <ng-container *ngIf="i !== 1">
-        <a routerLink="{{ linkPaths[i] }}"
-           class="group block rounded-2xl bg-white dark:bg-slate-800
-                  ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
-                  hover:-translate-y-1 hover:shadow-lg
-                  hover:ring-green-400 dark:hover:ring-green-500 transition">
+        <a
+          routerLink="{{ linkPaths[i] }}"
+          class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+        >
+          <img
+            [src]="imagePaths[i]"
+            class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
+          />
 
-          <img [src]="imagePaths[i]"
-               class="mx-auto mb-4 h-16 w-16 object-contain
-                      filter dark:invert dark:brightness-125" />
-
-          <h5 class="mb-2 text-center text-xl font-semibold
-                     text-gray-900 dark:text-gray-50
-                     group-hover:text-green-700 dark:group-hover:text-green-400">
+          <h5
+            class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
+          >
             {{ s }}
           </h5>
 
-          <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
-            FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
+          <p
+            class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+          >
+            FC&nbsp;{{ summaryContent[i] | number : "1.0-0" }}
           </p>
-          <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
-            $&nbsp;{{ valuesConvertedToDollars[i] | number:'1.0-0' }}
+          <p
+            class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
+          >
+            $&nbsp;{{ valuesConvertedToDollars[i] | number : "1.0-0" }}
           </p>
         </a>
       </ng-container>
     </ng-container>
     <!-- ------------------------------------------------------------ -->
-
   </div>
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────╯ -->
 
-
 <!-- ╭─ Admin daily update ─────────────────────────────────────────────╮ -->
 <section
   *ngIf="auth.isAdmin"
-  class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
-  <h2 class="mb-10 text-center text-3xl font-bold text-green-800 dark:text-green-300">
+  class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8"
+>
+  <h2
+    class="mb-10 text-center text-3xl font-bold text-green-800 dark:text-green-300"
+  >
     Modifier les montants du&nbsp;{{ frenchDate }}
   </h2>
 
-  <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  <div
+    class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+  >
     <ng-container *ngFor="let f of dailyFieldConfigs">
-      <div class="flex flex-col rounded-2xl bg-white p-6 shadow-lg
-                  dark:bg-slate-800">
+      <div
+        class="flex flex-col rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800"
+      >
         <h3 class="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
           {{ f.label }}
         </h3>
@@ -742,15 +969,13 @@
           [(ngModel)]="f.input"
           type="number"
           placeholder="Entrez le montant"
-          class="mb-4 w-full rounded-lg border bg-gray-50 p-2.5
-                 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
-                 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          class="mb-4 w-full rounded-lg border bg-gray-50 p-2.5 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
         />
 
         <button
           (click)="setDailyField(f.key, f.input); f.input = ''"
-          class="mt-auto w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
-                 transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+          class="mt-auto w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+        >
           Confirmer
         </button>
       </div>
@@ -761,31 +986,45 @@
 
 <!-- ╭─ Credits & transports (modern, minimal) ───────────────╮ -->
 <section class="mx-auto mt-16 max-w-md md:max-w-lg px-4 sm:px-6 lg:px-8">
-  <div class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10">
-
+  <div
+    class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-slate-900 dark:ring-white/10"
+  >
     <!-- Header: soft gradient + search -->
-    <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600">
+    <div
+      class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600"
+    >
       <div class="flex items-center gap-2 text-white">
         <!-- ticket icon -->
         <svg class="h-5 w-5 opacity-90" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"/>
+          <path
+            d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"
+          />
         </svg>
-        <h3 class="text-base font-semibold tracking-wide">Crédits & Transports</h3>
+        <h3 class="text-base font-semibold tracking-wide">
+          Crédits & Transports
+        </h3>
       </div>
 
       <div class="relative w-44">
         <svg
           class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/80"
-          viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M8 14a6 6 0 100-12 6 6 0 000 12zm5 1l3 3"/>
+          viewBox="0 0 18 18"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 14a6 6 0 100-12 6 6 0 000 12zm5 1l3 3"
+          />
         </svg>
         <input
           id="search-code"
           [(ngModel)]="searchText"
           placeholder="Filtrer par date…"
-          class="w-full rounded-lg bg-white/15 py-1.5 pl-8 pr-3 text-sm text-white placeholder-white/70
-                 ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none"
+          class="w-full rounded-lg bg-white/15 py-1.5 pl-8 pr-3 text-sm text-white placeholder-white/70 ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none"
         />
       </div>
     </div>
@@ -795,27 +1034,36 @@
       <!-- upload (admin only) -->
       <div *ngIf="auth.isAdmin" class="mb-5 flex items-center gap-3">
         <label
-          class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2
-                 text-sm font-medium text-white hover:bg-emerald-700">
+          class="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+        >
           <!-- camera -->
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+            />
+          </svg>
           Joindre un reçu
-          <input type="file" hidden accept="image/*,application/pdf"
-                 (change)="uploadReceipt($any($event.target).files)" />
+          <input
+            type="file"
+            hidden
+            accept="image/*,application/pdf"
+            (change)="uploadReceipt($any($event.target).files)"
+          />
         </label>
 
         <input
-          type="number" min="0" step="0.01"
+          type="number"
+          min="0"
+          step="0.01"
           placeholder="Montant"
-          class="w-28 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm
-                 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500
-                 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          [(ngModel)]="newReceiptAmount" />
+          class="w-28 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          [(ngModel)]="newReceiptAmount"
+        />
 
         <!-- small admin badge -->
-        <span class="ml-auto hidden items-center gap-1 rounded-full px-2 py-0.5 text-xs
-                     ring-1 ring-emerald-300 bg-emerald-50 text-emerald-700
-                     dark:ring-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 sm:inline-flex">
+        <span
+          class="ml-auto hidden items-center gap-1 rounded-full px-2 py-0.5 text-xs ring-1 ring-emerald-300 bg-emerald-50 text-emerald-700 dark:ring-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 sm:inline-flex"
+        >
           Admin
         </span>
       </div>
@@ -823,19 +1071,23 @@
       <!-- list (or empty state) -->
       <ng-container *ngIf="filteredReceipts().length > 0; else emptyState">
         <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <li *ngFor="let r of filteredReceipts(); let i = index"
-              class="group rounded-lg px-2 py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+          <li
+            *ngFor="let r of filteredReceipts(); let i = index"
+            class="group rounded-lg px-2 py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+          >
             <div class="flex items-center gap-4">
               <!-- initials -->
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full
-                          bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-semibold text-slate-700
-                          ring-1 ring-black/5 dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 dark:ring-white/10">
-                {{ auth.currentUser.firstName?.substring(0,2) }}
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-semibold text-slate-700 ring-1 ring-black/5 dark:from-slate-700 dark:to-slate-600 dark:text-slate-100 dark:ring-white/10"
+              >
+                {{ auth.currentUser.firstName?.substring(0, 2) }}
               </div>
 
               <!-- date + sublabel -->
               <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-slate-900 dark:text-slate-50">
+                <p
+                  class="truncate text-sm font-medium text-slate-900 dark:text-slate-50"
+                >
                   {{ r.frenchDate }}
                 </p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Reçu</p>
@@ -843,36 +1095,43 @@
 
               <!-- amount / edit -->
               <ng-container *ngIf="!auth.isAdmin; else amountEdit">
-                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs
-                             bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200
-                             dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800">
-                  {{ r.amount | number:'1.0-2' }} $
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
+                >
+                  {{ r.amount | number : "1.0-2" }} $
                 </span>
               </ng-container>
               <ng-template #amountEdit>
                 <input
-                  type="number" min="0" step="0.01"
-                  class="w-24 rounded border border-slate-200 bg-slate-50 p-1.5 text-xs
-                         focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500
-                         dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="w-24 rounded border border-slate-200 bg-slate-50 p-1.5 text-xs focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   [(ngModel)]="r.amount"
-                  (blur)="updateAmount(r)" />
+                  (blur)="updateAmount(r)"
+                />
               </ng-template>
 
               <!-- receipt link -->
-              <a [href]="r.url" target="_blank" title="Voir le reçu" class="shrink-0">
-                <img src="../../../assets/img/validating-ticket.png"
-                     class="h-12 w-12 rounded-md border border-slate-200 object-cover bg-white
-                            dark:border-slate-700 dark:invert dark:brightness-110"
-                     alt="Reçu" />
+              <a
+                [href]="r.url"
+                target="_blank"
+                title="Voir le reçu"
+                class="shrink-0"
+              >
+                <img
+                  src="../../../assets/img/validating-ticket.png"
+                  class="h-12 w-12 rounded-md border border-slate-200 object-cover bg-white dark:border-slate-700 dark:invert dark:brightness-110"
+                  alt="Reçu"
+                />
               </a>
 
               <!-- admin ‘changer’ -->
               <button
                 *ngIf="auth.isAdmin"
-                class="ml-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white
-                       hover:bg-blue-700"
-                (click)="prepareUpdate(r)">
+                class="ml-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                (click)="prepareUpdate(r)"
+              >
                 Changer
               </button>
             </div>
@@ -882,10 +1141,17 @@
 
       <!-- empty state -->
       <ng-template #emptyState>
-        <div class="flex flex-col items-center justify-center rounded-xl border border-dashed
-                    border-slate-200 p-8 text-center dark:border-slate-700">
-          <svg class="h-8 w-8 text-slate-400 dark:text-slate-500" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 3h10l4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7l4-4zm8 0v4h4"/>
+        <div
+          class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 p-8 text-center dark:border-slate-700"
+        >
+          <svg
+            class="h-8 w-8 text-slate-400 dark:text-slate-500"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path
+              d="M7 3h10l4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7l4-4zm8 0v4h4"
+            />
           </svg>
           <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
             Aucun reçu pour l’instant.
@@ -898,39 +1164,53 @@
 
       <!-- hidden file input for “Changer” -->
       <input
-        #fileInput type="file" hidden accept="image/*,application/pdf"
-        (change)="replaceReceipt($any($event.target).files)" />
+        #fileInput
+        type="file"
+        hidden
+        accept="image/*,application/pdf"
+        (change)="replaceReceipt($any($event.target).files)"
+      />
     </div>
   </div>
 </section>
 <!-- ╰─────────────────────────────────────────────────────────╯ -->
 
 <!-- ╔═══ Déverrouiller les paiements ═══╗ -->
-<div *ngIf="showCodeModal && !isPayUnlocked"
-     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+<div
+  *ngIf="showCodeModal && !isPayUnlocked"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+>
   <div class="w-80 rounded-lg bg-white dark:bg-gray-800 p-6 shadow-lg">
     <p class="mb-4 text-gray-900 dark:text-gray-100">
       Entrez votre <strong>code personnel</strong> pour accedder a cette page :
     </p>
 
-    <input class="mb-4 w-full rounded border p-2 dark:bg-gray-700 dark:text-white"
-           [formControl]="payCodeInput" (keyup.enter)="unlockPayment()"
-           placeholder="Code secret" autofocus>
+    <input
+      class="mb-4 w-full rounded border p-2 dark:bg-gray-700 dark:text-white"
+      [formControl]="payCodeInput"
+      (keyup.enter)="unlockPayment()"
+      placeholder="Code secret"
+      autofocus
+    />
 
-    <button class="mb-2 w-full rounded bg-green-700 py-2 font-medium text-white
-                   hover:bg-green-800" (click)="unlockPayment()">
+    <button
+      class="mb-2 w-full rounded bg-green-700 py-2 font-medium text-white hover:bg-green-800"
+      (click)="unlockPayment()"
+    >
       Valider
     </button>
 
-    <button (click)="closeCodeModal()"
-            class="w-full rounded border py-2 font-medium text-gray-700
-                   hover:bg-gray-100 dark:text-gray-300 dark:border-gray-600
-                   dark:hover:bg-gray-700">
+    <button
+      (click)="closeCodeModal()"
+      class="w-full rounded border py-2 font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+    >
       Annuler
     </button>
 
-    <p *ngIf="payErrMsg"
-       class="mt-3 text-center text-red-600 dark:text-red-400">
+    <p
+      *ngIf="payErrMsg"
+      class="mt-3 text-center text-red-600 dark:text-red-400"
+    >
       {{ payErrMsg }}
     </p>
   </div>
