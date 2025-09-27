@@ -1,782 +1,1519 @@
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-
-<div class="flex container mx-auto m-4 justify-center ">
-    <h1 class="text-3xl md:text-4xl mr-10">Apercu & Tutoriels</h1>
-    
-   
+<div class="flex container mx-auto m-4 justify-center">
+  <h1 class="text-3xl md:text-4xl mr-10">Apercu & Tutoriels</h1>
 </div>
-<div class="container  justify-center mx-auto   md:flex-row ">
-
-<figure class="max-w-screen-md mx-auto text-center">
-    <svg class="w-10 h-10 mx-auto mb-3 text-gray-400 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 14">
-        <path d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z"/>
+<div class="container justify-center mx-auto md:flex-row">
+  <figure class="max-w-screen-md mx-auto text-center">
+    <svg
+      class="w-10 h-10 mx-auto mb-3 text-gray-400"
+      aria-hidden="true"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      viewBox="0 0 18 14"
+    >
+      <path
+        d="M6 0H2a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3H2a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Zm10 0h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4v1a3 3 0 0 1-3 3h-1a1 1 0 0 0 0 2h1a5.006 5.006 0 0 0 5-5V2a2 2 0 0 0-2-2Z"
+      />
     </svg>
     <blockquote>
-        <p class="text-xl md:text-2xl italic font-medium text-gray-900  mx-4">"Notre Mission
-           est d' aider les petits vendeurs locaux à obtenir des crédits pour gérer leur entreprise afin d'augmenter leur production et de développer leur activité.
-            "</p>
+      <p class="text-xl md:text-2xl italic font-medium text-gray-900 mx-4">
+        "Notre Mission est d' aider les petits vendeurs locaux à obtenir des
+        crédits pour gérer leur entreprise afin d'augmenter leur production et
+        de développer leur activité. "
+      </p>
     </blockquote>
-    <figcaption class="flex items-center justify-center mt-6 space-x-3 rtl:space-x-reverse">
-        <!-- <img class="w-6 h-6 rounded-full" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/michael-gouch.png" alt="profile picture"> -->
-        <div class="flex items-center divide-x-2 rtl:divide-x-reverse divide-gray-500 dark:divide-gray-700">
-            <cite class="pe-3 font-medium text-gray-900 ">Georgine Kuta</cite>
-            <cite class="ps-3 text-sm text-gray-500 dark:text-gray-400">Fondatrice - Fondation Gervais </cite>
-        </div>
+    <figcaption
+      class="flex items-center justify-center mt-6 space-x-3 rtl:space-x-reverse"
+    >
+      <!-- <img class="w-6 h-6 rounded-full" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/michael-gouch.png" alt="profile picture"> -->
+      <div
+        class="flex items-center divide-x-2 rtl:divide-x-reverse divide-gray-500 dark:divide-gray-700"
+      >
+        <cite class="pe-3 font-medium text-gray-900">Georgine Kuta</cite>
+        <cite class="ps-3 text-sm text-gray-500 dark:text-gray-400"
+          >Fondatrice - Fondation Gervais
+        </cite>
+      </div>
     </figcaption>
-</figure>
-<!-- ─────── CALCUL DES FRAIS EMPRUNT (v2-spicy) ──────────────────────────── -->
-<section
-  class="relative max-w-2xl mx-auto mt-10 mb-12 px-6 py-8
-         bg-white/80 dark:bg-slate-800 backdrop-blur
-         rounded-2xl shadow-lg ring-1 ring-gray-200 dark:ring-slate-700
-         animate-fadeIn">
+  </figure>
+  <!-- ─────── CALCUL DES FRAIS EMPRUNT (v2-spicy) ──────────────────────────── -->
+  <section
+    class="relative max-w-2xl mx-auto mt-10 mb-12 px-6 py-8 bg-white/80 dark:bg-slate-800 backdrop-blur rounded-2xl shadow-lg ring-1 ring-gray-200 dark:ring-slate-700 animate-fadeIn"
+  >
+    <!-- Gradient ribbon -->
+    <div
+      class="absolute -top-2 -left-2 right-0 h-2 rounded-t-2xl bg-gradient-to-r from-teal-400 via-emerald-500 to-lime-400"
+    ></div>
 
-  <!-- Gradient ribbon -->
-  <div class="absolute -top-2 -left-2 right-0 h-2 rounded-t-2xl
-              bg-gradient-to-r from-teal-400 via-emerald-500 to-lime-400"></div>
+    <!-- Faint pulse -->
+    <div
+      class="absolute inset-0 rounded-2xl pointer-events-none before:absolute before:inset-0 before:bg-emerald-400/10 before:blur-xl before:opacity-0 hover:before:opacity-100 before:transition-opacity"
+    ></div>
 
-  <!-- Faint pulse -->
-  <div class="absolute inset-0 rounded-2xl pointer-events-none
-              before:absolute before:inset-0 before:bg-emerald-400/10
-              before:blur-xl before:opacity-0 hover:before:opacity-100
-              before:transition-opacity"></div>
+    <h2
+      class="text-2xl font-extrabold text-gray-800 dark:text-white mb-6 flex items-center gap-2"
+    >
+      <svg
+        class="w-6 h-6 text-emerald-500"
+        stroke="currentColor"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"
+        />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M19.5 12A7.5 7.5 0 115.025 6.18"
+        />
+      </svg>
+      Estimation des frais
+    </h2>
 
-  <h2 class="text-2xl font-extrabold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-    <svg class="w-6 h-6 text-emerald-500" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"/>
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M19.5 12A7.5 7.5 0 115.025 6.18"/>
-    </svg>
-    Estimation des frais
-  </h2>
-
-  <!-- ── 1. Sélecteur de type de client ───────────────────────────── -->
-  <div class="mb-6">
-    <div class="inline-flex rounded-full bg-gray-100 dark:bg-slate-700 p-1 shadow-sm">
-      <button
-        (click)="isNewClient = true"
-        class="px-4 py-1.5 text-sm font-medium rounded-full transition
-               duration-200"
-        [ngClass]="isNewClient
-          ? 'bg-emerald-500 text-white shadow'
-          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
-        Nouveau
-      </button>
-      <button
-        (click)="isNewClient = false"
-        class="px-4 py-1.5 text-sm font-medium rounded-full transition
-               duration-200"
-        [ngClass]="!isNewClient
-          ? 'bg-emerald-500 text-white shadow'
-          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
-        Ancien
-      </button>
+    <!-- ── 1. Sélecteur de type de client ───────────────────────────── -->
+    <div class="mb-6">
+      <div
+        class="inline-flex rounded-full bg-gray-100 dark:bg-slate-700 p-1 shadow-sm"
+      >
+        <button
+          (click)="isNewClient = true"
+          class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
+          [ngClass]="
+            isNewClient
+              ? 'bg-emerald-500 text-white shadow'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+          "
+        >
+          Nouveau
+        </button>
+        <button
+          (click)="isNewClient = false"
+          class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
+          [ngClass]="
+            !isNewClient
+              ? 'bg-emerald-500 text-white shadow'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+          "
+        >
+          Ancien
+        </button>
+      </div>
     </div>
-  </div>
 
-  <!-- ── 2. Montant demandé ───────────────────────────────────────── -->
-  <div class="mb-8">
-    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-      Montant demandé (FC)
-    </label>
-    <input type="number" min="0" step="100" [(ngModel)]="loanAmount"
-           placeholder="0"
-           class="w-full rounded-lg border border-gray-300 dark:border-slate-600
-                  bg-gray-50 dark:bg-slate-700 p-3 text-gray-900
-                  focus:border-emerald-500 focus:ring-emerald-500
-                  transition-shadow shadow-inner">
-  </div>
-
-  <!-- ── 3. Résultats en temps réel ───────────────────────────────── -->
-  <ul class="space-y-2 text-gray-800 dark:text-gray-200">
-    <li class="flex items-center gap-2">
-      <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 8v4l3 3"/>
-      </svg>
-      <span class="flex-1">Frais de membre</span>
-      <strong>{{ memberFee | number:'1.0-0' }} FC</strong>
-    </li>
-
-    <li *ngIf="isNewClient" class="flex items-center gap-2">
-      <svg class="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M16 12H8m8 0l-3-3m3 3l-3 3"/>
-      </svg>
-      <span class="flex-1">Frais&nbsp;d’adhésion</span>
-      <strong>{{ adhesionFee | number:'1.0-0' }} FC</strong>
-    </li>
-
-    <li class="flex items-center gap-2">
-      <svg class="w-5 h-5 text-fuchsia-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17 9V7a5 5 0 00-10 0v2"/>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M5 12h14l1 9H4l1-9z"/>
-      </svg>
-      <span class="flex-1">Épargne obligatoire (30 %)</span>
-      <strong>{{ savingDeposit | number:'1.0-0' }} FC</strong>
-    </li>
-  </ul>
-
-  <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
-
- 
-
-  <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
-
-  <!-- ── 4. Projection de remboursement ───────────────────────────── -->
-  <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-1">
-    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 8v4l3 3"/>
-    </svg>
-    Projection de remboursement
-  </h3>
-
-  <!-- Sélecteur durée -->
-  <div class="mb-4">
-    <div class="inline-flex rounded-full bg-gray-100 dark:bg-slate-700 p-1 shadow-sm">
-      <button
-        (click)="repaymentWeeks = 4"
-        class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
-        [ngClass]="repaymentWeeks === 4
-          ? 'bg-indigo-500 text-white shadow'
-          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
-        4&nbsp;semaines&nbsp;(1&nbsp;mois)
-      </button>
-      <button
-        (click)="repaymentWeeks = 8"
-        class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
-        [ngClass]="repaymentWeeks === 8
-          ? 'bg-indigo-500 text-white shadow'
-          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'">
-        8&nbsp;semaines&nbsp;(2&nbsp;mois)
-      </button>
+    <!-- ── 2. Montant demandé ───────────────────────────────────────── -->
+    <div class="mb-8">
+      <label
+        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+      >
+        Montant demandé (FC)
+      </label>
+      <input
+        type="number"
+        min="0"
+        step="100"
+        [(ngModel)]="loanAmount"
+        placeholder="0"
+        class="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 p-3 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500 transition-shadow shadow-inner"
+      />
     </div>
-  </div>
 
-  <!-- Résumé chiffres -->
-  <ul class="space-y-2 text-gray-800 dark:text-gray-200">
+    <!-- ── 3. Résultats en temps réel ───────────────────────────────── -->
+    <ul class="space-y-2 text-gray-800 dark:text-gray-200">
+      <li class="flex items-center gap-2">
+        <svg
+          class="w-5 h-5 text-amber-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8v4l3 3"
+          />
+        </svg>
+        <span class="flex-1">Frais de membre</span>
+        <strong>{{ memberFee | number : "1.0-0" }} FC</strong>
+      </li>
 
-    <li class="flex items-center gap-2">
-      <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 12h16M4 12l4 4m-4-4l4-4"/>
+      <li *ngIf="isNewClient" class="flex items-center gap-2">
+        <svg
+          class="w-5 h-5 text-sky-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M16 12H8m8 0l-3-3m3 3l-3 3"
+          />
+        </svg>
+        <span class="flex-1">Frais&nbsp;d’adhésion</span>
+        <strong>{{ adhesionFee | number : "1.0-0" }} FC</strong>
+      </li>
+
+      <li class="flex items-center gap-2">
+        <svg
+          class="w-5 h-5 text-fuchsia-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 9V7a5 5 0 00-10 0v2"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 12h14l1 9H4l1-9z"
+          />
+        </svg>
+        <span class="flex-1">Épargne obligatoire (30 %)</span>
+        <strong>{{ savingDeposit | number : "1.0-0" }} FC</strong>
+      </li>
+    </ul>
+
+    <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600" />
+
+    <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600" />
+
+    <!-- ── 4. Projection de remboursement ───────────────────────────── -->
+    <h3
+      class="text-lg font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-1"
+    >
+      <svg
+        class="w-5 h-5 text-indigo-500"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M12 8v4l3 3"
+        />
       </svg>
-      <span class="flex-1">Total à rembourser</span>
-      <strong>{{ totalRepay | number:'1.0-0' }} FC</strong>
-    </li>
-    <li class="flex items-center gap-2">
-      <svg class="w-5 h-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3"/>
-      </svg>
-      <span class="flex-1">Paiement hebdomadaire (×{{ repaymentWeeks }})</span>
-      <strong>{{ weeklyRepay | number:'1.0-0' }} FC</strong>
-    </li>
-  </ul>
+      Projection de remboursement
+    </h3>
 
-  <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600">
+    <!-- Sélecteur durée -->
+    <div class="mb-4">
+      <div
+        class="inline-flex rounded-full bg-gray-100 dark:bg-slate-700 p-1 shadow-sm"
+      >
+        <button
+          (click)="repaymentWeeks = 4"
+          class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
+          [ngClass]="
+            repaymentWeeks === 4
+              ? 'bg-indigo-500 text-white shadow'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+          "
+        >
+          4&nbsp;semaines&nbsp;(1&nbsp;mois)
+        </button>
+        <button
+          (click)="repaymentWeeks = 8"
+          class="px-4 py-1.5 text-sm font-medium rounded-full transition duration-200"
+          [ngClass]="
+            repaymentWeeks === 8
+              ? 'bg-indigo-500 text-white shadow'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+          "
+        >
+          8&nbsp;semaines&nbsp;(2&nbsp;mois)
+        </button>
+      </div>
+    </div>
 
-  <!-- ── 5. Total initial (frais + épargne) ──────────────────────── -->
-  <p class="flex items-center justify-between text-lg font-extrabold dark:text-white">
-    <span class="flex items-center gap-2">
-      <svg class="w-6 h-6 text-green-600 animate-bounce-slow"
-           fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M19.5 12A7.5 7.5 0 115.025 6.18"/>
-      </svg>
-      Total frais initiaux
-    </span>
-    {{ totalToPay | number:'1.0-0' }} FC
-  </p>
-</section>
-<!-- ─────── FIN ──────────────────────────────────────────────────────────── -->
+    <!-- Résumé chiffres -->
+    <ul class="space-y-2 text-gray-800 dark:text-gray-200">
+      <li class="flex items-center gap-2">
+        <svg
+          class="w-5 h-5 text-emerald-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 12h16M4 12l4 4m-4-4l4-4"
+          />
+        </svg>
+        <span class="flex-1">Total à rembourser</span>
+        <strong>{{ totalRepay | number : "1.0-0" }} FC</strong>
+      </li>
+      <li class="flex items-center gap-2">
+        <svg
+          class="w-5 h-5 text-cyan-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3"
+          />
+        </svg>
+        <span class="flex-1"
+          >Paiement hebdomadaire (×{{ repaymentWeeks }})</span
+        >
+        <strong>{{ weeklyRepay | number : "1.0-0" }} FC</strong>
+      </li>
+    </ul>
 
+    <hr class="my-4 border-dashed border-gray-300 dark:border-slate-600" />
 
-    <!-- <p class="mb-3 text-lg text-gray-500 md:text-xl dark:text-gray-400 mx-4"> Notre Mission:  Aider les petits vendeurs locaux à obtenir des crédits pour gérer leur entreprise afin d'augmenter leur production et de développer leur activité.
+    <!-- ── 5. Total initial (frais + épargne) ──────────────────────── -->
+    <p
+      class="flex items-center justify-between text-lg font-extrabold dark:text-white"
+    >
+      <span class="flex items-center gap-2">
+        <svg
+          class="w-6 h-6 text-green-600 animate-bounce-slow"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8c-1.657 0-3 1.567-3 3.5S10.343 15 12 15s3-1.567 3-3.5S13.657 8 12 8z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19.5 12A7.5 7.5 0 115.025 6.18"
+          />
+        </svg>
+        Total frais initiaux
+      </span>
+      {{ totalToPay | number : "1.0-0" }} FC
+    </p>
+  </section>
+  <!-- ─────── FIN ──────────────────────────────────────────────────────────── -->
+
+  <!-- <p class="mb-3 text-lg text-gray-500 md:text-xl dark:text-gray-400 mx-4"> Notre Mission:  Aider les petits vendeurs locaux à obtenir des crédits pour gérer leur entreprise afin d'augmenter leur production et de développer leur activité.
     </p>
     <p class="text-gray-500 dark:text-gray-400 mx-4">Track work across the enterprise through an open, collaborative platform. Link issues across Jira and ingest data from other software development tools, so your IT support and operations teams have richer contextual information to rapidly respond to requests, incidents, and changes.</p> -->
-    <div class="my-6"></div>
+  <div class="my-6"></div>
 
-    <div  id="accordion-nested-parent" data-accordion="collapse">
-        <h2 id="accordion-collapse-heading-1">
-          <button (click)="toggle('system')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-1" aria-expanded="true" aria-controls="accordion-collapse-body-1">
-            <span>Comment Utiliser Le Système?</span>
-            <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-            </svg>
-          </button>
-        </h2>
-        <div *ngIf="system" id="accordion-collapse-body-1"  aria-labelledby="accordion-collapse-heading-1">
-          <div class="p-5  border border-b-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900">
-            <p class="mb-2 text-gray-500 dark:text-gray-400">Voici des vidéos expliquant comment utiliser le système. Ceci est un résumé. Pour plus d'informations et questions pertinentes, envoyez-moi un message ou appelez-moi sur <a class="text-blue-500 underline" href="https://wa.me/12156877614" target="_blank"> WhatsApp (+12156877614)</a>.
-            </p>
-           
-            <!-- Nested accordion -->
-            <div id="accordion-nested-collapse" data-accordion="collapse">
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('intro')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Introduction</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="intro" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fintro-system.mp4?alt=media&token=bc0efcbb-affb-43d4-ae48-da01559b9228" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('register')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Enregister Client & Client Complet</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="register" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fenregister-client.mp4?alt=media&token=5a0ad323-fa97-4fdf-8fe0-900836b7ff10" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('clientPayment')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Client Paiement</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="clientPayment" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fpayment-client.mp4?alt=media&token=f147a8bd-a90d-4d39-8eca-9ea66f55bb13" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
+  <div id="accordion-nested-parent" data-accordion="collapse">
+    <h2 id="accordion-collapse-heading-1">
+      <button
+        (click)="toggle('system')"
+        type="button"
+        class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 rounded-t-xl focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+        data-accordion-target="#accordion-collapse-body-1"
+        aria-expanded="true"
+        aria-controls="accordion-collapse-body-1"
+      >
+        <span>Comment Utiliser Le Système?</span>
+        <svg
+          data-accordion-icon
+          class="w-3 h-3 rotate-180 shrink-0"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 10 6"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5 5 1 1 5"
+          />
+        </svg>
+      </button>
+    </h2>
+    <div
+      *ngIf="system"
+      id="accordion-collapse-body-1"
+      aria-labelledby="accordion-collapse-heading-1"
+    >
+      <div
+        class="p-5 border border-b-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900"
+      >
+        <p class="mb-2 text-gray-500 dark:text-gray-400">
+          Voici des vidéos expliquant comment utiliser le système. Ceci est un
+          résumé. Pour plus d'informations et questions pertinentes, envoyez-moi
+          un message ou appelez-moi sur
+          <a
+            class="text-blue-500 underline"
+            href="https://wa.me/12156877614"
+            target="_blank"
+          >
+            WhatsApp (+12156877614)</a
+          >.
+        </p>
 
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('card')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Carte</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="card" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fcarte.MP4?alt=media&token=32f7d0c6-5dc5-4f67-9d07-844cc7a6ef80" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('cardReturn')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Retrait Carte & Nouveau Cycle</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="cardReturn" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fcarte-retrait-nouveau-cycle.mp4?alt=media&token=95f81fcc-8b8e-41c2-af80-c00241f64bc0" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('moneyInHands')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Argent en Main</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="moneyInHands" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fargent-en-main.mp4?alt=media&token=2aa45289-0b6e-44c9-a9f7-ac0ca4f2e3df" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('dailyActivity')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Activité Du Jour</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="dailyActivity" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Factivite-du-jour.mp4?alt=media&token=3f438f02-224c-4b3a-9728-3977457bd0fb" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('moneyRequested')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Argent Demander</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="moneyRequested" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fargent-demander.mp4?alt=media&token=d00843a2-09db-43b2-8931-c3f968a2aafa" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-
-              <h2 id="accordion-nested-collapse-heading-1">
-                <button (click)="toggle('reserveSummary')" type="button" class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-nested-collapse-body-1" aria-expanded="false" aria-controls="accordion-nested-collapse-body-1">
-                  <span>Reserve Et Resume</span>
-                 <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                  </svg>
-                </button>
-              </h2>
-              <div *ngIf="reserveSummary" id="accordion-nested-collapse-body-1" aria-labelledby="accordion-nested-collapse-heading-1">
-                <div class="p-5 border border-b-0 border-gray-200 dark:border-gray-700">
-                  <video class="w-auto lg:w-96" autoplay controls>
-                    <source src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Freserve-et-resume.mp4?alt=media&token=f02cc445-f508-4e36-876f-8c0901d839b7" type="video/mp4">
-                    Your browser does not support the video tag.
-                  </video>
-                  <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
-                </div>
-              </div>
-      
-            </div>
-            <!-- End: Nested accordion -->
-          </div>
-        </div>
-        <h2 id="accordion-collapse-heading-2">
-          <button (click)="toggle('payment')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-2" aria-expanded="false" aria-controls="accordion-collapse-body-2">
-            <span>Paiement et Bonus</span>
-            <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-            </svg>
-          </button>
-        </h2>
-        <div *ngIf="payment" id="accordion-collapse-body-2"  aria-labelledby="accordion-collapse-heading-2">
-          <div class="p-5 border border-gray-200 dark:border-gray-700">
-            <!-- Calendrier des versements -->
-              <p class="text-base md:text-lg font-medium text-center text-slate-800  space-y-2">
-                <span class="flex items-center justify-center gap-1">
-                  <!-- Icon calendrier -->
-                  <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M6 2a1 1 0 100 2h1v2h2V4h6v2h2V4h1a1 1 0 100-2H6zM3 8a2 2 0 012-2h14a2 2 0 012 2v12a2
-                            2 0 01-2 2H5a2 2 0 01-2-2V8zm2 2v10h14V10H5z"/>
-                  </svg>
-                  Salaires : <span class="font-extrabold text-red-600">1<sup>er</sup></span> de chaque mois
-                  <em class="text-xs opacity-70">(ou la veille si week-end)</em>
-                </span>
-                <br>
-                <span class="flex items-center justify-center gap-1">
-                  <!-- Icon cadeau -->
-                  <svg class="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 12v8a2 2 0 01-2 2h-6v-6h8zm-8 0H4v8a2 2 0 002 2h6v-6zm0-2V4h6a2 2 0
-                            012 2v4h-8zm-2-6H6a2 2 0 00-2 2v4h8V4z"/>
-                  </svg>
-                  Bonus : <span class="font-extrabold text-red-600">15</span> de chaque mois
-                  <em class="text-xs opacity-70">(ou la veille si week-end)</em>
-                </span>
-              </p>
-
-       <!-- ░░░ BARÈME PAIEMENT & BONUS — MANAGER 15 K+ ░░░ -->
-          <div *ngIf="auth.isAdmninistrator || auth.isDistributor"
-              class="max-w-2xl mx-auto my-6">
-
-            <div
-              class="rounded-2xl overflow-hidden shadow-lg
-                    ring-1 ring-amber-200 dark:ring-amber-700
-                    bg-gradient-to-br from-white via-amber-50 to-amber-100
-                    dark:from-slate-800 dark:via-slate-800/70 dark:to-slate-900/60">
-
-              <!-- Ruban titre -->
-              <h2
-                class="bg-amber-600/10 dark:bg-amber-900/40
-                      text-amber-800 dark:text-amber-200
-                      text-center py-3 text-sm font-bold tracking-wide
-                      flex items-center justify-center gap-1">
-                <!-- Icône trophée -->
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17 4V2H7v2H3v5a5 5 0 005 5v2H6v2h12v-2h-2v-2a5 5 0 005-5V4h-4zm0
-                          5a3 3 0 01-3 3h-4a3 3 0 01-3-3V6h10v3z"/>
-                </svg>
-                Bonus Pourcentage Distribution
-                <!-- Barème Paiement&nbsp;&amp;&nbsp;Bonus — Managers 15 K+ -->
-              </h2>
-
-              <!-- Tableau -->
-              <div class="overflow-x-auto bg-white dark:bg-slate-800">
-                <table
-                  class="min-w-full text-xs md:text-sm
-                        text-slate-700 dark:text-slate-200 border-collapse">
-                  <thead
-                    class="uppercase tracking-wider bg-slate-100 dark:bg-slate-700/60">
-                    <tr>
-                      <th class="px-4 py-3 text-left rounded-l-lg">Rôle</th>
-                      <!-- <th class="px-4 py-3 text-left">Base</th> -->
-                      <th class="px-4 py-3 text-left">Bonus 1.6–2 %</th>
-                      <th class="px-4 py-3 text-left">Bonus 1.1–1.5 %</th>
-                      <th class="px-4 py-3 text-left">Bonus 0.6–1 %</th>
-                      <th class="px-4 py-3 text-left rounded-r-lg">Bonus 0–0.5 %</th>
-                    </tr>
-                  </thead>
-
-                  <tbody
-                    class="[&>tr:nth-child(even)]:bg-slate-50
-                          dark:[&>tr:nth-child(even)]:bg-slate-800/50
-                          hover:[&>tr]:bg-amber-50
-                          dark:hover:[&>tr]:bg-slate-700/50">
-               
-                    <tr>
-                      <td class="px-4 py-3 font-medium">Audit Team</td>
-                      <!-- <td class="px-4 py-3">100&nbsp;$</td> -->
-                      <td class="px-4 py-3">10&nbsp;$</td>
-                      <td class="px-4 py-3">15&nbsp;$</td>
-                      <td class="px-4 py-3">20&nbsp;$</td>
-                      <td class="px-4 py-3">30&nbsp;$</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-          <!-- ░░░ FIN BARÈME ░░░ -->
-
-              
-
-        
-            
-                        <!-- ░░░ SALAIRE ET BONUS STRUCTURE ░░░ -->
-          <!-- ░░░ STRUCTURE DE SALAIRE & BONUS ░░░ -->
-            <div
-              class="max-w-2xl mx-auto my-6
-                    rounded-2xl overflow-hidden shadow-lg
-                    ring-1 ring-indigo-200 dark:ring-slate-700
-                    bg-gradient-to-br from-white via-indigo-50 to-indigo-100
-                    dark:from-slate-800 dark:via-slate-800/70 dark:to-slate-900/60 p-6">
-
-              <!-- Ruban titre -->
-              <h1
-                class="text-xl font-extrabold mb-6 text-center tracking-wide
-                      text-indigo-800 dark:text-indigo-200 relative">
-                Structure de Salaire & Bonus
-              </h1>
-
-              <div class="overflow-x-auto">
-                <table
-                  class="min-w-full text-sm text-gray-700 dark:text-gray-200
-                        border-collapse">
-                  <thead>
-                    <tr
-                      class="bg-indigo-100/70 dark:bg-indigo-900/40 text-left
-                            uppercase text-xs font-semibold tracking-wider">
-                      <th class="px-4 py-3 rounded-l-lg">Rôle</th>
-                      <th class="px-4 py-3">Salaire initial</th>
-                      <th class="px-4 py-3">Après 3&nbsp;mois</th>
-                      <th class="px-4 py-3 rounded-r-lg">Augmentation annuelle</th>
-                    </tr>
-                  </thead>
-
-                  <!-- Manager -->
-                  <tr class="odd:bg-white even:bg-indigo-50/40 dark:odd:bg-slate-800 dark:even:bg-slate-800/50 hover:brightness-105">
-                    <td class="px-4 py-3 font-medium">Manager</td>
-                    <td class="px-4 py-3">80&nbsp;$</td>
-                    <td class="px-4 py-3 flex items-center gap-1">
-                      100&nbsp;$
-                      <svg class="w-4 h-4 text-emerald-500" fill="currentColor"
-                        viewBox="0 0 24 24">
-                        <path d="M5 12l7-7 7 7H5z" />
-                      </svg>
-                    </td>
-                    <td class="px-4 py-3">+10&nbsp;$&nbsp;/ an</td>
-                  </tr>
-
-                  <!-- Agent Marketing -->
-                  <tr class="odd:bg-white even:bg-indigo-50/40 dark:odd:bg-slate-800 dark:even:bg-slate-800/50 hover:brightness-105">
-                    <td class="px-4 py-3 font-medium">Agent Marketing</td>
-                    <td class="px-4 py-3">70&nbsp;$</td>
-                    <td class="px-4 py-3 flex items-center gap-1">
-                      90&nbsp;$
-                      <svg class="w-4 h-4 text-emerald-500" fill="currentColor"
-                        viewBox="0 0 24 24">
-                        <path d="M5 12l7-7 7 7H5z" />
-                      </svg>
-                    </td>
-                    <td class="px-4 py-3">+10&nbsp;$&nbsp;/ an</td>
-                  </tr>
-                </table>
-              </div>
-
-              <!-- Légende -->
-              <p
-                class="mt-4 text-xs text-gray-600 dark:text-gray-400 text-center">
-                <em>Les flèches signalent les paliers de progression : tout effort
-                régulier est récompensé !</em>
-              </p>
-            </div>
-            <!-- ░░░ FIN STRUCTURE ░░░ -->
-
-
-      <!-- ░░░ BONUS MENSUEL : PLUS TU PERFORMES, PLUS TU GAGNES ░░░ -->
-            <h2 class="text-lg font-semibold text-gray-800 mb-4 text-center mx-auto">
-              Bonus mensuel : « Mieux tu performes, plus tu gagnes »
-            </h2>
-
-          <div class="overflow-x-auto mb-6 max-w-2xl mx-auto">
-            <table
-              class="min-w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600">
-              <thead
-                class="bg-gray-100 dark:bg-slate-700/60 text-left text-xs font-semibold uppercase tracking-wider">
-                <tr>
-                  <th class="px-4 py-3">Pourcentage de performance</th>
-                  <th class="px-4 py-3">Indicateur</th>
-                  <th class="px-4 py-3">Bonus ($)</th>
-                </tr>
-              </thead>
-
-              <!-- 50 % -->
-              <tr
-                class="bg-green-50 dark:bg-green-900 border-b hover:bg-green-700">
-                <td class="px-4 py-3 font-medium">50 %</td>
-                <td class="px-4 py-3">
-                  <div class="w-44 h-2 bg-green-200 rounded">
-                    <div class="h-full bg-green-500 rounded" style="width:50%"></div>
-                  </div>
-                </td>
-                <td
-                  class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1">
-                  10 $
-                  <!-- flèche ↑ -->
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
-                  </svg>
-                </td>
-              </tr>
-
-              <!-- 60 % -->
-              <tr
-                class="bg-green-100 dark:bg-green-900 border-b hover:bg-green-7000">
-                <td class="px-4 py-3 font-medium">60 %</td>
-                <td class="px-4 py-3">
-                  <div class="w-44 h-2 bg-green-200 rounded">
-                    <div class="h-full bg-green-500 rounded" style="width:60%"></div>
-                  </div>
-                </td>
-                <td
-                  class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1">
-                  20 $
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
-                  </svg>
-                </td>
-              </tr>
-
-              <!-- 70 % -->
-              <tr
-                class="bg-green-200 dark:bg-green-900 border-b hover:bg-green-700">
-                <td class="px-4 py-3 font-medium">70 %</td>
-                <td class="px-4 py-3">
-                  <div class="w-44 h-2 bg-green-200 rounded">
-                    <div class="h-full bg-green-500 rounded" style="width:70%"></div>
-                  </div>
-                </td>
-                <td
-                  class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1">
-                  40 $
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
-                  </svg>
-                </td>
-              </tr>
-
-              <!-- 80 % -->
-              <tr
-                class="bg-green-300 dark:bg-green-900 border-b hover:bg-green-700">
-                <td class="px-4 py-3 font-medium">80 %</td>
-                <td class="px-4 py-3">
-                  <div class="w-44 h-2 bg-green-200 rounded">
-                    <div class="h-full bg-green-500 rounded" style="width:80%"></div>
-                  </div>
-                </td>
-                <td
-                  class="px-4 py-3 font-semibold text-green-800 dark:text-green-200 flex items-center gap-1">
-                  80 $
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
-                  </svg>
-                </td>
-              </tr>
-
-              <!-- 90 % -->
-              <tr
-                class="bg-green-400 dark:bg-green-900 border-b hover:bg-green-700">
-                <td class="px-4 py-3 font-medium">90 %</td>
-                <td class="px-4 py-3">
-                  <div class="w-44 h-2 bg-green-200 rounded">
-                    <div class="h-full bg-green-600 rounded" style="width:90%"></div>
-                  </div>
-                </td>
-                <td
-                  class="px-4 py-3 font-semibold text-green-900 dark:text-green-100 flex items-center gap-1">
-                  100 $
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
-                  </svg>
-                </td>
-              </tr>
-
-              <!-- 100 % -->
-              <tr class="bg-green-500 dark:bg-green-800 hover:bg-green-600 text-white">
-                <td class="px-4 py-3 font-medium">100 %</td>
-                <td class="px-4 py-3">
-                  <div class="w-44 h-2 bg-green-200 rounded">
-                    <div class="h-full bg-green-700 rounded" style="width:100%"></div>
-                  </div>
-                </td>
-                <td class="px-4 py-3 font-bold flex items-center gap-1">
-                  120 $
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 fill-current"
-                    viewBox="0 0 24 24">
-                    <path
-                      d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z" />
-                  </svg>
-                </td>
-              </tr>
-            </table>
-          </div>
-<!-- ░░░ FIN BONUS ░░░ -->
-
-
-       <!-- ░░░ CONDITIONS D’ÉLIGIBILITÉ ░░░ -->
-          <div
-            class="mt-6 px-4 py-3 rounded-lg max-w-2xl mx-auto text-center
-                  bg-emerald-50 dark:bg-emerald-900/20
-                  ring-1 ring-emerald-300 dark:ring-emerald-700
-                  shadow-sm space-y-2 text-sm">
-
-            <!-- Manager -->
-            <p class="flex items-center gap-2 text-emerald-800">
-              <!-- Icône 👥 -->
-              <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M5 20v-2c0-1.1.9-2 2-2h10a2 2 0 012 2v2"/>
-                <circle cx="12" cy="8" r="4"/>
-              </svg>
-              <span>
-                <strong>Bonus Manager</strong> : déclenché dès que l’équipe atteint
-                <span class="font-extrabold text-emerald-600 ">50&nbsp;personnes</span>
-                ou plus.
-              </span>
-            </p>
-
-            <!-- Agent marketing -->
-            <p class="flex items-center gap-2 text-emerald-800 ">
-              <!-- Icône 🎯 -->
-              <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a6 6 0 110 12A6 6 0 0112 6zm0 2a4 4 0 100 8 4 4 0 000-8z"/>
-              </svg>
-              <span>
-                <strong>Bonus Agent Marketing</strong> : actif si l’agent gère au moins
-                <span class="font-extrabold text-emerald-6000">25&nbsp;clients</span>.
-              </span>
-            </p>
-          </div>
-<!-- ░░░ FIN CONDITIONS ░░░ -->
-
-
-      
-      
-          </div>
-        </div>
-
-
-
-        <h2 id="accordion-collapse-heading-2">
-            <button (click)="toggle('best')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-2" aria-expanded="false" aria-controls="accordion-collapse-body-2">
-              <span>Critères pour être la meilleure Equipe, Employé, et Client(e)</span>
-              <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
+        <!-- Nested accordion -->
+        <div id="accordion-nested-collapse" data-accordion="collapse">
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('intro')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Introduction</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
               </svg>
             </button>
           </h2>
-        <!-- ░░░ AWARDS / BEST-OF SHOWCASE ░░░ -->
+          <div
+            *ngIf="intro"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
             <div
-              *ngIf="best"
-              id="accordion-collapse-body-2"
-              aria-labelledby="accordion-collapse-heading-2"
-              class="mx-auto my-8 w-full max-w-3xl rounded-3xl bg-white/70 shadow-xl ring-4 ring-indigo-100/60
-                    backdrop-blur-md transition-all duration-300
-                    dark:bg-slate-800 dark:ring-indigo-500/30">
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fintro-system.mp4?alt=media&token=bc0efcbb-affb-43d4-ae48-da01559b9228"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('register')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Enregister Client & Client Complet</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="register"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fenregister-client.mp4?alt=media&token=5a0ad323-fa97-4fdf-8fe0-900836b7ff10"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('clientPayment')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Client Paiement</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="clientPayment"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fpayment-client.mp4?alt=media&token=f147a8bd-a90d-4d39-8eca-9ea66f55bb13"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
 
-              <!-- Decorative gradient bar -->
-              <div class="h-2 rounded-t-3xl bg-gradient-to-r from-indigo-500 via-emerald-500 to-pink-500"></div>
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('card')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Carte</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="card"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fcarte.MP4?alt=media&token=32f7d0c6-5dc5-4f67-9d07-844cc7a6ef80"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
 
-              <div class="space-y-10 px-8 py-10 sm:px-12">
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('cardReturn')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Retrait Carte & Nouveau Cycle</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="cardReturn"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fcarte-retrait-nouveau-cycle.mp4?alt=media&token=95f81fcc-8b8e-41c2-af80-c00241f64bc0"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
 
-                <!-- ░░ Best Employee ░░ -->
-                <section class="space-y-3">
-                  <h2
-                    class="flex items-center gap-2 text-2xl font-extrabold text-indigo-600 dark:text-indigo-300">
-                    <span class="inline-block animate-bounce">🏅</span>
-                    Meilleure Employée
-                  </h2>
-                  <p
-                    class="rounded-lg bg-indigo-50 px-4 py-2 text-sm text-indigo-800 shadow
-                          dark:bg-indigo-900/40 dark:text-indigo-200">
-                    Critère&nbsp;: Employé ayant collecté le plus grand montant de paiements clients, en excluant les transferts d’épargne vers paiements.
-                  
-                  </p>
-                </section>
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('moneyInHands')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Argent en Main</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="moneyInHands"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fargent-en-main.mp4?alt=media&token=2aa45289-0b6e-44c9-a9f7-ac0ca4f2e3df"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
 
-                <!-- ░░ Best Manager ░░ -->
-                <!-- <section class="space-y-3">
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('dailyActivity')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Activité Du Jour</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="dailyActivity"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Factivite-du-jour.mp4?alt=media&token=3f438f02-224c-4b3a-9728-3977457bd0fb"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
+
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('moneyRequested')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Argent Demander</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="moneyRequested"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Fargent-demander.mp4?alt=media&token=d00843a2-09db-43b2-8931-c3f968a2aafa"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
+
+          <h2 id="accordion-nested-collapse-heading-1">
+            <button
+              (click)="toggle('reserveSummary')"
+              type="button"
+              class="flex items-center justify-between w-full p-5 rounded-t-xl font-medium rtl:text-right text-gray-500 border border-b-0 border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+              data-accordion-target="#accordion-nested-collapse-body-1"
+              aria-expanded="false"
+              aria-controls="accordion-nested-collapse-body-1"
+            >
+              <span>Reserve Et Resume</span>
+              <svg
+                data-accordion-icon
+                class="w-3 h-3 rotate-180 shrink-0"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 10 6"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5 5 1 1 5"
+                />
+              </svg>
+            </button>
+          </h2>
+          <div
+            *ngIf="reserveSummary"
+            id="accordion-nested-collapse-body-1"
+            aria-labelledby="accordion-nested-collapse-heading-1"
+          >
+            <div
+              class="p-5 border border-b-0 border-gray-200 dark:border-gray-700"
+            >
+              <video class="w-auto lg:w-96" autoplay controls>
+                <source
+                  src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/videos%2Freserve-et-resume.mp4?alt=media&token=f02cc445-f508-4e36-876f-8c0901d839b7"
+                  type="video/mp4"
+                />
+                Your browser does not support the video tag.
+              </video>
+              <!-- <p class="text-gray-500 dark:text-gray-400">The main difference is that the core components from Flowbite are open source under the MIT license, whereas Tailwind UI is a paid product.</p> -->
+            </div>
+          </div>
+        </div>
+        <!-- End: Nested accordion -->
+      </div>
+    </div>
+    <h2 id="accordion-collapse-heading-2">
+      <button
+        (click)="toggle('payment')"
+        type="button"
+        class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+        data-accordion-target="#accordion-collapse-body-2"
+        aria-expanded="false"
+        aria-controls="accordion-collapse-body-2"
+      >
+        <span>Paiement et Bonus</span>
+        <svg
+          data-accordion-icon
+          class="w-3 h-3 rotate-180 shrink-0"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 10 6"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5 5 1 1 5"
+          />
+        </svg>
+      </button>
+    </h2>
+    <div
+      *ngIf="payment"
+      id="accordion-collapse-body-2"
+      aria-labelledby="accordion-collapse-heading-2"
+    >
+      <div class="p-5 border border-gray-200 dark:border-gray-700">
+        <!-- Calendrier des versements -->
+        <p
+          class="text-base md:text-lg font-medium text-center text-slate-800 space-y-2"
+        >
+          <span class="flex items-center justify-center gap-1">
+            <!-- Icon calendrier -->
+            <svg
+              class="w-5 h-5 text-rose-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M6 2a1 1 0 100 2h1v2h2V4h6v2h2V4h1a1 1 0 100-2H6zM3 8a2 2 0 012-2h14a2 2 0 012 2v12a2
+                            2 0 01-2 2H5a2 2 0 01-2-2V8zm2 2v10h14V10H5z"
+              />
+            </svg>
+            Salaires :
+            <span class="font-extrabold text-red-600">1<sup>er</sup></span> de
+            chaque mois
+            <em class="text-xs opacity-70">(ou la veille si week-end)</em>
+          </span>
+          <br />
+          <span class="flex items-center justify-center gap-1">
+            <!-- Icon cadeau -->
+            <svg
+              class="w-5 h-5 text-amber-500"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M20 12v8a2 2 0 01-2 2h-6v-6h8zm-8 0H4v8a2 2 0 002 2h6v-6zm0-2V4h6a2 2 0
+                            012 2v4h-8zm-2-6H6a2 2 0 00-2 2v4h8V4z"
+              />
+            </svg>
+            Bonus : <span class="font-extrabold text-red-600">15</span> de
+            chaque mois
+            <em class="text-xs opacity-70">(ou la veille si week-end)</em>
+          </span>
+        </p>
+
+        <!-- ░░░ BARÈME PAIEMENT & BONUS — MANAGER 15 K+ ░░░ -->
+        <div
+          *ngIf="auth.isAdmninistrator || auth.isDistributor"
+          class="max-w-2xl mx-auto my-6"
+        >
+          <div
+            class="rounded-2xl overflow-hidden shadow-lg ring-1 ring-amber-200 dark:ring-amber-700 bg-gradient-to-br from-white via-amber-50 to-amber-100 dark:from-slate-800 dark:via-slate-800/70 dark:to-slate-900/60"
+          >
+            <!-- Ruban titre -->
+            <h2
+              class="bg-amber-600/10 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-center py-3 text-sm font-bold tracking-wide flex items-center justify-center gap-1"
+            >
+              <!-- Icône trophée -->
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M17 4V2H7v2H3v5a5 5 0 005 5v2H6v2h12v-2h-2v-2a5 5 0 005-5V4h-4zm0
+                          5a3 3 0 01-3 3h-4a3 3 0 01-3-3V6h10v3z"
+                />
+              </svg>
+              Bonus Pourcentage Distribution
+              <!-- Barème Paiement&nbsp;&amp;&nbsp;Bonus — Managers 15 K+ -->
+            </h2>
+
+            <!-- Tableau -->
+            <div class="overflow-x-auto bg-white dark:bg-slate-800">
+              <table
+                class="min-w-full text-xs md:text-sm text-slate-700 dark:text-slate-200 border-collapse"
+              >
+                <thead
+                  class="uppercase tracking-wider bg-slate-100 dark:bg-slate-700/60"
+                >
+                  <tr>
+                    <th class="px-4 py-3 text-left rounded-l-lg">Rôle</th>
+                    <!-- <th class="px-4 py-3 text-left">Base</th> -->
+                    <th class="px-4 py-3 text-left">Bonus 1.6–2 %</th>
+                    <th class="px-4 py-3 text-left">Bonus 1.1–1.5 %</th>
+                    <th class="px-4 py-3 text-left">Bonus 0.6–1 %</th>
+                    <th class="px-4 py-3 text-left rounded-r-lg">
+                      Bonus 0–0.5 %
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody
+                  class="[&>tr:nth-child(even)]:bg-slate-50 dark:[&>tr:nth-child(even)]:bg-slate-800/50 hover:[&>tr]:bg-amber-50 dark:hover:[&>tr]:bg-slate-700/50"
+                >
+                  <tr>
+                    <td class="px-4 py-3 font-medium">Audit Team</td>
+                    <!-- <td class="px-4 py-3">100&nbsp;$</td> -->
+                    <td class="px-4 py-3">10&nbsp;$</td>
+                    <td class="px-4 py-3">15&nbsp;$</td>
+                    <td class="px-4 py-3">20&nbsp;$</td>
+                    <td class="px-4 py-3">30&nbsp;$</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- ░░░ FIN BARÈME ░░░ -->
+
+        <!-- ░░░ SALAIRE ET BONUS STRUCTURE ░░░ -->
+        <!-- ░░░ STRUCTURE DE SALAIRE & BONUS ░░░ -->
+        <div
+          class="max-w-2xl mx-auto my-6 rounded-2xl overflow-hidden shadow-lg ring-1 ring-indigo-200 dark:ring-slate-700 bg-gradient-to-br from-white via-indigo-50 to-indigo-100 dark:from-slate-800 dark:via-slate-800/70 dark:to-slate-900/60 p-6"
+        >
+          <!-- Ruban titre -->
+          <h1
+            class="text-xl font-extrabold mb-6 text-center tracking-wide text-indigo-800 dark:text-indigo-200 relative"
+          >
+            Structure de Salaire & Bonus
+          </h1>
+
+          <div class="overflow-x-auto">
+            <table
+              class="min-w-full text-sm text-gray-700 dark:text-gray-200 border-collapse"
+            >
+              <thead>
+                <tr
+                  class="bg-indigo-100/70 dark:bg-indigo-900/40 text-left uppercase text-xs font-semibold tracking-wider"
+                >
+                  <th class="px-4 py-3 rounded-l-lg">Rôle</th>
+                  <th class="px-4 py-3">Salaire initial</th>
+                  <th class="px-4 py-3">Après 3&nbsp;mois</th>
+                  <th class="px-4 py-3 rounded-r-lg">Augmentation annuelle</th>
+                </tr>
+              </thead>
+
+              <!-- Manager -->
+              <tr
+                class="odd:bg-white even:bg-indigo-50/40 dark:odd:bg-slate-800 dark:even:bg-slate-800/50 hover:brightness-105"
+              >
+                <td class="px-4 py-3 font-medium">Manager</td>
+                <td class="px-4 py-3">80&nbsp;$</td>
+                <td class="px-4 py-3 flex items-center gap-1">
+                  100&nbsp;$
+                  <svg
+                    class="w-4 h-4 text-emerald-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M5 12l7-7 7 7H5z" />
+                  </svg>
+                </td>
+                <td class="px-4 py-3">+10&nbsp;$&nbsp;/ an</td>
+              </tr>
+
+              <!-- Agent Marketing -->
+              <tr
+                class="odd:bg-white even:bg-indigo-50/40 dark:odd:bg-slate-800 dark:even:bg-slate-800/50 hover:brightness-105"
+              >
+                <td class="px-4 py-3 font-medium">Agent Marketing</td>
+                <td class="px-4 py-3">70&nbsp;$</td>
+                <td class="px-4 py-3 flex items-center gap-1">
+                  90&nbsp;$
+                  <svg
+                    class="w-4 h-4 text-emerald-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M5 12l7-7 7 7H5z" />
+                  </svg>
+                </td>
+                <td class="px-4 py-3">+10&nbsp;$&nbsp;/ an</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Légende -->
+          <p class="mt-4 text-xs text-gray-600 dark:text-gray-400 text-center">
+            <em
+              >Les flèches signalent les paliers de progression : tout effort
+              régulier est récompensé !</em
+            >
+          </p>
+        </div>
+        <!-- ░░░ FIN STRUCTURE ░░░ -->
+
+        <!-- ░░░ BONUS MENSUEL : PLUS TU PERFORMES, PLUS TU GAGNES ░░░ -->
+        <h2
+          class="text-lg font-semibold text-gray-800 mb-4 text-center mx-auto"
+        >
+          Bonus mensuel : « Mieux tu performes, plus tu gagnes » 20-39 cleints
+          suivi
+        </h2>
+
+        <div class="overflow-x-auto mb-6 max-w-2xl mx-auto">
+          <table
+            class="min-w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+          >
+            <thead
+              class="bg-gray-100 dark:bg-slate-700/60 text-left text-xs font-semibold uppercase tracking-wider"
+            >
+              <tr>
+                <th class="px-4 py-3">Pourcentage de performance</th>
+                <th class="px-4 py-3">Indicateur</th>
+                <th class="px-4 py-3">Bonus ($)</th>
+              </tr>
+            </thead>
+
+            <!-- 50 % -->
+            <tr
+              class="bg-green-50 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">50 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 50%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
+              >
+                10 $
+                <!-- flèche ↑ -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 60 % -->
+            <tr
+              class="bg-green-100 dark:bg-green-900 border-b hover:bg-green-7000"
+            >
+              <td class="px-4 py-3 font-medium">60 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 60%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
+              >
+                20 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 70 % -->
+            <tr
+              class="bg-green-200 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">70 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 70%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
+              >
+                30 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 80 % -->
+            <tr
+              class="bg-green-300 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">80 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 80%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-800 dark:text-green-200 flex items-center gap-1"
+              >
+                40 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 90 % -->
+            <tr
+              class="bg-green-400 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">90 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-600 rounded"
+                    style="width: 90%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-900 dark:text-green-100 flex items-center gap-1"
+              >
+                50 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 100 % -->
+            <tr
+              class="bg-green-500 dark:bg-green-800 hover:bg-green-600 text-white"
+            >
+              <td class="px-4 py-3 font-medium">100 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-700 rounded"
+                    style="width: 100%"
+                  ></div>
+                </div>
+              </td>
+              <td class="px-4 py-3 font-bold flex items-center gap-1">
+                70 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <!-- ░░░ FIN BONUS ░░░ -->
+
+        <!-- ░░░ BONUS MENSUEL : PLUS TU PERFORMES, PLUS TU GAGNES ░░░ -->
+        <h2
+          class="text-lg font-semibold text-gray-800 mb-4 text-center mx-auto"
+        >
+          Bonus mensuel : « Mieux tu performes, plus tu gagnes » 40+ clients
+          suivi
+        </h2>
+
+        <div class="overflow-x-auto mb-6 max-w-2xl mx-auto">
+          <table
+            class="min-w-full text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+          >
+            <thead
+              class="bg-gray-100 dark:bg-slate-700/60 text-left text-xs font-semibold uppercase tracking-wider"
+            >
+              <tr>
+                <th class="px-4 py-3">Pourcentage de performance</th>
+                <th class="px-4 py-3">Indicateur</th>
+                <th class="px-4 py-3">Bonus ($)</th>
+              </tr>
+            </thead>
+
+            <!-- 50 % -->
+            <tr
+              class="bg-green-50 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">50 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 50%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
+              >
+                20 $
+                <!-- flèche ↑ -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 60 % -->
+            <tr
+              class="bg-green-100 dark:bg-green-900 border-b hover:bg-green-7000"
+            >
+              <td class="px-4 py-3 font-medium">60 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 60%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
+              >
+                40 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 70 % -->
+            <tr
+              class="bg-green-200 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">70 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 70%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
+              >
+                60 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 80 % -->
+            <tr
+              class="bg-green-300 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">80 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-500 rounded"
+                    style="width: 80%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-800 dark:text-green-200 flex items-center gap-1"
+              >
+                80 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 90 % -->
+            <tr
+              class="bg-green-400 dark:bg-green-900 border-b hover:bg-green-700"
+            >
+              <td class="px-4 py-3 font-medium">90 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-600 rounded"
+                    style="width: 90%"
+                  ></div>
+                </div>
+              </td>
+              <td
+                class="px-4 py-3 font-semibold text-green-900 dark:text-green-100 flex items-center gap-1"
+              >
+                100 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+
+            <!-- 100 % -->
+            <tr
+              class="bg-green-500 dark:bg-green-800 hover:bg-green-600 text-white"
+            >
+              <td class="px-4 py-3 font-medium">100 %</td>
+              <td class="px-4 py-3">
+                <div class="w-44 h-2 bg-green-200 rounded">
+                  <div
+                    class="h-full bg-green-700 rounded"
+                    style="width: 100%"
+                  ></div>
+                </div>
+              </td>
+              <td class="px-4 py-3 font-bold flex items-center gap-1">
+                120 $
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 fill-current"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
+                  />
+                </svg>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <!-- ░░░ FIN BONUS ░░░ -->
+
+        <!-- ░░░ CONDITIONS D’ÉLIGIBILITÉ ░░░ -->
+        <!-- <div
+          class="mt-6 px-4 py-3 rounded-lg max-w-2xl mx-auto text-center bg-emerald-50 dark:bg-emerald-900/20 ring-1 ring-emerald-300 dark:ring-emerald-700 shadow-sm space-y-2 text-sm"
+        >
+          <p class="flex items-center gap-2 text-emerald-800">
+            <svg
+              class="w-4 h-4 shrink-0"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M5 20v-2c0-1.1.9-2 2-2h10a2 2 0 012 2v2" />
+              <circle cx="12" cy="8" r="4" />
+            </svg>
+            <span>
+              <strong>Bonus Manager</strong> : déclenché dès que l’équipe
+              atteint
+              <span class="font-extrabold text-emerald-600"
+                >50&nbsp;personnes</span
+              >
+              ou plus.
+            </span>
+          </p>
+
+          <p class="flex items-center gap-2 text-emerald-800">
+            <svg
+              class="w-4 h-4 shrink-0"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a6 6 0 110 12A6 6 0 0112 6zm0 2a4 4 0 100 8 4 4 0 000-8z"
+              />
+            </svg>
+            <span>
+              <strong>Bonus Agent Marketing</strong> : actif si l’agent gère au
+              moins
+              <span class="font-extrabold text-emerald-6000"
+                >20&nbsp;clients</span
+              >.
+            </span>
+          </p>
+        </div> -->
+        <!-- ░░░ FIN CONDITIONS ░░░ -->
+      </div>
+    </div>
+
+    <h2 id="accordion-collapse-heading-2">
+      <button
+        (click)="toggle('best')"
+        type="button"
+        class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+        data-accordion-target="#accordion-collapse-body-2"
+        aria-expanded="false"
+        aria-controls="accordion-collapse-body-2"
+      >
+        <span
+          >Critères pour être la meilleure Equipe, Employé, et Client(e)</span
+        >
+        <svg
+          data-accordion-icon
+          class="w-3 h-3 rotate-180 shrink-0"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 10 6"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5 5 1 1 5"
+          />
+        </svg>
+      </button>
+    </h2>
+    <!-- ░░░ AWARDS / BEST-OF SHOWCASE ░░░ -->
+    <div
+      *ngIf="best"
+      id="accordion-collapse-body-2"
+      aria-labelledby="accordion-collapse-heading-2"
+      class="mx-auto my-8 w-full max-w-3xl rounded-3xl bg-white/70 shadow-xl ring-4 ring-indigo-100/60 backdrop-blur-md transition-all duration-300 dark:bg-slate-800 dark:ring-indigo-500/30"
+    >
+      <!-- Decorative gradient bar -->
+      <div
+        class="h-2 rounded-t-3xl bg-gradient-to-r from-indigo-500 via-emerald-500 to-pink-500"
+      ></div>
+
+      <div class="space-y-10 px-8 py-10 sm:px-12">
+        <!-- ░░ Best Employee ░░ -->
+        <section class="space-y-3">
+          <h2
+            class="flex items-center gap-2 text-2xl font-extrabold text-indigo-600 dark:text-indigo-300"
+          >
+            <span class="inline-block animate-bounce">🏅</span>
+            Meilleure Employée
+          </h2>
+          <p
+            class="rounded-lg bg-indigo-50 px-4 py-2 text-sm text-indigo-800 shadow dark:bg-indigo-900/40 dark:text-indigo-200"
+          >
+            Critère&nbsp;: Employé ayant collecté le plus grand montant de
+            paiements clients, en excluant les transferts d’épargne vers
+            paiements.
+          </p>
+        </section>
+
+        <!-- ░░ Best Manager ░░ -->
+        <!-- <section class="space-y-3">
                   <h2
                     class="flex items-center gap-2 text-2xl font-extrabold text-emerald-600 dark:text-emerald-300">
                     <span class="inline-block animate-pulse">👨‍💼</span>
@@ -813,483 +1550,707 @@
                   </p>
                 </section> -->
 
-                <!-- ░░ Best Team ░░ -->
-                <section class="space-y-3">
-                  <h2
-                    class="flex items-center gap-2 text-2xl font-extrabold text-pink-600 dark:text-pink-300">
-                    <!-- slow spin via inline style -->
-                    <span
-                      class="inline-block animate-spin"
-                      style="animation-duration:6s">🤝</span>
-                    Meilleure Équipe
-                  </h2>
-                  <p
-                    class="rounded-lg bg-pink-50 px-4 py-2 text-sm text-pink-800 shadow
-                          dark:bg-pink-900/40 dark:text-pink-200">
-                    Critère&nbsp;: Total de paiements le plus élevé du mois.
-                  </p>
-                </section>
+        <!-- ░░ Best Team ░░ -->
+        <section class="space-y-3">
+          <h2
+            class="flex items-center gap-2 text-2xl font-extrabold text-pink-600 dark:text-pink-300"
+          >
+            <!-- slow spin via inline style -->
+            <span
+              class="inline-block animate-spin"
+              style="animation-duration: 6s"
+              >🤝</span
+            >
+            Meilleure Équipe
+          </h2>
+          <p
+            class="rounded-lg bg-pink-50 px-4 py-2 text-sm text-pink-800 shadow dark:bg-pink-900/40 dark:text-pink-200"
+          >
+            Critère&nbsp;: Total de paiements le plus élevé du mois.
+          </p>
+        </section>
 
-                <!-- ░░ Best Client ░░ -->
-                <section class="space-y-3">
-                  <h2
-                    class="flex items-center gap-2 text-2xl font-extrabold text-yellow-600 dark:text-yellow-300">
-                    <!-- slow ping via inline style -->
-                    <span
-                      class="inline-block animate-ping"
-                      style="animation-duration:3s">👑</span>
-                    Meilleur(e) Client(e)
-                  </h2>
-                  <p class="text-sm text-gray-600 dark:text-gray-300">
-                    Atteignez ces paliers pour débloquer des récompenses :
-                  </p>
-                  <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-200">
-                    <li class="flex gap-2">
-                      <span
-                        class="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium
-                                  text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-200">
-                        70+ pts
-                      </span>
-                      <strong>Client Argent</strong> – accès au crédit sans restriction.
-                    </li>
-                    <li class="flex gap-2">
-                      <span
-                        class="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium
-                                  text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-200">
-                        90 pts
-                      </span>
-                      Bonus de 5 % versé en épargne.
-                    </li>
-                    <li class="flex gap-2">
-                      <span
-                        class="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium
-                                  text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-200">
-                        100 pts
-                      </span>
-                      Participation au grand tombola annuel (réfrigérateur, 500 $, …).
-                    </li>
-                  </ul>
-                </section>
+        <!-- ░░ Best Client ░░ -->
+        <section class="space-y-3">
+          <h2
+            class="flex items-center gap-2 text-2xl font-extrabold text-yellow-600 dark:text-yellow-300"
+          >
+            <!-- slow ping via inline style -->
+            <span
+              class="inline-block animate-ping"
+              style="animation-duration: 3s"
+              >👑</span
+            >
+            Meilleur(e) Client(e)
+          </h2>
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            Atteignez ces paliers pour débloquer des récompenses :
+          </p>
+          <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+            <li class="flex gap-2">
+              <span
+                class="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-200"
+              >
+                70+ pts
+              </span>
+              <strong>Client Argent</strong> – accès au crédit sans restriction.
+            </li>
+            <li class="flex gap-2">
+              <span
+                class="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-200"
+              >
+                90 pts
+              </span>
+              Bonus de 5 % versé en épargne.
+            </li>
+            <li class="flex gap-2">
+              <span
+                class="inline-block rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:bg-yellow-900/60 dark:text-yellow-200"
+              >
+                100 pts
+              </span>
+              Participation au grand tombola annuel (réfrigérateur, 500 $, …).
+            </li>
+          </ul>
+        </section>
+      </div>
+      <!-- /inner -->
+    </div>
 
-              </div><!-- /inner -->
-            </div>
+    <h2 id="accordion-collapse-heading-2">
+      <button
+        (click)="toggle('budget')"
+        type="button"
+        class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+        data-accordion-target="#accordion-collapse-body-2"
+        aria-expanded="false"
+        aria-controls="accordion-collapse-body-2"
+      >
+        <span>Budget Du Mois</span>
+        <svg
+          data-accordion-icon
+          class="w-3 h-3 rotate-180 shrink-0"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 10 6"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5 5 1 1 5"
+          />
+        </svg>
+      </button>
+    </h2>
 
+    <!-- ░░░ COLLAPSIBLE WRAPPER ░░░ -->
+    <div
+      *ngIf="budget"
+      id="accordion-collapse-body-2"
+      aria-labelledby="accordion-collapse-heading-2"
+    >
+      <!-- ░░░ CARD ░░░ -->
+      <div
+        class="mx-auto my-6 w-full max-w-2xl rounded-3xl bg-white/90 shadow-xl ring-2 ring-emerald-300 dark:bg-slate-800/80 dark:ring-emerald-600"
+      >
+        <!-- ░░░ HEADER ░░░ -->
+        <header
+          class="flex flex-col items-center justify-center gap-2 rounded-t-3xl bg-gradient-to-r from-emerald-500 to-emerald-700 px-6 py-6 text-center text-white dark:from-emerald-600 dark:to-emerald-800"
+        >
+          <p class="text-sm uppercase tracking-wider opacity-80 text-white">
+            Budget initial&nbsp;(FC)
+          </p>
 
-
-     
-          <h2 id="accordion-collapse-heading-2">
-            <button (click)="toggle('budget')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-2" aria-expanded="false" aria-controls="accordion-collapse-body-2">
-              <span>Budget Du Mois</span>
-              <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-              </svg>
-            </button>
+          <!-- 💰 big number -->
+          <h2
+            class="text-4xl font-extrabold drop-shadow-sm sm:text-5xl text-white"
+          >
+            {{ startingBudget | number : "1.0-0" }}
           </h2>
 
-      <!-- ░░░ COLLAPSIBLE WRAPPER ░░░ -->
-          <div *ngIf="budget"
-              id="accordion-collapse-body-2"
-              aria-labelledby="accordion-collapse-heading-2">
+          <p class="mt-1 max-w-xs text-xs leading-snug text-emerald-100/90">
+            Ce montant&nbsp;sera ajouté&nbsp;au budget ci-dessous selon votre
+            <span class="font-semibold">pourcentage de performance</span>. Plus
+            le pourcentage est élevé, plus le budget final augmente !
+          </p>
+        </header>
 
-            <!-- ░░░ CARD ░░░ -->
-            <div class="mx-auto my-6 w-full max-w-2xl rounded-3xl bg-white/90 shadow-xl ring-2 ring-emerald-300
-                        dark:bg-slate-800/80 dark:ring-emerald-600">
+        <!-- ░░░ TABLE ░░░ -->
+        <div class="overflow-x-auto px-6 pb-8 pt-6">
+          <table
+            class="min-w-full divide-y divide-gray-200 text-sm text-gray-700 dark:divide-gray-700 dark:text-gray-100"
+          >
+            <!-- head -->
+            <thead>
+              <tr>
+                <th
+                  class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                >
+                  Pourcentage du Manager
+                </th>
+                <th
+                  class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                >
+                  Budget additionnel&nbsp;(FC)
+                </th>
+              </tr>
+            </thead>
 
-              <!-- ░░░ HEADER ░░░ -->
-              <header class="flex flex-col items-center justify-center gap-2 rounded-t-3xl
-                            bg-gradient-to-r from-emerald-500 to-emerald-700 px-6 py-6
-                            text-center text-white dark:from-emerald-600 dark:to-emerald-800">
-                <p class="text-sm uppercase tracking-wider opacity-80 text-white">
-                  Budget initial&nbsp;(FC)
-                </p>
+            <!-- body -->
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+              <!-- ⭐ highlight the top row -->
+              <tr class="group hover:bg-emerald-50 dark:hover:bg-slate-700/40">
+                <td
+                  class="px-4 py-3 font-semibold text-emerald-700 dark:text-emerald-400"
+                >
+                  100 %
+                </td>
+                <td class="px-4 py-3 font-bold">
+                  20&nbsp;M
+                  <span class="ml-1 inline-block animate-pulse text-lg"
+                    >🚀</span
+                  >
+                </td>
+              </tr>
 
-                <!-- 💰 big number -->
-                <h2 class="text-4xl font-extrabold drop-shadow-sm sm:text-5xl text-white">
-                  {{ startingBudget | number:'1.0-0' }}
-                </h2>
+              <!-- template for the remaining rows -->
+              <tr
+                *ngFor="
+                  let row of [
+                    { range: '90-99 %', value: '18M' },
+                    { range: '80-89 %', value: '15M' },
+                    { range: '70-79 %', value: '12M' },
+                    { range: '60-69 %', value: '9M' },
+                    { range: '50-59 %', value: '6M' },
+                    { range: '40-49 %', value: '3M' },
+                    { range: '0-39 %', value: '0' }
+                  ]
+                "
+                class="group hover:bg-gray-50 dark:hover:bg-slate-700/40"
+              >
+                <td class="whitespace-nowrap px-4 py-3">
+                  {{ row.range }}
+                </td>
+                <td
+                  class="whitespace-nowrap px-4 py-3 font-medium group-hover:font-semibold"
+                >
+                  {{ row.value }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- /table wrapper -->
+      </div>
+      <!-- /card -->
+    </div>
 
-                <p class="mt-1 max-w-xs text-xs leading-snug text-emerald-100/90">
-                  Ce montant&nbsp;sera ajouté&nbsp;au budget ci-dessous selon votre
-                  <span class="font-semibold">pourcentage de performance</span>.
-                  Plus le pourcentage est élevé, plus le budget final augmente !
-                </p>
-              </header>
+    <h2 id="accordion-collapse-heading-loan">
+      <button
+        (click)="toggle('maxLoan')"
+        type="button"
+        class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+        data-accordion-target="#accordion-collapse-body-loan"
+        aria-expanded="false"
+        aria-controls="accordion-collapse-body-loan"
+      >
+        <span>Score Credit et Emprunts</span>
+        <svg
+          data-accordion-icon
+          class="w-3 h-3 rotate-180 shrink-0"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 10 6"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5 5 1 1 5"
+          />
+        </svg>
+      </button>
+    </h2>
 
-              <!-- ░░░ TABLE ░░░ -->
-              <div class="overflow-x-auto px-6 pb-8 pt-6">
-                <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700 dark:divide-gray-700 dark:text-gray-100">
+    <div
+      *ngIf="maxLoan"
+      id="accordion-collapse-body-loan"
+      aria-labelledby="accordion-collapse-heading-loan"
+    >
+      <div
+        class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2"
+      >
+        <div class="my-4 mx-6">
+          <p>
+            <strong>Qu'est-ce qu'un Score Crédit ?</strong><br />
+            Le <strong>Score Crédit</strong> est un chiffre que nous utilisons
+            pour suivre la fiabilité d'un client dans le remboursement de ses
+            dettes. Tout le monde commence avec un score de <strong>50</strong>.
+          </p>
+          <p>
+            À chaque cycle de remboursement (<strong>1 ou 2 mois</strong>), le
+            score évolue en fonction du respect des délais :
+          </p>
 
-                  <!-- head -->
-                  <thead>
+          <ul>
+            <li>
+              Si la dette est remboursée à temps (au plus tard à la date
+              prévue), le client reçoit <strong>+5 points</strong>.
+            </li>
+            <li>
+              Si le remboursement est en retard, <strong>-2 points</strong> sont
+              retirés pour chaque semaine de retard.
+            </li>
+          </ul>
+          <em>Exemple :</em> Si un client devait rembourser sa dette avant le
+          <strong>11 mars</strong> mais termine le <strong>1er avril</strong>,
+          il accumule <strong>3 semaines de retard</strong> et perd
+          <strong>6 points</strong>.
+          <p>
+            Lorsqu’un client atteint un
+            <strong>Score Crédit de 0 ou mois</strong>, il doit attendre apres 6
+            mois pour emprunter a nouveau. Son score credit va retourner a 50
+            apres 6 mois d'avoir finit sa dette.
+          </p>
+          <p>
+            Lorsqu’un client atteint un <strong>Score Crédit de 70</strong>, il
+            bénéficie d’un accès permanent à un prêt chaque fois qu'il en a
+            besoin, à condition de ne pas avoir de dette en cours. De plus,
+            l'argent prêté ne sera pas déduit de votre budget.
+          </p>
+          <p>
+            <strong>💰 Bonus :</strong> À
+            <strong>90 points de Score Crédit</strong>, vous recevez
+            <strong>5% du montant emprunté</strong>, directement ajouté à votre
+            épargne.
+          </p>
+          <p>
+            <strong>🎉 Grand privilège :</strong> À
+            <strong>100 points de Score Crédit</strong>, vous aurez
+            l'opportunité de participer à une <strong>loterie annuelle</strong>,
+            où vous pourrez gagner divers prix tels que des
+            <strong
+              >réfrigérateurs, de l'argent, des ustensiles de cuisine, des
+              vêtements, des téléphones</strong
+            >, et bien plus encore !
+          </p>
+          <p>
+            <strong>📌 Catégories de clients haut de gamme :</strong> En
+            fonction de Score Crédit, Les clients seront classé dans l'une des
+            trois catégories suivantes :
+          </p>
+
+          <ul>
+            <li>
+              <strong>Client Argent (Silver) - 70+ points :</strong> Accès
+              illimité aux prêts.
+            </li>
+            <li>
+              <strong>Client Or (Gold) - 90+ points :</strong> 5% du montant
+              emprunté ajouté à votre épargne, en plus des avantages des clients
+              Argent.
+            </li>
+            <li>
+              <strong>Client Platine (Platinum) - 100 points :</strong>
+              Participation à la loterie annuelle avec des prix exclusifs, en
+              plus des avantages des clients Or.
+            </li>
+          </ul>
+
+          <p
+            style="background-color: #ffeb3b; padding: 10px; border-radius: 5px"
+          >
+            <strong>⚠️ Important :</strong> Pour chaque crédit demandé,
+            <strong>30% du montant du prêt</strong> doit être déposé sur
+            l’épargne pour pouvoir obtenir le prêt a partir du mois d'Avril
+            2025.
+          </p>
+        </div>
+
+        <div class="p-4">
+          <div class="max-w-3xl mx-auto">
+            <div
+              class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-200"
+            >
+              <div class="overflow-x-auto">
+                <table class="min-w-full text-slate-700">
+                  <colgroup>
+                    <col class="w-1/2" />
+                    <col class="w-1/2" />
+                  </colgroup>
+
+                  <thead class="bg-slate-900 text-white">
                     <tr>
-                      <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider
-                                text-gray-500 dark:text-gray-400">
-                        Pourcentage du Manager
+                      <th
+                        class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10"
+                      >
+                        Score Crédit
                       </th>
-                      <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider
-                                text-gray-500 dark:text-gray-400">
-                        Budget additionnel&nbsp;(FC)
+                      <th
+                        class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10"
+                      >
+                        Montant Max (FC)
                       </th>
                     </tr>
                   </thead>
 
-                  <!-- body -->
-                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-
-                    <!-- ⭐ highlight the top row -->
-                    <tr class="group hover:bg-emerald-50 dark:hover:bg-slate-700/40">
-                      <td class="px-4 py-3 font-semibold text-emerald-700 dark:text-emerald-400">
-                        100 %
+                  <tbody class="divide-y divide-slate-200">
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-emerald-50 text-emerald-800 font-semibold border-l-4 border-emerald-500"
+                      >
+                        100%
                       </td>
-                      <td class="px-4 py-3 font-bold">
-                        20&nbsp;M
-                        <span class="ml-1 inline-block animate-pulse text-lg">🚀</span>
-                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">2M</td>
                     </tr>
 
-                    <!-- template for the remaining rows -->
-                    <tr *ngFor="let row of [
-                          { range: '90-99 %',  value: '18M' },
-                          { range: '80-89 %',  value: '15M' },
-                          { range: '70-79 %',  value: '12M' },
-                          { range: '60-69 %',  value: '9M'  },
-                          { range: '50-59 %',  value: '6M'  },
-                          { range: '40-49 %',  value: '3M'  },
-                          { range: '0-39 %',   value: '0'   }
-                        ]"
-                        class="group hover:bg-gray-50 dark:hover:bg-slate-700/40">
-
-                      <td class="whitespace-nowrap px-4 py-3">
-                        {{ row.range }}
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-emerald-100 text-emerald-800 font-semibold border-l-4 border-emerald-400"
+                      >
+                        95-99%
                       </td>
-                      <td class="whitespace-nowrap px-4 py-3 font-medium
-                                group-hover:font-semibold">
-                        {{ row.value }}
-                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">1.5M</td>
                     </tr>
 
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-teal-100 text-teal-800 font-semibold border-l-4 border-teal-400"
+                      >
+                        90-94%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">1.4M</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-cyan-100 text-cyan-800 font-semibold border-l-4 border-cyan-400"
+                      >
+                        85-89%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">1.3M</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-sky-100 text-sky-800 font-semibold border-l-4 border-sky-400"
+                      >
+                        80-84%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">1.2M</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-sky-50 text-sky-800 font-semibold border-l-4 border-sky-300"
+                      >
+                        75-79%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">1.1M</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-blue-50 text-blue-800 font-semibold border-l-4 border-blue-300"
+                      >
+                        70-74%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">1M</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-amber-50 text-amber-800 font-semibold border-l-4 border-amber-300"
+                      >
+                        65-69%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">700K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-amber-100 text-amber-800 font-semibold border-l-4 border-amber-400"
+                      >
+                        60-64%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">600K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-amber-100 text-amber-900 font-semibold border-l-4 border-amber-500"
+                      >
+                        55-59%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">500K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-orange-50 text-orange-800 font-semibold border-l-4 border-orange-300"
+                      >
+                        50-54%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">400K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-orange-100 text-orange-800 font-semibold border-l-4 border-orange-400"
+                      >
+                        45-49%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">300K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-orange-100 text-orange-900 font-semibold border-l-4 border-orange-500"
+                      >
+                        40-44%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">200K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-amber-200 text-amber-900 font-semibold border-l-4 border-amber-600"
+                      >
+                        35-39%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">150K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-rose-100 text-rose-800 font-semibold border-l-4 border-rose-400"
+                      >
+                        20-34%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">100K</td>
+                    </tr>
+
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500"
+                      >
+                        1-19%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">50K</td>
+                    </tr>
+                    <tr class="hover:bg-slate-50 transition">
+                      <td
+                        class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500"
+                      >
+                        -Infinity - 0%
+                      </td>
+                      <td class="px-5 py-3 font-mono tabular-nums">0 FC</td>
+                    </tr>
                   </tbody>
                 </table>
-              </div><!-- /table wrapper -->
-            </div><!-- /card -->
+              </div>
+              <!-- ✅ Clean, fixed-width note (outside the scroll) -->
+              <div
+                class="px-5 py-4 sm:px-6 bg-rose-50 text-rose-900/90 text-sm border-t border-rose-200 rounded-b-2xl"
+              >
+                <p class="flex items-start gap-2 leading-relaxed">
+                  <svg
+                    class="mt-0.5 h-4 w-4 shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 9v4m0 4h.01" />
+                    <circle cx="12" cy="12" r="9" />
+                  </svg>
+                  <span>
+                    Pour un score ≤ 0&nbsp;: patienter
+                    <strong>6&nbsp;mois</strong> après le dernier paiement. Le
+                    score est alors réinitialisé à <strong>50</strong> (→
+                    <span class="font-mono">400K</span>) et l’emprunt redevient
+                    possible.
+                  </span>
+                </p>
+              </div>
+            </div>
           </div>
-
-          <h2 id="accordion-collapse-heading-loan">
-            <button (click)="toggle('maxLoan')" type="button" class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" data-accordion-target="#accordion-collapse-body-loan" aria-expanded="false" aria-controls="accordion-collapse-body-loan">
-                <span>Score Credit et Emprunts</span>
-                <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5 5 1 1 5"/>
-                </svg>
-            </button>
-        </h2>
-        
-        <div *ngIf="maxLoan" id="accordion-collapse-body-loan" aria-labelledby="accordion-collapse-heading-loan">
-            
-          <div class="max-w-xl mx-auto bg-white rounded-lg shadow-md overflow-hidden my-2">
-          <div class="my-4 mx-6">
-            <p>
-              <strong>Qu'est-ce qu'un Score Crédit ?</strong><br>
-              Le <strong>Score Crédit</strong> est un chiffre que nous utilisons pour suivre la fiabilité d'un client dans le remboursement de ses dettes. Tout le monde commence avec un score de <strong>50</strong>. 
-          </p>
-          <p>
-              À chaque cycle de remboursement (<strong>1 ou 2 mois</strong>), le score évolue en fonction du respect des délais :
-              <ul>
-                  <li>Si la dette est remboursée à temps (au plus tard à la date prévue), le client reçoit <strong>+5 points</strong>.</li>
-                  <li>Si le remboursement est en retard, <strong>-2 points</strong> sont retirés pour chaque semaine de retard.</li>
-              </ul>
-              <em>Exemple :</em> Si un client devait rembourser sa dette avant le <strong>11 mars</strong> mais termine le <strong>1er avril</strong>, il accumule <strong>3 semaines de retard</strong> et perd <strong>6 points</strong>.
-           <p>
-              Lorsqu’un client atteint un <strong>Score Crédit de 0 ou mois</strong>, il doit attendre apres 6 mois pour emprunter a nouveau. Son score credit va retourner a 50 apres 6 mois d'avoir finit sa dette.
-          </p>
-          <p>
-              Lorsqu’un client atteint un <strong>Score Crédit de 70</strong>, il bénéficie d’un accès permanent à un prêt chaque fois qu'il en a besoin, à condition de ne pas avoir de dette en cours. De plus, l'argent prêté ne sera pas déduit de votre budget.
-          </p>
-          <p>
-            <strong>💰 Bonus :</strong> À <strong>90 points de Score Crédit</strong>, vous recevez <strong>5% du montant emprunté</strong>, directement ajouté à votre épargne.
-          </p>
-          <p>
-            <strong>🎉 Grand privilège :</strong> À <strong>100 points de Score Crédit</strong>, vous aurez l'opportunité de participer à une <strong>loterie annuelle</strong>, où vous pourrez gagner divers prix tels que des <strong>réfrigérateurs, de l'argent, des ustensiles de cuisine, des vêtements, des téléphones</strong>, et bien plus encore !
-        </p>
-        <p>
-            <strong>📌 Catégories de clients haut de gamme :</strong> En fonction de  Score Crédit, Les clients seront classé dans l'une des trois catégories suivantes :
-            <ul>
-                <li><strong>Client Argent (Silver) - 70+ points :</strong> Accès illimité aux prêts.</li>
-                <li><strong>Client Or (Gold) - 90+ points :</strong> 5% du montant emprunté ajouté à votre épargne, en plus des avantages des clients Argent.</li>
-                <li><strong>Client Platine (Platinum) - 100 points :</strong> Participation à la loterie annuelle avec des prix exclusifs, en plus des avantages des clients Or.</li>
-            </ul>
-        
-          <p style="background-color: #ffeb3b; padding: 10px; border-radius: 5px;">
-            <strong>⚠️ Important :</strong> Pour chaque crédit demandé, <strong>30% du montant du prêt</strong> doit être déposé sur l’épargne pour pouvoir obtenir le prêt a partir du mois d'Avril 2025.
-          </p>
-          </div>
-          
-              <div class="p-4">
-  <div class="max-w-3xl mx-auto">
-    <div class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-200">
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-slate-700">
-          <colgroup>
-            <col class="w-1/2" />
-            <col class="w-1/2" />
-          </colgroup>
-
-          <thead class="bg-slate-900 text-white">
-            <tr>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10">
-                Score Crédit
-              </th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider sticky top-0 z-10">
-                Montant Max (FC)
-              </th>
-            </tr>
-          </thead>
-
-          <tbody class="divide-y divide-slate-200">
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-emerald-50 text-emerald-800 font-semibold border-l-4 border-emerald-500">
-                100%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">2M</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-emerald-100 text-emerald-800 font-semibold border-l-4 border-emerald-400">
-                95-99%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">1.5M</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-teal-100 text-teal-800 font-semibold border-l-4 border-teal-400">
-                90-94%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">1.4M</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-cyan-100 text-cyan-800 font-semibold border-l-4 border-cyan-400">
-                85-89%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">1.3M</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-sky-100 text-sky-800 font-semibold border-l-4 border-sky-400">
-                80-84%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">1.2M</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-sky-50 text-sky-800 font-semibold border-l-4 border-sky-300">
-                75-79%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">1.1M</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-blue-50 text-blue-800 font-semibold border-l-4 border-blue-300">
-                70-74%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">1M</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-amber-50 text-amber-800 font-semibold border-l-4 border-amber-300">
-                65-69%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">700K</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-amber-100 text-amber-800 font-semibold border-l-4 border-amber-400">
-                60-64%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">600K</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-amber-100 text-amber-900 font-semibold border-l-4 border-amber-500">
-                55-59%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">500K</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-orange-50 text-orange-800 font-semibold border-l-4 border-orange-300">
-                50-54%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">400K</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-orange-100 text-orange-800 font-semibold border-l-4 border-orange-400">
-                45-49%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">300K</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-orange-100 text-orange-900 font-semibold border-l-4 border-orange-500">
-                40-44%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">200K</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-amber-200 text-amber-900 font-semibold border-l-4 border-amber-600">
-                35-39%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">150K</td>
-            </tr>
-
-            <tr class="hover:bg-slate-50 transition">
-              <td class="px-5 py-3 bg-rose-100 text-rose-800 font-semibold border-l-4 border-rose-400">
-                20-34%
-              </td>
-              <td class="px-5 py-3 font-mono tabular-nums">100K</td>
-            </tr>
-
-              <tr class="hover:bg-slate-50 transition">
-                <td class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500">
-                  1-19%
-                </td>
-                <td class="px-5 py-3 font-mono tabular-nums">50K</td>
-              </tr>
-               <tr class="hover:bg-slate-50 transition">
-                <td class="px-5 py-3 bg-rose-200 text-rose-900 font-semibold border-l-4 border-rose-500">
-                  -Infinity - 0%
-                </td>
-                <td class="px-5 py-3 font-mono tabular-nums">0 FC</td>
-              </tr>
-          </tbody>
-        </table>
-      </div>
-       <!-- ✅ Clean, fixed-width note (outside the scroll) -->
-        <div
-          class="px-5 py-4 sm:px-6 bg-rose-50 text-rose-900/90 text-sm border-t border-rose-200
-                rounded-b-2xl">
-          <p class="flex items-start gap-2 leading-relaxed">
-            <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 9v4m0 4h.01"/><circle cx="12" cy="12" r="9"/>
-            </svg>
-            <span>
-              Pour un score ≤ 0&nbsp;: patienter <strong>6&nbsp;mois</strong> après le dernier paiement.
-              Le score est alors réinitialisé à <strong>50</strong> (→ <span class="font-mono">400K</span>) et l’emprunt redevient possible.
-            </span>
-          </p>
         </div>
+      </div>
+    </div>
+    <h2 id="accordion-collapse-heading-2">
+      <button
+        (click)="toggle('criteriaToLend')"
+        type="button"
+        class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+        data-accordion-target="#accordion-collapse-body-2"
+        aria-expanded="false"
+        aria-controls="accordion-collapse-body-2"
+      >
+        <span>À Qui Peut-On Prêter de l’Argent et Combien ?</span>
+        <svg
+          data-accordion-icon
+          class="w-3 h-3 rotate-180 shrink-0"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 10 6"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5 5 1 1 5"
+          />
+        </svg>
+      </button>
+    </h2>
+
+    <div
+      *ngIf="criteriaToLend"
+      id="accordion-collapse-body-2"
+      aria-labelledby="accordion-collapse-heading-2"
+      class="p-5 border border-t-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+    >
+      <div class="flex justify-center my-4">
+        <img
+          loading="lazy"
+          src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/others%2Fgood-vs-bad-client.jpg?alt=media&token=b01257d1-1bad-49fc-a244-7776926bfc52"
+          alt="Bon Client vs Mauvais Client"
+          class="w-full max-w-3xl rounded shadow-md border border-gray-300"
+        />
+      </div>
+
+      <p class="mb-4">
+        🔎 Avant de parler de bon ou mauvais client, il faut toujours
+        <strong>regarder la réalité</strong>.
+      </p>
+
+      <p class="mb-4">
+        ❓ Posez-vous la question simple :
+        <em
+          >« Ce client est-il capable de rembourser l’argent qu’il demande ?
+          »</em
+        >
+      </p>
+
+      <p class="mb-4">
+        🛠️ Soyez pratique : posez des questions simples, observez les faits et
+        ne vous fiez pas seulement aux paroles.
+      </p>
+
+      <h3 class="text-lg font-semibold mt-6 mb-2">
+        Montant du Prêt à Accorder
+      </h3>
+
+      <ul class="list-disc list-inside space-y-2">
+        <li>
+          ⚠️ Les gens surestiment souvent leur capacité financière. Ne croyez
+          pas les promesses, observez la réalité.
+        </li>
+        <li>
+          🏠 Ne jamais prêter si :
+          <ul class="list-disc list-inside ml-5">
+            <li>Vous ne savez pas où le client habite.</li>
+            <li>Vous ne savez pas où il vend ses produits.</li>
+          </ul>
+        </li>
+        <li>
+          📈 Condition essentielle : le client doit être en activité depuis au
+          moins <strong>6 mois</strong> et vendre des produits
+          <strong>non périssables</strong>.
+        </li>
+      </ul>
+
+      <h3 class="text-lg font-semibold mt-6 mb-2">Application au Contexte</h3>
+
+      <p class="mb-4">💬 Questions pratiques :</p>
+
+      <ul class="list-disc list-inside space-y-2">
+        <li>💰 Combien le client gagne-t-il <strong>par jour</strong> ?</li>
+        <li>
+          📊 Utilisez la règle suivante :
+          <strong
+            >gain journalier ÷ 3 ≈ capacité de remboursement
+            hebdomadaire</strong
+          >.
+        </li>
+      </ul>
+
+      <p class="mt-4">Exemple :</p>
+      <ul class="list-disc list-inside ml-5 space-y-2">
+        <li>
+          Gain : 30 000 FC par jour ➔ Capacité de remboursement : 10 000 FC par
+          semaine.
+        </li>
+        <li>
+          Montant de prêt initial recommandé : <strong>50 000 FC</strong>.
+        </li>
+        <li>
+          Après remboursement réussi, possibilité d’augmenter jusqu’à
+          <strong>100 000 FC</strong>.
+        </li>
+      </ul>
+    </div>
+
+    <div
+      class="container mx-auto my-6 p-6 bg-red-50 border-l-4 border-red-500 rounded"
+    >
+      <h2 class="text-2xl font-bold text-red-700 mb-4">⚠️ Cas de Vol</h2>
+      <ul class="list-disc list-inside text-gray-800 space-y-2">
+        <li>
+          <strong
+            >Demander plus d'argent que ce qui est requis au client :</strong
+          >
+          Exemple : faire payer des frais d’adhésion ou d’épargne supérieurs aux
+          montants officiels.
+        </li>
+        <li>
+          <strong
+            >Donner moins d'argent au client que ce qui est déclaré :</strong
+          >
+          Le montant donné au client doit toujours correspondre à ce qui est
+          inscrit dans le système.
+        </li>
+        <li>
+          <strong>Garder l'argent du client plus d'une journée :</strong>
+          Aucun prétexte (oubli, système, budget à venir) ne justifie de garder
+          l'argent du client. Il doit être entré dans le système
+          <strong>le jour même</strong>.
+        </li>
+        <li>
+          <strong>Créer de faux clients avec de fausses identités :</strong>
+          Numéros de téléphone ou photos inventés = vol. Tolérance zéro.
+        </li>
+        <li>
+          <strong
+            >Prêter de l'argent à un membre de la famille ou un ami :</strong
+          >
+          Tout prêt doit respecter les règles sans conflit d’intérêt personnel.
+        </li>
+        <li>
+          <strong
+            >Prétendre être présent sur le lieu de travail alors que vous êtes
+            absent :</strong
+          >
+          Se faire passer pour actif alors qu’on est en déplacement ou ailleurs
+          est considéré comme une tentative de fraude.
+        </li>
+      </ul>
+      <p class="mt-4 text-red-700 font-semibold">
+        🚨 Toute violation de ces règles est considérée comme un vol et peut
+        entraîner des sanctions disciplinaires, des poursuites judiciaires et
+        une peine de prison.
+      </p>
     </div>
   </div>
 </div>
-
-            </div>
-        </div>
-        <h2 id="accordion-collapse-heading-2">
-          <button (click)="toggle('criteriaToLend')" type="button" 
-            class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3" 
-            data-accordion-target="#accordion-collapse-body-2" 
-            aria-expanded="false" aria-controls="accordion-collapse-body-2">
-            <span>À Qui Peut-On Prêter de l’Argent et Combien ?</span>
-            <svg data-accordion-icon class="w-3 h-3 rotate-180 shrink-0" 
-              aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" 
-              viewBox="0 0 10 6">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" 
-                stroke-width="2" d="M9 5 5 1 1 5"/>
-            </svg>
-          </button>
-        </h2>
-        
-        <div *ngIf="criteriaToLend" id="accordion-collapse-body-2" aria-labelledby="accordion-collapse-heading-2" class="p-5 border border-t-0 border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-          <div class="flex justify-center my-4">
-            <img 
-              loading="lazy"
-              src="https://firebasestorage.googleapis.com/v0/b/kank-4bbbc.appspot.com/o/others%2Fgood-vs-bad-client.jpg?alt=media&token=b01257d1-1bad-49fc-a244-7776926bfc52" 
-              alt="Bon Client vs Mauvais Client" 
-              class="w-full max-w-3xl rounded shadow-md border border-gray-300"
-            />
-          </div>
-
-          <p class="mb-4">🔎 Avant de parler de bon ou mauvais client, il faut toujours <strong>regarder la réalité</strong>.</p>
-        
-          <p class="mb-4">❓ Posez-vous la question simple : <em>« Ce client est-il capable de rembourser l’argent qu’il demande ? »</em></p>
-        
-          <p class="mb-4">🛠️ Soyez pratique : posez des questions simples, observez les faits et ne vous fiez pas seulement aux paroles.</p>
-        
-          <h3 class="text-lg font-semibold mt-6 mb-2">Montant du Prêt à Accorder</h3>
-        
-          <ul class="list-disc list-inside space-y-2">
-            <li>⚠️ Les gens surestiment souvent leur capacité financière. Ne croyez pas les promesses, observez la réalité.</li>
-            <li>🏠 Ne jamais prêter si :
-              <ul class="list-disc list-inside ml-5">
-                <li>Vous ne savez pas où le client habite.</li>
-                <li>Vous ne savez pas où il vend ses produits.</li>
-              </ul>
-            </li>
-            <li>📈 Condition essentielle : le client doit être en activité depuis au moins <strong>6 mois</strong> et vendre des produits <strong>non périssables</strong>.</li>
-          </ul>
-        
-          <h3 class="text-lg font-semibold mt-6 mb-2">Application au Contexte </h3>
-        
-          <p class="mb-4">💬 Questions pratiques :</p>
-        
-          <ul class="list-disc list-inside space-y-2">
-            <li>💰 Combien le client gagne-t-il <strong>par jour</strong> ?</li>
-            <li>📊 Utilisez la règle suivante : <strong>gain journalier ÷ 3 ≈ capacité de remboursement hebdomadaire</strong>.</li>
-          </ul>
-        
-          <p class="mt-4">Exemple :</p>
-          <ul class="list-disc list-inside ml-5 space-y-2">
-            <li>Gain : 30 000 FC par jour ➔ Capacité de remboursement : 10 000 FC par semaine.</li>
-            <li>Montant de prêt initial recommandé : <strong>50 000 FC</strong>.</li>
-            <li>Après remboursement réussi, possibilité d’augmenter jusqu’à <strong>100 000 FC</strong>.</li>
-          </ul>
-        
-        </div>
-        
-
-        <div class="container mx-auto my-6 p-6 bg-red-50 border-l-4 border-red-500 rounded">
-          <h2 class="text-2xl font-bold text-red-700 mb-4">⚠️ Cas de Vol</h2>
-          <ul class="list-disc list-inside text-gray-800 space-y-2">
-            <li>
-              <strong>Demander plus d'argent que ce qui est requis au client :</strong>
-              Exemple : faire payer des frais d’adhésion ou d’épargne supérieurs aux montants officiels.
-            </li>
-            <li>
-              <strong>Donner moins d'argent au client que ce qui est déclaré :</strong>
-              Le montant donné au client doit toujours correspondre à ce qui est inscrit dans le système.
-            </li>
-            <li>
-              <strong>Garder l'argent du client plus d'une journée :</strong>
-              Aucun prétexte (oubli, système, budget à venir) ne justifie de garder l'argent du client. Il doit être entré dans le système <strong>le jour même</strong>.
-            </li>
-            <li>
-              <strong>Créer de faux clients avec de fausses identités :</strong>
-              Numéros de téléphone ou photos inventés = vol. Tolérance zéro.
-            </li>
-            <li>
-              <strong>Prêter de l'argent à un membre de la famille ou un ami :</strong>
-              Tout prêt doit respecter les règles sans conflit d’intérêt personnel.
-            </li>
-            <li>
-              <strong>Prétendre être présent sur le lieu de travail alors que vous êtes absent :</strong>
-              Se faire passer pour actif alors qu’on est en déplacement ou ailleurs est considéré comme une tentative de fraude.
-            </li>
-          </ul>
-          <p class="mt-4 text-red-700 font-semibold">
-            🚨 Toute violation de ces règles est considérée comme un vol et peut entraîner des sanctions disciplinaires, des poursuites judiciaires et une peine de prison.
-          </p>
-        </div>
-        
-        
-
-       
-
-
-
-      </div>
-      
-</div>
-
-
