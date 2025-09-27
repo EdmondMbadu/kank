@@ -39,7 +39,7 @@ export class TeamRankingMonthComponent {
 
   // team-ranking-month.component.ts (add near top-level props)
   rankingMode: 'performance' | 'dailyPayments' | 'monthlyPayments' =
-    'performance';
+    'dailyPayments';
   loadingDaily = false;
   todayDayKey: string = this.time.todaysDateMonthDayYear(); // e.g. "9-15-2025"
 
