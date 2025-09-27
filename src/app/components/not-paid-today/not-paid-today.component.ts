@@ -377,48 +377,75 @@ export class NotPaidTodayComponent {
     try {
       this.updateSummary();
 
-      // Build buckets from today's clients, but we'll still loop over *all* employees
       const byAgent = this.buildAgentFollowups();
       const callable = this.fns.httpsCallable('sendCustomSMS');
+
+      // ── managers
+      const managers = this.getManagers();
+      const haveManagers = managers.length > 0;
+
+      // ── aggregate clients from NON-working agents → for managers
+      const aggregatedForManagers: { current: Client[]; away: Client[] } = {
+        current: [],
+        away: [],
+      };
+
+      for (const entry of byAgent.values()) {
+        if (!this.isWorkingEmployee(entry.employee)) {
+          aggregatedForManagers.current.push(...entry.current);
+          aggregatedForManagers.away.push(...entry.away);
+        }
+      }
 
       // Counters & jobs
       let sent = 0;
       let skippedNoWork = 0;
       let skippedNoPhone = 0;
-
       const jobs: Promise<unknown>[] = [];
+      const date = this.requestDateCorrectFormat;
 
-      // ── Loop over *all* employees so those with zero clients are handled
+      // ── loop over everyone; send to working agents; managers get the aggregated extras
       for (const emp of this.employees) {
         if (!emp?.uid) continue;
 
-        // 1) Status check
-        if (!this.isWorkingEmployee(emp)) {
+        const isManager = this.roleOf(emp) === 'manager';
+        const isWorking = this.isWorkingEmployee(emp);
+        const phone = this.hasPhone(emp);
+
+        // Non-working employees: don't send to them; count, and let managers receive their clients
+        if (!isWorking) {
           skippedNoWork++;
           continue;
         }
 
-        // 2) Phone check
-        const phone = (emp as any).phoneNumber || (emp as any).telephone || '';
         if (!phone) {
           skippedNoPhone++;
           continue;
         }
 
-        // 3) Retrieve buckets (may be empty if this employee has no clients today)
-        const buckets = byAgent.get(emp.uid) ?? {
+        // Buckets for this employee
+        const base = byAgent.get(emp.uid) ?? {
           employee: emp,
           current: [],
           away: [],
         };
-        const linesCurrent = buckets.current.map(
+
+        // If manager, append aggregated non-working agents' clients
+        const mergedCurrent = isManager
+          ? [...base.current, ...aggregatedForManagers.current]
+          : base.current;
+        const mergedAway = isManager
+          ? [...base.away, ...aggregatedForManagers.away]
+          : base.away;
+
+        const linesCurrent = mergedCurrent.map(
           (c) => `• ${this.formatClientLine(c)}`
         );
-        const linesAway = buckets.away.map(
+        const linesAway = mergedAway.map(
           (c) => `• ${this.formatClientLine(c)}`
         );
 
-        // 4) If no clients today → send recruitment prompt
+        // If nothing to send → recruitment prompt
         if (!linesCurrent.length && !linesAway.length) {
           const message = this.buildRecruitmentMessage(emp);
           jobs.push(
@@ -426,8 +453,8 @@ export class NotPaidTodayComponent {
               phoneNumber: phone,
               message,
               metadata: {
-                kind: 'agent-recruitment',
-                date: this.requestDateCorrectFormat,
+                kind: isManager ? 'manager-recruitment' : 'agent-recruitment',
+                date,
               },
             }).toPromise()
           );
@@ -435,43 +462,59 @@ export class NotPaidTodayComponent {
           continue;
         }
 
-        // 5) Otherwise send normal follow-up list
+        // Normal follow-ups (manager version includes aggregated note)
         const header = `Bonjour ${emp.firstName || ''}, voici les suivis du ${
           this.frenchDate
         } :`;
-        const bodyParts: string[] = [header];
+        const parts: string[] = [header];
         if (linesCurrent.length)
-          bodyParts.push(
+          parts.push(
             '',
             `En cours (${linesCurrent.length}) :`,
             ...linesCurrent
           );
         if (linesAway.length)
-          bodyParts.push('', `À l’écart (${linesAway.length}) :`, ...linesAway);
-        bodyParts.push('', 'Merci pour la confiance à la FONDATION GERVAIS.');
-        const message = bodyParts.join('\n');
+          parts.push('', `À l’écart (${linesAway.length}) :`, ...linesAway);
+        if (
+          isManager &&
+          (aggregatedForManagers.current.length ||
+            aggregatedForManagers.away.length)
+        ) {
+          parts.push('', '⚠️ Inclus : clients des agents non actifs.');
+        }
+        parts.push('', 'Merci pour la confiance à la FONDATION GERVAIS.');
 
+        const message = parts.join('\n');
         jobs.push(
           callable({
             phoneNumber: phone,
             message,
             metadata: {
-              kind: 'agent-followups',
-              date: this.requestDateCorrectFormat,
+              kind: isManager ? 'manager-followups' : 'agent-followups',
+              date,
             },
           }).toPromise()
         );
         sent++;
       }
 
-      // If no jobs, still show a meaningful summary
+      // No manager present while there were clients to reroute
+      if (
+        (aggregatedForManagers.current.length ||
+          aggregatedForManagers.away.length) &&
+        !haveManagers
+      ) {
+        alert(
+          'Aucun employé avec rôle "Manager" trouvé — clients des agents non actifs non routés.'
+        );
+      }
+
       if (!jobs.length) {
         alert(`Aucun envoi effectué.
 Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}.`);
         return;
       }
 
-      // Wait & compute failures
       const results = await Promise.allSettled(jobs);
       const failed = results.filter((r) => r.status === 'rejected').length;
       const succeeded = sent - failed;
@@ -480,7 +523,7 @@ Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}.`);
 Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}.`);
     } catch (err) {
       console.error('sendFollowupsToAgents error:', err);
-      alert('Erreur lors de l’envoi des listes aux agents.');
+      alert('Erreur lors de l’envoi des listes.');
     } finally {
       this.sendingAgents = false;
     }
@@ -511,5 +554,17 @@ Ignorés — Non actifs: ${skippedNoWork}, Sans numéro: ${skippedNoPhone}.`);
       ``,
       `Merci pour la confiance à la FONDATION GERVAIS.`,
     ].join('\n');
+  }
+
+  private roleOf(e: Employee): string {
+    return String((e as any).role || (e as any).position || '')
+      .trim()
+      .toLowerCase();
+  }
+  private getManagers(): Employee[] {
+    return (this.employees || []).filter((e) => this.roleOf(e) === 'manager');
+  }
+  private hasPhone(e: Employee): string {
+    return (e as any).phoneNumber || (e as any).telephone || '';
   }
 }
