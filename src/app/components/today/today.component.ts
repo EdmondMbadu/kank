@@ -706,4 +706,11 @@ export class TodayComponent {
 
     this.updateOkChips();
   }
+
+    /** Pour sécuriser l’affichage de la jauge et des classes */
+  get clampedPerc(): number {
+    const p = Number(this.perc || 0);
+    return Math.max(0, Math.min(100, isFinite(p) ? p : 0));
+  }
+
 }

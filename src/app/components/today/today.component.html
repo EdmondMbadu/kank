@@ -289,6 +289,79 @@
 </details>
 <!-- ╰──────────────────────────────────────────────────────────────╯ -->
 
+<!-- ╭─ Bandeau motivation (après Vérification quotidienne) ───────────╮ -->
+<ng-container >
+  <div class="mx-auto mt-6 max-w-5xl px-4 sm:px-6 lg:px-8">
+    <div
+      class="relative overflow-hidden rounded-2xl ring-1 border-l-8 p-5 sm:p-6"
+      [style.borderLeftColor]="compute.getGradientColor(clampedPerc)"
+      [ngClass]="{
+        'bg-red-600 text-white ring-red-500'            : clampedPerc === 0,
+        'bg-red-500 text-white ring-red-400'            : clampedPerc > 0 && clampedPerc < 30,
+        'bg-orange-500 text-white ring-orange-400'      : clampedPerc >= 30 && clampedPerc < 50,
+        'bg-amber-500 text-black ring-amber-400'        : clampedPerc >= 50 && clampedPerc < 70,
+        'bg-yellow-400 text-black ring-yellow-300'      : clampedPerc >= 70 && clampedPerc < 80,
+        'bg-green-500 text-white ring-green-400'        : clampedPerc >= 80 && clampedPerc < 90,
+        'bg-emerald-600 text-white ring-emerald-500'    : clampedPerc >= 90
+      }"
+    >
+      <!-- Ligne titre + chip du % -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-2">
+          <!-- Titres selon palier -->
+          <ng-container [ngSwitch]="true">
+            <span *ngSwitchCase="clampedPerc === 0">🚨 0 % — Pas encore de paiement</span>
+            <span *ngSwitchCase="clampedPerc > 0 && clampedPerc < 30">🧭 Encore loin</span>
+            <span *ngSwitchCase="clampedPerc >= 30 && clampedPerc < 50">👍 Bon début</span>
+            <span *ngSwitchCase="clampedPerc >= 50 && clampedPerc < 70">💪 Bien joué</span>
+            <span *ngSwitchCase="clampedPerc >= 70 && clampedPerc < 80">✅ Très bien</span>
+            <span *ngSwitchCase="clampedPerc >= 80 && clampedPerc < 90">🌟 Super travail</span>
+            <span *ngSwitchDefault>🏆 Excellent</span>
+          </ng-container>
+        </div>
+
+        <!-- Chip % -->
+        <span
+          class="inline-flex items-center rounded-full px-3 py-1 text-[12px] sm:text-sm font-bold ring-1 bg-white/15"
+          [style.borderColor]="compute.getGradientColor(clampedPerc)"
+          [style.color]="'#fff'"
+          [style.boxShadow]="'inset 0 0 0 9999px rgba(255,255,255,0.08)'"
+        >
+          {{ percentage }} %
+        </span>
+      </div>
+
+      <!-- Sous-texte motivant -->
+      <p class="mt-1 text-sm sm:text-base font-medium opacity-90">
+        <ng-container [ngSwitch]="true">
+          <span *ngSwitchCase="clampedPerc === 0">On s’y met maintenant : vous pouvez le faire 💪</span>
+          <span *ngSwitchCase="clampedPerc > 0 && clampedPerc < 30">C’est un début ; continuez, chaque visite compte.</span>
+          <span *ngSwitchCase="clampedPerc >= 30 && clampedPerc < 50">Beau rythme — cap sur 50 %, puis 70 %.</span>
+          <span *ngSwitchCase="clampedPerc >= 50 && clampedPerc < 70">Vous êtes sur la bonne voie — poussez jusqu’à 70 %.</span>
+          <span *ngSwitchCase="clampedPerc >= 70 && clampedPerc < 80">Dernière ligne droite vers 80 %.</span>
+          <span *ngSwitchCase="clampedPerc >= 80 && clampedPerc < 90">Plus que quelques pas vers 90 %.</span>
+          <span *ngSwitchDefault>Vous êtes une inspiration — cap sur 100 % !</span>
+        </ng-container>
+      </p>
+
+      <!-- Barre de progression (teintée via getGradientColor) -->
+      <div class="mt-4">
+        <div class="h-2 w-full rounded-full bg-black/20 dark:bg-white/20 overflow-hidden">
+          <div
+            class="h-2 rounded-full"
+            [style.width.%]="clampedPerc"
+            [style.background]="compute.getGradientColor(clampedPerc)"
+          ></div>
+        </div>
+        <div class="mt-2 text-xs opacity-90">
+          Objectif du jour atteint à <strong>{{ percentage }} %</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+<!-- ╰──────────────────────────────────────────────────────────────╯ -->
+
 
 
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
