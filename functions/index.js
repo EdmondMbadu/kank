@@ -987,3 +987,213 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
   }
   return {sent, failed};
 });
+
+
+// ───────────────────────────────────────────────────────────
+// DAILY (08:00 Kinshasa) — Send agent/manager follow-ups per *location*
+// Non-working agents' clients → managers of *that* location only
+// ───────────────────────────────────────────────────────────
+exports.scheduledSendAgentFollowups = functions.pubsub
+    .schedule("0 8 * * *")
+    .timeZone("Africa/Kinshasa")
+    .onRun(async () => {
+      try {
+        const weekday = new Date().toLocaleString("en-US", {weekday: "long", timeZone: "Africa/Kinshasa"});
+        if (weekday === "Sunday") {
+          console.log("Sunday detected. Skipping employee follow-ups.");
+          return null;
+        }
+        const frenchDate = new Date().toLocaleDateString("fr-FR", {timeZone: "Africa/Kinshasa"});
+
+        const usersSnap = await db.collection("users").where("mode", "!=", "testing").get();
+        if (usersSnap.empty) {console.log("No active users"); return null;}
+
+        let totalSent = 0; let totalSkippedNoPhone = 0; let totalSkippedNoWork = 0; let totalFailed = 0;
+
+        for (const userDoc of usersSnap.docs) {
+          const userId = userDoc.id;
+          const defaultLocation =
+          String(userDoc.get("firstName") || userDoc.get("lastName") || "").trim() || "Unknown";
+
+          const [empSnap, cliSnap] = await Promise.all([
+            db.collection("users").doc(userId).collection("employees").get(),
+            db.collection("users").doc(userId).collection("clients").get(),
+          ]);
+
+          const employees = empSnap.docs.map((d) => ({id: d.id, ...d.data()}));
+          const employeeByUid = new Map();
+          for (const e of employees) {
+            const uid = String(e.uid || e.id || "").trim();
+            if (uid) employeeByUid.set(uid, e);
+          }
+
+          // Clients scheduled for *today* with debt, valid phone flag, and not "just started"
+          const allClients = cliSnap.docs.map((d) => ({id: d.id, ...d.data()}));
+          const clientsWithDebts = allClients.filter((c) => Number(c.debtLeft) > 0);
+          const clientsToday = clientsWithDebts.filter((c) =>
+            c.paymentDay === weekday &&
+          c.isPhoneCorrect !== "false" &&
+          didClientStartThisWeek(c),
+          );
+
+          // byAgent: agentUid -> { employee, current[], away[], location }
+          const byAgent = new Map();
+          // unassigned (no agent uid) → defaultLocation
+          const unassignedByLoc = new Map(); // loc -> { current:[], away:[] }
+          const ensureLocBucket = (map, loc) => {
+            if (!map.has(loc)) map.set(loc, {current: [], away: []});
+            return map.get(loc);
+          };
+
+          const pushToAgent = (bucket, uid, client) => {
+            if (!uid || !employeeByUid.has(uid)) {
+              ensureLocBucket(unassignedByLoc, defaultLocation)[bucket].push(client);
+              return;
+            }
+            if (!byAgent.has(uid)) {
+              const emp = employeeByUid.get(uid);
+              byAgent.set(uid, {
+                employee: emp,
+                current: [],
+                away: [],
+                location: empLocation(emp, defaultLocation),
+              });
+            }
+            byAgent.get(uid)[bucket].push(client);
+          };
+
+          for (const c of clientsToday) {
+            const alive = !c.vitalStatus || String(c.vitalStatus).toLowerCase() === "vivant";
+            const bucket = alive ? "current" : "away";
+            const agentUid = String(c.agent || c.employeeUid || "").trim();
+            pushToAgent(bucket, agentUid, c);
+          }
+
+          // Aggregate *per-location* from NON-working agents (+ unassigned)
+          // aggregatedByLoc: loc -> { current:[], away:[] }
+          const aggregatedByLoc = new Map(unassignedByLoc);
+          for (const entry of byAgent.values()) {
+            const emp = entry.employee;
+            const loc = entry.location || defaultLocation;
+            if (!isWorkingEmployee(emp)) {
+              const acc = ensureLocBucket(aggregatedByLoc, loc);
+              acc.current.push(...entry.current);
+              acc.away.push(...entry.away);
+            }
+          }
+
+          // Index managers by location
+          // A manager "belongs" to empLocation(e) (fallback defaultLocation).
+          const managersByLoc = new Map(); // loc -> Employee[]
+          for (const e of employees) {
+            if (roleOf(e) === "manager") {
+              const loc = empLocation(e, defaultLocation);
+              if (!managersByLoc.has(loc)) managersByLoc.set(loc, []);
+              managersByLoc.get(loc).push(e);
+            }
+          }
+
+          // Send per employee (only those who are working + have valid phone)
+          const sendJobs = [];
+          for (const e of employees) {
+            if (!isWorkingEmployee(e)) {totalSkippedNoWork++; continue;}
+
+            const rawPhone = hasPhone(e);
+            const to = makeValidE164(rawPhone || "");
+            if (!to) {totalSkippedNoPhone++; continue;}
+
+            const uid = String(e.uid || e.id || "").trim();
+            const base = byAgent.get(uid) || {
+              employee: e,
+              current: [],
+              away: [],
+              location: empLocation(e, defaultLocation),
+            };
+            const isMgr = roleOf(e) === "manager";
+            const myLoc = empLocation(e, defaultLocation);
+
+            // Managers get only the aggregated load for *their* location
+            const agg = aggregatedByLoc.get(myLoc) || {current: [], away: []};
+            const mergedCurrent = isMgr ? [...base.current, ...agg.current] : base.current;
+            const mergedAway = isMgr ? [...base.away, ...agg.away] : base.away;
+
+            const linesCurrent = mergedCurrent.map((c) => `• ${formatClientLine(c)}`);
+            const linesAway = mergedAway.map((c) => `• ${formatClientLine(c)}`);
+
+            const message =
+            (!linesCurrent.length && !linesAway.length) ?
+              buildRecruitmentMessage(e) :
+              [
+                `Bonjour ${e.firstName || ""} ${e.lastName || ""}, voici les suivis du ${frenchDate} :`,
+                ...(linesCurrent.length ? ["", `En cours (${linesCurrent.length}) :`, ...linesCurrent] : []),
+                ...(linesAway.length ? ["", `À l’écart (${linesAway.length}) :`, ...linesAway] : []),
+                ...(isMgr && (agg.current.length || agg.away.length) ? ["", "⚠️ Inclus : clients des agents non actifs de votre site."] : []),
+                "",
+                "Merci pour la confiance à la FONDATION GERVAIS.",
+              ].join("\n");
+
+            sendJobs.push(
+                sms.send({to: [to], message})
+                    .then(() => {totalSent++;})
+                    .catch((err) => {console.error("SMS send failed", err); totalFailed++;}),
+            );
+          }
+
+          // If there is aggregated load for a given location but no manager at that location
+          for (const [loc, agg] of aggregatedByLoc.entries()) {
+            const hasAgg = (agg.current.length || agg.away.length);
+            const mgrs = managersByLoc.get(loc) || [];
+            if (hasAgg && mgrs.length === 0) {
+              console.log(`No manager found at location "${loc}" for user ${userId}; aggregated clients not routed for this site.`);
+            }
+          }
+
+          if (sendJobs.length) await Promise.allSettled(sendJobs);
+        }
+
+        console.log(`scheduledSendAgentFollowups DONE — sent: ${totalSent}, failed: ${totalFailed}, skipped(noWork): ${totalSkippedNoWork}, skipped(noPhone): ${totalSkippedNoPhone}`);
+        return null;
+      } catch (err) {
+        console.error("scheduledSendAgentFollowups error:", err);
+        throw err;
+      }
+    });
+
+// ── helpers (reuse variants from your component/other functions)
+function roleOf(e) {
+  return String((e && (e.role || e.position)) || "").trim().toLowerCase();
+}
+function isWorkingEmployee(e) {
+  if (!e) return false;
+  const raw = String(e.status || e.workStatus || e.employmentStatus || "").trim().toLowerCase();
+  return ["travaille", "tavaille", "en travail", "working", "work"].includes(raw);
+}
+function hasPhone(e) {
+  return (e && (e.phoneNumber || e.telephone)) || "";
+}
+function empLocation(e, fallback) {
+  // If one day you store a field like e.location/site/office/branch, we’ll use it.
+  return String(e.location || e.site || e.office || e.branch || fallback || "").trim();
+}
+function displayPhone(p) {
+  const raw = (p || "").toString().trim();
+  return raw.length ? raw : "numéro indisponible";
+}
+function toFr(n) {
+  return Number(n || 0).toLocaleString("fr-FR", {maximumFractionDigits: 0});
+}
+function formatClientLine(c) {
+  const min = minimumPayment(c);
+  const debt = Number(c.debtLeft || 0);
+  const phone = displayPhone(c.phoneNumber);
+  return `${c.firstName || ""} ${c.lastName || ""} — ${phone} (min: ${toFr(min)} FC, dette: ${toFr(debt)} FC)`;
+}
+function buildRecruitmentMessage(e) {
+  return [
+    `Bonjour ${e.firstName || ""}  ${e.lastName || ""},,`,
+    `Ozali na client programmé te lelo.`,
+    `Profitez pona Marketting pe kolouka ba clients ya sika pe kotala ba clients oyo bafutaki te lobi.`,
+    ``,
+    `Merci pour la confiance à la FONDATION GERVAIS.`,
+  ].join("\n");
+}
