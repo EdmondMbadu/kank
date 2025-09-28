@@ -576,10 +576,11 @@
                     <h3 class="text-lg sm:text-xl font-semibold tracking-tight">
                       Performance Paiements
                     </h3>
-                    <p class="text-xs sm:text-sm opacity-90">
-                      Total / Attendu —
+                    <p class="text-xs sm:text-sm opacity-90 text-center">
+                      <!-- Total / Attendu — -->
                       {{ time.monthFrenchNames[givenMonth - 1] }}
-                      {{ givenYear }}
+                      {{ givenYear }} — {{ employee.firstName }}
+                      {{ employee.lastName }}
                     </p>
                   </div>
                 </div>
