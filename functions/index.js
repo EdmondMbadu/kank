@@ -1353,10 +1353,10 @@ async function getProdOwners() {
 }
 
 // TEST: only users with mode === 'testing'
-async function getTestingOwners() {
-  const snap = await db.collection("users").where("mode", "==", "testing").get();
-  return snap.docs.map((d) => d.id);
-}
+// async function getTestingOwners() {
+//   const snap = await db.collection("users").where("mode", "==", "testing").get();
+//   return snap.docs.map((d) => d.id);
+// }
 
 /* ─────────────── Scheduled functions ─────────────── */
 
@@ -1383,13 +1383,13 @@ exports.scheduleExpectedKinshasaProd = functions.pubsub
  * Runs ONLY for users with mode="testing".
  * (During testing, feel free to tweak cron, e.g.,  for every 10 minutes.)
  */
-exports.scheduleExpectedTestingPT = functions.pubsub
-    .schedule("0 8 * * *") // Daily at 08:00 PT
-    .timeZone("America/Los_Angeles")
-    .onRun(async () => {
-      const owners = await getTestingOwners();
-      for (const ownerUid of owners) {
-        await computeExpectedForOwnerDay(ownerUid, "America/Los_Angeles");
-      }
-      return null;
-    });
+// exports.scheduleExpectedTestingPT = functions.pubsub
+//     .schedule("25 20 * * *") // Daily at 08:00 PT
+//     .timeZone("America/Los_Angeles")
+//     .onRun(async () => {
+//       const owners = await getTestingOwners();
+//       for (const ownerUid of owners) {
+//         await computeExpectedForOwnerDay(ownerUid, "America/Los_Angeles");
+//       }
+//       return null;
+//     });
