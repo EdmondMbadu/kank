@@ -4,346 +4,339 @@
   [path]="'home'"
 ></app-navbar>
 
-<div [ngClass]="{ blurred: !isAuthorized && !auth.isAdmninistrator }">
-  <main class="pt-8 pb-16 lg:pt-16 lg:pb-24 bg-white">
-    <div class="flex justify-between px-4 mx-auto max-w-screen-xl">
-      <article
-        class="mx-auto w-full max-w-3xl format format-sm sm:format-base lg:format-lg format-blue"
-      >
-        <header class="mb-4 lg:mb-6 not-format">
-          <!-- Identity / header card with gradient frame -->
-          <address class="not-italic">
-            <div
-              class="rounded-3xl p-[1px] bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400"
-            >
+<!-- Page backdrop -->
+<div class="relative isolate">
+  <div class="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+    <div
+      class="absolute inset-0 bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+    ></div>
+    <div
+      class="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(59,130,246,0.18),transparent_70%)] dark:bg-[radial-gradient(60%_50%_at_50%_0%,rgba(96,165,250,0.18),transparent_70%)]"
+    ></div>
+  </div>
+
+  <div
+    [ngClass]="{ blurred: !isAuthorized && !auth.isAdmninistrator }"
+    class="relative"
+  >
+    <main class="py-10 lg:py-14">
+      <div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+        <article class="mx-auto w-full max-w-5xl">
+          <header class="mb-8 lg:mb-10">
+            <address class="not-italic">
               <div
-                class="flex items-center gap-4 rounded-[calc(theme(borderRadius.3xl)-1px)] border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/85"
+                class="rounded-[28px] p-[1.5px] bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-500 shadow-[0_0_0_1px_rgba(2,6,23,0.06),0_10px_30px_-10px_rgba(2,6,23,0.25)]"
               >
-                <!-- Avatar -->
-                <div class="relative">
-                  <img
-                    *ngIf="employee.profilePicture === undefined"
-                    class="h-20 w-20 rounded-2xl object-cover ring-1 ring-black/5 dark:ring-white/10"
-                    src="../../../assets/img/user.png"
-                    alt="Employee"
-                  />
-                  <img
-                    *ngIf="employee.profilePicture !== undefined"
-                    class="h-20 w-20 rounded-2xl object-cover ring-1 ring-black/5 dark:ring-white/10"
-                    [src]="employee.profilePicture.downloadURL"
-                    alt="Employee"
-                  />
-                  <!-- role mini-badge (purely visual) -->
-                  <span
-                    class="absolute -bottom-1 -right-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-indigo-600 px-1 text-xs font-semibold text-white ring-2 ring-white dark:ring-slate-900"
-                  >
-                    {{ (employee.role || "?")[0] }}
-                  </span>
-                </div>
-
-                <!-- Name + chips -->
-                <div class="min-w-0 flex-1">
-                  <a
-                    href="#"
-                    rel="author"
-                    class="block text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
-                  >
-                    {{ employee.firstName }} {{ employee.middleName }}
-                    {{ employee.lastName }}
-                  </a>
-
-                  <!-- mini-stats line -->
-                  <div class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                <div
+                  class="flex items-center gap-5 rounded-[26px] border border-white/60 bg-white/80 p-5 backdrop-blur-md dark:border-white/10 dark:bg-slate-900/70"
+                >
+                  <div class="relative shrink-0">
+                    <img
+                      *ngIf="employee.profilePicture === undefined"
+                      class="h-24 w-24 rounded-2xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                      src="../../../assets/img/user.png"
+                      alt="Employee"
+                    />
+                    <img
+                      *ngIf="employee.profilePicture !== undefined"
+                      class="h-24 w-24 rounded-2xl object-cover ring-1 ring-black/5 dark:ring-white/10"
+                      [src]="employee.profilePicture.downloadURL"
+                      alt="Employee"
+                    />
                     <span
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs ring-1 ring-purple-200 bg-purple-50 text-purple-700 dark:ring-purple-800 dark:bg-purple-900/30 dark:text-purple-200"
+                      class="absolute -bottom-1.5 -right-1.5 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-indigo-600 px-1 text-xs font-semibold text-white ring-2 ring-white dark:ring-slate-900"
                     >
-                      <!-- briefcase -->
-                      <svg
-                        class="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path
-                          d="M10 4h4a2 2 0 0 1 2 2v1h3a1 1 0 0 1 1 1v4h-8v1a1 1 0 1 1-2 0v-1H2V8a1 1 0 0 1 1-1h3V6a2 2 0 0 1 2-2zm4 3V6h-4v1h4zM2 14h8v1a2 2 0 1 0 4 0v-1h8v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4z"
-                        />
-                      </svg>
-                      Rôle : <strong class="ml-0.5">{{ employee.role }}</strong>
-                    </span>
-
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs ring-1 ring-emerald-200 bg-emerald-50 text-emerald-700 dark:ring-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
-                    >
-                      <!-- umbrella -->
-                      <svg
-                        class="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path
-                          d="M12 2a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9zm1 11v6a2 2 0 1 1-4 0h2a1 1 0 1 0 2 0v-6h0z"
-                        />
-                      </svg>
-                      Vacances : <strong class="ml-0.5">{{ vacation }}</strong>
-                    </span>
-
-                    <span
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs ring-1 ring-amber-200 bg-amber-50 text-amber-700 dark:ring-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
-                    >
-                      <!-- spark -->
-                      <svg
-                        class="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        [ngStyle]="{ color: perfColor }"
-                      >
-                        <path
-                          d="M12 2l1.9 6H20l-4.9 3.6L17 18l-5-3.6L7 18l1.9-6L4 8h6.1L12 2z"
-                        />
-                      </svg>
-                      Perf. {{ preposition }}
-                      {{ time.monthFrenchNames[givenMonth - 1] }} :
-                      <strong class="ml-0.5" [ngStyle]="{ color: perfColor }"
-                        >{{ performancePercentageMonth }}%</strong
-                      >
+                      {{ (employee.role || "?")[0] }}
                     </span>
                   </div>
 
-                  <div
-                    class="mt-2 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
-                  >
-                    <div
-                      class="h-full rounded-full transition-all"
-                      [style.width.%]="performancePercentageMonth"
-                      [ngStyle]="{ 'background-color': perfColor }"
-                    ></div>
-                  </div>
-
-                  <!-- Contract chip -->
-                  <div class="mt-2">
+                  <div class="min-w-0 flex-1">
                     <a
-                      *ngIf="employee.contract"
-                      target="_blank"
-                      [href]="employee.contract"
-                      class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ring-1 ring-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:ring-sky-300 dark:ring-sky-800 dark:bg-sky-900/30 dark:text-sky-200 dark:hover:bg-sky-900/40"
+                      href="#"
+                      rel="author"
+                      class="block text-xl md:text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
                     >
-                      <!-- doc -->
-                      <svg
-                        class="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path
-                          d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                        />
-                        <path d="M14 2v6h6" />
-                      </svg>
-                      Contrat-{{ year }}
-                    </a>
-                  </div>
-
-                  <!-- Admin actions (unchanged behavior) -->
-                  <div class="mt-3 flex flex-wrap gap-2 *:text-xs">
-                    <button
-                      *ngIf="this.auth.isAdmninistrator"
-                      (click)="toggleCheckVisibility()"
-                      type="button"
-                      class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800"
-                    >
-                      Basculer Bonus Visibilité
-                    </button>
-
-                    <button
-                      *ngIf="checkVisible === 'true'"
-                      (click)="toggleCode()"
-                      type="button"
-                      class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800"
-                    >
-                      Signer Bonus
-                    </button>
-
-                    <button
-                      *ngIf="this.auth.isAdmninistrator"
-                      (click)="togglePaymentCheckVisibility()"
-                      type="button"
-                      class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800"
-                    >
-                      Basculer Paiement Visibilité
-                    </button>
-
-                    <button
-                      *ngIf="paymentCheckVisible === 'true'"
-                      (click)="toggleCode()"
-                      type="button"
-                      class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800"
-                    >
-                      Signer Paiement
-                    </button>
-
-                    <button
-                      *ngIf="this.auth.isAdmninistrator"
-                      (click)="toggleSetCode()"
-                      type="button"
-                      class="rounded-lg bg-rose-600 px-3 py-1.5 font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-300 dark:bg-rose-600 dark:hover:bg-rose-700 dark:focus:ring-rose-800"
-                    >
-                      Mis A Jour Code
-                    </button>
-
-                    <!-- SMS -->
-                    <button
-                      *ngIf="auth.isAdmninistrator && checkVisible === 'true'"
-                      class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1"
-                      (click)="sendSMSCurrent('bonus')"
-                    >
-                      <!-- sms -->
-                      <svg
-                        class="mr-1 inline h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M4 4h16v12H5.17L4 17.17V4z" />
-                        <path d="M6 20h12v-2H6v2z" />
-                      </svg>
-                      SMS Bonus ▶︎ {{ employee.firstName }}
-                    </button>
-
-                    <button
-                      *ngIf="
-                        auth.isAdmninistrator && paymentCheckVisible === 'true'
-                      "
-                      class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1"
-                      (click)="sendSMSCurrent('paiement')"
-                    >
-                      <svg
-                        class="mr-1 inline h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M4 4h16v12H5.17L4 17.17V4z" />
-                        <path d="M6 20h12v-2H6v2z" />
-                      </svg>
-                      SMS Paiement ▶︎ {{ employee.firstName }}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </address>
-
-          <!-- Period selectors -->
-          <div
-            class="mt-4 flex items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white/90 p-3 dark:border-slate-700 dark:bg-slate-900/80"
-          >
-            <div class="w-40">
-              <!-- <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Mois</label> -->
-              <select
-                id="payments"
-                [(ngModel)]="givenMonth"
-                class="block w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-                (change)="retrieveEmployees()"
-              >
-                <option *ngFor="let month of monthsList" [ngValue]="month">
-                  {{ time.monthFrenchNames[month - 1] }}
-                </option>
-              </select>
-            </div>
-
-            <div class="w-36">
-              <!-- <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Année</label> -->
-              <select
-                id="payments"
-                [(ngModel)]="givenYear"
-                class="block w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-                (change)="retrieveEmployees()"
-              >
-                <option *ngFor="let year of yearsList" [ngValue]="year">
-                  {{ year }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Monthly Performance gauge -->
-          <div
-            class="container mt-3 flex mx-auto flex-col md:flex-row md:justify-center"
-          >
-            <div
-              class="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto"
-            >
-              <div
-                class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
-              >
-                <plotly-plot
-                  [data]="graphMonthPerformance.data"
-                  [layout]="graphMonthPerformance.layout"
-                ></plotly-plot>
-              </div>
-            </div>
-          </div>
-
-          <!-- Header — Présence (modern, responsive) -->
-          <div
-            class="mb-3 rounded-2xl overflow-hidden shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-          >
-            <div
-              class="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 px-4 py-3 sm:px-5"
-            >
-              <div
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
-              >
-                <div class="flex items-center gap-3 text-white">
-                  <!-- calendar-check icon -->
-                  <svg
-                    class="h-6 w-6 flex-shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1zm14 8H3v9a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-9zM5 8h14V7a1 1 0 0 0-1-1h-1v1a1 1 0 1 1-2 0V6H8v1a1 1 0 1 1-2 0V6H5a1 1 0 0 0-1 1v1z"
-                    />
-                    <path
-                      d="M10.8 17.2l-2.5-2.5 1.4-1.4 1.1 1.1 3.5-3.5 1.4 1.4-4.9 4.9z"
-                    />
-                  </svg>
-
-                  <div>
-                    <h3 class="text-lg sm:text-xl font-semibold tracking-tight">
-                      Calendrier de Présence
-                    </h3>
-                    <p class="text-xs sm:text-sm opacity-90">
-                      {{ time.monthFrenchNames[givenMonth - 1] }}
-                      {{ givenYear }} — {{ employee.firstName }}
+                      {{ employee.firstName }} {{ employee.middleName }}
                       {{ employee.lastName }}
-                    </p>
+                    </a>
+
+                    <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <span
+                        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ring-1 ring-purple-200 bg-purple-50 text-purple-700 dark:ring-purple-800 dark:bg-purple-900/25 dark:text-purple-200"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path
+                            d="M10 4h4a2 2 0 0 1 2 2v1h3a1 1 0 0 1 1 1v4h-8v1a1 1 0 1 1-2 0v-1H2V8a1 1 0 0 1 1-1h3V6a2 2 0 0 1 2-2zm4 3V6h-4v1h4zM2 14h8v1a2 2 0 1 0 4 0v-1h8v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4z"
+                          />
+                        </svg>
+                        Rôle : <strong class="ml-1">{{ employee.role }}</strong>
+                      </span>
+
+                      <span
+                        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ring-1 ring-emerald-200 bg-emerald-50 text-emerald-700 dark:ring-emerald-800 dark:bg-emerald-900/25 dark:text-emerald-200"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path
+                            d="M12 2a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9zm1 11v6a2 2 0 1 1-4 0h2a1 1 0 1 0 2 0v-6h0z"
+                          />
+                        </svg>
+                        Vacances : <strong class="ml-1">{{ vacation }}</strong>
+                      </span>
+
+                      <span
+                        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ring-1 ring-amber-200 bg-amber-50 text-amber-700 dark:ring-amber-800 dark:bg-amber-900/25 dark:text-amber-200"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          [ngStyle]="{ color: perfColor }"
+                        >
+                          <path
+                            d="M12 2l1.9 6H20l-4.9 3.6L17 18l-5-3.6L7 18l1.9-6L4 8h6.1L12 2z"
+                          />
+                        </svg>
+                        Perf.
+                        {{ time.monthFrenchNames[givenMonth - 1] }} :
+                        <strong class="ml-1" [ngStyle]="{ color: perfColor }"
+                          >{{ performancePercentageMonth }}%</strong
+                        >
+                      </span>
+                    </div>
+
+                    <div
+                      class="mt-3 h-2 w-full rounded-full bg-slate-200/80 dark:bg-slate-700/70 overflow-hidden"
+                    >
+                      <div
+                        class="h-full rounded-full transition-all duration-500 ease-out"
+                        [style.width.%]="performancePercentageMonth"
+                        [ngStyle]="{ 'background-color': perfColor }"
+                      ></div>
+                    </div>
+
+                    <div class="mt-3">
+                      <a
+                        *ngIf="employee.contract"
+                        target="_blank"
+                        [href]="employee.contract"
+                        class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs ring-1 ring-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:ring-sky-300 dark:ring-sky-800 dark:bg-sky-900/25 dark:text-sky-200"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path
+                            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                          />
+                          <path d="M14 2v6h6" />
+                        </svg>
+                        Contrat-{{ year }}
+                      </a>
+                    </div>
+
+                    <div class="mt-4 flex flex-wrap gap-2 *:text-xs">
+                      <button
+                        *ngIf="this.auth.isAdmninistrator"
+                        (click)="toggleCheckVisibility()"
+                        type="button"
+                        class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
+                      >
+                        Basculer Bonus Visibilité
+                      </button>
+
+                      <button
+                        *ngIf="checkVisible === 'true'"
+                        (click)="toggleCode()"
+                        type="button"
+                        class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
+                      >
+                        Signer Bonus
+                      </button>
+
+                      <button
+                        *ngIf="this.auth.isAdmninistrator"
+                        (click)="togglePaymentCheckVisibility()"
+                        type="button"
+                        class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
+                      >
+                        Basculer Paiement Visibilité
+                      </button>
+
+                      <button
+                        *ngIf="paymentCheckVisible === 'true'"
+                        (click)="toggleCode()"
+                        type="button"
+                        class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
+                      >
+                        Signer Paiement
+                      </button>
+
+                      <button
+                        *ngIf="this.auth.isAdmninistrator"
+                        (click)="toggleSetCode()"
+                        type="button"
+                        class="rounded-lg bg-rose-600 px-3 py-1.5 font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-300 dark:bg-rose-600 dark:hover:bg-rose-700 dark:focus:ring-rose-800 transition"
+                      >
+                        Mis A Jour Code
+                      </button>
+
+                      <button
+                        *ngIf="auth.isAdmninistrator && checkVisible === 'true'"
+                        class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1 transition"
+                        (click)="sendSMSCurrent('bonus')"
+                      >
+                        <svg
+                          class="mr-1 inline h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M4 4h16v12H5.17L4 17.17V4z" />
+                          <path d="M6 20h12v-2H6v2z" />
+                        </svg>
+                        SMS Bonus ▶︎ {{ employee.firstName }}
+                      </button>
+
+                      <button
+                        *ngIf="
+                          auth.isAdmninistrator &&
+                          paymentCheckVisible === 'true'
+                        "
+                        class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1 transition"
+                        (click)="sendSMSCurrent('paiement')"
+                      >
+                        <svg
+                          class="mr-1 inline h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M4 4h16v12H5.17L4 17.17V4z" />
+                          <path d="M6 20h12v-2H6v2z" />
+                        </svg>
+                        SMS Paiement ▶︎ {{ employee.firstName }}
+                      </button>
+                    </div>
                   </div>
                 </div>
+              </div>
+            </address>
 
-                <div class="inline-flex flex-wrap items-center gap-2">
-                  <span
-                    class="rounded-full bg-white/15 text-white px-3 py-1 text-xs ring-1 ring-white/30"
-                  >
-                    Aujourd’hui : {{ frenchDate }}
-                  </span>
-                  <span
-                    *ngIf="withinRadius !== null"
-                    class="rounded-full px-3 py-1 text-xs ring-1 ring-white/30 text-white"
-                    [ngClass]="{
-                      'bg-white/15': withinRadius === null,
-                      'bg-green-500/30': withinRadius === true,
-                      'bg-amber-500/30': withinRadius === false
-                    }"
-                  >
-                    {{ withinRadius ? "Sur site" : "Hors site" }}
-                  </span>
+            <div
+              class="mt-5 flex items-center justify-center gap-4 rounded-2xl border border-slate-200/80 bg-white/80 p-3 backdrop-blur-md dark:border-slate-700/70 dark:bg-slate-900/70"
+            >
+              <div class="w-40">
+                <select
+                  id="payments"
+                  [(ngModel)]="givenMonth"
+                  class="block w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                  (change)="retrieveEmployees()"
+                >
+                  <option *ngFor="let month of monthsList" [ngValue]="month">
+                    {{ time.monthFrenchNames[month - 1] }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="w-36">
+                <select
+                  id="payments"
+                  [(ngModel)]="givenYear"
+                  class="block w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                  (change)="retrieveEmployees()"
+                >
+                  <option *ngFor="let year of yearsList" [ngValue]="year">
+                    {{ year }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div
+              class="container mt-5 flex mx-auto flex-col md:flex-row md:justify-center"
+            >
+              <div class="w-full max-w-xl mx-auto">
+                <div
+                  class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm backdrop-blur-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
+                >
+                  <plotly-plot
+                    [data]="graphMonthPerformance.data"
+                    [layout]="graphMonthPerformance.layout"
+                  ></plotly-plot>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Attendance calendar + legend -->
-          <div class="relative overflow-x-auto mb-6 mt-4 dark:text-white">
-            <div class="container">
-              <div class="mb-2 flex flex-wrap items-center gap-2 text-xs">
+            <div
+              class="mb-4 mt-8 overflow-hidden rounded-2xl ring-1 ring-black/5 dark:ring-white/10"
+            >
+              <div
+                class="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 px-4 py-4 sm:px-5"
+              >
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                >
+                  <div class="flex items-center gap-3 text-white">
+                    <svg
+                      class="h-6 w-6 flex-shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1zm14 8H3v9a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-9zM5 8h14V7a1 1 0 0 0-1-1h-1v1a1 1 0 1 1-2 0V6H8v1a1 1 0 1 1-2 0V6H5a1 1 0 0 0-1 1v1z"
+                      />
+                      <path
+                        d="M10.8 17.2l-2.5-2.5 1.4-1.4 1.1 1.1 3.5-3.5 1.4 1.4-4.9 4.9z"
+                      />
+                    </svg>
+                    <div>
+                      <h3
+                        class="text-lg sm:text-xl font-semibold tracking-tight"
+                      >
+                        Calendrier de Présence
+                      </h3>
+                      <p class="text-xs sm:text-sm/6 opacity-90">
+                        {{ time.monthFrenchNames[givenMonth - 1] }}
+                        {{ givenYear }} — {{ employee.firstName }}
+                        {{ employee.lastName }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="inline-flex flex-wrap items-center gap-2">
+                    <span
+                      class="rounded-full bg-white/15 text-white px-3 py-1 text-xs ring-1 ring-white/30"
+                    >
+                      Aujourd’hui : {{ frenchDate }}
+                    </span>
+                    <span
+                      *ngIf="withinRadius !== null"
+                      class="rounded-full px-3 py-1 text-xs ring-1 ring-white/30 text-white"
+                      [ngClass]="{
+                        'bg-white/15': withinRadius === null,
+                        'bg-green-500/30': withinRadius === true,
+                        'bg-amber-500/30': withinRadius === false
+                      }"
+                    >
+                      {{ withinRadius ? "Sur site" : "Hors site" }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative mb-6 mt-4 overflow-x-auto">
+              <div
+                class="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-700 dark:text-slate-300"
+              >
                 <span
                   class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-800"
                   >● Présent</span
@@ -373,7 +366,9 @@
                 class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
               >
                 <table class="attendance-table w-full">
-                  <thead class="bg-slate-50 text-slate-700 dark:bg-slate-800">
+                  <thead
+                    class="bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
                     <tr>
                       <th>Dimanche</th>
                       <th>Lundi</th>
@@ -384,232 +379,227 @@
                       <th>Samedi</th>
                     </tr>
                   </thead>
-                  <tbody id="attendance-body">
-                    <!-- Rows generated dynamically -->
-                  </tbody>
+                  <tbody id="attendance-body"></tbody>
                 </table>
               </div>
             </div>
-          </div>
-          <!-- Action buttons (unchanged handlers) -->
-          <div class="flex flex-wrap items-center gap-2">
-            <button
-              *ngIf="this.auth.isAdmninistrator"
-              type="submit"
-              (click)="toggleMakePayment()"
-              class="mt-2 rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-900"
-            >
-              Paiement
-            </button>
 
-            <button
-              *ngIf="true"
-              type="submit"
-              (click)="toggleAttendance()"
-              class="mt-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-900"
-            >
-              Présence
-            </button>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                *ngIf="this.auth.isAdmninistrator"
+                type="submit"
+                (click)="toggleMakePayment()"
+                class="mt-2 rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-900 transition"
+              >
+                Paiement
+              </button>
 
-            <button
-              *ngIf="this.auth.isAdmin"
-              type="button"
-              (click)="determineAttendance()"
-              [disabled]="isMarkingPresence"
-              class="mt-2 inline-flex items-center gap-2 rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <svg
-                *ngIf="isMarkingPresence"
-                class="h-4 w-4 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
+              <button
+                *ngIf="true"
+                type="submit"
+                (click)="toggleAttendance()"
+                class="mt-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-900 transition"
               >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                />
-                <path
-                  class="opacity-75"
-                  d="M4 12a8 8 0 018-8"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <span>
-                {{
-                  isMarkingPresence
-                    ? presenceStatus === "locating"
-                      ? "Localisation en cours…"
-                      : presenceStatus === "checking"
-                      ? "Vérification du périmètre…"
-                      : presenceStatus === "saving"
-                      ? "Enregistrement…"
-                      : "Traitement…"
-                    : "Présence Employée"
-                }}
-              </span>
-            </button>
+                Présence
+              </button>
 
-            <button
-              type="button"
-              (click)="warmUpGps()"
-              [disabled]="warmingUp || isMarkingPresence"
-              class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <svg
-                *ngIf="warmingUp"
-                class="h-4 w-4 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
+              <button
+                *ngIf="this.auth.isAdmin"
+                type="button"
+                (click)="determineAttendance()"
+                [disabled]="isMarkingPresence"
+                class="mt-2 inline-flex items-center gap-2 rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:cursor-not-allowed disabled:opacity-60 transition"
               >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                />
-                <path
-                  class="opacity-75"
-                  d="M4 12a8 8 0 018-8"
-                  stroke="currentColor"
-                  stroke-linecap="round"
-                />
-              </svg>
-              <span>{{
-                warmingUp
-                  ? "Pré-chauffage GPS (10s)…"
-                  : "Améliorer la précision (10s)"
-              }}</span>
-            </button>
-          </div>
-          <!-- Presence info blocks (unchanged) -->
-          <div class="w-full max-w-2xl mt-2 ml-0 sm:ml-4 space-y-2">
-            <div
-              *ngIf="geoStatus !== 'granted'"
-              class="rounded-xl ring-1 ring-slate-200 p-3 bg-white dark:bg-slate-900"
-            >
-              <h4 class="mb-1 font-semibold text-slate-900 dark:text-slate-100">
-                Localisation du navigateur
-              </h4>
-              <p
-                class="text-sm text-slate-600 dark:text-slate-300"
-                *ngIf="geoStatus === 'prompt'"
+                <svg
+                  *ngIf="isMarkingPresence"
+                  class="h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                  />
+                  <path
+                    class="opacity-75"
+                    d="M4 12a8 8 0 018-8"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>
+                  {{
+                    isMarkingPresence
+                      ? presenceStatus === "locating"
+                        ? "Localisation en cours…"
+                        : presenceStatus === "checking"
+                        ? "Vérification du périmètre…"
+                        : presenceStatus === "saving"
+                        ? "Enregistrement…"
+                        : "Traitement…"
+                      : "Présence Employée"
+                  }}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                (click)="warmUpGps()"
+                [disabled]="warmingUp || isMarkingPresence"
+                class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-slate-700 transition"
               >
-                Au prochain essai, le navigateur demandera l’autorisation.
-                Choisissez <strong>Autoriser</strong>.
-              </p>
-              <p
-                class="text-sm text-amber-700 dark:text-amber-300"
-                *ngIf="geoStatus === 'denied'"
-              >
-                La localisation est <strong>bloquée</strong>. Autorisez-la dans
-                les réglages du téléphone / navigateur puis rechargez la page.
-              </p>
-              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Astuce : rapprochez-vous d’une fenêtre / sortez, activez GPS +
-                Wi-Fi + données mobiles.
-              </p>
+                <svg
+                  *ngIf="warmingUp"
+                  class="h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                  />
+                  <path
+                    class="opacity-75"
+                    d="M4 12a8 8 0 018-8"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>{{
+                  warmingUp
+                    ? "Pré-chauffage GPS (10s)…"
+                    : "Améliorer la précision (10s)"
+                }}</span>
+              </button>
             </div>
 
-            <div
-              *ngIf="withinRadius === true && presenceStatus === 'done'"
-              class="rounded-xl bg-green-50 text-green-900 p-3 dark:bg-green-900/30 dark:text-green-200"
-            >
-              ✅ Présence confirmée (dans {{ radius }} m) — {{ onTime }}.
-              <div class="text-xs mt-1 opacity-80">
-                Précision: ±{{ lastAccuracy }} m • Distance:
-                {{ lastDistance }} m • Fix: {{ lastFixAt | date : "shortTime" }}
+            <div class="w-full max-w-2xl mt-3 ml-0 sm:ml-4 space-y-2">
+              <div
+                *ngIf="geoStatus !== 'granted'"
+                class="rounded-xl ring-1 ring-slate-200 p-3 bg-white/90 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-700"
+              >
+                <h4
+                  class="mb-1 font-semibold text-slate-900 dark:text-slate-100"
+                >
+                  Localisation du navigateur
+                </h4>
+                <p
+                  class="text-sm text-slate-600 dark:text-slate-300"
+                  *ngIf="geoStatus === 'prompt'"
+                >
+                  Au prochain essai, le navigateur demandera l’autorisation.
+                  Choisissez <strong>Autoriser</strong>.
+                </p>
+                <p
+                  class="text-sm text-amber-700 dark:text-amber-300"
+                  *ngIf="geoStatus === 'denied'"
+                >
+                  La localisation est <strong>bloquée</strong>. Autorisez-la
+                  dans les réglages du téléphone / navigateur puis rechargez la
+                  page.
+                </p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Astuce : rapprochez-vous d’une fenêtre / sortez, activez GPS +
+                  Wi-Fi + données mobiles.
+                </p>
+              </div>
+
+              <div
+                *ngIf="withinRadius === true && presenceStatus === 'done'"
+                class="rounded-xl bg-green-50 text-green-900 p-3 dark:bg-green-900/30 dark:text-green-200"
+              >
+                ✅ Présence confirmée (dans {{ radius }} m) — {{ onTime }}.
+                <div class="text-xs mt-1 opacity-80">
+                  Précision: ±{{ lastAccuracy }} m • Distance:
+                  {{ lastDistance }} m • Fix:
+                  {{ lastFixAt | date : "shortTime" }}
+                </div>
+              </div>
+
+              <div
+                *ngIf="
+                  withinRadius === false &&
+                  (presenceStatus === 'checking' || presenceStatus === 'done')
+                "
+                class="rounded-xl bg-amber-50 text-amber-900 p-3 dark:bg-amber-900/30 dark:text-amber-200"
+              >
+                ⚠️ En dehors du lieu de travail (ou précision trop faible).
+                Réessayez près du site.
+                <div class="text-xs mt-1 opacity-80">
+                  Précision: ±{{ lastAccuracy }} m • Distance:
+                  {{ lastDistance }} m • Fix:
+                  {{ lastFixAt | date : "shortTime" }}
+                </div>
+              </div>
+
+              <div
+                *ngIf="presenceStatus === 'error' && errorMessage"
+                class="rounded-xl bg-rose-50 text-rose-900 p-3 dark:bg-rose-900/30 dark:text-rose-200"
+              >
+                ❌ Erreur: {{ errorMessage }}
               </div>
             </div>
 
             <div
-              *ngIf="
-                withinRadius === false &&
-                (presenceStatus === 'checking' || presenceStatus === 'done')
-              "
-              class="rounded-xl bg-amber-50 text-amber-900 p-3 dark:bg-amber-900/30 dark:text-amber-200"
-            >
-              ⚠️ En dehors du lieu de travail (ou précision trop faible).
-              Réessayez près du site.
-              <div class="text-xs mt-1 opacity-80">
-                Précision: ±{{ lastAccuracy }} m • Distance:
-                {{ lastDistance }} m • Fix: {{ lastFixAt | date : "shortTime" }}
-              </div>
-            </div>
-
-            <div
-              *ngIf="presenceStatus === 'error' && errorMessage"
-              class="rounded-xl bg-rose-50 text-rose-900 p-3 dark:bg-rose-900/30 dark:text-rose-200"
-            >
-              ❌ Erreur: {{ errorMessage }}
-            </div>
-          </div>
-
-          <!-- Header — Performance (Total / Attendu) -->
-          <div
-            class="mb-3 mt-4 rounded-2xl overflow-hidden shadow-sm ring-1 ring-black/5 dark:ring-white/10"
-          >
-            <div
-              class="bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-600 px-4 py-3 sm:px-5"
+              class="mb-4 mt-8 overflow-hidden rounded-2xl ring-1 ring-black/5 dark:ring-white/10"
             >
               <div
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                class="bg-gradient-to-r from-indigo-600 via-fuchsia-600 to-rose-600 px-4 py-4 sm:px-5"
               >
-                <div class="flex items-center gap-3 text-white">
-                  <!-- chart / gauge icon -->
-                  <svg
-                    class="h-6 w-6 flex-shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 4h16v2H4zM3 8h2v10H3zM7 10h2v8H7zM11 12h2v6h-2zM15 9h2v9h-2zM19 6h2v12h-2z"
-                    />
-                  </svg>
-
-                  <div>
-                    <h3 class="text-lg sm:text-xl font-semibold tracking-tight">
-                      Performance Paiements
-                    </h3>
-                    <p class="text-xs sm:text-sm opacity-90 text-center">
-                      <!-- Total / Attendu — -->
-                      {{ time.monthFrenchNames[givenMonth - 1] }}
-                      {{ givenYear }} — {{ employee.firstName }}
-                      {{ employee.lastName }}
-                    </p>
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+                >
+                  <div class="flex items-center gap-3 text-white">
+                    <svg
+                      class="h-6 w-6 flex-shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 4h16v2H4zM3 8h2v10H3zM7 10h2v8H7zM11 12h2v6h-2zM15 9h2v9h-2zM19 6h2v12h-2z"
+                      />
+                    </svg>
+                    <div>
+                      <h3
+                        class="text-lg sm:text-xl font-semibold tracking-tight"
+                      >
+                        Performance Paiements
+                      </h3>
+                      <p class="text-xs sm:text-sm opacity-90 text-center">
+                        {{ time.monthFrenchNames[givenMonth - 1] }}
+                        {{ givenYear }} — {{ employee.firstName }}
+                        {{ employee.lastName }}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div class="inline-flex flex-wrap items-center gap-2">
-                  <span
-                    class="rounded-full bg-white/15 text-white px-3 py-1 text-xs ring-1 ring-white/30"
-                  >
-                    Mois : {{ performancePercentageMonth || 0 }}%
-                  </span>
-                  <span
-                    class="rounded-full bg-white/15 text-white px-3 py-1 text-xs ring-1 ring-white/30"
-                  >
-                    Couleur = % de réalisation
-                  </span>
+                  <div class="inline-flex flex-wrap items-center gap-2">
+                    <span
+                      class="rounded-full bg-white/15 text-white px-3 py-1 text-xs ring-1 ring-white/30"
+                      >Mois : {{ performancePercentageMonth || 0 }}%</span
+                    >
+                    <span
+                      class="rounded-full bg-white/15 text-white px-3 py-1 text-xs ring-1 ring-white/30"
+                      >Couleur = % de réalisation</span
+                    >
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Collections (Total / Expected) calendar + legend -->
-          <div class="relative overflow-x-auto mb-6 mt-4 dark:text-white">
-            <div class="container">
-              <div class="mb-2 flex flex-wrap items-center gap-2 text-xs">
+            <div class="relative mb-6 mt-4 overflow-x-auto">
+              <div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
                 <span
                   class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 ring-1 ring-slate-200 bg-white text-slate-700"
+                  >● Couleur = % Paiements (total / attendu)</span
                 >
-                  ● Couleur = % Paiements (total / attendu)
-                </span>
                 <span
                   class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-white"
                   [ngStyle]="{
@@ -640,16 +630,17 @@
                 >
                 <span
                   class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 ring-1 ring-slate-200 bg-white text-slate-700"
+                  >● “—” si données manquantes</span
                 >
-                  ● “—” si données manquantes
-                </span>
               </div>
 
               <div
                 class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
               >
                 <table class="w-full">
-                  <thead class="bg-slate-50 text-slate-700 dark:bg-slate-800">
+                  <thead
+                    class="bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
                     <tr>
                       <th>Dimanche</th>
                       <th>Lundi</th>
@@ -660,553 +651,528 @@
                       <th>Samedi</th>
                     </tr>
                   </thead>
-                  <tbody id="collections-body">
-                    <!-- Rows generated dynamically -->
-                  </tbody>
+                  <tbody id="collections-body"></tbody>
                 </table>
               </div>
             </div>
-          </div>
 
-          <!-- Demande vacances -->
-          <button
-            type="submit"
-            (click)="toggle('showRequestVacation')"
-            class="my-3 rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-900"
-          >
-            Demande Vacances
-          </button>
-
-          <div
-            *ngIf="showRequestVacation"
-            class="mb-4 mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
-          >
-            <label
-              for="start_date"
-              class="mb-2 block text-sm font-medium text-slate-900 dark:text-slate-100"
+            <button
+              type="submit"
+              (click)="toggle('showRequestVacation')"
+              class="my-3 rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-900 transition"
             >
-              Date de Prendre les vacances
-            </label>
-            <input
-              [(ngModel)]="requestDate"
-              type="date"
-              id="first_name"
-              class="block w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-              placeholder="11-2-2023"
-              required
-            />
-
-            <div class="mt-3 flex gap-2">
-              <button
-                type="submit"
-                (click)="toggle('showRequestVacation')"
-                class="rounded-full bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 dark:focus:ring-slate-600"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                (click)="requestVacation()"
-                class="rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
-              >
-                Soumettre
-              </button>
-            </div>
-          </div>
-
-          <!-- Vacances en cours -->
-          <div
-            *ngIf="employee.attendance"
-            class="p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-sm dark:bg-slate-900 dark:border-slate-700"
-          >
-            <h3
-              class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3"
-            >
-              Vacances en cours
-            </h3>
-            <ul class="space-y-3">
-              <li
-                *ngFor="let date of getVacationInProgressDates()"
-                class="flex items-center justify-between rounded-xl border bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
-              >
-                <span class="font-medium text-slate-700 dark:text-slate-200">{{
-                  date
-                }}</span>
-                <div *ngIf="this.auth.isAdmin" class="flex gap-2">
-                  <button
-                    (click)="acceptVacation(date)"
-                    class="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
-                  >
-                    Accepter
-                  </button>
-                  <button
-                    (click)="rejectVacation(date)"
-                    class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </header>
-
-        <!-- Performance details table -->
-        <div
-          class="relative overflow-x-auto mb-6 shadow-sm rounded-2xl border border-slate-200 dark:border-slate-700"
-        >
-          <table
-            class="w-full text-sm text-left text-gray-600 dark:text-gray-300"
-          >
-            <thead
-              class="text-xs uppercase bg-slate-50 dark:bg-slate-800 dark:text-slate-300"
-            >
-              <tr>
-                <th scope="col" class="px-6 py-3 rounded-s-lg">
-                  Details De Performance
-                </th>
-                <th scope="col" class="py-3">Aujhourd'hui ({{ day }})</th>
-                <th scope="col" class="px-6 py-3 rounded-e-lg">
-                  {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="bg-white dark:bg-slate-900">
-                <th
-                  scope="row"
-                  class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white"
-                >
-                  Points De Performance
-                </th>
-                <td class="px-6 py-4">{{ averageToday }} / {{ totalToday }}</td>
-                <td class="px-6 py-4">
-                  {{ averagePointsMonth }} /{{ totalPointsMonth }}
-                </td>
-              </tr>
-              <tr class="bg-white dark:bg-slate-900">
-                <th
-                  scope="row"
-                  class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white"
-                >
-                  Pourcentage De Performance
-                </th>
-                <td class="px-6 py-4">
-                  {{ employee.performancePercantage }} %
-                </td>
-                <td class="px-6 py-4">{{ performancePercentageMonth }}%</td>
-              </tr>
-            </tbody>
-            <tfoot *ngIf="this.auth.isAdmninistrator">
-              <tr class="font-semibold text-slate-900 dark:text-white">
-                <th scope="row" class="px-6 py-3 text-base"></th>
-                <td class="py-4">
-                  <a
-                    (click)="generateInvoice()"
-                    class="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    Facture de Paiement
-                  </a>
-                </td>
-                <td class="py-4">
-                  <a
-                    (click)="generateInvoiceBonus()"
-                    class="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    Facture de Bonus
-                  </a>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <!-- Performance chart -->
-        <div
-          class="container flex lg:block mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
-        >
-          <div class="flex flex-col w-full">
-            <h1
-              class="text-2xl md:text-3xl m-6 text-center text-slate-900 dark:text-slate-100"
-            >
-              Performance
-            </h1>
+              Demande Vacances
+            </button>
 
             <div
-              class="inline-flex mx-auto mb-3 rounded-lg overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700"
+              *ngIf="showRequestVacation"
+              class="mb-4 mt-3 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
             >
-              <button
-                (click)="updatePerformanceGraphics(compute.week)"
-                type="button"
-                class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+              <label
+                for="start_date"
+                class="mb-2 block text-sm font-medium text-slate-900 dark:text-slate-100"
               >
-                1S
-              </button>
-              <button
-                (click)="updatePerformanceGraphics(compute.month)"
-                type="button"
-                class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-              >
-                1M
-              </button>
-              <button
-                (click)="updatePerformanceGraphics(compute.year)"
-                type="button"
-                class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-              >
-                1A
-              </button>
-              <button
-                (click)="updatePerformanceGraphics(maxRange)"
-                type="button"
-                class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-              >
-                Max
-              </button>
+                Date de Prendre les vacances
+              </label>
+              <input
+                [(ngModel)]="requestDate"
+                type="date"
+                id="first_name"
+                class="block w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                placeholder="11-2-2023"
+                required
+              />
+
+              <div class="mt-3 flex gap-2">
+                <button
+                  type="submit"
+                  (click)="toggle('showRequestVacation')"
+                  class="rounded-full bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 dark:focus:ring-slate-600 transition"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  (click)="requestVacation()"
+                  class="rounded-full bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800 transition"
+                >
+                  Soumettre
+                </button>
+              </div>
             </div>
 
-            <div class="px-4 pb-4">
-              <plotly-plot
-                [data]="graphPerformance.data"
-                [layout]="graphPerformance.layout"
-              ></plotly-plot>
+            <div
+              *ngIf="employee.attendance"
+              class="p-4 bg-slate-50/70 rounded-2xl border border-slate-200 shadow-sm backdrop-blur dark:bg-slate-900/60 dark:border-slate-700"
+            >
+              <h3
+                class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3"
+              >
+                Vacances en cours
+              </h3>
+              <ul class="space-y-3">
+                <li
+                  *ngFor="let date of getVacationInProgressDates()"
+                  class="flex items-center justify-between rounded-xl border bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                >
+                  <span
+                    class="font-medium text-slate-700 dark:text-slate-200"
+                    >{{ date }}</span
+                  >
+                  <div *ngIf="this.auth.isAdmin" class="flex gap-2">
+                    <button
+                      (click)="acceptVacation(date)"
+                      class="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 transition"
+                    >
+                      Accepter
+                    </button>
+                    <button
+                      (click)="rejectVacation(date)"
+                      class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </header>
+
+          <div
+            class="relative overflow-x-auto mb-8 rounded-2xl border border-slate-200 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
+          >
+            <table
+              class="w-full text-sm text-left text-gray-700 dark:text-gray-300"
+            >
+              <thead
+                class="text-xs uppercase bg-slate-50 dark:bg-slate-800/80 dark:text-slate-300"
+              >
+                <tr>
+                  <th scope="col" class="px-6 py-3 rounded-s-lg">
+                    Details De Performance
+                  </th>
+                  <th scope="col" class="py-3">Aujhourd'hui ({{ day }})</th>
+                  <th scope="col" class="px-6 py-3 rounded-e-lg">
+                    {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="bg-white/80 dark:bg-slate-900/70">
+                  <th
+                    scope="row"
+                    class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white"
+                  >
+                    Points De Performance
+                  </th>
+                  <td class="px-6 py-4">
+                    {{ averageToday }} / {{ totalToday }}
+                  </td>
+                  <td class="px-6 py-4">
+                    {{ averagePointsMonth }} /{{ totalPointsMonth }}
+                  </td>
+                </tr>
+                <tr class="bg-white/80 dark:bg-slate-900/70">
+                  <th
+                    scope="row"
+                    class="px-6 py-4 font-medium text-slate-900 whitespace-nowrap dark:text-white"
+                  >
+                    Pourcentage De Performance
+                  </th>
+                  <td class="px-6 py-4">
+                    {{ employee.performancePercantage }} %
+                  </td>
+                  <td class="px-6 py-4">{{ performancePercentageMonth }}%</td>
+                </tr>
+              </tbody>
+              <tfoot *ngIf="this.auth.isAdmninistrator">
+                <tr class="font-semibold text-slate-900 dark:text-white">
+                  <th scope="row" class="px-6 py-3 text-base"></th>
+                  <td class="py-4">
+                    <a
+                      (click)="generateInvoice()"
+                      class="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                      >Facture de Paiement</a
+                    >
+                  </td>
+                  <td class="py-4">
+                    <a
+                      (click)="generateInvoiceBonus()"
+                      class="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                      >Facture de Bonus</a
+                    >
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div
+            class="container mx-auto rounded-2xl border border-slate-200 bg-white/90 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
+          >
+            <div class="flex flex-col w-full">
+              <h1
+                class="text-2xl md:text-3xl m-6 text-center text-slate-900 dark:text-slate-100"
+              >
+                Performance
+              </h1>
+
+              <div
+                class="inline-flex mx-auto mb-4 rounded-lg overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700"
+              >
+                <button
+                  (click)="updatePerformanceGraphics(compute.week)"
+                  type="button"
+                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                >
+                  1S
+                </button>
+                <button
+                  (click)="updatePerformanceGraphics(compute.month)"
+                  type="button"
+                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                >
+                  1M
+                </button>
+                <button
+                  (click)="updatePerformanceGraphics(compute.year)"
+                  type="button"
+                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                >
+                  1A
+                </button>
+                <button
+                  (click)="updatePerformanceGraphics(maxRange)"
+                  type="button"
+                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+                >
+                  Max
+                </button>
+              </div>
+
+              <div class="px-4 pb-5">
+                <plotly-plot
+                  [data]="graphPerformance.data"
+                  [layout]="graphPerformance.layout"
+                ></plotly-plot>
+              </div>
             </div>
           </div>
-        </div>
-      </article>
-    </div>
-  </main>
+        </article>
+      </div>
+    </main>
+  </div>
 </div>
 
-<!-- ╔══════════ Reçus d’Audit (modern card) ══════════╗ -->
-<div class="mt-8 container mx-auto px-4">
-  <div
-    class="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 bg-white dark:bg-slate-900"
-  >
-    <!-- Header -->
+<div class="mt-10">
+  <div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
     <div
-      class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600"
+      class="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 bg-white/90 backdrop-blur dark:bg-slate-900/80"
     >
-      <div class="flex items-center gap-2 text-white">
-        <!-- ticket icon -->
-        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"
+      <div
+        class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600"
+      >
+        <div class="flex items-center gap-2 text-white">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M4 6a2 2 0 0 1 2-2h8l6 6v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm10 0v4a2 2 0 0 0 2 2h4"
+            />
+          </svg>
+          <h5 class="text-sm sm:text-base font-semibold tracking-wide">
+            Crédits & Transports
+          </h5>
+        </div>
+
+        <div class="relative">
+          <svg
+            class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/80"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path
+              d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z"
+            />
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="auditSearch"
+            placeholder="Filtrer par date…"
+            class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none"
           />
-        </svg>
-        <h5 class="text-sm sm:text-base font-semibold tracking-wide">
-          Crédits & Transports
-        </h5>
+        </div>
       </div>
 
-      <!-- search -->
-      <div class="relative">
-        <svg
-          class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/80"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-        >
-          <path
-            d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z"
+      <div class="p-4">
+        <div *ngIf="auth.isAdmin" class="mb-4 flex items-center gap-3">
+          <label
+            class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+              />
+            </svg>
+            Joindre un reçu
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              hidden
+              (change)="auditUpload($any($event.target).files)"
+            />
+          </label>
+
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="auditNewAmount"
+            placeholder="Montant"
+            class="w-28 p-2 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
           />
-        </svg>
+        </div>
+
+        <ul class="divide-y divide-slate-200 dark:divide-slate-700">
+          <li
+            *ngFor="let a of auditFiltered()"
+            class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
+          >
+            <div class="flex items-center gap-4 px-1">
+              <div class="flex-shrink-0">
+                <div
+                  class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10"
+                >
+                  <span
+                    class="text-sm font-semibold text-slate-700 dark:text-slate-100"
+                    >{{ employee.firstName?.substring(0, 2) }}</span
+                  >
+                </div>
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <p
+                  class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate"
+                >
+                  {{ a.frenchDate }}
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Reçu</p>
+              </div>
+
+              <ng-container *ngIf="!auth.isAdmin; else editAmt">
+                <span
+                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
+                >
+                  {{ a.amount | number : "1.0-2" }} $
+                </span>
+              </ng-container>
+              <ng-template #editAmt>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="a.amount"
+                  (blur)="auditUpdateAmount(a)"
+                  class="w-24 p-1.5 text-xs rounded border bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
+                />
+              </ng-template>
+
+              <a [href]="a.url" target="_blank" class="flex-shrink-0">
+                <img
+                  src="../../../assets/img/validating-ticket.png"
+                  class="w-11 h-11 object-cover rounded-md border border-slate-200 dark:border-slate-700 bg-white"
+                />
+              </a>
+
+              <button
+                *ngIf="auth.isAdmin"
+                class="ml-1 px-2.5 py-1.5 text-xs font-medium text-white rounded-lg bg-blue-600 hover:bg-blue-700"
+                (click)="auditPrepareReplace(a)"
+              >
+                Changer
+              </button>
+            </div>
+          </li>
+        </ul>
+
         <input
-          type="text"
-          [(ngModel)]="auditSearch"
-          placeholder="Filtrer par date…"
-          class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none"
+          type="file"
+          #auditFileInput
+          hidden
+          accept="image/*,application/pdf"
+          (change)="auditReplace($any($event.target).files)"
         />
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- Body -->
-    <div class="p-4">
-      <!-- upload (admin only) -->
-      <div *ngIf="auth.isAdmin" class="mb-4 flex items-center gap-3">
-        <label
-          class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700"
-        >
-          <!-- camera -->
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+<div class="mt-8 mb-16">
+  <div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
+    <div
+      class="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 bg-white/90 backdrop-blur dark:bg-slate-900/80"
+    >
+      <div
+        class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-sky-600"
+      >
+        <div class="flex items-center gap-2 text-white">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
             <path
-              d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+              d="M6 2h12l2 3v17l-4-2-4 2-4-2-4 2V5l2-3zm4 6h8M6 10h12M6 14h12M6 18h6"
             />
           </svg>
-          Joindre un reçu
-          <input
-            type="file"
-            accept="image/*,application/pdf"
-            hidden
-            (change)="auditUpload($any($event.target).files)"
-          />
-        </label>
+          <h5 class="text-sm sm:text-base font-semibold tracking-wide">
+            Paiements
+          </h5>
+        </div>
 
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          [(ngModel)]="auditNewAmount"
-          placeholder="Montant"
-          class="w-28 p-2 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
-        />
+        <div class="flex items-center">
+          <label for="simple-search" class="sr-only">Chercher</label>
+          <div class="relative w-48 sm:w-56">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5"
+            >
+              <svg
+                class="h-4 w-4 text-white/80"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  d="M2 10a8 8 0 1 1 14.32 4.906l1.387 1.387-1.415 1.415-1.387-1.387A8 8 0 0 1 2 10z"
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              [(ngModel)]="code"
+              id="simple-search"
+              class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none w-full"
+              placeholder="Entrer Le Code..."
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            class="ml-2 p-2.5 text-sm font-medium text-white bg-white/15 rounded-lg border border-white/20 hover:bg-white/25 focus:ring-2 focus:ring-white/60"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+            </svg>
+            <span class="sr-only">Chercher</span>
+          </button>
+        </div>
       </div>
 
-      <!-- list -->
-      <ul class="divide-y divide-slate-200 dark:divide-slate-700">
-        <li
-          *ngFor="let a of auditFiltered()"
-          class="py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-lg"
-        >
-          <div class="flex items-center gap-4 px-1">
-            <div class="flex-shrink-0">
+      <div *ngIf="code === paymentCode" class="p-4">
+        <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
+          <li
+            class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
+            *ngFor="let p of paymentAmounts; let i = index"
+          >
+            <div class="flex items-center gap-4 px-1">
               <div
-                class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10"
+                class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-slate-100 rounded-full dark:bg-slate-700 ring-1 ring-black/5 dark:ring-white/10"
               >
-                <span
-                  class="text-sm font-semibold text-slate-700 dark:text-slate-100"
+                <span class="font-medium text-slate-700 dark:text-slate-100">{{
+                  this.auth.currentUser.firstName?.substring(0, 2)
+                }}</span>
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <p
+                  class="text-sm font-medium text-slate-900 truncate dark:text-white"
                 >
-                  {{ employee.firstName?.substring(0, 2) }}
+                  {{ paymentDates[i] }}
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  Virement
+                </p>
+              </div>
+
+              <div class="inline-flex items-center">
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
+                >
+                  $ {{ paymentAmounts[i] | number : "1.0-0" }}
                 </span>
               </div>
             </div>
 
-            <div class="flex-1 min-w-0">
-              <p
-                class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate"
-              >
-                {{ a.frenchDate }}
-              </p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Reçu</p>
-            </div>
-
-            <!-- amount -->
-            <ng-container *ngIf="!auth.isAdmin; else editAmt">
-              <span
-                class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
-              >
-                {{ a.amount | number : "1.0-2" }} $
-              </span>
-            </ng-container>
-            <ng-template #editAmt>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                [(ngModel)]="a.amount"
-                (blur)="auditUpdateAmount(a)"
-                class="w-24 p-1.5 text-xs rounded border bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
-              />
-            </ng-template>
-
-            <a [href]="a.url" target="_blank" class="flex-shrink-0">
-              <img
-                src="../../../assets/img/validating-ticket.png"
-                class="w-11 h-11 object-cover rounded-md border border-slate-200 dark:border-slate-700 bg-white"
-              />
-            </a>
-
-            <button
-              *ngIf="auth.isAdmin"
-              class="ml-1 px-2.5 py-1.5 text-xs font-medium text-white rounded-lg bg-blue-600 hover:bg-blue-700"
-              (click)="auditPrepareReplace(a)"
-            >
-              Changer
-            </button>
-          </div>
-        </li>
-      </ul>
-
-      <!-- hidden input for “Changer” -->
-      <input
-        type="file"
-        #auditFileInput
-        hidden
-        accept="image/*,application/pdf"
-        (change)="auditReplace($any($event.target).files)"
-      />
-    </div>
-  </div>
-</div>
-<!-- ╚════════════════════════════════════════════════╝ -->
-
-<!-- ╔══════════ Paiements (modern card) ══════════╗ -->
-<div class="mt-6 container mx-auto px-4">
-  <div
-    class="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 bg-white dark:bg-slate-900"
-  >
-    <!-- Header -->
-    <div
-      class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-sky-600"
-    >
-      <div class="flex items-center gap-2 text-white">
-        <!-- receipt icon -->
-        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path
-            d="M6 2h12l2 3v17l-4-2-4 2-4-2-4 2V5l2-3zm4 6h8M6 10h12M6 14h12M6 18h6"
-          />
-        </svg>
-        <h5 class="text-sm sm:text-base font-semibold tracking-wide">
-          Paiements
-        </h5>
-      </div>
-
-      <!-- code input + button (unchanged behavior) -->
-      <div class="flex items-center">
-        <label for="simple-search" class="sr-only">Chercher</label>
-        <div class="relative w-48 sm:w-56">
-          <div
-            class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2.5"
-          >
-            <svg
-              class="h-4 w-4 text-white/80"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                d="M2 10a8 8 0 1 1 14.32 4.906l1.387 1.387-1.415 1.415-1.387-1.387A8 8 0 0 1 2 10z"
-              />
-            </svg>
-          </div>
-          <input
-            type="text"
-            [(ngModel)]="code"
-            id="simple-search"
-            class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none w-full"
-            placeholder="Entrer Le Code..."
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          class="ml-2 p-2.5 text-sm font-medium text-white bg-white/15 rounded-lg border border-white/20 hover:bg-white/25 focus:ring-2 focus:ring-white/60"
-        >
-          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-            <path d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-          </svg>
-          <span class="sr-only">Chercher</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Body -->
-    <div *ngIf="code === paymentCode" class="p-4">
-      <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
-        <li
-          class="py-3 sm:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-lg"
-          *ngFor="let p of paymentAmounts; let i = index"
-        >
-          <div class="flex items-center gap-4 px-1">
-            <!-- avatar -->
-            <div
-              class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-slate-100 rounded-full dark:bg-slate-700 ring-1 ring-black/5 dark:ring-white/10"
-            >
-              <span class="font-medium text-slate-700 dark:text-slate-100">
-                {{ this.auth.currentUser.firstName?.substring(0, 2) }}
-              </span>
-            </div>
-
-            <!-- date -->
-            <div class="flex-1 min-w-0">
-              <p
-                class="text-sm font-medium text-slate-900 truncate dark:text-white"
-              >
-                {{ paymentDates[i] }}
-              </p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Virement</p>
-            </div>
-
-            <!-- amount -->
-            <div class="inline-flex items-center">
-              <span
-                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
-              >
-                $ {{ paymentAmounts[i] | number : "1.0-0" }}
-              </span>
-            </div>
-          </div>
-
-          <!-- thumbnails / actions -->
-          <div class="mt-2 flex items-center justify-center gap-6">
-            <!-- generated invoice / picture -->
-            <a
-              [href]="
-                employee.paymentsPicturePath![paymentAmounts.length - 1 - i]
-              "
-              target="_blank"
-              class="group inline-flex items-center gap-2"
-            >
-              <img
-                src="../../../assets/img/receipt.png"
-                class="w-12 h-12 object-cover rounded-md border bg-white border-slate-200 dark:border-slate-700"
-                alt=""
-              />
-              <span
-                class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline"
-                >Facture</span
-              >
-            </a>
-
-            <!-- bank receipt -->
-            <ng-container
-              *ngIf="
-                employee.receipts &&
-                employee.receipts[paymentAmounts.length - 1 - i]
-              "
-            >
+            <div class="mt-3 flex items-center justify-center gap-6">
               <a
-                [href]="employee.receipts[paymentAmounts.length - 1 - i]"
+                [href]="
+                  employee.paymentsPicturePath![paymentAmounts.length - 1 - i]
+                "
                 target="_blank"
                 class="group inline-flex items-center gap-2"
               >
                 <img
-                  src="../../../assets/img/validating-ticket.png"
-                  class="w-12 h-12 object-cover rounded-md border border-slate-200 dark:border-slate-700"
-                  alt="Bank Transfer Receipt"
+                  src="../../../assets/img/receipt.png"
+                  class="w-12 h-12 object-cover rounded-md border bg-white border-slate-200 dark:border-slate-700"
+                  alt=""
                 />
                 <span
                   class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline"
-                  >Reçu</span
+                  >Facture</span
                 >
               </a>
-              <button
-                *ngIf="this.auth.isAdmin"
-                (click)="attachReceipt(paymentAmounts.length - 1 - i)"
-                class="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                Changer Reçu
-              </button>
-            </ng-container>
 
-            <!-- attach when missing -->
-            <ng-container
-              *ngIf="
-                !employee.receipts ||
-                !employee.receipts[paymentAmounts.length - 1 - i]
-              "
-            >
-              <button
-                *ngIf="this.auth.isAdmin"
-                (click)="attachReceipt(paymentAmounts.length - 1 - i)"
-                class="px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
+              <ng-container
+                *ngIf="
+                  employee.receipts &&
+                  employee.receipts[paymentAmounts.length - 1 - i]
+                "
               >
-                Attacher Reçu
-              </button>
-            </ng-container>
-          </div>
-        </li>
-      </ul>
+                <a
+                  [href]="employee.receipts[paymentAmounts.length - 1 - i]"
+                  target="_blank"
+                  class="group inline-flex items-center gap-2"
+                >
+                  <img
+                    src="../../../assets/img/validating-ticket.png"
+                    class="w-12 h-12 object-cover rounded-md border border-slate-200 dark:border-slate-700"
+                    alt="Bank Transfer Receipt"
+                  />
+                  <span
+                    class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline"
+                    >Reçu</span
+                  >
+                </a>
+                <button
+                  *ngIf="this.auth.isAdmin"
+                  (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                  class="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Changer Reçu
+                </button>
+              </ng-container>
+
+              <ng-container
+                *ngIf="
+                  !employee.receipts ||
+                  !employee.receipts[paymentAmounts.length - 1 - i]
+                "
+              >
+                <button
+                  *ngIf="this.auth.isAdmin"
+                  (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                  class="px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
+                >
+                  Attacher Reçu
+                </button>
+              </ng-container>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <input
+        type="file"
+        id="receiptFileInput"
+        style="display: none"
+        (change)="onReceiptFileSelected($any($event.target).files)"
+      />
     </div>
-
-    <!-- hidden input for receipts -->
-    <input
-      type="file"
-      id="receiptFileInput"
-      style="display: none"
-      (change)="onReceiptFileSelected($any($event.target).files)"
-    />
   </div>
 </div>
-<!-- ╚═══════════════════════════════════════════════╝ -->
 
 <!-- Access-code prompt -->
 <div
