@@ -2562,32 +2562,34 @@ export class EmployeePageComponent implements OnInit {
       const [mStr, , yStr] = this.editorDayKey.split('-');
       const monthKey = this.mmKey(Number(yStr), Number(mStr));
       const docRef = this.afs.doc(
-        this.pathForDayTotal(ownerUid, empUid, this.editorDayKey)
+        `users/${ownerUid}/employees/${empUid}/dayTotals/${this.editorDayKey}`
       );
+
+      // 👇 Normalize to strings so trim() is always safe
+      const expectedStr = String(this.editorExpected ?? '').trim();
+      const totalStr = String(this.editorTotal ?? '').trim();
 
       const setData: any = { monthKey };
       const deletes: string[] = [];
 
-      if (this.editorExpected.trim() === '') {
-        deletes.push('expected'); // clear → show "—" in UI
+      if (expectedStr === '') {
+        deletes.push('expected');
       } else {
-        const n = Number(this.editorExpected);
+        const n = Number(expectedStr);
         if (Number.isNaN(n) || n < 0) throw new Error('Attendu invalide');
         setData.expected = n;
       }
 
-      if (this.editorTotal.trim() === '') {
-        deletes.push('total'); // clear → behaves like 0 in ratio
+      if (totalStr === '') {
+        deletes.push('total');
       } else {
-        const n = Number(this.editorTotal);
+        const n = Number(totalStr);
         if (Number.isNaN(n) || n < 0) throw new Error('Total invalide');
         setData.total = n;
       }
 
-      // 1) upsert numeric fields + monthKey
       await docRef.set(setData, { merge: true });
 
-      // 2) delete cleared fields
       if (deletes.length) {
         const delPayload: any = {};
         deletes.forEach(
