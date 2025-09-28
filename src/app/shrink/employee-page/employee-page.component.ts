@@ -58,6 +58,9 @@ export class EmployeePageComponent implements OnInit {
     { code: 'N', label: 'Néant' },
   ];
 
+  /** dayKey "M-D-YYYY" -> { expected, total } */
+  monthlyDayTotals: Record<string, { expected: number; total: number }> = {};
+
   public friendlyFromKey(key: string): string {
     // key examples: "8-23-2025" or "8-23-2025-09-15-02" → show DD/MM/YYYY
     const [m, d, y] = key
@@ -498,6 +501,8 @@ export class EmployeePageComponent implements OnInit {
       );
 
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
+      await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
+      this.generateCollectionsTable(this.givenMonth, this.givenYear);
 
       this.updatePerformanceGraphics(this.graphicPerformanceTimeRange);
     });
@@ -2411,5 +2416,102 @@ export class EmployeePageComponent implements OnInit {
     this.statePickerKey = '';
     this.statePickerCurr = undefined;
     this.selectedState = '';
+  }
+
+  private mmKey(y: number, m: number) {
+    return `${y}-${String(m).padStart(2, '0')}`;
+  }
+
+  private rgbaFromRgb(rgb: string, alpha = 0.88) {
+    // "rgb(255, 0, 0)" -> "rgba(255, 0, 0, 0.88)"
+    return rgb.replace('rgb(', 'rgba(').replace(')', `,${alpha})`);
+  }
+
+  private async loadDayTotalsForMonth(
+    month: number,
+    year: number
+  ): Promise<void> {
+    this.monthlyDayTotals = {};
+    const ownerUid = this.auth.currentUser?.uid;
+    const empUid = this.employee?.uid;
+    if (!ownerUid || !empUid) return;
+
+    const monthKey = this.mmKey(year, month);
+    // Query only this month (thanks to monthKey in your CF)
+    const col = this.afs.collection(
+      `users/${ownerUid}/employees/${empUid}/dayTotals`,
+      (ref) => ref.where('monthKey', '==', monthKey)
+    );
+
+    const snap = await firstValueFrom(col.get());
+    snap.forEach((doc) => {
+      const d: any = doc.data();
+      const expected = Number(d?.expected || 0);
+      const total = Number(
+        d?.total ??
+          d?.collected ?? // fallback if you choose a different field name
+          d?.paid ??
+          0
+      );
+      this.monthlyDayTotals[doc.id] = { expected, total };
+    });
+  }
+
+  generateCollectionsTable(month: number, year: number) {
+    const body = document.getElementById('collections-body');
+    if (!body) return;
+
+    body.innerHTML = '';
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const firstDayIndex = new Date(year, month - 1, 1).getDay();
+
+    let date = 1;
+    for (let i = 0; i < 6; i++) {
+      const row = document.createElement('tr');
+
+      for (let j = 0; j < 7; j++) {
+        const cell = document.createElement('td');
+
+        if (i === 0 && j < firstDayIndex) {
+          cell.classList.add('not-filled');
+          cell.innerHTML = '';
+        } else if (date > daysInMonth) {
+          cell.classList.add('bg-gray-200', 'p-16');
+          cell.innerHTML = '';
+        } else {
+          const dayKey = `${month}-${date}-${year}`;
+          const rec = this.monthlyDayTotals[dayKey];
+
+          cell.classList.add('border', 'border-black', 'p-4', 'text-center');
+
+          if (rec && rec.expected > 0) {
+            const pct = Math.max(
+              0,
+              Math.min(100, Math.round((rec.total / rec.expected) * 100))
+            );
+            const color = this.compute.getGradientColor(pct);
+            cell.style.backgroundColor = this.rgbaFromRgb(color, 0.9);
+            cell.style.color = '#fff';
+            cell.innerHTML = `${date}<br>${pct}%`;
+            cell.title = `Total: ${rec.total.toLocaleString()} • Attendu: ${rec.expected.toLocaleString()}`;
+          } else if (rec && rec.expected === 0) {
+            cell.classList.add('bg-slate-200');
+            cell.innerHTML = `${date}<br>—`;
+            cell.title = 'Attendu: 0';
+          } else {
+            // no data for that day
+            cell.innerHTML = `${date}`;
+          }
+
+          date++;
+        }
+
+        row.appendChild(cell);
+      }
+
+      body.appendChild(row);
+      if (date > daysInMonth) break;
+    }
   }
 }
