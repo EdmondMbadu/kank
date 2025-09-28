@@ -175,6 +175,8 @@ export class TodayComponent {
   summaryContent: string[] = [];
   selectedDocId: string | null = null;
   searchText = '';
+  isSunday = new Date().getDay() === 0;
+
   // ───── unlocking state ─────────────────────────────────────────
   codesStored: string[] = (this.auth.currentUser?.teamCode ?? '')
     .split('-')
@@ -707,10 +709,9 @@ export class TodayComponent {
     this.updateOkChips();
   }
 
-    /** Pour sécuriser l’affichage de la jauge et des classes */
+  /** Pour sécuriser l’affichage de la jauge et des classes */
   get clampedPerc(): number {
     const p = Number(this.perc || 0);
     return Math.max(0, Math.min(100, isFinite(p) ? p : 0));
   }
-
 }
