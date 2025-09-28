@@ -1197,3 +1197,199 @@ function buildRecruitmentMessage(e) {
     `Merci pour la confiance à la FONDATION GERVAIS.`,
   ].join("\n");
 }
+
+
+/* ─────────────── Helpers ─────────────── */
+
+const EN_DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const FR_DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+
+function norm(s) {return String(s == null ? "" : s).trim().toLowerCase();}
+
+function paymentDayToIndex(label) {
+  const n = norm(label);
+  let i = EN_DAYS.indexOf(n);
+  if (i >= 0) return i;
+  i = FR_DAYS.indexOf(n);
+  if (i >= 0) return i;
+  const tri = n.slice(0, 3);
+  i = EN_DAYS.findIndex((x) => x.slice(0, 3) === tri);
+  if (i >= 0) return i;
+  i = FR_DAYS.findIndex((x) => x.slice(0, 3) === tri);
+  if (i >= 0) return i;
+  return -1;
+}
+
+/** Build today info for a given IANA timezone (e.g., "Africa/Kinshasa") */
+function dayInfo(timeZone, d = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    weekday: "long",
+  });
+  const parts = fmt.formatToParts(d);
+  const getNum = (t) => Number((parts.find((p) => p.type === t) || {}).value);
+  const wd = (parts.find((p) => p.type === "weekday") || {}).value || "Sunday";
+  const m = getNum("month");
+  const dd = getNum("day");
+  const y = getNum("year");
+  // Your app commonly uses "M-D-YYYY" (no leading zeros)
+  const dayKey = `${m}-${dd}-${y}`;
+  const dayIndex = EN_DAYS.indexOf(norm(wd));
+  return {dayKey, dayIndex, y, m, dd};
+}
+
+function monthKey(y, m) {
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+function computeMinPayment(c) {
+  const total = Number(c.amountToPay || 0);
+  const periods = Number(c.paymentPeriodRange || 0);
+  if (!periods) return 0;
+  return Math.round(total / periods);
+}
+
+function isAlive(c) {
+  const v = norm(c.vitalStatus);
+  return v === "" || v === "vivant";
+}
+
+function startedAtLeastAWeekAgo(targetY, targetM, targetD, startStr) {
+  if (!startStr) return true;
+  const parts = String(startStr).split("-").map(Number); // "MM-DD-YYYY"
+  const mm = parts[0]; const dd = parts[1]; const yyyy = parts[2];
+  if (!yyyy || !mm || !dd) return true;
+  const start = new Date(yyyy, mm - 1, dd);
+  const target = new Date(targetY, targetM - 1, targetD);
+  const oneWeekAgo = new Date(target);
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 6); // mirrors your UI logic
+  return start <= oneWeekAgo;
+}
+
+function sameDayKey(startStr, dayKey) {
+  return !!startStr && String(startStr).startsWith(dayKey);
+}
+
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/* ─────────────── Core per-owner job ─────────────── */
+
+async function computeExpectedForOwnerDay(ownerUid, timeZone) {
+  const info = dayInfo(timeZone, new Date());
+  const {dayKey, dayIndex, y, m, dd} = info;
+  const nowMs = Date.now();
+  const sod = new Date(y, m - 1, dd).getTime();
+  const mKey = monthKey(y, m);
+
+  // Load all employees for this owner
+  const empsSnap = await db.collection(`users/${ownerUid}/employees`).get();
+  const agentUids = empsSnap.docs.map((d) => d.id).filter(Boolean);
+  if (!agentUids.length) return;
+
+  const expectedByAgent = new Map();
+
+  // Pull clients in batches with 'in' (max 10 items)
+  for (const group of chunk(agentUids, 10)) {
+    const qs = await db.collection(`users/${ownerUid}/clients`)
+        .where("agent", "in", group)
+        .get();
+
+    qs.forEach((doc) => {
+      const c = doc.data();
+      const agentUid = c.agent;
+      const pdi = paymentDayToIndex(c.paymentDay);
+      if (pdi !== dayIndex) return;
+
+      // Eligibility mirrors your UI:
+      if (!isAlive(c)) return; // alive
+      if (Number(c.debtLeft || 0) <= 0) return; // has debt
+      if (sameDayKey(c.debtCycleStartDate, dayKey)) return; // not starting today
+      if (!startedAtLeastAWeekAgo(y, m, dd, c.debtCycleStartDate)) return; // ≥ ~1 week old
+
+      const min = computeMinPayment(c);
+      const prev = expectedByAgent.get(agentUid) || 0;
+      expectedByAgent.set(agentUid, prev + (Number.isFinite(min) ? min : 0));
+    });
+  }
+
+  // Write 'expected' per employee/day (write-once if already set)
+  const writes = [];
+  for (const [agentUid, expected] of expectedByAgent.entries()) {
+    const ref = db.doc(`users/${ownerUid}/employees/${agentUid}/dayTotals/${dayKey}`);
+    writes.push(
+        db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref);
+          const already = snap.exists ? Number((snap.data() || {}).expected || 0) : 0;
+          if (already > 0) return; // keep first value (write-once)
+          tx.set(ref, {
+            expected,
+            expectedSetMs: nowMs,
+            dayKey,
+            dayStartMs: sod,
+            monthKey: mKey,
+            updatedAtMs: nowMs,
+          }, {merge: true});
+        }),
+    );
+  }
+  await Promise.allSettled(writes);
+}
+
+/* ─────────────── Owners selection ─────────────── */
+
+// PROD: scan all users, filter out mode === 'testing'
+async function getProdOwners() {
+  const snap = await db.collection("users").get();
+  return snap.docs
+      .filter((d) => norm((d.data() || {}).mode) !== "testing")
+      .map((d) => d.id);
+}
+
+// TEST: only users with mode === 'testing'
+async function getTestingOwners() {
+  const snap = await db.collection("users").where("mode", "==", "testing").get();
+  return snap.docs.map((d) => d.id);
+}
+
+/* ─────────────── Scheduled functions ─────────────── */
+
+/**
+ * PROD — 08:00 Africa/Kinshasa, Monday–Saturday (skip Sunday).
+ * Runs for every user EXCEPT those with mode="testing".
+ */
+exports.scheduleExpectedKinshasaProd = functions.pubsub
+    .schedule("0 8 * * 1-6") // Mon–Sat at 08:00
+    .timeZone("Africa/Kinshasa")
+    .onRun(async () => {
+      const owners = await getProdOwners();
+      // Extra guard (even though cron excludes Sun)
+      const {dayIndex} = dayInfo("Africa/Kinshasa", new Date());
+      if (dayIndex === 0) return null; // Sunday
+      for (const ownerUid of owners) {
+        await computeExpectedForOwnerDay(ownerUid, "Africa/Kinshasa");
+      }
+      return null;
+    });
+
+/**
+ * TESTING — 08:00 America/Los_Angeles (Las Vegas).
+ * Runs ONLY for users with mode="testing".
+ * (During testing, feel free to tweak cron, e.g.,  for every 10 minutes.)
+ */
+exports.scheduleExpectedTestingPT = functions.pubsub
+    .schedule("0 8 * * *") // Daily at 08:00 PT
+    .timeZone("America/Los_Angeles")
+    .onRun(async () => {
+      const owners = await getTestingOwners();
+      for (const ownerUid of owners) {
+        await computeExpectedForOwnerDay(ownerUid, "America/Los_Angeles");
+      }
+      return null;
+    });
