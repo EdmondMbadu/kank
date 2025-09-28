@@ -877,156 +877,6 @@
     </div>
   </main>
 </div>
-<!-- Access-code prompt -->
-<div
-  *ngIf="!isAuthorized && !auth.isAdmninistrator && paymentCodeLoaded"
-  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
->
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-80">
-    <p class="mb-4 text-gray-900 dark:text-gray-100">
-      Veuillez entrer votre code pour accéder à cette page&nbsp;:
-    </p>
-
-    <input
-      [(ngModel)]="code"
-      (keyup.enter)="verifyCode()"
-      type="text"
-      class="w-full mb-4 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-      placeholder="Code"
-      autofocus
-    />
-
-    <!--  primary / confirm  -->
-    <button
-      (click)="verifyCode()"
-      class="w-full py-2 mb-2 rounded text-white font-medium bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
-    >
-      Valider
-    </button>
-
-    <!--  secondary / cancel  -->
-    <button
-      routerLink="/home"
-      class="w-full py-2 rounded font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-    >
-      Annuler
-    </button>
-
-    <p *ngIf="errorMsg" class="mt-3 text-red-600 text-center dark:text-red-400">
-      {{ errorMsg }}
-    </p>
-  </div>
-</div>
-
-<!-- Main modal -->
-<div
-  *ngIf="displayMakePayment"
-  id="defaultModal"
-  tabindex="-1"
-  class="w-full max-w-md max-h-full fixed inset-x-0 mx-auto top-36 z-50 p-4 flex pb-6"
->
-  <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
-    <!-- Modal content -->
-    <div
-      class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5"
-    >
-      <!-- Modal header -->
-      <div
-        class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600"
-      >
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Paiment a {{ employee.firstName }} {{ employee.middleName }}
-          {{ employee.lastName }}
-        </h3>
-        <button
-          type="button"
-          class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
-          data-modal-toggle="defaultModal"
-          (click)="toggleMakePayment()"
-        >
-          <svg
-            aria-hidden="true"
-            class="w-5 h-5"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-              clip-rule="evenodd"
-            ></path>
-          </svg>
-          <span class="sr-only">Close modal</span>
-        </button>
-      </div>
-      <!-- Modal body -->
-      <div>
-        <div class="grid gap-4 mb-4 sm:grid-cols-2">
-          <div>
-            <label
-              for="salaryPaid"
-              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-              >Montant Payer $</label
-            >
-            <input
-              type="text"
-              name="salaryPaid"
-              id="brand"
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-              [(ngModel)]="salaryPaid"
-              placeholder="100"
-              required=""
-            />
-          </div>
-        </div>
-        <div class="mb-4">
-          <h1 class="mb-4">Attacher l'Image de Paiement</h1>
-          <input
-            type="file"
-            id="getFile"
-            style="display: none"
-            (change)="startUpload($any($event.target).files)"
-          />
-          <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
-          <img
-            *ngIf="currentDownloadUrl === ''"
-            class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
-            (click)="onImageClick()"
-            src="../../../assets/img/file.png"
-            alt="file"
-          />
-          <img
-            *ngIf="currentDownloadUrl !== ''"
-            class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
-            (click)="onImageClick()"
-            [src]="currentDownloadUrl"
-            alt="file"
-          />
-
-          <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
-        </div>
-
-        <div class="flex flex-row mx-auto justify-center space-x-4">
-          <button
-            type="submit"
-            (click)="toggleMakePayment()"
-            class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center"
-          >
-            Annuler
-          </button>
-          <button
-            type="submit"
-            (click)="addPayment()"
-            class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center"
-          >
-            Ajouter
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- ╔══════════ Reçus d’Audit (modern card) ══════════╗ -->
 <div class="mt-8 container mx-auto px-4">
@@ -1358,6 +1208,156 @@
 </div>
 <!-- ╚═══════════════════════════════════════════════╝ -->
 
+<!-- Access-code prompt -->
+<div
+  *ngIf="!isAuthorized && !auth.isAdmninistrator && paymentCodeLoaded"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+>
+  <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-80">
+    <p class="mb-4 text-gray-900 dark:text-gray-100">
+      Veuillez entrer votre code pour accéder à cette page&nbsp;:
+    </p>
+
+    <input
+      [(ngModel)]="code"
+      (keyup.enter)="verifyCode()"
+      type="text"
+      class="w-full mb-4 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+      placeholder="Code"
+      autofocus
+    />
+
+    <!--  primary / confirm  -->
+    <button
+      (click)="verifyCode()"
+      class="w-full py-2 mb-2 rounded text-white font-medium bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+    >
+      Valider
+    </button>
+
+    <!--  secondary / cancel  -->
+    <button
+      routerLink="/home"
+      class="w-full py-2 rounded font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+    >
+      Annuler
+    </button>
+
+    <p *ngIf="errorMsg" class="mt-3 text-red-600 text-center dark:text-red-400">
+      {{ errorMsg }}
+    </p>
+  </div>
+</div>
+
+<!-- Main modal -->
+<div
+  *ngIf="displayMakePayment"
+  id="defaultModal"
+  tabindex="-1"
+  class="w-full max-w-md max-h-full fixed inset-x-0 mx-auto top-36 z-50 p-4 flex pb-6"
+>
+  <div class="relative p-4 w-full max-w-2xl h-full md:h-auto">
+    <!-- Modal content -->
+    <div
+      class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5"
+    >
+      <!-- Modal header -->
+      <div
+        class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600"
+      >
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Paiment a {{ employee.firstName }} {{ employee.middleName }}
+          {{ employee.lastName }}
+        </h3>
+        <button
+          type="button"
+          class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
+          data-modal-toggle="defaultModal"
+          (click)="toggleMakePayment()"
+        >
+          <svg
+            aria-hidden="true"
+            class="w-5 h-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            ></path>
+          </svg>
+          <span class="sr-only">Close modal</span>
+        </button>
+      </div>
+      <!-- Modal body -->
+      <div>
+        <div class="grid gap-4 mb-4 sm:grid-cols-2">
+          <div>
+            <label
+              for="salaryPaid"
+              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >Montant Payer $</label
+            >
+            <input
+              type="text"
+              name="salaryPaid"
+              id="brand"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+              [(ngModel)]="salaryPaid"
+              placeholder="100"
+              required=""
+            />
+          </div>
+        </div>
+        <div class="mb-4">
+          <h1 class="mb-4">Attacher l'Image de Paiement</h1>
+          <input
+            type="file"
+            id="getFile"
+            style="display: none"
+            (change)="startUpload($any($event.target).files)"
+          />
+          <!-- <svg class=" w-32 h-32 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg> -->
+          <img
+            *ngIf="currentDownloadUrl === ''"
+            class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onImageClick()"
+            src="../../../assets/img/file.png"
+            alt="file"
+          />
+          <img
+            *ngIf="currentDownloadUrl !== ''"
+            class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onImageClick()"
+            [src]="currentDownloadUrl"
+            alt="file"
+          />
+
+          <!-- <img class="w-72 rounded-lg sm:rounded-none sm:rounded-l-lg" src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/bonnie-green.png" alt="Bonnie Avatar"> -->
+        </div>
+
+        <div class="flex flex-row mx-auto justify-center space-x-4">
+          <button
+            type="submit"
+            (click)="toggleMakePayment()"
+            class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            (click)="addPayment()"
+            class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center"
+          >
+            Ajouter
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <div
   *ngIf="displayAttendance"
   class="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-4"
