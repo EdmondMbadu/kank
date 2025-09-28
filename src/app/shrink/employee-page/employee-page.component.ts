@@ -18,6 +18,8 @@ import { LocationCoordinates } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { firstValueFrom } from 'rxjs';
+import firebase from 'firebase/compat/app';
+
 // at the top, with other imports
 import exifr from 'exifr'; // if TS complains, use: import * as exifr from 'exifr';
 
@@ -43,6 +45,13 @@ export class EmployeePageComponent implements OnInit {
   public statePickerKey = ''; // key we will edit (e.g. "8-23-2025" or "8-23-2025-09-15-02")
   public statePickerCurr: string | undefined; // current state at that key, if any
   selectedState: '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' = '';
+
+  showCollectionsEditor = false;
+  editorDayKey = '';
+  editorExpected = ''; // string so empty means "clear"
+  editorTotal = '';
+  editorBusy = false;
+  editorErr = '';
 
   pickerStates: Array<{
     code: '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N';
@@ -2503,6 +2512,13 @@ export class EmployeePageComponent implements OnInit {
             // no data for that day
             cell.innerHTML = `${date}`;
           }
+          if (this.auth.isAdmninistrator) {
+            cell.classList.add('cursor-pointer');
+            const dayKey = `${month}-${date}-${year}`;
+            cell.addEventListener('click', () =>
+              this.openCollectionsEditor(dayKey)
+            );
+          }
 
           date++;
         }
@@ -2512,6 +2528,117 @@ export class EmployeePageComponent implements OnInit {
 
       body.appendChild(row);
       if (date > daysInMonth) break;
+    }
+  }
+
+  // OPEN the editor for a given day
+  openCollectionsEditor(dayKey: string) {
+    if (!this.auth.isAdmninistrator) return;
+    this.editorDayKey = dayKey;
+    const rec: any = this.monthlyDayTotals?.[dayKey] || {};
+    // if 0 or missing → show empty
+    this.editorExpected =
+      rec?.expected && Number(rec.expected) > 0 ? String(rec.expected) : '';
+    this.editorTotal =
+      rec?.total && Number(rec.total) > 0 ? String(rec.total) : '';
+    this.editorErr = '';
+    this.showCollectionsEditor = true;
+  }
+
+  private pathForDayTotal(ownerUid: string, empUid: string, dayKey: string) {
+    return `users/${ownerUid}/employees/${empUid}/dayTotals/${dayKey}`;
+  }
+
+  // SAVE (set / clear fields)
+  async saveCollectionsEditor() {
+    if (!this.auth.isAdmninistrator) return;
+    const ownerUid = this.auth.currentUser?.uid;
+    const empUid = this.employee?.uid;
+    if (!ownerUid || !empUid || !this.editorDayKey) return;
+
+    this.editorBusy = true;
+    this.editorErr = '';
+    try {
+      const [mStr, , yStr] = this.editorDayKey.split('-');
+      const monthKey = this.mmKey(Number(yStr), Number(mStr));
+      const docRef = this.afs.doc(
+        this.pathForDayTotal(ownerUid, empUid, this.editorDayKey)
+      );
+
+      const setData: any = { monthKey };
+      const deletes: string[] = [];
+
+      if (this.editorExpected.trim() === '') {
+        deletes.push('expected'); // clear → show "—" in UI
+      } else {
+        const n = Number(this.editorExpected);
+        if (Number.isNaN(n) || n < 0) throw new Error('Attendu invalide');
+        setData.expected = n;
+      }
+
+      if (this.editorTotal.trim() === '') {
+        deletes.push('total'); // clear → behaves like 0 in ratio
+      } else {
+        const n = Number(this.editorTotal);
+        if (Number.isNaN(n) || n < 0) throw new Error('Total invalide');
+        setData.total = n;
+      }
+
+      // 1) upsert numeric fields + monthKey
+      await docRef.set(setData, { merge: true });
+
+      // 2) delete cleared fields
+      if (deletes.length) {
+        const delPayload: any = {};
+        deletes.forEach(
+          (f) => (delPayload[f] = firebase.firestore.FieldValue.delete())
+        );
+        await docRef.update(delPayload).catch(() => {});
+      }
+
+      await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
+      this.generateCollectionsTable(this.givenMonth, this.givenYear);
+      this.showCollectionsEditor = false;
+    } catch (e: any) {
+      this.editorErr = e?.message || String(e);
+    } finally {
+      this.editorBusy = false;
+    }
+  }
+
+  // QUICK helpers
+  async clearExpectedOnly() {
+    this.editorExpected = '';
+    await this.saveCollectionsEditor();
+  }
+  async clearTotalOnly() {
+    this.editorTotal = '';
+    await this.saveCollectionsEditor();
+  }
+
+  // DELETE entire doc (table shows plain date = “empty”)
+  async deleteCollectionsRecord() {
+    if (!this.auth.isAdmninistrator) return;
+    const ok = confirm('Supprimer entièrement cet enregistrement ?');
+    if (!ok) return;
+
+    const ownerUid = this.auth.currentUser?.uid;
+    const empUid = this.employee?.uid;
+    if (!ownerUid || !empUid || !this.editorDayKey) return;
+
+    this.editorBusy = true;
+    this.editorErr = '';
+    try {
+      await this.afs
+        .doc(this.pathForDayTotal(ownerUid, empUid, this.editorDayKey))
+        .delete();
+      delete this.monthlyDayTotals[this.editorDayKey];
+      this.generateCollectionsTable(this.givenMonth, this.givenYear);
+      this.showCollectionsEditor = false;
+    } catch (e: any) {
+      this.editorErr = e?.message || String(e);
+    } finally {
+      this.editorBusy = false;
     }
   }
 }

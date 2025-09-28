@@ -2285,3 +2285,99 @@
   </div>
 </div>
 <!-- ────────────────────────────────────────────────────────────── -->
+
+<!-- Collections Editor (admin only) -->
+<div
+  *ngIf="showCollectionsEditor"
+  class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+>
+  <div
+    class="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden"
+  >
+    <!-- Header -->
+    <div
+      class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+    >
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Modifier — {{ friendlyFromKey(editorDayKey) }}
+      </h3>
+      <button
+        (click)="showCollectionsEditor = false"
+        class="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1.5 rounded-lg"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="px-4 py-4 space-y-3">
+      <div class="text-xs text-gray-500 dark:text-gray-400">
+        Laissez vide pour <strong>effacer</strong> le champ.
+      </div>
+
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-200"
+        >Attendu (expected)</label
+      >
+      <input
+        type="number"
+        min="0"
+        [(ngModel)]="editorExpected"
+        class="w-full p-2 rounded-lg border bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-slate-100"
+      />
+
+      <label
+        class="block text-sm font-medium text-gray-700 dark:text-gray-200 mt-2"
+        >Total (collected)</label
+      >
+      <input
+        type="number"
+        min="0"
+        [(ngModel)]="editorTotal"
+        class="w-full p-2 rounded-lg border bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 dark:text-slate-100"
+      />
+
+      <p *ngIf="editorErr" class="text-sm text-rose-600 dark:text-rose-400">
+        {{ editorErr }}
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div
+      class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-2 justify-between"
+    >
+      <div class="flex gap-2">
+        <button
+          (click)="clearExpectedOnly()"
+          [disabled]="editorBusy"
+          class="px-3 py-1.5 text-xs rounded-full bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-200"
+        >
+          Effacer Attendu
+        </button>
+        <button
+          (click)="clearTotalOnly()"
+          [disabled]="editorBusy"
+          class="px-3 py-1.5 text-xs rounded-full bg-amber-100 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-200"
+        >
+          Effacer Total
+        </button>
+      </div>
+
+      <div class="flex gap-2">
+        <button
+          (click)="deleteCollectionsRecord()"
+          [disabled]="editorBusy"
+          class="px-3 py-1.5 text-xs rounded-full bg-rose-600 text-white hover:bg-rose-700"
+        >
+          Supprimer le jour
+        </button>
+        <button
+          (click)="saveCollectionsEditor()"
+          [disabled]="editorBusy"
+          class="px-4 py-1.5 text-sm rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
+        >
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
