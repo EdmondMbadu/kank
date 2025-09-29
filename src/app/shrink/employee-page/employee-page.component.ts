@@ -2643,4 +2643,42 @@ export class EmployeePageComponent implements OnInit {
       this.editorBusy = false;
     }
   }
+
+  // === Ring geometry ===
+  size = 220; // overall SVG size (px)
+  strokeWidth = 16;
+
+  get radius2() {
+    return (this.size - this.strokeWidth) / 2;
+  }
+  get center() {
+    return this.size / 2;
+  }
+  get circumference() {
+    return 2 * Math.PI * this.radius2;
+  }
+
+  // Use your computed month % (string) -> number
+  get avgPerf(): number {
+    return Number(this.performancePercentageMonth) || 0;
+  }
+
+  // Unique-ish gradient id per month/year
+  get gradId(): string {
+    return `perfGrad-${this.givenYear}-${this.givenMonth}`;
+  }
+
+  // 0..100 -> stroke dasharray "drawn blank"
+  progressDasharray(): string {
+    const drawn = (this.avgPerf / 100) * this.circumference;
+    return `${drawn} ${this.circumference}`;
+  }
+
+  // Use your existing gradient color util for consistency
+  colorForPerf(n: number): string {
+    return this.compute.getGradientColor(n); // returns e.g. "rgb(…)"
+  }
+
+  // 36 ticks from -90° baseline every 10% (i.e., 0..100 step 10 -> 11 ticks)
+  ticks: number[] = Array.from({ length: 11 }, (_, i) => i * 36); // 360° * 10% = 36°
 }

@@ -258,18 +258,129 @@
                 </select>
               </div>
             </div>
-
+            <!-- PERFORMANCE RING — replaces the <plotly-plot> container -->
             <div
               class="container mt-5 flex mx-auto flex-col md:flex-row md:justify-center"
             >
               <div class="w-full max-w-xl mx-auto">
                 <div
-                  class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm backdrop-blur-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
+                  class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm backdrop-blur-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
                 >
-                  <plotly-plot
-                    [data]="graphMonthPerformance.data"
-                    [layout]="graphMonthPerformance.layout"
-                  ></plotly-plot>
+                  <div class="relative flex items-center justify-center">
+                    <svg
+                      [attr.width]="size"
+                      [attr.height]="size"
+                      [attr.viewBox]="'0 0 ' + size + ' ' + size"
+                      class="drop-shadow-sm"
+                    >
+                      <defs>
+                        <!-- subtle glow -->
+                        <filter
+                          id="perfGlow"
+                          x="-50%"
+                          y="-50%"
+                          width="200%"
+                          height="200%"
+                        >
+                          <feGaussianBlur stdDeviation="3.5" result="blur" />
+                          <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                          </feMerge>
+                        </filter>
+
+                        <!-- smooth gradient for trail (very faint) -->
+                        <linearGradient
+                          [attr.id]="gradId"
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="100%"
+                        >
+                          <stop offset="0%" stop-color="#e5e7eb" />
+                          <stop offset="100%" stop-color="#cbd5e1" />
+                        </linearGradient>
+                      </defs>
+
+                      <!-- background ring -->
+                      <circle
+                        [attr.cx]="center"
+                        [attr.cy]="center"
+                        [attr.r]="radius2"
+                        [attr.stroke]="'url(#' + gradId + ')'"
+                        [attr.stroke-width]="strokeWidth"
+                        fill="none"
+                      ></circle>
+
+                      <!-- tick marks (every 10%) -->
+                      <g
+                        [attr.transform]="
+                          'translate(' + center + ',' + center + ')'
+                        "
+                      >
+                        <ng-container *ngFor="let t of ticks">
+                          <line
+                            [attr.x1]="0"
+                            [attr.y1]="-radius2"
+                            [attr.x2]="0"
+                            [attr.y2]="-radius2 + 8"
+                            stroke="#c7d2fe"
+                            stroke-width="2"
+                            [attr.transform]="'rotate(' + t + ')'"
+                            class="opacity-50 dark:opacity-40"
+                          />
+                        </ng-container>
+                      </g>
+
+                      <!-- progress arc -->
+                      <circle
+                        [attr.cx]="center"
+                        [attr.cy]="center"
+                        [attr.r]="radius2"
+                        [attr.stroke]="colorForPerf(avgPerf)"
+                        [attr.stroke-width]="strokeWidth"
+                        stroke-linecap="round"
+                        fill="none"
+                        [attr.stroke-dasharray]="progressDasharray()"
+                        [attr.stroke-dashoffset]="0"
+                        [attr.transform]="
+                          'rotate(-90 ' + center + ' ' + center + ')'
+                        "
+                        filter="url(#perfGlow)"
+                        class="transition-all duration-700 ease-out"
+                      ></circle>
+                    </svg>
+
+                    <!-- center labels -->
+                    <div
+                      class="absolute inset-0 flex flex-col items-center justify-center"
+                    >
+                      <div
+                        class="text-4xl font-extrabold text-slate-900 dark:text-slate-100"
+                      >
+                        {{ avgPerf | number : "1.0-0" }}%
+                      </div>
+                      <div
+                        class="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                      >
+                        {{ time.monthFrenchNames[givenMonth - 1] }}
+                        {{ givenYear }}
+                      </div>
+                    </div>
+
+                    <!-- tiny status chip -->
+                    <div
+                      class="absolute -bottom-1.5 right-1 flex items-center gap-1 text-[11px]"
+                    >
+                      <span
+                        class="inline-block h-2.5 w-2.5 rounded-full"
+                        [ngStyle]="{ background: colorForPerf(avgPerf) }"
+                      ></span>
+                      <span class="text-slate-500 dark:text-slate-400"
+                        >Performance mensuelle</span
+                      >
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
