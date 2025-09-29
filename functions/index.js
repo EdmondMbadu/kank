@@ -1030,11 +1030,14 @@ exports.scheduledSendAgentFollowups = functions.pubsub
           // Clients scheduled for *today* with debt, valid phone flag, and not "just started"
           const allClients = cliSnap.docs.map((d) => ({id: d.id, ...d.data()}));
           const clientsWithDebts = allClients.filter((c) => Number(c.debtLeft) > 0);
-          const clientsToday = clientsWithDebts.filter((c) =>
-            c.paymentDay === weekday &&
-          c.isPhoneCorrect !== "false" &&
-          didClientStartThisWeek(c),
-          );
+          const clientsToday = clientsWithDebts
+              .filter((c) =>
+                c.paymentDay === weekday &&
+    c.isPhoneCorrect !== "false" &&
+    didClientStartThisWeek(c),
+              )
+              .filter((c) => !isLeftQuitte(c)); // 🚫 drop "+Quitte"/left altogether
+
 
           // byAgent: agentUid -> { employee, current[], away[], location }
           const byAgent = new Map();
@@ -1115,22 +1118,26 @@ exports.scheduledSendAgentFollowups = functions.pubsub
             // Managers get only the aggregated load for *their* location
             const agg = aggregatedByLoc.get(myLoc) || {current: [], away: []};
             const mergedCurrent = isMgr ? [...base.current, ...agg.current] : base.current;
-            const mergedAway = isMgr ? [...base.away, ...agg.away] : base.away;
+            // const mergedAway = isMgr ? [...base.away, ...agg.away] : base.away;
 
-            const linesCurrent = mergedCurrent.map((c) => `• ${formatClientLine(c)}`);
-            const linesAway = mergedAway.map((c) => `• ${formatClientLine(c)}`);
-
+            // Defensive filter (won’t remove anything extra if step #2 is in place)
+            const effCurrent = mergedCurrent.filter((c) => !isLeftQuitte(c));
+            // const effAway = mergedAway.filter((c) => !isLeftQuitte(c)); // ex
+            const linesCurrent = effCurrent.map((c) => `• ${formatClientLine(c)}`);
+            // const linesCurrent = mergedCurrent.map((c) => `• ${formatClientLine(c)}`);
+            // const linesAway = mergedAway.map((c) => `• ${formatClientLine(c)}`);
             const message =
-            (!linesCurrent.length && !linesAway.length) ?
-              buildRecruitmentMessage(e) :
-              [
-                `Bonjour ${e.firstName || ""} ${e.lastName || ""}, voici les suivis du ${frenchDate} :`,
-                ...(linesCurrent.length ? ["", `En cours (${linesCurrent.length}) :`, ...linesCurrent] : []),
-                ...(linesAway.length ? ["", `À l’écart (${linesAway.length}) :`, ...linesAway] : []),
-                ...(isMgr && (agg.current.length || agg.away.length) ? ["", "⚠️ Inclus : clients des agents non actifs de votre site."] : []),
-                "",
-                "Merci pour la confiance à la FONDATION GERVAIS.",
-              ].join("\n");
+  (!linesCurrent.length) ?
+    buildRecruitmentMessage(e) : // if no current clients (we ignore “away” for this decision)
+    [
+      `Bonjour ${e.firstName || ""} ${e.lastName || ""}, voici les suivis du ${frenchDate} :`,
+      ...(linesCurrent.length ? ["", `En cours (${linesCurrent.length}) :`, ...linesCurrent] : []),
+      // Removed the "À l’écart" block entirely:
+      // ...(linesAway.length ? ["", `À l’écart (${linesAway.length}) :`, ...linesAway] : []),
+      ...(isMgr && (agg.current.length) ? ["", "⚠️ Inclus : clients des agents non actifs de votre site."] : []),
+      "",
+      "Merci pour la confiance à la FONDATION GERVAIS.",
+    ].join("\n");
 
             sendJobs.push(
                 sms.send({to: [to], message})
@@ -1196,6 +1203,26 @@ function buildRecruitmentMessage(e) {
     ``,
     `Merci pour la confiance à la FONDATION GERVAIS.`,
   ].join("\n");
+}
+
+function isLeftQuitte(c) {
+  // Gather possibly-used status fields (strings or arrays) and normalize
+  const fields = [
+    c.status, c.clientStatus, c.followUpStatus, c.suiviStatus,
+    c.state, c.stage, c.note, c.notes, c.flags, c.tags, c.labels,
+  ];
+  const parts = [];
+  for (const f of fields) {
+    if (!f) continue;
+    if (Array.isArray(f)) parts.push(f.join(" "));
+    else parts.push(String(f));
+  }
+  // lower-case + strip accents to match "quitté/quitte"
+  const txt = parts.join(" ").toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // Match: "+quitte", "quitte", "quitté", "left", "parti/partie"
+  return /\b\+?quittee?\b|\bleft\b|\bparti(e)?\b/.test(txt);
 }
 
 
