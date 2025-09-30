@@ -990,11 +990,12 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
 
 
 // ───────────────────────────────────────────────────────────
-// DAILY (08:00 Kinshasa) — Send agent/manager follow-ups per *location*
+// DAILY (05:00 Kinshasa) — Send agent/manager follow-ups per *location*
 // Non-working agents' clients → managers of *that* location only
+// Only send to roles: manager, agent, agent marketing/marketting
 // ───────────────────────────────────────────────────────────
 exports.scheduledSendAgentFollowups = functions.pubsub
-    .schedule("0 8 * * *")
+    .schedule("5 8 * * *")
     .timeZone("Africa/Kinshasa")
     .onRun(async () => {
       try {
@@ -1008,7 +1009,7 @@ exports.scheduledSendAgentFollowups = functions.pubsub
         const usersSnap = await db.collection("users").where("mode", "!=", "testing").get();
         if (usersSnap.empty) {console.log("No active users"); return null;}
 
-        let totalSent = 0; let totalSkippedNoPhone = 0; let totalSkippedNoWork = 0; let totalFailed = 0;
+        let totalSent = 0; let totalSkippedNoPhone = 0; let totalSkippedNoWork = 0; let totalSkippedRole = 0; let totalFailed = 0;
 
         for (const userDoc of usersSnap.docs) {
           const userId = userDoc.id;
@@ -1033,11 +1034,10 @@ exports.scheduledSendAgentFollowups = functions.pubsub
           const clientsToday = clientsWithDebts
               .filter((c) =>
                 c.paymentDay === weekday &&
-    c.isPhoneCorrect !== "false" &&
-    didClientStartThisWeek(c),
+            c.isPhoneCorrect !== "false" &&
+            didClientStartThisWeek(c),
               )
               .filter((c) => !isLeftQuitte(c)); // 🚫 drop "+Quitte"/left altogether
-
 
           // byAgent: agentUid -> { employee, current[], away[], location }
           const byAgent = new Map();
@@ -1086,7 +1086,6 @@ exports.scheduledSendAgentFollowups = functions.pubsub
           }
 
           // Index managers by location
-          // A manager "belongs" to empLocation(e) (fallback defaultLocation).
           const managersByLoc = new Map(); // loc -> Employee[]
           for (const e of employees) {
             if (roleOf(e) === "manager") {
@@ -1096,9 +1095,10 @@ exports.scheduledSendAgentFollowups = functions.pubsub
             }
           }
 
-          // Send per employee (only those who are working + have valid phone)
+          // Send per employee (only those who are working + have valid phone + allowed role)
           const sendJobs = [];
           for (const e of employees) {
+            if (!isAllowedRecipient(e)) {totalSkippedRole++; continue;}
             if (!isWorkingEmployee(e)) {totalSkippedNoWork++; continue;}
 
             const rawPhone = hasPhone(e);
@@ -1115,29 +1115,24 @@ exports.scheduledSendAgentFollowups = functions.pubsub
             const isMgr = roleOf(e) === "manager";
             const myLoc = empLocation(e, defaultLocation);
 
-            // Managers get only the aggregated load for *their* location
+            // Managers get aggregated load for their location
             const agg = aggregatedByLoc.get(myLoc) || {current: [], away: []};
             const mergedCurrent = isMgr ? [...base.current, ...agg.current] : base.current;
-            // const mergedAway = isMgr ? [...base.away, ...agg.away] : base.away;
 
-            // Defensive filter (won’t remove anything extra if step #2 is in place)
+            // Defensive filter
             const effCurrent = mergedCurrent.filter((c) => !isLeftQuitte(c));
-            // const effAway = mergedAway.filter((c) => !isLeftQuitte(c)); // ex
             const linesCurrent = effCurrent.map((c) => `• ${formatClientLine(c)}`);
-            // const linesCurrent = mergedCurrent.map((c) => `• ${formatClientLine(c)}`);
-            // const linesAway = mergedAway.map((c) => `• ${formatClientLine(c)}`);
+
             const message =
-  (!linesCurrent.length) ?
-    buildRecruitmentMessage(e) : // if no current clients (we ignore “away” for this decision)
-    [
-      `Bonjour ${e.firstName || ""} ${e.lastName || ""}, voici les suivis du ${frenchDate} :`,
-      ...(linesCurrent.length ? ["", `En cours (${linesCurrent.length}) :`, ...linesCurrent] : []),
-      // Removed the "À l’écart" block entirely:
-      // ...(linesAway.length ? ["", `À l’écart (${linesAway.length}) :`, ...linesAway] : []),
-      ...(isMgr && (agg.current.length) ? ["", "⚠️ Inclus : clients des agents non actifs de votre site."] : []),
-      "",
-      "Merci pour la confiance à la FONDATION GERVAIS.",
-    ].join("\n");
+            (!linesCurrent.length) ?
+              buildRecruitmentMessage(e) :
+              [
+                `Bonjour ${e.firstName || ""} ${e.lastName || ""}, voici les suivis du ${frenchDate} :`,
+                ...(linesCurrent.length ? ["", `En cours (${linesCurrent.length}) :`, ...linesCurrent] : []),
+                ...(isMgr && (agg.current.length) ? ["", "⚠️ Inclus : clients des agents non actifs de votre site."] : []),
+                "",
+                "Merci pour la confiance à la FONDATION GERVAIS.",
+              ].join("\n");
 
             sendJobs.push(
                 sms.send({to: [to], message})
@@ -1158,7 +1153,9 @@ exports.scheduledSendAgentFollowups = functions.pubsub
           if (sendJobs.length) await Promise.allSettled(sendJobs);
         }
 
-        console.log(`scheduledSendAgentFollowups DONE — sent: ${totalSent}, failed: ${totalFailed}, skipped(noWork): ${totalSkippedNoWork}, skipped(noPhone): ${totalSkippedNoPhone}`);
+        console.log(
+            `scheduledSendAgentFollowups DONE — sent: ${totalSent}, failed: ${totalFailed}, skipped(role): ${totalSkippedRole}, skipped(noWork): ${totalSkippedNoWork}, skipped(noPhone): ${totalSkippedNoPhone}`,
+        );
         return null;
       } catch (err) {
         console.error("scheduledSendAgentFollowups error:", err);
@@ -1166,9 +1163,19 @@ exports.scheduledSendAgentFollowups = functions.pubsub
       }
     });
 
-// ── helpers (reuse variants from your component/other functions)
+/** ── helpers (reuse variants from your component/other functions) */
 function roleOf(e) {
   return String((e && (e.role || e.position)) || "").trim().toLowerCase();
+}
+function isAllowedRecipient(e) {
+  const r = roleOf(e);
+  // Allowed roles ONLY
+  if (r === "manager") return true;
+  if (r === "agent") return true;
+  // accept common spellings for marketing agents
+  if (r === "agent marketing" || r === "agent marketting") return true;
+  // everything else (e.g., "auditrice", "auditor", etc.) is excluded
+  return false;
 }
 function isWorkingEmployee(e) {
   if (!e) return false;
@@ -1179,7 +1186,6 @@ function hasPhone(e) {
   return (e && (e.phoneNumber || e.telephone)) || "";
 }
 function empLocation(e, fallback) {
-  // If one day you store a field like e.location/site/office/branch, we’ll use it.
   return String(e.location || e.site || e.office || e.branch || fallback || "").trim();
 }
 function displayPhone(p) {
@@ -1197,16 +1203,14 @@ function formatClientLine(c) {
 }
 function buildRecruitmentMessage(e) {
   return [
-    `Bonjour ${e.firstName || ""}  ${e.lastName || ""},,`,
+    `Bonjour ${e.firstName || ""} ${e.lastName || ""},`,
     `Ozali na client programmé te lelo.`,
     `Profitez pona Marketting pe kolouka ba clients ya sika pe kotala ba clients oyo bafutaki te lobi.`,
     ``,
     `Merci pour la confiance à la FONDATION GERVAIS.`,
   ].join("\n");
 }
-
 function isLeftQuitte(c) {
-  // Gather possibly-used status fields (strings or arrays) and normalize
   const fields = [
     c.status, c.clientStatus, c.followUpStatus, c.suiviStatus,
     c.state, c.stage, c.note, c.notes, c.flags, c.tags, c.labels,
@@ -1217,11 +1221,8 @@ function isLeftQuitte(c) {
     if (Array.isArray(f)) parts.push(f.join(" "));
     else parts.push(String(f));
   }
-  // lower-case + strip accents to match "quitté/quitte"
   const txt = parts.join(" ").toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  // Match: "+quitte", "quitte", "quitté", "left", "parti/partie"
   return /\b\+?quittee?\b|\bleft\b|\bparti(e)?\b/.test(txt);
 }
 
