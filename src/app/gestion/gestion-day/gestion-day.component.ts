@@ -17,6 +17,10 @@ import { DataService } from 'src/app/services/data.service';
   styleUrls: ['./gestion-day.component.css'],
 })
 export class GestionDayComponent implements OnInit {
+  size = 220;
+  strokeWidth = 16;
+  avgPerf = 0; // 0..100
+  gradId = 'perfGrad-' + Math.random().toString(36).slice(2);
   managementInfo?: Management = {};
   constructor(
     private router: Router,
@@ -677,29 +681,32 @@ export class GestionDayComponent implements OnInit {
   }
   setGraphics() {
     let num = Number(this.percentage);
-    let gaugeColor = this.compute.getGradientColor(Number(num));
+    if (!isFinite(num)) num = 0;
+    num = Math.max(0, Math.min(100, num));
+    this.avgPerf = num; // <-- feeds the SVG ring
+
+    const gaugeColor = this.compute.getGradientColor(num);
     this.graphMonthPerformance = {
       data: [
         {
           domain: { x: [0, 1], y: [0, 1] },
           value: num,
-          title: {
-            text: `Performance Du Jour`,
-          },
+          title: { text: `Performance Du Jour` },
           type: 'indicator',
           mode: 'gauge+number',
           gauge: {
-            axis: { range: [0, 100], tickcolor: gaugeColor }, // Color of the ticks (optional)
-            bar: { color: gaugeColor }, // Single color for the gauge bar (needle)
+            axis: { range: [0, 100], tickcolor: gaugeColor },
+            bar: { color: gaugeColor },
           },
         },
       ],
       layout: {
-        margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
-        responsive: true, // Make the chart responsive
+        margin: { t: 20, b: 20, l: 20, r: 20 },
+        responsive: true,
       },
     };
   }
+
   updateReserveGraphics(time: number) {
     let sorted = this.sortKeysAndValuesReserve(time);
     this.recentReserveDates = sorted[0];
@@ -912,5 +919,25 @@ export class GestionDayComponent implements OnInit {
       ev.stopPropagation();
       this.openBudgetModal();
     }
+  }
+
+  get center(): number {
+    return this.size / 2;
+  }
+  get radius(): number {
+    return (this.size - this.strokeWidth) / 2;
+  }
+  get circumference(): number {
+    return 2 * Math.PI * this.radius;
+  }
+
+  colorForPerf(v: number): string {
+    return this.compute.getGradientColor(Number(v || 0));
+  }
+
+  progressDasharray(): string {
+    const c = this.circumference;
+    const p = Math.max(0, Math.min(100, Number(this.avgPerf || 0))) / 100;
+    return `${p * c} ${c}`;
   }
 }
