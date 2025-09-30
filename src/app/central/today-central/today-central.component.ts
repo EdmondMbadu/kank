@@ -261,4 +261,70 @@ export class TodayCentralComponent {
 
     return `${nextMonth}-${nextDay}-${nextYear}`;
   }
+  // Helpers: robust to string|number and flexible field names
+  toNum(v: any): number {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const n = parseFloat(v.replace(/\s/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+    return 0;
+  }
+  val(obj: any, ...keys: string[]): any {
+    if (!obj) return 0;
+    for (const k of keys) {
+      const v = obj[k];
+      if (v !== undefined && v !== null && v !== '') return v;
+    }
+    return 0;
+  }
+  percentOf(value: any, basis: any): number {
+    const v = this.toNum(value);
+    const b = this.toNum(basis) || 1;
+    return Math.max(0, (v / b) * 100);
+  }
+
+  // Baselines for today/tomorrow (bars = % of max $)
+  get reserveTodayUSDMax(): number {
+    const list = this.sortedReserveToday ?? [];
+    const vals = list.map((s) =>
+      this.toNum(
+        this.val(
+          s,
+          'totalReserveInDollars',
+          'totalPaymentInDollars',
+          'amountUsd'
+        )
+      )
+    );
+    return Math.max(1, ...vals, 1);
+  }
+  get paymentTodayUSDMax(): number {
+    const list = this.sortedPaymentToday ?? [];
+    const vals = list.map((s) =>
+      this.toNum(
+        this.val(
+          s,
+          'totalPaymentInDollars',
+          'totalReserveInDollars',
+          'amountUsd'
+        )
+      )
+    );
+    return Math.max(1, ...vals, 1);
+  }
+  get requestTomorrowUSDMax(): number {
+    const list = this.sortedRequestedTomorrow ?? [];
+    const vals = list.map((s) =>
+      this.toNum(
+        this.val(
+          s,
+          'totalRequestedInDollars',
+          'totalReserveInDollars',
+          'amountUsd'
+        )
+      )
+    );
+    return Math.max(1, ...vals, 1);
+  }
 }
