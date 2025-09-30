@@ -990,7 +990,7 @@ exports.sendEmployeePayRemindersSMS = functions.https.onCall(async (data, ctx)=>
 
 
 // ───────────────────────────────────────────────────────────
-// DAILY (05:00 Kinshasa) — Send agent/manager follow-ups per *location*
+// DAILY (08:05 Kinshasa) — Send agent/manager follow-ups per *location*
 // Non-working agents' clients → managers of *that* location only
 // Only send to roles: manager, agent, agent marketing/marketting
 // ───────────────────────────────────────────────────────────
