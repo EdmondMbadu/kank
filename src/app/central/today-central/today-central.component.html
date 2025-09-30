@@ -1,171 +1,224 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
 <!-- investements -->
 
-    <div class="flex container mx-auto m-6 justify-center">
-        <h1 class="text-2xl md:text-4xl mx-auto ">Activités Du Jour Central {{frenchDate}}</h1>
-
-    </div>
-    <div class="flex container mx-auto justify-center mb-2">    
-        <div class="">
-        <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->
-        <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  mb-2" (change)="findDailyActivitiesCentralAmount()" fplaceholder="11-2-2023" required>
-        <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="">Chercher</button> -->
+<div class="container mx-auto px-4 mt-6">
+  <div
+    class="relative mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-md p-4 md:p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/50"
+  >
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <div
+          class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xl"
+        >
+          📈
         </div>
-       
+        <h1
+          class="min-w-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold tracking-tight leading-tight text-2xl md:text-4xl break-words whitespace-normal"
+        >
+          Activités Du Jour Central
+        </h1>
+      </div>
+
+      <span
+        class="sm:ml-auto inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 text-sm font-medium text-slate-700 dark:text-slate-200 shadow order-last sm:order-none"
+      >
+        <time>{{ frenchDate }}</time>
+      </span>
     </div>
 
+    <div
+      class="absolute -bottom-[2px] left-6 right-6 h-[3px] rounded-full bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-400"
+    ></div>
+  </div>
+</div>
+<div class="flex container mx-auto justify-center my-2">
+  <div class="">
+    <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->
+    <input
+      [(ngModel)]="requestDate"
+      type="date"
+      id="first_name"
+      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mb-2"
+      (change)="findDailyActivitiesCentralAmount()"
+      fplaceholder="11-2-2023"
+      required
+    />
+    <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="">Chercher</button> -->
+  </div>
+</div>
 
-<div class="container  flex flex-wrap  items-center justify-center  mx-auto md:flex-row">
+<div
+  class="container flex flex-wrap items-center justify-center mx-auto md:flex-row"
+>
+  <div class="flex-col w-60 m-6" *ngFor="let s of summary; let i = index">
+    <a
+      class="block max-w-sm p-6 bg-neutral-200 border border-gray-200 rounded-lg shadow hover:bg-green-100"
+    >
+      <img
+        src="{{ imagePaths[i] }}"
+        alt=""
+        class="w-20 justify-center mx-auto"
+      />
 
-    <div class="flex-col w-60  m-6 " *ngFor="let s of summary; let i = index;  ">
-        <a class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
-            <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
-            
-            <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" > FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" > $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
-         
-        </a>
-    </div>
+      <h5
+        class="my-2 text-2xl text-center font-bold tracking-tight text-gray-900"
+      >
+        {{ s }}
+      </h5>
+      <h2 class="font-bold text-lg text-green-700 text-center">
+        FC {{ summaryContent[i] | number : "1.0-0" }}
+      </h2>
+      <h2 class="font-bold text-lg text-yellow-900 text-center">
+        $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+      </h2>
+    </a>
+  </div>
 
-    <div *ngIf="this.auth.isAdmin" class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl">
-        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Classement Du Jour</h1>
-        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th scope="col" class="px-6 py-3 rounded-s-lg">
-                        Équipe
-                    </th>
-                    <th scope="col" class=" py-3 px-6">
-                      Reserve Du Jour(FC)
-                    </th>
-                    <th scope="col" class=" px-6 py-3">
-                        Reserve Du Jour($)
-                      </th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let s of sortedReserveToday; let i=index" class="bg-white dark:bg-gray-800">
-                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {{i+1}}.  {{s.firstName}}
-                    </th>
-                    <td class="px-6 py-4">
-                      {{s.totalReserve | number:'1.0-0'}} FC
-                    </td>
-                    <td class="px-6 py-4">
-                        {{s.totalReserveInDollars | number:'1.0-0'}} $
-                      </td>
-                    
-                </tr>
-                
-                
-            </tbody>
-            <tfoot>
-                <tr class="font-semibold ">
-                    <th scope="row" class="px-6 py-3 text-base">Total</th>
-                    <td class="px-6 py-3">{{dailyReserve | number:'1.0-0'}} FC</td>
-                    <td class="px-6 py-3">{{ dailyReserveDollars| number:'1.0-0'}} $</td>
-                </tr>
-               
-            </tfoot>
-            
-          
-        </table>
-    </div>
-    <div *ngIf="this.auth.isAdmin" class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl mx-4">
-        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Classement Paiement Du Jour</h1>
-        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th scope="col" class="px-6 py-3 rounded-s-lg">
-                        Équipe
-                    </th>
-                    <th scope="col" class=" py-3 px-6">
-                      Paiement Du Jour(FC)
-                    </th>
-                    <th scope="col" class=" px-6 py-3">
-                        Paiement Du Jour($)
-                      </th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let s of sortedPaymentToday; let i=index" class="bg-white dark:bg-gray-800">
-                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {{i+1}}.  {{s.firstName}}
-                    </th>
-                    <td class="px-6 py-4">
-                      {{s.totalReserve | number:'1.0-0'}} FC
-                    </td>
-                    <td class="px-6 py-4">
-                        {{s.totalReserveInDollars | number:'1.0-0'}} $
-                      </td>
-                    
-                </tr>
-                
-                
-            </tbody>
-            <tfoot>
-                <tr class="font-semibold ">
-                    <th scope="row" class="px-6 py-3 text-base">Total</th>
-                    <td class="px-6 py-3">{{dailyPayment | number:'1.0-0'}} FC</td>
-                    <td class="px-6 py-3">{{ dailyPaymentDollars| number:'1.0-0'}} $</td>
-                </tr>
-               
-            </tfoot>
-            
-          
-        </table>
-    </div>
-    
-    
-    <div *ngIf="this.auth.isAdmninistrator" class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl">
-        <h1 class="text-2xl  font-bold text-center mx-4 mb-4 underline"> Argent Demandé  Demain</h1>
-        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400">
-                <tr>
-                    <th scope="col" class="px-6 py-3 rounded-s-lg">
-                        Équipe
-                    </th>
-                    <th scope="col" class=" py-3 px-6">
-                        Argent Demandé Demain(FC)
-                    </th>
-                    <th scope="col" class=" px-6 py-3">
-                        Argent Demandé Demain($)
-                      </th>
-                    
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let s of sortedRequestedTomorrow; let i=index" class="bg-white dark:bg-gray-800">
-                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    {{i+1}}.  {{s.firstName}}
-                    </th>
-                    <td class="px-6 py-4">
-                      {{s.totalReserve | number:'1.0-0'}} FC
-                    </td>
-                    <td class="px-6 py-4">
-                        {{s.totalReserveInDollars | number:'1.0-0'}} $
-                      </td>
-                    
-                </tr>
-                
-                
-            </tbody>
-            <tfoot>
-                <tr class="font-semibold ">
-                    <th scope="row" class="px-6 py-3 text-base">Total</th>
-                    <td class="px-6 py-3">{{dailyRequest | number:'1.0-0'}} FC</td>
-                    <td class="px-6 py-3">{{ dailyRequestDollars| number:'1.0-0'}} $</td>
-                </tr>
-               
-            </tfoot>
-            
-          
-        </table>
-    </div>
+  <div
+    *ngIf="this.auth.isAdmin"
+    class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl"
+  >
+    <h1 class="text-2xl font-bold text-center mx-4 mb-4 underline">
+      Classement Du Jour
+    </h1>
+    <table
+      class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400"
+    >
+      <thead
+        class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
+      >
+        <tr>
+          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+          <th scope="col" class="py-3 px-6">Reserve Du Jour(FC)</th>
+          <th scope="col" class="px-6 py-3">Reserve Du Jour($)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let s of sortedReserveToday; let i = index"
+          class="bg-white dark:bg-gray-800"
+        >
+          <th
+            scope="row"
+            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+          >
+            {{ i + 1 }}. {{ s.firstName }}
+          </th>
+          <td class="px-6 py-4">{{ s.totalReserve | number : "1.0-0" }} FC</td>
+          <td class="px-6 py-4">
+            {{ s.totalReserveInDollars | number : "1.0-0" }} $
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="font-semibold">
+          <th scope="row" class="px-6 py-3 text-base">Total</th>
+          <td class="px-6 py-3">{{ dailyReserve | number : "1.0-0" }} FC</td>
+          <td class="px-6 py-3">
+            {{ dailyReserveDollars | number : "1.0-0" }} $
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div
+    *ngIf="this.auth.isAdmin"
+    class="relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl mx-4"
+  >
+    <h1 class="text-2xl font-bold text-center mx-4 mb-4 underline">
+      Classement Paiement Du Jour
+    </h1>
+    <table
+      class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400"
+    >
+      <thead
+        class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
+      >
+        <tr>
+          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+          <th scope="col" class="py-3 px-6">Paiement Du Jour(FC)</th>
+          <th scope="col" class="px-6 py-3">Paiement Du Jour($)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let s of sortedPaymentToday; let i = index"
+          class="bg-white dark:bg-gray-800"
+        >
+          <th
+            scope="row"
+            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+          >
+            {{ i + 1 }}. {{ s.firstName }}
+          </th>
+          <td class="px-6 py-4">{{ s.totalReserve | number : "1.0-0" }} FC</td>
+          <td class="px-6 py-4">
+            {{ s.totalReserveInDollars | number : "1.0-0" }} $
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="font-semibold">
+          <th scope="row" class="px-6 py-3 text-base">Total</th>
+          <td class="px-6 py-3">{{ dailyPayment | number : "1.0-0" }} FC</td>
+          <td class="px-6 py-3">
+            {{ dailyPaymentDollars | number : "1.0-0" }} $
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 
-
+  <div
+    *ngIf="this.auth.isAdmninistrator"
+    class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl"
+  >
+    <h1 class="text-2xl font-bold text-center mx-4 mb-4 underline">
+      Argent Demandé Demain
+    </h1>
+    <table
+      class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400"
+    >
+      <thead
+        class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
+      >
+        <tr>
+          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+          <th scope="col" class="py-3 px-6">Argent Demandé Demain(FC)</th>
+          <th scope="col" class="px-6 py-3">Argent Demandé Demain($)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let s of sortedRequestedTomorrow; let i = index"
+          class="bg-white dark:bg-gray-800"
+        >
+          <th
+            scope="row"
+            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+          >
+            {{ i + 1 }}. {{ s.firstName }}
+          </th>
+          <td class="px-6 py-4">{{ s.totalReserve | number : "1.0-0" }} FC</td>
+          <td class="px-6 py-4">
+            {{ s.totalReserveInDollars | number : "1.0-0" }} $
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="font-semibold">
+          <th scope="row" class="px-6 py-3 text-base">Total</th>
+          <td class="px-6 py-3">{{ dailyRequest | number : "1.0-0" }} FC</td>
+          <td class="px-6 py-3">
+            {{ dailyRequestDollars | number : "1.0-0" }} $
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 </div>
