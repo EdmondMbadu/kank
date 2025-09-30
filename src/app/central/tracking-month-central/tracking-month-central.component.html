@@ -212,18 +212,18 @@
               <td class="px-4 py-3 text-right">
                 <span
                   class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-xs font-semibold"
-                  [ngClass]="nonNegColor(sortedGrowthRateMonth[i]?.growthRate)"
+                  [ngClass]="nonNegColor(sortedGrowthRateMonth[i].growthRate)"
                 >
                   <span>{{
-                    toNum(sortedGrowthRateMonth[i]?.growthRate) >= 0 ? "▲" : "▼"
+                    toNum(sortedGrowthRateMonth[i].growthRate) >= 0 ? "▲" : "▼"
                   }}</span>
                   <span
                     >{{
-                      toNum(sortedGrowthRateMonth[i]?.growthRate) >= 0
+                      toNum(sortedGrowthRateMonth[i].growthRate) >= 0
                         ? "+"
                         : ""
                     }}{{
-                      toNum(sortedGrowthRateMonth[i]?.growthRate)
+                      toNum(sortedGrowthRateMonth[i].growthRate)
                         | number : "1.0-0"
                     }}%</span
                   >
@@ -366,21 +366,21 @@
                 <span
                   class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-xs font-semibold"
                   [ngClass]="
-                    nonNegColor(sortedGrowthRatePaymentMonth[i]?.growthRate)
+                    nonNegColor(sortedGrowthRatePaymentMonth[i].growthRate)
                   "
                 >
                   <span>{{
-                    toNum(sortedGrowthRatePaymentMonth[i]?.growthRate) >= 0
+                    toNum(sortedGrowthRatePaymentMonth[i].growthRate) >= 0
                       ? "▲"
                       : "▼"
                   }}</span>
                   <span
                     >{{
-                      toNum(sortedGrowthRatePaymentMonth[i]?.growthRate) >= 0
+                      toNum(sortedGrowthRatePaymentMonth[i].growthRate) >= 0
                         ? "+"
                         : ""
                     }}{{
-                      toNum(sortedGrowthRatePaymentMonth[i]?.growthRate)
+                      toNum(sortedGrowthRatePaymentMonth[i].growthRate)
                         | number : "1.0-0"
                     }}%</span
                   >
