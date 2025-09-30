@@ -1,165 +1,228 @@
-<app-navbar [email]="this.auth.currentUser.email" [firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<section class="bg-white">  
-  <div class="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
+<section class="bg-white">
+  <div class="py-8 px-4 mx-auto max-w-screen-xl lg:px-6">
     <!-- Header -->
-    <div  class="flex container mx-auto justify-center text-center mb-8">
-      <h2 class="text-2xl md:text-4xl font-bold"> <span>Classement</span> Des Employée Du Mois</h2>
-    </div>
-      <div class=" container  flex mx-auto   flex-col md:justify-center md:flex-row  ">
-
-        <div class="flex flex-col ">
-         
-            <!-- PERFORMANCE RING (replaces the plotly-plot block) -->
-<div class="w-full max-w-sm mx-auto mt-0 md:-mt-8 mb-4">
-  <div class="relative flex items-center justify-center">
-    <svg
-      [attr.width]="size"
-      [attr.height]="size"
-      [attr.viewBox]="'0 0 ' + size + ' ' + size"
-      class="drop-shadow-sm"
+    <div
+      class="container mx-auto lg:mb-12 flex flex-col items-center text-center"
     >
-      <defs>
-        <!-- gradient for the arc -->
-        <linearGradient [attr.id]="gradId" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#34d399" />
-          <stop offset="50%" stop-color="#22c55e" />
-          <stop offset="100%" stop-color="#10b981" />
-        </linearGradient>
-
-        <!-- soft glow -->
-        <filter id="perfGlow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3.5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-
-      <!-- subtle background ring -->
-      <circle
-        [attr.cx]="center"
-        [attr.cy]="center"
-        [attr.r]="radius"
-        stroke="#e5e7eb"
-        [attr.stroke-width]="strokeWidth"
-        fill="none"
-      ></circle>
-
-      <!-- dotted guide (optional, faint) -->
-      <circle
-        [attr.cx]="center"
-        [attr.cy]="center"
-        [attr.r]="radius"
-        stroke="#eef2f7"
-        [attr.stroke-width]="2"
-        stroke-dasharray="2 10"
-        fill="none"
-      ></circle>
-
-      <!-- progress arc -->
-     <!-- progress arc -->
-    <circle
-      [attr.cx]="center"
-      [attr.cy]="center"
-      [attr.r]="radius"
-      [attr.stroke]="colorForPerf(avgPerf)"   
-      [attr.stroke-width]="strokeWidth"
-      stroke-linecap="round"
-      fill="none"
-      [attr.stroke-dasharray]="progressDasharray()" 
-      [attr.stroke-dashoffset]="0"                   
-      [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'"
-      filter="url(#perfGlow)"
-      class="transition-all duration-700 ease-out"
-    />
-    </svg>
-
-    <!-- center label -->
-    <div class="absolute inset-0 flex flex-col items-center justify-center">
-      <div class="text-4xl font-extrabold text-gray-900">
-        {{ avgPerf | number:'1.0-0' }}%
+      <div
+        class="mb-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/60 px-3 py-1 text-xs font-medium text-slate-700 backdrop-blur dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
+      >
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+        Top du mois — {{ time.monthFrenchNames[givenMonth - 1] }}
+        {{ givenYear }}
       </div>
-      <div class="text-xs uppercase tracking-wide text-gray-500">
-        Performance Moyenne
-      </div>
+      <h2
+        class="text-2xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+      >
+        Classement des Employés du Mois
+      </h2>
     </div>
 
-    <!-- tiny status chip -->
-    <div class="absolute -bottom-2 right-1 flex items-center gap-1 text-[11px]">
-      <span
-        class="inline-block h-2.5 w-2.5 rounded-full"
-        [ngStyle]="{ background: colorForPerf(avgPerf) }"
-      ></span>
-      <span class="text-gray-500">aujourd’hui</span>
-    </div>
-  </div>
-</div>
+    <div class="container flex mx-auto flex-col md:justify-center md:flex-row">
+      <div class="flex flex-col">
+        <!-- PERFORMANCE RING (replaces the plotly-plot block) -->
+        <div class="w-full max-w-sm mx-auto mt-0 md:-mt-8 mb-4">
+          <div class="relative flex items-center justify-center">
+            <svg
+              [attr.width]="size"
+              [attr.height]="size"
+              [attr.viewBox]="'0 0 ' + size + ' ' + size"
+              class="drop-shadow-sm"
+            >
+              <defs>
+                <!-- gradient for the arc -->
+                <linearGradient
+                  [attr.id]="gradId"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stop-color="#34d399" />
+                  <stop offset="50%" stop-color="#22c55e" />
+                  <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
 
-            
+                <!-- soft glow -->
+                <filter
+                  id="perfGlow"
+                  x="-50%"
+                  y="-50%"
+                  width="200%"
+                  height="200%"
+                >
+                  <feGaussianBlur stdDeviation="3.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              <!-- subtle background ring -->
+              <circle
+                [attr.cx]="center"
+                [attr.cy]="center"
+                [attr.r]="radius"
+                stroke="#e5e7eb"
+                [attr.stroke-width]="strokeWidth"
+                fill="none"
+              ></circle>
+
+              <!-- dotted guide (optional, faint) -->
+              <circle
+                [attr.cx]="center"
+                [attr.cy]="center"
+                [attr.r]="radius"
+                stroke="#eef2f7"
+                [attr.stroke-width]="2"
+                stroke-dasharray="2 10"
+                fill="none"
+              ></circle>
+
+              <!-- progress arc -->
+              <!-- progress arc -->
+              <circle
+                [attr.cx]="center"
+                [attr.cy]="center"
+                [attr.r]="radius"
+                [attr.stroke]="colorForPerf(avgPerf)"
+                [attr.stroke-width]="strokeWidth"
+                stroke-linecap="round"
+                fill="none"
+                [attr.stroke-dasharray]="progressDasharray()"
+                [attr.stroke-dashoffset]="0"
+                [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'"
+                filter="url(#perfGlow)"
+                class="transition-all duration-700 ease-out"
+              />
+            </svg>
+
+            <!-- center label -->
+            <div
+              class="absolute inset-0 flex flex-col items-center justify-center"
+            >
+              <div class="text-4xl font-extrabold text-gray-900">
+                {{ avgPerf | number : "1.0-0" }}%
+              </div>
+              <div class="text-xs uppercase tracking-wide text-gray-500">
+                Performance Moyenne
+              </div>
+            </div>
+
+            <!-- tiny status chip -->
+            <div
+              class="absolute -bottom-2 right-1 flex items-center gap-1 text-[11px]"
+            >
+              <span
+                class="inline-block h-2.5 w-2.5 rounded-full"
+                [ngStyle]="{ background: colorForPerf(avgPerf) }"
+              ></span>
+              <span class="text-gray-500">aujourd’hui</span>
+            </div>
+          </div>
         </div>
-
-
+      </div>
     </div>
-<!-- Mode switch -->
-<div *ngIf="true" class="flex justify-center mb-6">
-  <div class="inline-flex rounded-full bg-gray-100 p-1 shadow-inner">
-    <button
-      (click)="setRankingMode('performance')"
-      class="px-4 py-2 text-sm font-medium rounded-full transition"
-      [class.bg-white]="rankingMode==='performance'"
-      [class.text-gray-900]="rankingMode==='performance'"
-      [class.text-gray-600]="rankingMode!=='performance'">
-      Performance
-    </button>
+    <!-- Mode switch -->
+    <div *ngIf="true" class="flex justify-center mb-6">
+      <div class="inline-flex rounded-full bg-gray-100 p-1 shadow-inner">
+        <button
+          (click)="setRankingMode('performance')"
+          class="px-4 py-2 text-sm font-medium rounded-full transition"
+          [class.bg-white]="rankingMode === 'performance'"
+          [class.text-gray-900]="rankingMode === 'performance'"
+          [class.text-gray-600]="rankingMode !== 'performance'"
+        >
+          Performance
+        </button>
 
-    <button
-      (click)="setRankingMode('dailyPayments')"
-      class="px-4 py-2 text-sm font-medium rounded-full transition"
-      [class.bg-white]="rankingMode==='dailyPayments'"
-      [class.text-gray-900]="rankingMode==='dailyPayments'"
-      [class.text-gray-600]="rankingMode!=='dailyPayments'">
-      Paiements du jour
-    </button>
+        <button
+          (click)="setRankingMode('dailyPayments')"
+          class="px-4 py-2 text-sm font-medium rounded-full transition"
+          [class.bg-white]="rankingMode === 'dailyPayments'"
+          [class.text-gray-900]="rankingMode === 'dailyPayments'"
+          [class.text-gray-600]="rankingMode !== 'dailyPayments'"
+        >
+          Paiements du jour
+        </button>
 
-    <!-- 🆕 Monthly -->
-    <button
-    *ngIf="auth.isAdmin"
-      (click)="setRankingMode('monthlyPayments')"
-      class="px-4 py-2 text-sm font-medium rounded-full transition"
-      [class.bg-white]="rankingMode==='monthlyPayments'"
-      [class.text-gray-900]="rankingMode==='monthlyPayments'"
-      [class.text-gray-600]="rankingMode!=='monthlyPayments'">
-      Paiements du mois
-    </button>
-  </div>
-</div>
+        <!-- 🆕 Monthly -->
+        <button
+          *ngIf="auth.isAdmin"
+          (click)="setRankingMode('monthlyPayments')"
+          class="px-4 py-2 text-sm font-medium rounded-full transition"
+          [class.bg-white]="rankingMode === 'monthlyPayments'"
+          [class.text-gray-900]="rankingMode === 'monthlyPayments'"
+          [class.text-gray-600]="rankingMode !== 'monthlyPayments'"
+        >
+          Paiements du mois
+        </button>
+      </div>
+    </div>
 
-
-<div *ngIf="rankingMode==='dailyPayments' && loadingDaily" class="flex justify-center mb-4">
-  <div class="inline-flex items-center gap-2 text-sm text-gray-500">
-    <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle>
-      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.9"></path>
-    </svg>
-    Chargement des paiements du {{ todayDayKey }}…
-  </div>
-</div>
-<div *ngIf="rankingMode==='monthlyPayments' && loadingMonthly" class="flex justify-center mb-4">
-  <div class="inline-flex items-center gap-2 text-sm text-gray-500">
-    <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle>
-      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.9"></path>
-    </svg>
-    Chargement des paiements de {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}…
-  </div>
-</div>
-
-
+    <div
+      *ngIf="rankingMode === 'dailyPayments' && loadingDaily"
+      class="flex justify-center mb-4"
+    >
+      <div class="inline-flex items-center gap-2 text-sm text-gray-500">
+        <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+            opacity="0.25"
+          ></circle>
+          <path
+            d="M22 12a10 10 0 0 1-10 10"
+            stroke="currentColor"
+            stroke-width="4"
+            stroke-linecap="round"
+            opacity="0.9"
+          ></path>
+        </svg>
+        Chargement des paiements du {{ todayDayKey }}…
+      </div>
+    </div>
+    <div
+      *ngIf="rankingMode === 'monthlyPayments' && loadingMonthly"
+      class="flex justify-center mb-4"
+    >
+      <div class="inline-flex items-center gap-2 text-sm text-gray-500">
+        <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+            opacity="0.25"
+          ></circle>
+          <path
+            d="M22 12a10 10 0 0 1-10 10"
+            stroke="currentColor"
+            stroke-width="4"
+            stroke-linecap="round"
+            opacity="0.9"
+          ></path>
+        </svg>
+        Chargement des paiements de {{ time.monthFrenchNames[givenMonth - 1] }}
+        {{ givenYear }}…
+      </div>
+    </div>
 
     <!-- Filters -->
-    <div   class="flex container mx-auto justify-center text-center space-x-8 mb-6">
+    <div
+      class="flex container mx-auto justify-center text-center space-x-8 mb-6"
+    >
       <div class="mb-6">
         <select
           id="month-filter"
@@ -180,690 +243,877 @@
           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
           (change)="ngOnInit()"
         >
-          <option *ngFor="let year of yearsList" [ngValue]="year">{{ year }}</option>
+          <option *ngFor="let year of yearsList" [ngValue]="year">
+            {{ year }}
+          </option>
         </select>
       </div>
     </div>
 
     <!-- Employee Leaderboard -->
-<!-- PERFORMANCE SECTION -->
-<div *ngIf="rankingMode==='performance'" class="space-y-4">
-  <div
-    *ngFor="let em of allEmployees; let i = index"
-    class="relative bg-white rounded-2xl p-4 md:p-5 shadow-sm ring-1 flex items-center gap-4"
-    [ngClass]="i < 3 ? perfPodiumClass(i+1) : 'ring-gray-200'"
-  >
-    <!-- Rank number -->
-    <div
-      class="absolute -top-3 -left-3 h-9 w-9 rounded-full flex items-center justify-center text-base font-extrabold text-white shadow-lg ring-4 ring-white"
-      [ngClass]="perfBadgeClass(i+1)"
-      [attr.aria-label]="'Rang ' + (i+1)"
-    >
-      {{ i + 1 }}
-    </div>
-
-    <!-- Avatar -->
-    <div class="shrink-0">
-      <img
-        *ngIf="em?.profilePicture?.downloadURL; else perfAvatarFallback"
-        [src]="em.profilePicture?.downloadURL"
-        alt="Employee Avatar"
-        class="h-14 w-14 rounded-full object-cover border-2"
-        [ngStyle]="{ borderColor: colorForPerf(em.performancePercentageMonth) }"
-      />
-      <ng-template #perfAvatarFallback>
+    <!-- PERFORMANCE SECTION -->
+    <div *ngIf="rankingMode === 'performance'" class="space-y-4">
+      <div
+        *ngFor="let em of allEmployees; let i = index"
+        class="relative bg-white rounded-2xl p-4 md:p-5 shadow-sm ring-1 flex items-center gap-4"
+        [ngClass]="i < 3 ? perfPodiumClass(i + 1) : 'ring-gray-200'"
+      >
+        <!-- Rank number -->
         <div
-          class="h-14 w-14 rounded-full flex items-center justify-center text-white font-bold border-2"
-          [ngStyle]="{ borderColor: colorForPerf(em.performancePercentageMonth), background: '#94a3b8' }"
+          class="absolute -top-3 -left-3 h-9 w-9 rounded-full flex items-center justify-center text-base font-extrabold text-white shadow-lg ring-4 ring-white"
+          [ngClass]="perfBadgeClass(i + 1)"
+          [attr.aria-label]="'Rang ' + (i + 1)"
         >
-          {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
+          {{ i + 1 }}
         </div>
-      </ng-template>
+
+        <!-- Avatar -->
+        <div class="shrink-0">
+          <img
+            *ngIf="em?.profilePicture?.downloadURL; else perfAvatarFallback"
+            [src]="em.profilePicture?.downloadURL"
+            alt="Employee Avatar"
+            class="h-14 w-14 rounded-full object-cover border-2"
+            [ngStyle]="{
+              borderColor: colorForPerf(em.performancePercentageMonth)
+            }"
+          />
+          <ng-template #perfAvatarFallback>
+            <div
+              class="h-14 w-14 rounded-full flex items-center justify-center text-white font-bold border-2"
+              [ngStyle]="{
+                borderColor: colorForPerf(em.performancePercentageMonth),
+                background: '#94a3b8'
+              }"
+            >
+              {{ (em.firstName || "?").charAt(0)
+              }}{{ (em.lastName || "").charAt(0) }}
+            </div>
+          </ng-template>
+        </div>
+
+        <!-- Main info -->
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3
+                  class="truncate text-base md:text-lg font-semibold text-gray-900"
+                  (click)="em.showAttendance = !em.showAttendance"
+                >
+                  {{ em.firstName }} {{ em.lastName }}
+                </h3>
+
+                <!-- Status / alerts -->
+                <span
+                  *ngIf="!em.paidThisMonth && auth.isAdmin"
+                  class="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-semibold"
+                  >⚠️ Not Signed</span
+                >
+                <span
+                  *ngIf="em.status !== 'Travaille'"
+                  class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-xs font-medium"
+                  >Hors service</span
+                >
+              </div>
+
+              <div class="text-xs text-gray-500 mt-0.5 truncate">
+                Rôle: {{ em.role || "Employé" }} • Lieu:
+                {{ em.tempLocationHolder }}
+                <span *ngIf="em.phoneNumber"> • {{ em.phoneNumber }}</span>
+              </div>
+            </div>
+
+            <!-- Performance % -->
+            <div *ngIf="auth.isAdmin" class="text-right shrink-0">
+              <div class="text-sm font-bold">
+                {{ toNum(em.performancePercentageMonth) }}%
+              </div>
+              <div class="text-[10px] text-gray-500">Performance</div>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="mt-3">
+            <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all"
+                [style.width.%]="toNum(em.performancePercentageMonth)"
+                [ngStyle]="{
+                  background: getBackgroundColor(
+                    em.performancePercentageMonth || '0'
+                  )
+                }"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Vacations -->
+          <div
+            *ngIf="em.attendance && getVacationInProgressDates(em).length"
+            class="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100"
+          >
+            <div class="text-xs font-semibold text-gray-700 mb-2">
+              Vacances en cours
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span
+                *ngFor="let date of getVacationInProgressDates(em)"
+                class="inline-flex items-center rounded-full bg-white border px-2 py-0.5 text-xs text-gray-700"
+              >
+                {{ date }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col items-end gap-2">
+          <a
+            *ngIf="auth.isAdmninistrator && em.profilePicture?.CVDownloadURL"
+            [href]="em.profilePicture?.CVDownloadURL"
+            target="_blank"
+            class="text-xs md:text-sm font-medium text-white bg-emerald-600 px-3 py-1.5 rounded-full hover:bg-emerald-700"
+            >CV</a
+          >
+        </div>
+
+        <!-- Attendance Modal (unchanged) -->
+        <div
+          *ngIf="em.showAttendance"
+          id="defaultModal"
+          tabindex="-1"
+          class="w-full max-w-md max-h-full fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6"
+        >
+          <!-- (keep your existing modal content exactly as-is) -->
+          <!-- ... -->
+        </div>
+      </div>
     </div>
 
-    <!-- Main info -->
-    <div class="min-w-0 flex-1">
-      <div class="flex items-center justify-between gap-2">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h3
-              class="truncate text-base md:text-lg font-semibold text-gray-900"
-              (click)="em.showAttendance = !em.showAttendance"
-            >
-              {{ em.firstName }} {{ em.lastName }}
-            </h3>
+    <!-- DAILY PAYMENTS SECTION -->
+    <div *ngIf="rankingMode === 'dailyPayments'" class="space-y-6">
+      <!-- Header + date -->
+      <div class="text-center">
+        <h3 class="text-2xl md:text-3xl font-bold">
+          Classement invidiuelle du jour — (Paiements) ({{ todayDayKey }})
+        </h3>
+        <p class="text-sm text-gray-500 mt-1">
+          Somme des paiements inscrits par employé
+        </p>
+      </div>
+      <div
+        *ngIf="!loadingDaily && paidEmployeesToday.length === 0"
+        class="text-center text-sm text-gray-500 mt-2"
+      >
+        Aucun paiement enregistré aujourd’hui.
+      </div>
 
-            <!-- Status / alerts -->
+      <!-- Podium 1 • 2 • 3 (winner a bit smaller; wider gaps on large screens) -->
+      <div
+        class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-3 md:gap-x-4 lg:gap-x-6 xl:gap-x-8 items-end"
+      >
+        <div
+          *ngFor="let em of paidEmployeesToday | slice : 0 : 3; let idx = index"
+          class="relative rounded-2xl p-5 shadow-xl ring-1 bg-white transition"
+          [ngClass]="[
+            trophyMeta(idx + 1).cardClass,
+
+            idx + 1 === 1
+              ? 'scale-[1.04] ring-2 shadow-2xl border border-amber-100'
+              : '',
+
+            idx + 1 === 1 ? 'lg:mr-4 xl:mr-6' : '',
+            idx + 1 === 2 ? 'lg:ml-4 xl:ml-6' : '',
+
+            idx + 1 === 2 ? 'sm:translate-y-1' : '',
+            idx + 1 === 3 ? 'sm:translate-y-2' : ''
+          ]"
+        >
+          <!-- Rank badge -->
+          <div
+            class="absolute -top-3 -left-3 rounded-full flex items-center justify-center font-extrabold text-white shadow-lg ring-4 ring-white"
+            [ngClass]="[
+              idx + 1 === 1 ? 'h-10 w-10 text-lg' : 'h-9 w-9 text-base',
+              trophyMeta(idx + 1).badgeClass
+            ]"
+            [attr.aria-label]="'Rang ' + (idx + 1)"
+          >
+            {{ idx + 1 }}
+          </div>
+
+          <!-- Winner ribbon -->
+          <div *ngIf="idx + 1 === 1" class="absolute -top-3 right-3 rotate-3">
             <span
-              *ngIf="!em.paidThisMonth && auth.isAdmin"
-              class="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-semibold"
-              >⚠️ Not Signed</span
+              class="inline-block px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 rounded shadow"
             >
+              Vainqueur
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xl">{{ trophyMeta(idx + 1).emoji }}</span>
             <span
-              *ngIf="em.status !== 'Travaille'"
-              class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-xs font-medium"
-              >Hors service</span
+              class="text-[11px] font-semibold uppercase tracking-wide"
+              [ngClass]="
+                idx + 1 === 1
+                  ? 'bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500'
+                  : trophyMeta(idx + 1).labelClass
+              "
             >
+              {{ trophyMeta(idx + 1).label }}
+            </span>
           </div>
 
-          <div class="text-xs text-gray-500 mt-0.5 truncate">
-            Rôle: {{ em.role || 'Employé' }} • Lieu: {{ em.tempLocationHolder }}
-            <span *ngIf="em.phoneNumber"> • {{ em.phoneNumber }}</span>
-          </div>
-        </div>
+          <div class="flex items-center gap-3">
+            <!-- Avatars: cards slightly bigger (everyone h-12); winner keeps thicker ring -->
+            <div
+              class="rounded-full p-[2px]"
+              [ngClass]="
+                idx + 1 === 1
+                  ? 'bg-gradient-to-br from-amber-300 via-yellow-300 to-amber-500'
+                  : idx + 1 === 2
+                  ? 'bg-gradient-to-br from-orange-300 to-orange-600'
+                  : 'bg-gradient-to-br from-slate-300 to-slate-500'
+              "
+            >
+              <img
+                *ngIf="em?.profilePicture?.downloadURL; else avatarFallback"
+                [src]="em.profilePicture?.downloadURL"
+                class="rounded-full object-cover"
+                [ngClass]="[
+                  idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
+                  trophyMeta(idx + 1).ringClass
+                ]"
+                alt="avatar"
+              />
+            </div>
 
-        <!-- Performance % -->
-        <div *ngIf="auth.isAdmin" class="text-right shrink-0">
-          <div class="text-sm font-bold">
-            {{ toNum(em.performancePercentageMonth) }}%
+            <ng-template #avatarFallback>
+              <div
+                class="flex items-center justify-center font-bold text-white rounded-full"
+                [ngClass]="[
+                  idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
+                  trophyMeta(idx + 1).avatarClass,
+                  trophyMeta(idx + 1).ringClass
+                ]"
+              >
+                {{ (em.firstName || "?").charAt(0)
+                }}{{ (em.lastName || "").charAt(0) }}
+              </div>
+            </ng-template>
+
+            <div class="min-w-0">
+              <div
+                [ngClass]="
+                  idx + 1 === 1
+                    ? 'text-base font-extrabold text-gray-900 truncate'
+                    : 'font-semibold text-gray-900 truncate'
+                "
+              >
+                {{ em.firstName }} {{ em.lastName }}
+              </div>
+              <div class="text-[11px] text-gray-500 truncate">
+                {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
+              </div>
+            </div>
           </div>
-          <div class="text-[10px] text-gray-500">Performance</div>
+
+          <div *ngIf="auth.isAdmin" class="mt-3 flex items-baseline gap-2">
+            <div
+              [ngClass]="
+                idx + 1 === 1
+                  ? 'text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500'
+                  : 'text-base font-bold text-gray-900'
+              "
+            >
+              FC {{ em._dailyTotal || 0 | number : "1.0-0" }}
+            </div>
+            <div
+              class="text-[11px]"
+              [ngClass]="idx + 1 === 1 ? 'text-amber-700' : 'text-gray-500'"
+            >
+              ({{ em._dailyCount || 0 }} paiement{{
+                (em._dailyCount || 0) > 1 ? "s" : ""
+              }})
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Progress bar -->
-      <div class="mt-3">
-        <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+      <!-- The rest (rank #4+) -->
+      <div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm">
+        <ul class="divide-y divide-gray-100">
+          <li
+            *ngFor="let em of paidEmployeesToday | slice : 3; let i = index"
+            class="flex items-center justify-between p-4"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-8 text-center font-semibold text-gray-500">
+                {{ i + 4 }}
+              </div>
+              <img
+                *ngIf="em?.profilePicture?.downloadURL; else smallFallback"
+                [src]="em.profilePicture?.downloadURL"
+                class="h-10 w-10 rounded-full object-cover"
+                alt="avatar"
+              />
+              <ng-template #smallFallback>
+                <div
+                  class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600"
+                >
+                  {{ (em.firstName || "?").charAt(0)
+                  }}{{ (em.lastName || "").charAt(0) }}
+                </div>
+              </ng-template>
+
+              <div class="min-w-0">
+                <div class="font-medium text-gray-900 truncate">
+                  {{ em.firstName }} {{ em.lastName }}
+                </div>
+                <div class="text-xs text-gray-500 truncate">
+                  {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="this.auth.isAdmin" class="text-right">
+              <div class="text-sm font-semibold">
+                FC {{ em._dailyTotal || 0 | number : "1.0-0" }}
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ em._dailyCount || 0 }} paiement{{
+                  (em._dailyCount || 0) > 1 ? "s" : ""
+                }}
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 🆕 MONTHLY PAYMENTS SECTION -->
+    <div *ngIf="rankingMode === 'monthlyPayments'" class="space-y-6">
+      <!-- Header -->
+      <div class="text-center">
+        <h3 class="text-2xl md:text-3xl font-bold">
+          Classement — Paiements du mois ({{
+            time.monthFrenchNames[givenMonth - 1]
+          }}
+          {{ givenYear }})
+        </h3>
+        <p class="text-sm text-gray-500 mt-1">
+          Somme des paiements du mois par employé
+        </p>
+      </div>
+
+      <!-- Empty state -->
+      <div
+        *ngIf="!loadingMonthly && paidEmployeesMonth.length === 0"
+        class="text-center text-sm text-gray-500"
+      >
+        Aucun paiement enregistré pour ce mois.
+      </div>
+
+      <!-- Podium (top 3) -->
+      <!-- Podium (top 3) -->
+      <div
+        class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-3 md:gap-x-4 lg:gap-x-6 xl:gap-x-8 items-end"
+        *ngIf="paidEmployeesMonth.length > 0"
+      >
+        <div
+          *ngFor="let em of paidEmployeesMonth | slice : 0 : 3; let idx = index"
+          class="relative rounded-2xl p-5 shadow-xl ring-1 bg-white transition"
+          [ngClass]="[
+            trophyMeta(idx + 1).cardClass,
+
+            idx + 1 === 1
+              ? 'scale-[1.04] ring-2 shadow-2xl border border-amber-100'
+              : '',
+
+            idx + 1 === 1 ? 'lg:mr-4 xl:mr-5' : '',
+            idx + 1 === 2 ? 'lg:ml-4 xl:ml-5' : '',
+
+            idx + 1 === 2 ? 'sm:translate-y-1' : '',
+            idx + 1 === 3 ? 'sm:translate-y-2' : ''
+          ]"
+        >
+          <!-- Rank badge -->
           <div
-            class="h-full rounded-full transition-all"
-            [style.width.%]="toNum(em.performancePercentageMonth)"
-            [ngStyle]="{ background: getBackgroundColor(em.performancePercentageMonth || '0') }"
+            class="absolute -top-3 -left-3 rounded-full flex items-center justify-center font-extrabold text-white shadow-lg ring-4 ring-white"
+            [ngClass]="[
+              idx + 1 === 1 ? 'h-10 w-10 text-lg' : 'h-9 w-9 text-base',
+              trophyMeta(idx + 1).badgeClass
+            ]"
+          >
+            {{ idx + 1 }}
+          </div>
+
+          <!-- Winner ribbon -->
+          <div *ngIf="idx + 1 === 1" class="absolute -top-3 right-3 rotate-3">
+            <span
+              class="inline-block px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 rounded shadow"
+            >
+              Vainqueur
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xl">{{ trophyMeta(idx + 1).emoji }}</span>
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wide"
+              [ngClass]="
+                idx + 1 === 1
+                  ? 'bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500'
+                  : trophyMeta(idx + 1).labelClass
+              "
+            >
+              {{ trophyMeta(idx + 1).label }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <!-- Slightly bigger cards; winner keeps thicker ring -->
+            <div
+              class="rounded-full p-[2px]"
+              [ngClass]="
+                idx + 1 === 1
+                  ? 'bg-gradient-to-br from-amber-300 via-yellow-300 to-amber-500'
+                  : idx + 1 === 2
+                  ? 'bg-gradient-to-br from-orange-300 to-orange-600'
+                  : 'bg-gradient-to-br from-slate-300 to-slate-500'
+              "
+            >
+              <img
+                *ngIf="em?.profilePicture?.downloadURL; else mAvatarFallback"
+                [src]="em.profilePicture?.downloadURL"
+                class="rounded-full object-cover"
+                [ngClass]="[
+                  idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
+                  trophyMeta(idx + 1).ringClass
+                ]"
+                alt="avatar"
+              />
+            </div>
+
+            <ng-template #mAvatarFallback>
+              <div
+                class="flex items-center justify-center font-bold text-white rounded-full"
+                [ngClass]="[
+                  idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
+                  trophyMeta(idx + 1).avatarClass,
+                  trophyMeta(idx + 1).ringClass
+                ]"
+              >
+                {{ (em.firstName || "?").charAt(0)
+                }}{{ (em.lastName || "").charAt(0) }}
+              </div>
+            </ng-template>
+
+            <div class="min-w-0">
+              <div
+                [ngClass]="
+                  idx + 1 === 1
+                    ? 'text-base font-extrabold text-gray-900 truncate'
+                    : 'font-semibold text-gray-900 truncate'
+                "
+              >
+                {{ em.firstName }} {{ em.lastName }}
+              </div>
+              <div class="text-[11px] text-gray-500 truncate">
+                {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="auth.isAdmin" class="mt-3 flex items-baseline gap-2">
+            <div
+              [ngClass]="
+                idx + 1 === 1
+                  ? 'text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500'
+                  : 'text-base font-bold text-gray-900'
+              "
+            >
+              FC {{ em._monthTotal || 0 | number : "1.0-0" }}
+            </div>
+            <div
+              class="text-[11px]"
+              [ngClass]="idx + 1 === 1 ? 'text-amber-700' : 'text-gray-500'"
+            >
+              ({{ em._monthCount || 0 }} paiement{{
+                (em._monthCount || 0) > 1 ? "s" : ""
+              }})
+            </div>
+          </div>
+
+          <!-- Soft pulse for #1 (Tailwind only) -->
+          <div
+            *ngIf="idx + 1 === 1"
+            class="absolute inset-0 pointer-events-none rounded-2xl ring-1 ring-amber-300/20 animate-pulse"
           ></div>
         </div>
       </div>
 
-      <!-- Vacations -->
+      <!-- Rest (rank #4+) -->
       <div
-        *ngIf="em.attendance && getVacationInProgressDates(em).length"
-        class="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100"
+        class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm"
+        *ngIf="paidEmployeesMonth.length > 3"
       >
-        <div class="text-xs font-semibold text-gray-700 mb-2">Vacances en cours</div>
-        <div class="flex flex-wrap gap-2">
-          <span
-            *ngFor="let date of getVacationInProgressDates(em)"
-            class="inline-flex items-center rounded-full bg-white border px-2 py-0.5 text-xs text-gray-700"
+        <ul class="divide-y divide-gray-100">
+          <li
+            *ngFor="let em of paidEmployeesMonth | slice : 3; let i = index"
+            class="flex items-center justify-between p-4"
           >
-            {{ date }}
-          </span>
-        </div>
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-8 text-center font-semibold text-gray-500">
+                {{ i + 4 }}
+              </div>
+              <img
+                *ngIf="em?.profilePicture?.downloadURL; else mSmallFallback"
+                [src]="em.profilePicture?.downloadURL"
+                class="h-10 w-10 rounded-full object-cover"
+                alt="avatar"
+              />
+              <ng-template #mSmallFallback>
+                <div
+                  class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600"
+                >
+                  {{ (em.firstName || "?").charAt(0)
+                  }}{{ (em.lastName || "").charAt(0) }}
+                </div>
+              </ng-template>
+
+              <div class="min-w-0">
+                <div class="font-medium text-gray-900 truncate">
+                  {{ em.firstName }} {{ em.lastName }}
+                </div>
+                <div class="text-xs text-gray-500 truncate">
+                  {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="this.auth.isAdmin" class="text-right">
+              <div class="text-sm font-semibold">
+                FC {{ em._monthTotal || 0 | number : "1.0-0" }}
+              </div>
+              <div class="text-xs text-gray-500">
+                {{ em._monthCount || 0 }} paiement{{
+                  (em._monthCount || 0) > 1 ? "s" : ""
+                }}
+              </div>
+            </div>
+          </li>
+        </ul>
       </div>
     </div>
 
-    <!-- Actions -->
-    <div class="flex flex-col items-end gap-2">
-      <a
-        *ngIf="auth.isAdmninistrator && em.profilePicture?.CVDownloadURL"
-        [href]="em.profilePicture?.CVDownloadURL"
-        target="_blank"
-        class="text-xs md:text-sm font-medium text-white bg-emerald-600 px-3 py-1.5 rounded-full hover:bg-emerald-700"
-        >CV</a
+    <!-- Ranking: Payroll + Bonus -->
+    <section
+      *ngIf="auth.isAdmninistrator"
+      class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2"
+    >
+      <!-- ── PAIEMENTS EMPLOYÉ·E ───────────────────────────────────────── -->
+      <div
+        class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
       >
-    </div>
-
-    <!-- Attendance Modal (unchanged) -->
-    <div
-      *ngIf="em.showAttendance"
-      id="defaultModal"
-      tabindex="-1"
-      class="w-full max-w-md max-h-full fixed inset-x-0 mx-auto top-0 z-50 p-4 flex pb-6"
-    >
-      <!-- (keep your existing modal content exactly as-is) -->
-      <!-- ... -->
-    </div>
-  </div>
-</div>
-
-    <!-- DAILY PAYMENTS SECTION -->
-<div *ngIf="rankingMode==='dailyPayments'" class="space-y-6">
-  <!-- Header + date -->
-  <div class="text-center">
-    <h3 class="text-2xl md:text-3xl font-bold">
-      Classement invidiuelle du jour — (Paiements) ({{ todayDayKey }})
-    </h3>
-    <p class="text-sm text-gray-500 mt-1">Somme des paiements inscrits par employé</p>
-  </div>
-  <div *ngIf="!loadingDaily && paidEmployeesToday.length === 0" class="text-center text-sm text-gray-500 mt-2">
-    Aucun paiement enregistré aujourd’hui.
-  </div>
-
-
-<!-- Podium 1 • 2 • 3 (winner a bit smaller; wider gaps on large screens) -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-3 md:gap-x-4 lg:gap-x-6 xl:gap-x-8 items-end">
-  <div
-    *ngFor="let em of paidEmployeesToday | slice:0:3; let idx = index"
-    class="relative rounded-2xl p-5 shadow-xl ring-1 bg-white transition"
-    [ngClass]="[
-      trophyMeta(idx+1).cardClass,
-
-      
-      (idx+1) === 1 ? 'scale-[1.04] ring-2 shadow-2xl border border-amber-100' : '',
-
-    
-      (idx+1) === 1 ? 'lg:mr-4 xl:mr-6' : '',
-      (idx+1) === 2 ? 'lg:ml-4 xl:ml-6' : '',
-
-     
-      (idx+1) === 2 ? 'sm:translate-y-1' : '',
-      (idx+1) === 3 ? 'sm:translate-y-2' : ''
-    ]"
-  >
-    <!-- Rank badge -->
-    <div
-      class="absolute -top-3 -left-3 rounded-full flex items-center justify-center font-extrabold text-white shadow-lg ring-4 ring-white"
-      [ngClass]="[(idx+1) === 1 ? 'h-10 w-10 text-lg' : 'h-9 w-9 text-base', trophyMeta(idx+1).badgeClass]"
-      [attr.aria-label]="'Rang ' + (idx+1)"
-    >
-      {{ idx + 1 }}
-    </div>
-
-    <!-- Winner ribbon -->
-    <div *ngIf="(idx+1) === 1" class="absolute -top-3 right-3 rotate-3">
-      <span class="inline-block px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white
-                   bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 rounded shadow">
-        Vainqueur
-      </span>
-    </div>
-
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-xl">{{ trophyMeta(idx+1).emoji }}</span>
-      <span
-        class="text-[11px] font-semibold uppercase tracking-wide"
-        [ngClass]="(idx+1) === 1
-          ? 'bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500'
-          : trophyMeta(idx+1).labelClass"
-      >
-        {{ trophyMeta(idx+1).label }}
-      </span>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <!-- Avatars: cards slightly bigger (everyone h-12); winner keeps thicker ring -->
-      <div class="rounded-full p-[2px]"
-           [ngClass]="(idx+1) === 1
-             ? 'bg-gradient-to-br from-amber-300 via-yellow-300 to-amber-500'
-             : (idx+1) === 2
-               ? 'bg-gradient-to-br from-orange-300 to-orange-600'
-               : 'bg-gradient-to-br from-slate-300 to-slate-500'">
-        <img *ngIf="em?.profilePicture?.downloadURL; else avatarFallback"
-             [src]="em.profilePicture?.downloadURL"
-             class="rounded-full object-cover"
-             [ngClass]="[(idx+1) === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2', trophyMeta(idx+1).ringClass]"
-             alt="avatar" />
-      </div>
-
-      <ng-template #avatarFallback>
-        <div class="flex items-center justify-center font-bold text-white rounded-full"
-             [ngClass]="[(idx+1) === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2', trophyMeta(idx+1).avatarClass, trophyMeta(idx+1).ringClass]">
-          {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
-        </div>
-      </ng-template>
-
-      <div class="min-w-0">
-        <div [ngClass]="(idx+1) === 1 ? 'text-base font-extrabold text-gray-900 truncate' : 'font-semibold text-gray-900 truncate'">
-          {{ em.firstName }} {{ em.lastName }}
-        </div>
-        <div class="text-[11px] text-gray-500 truncate">
-          {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="auth.isAdmin" class="mt-3 flex items-baseline gap-2">
-      <div [ngClass]="(idx+1) === 1
-            ? 'text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500'
-            : 'text-base font-bold text-gray-900'">
-        FC {{ (em._dailyTotal || 0) | number:'1.0-0' }}
-      </div>
-      <div class="text-[11px]" [ngClass]="(idx+1) === 1 ? 'text-amber-700' : 'text-gray-500'">
-        ({{ em._dailyCount || 0 }} paiement{{ (em._dailyCount || 0) > 1 ? 's' : '' }})
-      </div>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-
-  <!-- The rest (rank #4+) -->
-<div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm">
-  <ul class="divide-y divide-gray-100">
-    <li
-      *ngFor="let em of paidEmployeesToday | slice:3; let i = index"
-      class="flex items-center justify-between p-4"
-    >
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-8 text-center font-semibold text-gray-500">
-            {{ i + 4 }}
-          </div>
-          <img
-            *ngIf="em?.profilePicture?.downloadURL; else smallFallback"
-            [src]="em.profilePicture?.downloadURL"
-            class="h-10 w-10 rounded-full object-cover"
-            alt="avatar"
-          />
-          <ng-template #smallFallback>
-            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-              {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
-            </div>
-          </ng-template>
-
-          <div class="min-w-0">
-            <div class="font-medium text-gray-900 truncate">
-              {{ em.firstName }} {{ em.lastName }}
-            </div>
-            <div class="text-xs text-gray-500 truncate">
-              {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="this.auth.isAdmin" class="text-right">
-          <div class="text-sm font-semibold">
-            FC {{ (em._dailyTotal || 0) | number:'1.0-0' }}
-          </div>
-          <div class="text-xs text-gray-500">
-            {{ em._dailyCount || 0 }} paiement{{ (em._dailyCount || 0) > 1 ? 's' : '' }}
-          </div>
-        </div>
-      </li>
-    </ul>
-  </div>
-</div>
-
-<!-- 🆕 MONTHLY PAYMENTS SECTION -->
-<div *ngIf="rankingMode==='monthlyPayments'" class="space-y-6">
-  <!-- Header -->
-  <div class="text-center">
-    <h3 class="text-2xl md:text-3xl font-bold">
-      Classement — Paiements du mois ({{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }})
-    </h3>
-    <p class="text-sm text-gray-500 mt-1">Somme des paiements du mois par employé</p>
-  </div>
-
-  <!-- Empty state -->
-  <div *ngIf="!loadingMonthly && paidEmployeesMonth.length === 0" class="text-center text-sm text-gray-500">
-    Aucun paiement enregistré pour ce mois.
-  </div>
-
-  <!-- Podium (top 3) -->
- <!-- Podium (top 3) -->
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-3 md:gap-x-4 lg:gap-x-6 xl:gap-x-8 items-end" *ngIf="paidEmployeesMonth.length > 0">
-  <div
-    *ngFor="let em of paidEmployeesMonth | slice:0:3; let idx = index"
-    class="relative rounded-2xl p-5 shadow-xl ring-1 bg-white transition"
-    [ngClass]="[
-      trophyMeta(idx+1).cardClass,
-
-     
-      (idx+1) === 1 ? 'scale-[1.04] ring-2 shadow-2xl border border-amber-100' : '',
-
-     
-      (idx+1) === 1 ? 'lg:mr-4 xl:mr-5' : '',
-      (idx+1) === 2 ? 'lg:ml-4 xl:ml-5' : '',
-
-      
-      (idx+1) === 2 ? 'sm:translate-y-1' : '',
-      (idx+1) === 3 ? 'sm:translate-y-2' : ''
-    ]"
-  >
-    <!-- Rank badge -->
-    <div
-      class="absolute -top-3 -left-3 rounded-full flex items-center justify-center font-extrabold text-white shadow-lg ring-4 ring-white"
-      [ngClass]="[(idx+1) === 1 ? 'h-10 w-10 text-lg' : 'h-9 w-9 text-base', trophyMeta(idx+1).badgeClass]"
-    >
-      {{ idx + 1 }}
-    </div>
-
-    <!-- Winner ribbon -->
-    <div *ngIf="(idx+1) === 1" class="absolute -top-3 right-3 rotate-3">
-      <span class="inline-block px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white
-                   bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600 rounded shadow">
-        Vainqueur
-      </span>
-    </div>
-
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-xl">{{ trophyMeta(idx+1).emoji }}</span>
-      <span
-        class="text-[11px] font-semibold uppercase tracking-wide"
-        [ngClass]="(idx+1) === 1
-          ? 'bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-yellow-500'
-          : trophyMeta(idx+1).labelClass"
-      >
-        {{ trophyMeta(idx+1).label }}
-      </span>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <!-- Slightly bigger cards; winner keeps thicker ring -->
-      <div class="rounded-full p-[2px]"
-           [ngClass]="(idx+1) === 1
-             ? 'bg-gradient-to-br from-amber-300 via-yellow-300 to-amber-500'
-             : (idx+1) === 2
-               ? 'bg-gradient-to-br from-orange-300 to-orange-600'
-               : 'bg-gradient-to-br from-slate-300 to-slate-500'">
-        <img *ngIf="em?.profilePicture?.downloadURL; else mAvatarFallback"
-             [src]="em.profilePicture?.downloadURL"
-             class="rounded-full object-cover"
-             [ngClass]="[(idx+1) === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2', trophyMeta(idx+1).ringClass]"
-             alt="avatar" />
-      </div>
-
-      <ng-template #mAvatarFallback>
-        <div class="flex items-center justify-center font-bold text-white rounded-full"
-             [ngClass]="[(idx+1) === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2', trophyMeta(idx+1).avatarClass, trophyMeta(idx+1).ringClass]">
-          {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
-        </div>
-      </ng-template>
-
-      <div class="min-w-0">
-        <div [ngClass]="(idx+1) === 1 ? 'text-base font-extrabold text-gray-900 truncate' : 'font-semibold text-gray-900 truncate'">
-          {{ em.firstName }} {{ em.lastName }}
-        </div>
-        <div class="text-[11px] text-gray-500 truncate">
-          {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="auth.isAdmin" class="mt-3 flex items-baseline gap-2">
-      <div [ngClass]="(idx+1) === 1
-            ? 'text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500'
-            : 'text-base font-bold text-gray-900'">
-        FC {{ (em._monthTotal || 0) | number:'1.0-0' }}
-      </div>
-      <div class="text-[11px]" [ngClass]="(idx+1) === 1 ? 'text-amber-700' : 'text-gray-500'">
-        ({{ em._monthCount || 0 }} paiement{{ (em._monthCount || 0) > 1 ? 's' : '' }})
-      </div>
-    </div>
-
-    <!-- Soft pulse for #1 (Tailwind only) -->
-    <div *ngIf="(idx+1) === 1" class="absolute inset-0 pointer-events-none rounded-2xl ring-1 ring-amber-300/20 animate-pulse"></div>
-  </div>
-</div>
-
-
-  <!-- Rest (rank #4+) -->
-  <div class="rounded-2xl bg-white ring-1 ring-gray-200 shadow-sm" *ngIf="paidEmployeesMonth.length > 3">
-    <ul class="divide-y divide-gray-100">
-      <li *ngFor="let em of paidEmployeesMonth | slice:3; let i = index" class="flex items-center justify-between p-4">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-8 text-center font-semibold text-gray-500">
-            {{ i + 4 }}
-          </div>
-          <img *ngIf="em?.profilePicture?.downloadURL; else mSmallFallback"
-               [src]="em.profilePicture?.downloadURL"
-               class="h-10 w-10 rounded-full object-cover" alt="avatar" />
-          <ng-template #mSmallFallback>
-            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-              {{ (em.firstName || '?').charAt(0) }}{{ (em.lastName || '').charAt(0) }}
-            </div>
-          </ng-template>
-
-          <div class="min-w-0">
-            <div class="font-medium text-gray-900 truncate">
-              {{ em.firstName }} {{ em.lastName }}
-            </div>
-            <div class="text-xs text-gray-500 truncate">
-              {{ em.role || 'Employé' }} · {{ em.tempLocationHolder }}
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="this.auth.isAdmin" class="text-right">
-          <div class="text-sm font-semibold">
-            FC {{ (em._monthTotal || 0) | number:'1.0-0' }}
-          </div>
-          <div class="text-xs text-gray-500">
-            {{ em._monthCount || 0 }} paiement{{ (em._monthCount || 0) > 1 ? 's' : '' }}
-          </div>
-        </div>
-      </li>
-    </ul>
-  </div>
-</div>
-
-
-<!-- Ranking: Payroll + Bonus -->
-<section *ngIf="auth.isAdmninistrator" class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-  <!-- ── PAIEMENTS EMPLOYÉ·E ───────────────────────────────────────── -->
-  <div
-    class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5
-           dark:border-slate-800 dark:bg-slate-900/70 dark:text-white">
-
-    <!-- Card header (click to toggle) -->
-    <header
-      role="button"
-      tabindex="0"
-      (click)="toggle('payroll')"
-      (keydown.enter)="toggle('payroll')"
-      (keydown.space)="toggle('payroll')"
-      [attr.aria-expanded]="collapse.payroll"
-      class="flex items-center justify-between gap-3 rounded-t-2xl cursor-pointer select-none
-             bg-gradient-to-r from-slate-50 to-white px-5 py-4
-             dark:from-slate-800 dark:to-slate-900">
-      <div class="flex items-center gap-2">
-        <svg class="h-4 w-4 transition-transform duration-200"
-             [class.rotate-90]="collapse.payroll" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clip-rule="evenodd" />
-        </svg>
-        <h2 class="text-base font-semibold tracking-tight">Paiements Employé·e</h2>
-      </div>
-      <span class="text-xs text-slate-500 dark:text-slate-400">Vue mensuelle</span>
-    </header>
-
-    <!-- Collapsible body -->
-    <div class="px-4 pb-4" [class.hidden]="!collapse.payroll">
-      <table
-        class="w-full table-auto border-collapse text-[13px] text-slate-600
-               dark:text-slate-300">
-        <thead
-          class="select-none text-[11px] uppercase tracking-wide text-slate-500
-                 dark:text-slate-400">
-          <tr class="border-b border-slate-200 dark:border-slate-800">
-            <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
-            <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
-            <th scope="col" class="px-3 py-2 text-right font-medium">Salaire&nbsp;($)</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr
-            *ngFor="let em of allEmployees; let i = index"
-            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
-            <td class="px-3 py-2">
-              <span
-                class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
-                       bg-slate-100 text-[11px] font-semibold text-slate-700
-                       dark:bg-slate-800 dark:text-slate-200">
-                {{ i + 1 }}
-              </span>
-            </td>
-            <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
-              {{ em.firstName }} {{ em.lastName }}
-            </td>
-            <td class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50">
-              {{ em.paymentAmount | number:'1.0-0' }} $
-            </td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
-            <td class="px-3 py-2"></td>
-            <td class="px-3 py-2 text-right text-[13px] font-semibold">Salaire total</td>
-            <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-              {{ totalSalary | number:'1.0-0' }} $
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <!-- Subsection: Maisons Loyer (own toggle, optional) -->
-      <div class="mt-6">
-        <div
+        <!-- Card header (click to toggle) -->
+        <header
           role="button"
           tabindex="0"
-          (click)="toggle('loyer')"
-          (keydown.enter)="toggle('loyer')"
-          (keydown.space)="toggle('loyer')"
-          [attr.aria-expanded]="collapse.loyer"
-          class="mb-2 flex items-center gap-2 cursor-pointer select-none">
-          <svg class="h-4 w-4 transition-transform duration-200"
-               [class.rotate-90]="collapse.loyer" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path fill-rule="evenodd"
-                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                  clip-rule="evenodd" />
-          </svg>
-          <h3 class="text-sm font-semibold tracking-tight text-slate-700 dark:text-slate-200">
-            Maisons&nbsp;—&nbsp;Loyer
-          </h3>
-        </div>
+          (click)="toggle('payroll')"
+          (keydown.enter)="toggle('payroll')"
+          (keydown.space)="toggle('payroll')"
+          [attr.aria-expanded]="collapse.payroll"
+          class="flex items-center justify-between gap-3 rounded-t-2xl cursor-pointer select-none bg-gradient-to-r from-slate-50 to-white px-5 py-4 dark:from-slate-800 dark:to-slate-900"
+        >
+          <div class="flex items-center gap-2">
+            <svg
+              class="h-4 w-4 transition-transform duration-200"
+              [class.rotate-90]="collapse.payroll"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <h2 class="text-base font-semibold tracking-tight">
+              Paiements Employé·e
+            </h2>
+          </div>
+          <span class="text-xs text-slate-500 dark:text-slate-400"
+            >Vue mensuelle</span
+          >
+        </header>
 
-        <div [class.hidden]="!collapse.loyer">
-          <table class="w-full table-auto text-[13px]">
-            <thead class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <!-- Collapsible body -->
+        <div class="px-4 pb-4" [class.hidden]="!collapse.payroll">
+          <table
+            class="w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
+          >
+            <thead
+              class="select-none text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
+            >
               <tr class="border-b border-slate-200 dark:border-slate-800">
-                <th class="px-3 py-2 text-left font-medium">#</th>
-                <th class="px-3 py-2 text-left font-medium">Nom</th>
-                <th class="px-3 py-2 text-right font-medium">Loyer&nbsp;($)</th>
+                <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
+                <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
+                <th scope="col" class="px-3 py-2 text-right font-medium">
+                  Salaire&nbsp;($)
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
-                *ngFor="let u of allUsers; let i = index"
-                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
+                *ngFor="let em of allEmployees; let i = index"
+                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors"
+              >
                 <td class="px-3 py-2">
-                  <span class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
-                              bg-slate-100 text-[11px] font-semibold text-slate-700
-                              dark:bg-slate-800 dark:text-slate-200">
+                  <span
+                    class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
                     {{ i + 1 }}
                   </span>
                 </td>
-                <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
-                  {{ u.firstName }}
+                <td
+                  class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100"
+                >
+                  {{ em.firstName }} {{ em.lastName }}
                 </td>
-                <td class="px-3 py-2 text-right tabular-nums font-medium">
-                  {{ u.housePayment | number:'1.0-0' }} $
+                <td
+                  class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50"
+                >
+                  {{ em.paymentAmount | number : "1.0-0" }} $
                 </td>
               </tr>
             </tbody>
-
             <tfoot>
-              <tr class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
-                <td class="px-3 py-2"></td>
-                <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
-                <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-                  {{ totalHouse | number:'1.0-0' }} $
-                </td>
-              </tr>
-
-              <!-- Global total -->
-              <tr class="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/60">
+              <tr
+                class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40"
+              >
                 <td class="px-3 py-2"></td>
                 <td class="px-3 py-2 text-right text-[13px] font-semibold">
-                  Total global <span class="text-xs font-normal text-slate-500">(Salaire + Loyer)</span>
+                  Salaire total
                 </td>
-                <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-                  {{ total | number:'1.0-0' }} $
+                <td
+                  class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums"
+                >
+                  {{ totalSalary | number : "1.0-0" }} $
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <!-- Subsection: Maisons Loyer (own toggle, optional) -->
+          <div class="mt-6">
+            <div
+              role="button"
+              tabindex="0"
+              (click)="toggle('loyer')"
+              (keydown.enter)="toggle('loyer')"
+              (keydown.space)="toggle('loyer')"
+              [attr.aria-expanded]="collapse.loyer"
+              class="mb-2 flex items-center gap-2 cursor-pointer select-none"
+            >
+              <svg
+                class="h-4 w-4 transition-transform duration-200"
+                [class.rotate-90]="collapse.loyer"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <h3
+                class="text-sm font-semibold tracking-tight text-slate-700 dark:text-slate-200"
+              >
+                Maisons&nbsp;—&nbsp;Loyer
+              </h3>
+            </div>
+
+            <div [class.hidden]="!collapse.loyer">
+              <table class="w-full table-auto text-[13px]">
+                <thead
+                  class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                >
+                  <tr class="border-b border-slate-200 dark:border-slate-800">
+                    <th class="px-3 py-2 text-left font-medium">#</th>
+                    <th class="px-3 py-2 text-left font-medium">Nom</th>
+                    <th class="px-3 py-2 text-right font-medium">
+                      Loyer&nbsp;($)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tr
+                    *ngFor="let u of allUsers; let i = index"
+                    class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors"
+                  >
+                    <td class="px-3 py-2">
+                      <span
+                        class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                      >
+                        {{ i + 1 }}
+                      </span>
+                    </td>
+                    <td
+                      class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100"
+                    >
+                      {{ u.firstName }}
+                    </td>
+                    <td class="px-3 py-2 text-right tabular-nums font-medium">
+                      {{ u.housePayment | number : "1.0-0" }} $
+                    </td>
+                  </tr>
+                </tbody>
+
+                <tfoot>
+                  <tr
+                    class="border-t dark:text-white border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40"
+                  >
+                    <td class="px-3 py-2"></td>
+                    <td class="px-3 py-2 text-right text-[13px] font-semibold">
+                      Total
+                    </td>
+                    <td
+                      class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums"
+                    >
+                      {{ totalHouse | number : "1.0-0" }} $
+                    </td>
+                  </tr>
+
+                  <!-- Global total -->
+                  <tr
+                    class="border-t border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/60"
+                  >
+                    <td class="px-3 py-2"></td>
+                    <td class="px-3 py-2 text-right text-[13px] font-semibold">
+                      Total global
+                      <span class="text-xs font-normal text-slate-500"
+                        >(Salaire + Loyer)</span
+                      >
+                    </td>
+                    <td
+                      class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums"
+                    >
+                      {{ total | number : "1.0-0" }} $
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BONUS EMPLOYÉ·E ──────────────────────────────────────────── -->
+      <div
+        class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
+      >
+        <header
+          role="button"
+          tabindex="0"
+          (click)="toggle('bonus')"
+          (keydown.enter)="toggle('bonus')"
+          (keydown.space)="toggle('bonus')"
+          [attr.aria-expanded]="collapse.bonus"
+          class="flex items-center justify-between gap-3 rounded-t-2xl cursor-pointer select-none bg-gradient-to-r from-slate-50 to-white px-5 py-4 dark:from-slate-800 dark:to-slate-900"
+        >
+          <div class="flex items-center gap-2">
+            <svg
+              class="h-4 w-4 transition-transform duration-200"
+              [class.rotate-90]="collapse.bonus"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <h2 class="text-base font-semibold tracking-tight">
+              Bonus Employé·e
+            </h2>
+          </div>
+          <span class="text-xs text-slate-500 dark:text-slate-400"
+            >Ce mois</span
+          >
+        </header>
+
+        <div class="px-4 pb-4" [class.hidden]="!collapse.bonus">
+          <table
+            class="w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
+          >
+            <thead
+              class="select-none text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
+            >
+              <tr class="border-b border-slate-200 dark:border-slate-800">
+                <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
+                <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
+                <th scope="col" class="px-3 py-2 text-right font-medium">
+                  Bonus&nbsp;($)
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let em of allEmployees; let i = index"
+                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors"
+              >
+                <td class="px-3 py-2">
+                  <span
+                    class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+                  >
+                    {{ i + 1 }}
+                  </span>
+                </td>
+                <td
+                  class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100"
+                >
+                  {{ em.firstName }} {{ em.lastName }}
+                </td>
+                <td
+                  class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50"
+                >
+                  {{ em.totalBonusThisMonth | number : "1.0-0" }} $
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr
+                class="border-t border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40"
+              >
+                <td class="px-3 py-2"></td>
+                <td class="px-3 py-2 text-right text-[13px] font-semibold">
+                  Total
+                </td>
+                <td
+                  class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums"
+                >
+                  {{ totalBonus | number : "1.0-0" }} $
                 </td>
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- ── BONUS EMPLOYÉ·E ──────────────────────────────────────────── -->
-  <div
-    class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5
-           dark:border-slate-800 dark:bg-slate-900/70 dark:text-white">
-
-    <header
-      role="button"
-      tabindex="0"
-      (click)="toggle('bonus')"
-      (keydown.enter)="toggle('bonus')"
-      (keydown.space)="toggle('bonus')"
-      [attr.aria-expanded]="collapse.bonus"
-      class="flex items-center justify-between gap-3 rounded-t-2xl cursor-pointer select-none
-             bg-gradient-to-r from-slate-50 to-white px-5 py-4
-             dark:from-slate-800 dark:to-slate-900">
-      <div class="flex items-center gap-2">
-        <svg class="h-4 w-4 transition-transform duration-200"
-             [class.rotate-90]="collapse.bonus" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clip-rule="evenodd" />
-        </svg>
-        <h2 class="text-base font-semibold tracking-tight">Bonus Employé·e</h2>
-      </div>
-      <span class="text-xs text-slate-500 dark:text-slate-400">Ce mois</span>
-    </header>
-
-    <div class="px-4 pb-4" [class.hidden]="!collapse.bonus">
-      <table
-        class="w-full table-auto border-collapse text-[13px] text-slate-600
-               dark:text-slate-300">
-        <thead
-          class="select-none text-[11px] uppercase tracking-wide text-slate-500
-                 dark:text-slate-400">
-          <tr class="border-b border-slate-200 dark:border-slate-800">
-            <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
-            <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
-            <th scope="col" class="px-3 py-2 text-right font-medium">Bonus&nbsp;($)</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-          <tr
-            *ngFor="let em of allEmployees; let i = index"
-            class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors">
-            <td class="px-3 py-2">
-              <span
-                class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full
-                       bg-emerald-100 text-[11px] font-semibold text-emerald-800
-                       dark:bg-emerald-900/40 dark:text-emerald-200">
-                {{ i + 1 }}
-              </span>
-            </td>
-            <td class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
-              {{ em.firstName }} {{ em.lastName }}
-            </td>
-            <td class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50">
-              {{ em.totalBonusThisMonth | number:'1.0-0' }} $
-            </td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr class="border-t border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40">
-            <td class="px-3 py-2"></td>
-            <td class="px-3 py-2 text-right text-[13px] font-semibold">Total</td>
-            <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums">
-              {{ totalBonus | number:'1.0-0' }} $
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-
-</section>
-
+    </section>
   </div>
 </section>
-
 
 <!-- any template -->
- <div class="mx-auto container max-w-5xl">
-<app-rotation-schedule
-  [employees]="allEmployees"
-  [locations]="allLocations"
-></app-rotation-schedule>
-
- </div>
-
-
+<div class="mx-auto container max-w-5xl">
+  <app-rotation-schedule
+    [employees]="allEmployees"
+    [locations]="allLocations"
+  ></app-rotation-schedule>
+</div>
