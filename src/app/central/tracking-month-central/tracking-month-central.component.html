@@ -98,117 +98,301 @@
   </div>
 </div>
 
-<div class="md:flex-row md:container md:mx-auto md:flex justify-center">
-  <div class="relative min-w-md flex-col overflow-x-auto mb-6 shadow-xl">
-    <h1 class="text-2xl font-bold text-center mx-4 mb-4 underline">
-      Classement Du Mois ({{ time.monthFrenchNames[givenMonth - 1] }}
-      {{ givenYear }})
-    </h1>
-    <table
-      class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400"
+<div class="container mx-auto px-4 py-6">
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div
+      class="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/60"
     >
-      <thead
-        class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
-      >
-        <tr>
-          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-          <th scope="col" class="py-3 px-6">Reserve Du Mois(FC)</th>
-          <th scope="col" class="px-6 py-3">Reserve Du Mois($)</th>
-          <th scope="col" class="px-6 py-3">Taux De Croissance</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          *ngFor="let s of sortedReserveMonth; let i = index"
-          class="bg-white dark:bg-gray-800"
-        >
-          <th
-            scope="row"
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold tracking-tight">
+          Classement Du Mois
+          <span
+            class="ml-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
           >
-            {{ i + 1 }}. {{ s.firstName }}
-          </th>
-          <td class="px-6 py-4">{{ s.totalReserve | number : "1.0-0" }} FC</td>
-
-          <td class="px-6 py-4">
-            {{ s.totalReserveInDollars | number : "1.0-0" }} $
-          </td>
-          <td class="px-6 py-4">
-            {{ sortedGrowthRateMonth[i].growthRate | number : "1.0-0" }} %
-          </td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr class="font-semibold">
-          <th scope="row" class="px-6 py-3 text-base">Total</th>
-          <td class="px-6 py-3">
-            {{ givenMonthTotalReserveAmount | number : "1.0-0" }} FC
-          </td>
-          <td class="px-6 py-3">
+            ({{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }})
+          </span>
+        </h2>
+        <div
+          class="mt-2 flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
+        >
+          <div
+            class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+          >
+            Total: {{ givenMonthTotalReserveAmount | number : "1.0-0" }} FC ·
             {{ givenMonthTotalReserveAmountDollars | number : "1.0-0" }} $
-          </td>
-          <td class="px-6 py-3">{{ growthRateTotal | number : "1.0-0" }} %</td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-</div>
-
-<div class="md:flex-row md:container md:mx-auto md:flex justify-center mx-4">
-  <div class="relative min-w-md flex-col overflow-x-auto mb-6 shadow-xl">
-    <h1 class="text-2xl font-bold text-center mx-4 mb-4 underline">
-      Classement Paiement Du Mois ({{ time.monthFrenchNames[givenMonth - 1] }}
-      {{ givenYear }})
-    </h1>
-    <table
-      class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400"
-    >
-      <thead
-        class="text-xs text-gray-700 uppercase bg-gray-100 dark:bg-gray-700 dark:text-gray-400"
-      >
-        <tr>
-          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-          <th scope="col" class="py-3 px-6">Paiement Du Mois(FC)</th>
-          <th scope="col" class="px-6 py-3">Paiement Du Mois($)</th>
-          <th scope="col" class="px-6 py-3">Taux De Croissance</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          *ngFor="let s of sortedPaymentMonth; let i = index"
-          class="bg-white dark:bg-gray-800"
-        >
-          <th
-            scope="row"
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+          </div>
+          <div
+            class="rounded-full bg-slate-100 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            {{ i + 1 }}. {{ s.firstName }}
-          </th>
-          <td class="px-6 py-4">{{ s.totalPayment | number : "1.0-0" }} FC</td>
+            Croissance: {{ growthRateTotal | number : "1.0-0" }} %
+          </div>
+        </div>
+      </div>
 
-          <td class="px-6 py-4">
-            {{ s.totalPaymentInDollars | number : "1.0-0" }} $
-          </td>
-          <td class="px-6 py-4">
-            {{ sortedGrowthRatePaymentMonth[i].growthRate | number : "1.0-0" }}
-            %
-          </td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr class="font-semibold">
-          <th scope="row" class="px-6 py-3 text-base">Total</th>
-          <td class="px-6 py-3">
-            {{ givenMonthTotalPaymentAmount | number : "1.0-0" }} FC
-          </td>
-          <td class="px-6 py-3">
-            {{ givenMonthTotalPaymentAmountDollars | number : "1.0-0" }} $
-          </td>
-          <td class="px-6 py-3">
-            {{ growthRateTotalPayments | number : "1.0-0" }} %
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+      <div
+        class="max-h-[60vh] overflow-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-700"
+      >
+        <table class="min-w-full text-sm">
+          <thead
+            class="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          >
+            <tr>
+              <th class="px-4 py-3 text-left">Rang</th>
+              <th class="px-2 py-3 text-left">Équipe</th>
+              <th class="px-4 py-3 text-left">Réserve (FC)</th>
+              <th class="px-4 py-3 text-left">Réserve ($)</th>
+              <th class="px-4 py-3 text-right">Δ Croissance</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr
+              *ngFor="let s of sortedReserveMonth; let i = index"
+              class="bg-white/80 hover:bg-emerald-50/60 dark:bg-slate-900/40 dark:hover:bg-slate-800/60"
+            >
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold"
+                  [ngClass]="{
+                    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200':
+                      i === 0,
+                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200':
+                      i > 2
+                  }"
+                  [title]="'Rang ' + (i + 1)"
+                >
+                  {{ i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1 }}
+                </span>
+              </td>
+
+              <td class="px-2 py-3">
+                <div class="font-medium text-slate-900 dark:text-slate-100">
+                  {{ s.firstName }}
+                </div>
+                <div
+                  class="mt-1 h-2 w-36 rounded-full bg-slate-200 dark:bg-slate-700"
+                >
+                  <div
+                    class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                    [style.width.%]="
+                      percentOf(toNum(s?.totalReserveInDollars), maxReserveUSD)
+                    "
+                  ></div>
+                </div>
+              </td>
+
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="font-medium text-slate-900 dark:text-slate-100">
+                  {{ toNum(s?.totalReserve) | number : "1.0-0" }} FC
+                </div>
+              </td>
+
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{ toNum(s?.totalReserveInDollars) | number : "1.0-0" }} $
+                  </span>
+                  <span class="text-xs text-slate-500 dark:text-slate-400">
+                    {{
+                      percentOf(toNum(s?.totalReserveInDollars), maxReserveUSD)
+                        | number : "1.0-0"
+                    }}%
+                  </span>
+                </div>
+              </td>
+
+              <td class="px-4 py-3 text-right">
+                <span
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold"
+                  [ngClass]="nonNegColor(sortedGrowthRateMonth[i]?.growthRate)"
+                >
+                  <span>{{
+                    toNum(sortedGrowthRateMonth[i]?.growthRate) >= 0 ? "▲" : "▼"
+                  }}</span>
+                  <span
+                    >{{
+                      toNum(sortedGrowthRateMonth[i]?.growthRate) >= 0
+                        ? "+"
+                        : ""
+                    }}{{
+                      toNum(sortedGrowthRateMonth[i]?.growthRate)
+                        | number : "1.0-0"
+                    }}%</span
+                  >
+                </span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="bg-slate-50 text-sm dark:bg-slate-800">
+            <tr>
+              <td class="px-4 py-3 font-semibold">Total</td>
+              <td class="px-2 py-3"></td>
+              <td class="px-4 py-3 font-semibold">
+                {{ toNum(givenMonthTotalReserveAmount) | number : "1.0-0" }} FC
+              </td>
+              <td class="px-4 py-3 font-semibold">
+                {{
+                  toNum(givenMonthTotalReserveAmountDollars) | number : "1.0-0"
+                }}
+                $
+              </td>
+              <td class="px-4 py-3 text-right font-semibold">
+                {{ toNum(growthRateTotal) | number : "1.0-0" }} %
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div
+      class="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div class="mb-4">
+        <h2 class="text-xl font-semibold tracking-tight">
+          Classement Paiement Du Mois
+          <span
+            class="ml-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
+          >
+            ({{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }})
+          </span>
+        </h2>
+        <div
+          class="mt-2 flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
+        >
+          <div
+            class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+          >
+            Total:
+            {{ toNum(givenMonthTotalPaymentAmount) | number : "1.0-0" }} FC ·
+            {{ toNum(givenMonthTotalPaymentAmountDollars) | number : "1.0-0" }}
+            $
+          </div>
+          <div
+            class="rounded-full bg-slate-100 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            Croissance:
+            {{ toNum(growthRateTotalPayments) | number : "1.0-0" }} %
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="max-h-[60vh] overflow-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-700"
+      >
+        <table class="min-w-full text-sm">
+          <thead
+            class="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          >
+            <tr>
+              <th class="px-4 py-3 text-left">Rang</th>
+              <th class="px-2 py-3 text-left">Équipe</th>
+              <th class="px-4 py-3 text-left">Paiement (FC)</th>
+              <th class="px-4 py-3 text-left">Paiement ($)</th>
+              <th class="px-4 py-3 text-right">Δ Croissance</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr
+              *ngFor="let s of sortedPaymentMonth; let i = index"
+              class="bg-white/80 hover:bg-emerald-50/60 dark:bg-slate-900/40 dark:hover:bg-slate-800/60"
+            >
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold"
+                  [ngClass]="{
+                    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200':
+                      i === 0,
+                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200':
+                      i > 2
+                  }"
+                  [title]="'Rang ' + (i + 1)"
+                >
+                  {{ i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1 }}
+                </span>
+              </td>
+
+              <td class="px-2 py-3">
+                <div class="font-medium text-slate-900 dark:text-slate-100">
+                  {{ s.firstName }}
+                </div>
+                <div
+                  class="mt-1 h-2 w-36 rounded-full bg-slate-200 dark:bg-slate-700"
+                >
+                  <div
+                    class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                    [style.width.%]="
+                      percentOf(toNum(s?.totalPaymentInDollars), maxPaymentUSD)
+                    "
+                  ></div>
+                </div>
+              </td>
+
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="font-medium text-slate-900 dark:text-slate-100">
+                  {{ toNum(s?.totalPayment) | number : "1.0-0" }} FC
+                </div>
+              </td>
+
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{ toNum(s?.totalPaymentInDollars) | number : "1.0-0" }} $
+                  </span>
+                  <span class="text-xs text-slate-500 dark:text-slate-400">
+                    {{
+                      percentOf(toNum(s?.totalPaymentInDollars), maxPaymentUSD)
+                        | number : "1.0-0"
+                    }}%
+                  </span>
+                </div>
+              </td>
+
+              <td class="px-4 py-3 text-right">
+                <span
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold"
+                  [ngClass]="
+                    nonNegColor(sortedGrowthRatePaymentMonth[i]?.growthRate)
+                  "
+                >
+                  <span>{{
+                    toNum(sortedGrowthRatePaymentMonth[i]?.growthRate) >= 0
+                      ? "▲"
+                      : "▼"
+                  }}</span>
+                  <span
+                    >{{
+                      toNum(sortedGrowthRatePaymentMonth[i]?.growthRate) >= 0
+                        ? "+"
+                        : ""
+                    }}{{
+                      toNum(sortedGrowthRatePaymentMonth[i]?.growthRate)
+                        | number : "1.0-0"
+                    }}%</span
+                  >
+                </span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="bg-slate-50 text-sm dark:bg-slate-800">
+            <tr>
+              <td class="px-4 py-3 font-semibold">Total</td>
+              <td class="px-2 py-3"></td>
+              <td class="px-4 py-3 font-semibold">
+                {{ toNum(givenMonthTotalPaymentAmount) | number : "1.0-0" }} FC
+              </td>
+              <td class="px-4 py-3 font-semibold">
+                {{
+                  toNum(givenMonthTotalPaymentAmountDollars) | number : "1.0-0"
+                }}
+                $
+              </td>
+              <td class="px-4 py-3 text-right font-semibold">
+                {{ toNum(growthRateTotalPayments) | number : "1.0-0" }} %
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
   </div>
 </div>

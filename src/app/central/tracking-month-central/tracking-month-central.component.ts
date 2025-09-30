@@ -390,4 +390,41 @@ export class TrackingMonthCentralComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.givenMonthBudget)}`,
     ];
   }
+  // tracking-month-central.component.ts (inside the class)
+  toNum(v: any): number {
+    if (typeof v === 'number') return v;
+    if (typeof v === 'string') {
+      const n = parseFloat(v.replace(/\s/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+    return 0;
+  }
+
+  percentOf(value: any, basis: any): number {
+    const v = this.toNum(value);
+    const b = this.toNum(basis) || 1;
+    return Math.max(0, (v / b) * 100);
+  }
+
+  nonNegColor(rate: any): string {
+    const r = this.toNum(rate);
+    return r >= 0
+      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
+      : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200';
+  }
+
+  // Compute baselines safely every change detection (cheap enough for small lists)
+  get maxReserveUSD(): number {
+    const arr = (this.sortedReserveMonth ?? []).map((s) =>
+      this.toNum(s?.totalReserveInDollars)
+    );
+    return Math.max(1, ...arr, 1);
+  }
+
+  get maxPaymentUSD(): number {
+    const arr = (this.sortedPaymentMonth ?? []).map((s) =>
+      this.toNum(s?.totalPaymentInDollars)
+    );
+    return Math.max(1, ...arr, 1);
+  }
 }
