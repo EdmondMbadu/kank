@@ -99,9 +99,11 @@
 </div>
 
 <div class="container mx-auto px-4 py-6">
-  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+  <!-- one-per-row, no forced side-by-side -->
+  <div class="grid grid-cols-1 2xl:grid-cols-2 gap-8">
+    <!-- ====== RÉSERVE DU MOIS ====== -->
     <div
-      class="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/60"
+      class="rounded-2xl 2xl:max-w-3xl border border-slate-200 bg-white/70 p-5 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/60"
     >
       <div class="mb-4">
         <h2 class="text-xl font-semibold tracking-tight">
@@ -112,50 +114,58 @@
             ({{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }})
           </span>
         </h2>
+
         <div
-          class="mt-2 flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
+          class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
         >
           <div
-            class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+            class="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
           >
-            Total: {{ givenMonthTotalReserveAmount | number : "1.0-0" }} FC ·
-            {{ givenMonthTotalReserveAmountDollars | number : "1.0-0" }} $
+            Total:
+            {{ toNum(givenMonthTotalReserveAmount) | number : "1.0-0" }} FC ·
+            {{ toNum(givenMonthTotalReserveAmountDollars) | number : "1.0-0" }}
+            $
           </div>
           <div
-            class="rounded-full bg-slate-100 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            Croissance: {{ growthRateTotal | number : "1.0-0" }} %
+            Croissance: {{ toNum(growthRateTotal) | number : "1.0-0" }} %
+          </div>
+          <div
+            class="rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-200 dark:ring-cyan-800"
+          >
+            Barre = % du meilleur $
           </div>
         </div>
       </div>
 
-      <div
-        class="max-h-[60vh] overflow-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-700"
-      >
-        <table class="min-w-full text-sm">
+      <!-- no overflow container: show full table -->
+      <div class="rounded-xl ring-1 ring-slate-200 dark:ring-slate-700">
+        <table class="w-full table-auto text-sm font-normal tabular-nums">
           <thead
-            class="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
           >
             <tr>
               <th class="px-4 py-3 text-left">Rang</th>
               <th class="px-2 py-3 text-left">Équipe</th>
-              <th class="px-4 py-3 text-left">Réserve (FC)</th>
-              <th class="px-4 py-3 text-left">Réserve ($)</th>
+              <th class="px-4 py-3 text-right">Réserve (FC)</th>
+              <th class="px-4 py-3 text-right">Réserve ($)</th>
               <th class="px-4 py-3 text-right">Δ Croissance</th>
             </tr>
           </thead>
+
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
             <tr
               *ngFor="let s of sortedReserveMonth; let i = index"
-              class="bg-white/80 hover:bg-emerald-50/60 dark:bg-slate-900/40 dark:hover:bg-slate-800/60"
+              class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
             >
               <td class="px-4 py-3">
                 <span
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold ring-1 ring-inset"
                   [ngClass]="{
-                    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200':
+                    'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
                       i === 0,
-                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200':
+                    'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700':
                       i > 2
                   }"
                   [title]="'Rang ' + (i + 1)"
@@ -169,7 +179,8 @@
                   {{ s.firstName }}
                 </div>
                 <div
-                  class="mt-1 h-2 w-36 rounded-full bg-slate-200 dark:bg-slate-700"
+                  class="mt-1 h-2 w-40 rounded-full bg-slate-200 dark:bg-slate-700"
+                  aria-hidden="true"
                 >
                   <div
                     class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
@@ -180,41 +191,39 @@
                 </div>
               </td>
 
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="font-medium text-slate-900 dark:text-slate-100">
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <span class="font-medium text-slate-900 dark:text-slate-100">
                   {{ toNum(s?.totalReserve) | number : "1.0-0" }} FC
-                </div>
+                </span>
               </td>
 
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{ toNum(s?.totalReserveInDollars) | number : "1.0-0" }} $
-                  </span>
-                  <span class="text-xs text-slate-500 dark:text-slate-400">
-                    {{
-                      percentOf(toNum(s?.totalReserveInDollars), maxReserveUSD)
-                        | number : "1.0-0"
-                    }}%
-                  </span>
-                </div>
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <span class="font-medium text-slate-900 dark:text-slate-100">
+                  {{ toNum(s?.totalReserveInDollars) | number : "1.0-0" }} $
+                </span>
+                <span class="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                  {{
+                    percentOf(toNum(s?.totalReserveInDollars), maxReserveUSD)
+                      | number : "1.0-0"
+                  }}%
+                </span>
               </td>
 
               <td class="px-4 py-3 text-right">
                 <span
-                  class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold"
-                  [ngClass]="nonNegColor(sortedGrowthRateMonth[i].growthRate)"
+                  class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-xs font-semibold"
+                  [ngClass]="nonNegColor(sortedGrowthRateMonth[i]?.growthRate)"
                 >
                   <span>{{
-                    toNum(sortedGrowthRateMonth[i].growthRate) >= 0 ? "▲" : "▼"
+                    toNum(sortedGrowthRateMonth[i]?.growthRate) >= 0 ? "▲" : "▼"
                   }}</span>
                   <span
                     >{{
-                      toNum(sortedGrowthRateMonth[i].growthRate) >= 0
+                      toNum(sortedGrowthRateMonth[i]?.growthRate) >= 0
                         ? "+"
                         : ""
                     }}{{
-                      toNum(sortedGrowthRateMonth[i].growthRate)
+                      toNum(sortedGrowthRateMonth[i]?.growthRate)
                         | number : "1.0-0"
                     }}%</span
                   >
@@ -222,14 +231,15 @@
               </td>
             </tr>
           </tbody>
+
           <tfoot class="bg-slate-50 text-sm dark:bg-slate-800">
             <tr>
               <td class="px-4 py-3 font-semibold">Total</td>
               <td class="px-2 py-3"></td>
-              <td class="px-4 py-3 font-semibold">
+              <td class="px-4 py-3 text-right font-semibold">
                 {{ toNum(givenMonthTotalReserveAmount) | number : "1.0-0" }} FC
               </td>
-              <td class="px-4 py-3 font-semibold">
+              <td class="px-4 py-3 text-right font-semibold">
                 {{
                   toNum(givenMonthTotalReserveAmountDollars) | number : "1.0-0"
                 }}
@@ -244,8 +254,9 @@
       </div>
     </div>
 
+    <!-- ====== PAIEMENT DU MOIS ====== -->
     <div
-      class="rounded-2xl border border-slate-200 bg-white/70 p-4 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/60"
+      class="rounded-2xl 2xl:max-w-2xl border border-slate-200 bg-white/70 p-5 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/60"
     >
       <div class="mb-4">
         <h2 class="text-xl font-semibold tracking-tight">
@@ -256,11 +267,12 @@
             ({{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }})
           </span>
         </h2>
+
         <div
-          class="mt-2 flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
+          class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
         >
           <div
-            class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+            class="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
           >
             Total:
             {{ toNum(givenMonthTotalPaymentAmount) | number : "1.0-0" }} FC ·
@@ -268,41 +280,45 @@
             $
           </div>
           <div
-            class="rounded-full bg-slate-100 px-2 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
             Croissance:
             {{ toNum(growthRateTotalPayments) | number : "1.0-0" }} %
           </div>
+          <div
+            class="rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-200 dark:ring-cyan-800"
+          >
+            Barre = % du meilleur $
+          </div>
         </div>
       </div>
 
-      <div
-        class="max-h-[60vh] overflow-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-700"
-      >
-        <table class="min-w-full text-sm">
+      <div class="rounded-xl ring-1 ring-slate-200 dark:ring-slate-700">
+        <table class="w-full table-auto text-sm font-normal tabular-nums">
           <thead
-            class="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
           >
             <tr>
               <th class="px-4 py-3 text-left">Rang</th>
               <th class="px-2 py-3 text-left">Équipe</th>
-              <th class="px-4 py-3 text-left">Paiement (FC)</th>
-              <th class="px-4 py-3 text-left">Paiement ($)</th>
+              <th class="px-4 py-3 text-right">Paiement (FC)</th>
+              <th class="px-4 py-3 text-right">Paiement ($)</th>
               <th class="px-4 py-3 text-right">Δ Croissance</th>
             </tr>
           </thead>
+
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
             <tr
               *ngFor="let s of sortedPaymentMonth; let i = index"
-              class="bg-white/80 hover:bg-emerald-50/60 dark:bg-slate-900/40 dark:hover:bg-slate-800/60"
+              class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
             >
               <td class="px-4 py-3">
                 <span
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-semibold ring-1 ring-inset"
                   [ngClass]="{
-                    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200':
+                    'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
                       i === 0,
-                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200':
+                    'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700':
                       i > 2
                   }"
                   [title]="'Rang ' + (i + 1)"
@@ -316,7 +332,8 @@
                   {{ s.firstName }}
                 </div>
                 <div
-                  class="mt-1 h-2 w-36 rounded-full bg-slate-200 dark:bg-slate-700"
+                  class="mt-1 h-2 w-40 rounded-full bg-slate-200 dark:bg-slate-700"
+                  aria-hidden="true"
                 >
                   <div
                     class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
@@ -327,45 +344,43 @@
                 </div>
               </td>
 
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="font-medium text-slate-900 dark:text-slate-100">
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <span class="font-medium text-slate-900 dark:text-slate-100">
                   {{ toNum(s?.totalPayment) | number : "1.0-0" }} FC
-                </div>
+                </span>
               </td>
 
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{ toNum(s?.totalPaymentInDollars) | number : "1.0-0" }} $
-                  </span>
-                  <span class="text-xs text-slate-500 dark:text-slate-400">
-                    {{
-                      percentOf(toNum(s?.totalPaymentInDollars), maxPaymentUSD)
-                        | number : "1.0-0"
-                    }}%
-                  </span>
-                </div>
+              <td class="px-4 py-3 text-right whitespace-nowrap">
+                <span class="font-medium text-slate-900 dark:text-slate-100">
+                  {{ toNum(s?.totalPaymentInDollars) | number : "1.0-0" }} $
+                </span>
+                <span class="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                  {{
+                    percentOf(toNum(s?.totalPaymentInDollars), maxPaymentUSD)
+                      | number : "1.0-0"
+                  }}%
+                </span>
               </td>
 
               <td class="px-4 py-3 text-right">
                 <span
-                  class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold"
+                  class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-xs font-semibold"
                   [ngClass]="
-                    nonNegColor(sortedGrowthRatePaymentMonth[i].growthRate)
+                    nonNegColor(sortedGrowthRatePaymentMonth[i]?.growthRate)
                   "
                 >
                   <span>{{
-                    toNum(sortedGrowthRatePaymentMonth[i].growthRate) >= 0
+                    toNum(sortedGrowthRatePaymentMonth[i]?.growthRate) >= 0
                       ? "▲"
                       : "▼"
                   }}</span>
                   <span
                     >{{
-                      toNum(sortedGrowthRatePaymentMonth[i].growthRate) >= 0
+                      toNum(sortedGrowthRatePaymentMonth[i]?.growthRate) >= 0
                         ? "+"
                         : ""
                     }}{{
-                      toNum(sortedGrowthRatePaymentMonth[i].growthRate)
+                      toNum(sortedGrowthRatePaymentMonth[i]?.growthRate)
                         | number : "1.0-0"
                     }}%</span
                   >
@@ -373,14 +388,15 @@
               </td>
             </tr>
           </tbody>
+
           <tfoot class="bg-slate-50 text-sm dark:bg-slate-800">
             <tr>
               <td class="px-4 py-3 font-semibold">Total</td>
               <td class="px-2 py-3"></td>
-              <td class="px-4 py-3 font-semibold">
+              <td class="px-4 py-3 text-right font-semibold">
                 {{ toNum(givenMonthTotalPaymentAmount) | number : "1.0-0" }} FC
               </td>
-              <td class="px-4 py-3 font-semibold">
+              <td class="px-4 py-3 text-right font-semibold">
                 {{
                   toNum(givenMonthTotalPaymentAmountDollars) | number : "1.0-0"
                 }}
