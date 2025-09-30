@@ -99,6 +99,15 @@ export class TimeService {
     let date = `${month}-${day}-${year}`;
     return date;
   }
+  todaysDateKinshasFormat(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+
+    let date = `${day}/${month}/${year}`;
+    return date;
+  }
   yesterdaysDateMonthDayYear(): string {
     const yesterday = new Date(); // Start with today's date
     yesterday.setDate(yesterday.getDate() - 1); // Subtract one day

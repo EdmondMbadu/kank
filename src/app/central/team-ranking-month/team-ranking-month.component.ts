@@ -41,6 +41,7 @@ export class TeamRankingMonthComponent {
   rankingMode: 'performance' | 'dailyPayments' | 'monthlyPayments' =
     'dailyPayments';
   loadingDaily = false;
+  todayKin: string = this.time.todaysDateKinshasFormat();
   todayDayKey: string = this.time.todaysDateMonthDayYear(); // e.g. "9-15-2025"
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
