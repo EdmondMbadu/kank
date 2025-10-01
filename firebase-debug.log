@@ -1,0 +1,28 @@
+[debug] [2025-10-01T20:00:21.286Z] ----------------------------------------------------------------------
+[debug] [2025-10-01T20:00:21.291Z] Command:       /Users/edmondmbadu/.nvm/versions/node/v19.9.0/bin/node /opt/homebrew/bin/firebase deploy
+[debug] [2025-10-01T20:00:21.292Z] CLI Version:   13.14.2
+[debug] [2025-10-01T20:00:21.292Z] Platform:      darwin
+[debug] [2025-10-01T20:00:21.292Z] Node Version:  v19.9.0
+[debug] [2025-10-01T20:00:21.292Z] Time:          Wed Oct 01 2025 13:00:21 GMT-0700 (Pacific Daylight Time)
+[debug] [2025-10-01T20:00:21.292Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-10-01T20:00:21.324Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-10-01T20:00:21.324Z] > authorizing via signed-in user (mbadungoma@gmail.com)
+[debug] [2025-10-01T20:00:21.324Z] [iam] checking project kank-4bbbc for permissions ["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2025-10-01T20:00:21.325Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions [none]
+[debug] [2025-10-01T20:00:21.325Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions x-goog-quota-user=projects/kank-4bbbc
+[debug] [2025-10-01T20:00:21.325Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-10-01T20:00:21.512Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions 200
+[debug] [2025-10-01T20:00:21.513Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kank-4bbbc:testIamPermissions {"permissions":["cloudfunctions.functions.create","cloudfunctions.functions.delete","cloudfunctions.functions.get","cloudfunctions.functions.list","cloudfunctions.functions.update","cloudfunctions.operations.get","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2025-10-01T20:00:21.513Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions [none]
+[debug] [2025-10-01T20:00:21.513Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-10-01T20:00:21.648Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-10-01T20:00:21.648Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/kank-4bbbc/serviceAccounts/kank-4bbbc@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-10-01T20:00:21.649Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc [none]
+[debug] [2025-10-01T20:00:21.846Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc 200
+[debug] [2025-10-01T20:00:21.847Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc {"projectId":"kank-4bbbc","projectNumber":"940518039240","displayName":"Kank","name":"projects/kank-4bbbc","resources":{"hostingSite":"kank-4bbbc","locationId":"us-central"},"state":"ACTIVE","etag":"1_ec6174c8-4b10-4b52-ba98-bc65f012c311"}
+[info] 
+[info] === Deploying to 'kank-4bbbc'...
+[info] 
+[info] i  deploying functions, hosting 
+[debug] [2025-10-01T20:00:21.852Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/kank-4bbbc [none]
