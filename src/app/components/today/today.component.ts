@@ -51,6 +51,9 @@ export class TodayComponent {
   formulaMinusSumN = 0;
   formulaNetN = 0;
 
+  notPaidAmountTodayN: number = 0;
+  requestTotalTomorrow: number = 0;
+
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -290,7 +293,7 @@ export class TodayComponent {
         ? '0'
         : this.tomorrowMoneyRequests;
     this.summaryContent = [
-      ``,
+      `${this.notPaidAmountTodayN}`, // was ``
       ` ${this.dailyPayment}`,
       ` ${this.dailyLending}`,
       ` ${this.dailyFees}`,
@@ -299,17 +302,18 @@ export class TodayComponent {
       `${this.dailySaving}`,
       `${this.dailySavingReturns}`,
       `${this.dailyFeesReturns}`,
-      '',
-      '',
+      `${this.requestTotalToday}`, // was ''
+      `${this.requestTotalTomorrow}`, // was ''
       `${this.dailyExpense}`,
       `${this.dailyLoss}`,
-      // `${this.tomorrowMoneyRequests}`,
     ];
     this.dailyPaymentDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyPayment)
       .toString();
     this.valuesConvertedToDollars = [
-      ``,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.notPaidAmountTodayN.toString()
+      )}`, // was ``
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFees)}`,
@@ -320,16 +324,14 @@ export class TodayComponent {
         this.dailySavingReturns
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyFeesReturns)}`,
-      ``,
-      ``,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.requestTotalToday.toString()
+      )}`, // was ``
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.requestTotalTomorrow.toString()
+      )}`, // was ``
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLoss)}`,
-      // `${this.compute.convertCongoleseFrancToUsDollars(
-      //   this.dailyMoneyRequests
-      // )}`,
-      // `${this.compute.convertCongoleseFrancToUsDollars(
-      //   this.tomorrowMoneyRequests
-      // )}`,
     ];
     this.recomputeMoneyInHandsTrace();
   }
@@ -543,43 +545,27 @@ export class TodayComponent {
   }
 
   private computeRequestTotalSameAsRequestToday() {
-    const target = this.requestDateCorrectFormat;
-    let total = 0;
+    const todayKey = this.requestDateCorrectFormat;
+    const tomorrowKey = this.addDaysToKey(todayKey, 1);
 
-    // Clients (lending/savings/rejection)
-    if (this.clients?.length) {
-      for (const c of this.clients) {
-        if (c.requestStatus && c.requestDate === target) {
-          // lending only if verified by agent (mirrors your request-today)
-          if (
-            c.requestType === 'lending' &&
-            c.agentSubmittedVerification === 'true'
-          ) {
-            total += Number(c.requestAmount ?? 0);
-          } else if (c.requestType === 'savings') {
-            total += Number(c.requestAmount ?? 0);
-          } else if (c.requestType === 'rejection') {
-            total += Number(c.requestAmount ?? 0);
-          }
-        }
-      }
-    }
+    // today
+    this.requestTotalToday = this.sumRequestTotalForDate(todayKey);
 
-    // Cards
-    if (this.cards?.length) {
-      for (const k of this.cards) {
-        if (
-          k.requestStatus &&
-          k.requestType === 'card' &&
-          k.requestDate === target
-        ) {
-          total += Number(k.requestAmount ?? 0);
-        }
-      }
-    }
+    // tomorrow (relative to currently selected date)
+    this.requestTotalTomorrow = this.sumRequestTotalForDate(tomorrowKey);
 
-    this.requestTotalToday = total;
-    this.updateOkChips();
+    // push into tiles
+    this.summaryContent[9] = `${this.requestTotalToday}`;
+    this.valuesConvertedToDollars[9] = `${this.compute.convertCongoleseFrancToUsDollars(
+      this.requestTotalToday.toString()
+    )}`;
+
+    this.summaryContent[10] = `${this.requestTotalTomorrow}`;
+    this.valuesConvertedToDollars[10] = `${this.compute.convertCongoleseFrancToUsDollars(
+      this.requestTotalTomorrow.toString()
+    )}`;
+
+    this.updateOkChips(); // keeps your header status logic in sync
   }
 
   private updateOkChips() {
@@ -693,7 +679,6 @@ export class TodayComponent {
       Number(c.debtLeft ?? 0) > 0 &&
       notStartedToday(c) &&
       this.startedBeforeSelectedWeek(c);
-
     // 4) split like the good page (current vs away), then merge for global check
     const notPaidCurrent = shouldPay.filter((c) => common(c) && isAlive(c));
     // const notPaidAway = shouldPay.filter((c) => common(c) && !isAlive(c));
@@ -706,6 +691,15 @@ export class TodayComponent {
     ).length;
     this.okReasons = this.reasonsMissing === 0;
 
+    // NEW: amount outstanding for those who did not pay today
+    this.notPaidAmountTodayN = this.compute.computeExpectedPerDate(notPaidAll);
+
+    // push into tile #0 (FC + $)
+    this.summaryContent[0] = `${this.notPaidAmountTodayN}`;
+    this.valuesConvertedToDollars[0] = `${this.compute.convertCongoleseFrancToUsDollars(
+      this.notPaidAmountTodayN.toString()
+    )}`;
+
     this.updateOkChips();
   }
 
@@ -713,5 +707,48 @@ export class TodayComponent {
   get clampedPerc(): number {
     const p = Number(this.perc || 0);
     return Math.max(0, Math.min(100, isFinite(p) ? p : 0));
+  }
+
+  /** Add (or subtract) days to a "M-D-YYYY" or "MM-DD-YYYY" key and return "M-D-YYYY". */
+  private addDaysToKey(mdY: string, days: number): string {
+    const [m, d, y] = this.normDateOnly(mdY).split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + days);
+    return `${dt.getMonth() + 1}-${dt.getDate()}-${dt.getFullYear()}`;
+  }
+
+  /** Sum request amounts for a target date (mirrors your request-today logic). */
+  private sumRequestTotalForDate(target: string): number {
+    let total = 0;
+
+    // Clients (lending/savings/rejection)
+    for (const c of this.clients || []) {
+      if (c.requestStatus && c.requestDate === target) {
+        if (
+          c.requestType === 'lending' &&
+          c.agentSubmittedVerification === 'true'
+        ) {
+          total += Number(c.requestAmount ?? 0);
+        } else if (
+          c.requestType === 'savings' ||
+          c.requestType === 'rejection'
+        ) {
+          total += Number(c.requestAmount ?? 0);
+        }
+      }
+    }
+
+    // Cards
+    for (const k of this.cards || []) {
+      if (
+        k.requestStatus &&
+        k.requestType === 'card' &&
+        k.requestDate === target
+      ) {
+        total += Number(k.requestAmount ?? 0);
+      }
+    }
+
+    return total;
   }
 }
