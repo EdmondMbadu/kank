@@ -176,7 +176,7 @@ exports.sendClientCompletionSMS = functions.firestore
 
         // Construct your message
         const message = `${fullName},
-Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. En cas de probleme ou d'erreurs benga 0825333567. Merci pona confiance na FONDATION GERVAIS`;
+Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${dateFin}. Okosala ${nombrePaiements} paiements na ${duree}, okofuta ${montantMinimum} FC semaine nionso. Félicitations na confiance ya kozala membre ya Fondation Gervais. Soki ofuti crédit nayo bien ba avantages eza ebele. Soki mituna ezali benga 0825333567. Merci pona confiance na FONDATION GERVAIS`;
 
         console.log(`Constructed message: ${message}`);
 
