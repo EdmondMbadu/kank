@@ -249,7 +249,21 @@
         </select>
       </div>
     </div>
-
+    <div *ngIf="auth.isAdmin" class="flex justify-center mb-8">
+      <button
+        type="button"
+        (click)="toggleMonthlyAmounts()"
+        class="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+      >
+        <span
+          class="h-2 w-2 rounded-full"
+          [ngClass]="showMonthlyAmounts ? 'bg-emerald-500' : 'bg-slate-300'"
+        ></span>
+        {{
+          showMonthlyAmounts ? "Masquer les montants" : "Afficher les montants"
+        }}
+      </button>
+    </div>
     <!-- Employee Leaderboard -->
     <!-- PERFORMANCE SECTION -->
     <div *ngIf="rankingMode === 'performance'" class="space-y-4">
@@ -655,6 +669,10 @@
         </p>
       </div>
 
+      <ng-template #monthlyRowHidden>
+        <!-- <div class="text-xs italic text-gray-500">Montants masqués</div> -->
+      </ng-template>
+
       <!-- Empty state -->
       <div
         *ngIf="!loadingMonthly && paidEmployeesMonth.length === 0"
@@ -774,24 +792,31 @@
             </div>
           </div>
 
-          <div *ngIf="auth.isAdmin" class="mt-3 flex items-baseline gap-2">
-            <div
-              [ngClass]="
-                idx + 1 === 1
-                  ? 'text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500'
-                  : 'text-base font-bold text-gray-900'
-              "
-            >
-              FC {{ em._monthTotal || 0 | number : "1.0-0" }}
-            </div>
-            <div
-              class="text-[11px]"
-              [ngClass]="idx + 1 === 1 ? 'text-amber-700' : 'text-gray-500'"
-            >
-              ({{ em._monthCount || 0 }} paiement{{
-                (em._monthCount || 0) > 1 ? "s" : ""
-              }})
-            </div>
+          <div *ngIf="auth.isAdmin" class="mt-3">
+            <ng-container *ngIf="showMonthlyAmounts; else monthlyPodiumHidden">
+              <div class="flex items-baseline gap-2">
+                <div
+                  [ngClass]="
+                    idx + 1 === 1
+                      ? 'text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-500'
+                      : 'text-base font-bold text-gray-900'
+                  "
+                >
+                  FC {{ em._monthTotal || 0 | number : "1.0-0" }}
+                </div>
+                <div
+                  class="text-[11px]"
+                  [ngClass]="idx + 1 === 1 ? 'text-amber-700' : 'text-gray-500'"
+                >
+                  ({{ em._monthCount || 0 }} paiement{{
+                    (em._monthCount || 0) > 1 ? "s" : ""
+                  }})
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #monthlyPodiumHidden>
+              <!-- <div class="text-xs italic text-gray-500">Montants masqués</div> -->
+            </ng-template>
           </div>
 
           <!-- Soft pulse for #1 (Tailwind only) -->
@@ -842,14 +867,16 @@
             </div>
 
             <div *ngIf="this.auth.isAdmin" class="text-right">
-              <div class="text-sm font-semibold">
-                FC {{ em._monthTotal || 0 | number : "1.0-0" }}
-              </div>
-              <div class="text-xs text-gray-500">
-                {{ em._monthCount || 0 }} paiement{{
-                  (em._monthCount || 0) > 1 ? "s" : ""
-                }}
-              </div>
+              <ng-container *ngIf="showMonthlyAmounts; else monthlyRowHidden">
+                <div class="text-sm font-semibold">
+                  FC {{ em._monthTotal || 0 | number : "1.0-0" }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ em._monthCount || 0 }} paiement{{
+                    (em._monthCount || 0) > 1 ? "s" : ""
+                  }}
+                </div>
+              </ng-container>
             </div>
           </li>
         </ul>

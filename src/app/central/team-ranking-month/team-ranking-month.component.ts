@@ -47,6 +47,7 @@ export class TeamRankingMonthComponent {
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
+  showMonthlyAmounts = true;
 
   // state: all closed initially
   collapse: Record<'payroll' | 'bonus' | 'loyer', boolean> = {
@@ -58,6 +59,10 @@ export class TeamRankingMonthComponent {
   // single toggle function
   toggle(section: 'payroll' | 'bonus' | 'loyer') {
     this.collapse[section] = !this.collapse[section];
+  }
+
+  toggleMonthlyAmounts(): void {
+    this.showMonthlyAmounts = !this.showMonthlyAmounts;
   }
 
   allLocations: any[] = [];
