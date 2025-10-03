@@ -249,11 +249,14 @@
         </select>
       </div>
     </div>
-    <div *ngIf="auth.isAdmin" class="flex justify-center mb-8">
+    <div
+      *ngIf="auth.isAdmin && rankingMode === 'monthlyPayments'"
+      class="flex justify-center mb-8"
+    >
       <button
         type="button"
         (click)="toggleMonthlyAmounts()"
-        class="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+        class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-50"
       >
         <span
           class="h-2 w-2 rounded-full"
