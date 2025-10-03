@@ -714,6 +714,10 @@ export class TeamRankingMonthComponent {
         const a = adjusted.get(e.uid!) || { total: 0, count: 0 };
         e._dailyTotal = a.total;
         e._dailyCount = a.count;
+        const usd = this.compute.convertCongoleseFrancToUsDollars(
+          String(a.total ?? 0)
+        );
+        e._dailyTotalUsd = usd === '' ? 0 : usd;
       });
 
       // Sort by adjusted totals: total desc, then count desc, then name asc
@@ -923,6 +927,10 @@ export class TeamRankingMonthComponent {
         const a = adjusted.get(e.uid!) || { total: 0, count: 0 };
         e._monthTotal = a.total;
         e._monthCount = a.count;
+        const usd = this.compute.convertCongoleseFrancToUsDollars(
+          String(a.total ?? 0)
+        );
+        e._monthTotalUsd = usd === '' ? 0 : usd;
       });
 
       this.allEmployees.sort((a: any, b: any) => {
