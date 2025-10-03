@@ -23,17 +23,26 @@ export class GestionBankComponent {
   rateToday: string = '';
   currentUser: any = {};
   managementInfo?: Management = {};
+
+  // ADD fields
+  showRateEditor = false;
+  tmpRateDollar: number;
+  tmpRateFranc: number;
+
   constructor(
     public auth: AuthService,
     private data: DataService,
     private router: Router,
-    private compute: ComputationService,
+    public compute: ComputationService,
     private time: TimeService
   ) {
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
       this.getCurrentServed();
     });
+    // In constructor after injecting ComputationService + DataService, ADD:
+    this.tmpRateDollar = this.compute.rateDollar;
+    this.tmpRateFranc = this.compute.rateFranc;
   }
 
   async addToBank() {
@@ -99,5 +108,39 @@ export class GestionBankComponent {
     this.loss = (
       Number(this.moneyInDollarIf) - Number(this.moneyInDollar)
     ).toString();
+  }
+
+  // ADD methods
+  toggleRateEditor(force?: boolean) {
+    this.showRateEditor =
+      typeof force === 'boolean' ? force : !this.showRateEditor;
+    if (this.showRateEditor) {
+      this.tmpRateDollar = this.compute.rateDollar;
+      this.tmpRateFranc = this.compute.rateFranc;
+    }
+  }
+
+  async saveRates() {
+    const rd = Number(this.tmpRateDollar);
+    const rf = Number(this.tmpRateFranc);
+    if (!Number.isFinite(rd) || rd <= 0 || !Number.isFinite(rf) || rf <= 0) {
+      alert('Entrez des valeurs valides pour les deux taux.');
+      return;
+    }
+    this.compute.setRates({ rateDollar: rd, rateFranc: rf }); // live now
+    try {
+      await this.compute.updateManagementRates(rd, rf);
+    } catch {
+      /* keep runtime */
+    }
+    this.showRateEditor = false;
+  }
+
+  // convenience for filling inputs elsewhere (optional)
+  useActiveRate(target: 'today' | 'used') {
+    const v = this.compute.rateDollar ?? 0;
+    if (target === 'today') this.rateToday = v.toString();
+    else this.rateUsed = v.toString();
+    this.compteDollarAmount?.();
   }
 }

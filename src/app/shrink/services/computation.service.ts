@@ -7,12 +7,20 @@ import { Employee } from '../../models/employee';
 import { User, UserDailyField } from '../../models/user';
 import { AuthService } from '../../services/auth.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { Observable, map, catchError, of } from 'rxjs';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 // (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 @Injectable({
   providedIn: 'root',
 })
 export class ComputationService {
-  constructor(private time: TimeService, private storage: AngularFireStorage) {}
+  constructor(
+    private time: TimeService,
+    private storage: AngularFireStorage,
+    private afs: AngularFirestore
+  ) {
+    this.initRatesFromFirestore();
+  }
   colorPositive: string = '#008080';
   colorNegative: string = '#ff0000';
   rateFranc: number = 0.00034;
@@ -26,6 +34,81 @@ export class ComputationService {
   quarter4: number = 12;
   private R = 6371e3; // Earth's radius in meters
   today = this.time.todaysDateMonthDayYear();
+
+  // ADD this pair of methods inside DataService
+  /** Live stream of rates from Firestore (safe: never throws). */
+  watchManagementRates$(): Observable<{
+    rateDollar?: number;
+    rateFranc?: number;
+  }> {
+    // ⚠️ Replace 'singleton' with your real management doc id if different.
+    const docRef = this.afs.collection('management').doc('singleton');
+    return docRef.valueChanges().pipe(
+      map((doc: any) => {
+        const toNum = (v: any) => {
+          if (v === null || v === undefined) return undefined;
+          const n = Number(String(v).replace(/,/g, ''));
+          return Number.isFinite(n) ? n : undefined;
+        };
+        return {
+          rateDollar: toNum(doc?.rateDollar),
+          rateFranc: toNum(doc?.rateFranc),
+        };
+      }),
+      catchError(() => of({}))
+    );
+  }
+
+  /** Persist new rates (numbers) to Firestore. */
+  updateManagementRates(rateDollar: number, rateFranc: number) {
+    const docRef = this.afs.collection('management').doc('singleton');
+    return docRef.set({ rateDollar, rateFranc }, { merge: true });
+  }
+
+  // ADD these two helpers inside the class
+  /** Overwrite runtime rates safely (used by admin UI and stream). */
+  setRates(partial: { rateDollar?: number; rateFranc?: number }) {
+    if (
+      typeof partial.rateDollar === 'number' &&
+      Number.isFinite(partial.rateDollar) &&
+      partial.rateDollar > 0
+    ) {
+      this.rateDollar = partial.rateDollar;
+    }
+    if (
+      typeof partial.rateFranc === 'number' &&
+      Number.isFinite(partial.rateFranc) &&
+      partial.rateFranc > 0
+    ) {
+      this.rateFranc = partial.rateFranc;
+    }
+  }
+
+  /** Background init: load & react to Firestore updates, but keep defaults if missing/invalid. */
+  private initRatesFromFirestore() {
+    try {
+      // this.ratesSub =  // (uncomment if you plan to unsubscribe on destroy)
+      this.watchManagementRates$().subscribe((r) => {
+        if (
+          typeof r.rateDollar === 'number' &&
+          Number.isFinite(r.rateDollar) &&
+          r.rateDollar > 0
+        ) {
+          this.rateDollar = r.rateDollar;
+        }
+        if (
+          typeof r.rateFranc === 'number' &&
+          Number.isFinite(r.rateFranc) &&
+          r.rateFranc > 0
+        ) {
+          this.rateFranc = r.rateFranc;
+        }
+      });
+    } catch {
+      // swallow and keep defaults
+    }
+  }
+
   convertCongoleseFrancToUsDollars(value: string) {
     let input = Number(value);
     if (isNaN(input)) return '';
