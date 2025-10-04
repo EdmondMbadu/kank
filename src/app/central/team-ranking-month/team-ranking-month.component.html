@@ -290,7 +290,7 @@
         </p>
       </div>
       <div
-        *ngFor="let em of allEmployees; let i = index"
+        *ngFor="let em of performanceEmployees; let i = index"
         class="relative bg-white rounded-2xl p-4 md:p-5 shadow-sm ring-1 flex items-center gap-4"
         [ngClass]="i < 3 ? perfPodiumClass(i + 1) : 'ring-gray-200'"
       >

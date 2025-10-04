@@ -48,6 +48,7 @@ export class TeamRankingMonthComponent {
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
   showMonthlyAmounts = true;
+  performanceEmployees: Employee[] = [];
 
   // state: all closed initially
   collapse: Record<'payroll' | 'bonus' | 'loyer', boolean> = {
@@ -257,23 +258,12 @@ export class TeamRankingMonthComponent {
     this.allEmployees = Array.from(uniqueEmployees.values());
     console.log('all employees', allEmployees);
 
-    // Sort by performancePercentageMonth descending,
-    // converting any NaN to 0 so that NaNs don't cause sorting problems
-    this.allEmployees.sort((a, b) => {
-      const aVal = parseFloat(a.performancePercentageMonth ?? '0');
-      const bVal = parseFloat(b.performancePercentageMonth ?? '0');
-
-      const aPerformance = isNaN(aVal) ? 0 : aVal;
-      const bPerformance = isNaN(bVal) ? 0 : bVal;
-
-      // Descending order
-      return bPerformance - aPerformance;
-    });
-
     // Filter employees who are currently "Travaille" (working)
     this.allEmployees = this.allEmployees.filter((data) => {
       return data.status === 'Travaille';
     });
+
+    this.sortEmployeesByPerformance();
 
     // Recalculate or update any relevant average performance
     this.calculateAveragePerformancePercentage();
@@ -743,12 +733,22 @@ export class TeamRankingMonthComponent {
 
   // Keep your existing performance sorting, but factor it out for reuse
   private sortEmployeesByPerformance() {
+    if (!Array.isArray(this.allEmployees)) {
+      this.performanceEmployees = [];
+      return;
+    }
+
     this.allEmployees.sort((a, b) => {
       const aVal = parseFloat(a.performancePercentageMonth ?? '0');
       const bVal = parseFloat(b.performancePercentageMonth ?? '0');
       const aPerf = isNaN(aVal) ? 0 : aVal;
       const bPerf = isNaN(bVal) ? 0 : bVal;
       return bPerf - aPerf;
+    });
+
+    this.performanceEmployees = this.allEmployees.filter((employee) => {
+      const value = parseFloat(employee.performancePercentageMonth ?? '0');
+      return !isNaN(value) && value > 0;
     });
   }
 
