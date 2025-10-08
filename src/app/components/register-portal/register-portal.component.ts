@@ -312,6 +312,9 @@ export class RegiserPortalComponent {
         this.client
       );
 
+      // removed client from pending audit list.
+      const removeFromPending = await this.removeClientFromPending();
+
       this.router.navigate(['/client-info-current/']);
     } catch (err) {
       console.log('error occured while cancelling registration', err);
@@ -571,7 +574,6 @@ export class RegiserPortalComponent {
     c.requestType = 'rejection';
     c.requestDate = tomorrow;
     c.dateOfRequest = today;
-
     this.data
       .clientRequestRejectionRefund(c)
       .then(() => this.toast.success('Demande enregistrée 🚀'));
