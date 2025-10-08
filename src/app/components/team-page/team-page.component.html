@@ -57,54 +57,58 @@
           (change)="startUpload($any($event.target).files, em)"
         />
 
-
-       <!-- picture -->
+        <!-- picture -->
         <div class="relative">
-        <!-- preview — click = enlarge -->
-        <img
-            [src]="em.profilePicture?.downloadURL || '../../../assets/img/user.png'"
-            (click)="toggleFullPicture(em.profilePicture?.downloadURL || '../../../assets/img/user.png')"
+          <!-- preview — click = enlarge -->
+          <img
+            [src]="
+              em.profilePicture?.downloadURL || '../../../assets/img/user.png'
+            "
+            (click)="
+              toggleFullPicture(
+                em.profilePicture?.downloadURL || '../../../assets/img/user.png'
+              )
+            "
             class="h-48 w-full cursor-pointer object-cover transition hover:brightness-90"
             alt="{{ em.firstName }}"
-        />
+          />
 
-        <!-- edit button (admins only) -->
-        <button
+          <!-- edit button (admins only) -->
+          <button
             *ngIf="auth.isAdmin"
             (click)="onImageClick(i); $event.stopPropagation()"
             type="button"
             title="Changer la photo"
             class="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow hover:bg-black/80 focus:outline-none"
-        >
+          >
             <!-- pencil icon -->
             <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.8"
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.8"
             >
-            <path
+              <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 d="M15.232 5.232l3.536 3.536M4 20h4.586a2 2 0 0 0 1.414-.586l9.536-9.536a2 2 0 0 0 0-2.828l-3.536-3.536a2 2 0 0 0-2.828 0L4.636 13.05A2 2 0 0 0 4 14.464V20z"
-            />
+              />
             </svg>
-        </button>
+          </button>
 
-        <!-- status badge (unchanged) -->
-        <span
+          <!-- status badge (unchanged) -->
+          <span
             class="absolute top-2 right-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-white"
             [ngClass]="{
-            'bg-emerald-600/90': em.status === 'Travaille',
-            'bg-yellow-500/90': em.status === 'Vacance',
-            'bg-red-600/90': em.status === 'Quitté'
+              'bg-emerald-600/90': em.status === 'Travaille',
+              'bg-yellow-500/90': em.status === 'Vacance',
+              'bg-red-600/90': em.status === 'Quitté'
             }"
             >{{ em.status }}</span
-        >
+          >
         </div>
-
 
         <!-- info -->
         <div class="p-6">
@@ -130,20 +134,23 @@
           <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Téléphone : {{ em.phoneNumber }}
           </p>
-        <p class="mt-1 text-sm text-gray-500 dark:text-white">
+          <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Jour de Vacances Restants: {{ numberOfVacationDaysLeft(em) }}
           </p>
-          <p  *ngIf="auth.isAdmin" class="mt-1 text-sm text-gray-500 dark:text-white">
+          <p
+            *ngIf="auth.isAdmin"
+            class="mt-1 text-sm text-gray-500 dark:text-white"
+          >
             Arrival Hour: {{ em.arrivalHour }}
           </p>
-          <p  *ngIf="auth.isAdmin" class="mt-1 text-sm text-gray-500 dark:text-white">
-            Arrival Minute: {{ em.arrivalMinute}}
+          <p
+            *ngIf="auth.isAdmin"
+            class="mt-1 text-sm text-gray-500 dark:text-white"
+          >
+            Arrival Minute: {{ em.arrivalMinute }}
           </p>
           <!-- docs links -->
-          <div
-            class="mt-3 flex flex-wrap gap-3"
-            *ngIf="auth.isAdmin"
-          >
+          <div class="mt-3 flex flex-wrap gap-3" *ngIf="auth.isAdmin">
             <a
               *ngIf="em.profilePicture?.CVDownloadURL"
               [href]="em.profilePicture?.CVDownloadURL"
@@ -191,7 +198,7 @@
     [src]="fullPictureURL!"
     alt="Photo – plein écran"
     class="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl"
-    (click)="$event.stopPropagation()"  
+    (click)="$event.stopPropagation()"
   />
   <button
     (click)="toggleFullPicture()"
@@ -202,7 +209,6 @@
     &times;
   </button>
 </div>
-
 
 <!-- === RESET BUTTON === -->
 <div
@@ -217,14 +223,12 @@
   </button>
 
   <button
- 
-  (click)="openTransferModal()"
-  class="rounded-full bg-red-500 px-6 py-3 text-sm font-medium text-white ring-2 ring-white/30 backdrop-blur transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-white/50">
-  Transférer des Clients
-</button>
+    (click)="openTransferModal()"
+    class="rounded-full bg-red-500 px-6 py-3 text-sm font-medium text-white ring-2 ring-white/30 backdrop-blur transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-white/50"
+  >
+    Transférer des Clients
+  </button>
 </div>
-
-
 
 <!-- === EDIT EMPLOYEE MODALS === -->
 <ng-container *ngFor="let em of employees; let i = index">
@@ -258,7 +262,9 @@
         type="file"
         id="getBank"
         class="hidden"
-        (change)="startUploadContract($any($event.target).files, employees[i], 'bank')"
+        (change)="
+          startUploadContract($any($event.target).files, employees[i], 'bank')
+        "
       />
 
       <div class="grid gap-4 sm:grid-cols-2">
@@ -297,7 +303,7 @@
             class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
           />
         </label>
-         <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
           Jour De Vacances Accepter
           <input
             [(ngModel)]="employees[i].vacationAcceptedNumberOfDays"
@@ -306,7 +312,7 @@
           />
         </label>
         <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-         Arrival Hour
+          Arrival Hour
           <input
             [(ngModel)]="employees[i].arrivalHour"
             type="text"
@@ -335,6 +341,7 @@
             <option>Gestionnaire Regionale</option>
             <option>Auditrice</option>
             <option>Manager Regionale</option>
+            <option>Stagaire</option>
           </select>
         </label>
 
@@ -489,6 +496,7 @@
           <option>Agent Marketing</option>
           <option>Gestionnaire</option>
           <option>Gestionnaire Regionale</option>
+          <option>Stagaire</option>
         </select>
       </label>
 
@@ -556,15 +564,17 @@
   </div>
 </div>
 
-
-
 <!-- === TRANSFER CLIENTS MODAL === -->
 <div
   *ngIf="transferModalVisible"
-  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+>
   <div
-    class="w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-gray-800">
-    <h2 class="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-white">
+    class="w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-gray-800"
+  >
+    <h2
+      class="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-white"
+    >
       Transférer des Clients (A → B)
     </h2>
 
@@ -575,11 +585,14 @@
         <select
           [(ngModel)]="transfer.sourceId"
           (change)="onSourceChange()"
-          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white">
+          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+        >
           <option [ngValue]="null">Sélectionner…</option>
           <option *ngFor="let e of employees" [value]="e.uid">
-            {{ e.firstName }} {{ e.lastName }} — {{ e.role }}
-            ({{ (e.currentClients?.length) || (e.clients?.length || 0) }} clients)
+            {{ e.firstName }} {{ e.lastName }} — {{ e.role }} ({{
+              e.currentClients?.length || e.clients?.length || 0
+            }}
+            clients)
           </option>
         </select>
       </label>
@@ -589,50 +602,85 @@
         Cible (Employé B)
         <select
           [(ngModel)]="transfer.targetId"
-          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white">
+          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+        >
           <option [ngValue]="null">Sélectionner…</option>
           <option *ngFor="let e of employees" [value]="e.uid">
-            {{ e.firstName }} {{ e.lastName }} — {{ e.role }}
-            ({{ (e.currentClients?.length) || (e.clients?.length || 0) }} clients)
+            {{ e.firstName }} {{ e.lastName }} — {{ e.role }} ({{
+              e.currentClients?.length || e.clients?.length || 0
+            }}
+            clients)
           </option>
         </select>
       </label>
     </div>
 
     <!-- Preview / safety notes -->
-    <div class="mt-4 rounded-xl bg-yellow-50 p-4 text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-100">
+    <div
+      class="mt-4 rounded-xl bg-yellow-50 p-4 text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-100"
+    >
       <p class="font-medium">Règles :</p>
       <ul class="list-disc pl-5 space-y-1">
-        <li>Tous les clients de A seront ajoutés à B (les clients déjà chez B ne seront pas dupliqués).</li>
-        <li>A n’aura plus aucun client dans son tableau <code>clients</code>.</li>
-        <li>Le champ <code>agent</code> de chaque client sera mis à jour vers B pour garder la cohérence.</li>
+        <li>
+          Tous les clients de A seront ajoutés à B (les clients déjà chez B ne
+          seront pas dupliqués).
+        </li>
+        <li>
+          A n’aura plus aucun client dans son tableau <code>clients</code>.
+        </li>
+        <li>
+          Le champ <code>agent</code> de chaque client sera mis à jour vers B
+          pour garder la cohérence.
+        </li>
       </ul>
     </div>
 
     <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
-      <div>Clients chez A : <strong>{{ transfer.sourceClientCount }}</strong></div>
-      <div>Clients chez B (avant) : <strong>{{ transfer.targetClientCount }}</strong></div>
+      <div>
+        Clients chez A : <strong>{{ transfer.sourceClientCount }}</strong>
+      </div>
+      <div>
+        Clients chez B (avant) :
+        <strong>{{ transfer.targetClientCount }}</strong>
+      </div>
     </div>
 
     <!-- Actions -->
     <div class="mt-8 flex justify-center gap-4">
       <button
         (click)="closeTransferModal()"
-        class="rounded-full bg-gray-300 px-6 py-2 font-medium text-gray-800 hover:bg-gray-400">
+        class="rounded-full bg-gray-300 px-6 py-2 font-medium text-gray-800 hover:bg-gray-400"
+      >
         Annuler
       </button>
 
       <button
         [disabled]="!canTransfer() || isTransferring"
         (click)="confirmTransfer()"
-        class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-60">
-        <svg *ngIf="isTransferring" class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"/>
-          <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4"/>
+        class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+      >
+        <svg
+          *ngIf="isTransferring"
+          class="h-5 w-5 animate-spin"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+            opacity="0.25"
+          />
+          <path
+            d="M22 12a10 10 0 0 1-10 10"
+            stroke="currentColor"
+            stroke-width="4"
+          />
         </svg>
         Confirmer le transfert
       </button>
     </div>
   </div>
 </div>
-

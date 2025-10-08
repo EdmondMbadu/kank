@@ -1174,6 +1174,7 @@ function isAllowedRecipient(e) {
   if (r === "agent") return true;
   // accept common spellings for marketing agents
   if (r === "agent marketing" || r === "agent marketting") return true;
+  if (r === "stagaire" || r === "stagaire marketting") return true;
   // everything else (e.g., "auditrice", "auditor", etc.) is excluded
   return false;
 }
