@@ -25,6 +25,14 @@ export class InvestementsSummaryComponent implements OnInit {
   clientsWithoutDebt?: Client[];
   currentClients?: Client[] = [];
   currentClientsRegistered?: Client[] = [];
+  // add with other booleans
+  isOverviewOpen = true;
+
+  // add a method near toggleOpen()
+  toggleOverviewOpen() {
+    this.isOverviewOpen = !this.isOverviewOpen;
+  }
+
   async ngOnInit() {
     this.retrieveClients();
 
