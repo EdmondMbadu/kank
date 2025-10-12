@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, Subscription, take } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
@@ -9,6 +9,16 @@ import { TimeService } from 'src/app/services/time.service';
 import { DataService } from 'src/app/services/data.service';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { FormControl } from '@angular/forms';
+import { MessagingService } from 'src/app/services/messaging.service';
+
+type BulkFailure = { client: Client; error: string };
+type BulkResult = {
+  total: number;
+  succeeded: number;
+  failed: number;
+  failures: BulkFailure[];
+};
+type SendResult = { ok: boolean; text: string };
 
 @Component({
   selector: 'app-home-central',
@@ -20,31 +30,74 @@ export class HomeCentralComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService,
+    public compute: ComputationService,
     private data: DataService,
-    private fns: AngularFireFunctions
+    private fns: AngularFireFunctions,
+    public messaging: MessagingService
   ) {}
+
   isFetchingClients = false;
   currentClients: Array<Client[]> = [];
   allcurrentClientsWithDebts: Client[] = [];
   allCurrentClientsWithDebtsScheduledToPayToday: Client[] = [];
   allUsers: User[] = [];
+
+  // master list search
   searchControl = new FormControl('');
   filteredItems: Client[] = [];
+
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
-  ngOnInit(): void {
-    this.auth.getAllUsersInfo().subscribe((data) => {
-      this.allUsers = data;
-      // this is really weird. maybe some apsect of angular. but it works for now
-      if (this.allUsers.length > 1) this.getAllClients();
-    });
-  }
 
   allClients?: Client[];
   allCurrentClients?: Client[] = [];
   allClientsWithoutDebtsButWithSavings?: Client[] = [];
   savingsWithoutDebtsButWithSavings: number = 0;
   valuesConvertedToDollars: string[] = [];
+
+  // ===== NEW: multi-site finished-debt dashboard state =====
+  finishedAll: Client[] = []; // all finished across all sites
+  finishedFiltered: Client[] = []; // after filters
+  fdSearchControl = new FormControl('');
+  fdMinScore = 60;
+
+  uniqueLocations: string[] = [];
+  selectedLocations = new Set<string>();
+  selectAllLocations = true;
+
+  // single SMS modal
+  smsModal = {
+    open: false,
+    client: null as Client | null,
+    message: '' as string,
+  };
+  sending = false;
+  sendResult: SendResult | null = null;
+
+  // bulk modal
+  bulkModal = {
+    open: false,
+    minScore: 60,
+    message: '' as string,
+    recipients: [] as Client[],
+    excludedNoPhone: 0,
+    result: null as BulkResult | null,
+  };
+  bulkSending = false;
+
+  placeholderTokens = [
+    '{{FULL_NAME}}',
+    '{{firstName}}',
+    '{{lastName}}',
+    '{{LOCATION_NAME}}',
+    '{{MAX_AMOUNT}}',
+  ];
+
+  ngOnInit(): void {
+    this.auth.getAllUsersInfo().subscribe((data) => {
+      this.allUsers = data;
+      if (this.allUsers.length > 1) this.getAllClients();
+    });
+  }
 
   getAllClients() {
     if (this.isFetchingClients) return;
@@ -53,6 +106,7 @@ export class HomeCentralComponent implements OnInit {
     let tempClients: Client[] = [];
     this.allClients = [];
     let completedRequests = 0;
+
     this.allUsers.forEach((user) => {
       this.auth.getClientsOfAUser(user.uid!).subscribe((clients) => {
         const tagged = clients.map((c) => ({
@@ -68,27 +122,31 @@ export class HomeCentralComponent implements OnInit {
       });
     });
   }
+
   filterAndInitializeClients(allClients: Client[]) {
-    // Use a Map or Set to ensure uniqueness. Here, a Map is used to easily access clients by their ID.
-    let uniqueClients = new Map<string, Client>();
-    this.allClients = [];
+    const unique = new Map<string, Client>();
     allClients.forEach((client) => {
-      // Assuming client.id is the unique identifier
-      if (!uniqueClients.has(client.uid!)) {
-        uniqueClients.set(client.uid!, client);
-      }
+      const key =
+        client.uid ||
+        client.trackingId ||
+        `${client.firstName}-${client.lastName}-${client.phoneNumber}`;
+      if (!unique.has(key)) unique.set(key, client);
     });
+    this.allClients = Array.from(unique.values());
 
-    // Convert the Map values back to an array for further processing
-    this.allClients = Array.from(uniqueClients.values());
-
-    // Now, this.currentClients contains unique clients. Proceed with initialization.
-    this.initalizeInputs(); // Adjust this method as needed
-    /* 🔍 initialise search */
+    this.initalizeInputs();
     this.filteredItems = this.allClients ?? [];
     this.setupSearch();
+
+    // build finished-debt dataset + filters
+    this.buildFinishedAll();
+    this.buildUniqueLocations();
+    this.resetLocationSelection(true);
+    this.setupFdSearch();
+    this.applyFinishedFilters();
   }
 
+  // ===== existing summary logic =====
   linkPath: string[] = [
     '/client-info',
     '/client-info-current',
@@ -106,14 +164,12 @@ export class HomeCentralComponent implements OnInit {
     '../../../assets/img/total-income.png',
     '../../../assets/img/saving.svg',
   ];
-
   summary: string[] = [
     'Nombres des Clients Total',
     'Nombres des Clients Actuel',
     'Clients Avec Epargnes Sans Credit',
     'Argent Investi',
     'Prêt Restant',
-
     "Chiffre D'Affaire",
     'Montant Epargnes Sans Credit',
   ];
@@ -121,40 +177,36 @@ export class HomeCentralComponent implements OnInit {
   sContent: string[] = [];
 
   initalizeInputs() {
-    console.log('the day', this.theDay);
     this.findClientsWithoutDebtsButWithSavings();
     this.findAllClientsWithDebts();
-    let reserve = this.compute
+
+    const reserve = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'reserveAmount')
       .toString();
-    let moneyHand = this.compute
+    const moneyHand = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'moneyInHands')
       .toString();
-    let invested = this.compute
+    const invested = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'amountInvested')
       .toString();
-    // let debtTotal = this.compute
-    //   .findTotalAllUsersGivenField(this.allUsers, 'totalDebtLeft')
-    //   .toString();
-    let debtTotal = this.data.findTotalDebtLeft(this.allClients!);
-    let cardM = this.compute
+    const debtTotal = this.data.findTotalDebtLeft(this.allClients!);
+    const cardM = this.compute
       .findTotalAllUsersGivenField(this.allUsers, 'cardsMoney')
       .toString();
-    // this.currentClients = [];
-    let realBenefit = (Number(debtTotal) - Number(invested)).toString();
-    let totalIncome = (
+
+    const totalIncome = (
       Number(reserve) +
       Number(moneyHand) +
       Number(debtTotal) +
       Number(cardM)
     ).toString();
+
     this.summaryContent = [
       `${this.findNumberOfAllClients()}`,
       `${this.findClientsWithDebts()}`,
       `${this.findClientsWithoutDebtsButWithSavings()}`,
-      ` ${invested}`,
-      ` ${debtTotal}`,
-
+      `${invested}`,
+      `${debtTotal}`,
       `${totalIncome}`,
       `${this.savingsWithoutDebtsButWithSavings.toString()}`,
     ];
@@ -165,19 +217,16 @@ export class HomeCentralComponent implements OnInit {
       ``,
       `${this.compute.convertCongoleseFrancToUsDollars(invested)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(debtTotal)}`,
-
       `${this.compute.convertCongoleseFrancToUsDollars(totalIncome)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.savingsWithoutDebtsButWithSavings!.toString()
       )}`,
     ];
   }
+
   findNumberOfAllClients() {
     let total = 0;
-    this.allUsers.forEach((user) => {
-      total += Number(user.numberOfClients);
-    });
-
+    this.allUsers.forEach((user) => (total += Number(user.numberOfClients)));
     return total;
   }
 
@@ -189,30 +238,20 @@ export class HomeCentralComponent implements OnInit {
   findAllClientsWithDebts() {
     this.allcurrentClientsWithDebts =
       this.data.findClientsWithDebtsIncludingThoseWhoLeft(this.allClients!);
-
-    console.log(
-      'all current clients with debts',
-      this.allcurrentClientsWithDebts
-    );
     this.allCurrentClientsWithDebtsScheduledToPayToday =
-      this.allcurrentClientsWithDebts.filter((data) => {
+      this.allcurrentClientsWithDebts.filter((d) => {
         return (
-          data.paymentDay === this.theDay &&
-          data &&
-          this.data.didClientStartThisWeek(data) && // this condition can be confusing. it is the opposite
-          data.isPhoneCorrect !== 'false' // filter out fake numbers because we are wasting money in that case
+          d.paymentDay === this.theDay &&
+          d &&
+          this.data.didClientStartThisWeek(d) &&
+          d.isPhoneCorrect !== 'false'
         );
       });
-    console.log(
-      'all current clients with debts scheduled to pay today',
-      this.allCurrentClientsWithDebtsScheduledToPayToday
-    );
     return this.allcurrentClientsWithDebts?.length
       ? this.allcurrentClientsWithDebts
       : [];
   }
 
-  // find clients with debts =0 and savings > 10
   findClientsWithoutDebtsButWithSavings() {
     this.savingsWithoutDebtsButWithSavings = 0;
     let total = 0;
@@ -226,8 +265,30 @@ export class HomeCentralComponent implements OnInit {
     this.savingsWithoutDebtsButWithSavings = total;
     return this.allClientsWithoutDebtsButWithSavings?.length;
   }
+
+  // ===== master search =====
+  private setupSearch() {
+    this.searchControl.valueChanges
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe((term) => {
+        if (!term) {
+          this.filteredItems = this.allClients ?? [];
+          return;
+        }
+        const v = String(term).toLowerCase();
+        this.filteredItems = (this.allClients ?? []).filter(
+          (cl) =>
+            cl.firstName?.toLowerCase().includes(v) ||
+            cl.lastName?.toLowerCase().includes(v) ||
+            cl.middleName?.toLowerCase().includes(v) ||
+            cl.phoneNumber?.includes(v) ||
+            cl.locationName?.toLowerCase().includes(v)
+        );
+      });
+  }
+
+  // ===== scheduled-to-pay reminders (existing) =====
   sendReminders() {
-    // 1. Check if there are any clients to remind
     if (
       !this.allCurrentClientsWithDebtsScheduledToPayToday ||
       this.allCurrentClientsWithDebtsScheduledToPayToday.length === 0
@@ -236,7 +297,6 @@ export class HomeCentralComponent implements OnInit {
       return;
     }
 
-    // 2. Prepare the payload for all clients at once
     const clientsPayload =
       this.allCurrentClientsWithDebtsScheduledToPayToday.map((client) => {
         const minPayment = this.data.minimumPayment(client);
@@ -250,12 +310,10 @@ export class HomeCentralComponent implements OnInit {
         };
       });
 
-    // 3. Call the Cloud Function once, passing in the entire clients array
     const callable = this.fns.httpsCallable('sendPaymentReminders');
     callable({ clients: clientsPayload }).subscribe({
       next: (result: any) => {
         console.log('Reminder function result:', result);
-        // 4. Only one alert after the batch completes
         alert('Reminders sent successfully!');
       },
       error: (err: any) => {
@@ -264,23 +322,290 @@ export class HomeCentralComponent implements OnInit {
       },
     });
   }
-  private setupSearch() {
-    this.searchControl.valueChanges
-      .pipe(debounceTime(300), distinctUntilChanged())
-      .subscribe((term) => {
-        if (!term) {
-          this.filteredItems = this.allClients ?? [];
-          return;
-        }
-        const v = term.toLowerCase();
-        this.filteredItems = (this.allClients ?? []).filter(
-          (cl) =>
-            cl.firstName?.toLowerCase().includes(v) ||
-            cl.lastName?.toLowerCase().includes(v) ||
-            cl.middleName?.toLowerCase().includes(v) ||
-            cl.phoneNumber?.includes(v) ||
-            cl.locationName?.toLowerCase().includes(v)
-        );
+
+  // ======================================================================
+  // NEW: Finished-debt across all locations — filters & messaging
+  // ======================================================================
+
+  private buildFinishedAll() {
+    this.finishedAll = (this.allClients ?? []).filter(
+      (c) => Number(c.debtLeft) === 0 && (c as any).type !== 'register'
+    );
+  }
+
+  private buildUniqueLocations() {
+    const set = new Set<string>();
+    for (const c of this.allClients ?? []) {
+      if (c.locationName) set.add(c.locationName);
+    }
+    this.uniqueLocations = Array.from(set).sort((a, b) => a.localeCompare(b));
+  }
+
+  private resetLocationSelection(all = true) {
+    this.selectedLocations.clear();
+    if (all) {
+      this.uniqueLocations.forEach((l) => this.selectedLocations.add(l));
+      this.selectAllLocations = true;
+    } else {
+      this.selectAllLocations = false;
+    }
+  }
+
+  toggleAllLocations() {
+    this.selectAllLocations = !this.selectAllLocations;
+    this.resetLocationSelection(this.selectAllLocations);
+    this.applyFinishedFilters();
+  }
+
+  toggleLocation(loc: string) {
+    if (this.selectedLocations.has(loc)) this.selectedLocations.delete(loc);
+    else this.selectedLocations.add(loc);
+    this.selectAllLocations =
+      this.selectedLocations.size === this.uniqueLocations.length;
+    this.applyFinishedFilters();
+  }
+
+  private setupFdSearch() {
+    this.fdSearchControl.valueChanges
+      .pipe(debounceTime(250), distinctUntilChanged())
+      .subscribe(() => {
+        this.applyFinishedFilters();
       });
+  }
+
+  applyFinishedFilters() {
+    const v = String(this.fdSearchControl.value || '')
+      .trim()
+      .toLowerCase();
+    const min = Number(this.fdMinScore) || 0;
+
+    const base = this.finishedAll.filter((c) =>
+      this.selectedLocations.has(c.locationName || '')
+    );
+    const withScore = base.filter((c) => Number(c.creditScore ?? 0) >= min);
+    const withPhone = withScore.filter(
+      (c) =>
+        !!(
+          c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
+        )
+    );
+
+    this.finishedFiltered = v
+      ? withPhone.filter(
+          (c) =>
+            `${c.firstName} ${c.middleName} ${c.lastName}`
+              .toLowerCase()
+              .includes(v) || (c.phoneNumber || '').includes(v)
+        )
+      : withPhone;
+  }
+
+  // ====== single SMS modal ======
+  openSmsModal(c: Client) {
+    this.sendResult = null;
+    this.smsModal.client = c;
+    this.smsModal.message = this.buildDefaultTemplate(c);
+    this.smsModal.open = true;
+  }
+  closeSmsModal() {
+    this.smsModal.open = false;
+    this.smsModal.client = null;
+    this.smsModal.message = '';
+    this.sending = false;
+    this.sendResult = null;
+  }
+  applyDefaultTemplate() {
+    if (this.smsModal.client)
+      this.smsModal.message = this.buildDefaultTemplate(this.smsModal.client);
+  }
+
+  private buildDefaultTemplate(c: Client): string {
+    const max = this.maxAmountFor(c);
+    const maxLine =
+      max != null ? `\nOkoki kozua ${this.formatFc(max)} FC.` : '';
+    const loc = c.locationName || 'site';
+    return `Mbote ${c.firstName} ${c.lastName},
+To sepili mingi na efuteli ya credit na yo na FONDATION GERVAIS. 
+Soki olingi lisusu kozua credit pona mombongo na yo, kende na FONDATION GERVAIS location ${loc}.${maxLine}
+Merci pona confiance na FONDATION GERVAIS`;
+  }
+
+  async sendSmsToClient() {
+    if (!this.smsModal.client?.phoneNumber || !this.smsModal.message.trim())
+      return;
+    this.sending = true;
+    this.sendResult = null;
+
+    try {
+      await this.messaging.sendCustomSMS(
+        this.smsModal.client.phoneNumber,
+        this.smsModal.message,
+        {
+          reason: 'invite_back_for_funding',
+          clientId:
+            this.smsModal.client.trackingId || this.smsModal.client.uid || null,
+          clientName:
+            `${this.smsModal.client.firstName} ${this.smsModal.client.lastName}`.trim(),
+          locationName: this.smsModal.client.locationName || null,
+        }
+      );
+      this.sendResult = { ok: true, text: 'SMS envoyé avec succès.' };
+    } catch (e) {
+      console.error(e);
+      this.sendResult = { ok: false, text: 'Échec de l’envoi du SMS.' };
+    } finally {
+      this.sending = false;
+    }
+  }
+
+  // ====== bulk modal & actions ======
+  openBulkModal() {
+    this.bulkModal.open = true;
+    this.bulkModal.result = null;
+    this.bulkModal.minScore = this.fdMinScore;
+    this.applyDefaultBulkTemplate();
+    this.updateBulkRecipients();
+  }
+  closeBulkModal() {
+    this.bulkModal.open = false;
+    this.bulkModal.message = '';
+    this.bulkModal.recipients = [];
+    this.bulkModal.result = null;
+    this.bulkSending = false;
+  }
+  applyDefaultBulkTemplate() {
+    this.bulkModal.message = `Mbote {{FULL_NAME}},
+To sepili mingi na efuteli ya credit na yo na FONDATION GERVAIS. 
+Soki olingi lisusu kozua credit pona mombongo na yo, kende na FONDATION GERVAIS location {{LOCATION_NAME}}.
+Okoki kozua {{MAX_AMOUNT}} FC.
+Merci pona confiance na FONDATION GERVAIS`;
+  }
+
+  updateBulkRecipients() {
+    const min = Number(this.bulkModal.minScore) || 0;
+    const base = this.finishedFiltered; // already filtered by site, search, phone
+    const list: Client[] = [];
+    let excludedNoPhone = 0;
+
+    for (const c of base) {
+      const score = Number(c.creditScore ?? 0);
+      const okPhone = !!(
+        c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
+      );
+      if (!okPhone) {
+        excludedNoPhone += 1;
+        continue;
+      }
+      if (score >= min) list.push(c);
+    }
+    this.bulkModal.recipients = list;
+    this.bulkModal.excludedNoPhone = excludedNoPhone;
+  }
+
+  async sendBulkSms() {
+    if (
+      !this.bulkModal.message?.trim() ||
+      this.bulkModal.recipients.length === 0
+    )
+      return;
+    this.bulkSending = true;
+
+    const failures: BulkFailure[] = [];
+    let succeeded = 0;
+
+    for (const c of this.bulkModal.recipients) {
+      try {
+        const text = this.personalizeMessage(this.bulkModal.message, c);
+        await this.messaging.sendCustomSMS(c.phoneNumber!, text, {
+          reason: 'invite_back_for_funding_bulk',
+          clientId: c.trackingId || c.uid || null,
+          clientName: `${c.firstName} ${c.lastName}`.trim(),
+          minCreditScore: this.bulkModal.minScore,
+          locationName: c.locationName || null,
+        });
+        succeeded += 1;
+      } catch (e: any) {
+        console.error('Bulk SMS error', e);
+        failures.push({ client: c, error: e?.message || 'Échec d’envoi' });
+      }
+    }
+
+    const total = this.bulkModal.recipients.length;
+    this.bulkModal.result = {
+      total,
+      succeeded,
+      failed: failures.length,
+      failures,
+    };
+    this.bulkSending = false;
+  }
+
+  // ===== helpers =====
+  creditBadgeStyle(score: string | number | null | undefined) {
+    const val = Number(score) || 0;
+    return {
+      'background-color': this.compute.getGradientColor(val),
+      color: val < 80 ? '#fff' : '#000',
+    };
+  }
+  formatDisplayPhone(raw?: string | null) {
+    if (!raw) return '';
+    const digits = ('' + raw).replace(/\D/g, '');
+    if (digits.length === 10)
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    return raw;
+  }
+  estimatedSegments(text: string = '') {
+    const len = text.length;
+    const segSize = 160;
+    return Math.max(1, Math.ceil(len / segSize));
+  }
+  previewPersonalized() {
+    const first = this.bulkModal.recipients?.[0];
+    return first ? this.personalizeMessage(this.bulkModal.message, first) : '—';
+  }
+  private formatFc(n: number | string): string {
+    return Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+  }
+  private maxAmountFor(c: Client): number | null {
+    const score = Number(c.creditScore);
+    if (!Number.isFinite(score)) return null;
+    try {
+      return this.compute.getMaxLendAmount(score);
+    } catch {
+      return null;
+    }
+  }
+  private personalizeMessage(msg: string, c: Client): string {
+    const fullName = `${c.firstName ?? ''} ${c.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+    let out = msg
+      .replace(/\{\{\s*FULL_NAME\s*\}\}/g, fullName)
+      .replace(/\{\{\s*firstName\s*\}\}/g, c.firstName ?? '')
+      .replace(/\{\{\s*lastName\s*\}\}/g, c.lastName ?? '')
+      .replace(/\{\{\s*LOCATION_NAME\s*\}\}/g, c.locationName ?? 'site');
+
+    if (/\{\{\s*MAX_AMOUNT\s*\}\}/.test(out)) {
+      const max = this.maxAmountFor(c);
+      if (max != null) {
+        out = out.replace(/\{\{\s*MAX_AMOUNT\s*\}\}/g, this.formatFc(max));
+      } else {
+        out = out.replace(
+          /[ \t]*\r?\n?Okoki kozua\s+\{\{\s*MAX_AMOUNT\s*\}\}\s+FC\.?\s*/i,
+          ''
+        );
+        out = out.replace(/\{\{\s*MAX_AMOUNT\s*\}\}/g, '');
+      }
+    }
+    return out;
+  }
+  // Add inside the HomeCentralComponent class
+  get selectedLocationsArray(): string[] {
+    return Array.from(this.selectedLocations); // or [...this.selectedLocations]
+  }
+
+  trackByLoc(index: number, loc: string) {
+    return loc;
   }
 }
