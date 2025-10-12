@@ -273,8 +273,18 @@
                   }}
                   $
                 </td>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
-                  {{ toNum(growthRateTotal) | number : "1.0-0" }} %
+                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-bold">
+                  <!-- {{ toNum(growthRateTotal) | number : "1.0-0" }} % -->
+                  <span
+                    class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] sm:text-xs font-bold"
+                    [ngClass]="nonNegColor(growthRateTotal)"
+                  >
+                    <span>{{ toNum(growthRateTotal) >= 0 ? "▲" : "▼" }}</span>
+                    <span
+                      >{{ toNum(growthRateTotal) >= 0 ? "+" : ""
+                      }}{{ toNum(growthRateTotal) | number : "1.0-0" }}%</span
+                    >
+                  </span>
                 </td>
               </tr>
             </tfoot>
@@ -412,7 +422,7 @@
                   </span>
                 </td>
 
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-bold">
                   <span
                     class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] sm:text-xs font-semibold"
                     [ngClass]="
@@ -446,9 +456,7 @@
                 <td class="px-3 py-2 sm:px-4 sm:py-3 font-semibold">Total</td>
                 <td class="px-2 py-2 sm:py-3"></td>
                 <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
-                  {{
-                    toNum(givenMonthTotalPaymentAmount) | number : "1.0-0"
-                  }}
+                  {{ toNum(givenMonthTotalPaymentAmount) | number : "1.0-0" }}
                   FC
                 </td>
                 <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
@@ -459,7 +467,21 @@
                   $
                 </td>
                 <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
-                  {{ toNum(growthRateTotalPayments) | number : "1.0-0" }} %
+                  <!-- {{ toNum(growthRateTotalPayments) | number : "1.0-0" }} % -->
+                  <span
+                    class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] sm:text-xs font-bold"
+                    [ngClass]="nonNegColor(growthRateTotalPayments)"
+                  >
+                    <span>{{
+                      toNum(growthRateTotalPayments) >= 0 ? "▲" : "▼"
+                    }}</span>
+                    <span
+                      >{{ toNum(growthRateTotalPayments) >= 0 ? "+" : ""
+                      }}{{
+                        toNum(growthRateTotalPayments) | number : "1.0-0"
+                      }}%</span
+                    >
+                  </span>
                 </td>
               </tr>
             </tfoot>
