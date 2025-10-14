@@ -508,27 +508,27 @@
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
             <div>
               <span class="font-semibold">dayKey:</span>
-              <span class="font-mono">{{ adminLoaded?.dayKey }}</span>
+              <span class="font-mono">{{ adminLoaded.dayKey }}</span>
             </div>
             <div>
               <span class="font-semibold">monthKey:</span>
-              {{ adminLoaded?.monthKey || "—" }}
+              {{ adminLoaded.monthKey || "—" }}
             </div>
             <div>
               <span class="font-semibold">total:</span>
-              {{ adminLoaded?.total | number : "1.0-0" }}
+              {{ adminLoaded.total | number : "1.0-0" }}
             </div>
             <div>
               <span class="font-semibold">expected:</span>
-              {{ adminLoaded?.expected | number : "1.0-0" }}
+              {{ adminLoaded.expected | number : "1.0-0" }}
             </div>
             <div>
               <span class="font-semibold">count:</span>
-              {{ adminLoaded?.count ?? "—" }}
+              {{ adminLoaded.count ?? "—" }}
             </div>
             <div>
               <span class="font-semibold">dayStartMs:</span>
-              {{ adminLoaded?.dayStartMs || "—" }}
+              {{ adminLoaded.dayStartMs || "—" }}
             </div>
             <div>
               <span class="font-semibold">expectedSetMs:</span>
