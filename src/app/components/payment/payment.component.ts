@@ -147,7 +147,14 @@ export class PaymentComponent {
         this.paymentAmount
       )
       .then(() => {
-        this.performance.updateUserPerformance(this.client, this.paymentAmount);
+        // only updates performance if the payment is positive
+        if (Number(this.paymentAmount) > 0) {
+          this.performance.updateUserPerformance(
+            this.client,
+            this.paymentAmount
+          );
+        }
+
         this.router.navigate(['/client-portal', this.id]);
       })
       .catch((err) => {
