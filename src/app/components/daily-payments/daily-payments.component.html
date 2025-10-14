@@ -1,18 +1,37 @@
-<app-navbar [email]="this.auth.currentUser.email" [firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
 <!-- ===================== PAGE WRAPPER ===================== -->
-<section class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-emerald-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-8">
+<section
+  class="min-h-screen w-full bg-gradient-to-br from-indigo-50 via-white to-emerald-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-8"
+>
   <!-- ===================== HEADER ===================== -->
-  <header class="container mx-auto mb-8 flex flex-col items-center justify-center gap-4 md:flex-row">
-    <h2 class="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 md:text-3xl text-center">
-      Paiement Du Jour {{ frenchDate.replaceAll('-', '/') }}
+  <header
+    class="container mx-auto mb-8 flex flex-col items-center justify-center gap-4 md:flex-row"
+  >
+    <h2
+      class="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 md:text-3xl text-center"
+    >
+      Paiement Du Jour {{ frenchDate.replaceAll("-", "/") }}
     </h2>
 
     <button
       type="submit"
       routerLink="/client-info"
-      class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow transition-all duration-150 hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-700">
-      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+      class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow transition-all duration-150 hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-700"
+    >
+      <svg
+        class="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M12 5v14m7-7H5" />
       </svg>
       Info Client
@@ -26,181 +45,502 @@
       (change)="findDailyPayments()"
       type="date"
       id="requestDate"
-      class="w-full max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400" />
+      class="w-full max-w-xs rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
+    />
   </div>
 
   <!-- ===================== SUMMARY ===================== -->
   <div class="container mx-auto mb-6 flex justify-center">
     <h2 class="text-center text-xl font-bold text-gray-700 dark:text-gray-200">
-      {{ numberOfPeople }} clients – Total: {{ totalGivenDate | number: '1.0-0' }} FC
+      {{ numberOfPeople }} clients – Total:
+      {{ totalGivenDate | number : "1.0-0" }} FC
     </h2>
   </div>
 
-<!-- ===================== LIST CARD (with per-client progress) ===================== -->
-<div class="container mx-auto flex justify-center">
-  <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700">
-    <!-- CARD HEADER -->
-    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700">
-      <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Paiements</h5>
+  <!-- ===================== LIST CARD (with per-client progress) ===================== -->
+  <div class="container mx-auto flex justify-center">
+    <div
+      class="w-full max-w-2xl rounded-2xl bg-white shadow-xl ring-1 ring-gray-200 dark:bg-slate-800 dark:ring-gray-700"
+    >
+      <!-- CARD HEADER -->
+      <div
+        class="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-700"
+      >
+        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Paiements
+        </h5>
 
-      <!-- SEARCH -->
-      <form class="flex items-center" (submit)="$event.preventDefault()">
-        <label for="simple-search" class="sr-only">Chercher</label>
-        <div class="relative w-44 sm:w-56 md:w-64">
-          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <svg class="h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
+        <!-- SEARCH -->
+        <form class="flex items-center" (submit)="$event.preventDefault()">
+          <label for="simple-search" class="sr-only">Chercher</label>
+          <div class="relative w-44 sm:w-56 md:w-64">
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"
+            >
+              <svg
+                class="h-4 w-4 text-gray-500 dark:text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+            <input
+              id="simple-search"
+              type="text"
+              [formControl]="searchControl"
+              placeholder="Chercher un client ..."
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
+            />
           </div>
-          <input
-            id="simple-search"
-            type="text"
-            [formControl]="searchControl"
-            placeholder="Chercher un client ..."
-            class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
 
-    <!-- LIST -->
-    <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-      <li
-        *ngFor="let c of dailyPayments; let i = index"
-        [routerLink]="['/client-portal', c.trackingId]"
-        class="group relative cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+      <!-- LIST -->
+      <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <li
+          *ngFor="let c of dailyPayments; let i = index"
+          [routerLink]="['/client-portal', c.trackingId]"
+          class="group relative cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60"
+        >
+          <div
+            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+          >
+            <!-- Left: Avatar + Client -->
+            <div class="flex items-center gap-4 min-w-0">
+              <div
+                class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100"
+              >
+                {{ c.firstName!.substring(0, 2) }}
+              </div>
 
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <!-- Left: Avatar + Client -->
-          <div class="flex items-center gap-4 min-w-0">
-            <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
-              {{ c.firstName!.substring(0, 2) }}
-            </div>
-
-            <div class="min-w-0">
-              <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
-              </p>
-              <p class="truncate text-xs text-gray-500 dark:text-gray-400">
-                Agent: {{ c.employee?.firstName }} {{ c.employee?.lastName }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ c.timeFormatted }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Middle: Progress vs minimum due today -->
-          <div class="w-full sm:w-64 md:w-80">
-            <div class="flex items-baseline justify-between">
-              <span class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Min dû (aujourd’hui)</span>
-              <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">FC {{ c.expectedToday | number:'1.0-0' }}</span>
-            </div>
-
-            <div class="mt-1 relative h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-              <div class="absolute left-0 top-0 h-2 rounded-full"
-                   [ngClass]="(c.paidToday ?? 0) >= (c.expectedToday ?? 0) ? 'bg-emerald-500' : 'bg-amber-500'"
-                   [style.width.%]="(c.progressPct ?? 0)">
+              <div class="min-w-0">
+                <p
+                  class="truncate text-sm font-medium text-gray-900 dark:text-gray-100"
+                >
+                  {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+                </p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                  Agent: {{ c.employee?.firstName }} {{ c.employee?.lastName }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ c.timeFormatted }}
+                </p>
               </div>
             </div>
 
-            <div class="mt-1 flex items-center justify-between text-[11px]">
-              <span class="text-slate-500 dark:text-slate-400">Payé aujourd’hui</span>
-              <span class="font-semibold text-slate-700 dark:text-slate-200">FC {{ c.paidToday | number:'1.0-0' }}</span>
-            </div>
+            <!-- Middle: Progress vs minimum due today -->
+            <div class="w-full sm:w-64 md:w-80">
+              <div class="flex items-baseline justify-between">
+                <span
+                  class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                  >Min dû (aujourd’hui)</span
+                >
+                <span
+                  class="text-[11px] font-semibold text-slate-700 dark:text-slate-300"
+                  >FC {{ c.expectedToday | number : "1.0-0" }}</span
+                >
+              </div>
 
-            <div class="mt-1">
-              <span *ngIf="(c.paidToday ?? 0) >= (c.expectedToday ?? 0); else manque"
-                    class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[11px] font-semibold">
-                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M5 13l4 4L19 7"/>
-                </svg>
-                OK
-              </span>
-              <ng-template #manque>
-                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[11px] font-semibold">
-                  Manque FC {{ ((c.expectedToday ?? 0) - (c.paidToday ?? 0)) | number:'1.0-0' }}
+              <div
+                class="mt-1 relative h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
+              >
+                <div
+                  class="absolute left-0 top-0 h-2 rounded-full"
+                  [ngClass]="
+                    (c.paidToday ?? 0) >= (c.expectedToday ?? 0)
+                      ? 'bg-emerald-500'
+                      : 'bg-amber-500'
+                  "
+                  [style.width.%]="c.progressPct ?? 0"
+                ></div>
+              </div>
+
+              <div class="mt-1 flex items-center justify-between text-[11px]">
+                <span class="text-slate-500 dark:text-slate-400"
+                  >Payé aujourd’hui</span
+                >
+                <span class="font-semibold text-slate-700 dark:text-slate-200"
+                  >FC {{ c.paidToday | number : "1.0-0" }}</span
+                >
+              </div>
+
+              <div class="mt-1">
+                <span
+                  *ngIf="
+                    (c.paidToday ?? 0) >= (c.expectedToday ?? 0);
+                    else manque
+                  "
+                  class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[11px] font-semibold"
+                >
+                  <svg
+                    class="h-3 w-3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 13l4 4L19 7" />
+                  </svg>
+                  OK
                 </span>
-              </ng-template>
+                <ng-template #manque>
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[11px] font-semibold"
+                  >
+                    Manque FC
+                    {{
+                      (c.expectedToday ?? 0) - (c.paidToday ?? 0)
+                        | number : "1.0-0"
+                    }}
+                  </span>
+                </ng-template>
+              </div>
+            </div>
+
+            <!-- Right: this particular payment -->
+            <div class="text-right">
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                Ce paiement
+              </p>
+              <p
+                class="text-base font-extrabold text-emerald-700 dark:text-emerald-300"
+              >
+                FC {{ c.amount | number : "1.0-0" }}
+              </p>
             </div>
           </div>
-
-          <!-- Right: this particular payment -->
-          <div class="text-right">
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">Ce paiement</p>
-            <p class="text-base font-extrabold text-emerald-700 dark:text-emerald-300">
-              FC {{ c.amount | number:'1.0-0' }}
-            </p>
-          </div>
-        </div>
-      </li>
-    </ul>
+        </li>
+      </ul>
+    </div>
   </div>
-</div>
 
   <!-- ===================== AGENT RANKING ===================== -->
-<div class="container mx-auto mt-6 flex justify-center">
-  <div
-    class="w-full max-w-2xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-emerald-100
-           bg-gradient-to-br from-white via-indigo-50 to-emerald-50
-           dark:from-slate-800 dark:via-slate-800/60 dark:to-slate-900/60 dark:ring-slate-700">
-    <!-- Header -->
-    <div class="px-6 py-4 border-b border-emerald-100/60 dark:border-slate-700">
-      <h3
-        class="text-center text-lg sm:text-xl font-extrabold tracking-tight
-               bg-gradient-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent">
-        Classement du jour par agent
-      </h3>
-      <p class="mt-1 text-center text-xs text-gray-600 dark:text-gray-400">
-        Basé sur le total encaissé aujourd’hui
-      </p>
+  <div class="container mx-auto mt-6 flex justify-center">
+    <div
+      class="w-full max-w-2xl overflow-hidden rounded-2xl shadow-xl ring-1 ring-emerald-100 bg-gradient-to-br from-white via-indigo-50 to-emerald-50 dark:from-slate-800 dark:via-slate-800/60 dark:to-slate-900/60 dark:ring-slate-700"
+    >
+      <!-- Header -->
+      <div
+        class="px-6 py-4 border-b border-emerald-100/60 dark:border-slate-700"
+      >
+        <h3
+          class="text-center text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent"
+        >
+          Classement du jour par agent
+        </h3>
+        <p class="mt-1 text-center text-xs text-gray-600 dark:text-gray-400">
+          Basé sur le total encaissé aujourd’hui
+        </p>
+      </div>
+
+      <!-- Ranking list -->
+      <ol class="divide-y divide-emerald-100/60 dark:divide-slate-700">
+        <li
+          *ngFor="let a of agentRanking; let i = index"
+          class="flex items-center justify-between px-5 sm:px-6 py-3 sm:py-4"
+        >
+          <div class="flex items-center gap-3 sm:gap-4">
+            <!-- Rank badge -->
+            <div
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white sm:h-9 sm:w-9 sm:text-sm"
+              [ngClass]="{
+                'bg-emerald-600': i === 0,
+                'bg-indigo-600': i === 1,
+                'bg-cyan-600': i === 2,
+                'bg-gray-500': i > 2
+              }"
+            >
+              {{ i + 1 }}
+            </div>
+
+            <!-- inside the ranking <li> -->
+            <div class="min-w-0">
+              <p
+                class="truncate text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-100"
+              >
+                Agent&nbsp;:
+                <span
+                  [ngClass]="
+                    a.inactive ? 'italic text-gray-500 dark:text-gray-400' : ''
+                  "
+                >
+                  {{ a.name }}
+                </span>
+                <span
+                  *ngIf="a.inactive"
+                  class="ml-2 align-middle text-[10px] px-2 py-0.5 rounded-full border border-gray-300 text-gray-500 dark:border-slate-600 dark:text-gray-400"
+                >
+                  inactif
+                </span>
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ a.count }} paiement{{ a.count > 1 ? "s" : "" }}
+              </p>
+            </div>
+          </div>
+
+          <div class="text-right">
+            <p
+              class="text-sm sm:text-base font-extrabold text-emerald-700 dark:text-emerald-300"
+            >
+              FC {{ a.total | number : "1.0-0" }}
+            </p>
+          </div>
+        </li>
+      </ol>
     </div>
-
-    <!-- Ranking list -->
-    <ol class="divide-y divide-emerald-100/60 dark:divide-slate-700">
-      <li
-        *ngFor="let a of agentRanking; let i = index"
-        class="flex items-center justify-between px-5 sm:px-6 py-3 sm:py-4">
-        <div class="flex items-center gap-3 sm:gap-4">
-          <!-- Rank badge -->
-          <div
-            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white sm:h-9 sm:w-9 sm:text-sm"
-            [ngClass]="{
-              'bg-emerald-600': i === 0,
-              'bg-indigo-600': i === 1,
-              'bg-cyan-600': i === 2,
-              'bg-gray-500': i > 2
-            }">
-            {{ i + 1 }}
-          </div>
-
-         <!-- inside the ranking <li> -->
-          <div class="min-w-0">
-            <p class="truncate text-sm sm:text-base font-semibold text-gray-800 dark:text-gray-100">
-              Agent&nbsp;:
-              <span [ngClass]="a.inactive ? 'italic text-gray-500 dark:text-gray-400' : ''">
-                {{ a.name }}
-              </span>
-              <span *ngIf="a.inactive"
-                    class="ml-2 align-middle text-[10px] px-2 py-0.5 rounded-full border
-                          border-gray-300 text-gray-500 dark:border-slate-600 dark:text-gray-400">
-                inactif
-              </span>
-            </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              {{ a.count }} paiement{{ a.count > 1 ? 's' : '' }}
-            </p>
-          </div>
-
-        </div>
-
-        <div class="text-right">
-          <p class="text-sm sm:text-base font-extrabold text-emerald-700 dark:text-emerald-300">
-            FC {{ a.total | number:'1.0-0' }}
-          </p>
-        </div>
-      </li>
-    </ol>
   </div>
-</div>
+
+  <!-- ===================== ADMIN: DAY TOTALS WRITER ===================== -->
+
+  <div *ngIf="auth.isAdmin" class="container mx-auto mt-10">
+    <div
+      class="w-full max-w-3xl mx-auto rounded-2xl bg-white dark:bg-slate-800 shadow-xl ring-1 ring-emerald-100 dark:ring-slate-700 overflow-hidden"
+    >
+      <!-- Header -->
+      <div
+        class="px-6 py-4 border-b border-emerald-100/60 dark:border-slate-700"
+      >
+        <h3
+          class="text-center text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent"
+        >
+          Admin — Ajuster les <code>dayTotals</code> (par agent & date)
+        </h3>
+        <p class="mt-1 text-center text-xs text-gray-600 dark:text-gray-400">
+          Écrire directement dans
+          <code>users/OWNER_UID/employees/EMPLOYEE_UID/dayTotals/DAY_KEY</code>
+        </p>
+      </div>
+
+      <!-- Form -->
+      <div class="px-6 py-5 space-y-4">
+        <!-- Row: employee + date -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1"
+            >
+              Employé
+            </label>
+            <select
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
+              [(ngModel)]="adminSelectedEmployeeUid"
+              (change)="onAdminSelectionChanged()"
+            >
+              <option [ngValue]="''" disabled>— Sélectionner —</option>
+              <option *ngFor="let e of employees" [ngValue]="e.uid">
+                {{ e.firstName }} {{ e.lastName }} ({{ e.uid }})
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1"
+            >
+              Date (par défaut aujourd'hui)
+            </label>
+            <input
+              type="date"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
+              [(ngModel)]="adminDate"
+              (change)="onAdminSelectionChanged()"
+            />
+            <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              Doc ID (dayKey) : <span class="font-mono">{{ adminDayKey }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Row: inputs -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label
+              class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1"
+            >
+              Total (FC)
+            </label>
+            <input
+              type="number"
+              inputmode="numeric"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
+              [(ngModel)]="adminTotalInput"
+              placeholder="ex. 350000"
+            />
+            <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              Actuel :
+              <span class="font-semibold">{{
+                adminLoaded?.total ?? "—" | number : "1.0-0"
+              }}</span>
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1"
+            >
+              Expected (FC)
+            </label>
+            <input
+              type="number"
+              inputmode="numeric"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
+              [(ngModel)]="adminExpectedInput"
+              placeholder="ex. 120000"
+            />
+            <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              Actuel :
+              <span class="font-semibold">{{
+                adminLoaded?.expected ?? "—" | number : "1.0-0"
+              }}</span>
+            </p>
+          </div>
+
+          <div>
+            <label
+              class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1"
+            >
+              Count (optionnel)
+            </label>
+            <input
+              type="number"
+              inputmode="numeric"
+              class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100"
+              [(ngModel)]="adminCountInput"
+              placeholder="laisser vide pour ne pas toucher"
+            />
+            <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              Actuel :
+              <span class="font-semibold">{{ adminLoaded?.count ?? "—" }}</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            (click)="loadAdminDayTotals()"
+            [disabled]="!adminSelectedEmployeeUid || adminBusy"
+            class="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700 disabled:opacity-50"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 104.582 9M12 8v4l3 3"
+              />
+            </svg>
+            Charger
+          </button>
+
+          <button
+            type="button"
+            (click)="saveAdminDayTotals()"
+            [disabled]="
+              !adminSelectedEmployeeUid ||
+              adminBusy ||
+              (adminTotalInput == null &&
+                adminExpectedInput == null &&
+                adminCountInput == null)
+            "
+            class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-50"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            Enregistrer / Upsert
+          </button>
+
+          <button
+            type="button"
+            (click)="resetAdminInputs()"
+            class="inline-flex items-center gap-2 rounded-full bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+          >
+            Réinitialiser champs
+          </button>
+
+          <span
+            *ngIf="adminBusy"
+            class="text-sm text-slate-500 dark:text-slate-400"
+            >Traitement…</span
+          >
+          <span
+            *ngIf="adminMsg"
+            class="text-sm font-semibold"
+            [ngClass]="
+              adminMsgType === 'ok' ? 'text-emerald-600' : 'text-rose-600'
+            "
+          >
+            {{ adminMsg }}
+          </span>
+        </div>
+
+        <!-- Snapshot info -->
+        <div
+          *ngIf="adminLoaded"
+          class="mt-3 rounded-lg border border-emerald-100/80 dark:border-slate-700 p-3 text-[12px] text-slate-600 dark:text-slate-300 bg-emerald-50/50 dark:bg-slate-800/60"
+        >
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+            <div>
+              <span class="font-semibold">dayKey:</span>
+              <span class="font-mono">{{ adminLoaded?.dayKey }}</span>
+            </div>
+            <div>
+              <span class="font-semibold">monthKey:</span>
+              {{ adminLoaded?.monthKey || "—" }}
+            </div>
+            <div>
+              <span class="font-semibold">total:</span>
+              {{ adminLoaded?.total | number : "1.0-0" }}
+            </div>
+            <div>
+              <span class="font-semibold">expected:</span>
+              {{ adminLoaded?.expected | number : "1.0-0" }}
+            </div>
+            <div>
+              <span class="font-semibold">count:</span>
+              {{ adminLoaded?.count ?? "—" }}
+            </div>
+            <div>
+              <span class="font-semibold">dayStartMs:</span>
+              {{ adminLoaded?.dayStartMs || "—" }}
+            </div>
+            <div>
+              <span class="font-semibold">expectedSetMs:</span>
+              {{ adminLoaded.expectedSetMs || "—" }}
+            </div>
+            <div>
+              <span class="font-semibold">updatedAtMs:</span>
+              {{ adminLoaded.updatedAtMs || "—" }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>

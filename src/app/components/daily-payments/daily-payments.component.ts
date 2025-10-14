@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
@@ -7,6 +8,16 @@ import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
+interface DayTotalsDoc {
+  dayKey: string;
+  total?: number;
+  count?: number;
+  expected?: number;
+  dayStartMs?: number;
+  expectedSetMs?: number;
+  monthKey?: string;
+  updatedAtMs?: number;
+}
 
 @Component({
   selector: 'app-daily-payments',
@@ -14,6 +25,20 @@ import { TimeService } from 'src/app/services/time.service';
   styleUrls: ['./daily-payments.component.css'],
 })
 export class DailyPaymentsComponent implements OnInit {
+  // ADMIN state
+  adminSelectedEmployeeUid: string = '';
+  adminDate: string = this.time.getTodaysDateYearMonthDay(); // "YYYY-MM-DD"
+  adminDayKey: string = this.time.convertDateToMonthDayYear(this.adminDate); // "MM-DD-YYYY"
+  adminLoaded?: DayTotalsDoc | null;
+
+  adminTotalInput: number | null = null;
+  adminExpectedInput: number | null = null;
+  adminCountInput: number | null = null;
+
+  adminBusy = false;
+  adminMsg = '';
+  adminMsgType: 'ok' | 'err' | '' = '';
+
   clients?: Client[];
   employees: Employee[] = [];
   today = this.time.todaysDateMonthDayYear();
@@ -34,7 +59,8 @@ export class DailyPaymentsComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private data: DataService
+    private data: DataService,
+    private afs: AngularFirestore // <-- inject
   ) {
     this.retrieveClients();
   }
@@ -308,6 +334,147 @@ export class DailyPaymentsComponent implements OnInit {
     const perPeriod = amountToPay / period;
     const debtLeft = Math.max(this.n((client as any).debtLeft), 0); // tolerate missing field
     return Math.min(perPeriod, debtLeft);
+  }
+
+  // --- Admin helpers ---
+  onAdminSelectionChanged(): void {
+    // keep dayKey in your existing system's format (sample shows "10-13-2025")
+    this.adminDayKey = this.time.convertDateToMonthDayYear(this.adminDate);
+    this.adminMsg = '';
+    this.adminMsgType = '';
+    // Optionally auto-load
+    // if (this.adminSelectedEmployeeUid) this.loadAdminDayTotals();
+  }
+
+  resetAdminInputs(): void {
+    this.adminTotalInput = null;
+    this.adminExpectedInput = null;
+    this.adminCountInput = null;
+    this.adminMsg = '';
+    this.adminMsgType = '';
+  }
+
+  private startOfDayMsFromISO(iso: string): number {
+    const d = new Date(iso);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  }
+
+  private monthKeyFromISO(iso: string): string {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private buildDayTotalsPath(
+    ownerUid: string,
+    employeeUid: string,
+    dayKey: string
+  ): string {
+    return `users/${ownerUid}/employees/${employeeUid}/dayTotals/${dayKey}`;
+  }
+
+  async loadAdminDayTotals(): Promise<void> {
+    if (!this.adminSelectedEmployeeUid) return;
+    this.adminBusy = true;
+    this.adminMsg = '';
+    this.adminMsgType = '';
+
+    try {
+      const ownerUid = this.auth.currentUser?.uid;
+      if (!ownerUid) throw new Error('Owner UID manquant');
+
+      const path = this.buildDayTotalsPath(
+        ownerUid,
+        this.adminSelectedEmployeeUid,
+        this.adminDayKey
+      );
+      const snap = await this.afs.doc(path).ref.get();
+
+      if (snap.exists) {
+        const data = (snap.data() as any) || {};
+        this.adminLoaded = {
+          dayKey: data?.dayKey ?? this.adminDayKey,
+          total: Number(data?.total ?? 0),
+          count: Number(data?.count ?? 0),
+          expected: Number(data?.expected ?? 0),
+          dayStartMs: Number(data?.dayStartMs ?? 0),
+          expectedSetMs: Number(data?.expectedSetMs ?? 0),
+          monthKey: data?.monthKey ?? this.monthKeyFromISO(this.adminDate),
+          updatedAtMs: Number(data?.updatedAtMs ?? 0),
+        };
+
+        // Pre-fill inputs only if empty (keeps admin’s manual edits)
+        if (this.adminTotalInput == null)
+          this.adminTotalInput = this.adminLoaded.total ?? null;
+        if (this.adminExpectedInput == null)
+          this.adminExpectedInput = this.adminLoaded.expected ?? null;
+        if (this.adminCountInput == null)
+          this.adminCountInput = this.adminLoaded.count ?? null;
+
+        this.adminMsg = 'Données chargées.';
+        this.adminMsgType = 'ok';
+      } else {
+        this.adminLoaded = { dayKey: this.adminDayKey };
+        this.adminMsg = 'Aucune donnée pour ce jour — nouveau document.';
+        this.adminMsgType = 'ok';
+      }
+    } catch (e: any) {
+      this.adminMsg = e?.message || 'Erreur lors du chargement.';
+      this.adminMsgType = 'err';
+    } finally {
+      this.adminBusy = false;
+    }
+  }
+
+  async saveAdminDayTotals(): Promise<void> {
+    if (!this.adminSelectedEmployeeUid) return;
+    this.adminBusy = true;
+    this.adminMsg = '';
+    this.adminMsgType = '';
+
+    try {
+      const ownerUid = this.auth.currentUser?.uid;
+      if (!ownerUid) throw new Error('Owner UID manquant');
+
+      const nowMs = Date.now();
+      const payload: any = {
+        dayKey: this.adminDayKey,
+        dayStartMs: this.startOfDayMsFromISO(this.adminDate),
+        monthKey: this.monthKeyFromISO(this.adminDate),
+        updatedAtMs: nowMs,
+      };
+
+      // Only set fields the admin provided (so we don’t clobber unintentionally)
+      if (this.adminTotalInput != null && !isNaN(this.adminTotalInput)) {
+        payload.total = Number(this.adminTotalInput);
+      }
+
+      if (this.adminExpectedInput != null && !isNaN(this.adminExpectedInput)) {
+        payload.expected = Number(this.adminExpectedInput);
+        payload.expectedSetMs = nowMs;
+      }
+
+      if (this.adminCountInput != null && !isNaN(this.adminCountInput)) {
+        payload.count = Number(this.adminCountInput);
+      }
+
+      const path = this.buildDayTotalsPath(
+        ownerUid,
+        this.adminSelectedEmployeeUid,
+        this.adminDayKey
+      );
+      await this.afs.doc(path).set(payload, { merge: true });
+
+      // Refresh view
+      await this.loadAdminDayTotals();
+
+      this.adminMsg = 'Enregistré avec succès.';
+      this.adminMsgType = 'ok';
+    } catch (e: any) {
+      this.adminMsg = e?.message || 'Erreur lors de l’enregistrement.';
+      this.adminMsgType = 'err';
+    } finally {
+      this.adminBusy = false;
+    }
   }
 }
 
