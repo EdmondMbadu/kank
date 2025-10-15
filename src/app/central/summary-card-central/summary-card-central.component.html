@@ -115,20 +115,20 @@
           />
         </div>
 
-        <!-- Terminé toggle -->
+        <!-- Terminé tri-state filter: Exclure → Uniquement → Tous -->
         <button
           type="button"
-          class="text-xs rounded-full px-3 py-1 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-          [class.bg-rose-600]="showOnlyDone"
-          [class.text-white]="showOnlyDone"
-          (click)="toggleDoneMode()"
-          title="Basculer entre ‘exclure Terminé’ et ‘uniquement Terminé’"
+          class="text-xs rounded-full px-3 py-1 border hover:scale-[1.02] transition"
+          [ngClass]="{
+            'bg-amber-600 text-white border-amber-600':
+              doneFilter === 'exclude',
+            'bg-rose-600 text-white border-rose-600': doneFilter === 'only',
+            'bg-slate-900 text-white border-slate-900': doneFilter === 'all'
+          }"
+          (click)="cycleDoneFilter()"
+          title="Filtrer les clients Terminé"
         >
-          {{
-            showOnlyDone
-              ? "Cibler uniquement « Terminé »"
-              : "Exclure « Terminé »"
-          }}
+          {{ doneFilterLabel() }}
         </button>
 
         <!-- location filter -->

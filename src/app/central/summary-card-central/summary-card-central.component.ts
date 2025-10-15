@@ -32,6 +32,30 @@ export class SummaryCardCentralComponent {
     public messaging: MessagingService
   ) {}
 
+  // Tri-state filter for finished cards
+  doneFilter: 'exclude' | 'only' | 'all' = 'exclude';
+
+  cycleDoneFilter() {
+    this.doneFilter =
+      this.doneFilter === 'exclude'
+        ? 'only'
+        : this.doneFilter === 'only'
+        ? 'all'
+        : 'exclude';
+    this.applyCardsFilters();
+  }
+
+  doneFilterLabel(): string {
+    switch (this.doneFilter) {
+      case 'exclude':
+        return 'Exclure « Terminé »';
+      case 'only':
+        return 'Uniquement « Terminé »';
+      default:
+        return 'Tous (inclure « Terminé »)';
+    }
+  }
+
   allUsers: User[] = [];
   allClientsCard?: Card[];
 
@@ -64,20 +88,22 @@ export class SummaryCardCentralComponent {
   // NEW: toggle state (default = exclude finished)
   showOnlyDone = false;
 
-  // Robust detector for "done" status
   isCardDone(c: any): boolean {
+    // explicit “status” label (your snippet sets 'Terminé' when clientCardStatus is truthy)
     const status = (c?.status ?? '').toString().trim().toLowerCase();
-    const card = (c?.clientCardStatus ?? '').toString().trim().toLowerCase();
-    // common endings we’ve seen: 'terminé', 'termine', 'ended', 'done', 'finished', 'completed'
+    if (status === 'terminé' || status === 'termine') return true;
+
+    // clientCardStatus may be boolean or string like 'ended' / 'terminé'
+    const cs = c?.clientCardStatus;
+    if (typeof cs === 'boolean') return cs === true;
+    const csStr = (cs ?? '').toString().trim().toLowerCase();
     return (
-      status === 'terminé' ||
-      status === 'termine' ||
-      card === 'terminé' ||
-      card === 'termine' ||
-      card === 'ended' ||
-      card === 'done' ||
-      card === 'finished' ||
-      card === 'completed'
+      csStr === 'ended' ||
+      csStr === 'terminé' ||
+      csStr === 'termine' ||
+      csStr === 'done' ||
+      csStr === 'finished' ||
+      csStr === 'completed'
     );
   }
 
@@ -269,12 +295,14 @@ export class SummaryCardCentralComponent {
       this.cardSelectedLocations.has(c.locationName || '')
     );
 
-    // 2) done toggle
-    base = this.showOnlyDone
-      ? base.filter((c) => this.isCardDone(c))
-      : base.filter((c) => !this.isCardDone(c));
+    // 2) done tri-state
+    if (this.doneFilter === 'exclude') {
+      base = base.filter((c) => !this.isCardDone(c));
+    } else if (this.doneFilter === 'only') {
+      base = base.filter((c) => this.isCardDone(c));
+    } // 'all' → leave base as-is
 
-    // 3) amountToPay filter (as added earlier)
+    // 3) amountToPay filter
     const withAmount = base.filter(
       (c) => this.amountToPay(c) >= (Number(this.minAmountToPay) || 0)
     );
