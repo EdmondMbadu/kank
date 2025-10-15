@@ -5,7 +5,6 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
-import { PlotlyModule } from 'angular-plotly.js';
 import { DataService } from 'src/app/services/data.service';
 
 @Component({

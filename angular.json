@@ -14,12 +14,11 @@
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
             "allowedCommonJsDependencies": [
-              "plotly.js-dist-min",
-              "plotly.js-finance-dist-min",
+              "plotly.js-basic-dist",
               "heic2any",
               "pdfmake/build/pdfmake",
               "pdfmake/build/vfs_fonts"
-           ],
+            ],
             "outputPath": "dist",
             "index": "src/index.html",
             "main": "src/main.ts",

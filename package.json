@@ -25,10 +25,7 @@
     "heic2any": "^0.0.4",
     "mediainfo.js": "^0.3.5",
     "pdfmake": "^0.2.9",
-    "plotly.js": "^2.35.2",
     "plotly.js-basic-dist": "^2.35.2",
-    "plotly.js-dist-min": "^2.26.1",
-    "plotly.js-finance-dist-min": "^2.35.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.3"
