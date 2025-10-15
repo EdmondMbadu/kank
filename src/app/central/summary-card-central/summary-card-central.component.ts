@@ -60,6 +60,32 @@ export class SummaryCardCentralComponent {
   sContent: string[] = [];
 
   // ================= NEW: CARDS DASHBOARD STATE =================
+
+  // NEW: toggle state (default = exclude finished)
+  showOnlyDone = false;
+
+  // Robust detector for "done" status
+  isCardDone(c: any): boolean {
+    const status = (c?.status ?? '').toString().trim().toLowerCase();
+    const card = (c?.clientCardStatus ?? '').toString().trim().toLowerCase();
+    // common endings we’ve seen: 'terminé', 'termine', 'ended', 'done', 'finished', 'completed'
+    return (
+      status === 'terminé' ||
+      status === 'termine' ||
+      card === 'terminé' ||
+      card === 'termine' ||
+      card === 'ended' ||
+      card === 'done' ||
+      card === 'finished' ||
+      card === 'completed'
+    );
+  }
+
+  toggleDoneMode() {
+    this.showOnlyDone = !this.showOnlyDone;
+    this.applyCardsFilters();
+  }
+
   cardsAll: Card[] = [];
   cardsFiltered: Card[] = [];
   cardsSearchControl = new FormControl('');
@@ -179,10 +205,11 @@ export class SummaryCardCentralComponent {
   // ======== NEW: CARDS DATASET & FILTERS =========
   private buildCardsDataset() {
     // target: active (not ended) cards holders
-    this.cardsAll = (this.allClientsCard ?? []).filter(
-      (c: any) => c.clientCardStatus !== 'ended'
-    );
+    // this.cardsAll = (this.allClientsCard ?? []).filter(
+    //   (c: any) => c.clientCardStatus !== 'ended'
+    // );
 
+    this.cardsAll = this.allClientsCard ?? [];
     // locations
     const set = new Set<string>();
     for (const c of this.cardsAll as any[]) {
@@ -236,23 +263,31 @@ export class SummaryCardCentralComponent {
     const term = String(this.cardsSearchControl.value || '')
       .trim()
       .toLowerCase();
-    const base = (this.cardsAll as any[]).filter((c) =>
+
+    // 1) site filter
+    let base = (this.cardsAll as any[]).filter((c) =>
       this.cardSelectedLocations.has(c.locationName || '')
     );
 
-    // ✅ filter by amountToPay
-    const withMin = base.filter(
+    // 2) done toggle
+    base = this.showOnlyDone
+      ? base.filter((c) => this.isCardDone(c))
+      : base.filter((c) => !this.isCardDone(c));
+
+    // 3) amountToPay filter (as added earlier)
+    const withAmount = base.filter(
       (c) => this.amountToPay(c) >= (Number(this.minAmountToPay) || 0)
     );
 
-    // require a valid phone
-    const withPhone = withMin.filter(
+    // 4) valid phone
+    const withPhone = withAmount.filter(
       (c) =>
         !!(
           c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
         )
     );
 
+    // 5) search
     this.cardsFiltered = term
       ? (withPhone as any[]).filter(
           (c) =>

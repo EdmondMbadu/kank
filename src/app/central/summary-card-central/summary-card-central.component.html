@@ -115,6 +115,22 @@
           />
         </div>
 
+        <!-- Terminé toggle -->
+        <button
+          type="button"
+          class="text-xs rounded-full px-3 py-1 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+          [class.bg-rose-600]="showOnlyDone"
+          [class.text-white]="showOnlyDone"
+          (click)="toggleDoneMode()"
+          title="Basculer entre ‘exclure Terminé’ et ‘uniquement Terminé’"
+        >
+          {{
+            showOnlyDone
+              ? "Cibler uniquement « Terminé »"
+              : "Exclure « Terminé »"
+          }}
+        </button>
+
         <!-- location filter -->
         <div class="flex items-center gap-2 flex-wrap max-w-[520px]">
           <button
@@ -204,6 +220,12 @@
                     class="inline-flex items-center gap-1"
                   >
                     • {{ toFcDisplay(amountToPay($any(c))) }} FC à payer
+                  </span>
+                  <span
+                    *ngIf="isCardDone($any(c))"
+                    class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 border border-rose-200 dark:border-rose-800"
+                  >
+                    Terminé
                   </span>
                 </div>
               </div>
