@@ -49,116 +49,35 @@
   </div>
 </div>
 
-<!-- ===================== NEW: CARDS CLIENTS – BULK INVITE DASHBOARD ===================== -->
+<!-- ===================== CARDS CLIENTS – BULK INVITE DASHBOARD (ELEVATED UI) ===================== -->
 <section class="container mx-auto px-4 py-10" id="cards-bulk-dashboard">
   <div
     class="rounded-2xl bg-white dark:bg-slate-900 shadow-xl ring-1 ring-black/10 dark:ring-white/10"
   >
     <!-- Header -->
     <div
-      class="border-b border-gray-200 dark:border-gray-800 px-6 py-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+      class="border-b border-gray-200 dark:border-gray-800 px-6 py-6 space-y-5"
     >
-      <div>
-        <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
-          Relances multi-sites — clients <span class="italic">Carte</span>
-        </h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
-          Pas de critère de score. Recherche, filtrage par site, puis envoi en
-          masse. Le montant par défaut est fixé à
-          <strong>400 000 FC</strong> pour la première demande.
-        </p>
-      </div>
-
-      <div class="flex flex-col md:flex-row gap-3 md:items-center">
-        <!-- search cards list -->
-        <div class="relative">
-          <span class="absolute left-2 top-1.5 text-slate-400">
-            <svg
-              class="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="M21 21l-4.35-4.35"></path>
-            </svg>
-          </span>
-          <input
-            [formControl]="cardsSearchControl"
-            type="text"
-            placeholder="Chercher (nom, téléphone)…"
-            class="pl-7 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100"
-          />
+      <!-- Title + Primary action -->
+      <div
+        class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+      >
+        <div>
+          <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
+            Relances multi-sites — clients <span class="italic">Carte</span>
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Recherche, filtres, puis envoi en masse. Montant par défaut :
+            <span class="font-semibold text-slate-900 dark:text-slate-100"
+              >400 000 FC</span
+            >.
+          </p>
         </div>
 
-        <!-- min amountToPay -->
-        <div class="flex items-center gap-2">
-          <label class="text-xs text-slate-500 dark:text-slate-400"
-            >Min à payer</label
-          >
-          <input
-            type="number"
-            min="0"
-            step="1000"
-            [(ngModel)]="minAmountToPay"
-            (input)="applyCardsFilters()"
-            class="w-24 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 px-2 py-1 text-sm text-slate-900 dark:text-slate-100"
-          />
-          <input
-            type="range"
-            min="0"
-            max="2000000"
-            step="5000"
-            [(ngModel)]="minAmountToPay"
-            (input)="applyCardsFilters()"
-          />
-        </div>
-
-        <!-- Terminé tri-state filter: Exclure → Uniquement → Tous -->
-        <button
-          type="button"
-          class="text-xs rounded-full px-3 py-1 border hover:scale-[1.02] transition"
-          [ngClass]="{
-            'bg-amber-600 text-white border-amber-600':
-              doneFilter === 'exclude',
-            'bg-rose-600 text-white border-rose-600': doneFilter === 'only',
-            'bg-slate-900 text-white border-slate-900': doneFilter === 'all'
-          }"
-          (click)="cycleDoneFilter()"
-          title="Filtrer les clients Terminé"
-        >
-          {{ doneFilterLabel() }}
-        </button>
-
-        <!-- location filter -->
-        <div class="flex items-center gap-2 flex-wrap max-w-[520px]">
-          <button
-            type="button"
-            class="text-xs rounded-full px-3 py-1 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-            [class.bg-emerald-600]="cardsSelectAll"
-            [class.text-white]="cardsSelectAll"
-            (click)="toggleAllCardLocations()"
-          >
-            {{ cardsSelectAll ? "Tous les sites ✓" : "Tous les sites" }}
-          </button>
-          <button
-            *ngFor="let loc of cardUniqueLocations; trackBy: trackByLoc"
-            type="button"
-            class="text-xs rounded-full px-3 py-1 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-            [class.bg-indigo-600]="cardSelectedLocations.has(loc)"
-            [class.text-white]="cardSelectedLocations.has(loc)"
-            (click)="toggleCardLocation(loc)"
-          >
-            {{ loc }}
-          </button>
-        </div>
-
-        <!-- bulk action -->
         <button
           type="button"
           (click)="openCardBulkModal()"
-          class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow transition hover:scale-[1.02] hover:bg-indigo-700"
+          class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-60"
           [disabled]="cardsFiltered.length === 0"
           title="Inviter en masse les clients Carte"
         >
@@ -175,14 +94,210 @@
           Inviter ({{ cardsFiltered.length }})
         </button>
       </div>
+
+      <!-- Filter bar -->
+      <div
+        class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-slate-800/60 p-3"
+      >
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-12 md:items-end">
+          <!-- Search -->
+          <div class="md:col-span-5">
+            <label
+              class="block text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1"
+              >Recherche</label
+            >
+            <div class="relative">
+              <span
+                class="pointer-events-none absolute left-2 top-2.5 text-slate-400"
+              >
+                <svg
+                  class="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="M21 21l-4.35-4.35"></path>
+                </svg>
+              </span>
+              <input
+                [formControl]="cardsSearchControl"
+                type="text"
+                placeholder="Nom, téléphone…"
+                class="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-400"
+              />
+            </div>
+          </div>
+
+          <!-- Min amountToPay -->
+          <div class="md:col-span-4">
+            <label
+              class="block text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1"
+            >
+              Montant à payer minimum
+              <span
+                class="ml-2 inline-flex items-center rounded-full border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-200"
+              >
+                {{ toFcDisplay(minAmountToPay || 0) }} FC
+              </span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                [(ngModel)]="minAmountToPay"
+                (input)="applyCardsFilters()"
+                class="w-28 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900 px-2 py-2 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-400"
+              />
+              <input
+                type="range"
+                min="0"
+                max="2000000"
+                step="5000"
+                [(ngModel)]="minAmountToPay"
+                (input)="applyCardsFilters()"
+                class="flex-1 accent-emerald-600"
+              />
+            </div>
+          </div>
+
+          <!-- Done tri-state -->
+          <div class="md:col-span-3">
+            <label
+              class="block text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1"
+            >
+              Statut « Terminé »
+            </label>
+            <button
+              type="button"
+              (click)="cycleDoneFilter()"
+              class="w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border transition focus:outline-none focus:ring-2"
+              [ngClass]="{
+                'bg-amber-600 text-white border-amber-600 hover:bg-amber-700':
+                  doneFilter === 'exclude',
+                'bg-rose-600 text-white border-rose-600 hover:bg-rose-700':
+                  doneFilter === 'only',
+                'bg-slate-900 text-white border-slate-900 hover:bg-slate-800':
+                  doneFilter === 'all'
+              }"
+              title="Exclure → Uniquement → Tous"
+            >
+              <svg
+                *ngIf="doneFilter === 'exclude'"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M5 12h14" />
+                <path d="M12 5v14" class="opacity-0" />
+              </svg>
+              <svg
+                *ngIf="doneFilter === 'only'"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              <svg
+                *ngIf="doneFilter === 'all'"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+              {{ doneFilterLabel() }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Locations -->
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-2">
+            <span
+              class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
+              >Sites</span
+            >
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">
+              <strong>{{ cardSelectedLocations.size }}</strong> /
+              {{ cardUniqueLocations.length }}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            <!-- All sites chip -->
+            <button
+              type="button"
+              [attr.aria-pressed]="cardsSelectAll"
+              (click)="toggleAllCardLocations()"
+              class="text-xs inline-flex items-center gap-1 rounded-full px-3 py-1 border transition focus:outline-none"
+              [ngClass]="
+                cardsSelectAll
+                  ? 'bg-emerald-600 text-white border-emerald-600 ring-1 ring-emerald-300 hover:bg-emerald-700'
+                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-600'
+              "
+              title="Sélectionner / désélectionner tous les sites"
+            >
+              <svg
+                *ngIf="cardsSelectAll"
+                class="h-3.5 w-3.5 -ml-0.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              <span>{{
+                cardsSelectAll ? "Tous les sites ✓" : "Tous les sites"
+              }}</span>
+            </button>
+
+            <!-- Individual site chips -->
+            <button
+              *ngFor="let loc of cardUniqueLocations; trackBy: trackByLoc"
+              type="button"
+              [attr.aria-pressed]="cardSelectedLocations.has(loc)"
+              (click)="toggleCardLocation(loc)"
+              class="text-xs inline-flex items-center gap-1 rounded-full px-3 py-1 border transition focus:outline-none"
+              [ngClass]="
+                cardSelectedLocations.has(loc)
+                  ? 'bg-indigo-600 text-white border-indigo-600 ring-1 ring-indigo-300 hover:bg-indigo-700'
+                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-600'
+              "
+            >
+              <svg
+                *ngIf="cardSelectedLocations.has(loc)"
+                class="h-3.5 w-3.5 -ml-0.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+              >
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              <span>{{ loc }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Body -->
     <div class="px-6 py-5">
       <!-- quick stats -->
       <div class="mb-4 text-xs text-slate-500 dark:text-slate-400">
-        <span class="font-semibold">{{ cardsFiltered.length }}</span>
-        client(s) | Sites actifs :
+        <span class="font-semibold">{{ cardsFiltered.length }}</span> client(s)
+        • Sites actifs :
         <span class="font-semibold">{{ cardSelectedLocations.size }}</span> /
         {{ cardUniqueLocations.length }}
       </div>
@@ -196,7 +311,7 @@
         >
           <div
             *ngFor="let c of cardsFiltered"
-            class="px-4 py-3 flex items-center justify-between hover:bg-emerald-50 dark:hover:bg-slate-800/60"
+            class="px-4 py-3 flex items-center justify-between hover:bg-emerald-50/60 dark:hover:bg-slate-800/60"
           >
             <div class="min-w-0 flex items-center gap-3">
               <div
@@ -214,7 +329,7 @@
                 <div
                   class="mt-0.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
                 >
-                  <span>{{ formatDisplayPhone($any(c).phoneNumber) }} </span>
+                  <span>{{ formatDisplayPhone($any(c).phoneNumber) }}</span>
                   <span
                     *ngIf="amountToPay($any(c)) > 0"
                     class="inline-flex items-center gap-1"
@@ -233,7 +348,7 @@
 
             <div class="flex items-center gap-3">
               <span
-                class="text-[11px] font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded"
+                class="text-[11px] font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800"
               >
                 {{ $any(c).locationName || "site" }}
               </span>
