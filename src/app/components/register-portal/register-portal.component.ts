@@ -79,6 +79,7 @@ export class RegiserPortalComponent {
   agentVerifyingName: string = '';
   agentSubmmittedVerification: string = '';
   age: number | null = null; // ← nouveau
+  birthDateDisplay = '';
 
   showPhoneHistory = false;
   copied?: string;
@@ -214,6 +215,7 @@ export class RegiserPortalComponent {
       const idx = Number(this.id); // position du client courant
       this.client = data[idx];
       this.age = this.compute.computeAge(this.client.birthDate);
+      this.birthDateDisplay = this.formatBirthDate(this.client.birthDate);
       // … (votre logique existante) …
       this.detectSuspicious(idx, data);
       console.log('the client', this.client);
@@ -252,6 +254,32 @@ export class RegiserPortalComponent {
       this.requestDate = this.time.convertDateToDayMonthYear(
         this.client.requestDate!
       );
+    });
+  }
+
+  private formatBirthDate(birth?: string | null): string {
+    if (!birth) {
+      return '';
+    }
+    const parts = birth.split('-');
+    if (parts.length !== 3) {
+      return birth;
+    }
+    const [dayStr, monthStr, yearStr] = parts;
+    const day = Number(dayStr);
+    const month = Number(monthStr);
+    const year = Number(yearStr);
+    if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+      return birth;
+    }
+    const date = new Date(year, month - 1, day);
+    if (Number.isNaN(date.getTime())) {
+      return birth;
+    }
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
     });
   }
   setComments() {

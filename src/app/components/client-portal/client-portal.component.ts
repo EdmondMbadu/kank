@@ -95,6 +95,7 @@ export class ClientPortalComponent {
   isPlatinum: boolean = false;
   isPhoneNumberCorrect: string = '';
   age: number | null = null; // ← nouveau
+  birthDateDisplay = '';
   dateJoined: string = '';
 
   isPosting = false;
@@ -229,6 +230,7 @@ export class ClientPortalComponent {
       this.client = data[Number(this.id)];
       console.log('the client', this.client);
       this.age = this.compute.computeAge(this.client.birthDate);
+      this.birthDateDisplay = this.formatBirthDate(this.client.birthDate);
 
       this.minimumPayment();
       this.client.frenchPaymentDay = this.time.translateDayInFrench(
@@ -248,6 +250,32 @@ export class ClientPortalComponent {
           this.clientCycles = data;
         });
       }
+    });
+  }
+
+  private formatBirthDate(birth?: string | null): string {
+    if (!birth) {
+      return '';
+    }
+    const parts = birth.split('-');
+    if (parts.length !== 3) {
+      return birth;
+    }
+    const [dayStr, monthStr, yearStr] = parts;
+    const day = Number(dayStr);
+    const month = Number(monthStr);
+    const year = Number(yearStr);
+    if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+      return birth;
+    }
+    const date = new Date(year, month - 1, day);
+    if (Number.isNaN(date.getTime())) {
+      return birth;
+    }
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
     });
   }
 

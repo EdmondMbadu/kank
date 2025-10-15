@@ -200,6 +200,12 @@
     >
       <dt class="text-lg font-semibold">Âge</dt>
       <dd class="mt-1 text-3xl font-bold">{{ age }}</dd>
+      <dd
+        *ngIf="birthDateDisplay"
+        class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+      >
+        Né(e) le {{ birthDateDisplay }}
+      </dd>
     </div>
 
     <!-- Phone number (centered) + history -->
