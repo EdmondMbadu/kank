@@ -34,27 +34,28 @@
 </header>
 
 <!-- If no picture yet -->
-<div
-  class="mx-auto flex max-w-7xl flex-col items-center justify-center py-8"
->
-    <div *ngIf="!client?.profilePicture" class="flex flex-col items-center">
-      <input
-        type="file"
-        [id]="'putPicture'"
-        class="hidden"
-        (change)="startUpload($any($event.target).files)"
-      />
-      <button
-        (click)="onImageClick('putPicture')"
-        type="button"
-        class="inline-flex items-center justify-center rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800"
-      >
-        Ajouter Photo du Client
-      </button>
-    </div>
+<div class="mx-auto flex max-w-7xl flex-col items-center justify-center py-8">
+  <div *ngIf="!client?.profilePicture" class="flex flex-col items-center">
+    <input
+      type="file"
+      [id]="'putPicture'"
+      class="hidden"
+      (change)="startUpload($any($event.target).files)"
+    />
+    <button
+      (click)="onImageClick('putPicture')"
+      type="button"
+      class="inline-flex items-center justify-center rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800"
+    >
+      Ajouter Photo du Client
+    </button>
+  </div>
   <!-- === PHOTO UPLOADER / VIEWER === -->
   <!-- already-uploaded picture -->
-  <div *ngIf="client?.profilePicture" class="relative flex flex-col items-center">
+  <div
+    *ngIf="client?.profilePicture"
+    class="relative flex flex-col items-center"
+  >
     <!-- hidden input used when the user wants to replace the photo -->
     <input
       type="file"
@@ -105,7 +106,7 @@
     [src]="client.profilePicture!.downloadURL"
     alt="Photo du Client – plein écran"
     class="max-h-[90vh] max-w-[90vw] rounded-2xl shadow-2xl"
-    (click)="$event.stopPropagation()" 
+    (click)="$event.stopPropagation()"
   />
   <button
     (click)="toggleFullPicture()"
@@ -117,26 +118,47 @@
   </button>
 </div>
 
-
 <!-- === VERIFICATION & SUSPICIOUS BANNERS === -->
-<div class="mx-auto flex max-w-7xl flex-col items-center justify-center gap-2 px-4">
+<div
+  class="mx-auto flex max-w-7xl flex-col items-center justify-center gap-2 px-4"
+>
   <!-- verification status -->
-  <div *ngIf="agentSubmmittedVerification" class="inline-flex items-center rounded-full bg-green-100 px-4 py-2 text-lg font-semibold text-green-700 ">
-    ✔️ Client vérifié<span *ngIf="auth.isAdmin"> par {{ agentVerifyingName }}</span>
+  <div
+    *ngIf="agentSubmmittedVerification"
+    class="inline-flex items-center rounded-full bg-green-100 px-4 py-2 text-lg font-semibold text-green-700"
+  >
+    ✔️ Client vérifié<span *ngIf="auth.isAdmin">
+      par {{ agentVerifyingName }}</span
+    >
   </div>
-  <div *ngIf="!agentSubmmittedVerification && client.requestType !== 'rejection'" class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700 ">
+  <div
+    *ngIf="!agentSubmmittedVerification && client.requestType !== 'rejection'"
+    class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700"
+  >
     ❌ Client non vérifié
   </div>
-  <div *ngIf="client.requestType === 'rejection'" class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700 ">
+  <div
+    *ngIf="client.requestType === 'rejection'"
+    class="inline-flex items-center rounded-full bg-red-100 px-4 py-2 text-lg font-semibold text-red-700"
+  >
     🚫 Rejet en cours...
   </div>
 </div>
 
 <!-- suspicious banner -->
 <div *ngIf="suspiciousClientLink" class="mx-auto mt-4 max-w-7xl px-4">
-  <div class="flex flex-col items-center justify-between gap-2 rounded-lg border-l-4 border-yellow-500 bg-yellow-100 p-4 text-yellow-700 shadow sm:flex-row">
-    <p class="font-semibold">⚠️ Client suspect &mdash; <span class="text-red-600">{{ suspiciousReason }}</span></p>
-    <a [routerLink]="suspiciousClientLink" class="underline text-blue-600 hover:text-blue-800">Voir l’autre client</a>
+  <div
+    class="flex flex-col items-center justify-between gap-2 rounded-lg border-l-4 border-yellow-500 bg-yellow-100 p-4 text-yellow-700 shadow sm:flex-row"
+  >
+    <p class="font-semibold">
+      ⚠️ Client suspect &mdash;
+      <span class="text-red-600">{{ suspiciousReason }}</span>
+    </p>
+    <a
+      [routerLink]="suspiciousClientLink"
+      class="underline text-blue-600 hover:text-blue-800"
+      >Voir l’autre client</a
+    >
   </div>
 </div>
 
@@ -144,16 +166,23 @@
 <div
   class="mx-auto mt-8 max-w-7xl overflow-hidden rounded-3xl bg-white/70 shadow-xl ring-1 ring-gray-200 backdrop-blur dark:bg-gray-800/70 dark:ring-gray-700"
 >
-  <div class="h-2 w-full bg-gradient-to-r from-green-400 via-emerald-500 to-lime-400 dark:from-emerald-600 dark:via-teal-500 dark:to-cyan-400"></div>
+  <div
+    class="h-2 w-full bg-gradient-to-r from-green-400 via-emerald-500 to-lime-400 dark:from-emerald-600 dark:via-teal-500 dark:to-cyan-400"
+  ></div>
 
-  <dl class="grid gap-6 p-6 sm:grid-cols-2 xl:grid-cols-3 text-gray-900 dark:text-white">
+  <dl
+    class="grid gap-6 p-6 sm:grid-cols-2 xl:grid-cols-3 text-gray-900 dark:text-white"
+  >
     <!-- NAME -->
     <div class="col-span-full flex flex-col items-center">
-      <h2 class="text-2xl font-extrabold tracking-tight sm:text-3xl text-center">
-        {{ client.firstName }} {{ client.lastName }} <span *ngIf="client.middleName">{{ client.middleName }}</span>
+      <h2
+        class="text-2xl font-extrabold tracking-tight sm:text-3xl text-center"
+      >
+        {{ client.firstName }} {{ client.lastName }}
+        <span *ngIf="client.middleName">{{ client.middleName }}</span>
       </h2>
       <p class="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
-        Membre depuis {{ dateJoined}}
+        Membre depuis {{ dateJoined }}
       </p>
     </div>
     <!-- Age -->
@@ -165,273 +194,759 @@
       <dd class="mt-1 text-3xl font-bold">{{ age }}</dd>
     </div>
 
-   <!-- Phone number (centered) + history -->
-<div
-  class="relative flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
-  #phoneHistory
->
-  <dt class="text-lg font-semibold">Téléphone</dt>
+    <!-- Phone number (centered) + history -->
+    <div
+      class="relative flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
+      #phoneHistory
+    >
+      <dt class="text-lg font-semibold">Téléphone</dt>
 
-  <dd class="mt-1 w-full">
-    <div class="flex flex-col items-center justify-center gap-2">
-      <!-- main number -->
-      <a
-        [href]="'tel:' + client.phoneNumber"
-        class="text-xl font-bold tracking-wide text-center whitespace-nowrap max-w-[90%] overflow-hidden text-ellipsis hover:underline"
-      >
-        {{ formatPhone(client.phoneNumber) }}
-      </a>
+      <dd class="mt-1 w-full">
+        <div class="flex flex-col items-center justify-center gap-2">
+          <!-- main number -->
+          <a
+            [href]="'tel:' + client.phoneNumber"
+            class="text-xl font-bold tracking-wide text-center whitespace-nowrap max-w-[90%] overflow-hidden text-ellipsis hover:underline"
+          >
+            {{ formatPhone(client.phoneNumber) }}
+          </a>
 
-      <!-- toggle (isolated in a relative wrapper so the menu centers correctly) -->
-      <div *ngIf="allPhones.length > 1" class="relative">
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium
-                 border-slate-200 bg-white/70 shadow-sm ring-1 ring-black/5
-                 dark:border-slate-700 dark:bg-slate-800"
-          (click)="$event.stopPropagation(); togglePhoneHistory()"
-          [title]="allPhones.length > 1 ? 'Historique (' + allPhones.length + ')' : 'Historique vide'"
-        >
-          <span>Historique</span>
-          <span *ngIf="allPhones.length > 1"
-                class="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[11px] font-semibold text-white">
-            {{ allPhones.length }}
-          </span>
-          <svg class="ml-1 h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
-          </svg>
-        </button>
+          <!-- toggle (isolated in a relative wrapper so the menu centers correctly) -->
+          <div *ngIf="allPhones.length > 1" class="relative">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium border-slate-200 bg-white/70 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
+              (click)="$event.stopPropagation(); togglePhoneHistory()"
+              [title]="
+                allPhones.length > 1
+                  ? 'Historique (' + allPhones.length + ')'
+                  : 'Historique vide'
+              "
+            >
+              <span>Historique</span>
+              <span
+                *ngIf="allPhones.length > 1"
+                class="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-emerald-600 px-1 text-[11px] font-semibold text-white"
+              >
+                {{ allPhones.length }}
+              </span>
+              <svg
+                class="ml-1 h-3.5 w-3.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                />
+              </svg>
+            </button>
 
-        <!-- centered dropdown -->
-        <div
-          *ngIf="showPhoneHistory && allPhones.length"
-          class="absolute left-1/2 z-20 mt-2 w-72 max-w-[90vw] -translate-x-1/2 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl ring-1 ring-black/5
-                 dark:border-slate-700 dark:bg-slate-800"
-        >
-          <div class="px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
-            Historique des numéros
-          </div>
-
-          <ul class="max-h-60 overflow-auto divide-y divide-slate-100 dark:divide-slate-700">
-            <li *ngFor="let p of allPhones; let i = index" class="flex items-center justify-between gap-2 px-2 py-2">
-              <div class="min-w-0">
-                <a [href]="'tel:' + p" class="font-mono text-sm text-slate-800 hover:underline dark:text-slate-100">
-                  {{ formatPhone(p) }}
-                </a>
-                <span *ngIf="i===0"
-                      class="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800">
-                  Actuel
-                </span>
+            <!-- centered dropdown -->
+            <div
+              *ngIf="showPhoneHistory && allPhones.length"
+              class="absolute left-1/2 z-20 mt-2 w-72 max-w-[90vw] -translate-x-1/2 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
+            >
+              <div
+                class="px-2 py-1 text-xs font-semibold text-slate-500 dark:text-slate-300"
+              >
+                Historique des numéros
               </div>
 
-              <div class="flex items-center gap-1 shrink-0">
-                <a [href]="'sms:' + p"
-                   class="rounded-md px-2 py-1 text-[11px] ring-1 ring-inset ring-slate-200 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-700/60">
-                  SMS
-                </a>
-                <button
-                  type="button"
-                  (click)="copy(p)"
-                  class="rounded-md px-2 py-1 text-[11px] ring-1 ring-inset ring-slate-200 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-700/60"
+              <ul
+                class="max-h-60 overflow-auto divide-y divide-slate-100 dark:divide-slate-700"
+              >
+                <li
+                  *ngFor="let p of allPhones; let i = index"
+                  class="flex items-center justify-between gap-2 px-2 py-2"
                 >
-                  {{ copied === p ? 'Copié ✓' : 'Copier' }}
-                </button>
-              </div>
-            </li>
-          </ul>
+                  <div class="min-w-0">
+                    <a
+                      [href]="'tel:' + p"
+                      class="font-mono text-sm text-slate-800 hover:underline dark:text-slate-100"
+                    >
+                      {{ formatPhone(p) }}
+                    </a>
+                    <span
+                      *ngIf="i === 0"
+                      class="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-800"
+                    >
+                      Actuel
+                    </span>
+                  </div>
 
-          <div class="px-2 pt-1 text-[11px] text-slate-400 dark:text-slate-400">
-            Astuce : les numéros en double sont regroupés automatiquement.
+                  <div class="flex items-center gap-1 shrink-0">
+                    <a
+                      [href]="'sms:' + p"
+                      class="rounded-md px-2 py-1 text-[11px] ring-1 ring-inset ring-slate-200 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-700/60"
+                    >
+                      SMS
+                    </a>
+                    <button
+                      type="button"
+                      (click)="copy(p)"
+                      class="rounded-md px-2 py-1 text-[11px] ring-1 ring-inset ring-slate-200 hover:bg-slate-50 dark:ring-slate-700 dark:hover:bg-slate-700/60"
+                    >
+                      {{ copied === p ? "Copié ✓" : "Copier" }}
+                    </button>
+                  </div>
+                </li>
+              </ul>
+
+              <div
+                class="px-2 pt-1 text-[11px] text-slate-400 dark:text-slate-400"
+              >
+                Astuce : les numéros en double sont regroupés automatiquement.
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </dd>
     </div>
-  </dd>
-</div>
-
 
     <!-- BUSINESS ADDRESS -->
-    <a [routerLink]="['/update-client-info', id]" class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50">
+    <a
+      [routerLink]="['/update-client-info', id]"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">Adresse Business</dt>
-      <dd class="mt-1 text-center text-sm font-medium">{{ client.businessAddress }}</dd>
+      <dd class="mt-1 text-center text-sm font-medium">
+        {{ client.businessAddress }}
+      </dd>
     </a>
 
     <!-- HOME ADDRESS -->
-    <a [routerLink]="['/update-client-info', id]" class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50">
+    <a
+      [routerLink]="['/update-client-info', id]"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">Adresse Domicile</dt>
-      <dd class="mt-1 text-center text-sm font-medium">{{ client.homeAddress }}</dd>
+      <dd class="mt-1 text-center text-sm font-medium">
+        {{ client.homeAddress }}
+      </dd>
     </a>
 
     <!-- PROFESSION -->
-    <a [routerLink]="['/update-client-info', id]" class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50">
+    <a
+      [routerLink]="['/update-client-info', id]"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 transition hover:shadow-lg dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">Profession</dt>
-      <dd class="mt-1 text-center text-sm font-medium">{{ client.profession }}</dd>
+      <dd class="mt-1 text-center text-sm font-medium">
+        {{ client.profession }}
+      </dd>
     </a>
 
     <!-- SAVINGS -->
-    <div class="flex flex-col items-center rounded-2xl bg-lime-50 px-4 py-6 dark:bg-gray-900/50">
+    <div
+      class="flex flex-col items-center rounded-2xl bg-lime-50 px-4 py-6 dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">Épargnes (FC)</dt>
-      <dd class="mt-1 text-3xl font-extrabold">{{ client.savings | number:'1.0-0' }}</dd>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.savings | number : "1.0-0" }}
+      </dd>
     </div>
 
     <!-- FEES -->
-    <div class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60">
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60"
+    >
       <dt class="text-lg font-semibold">Frais de Dossier Payé (FC)</dt>
-      <dd class="mt-1 text-3xl font-extrabold">{{ client.applicationFee | number:'1.0-0' }}</dd>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.applicationFee | number : "1.0-0" }}
+      </dd>
     </div>
-    <div class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60">
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 px-4 py-6 dark:from-gray-900/60 dark:to-gray-800/60"
+    >
       <dt class="text-lg font-semibold">Frais d’Adhésion Payé (FC)</dt>
-      <dd class="mt-1 text-3xl font-extrabold">{{ client.membershipFee | number:'1.0-0' }}</dd>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.membershipFee | number : "1.0-0" }}
+      </dd>
     </div>
 
     <!-- REQUEST AMOUNT -->
-    <div class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50">
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">
-        {{ client.requestType !== 'rejection' ? 'Montant Demandé (FC)' : 'Montant à Remettre (FC)' }}
+        {{
+          client.requestType !== "rejection"
+            ? "Montant Demandé (FC)"
+            : "Montant à Remettre (FC)"
+        }}
       </dt>
-      <dd class="mt-1 text-3xl font-extrabold">{{ client.requestAmount | number:'1.0-0' }}</dd>
+      <dd class="mt-1 text-3xl font-extrabold">
+        {{ client.requestAmount | number : "1.0-0" }}
+      </dd>
     </div>
 
     <!-- DEBT CYCLE -->
-    <div class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50">
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">Cycle de Dette</dt>
       <dd class="mt-1 text-2xl font-bold">{{ client.debtCycle }}</dd>
     </div>
 
     <!-- CREDIT SCORE -->
-    <div class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50">
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">Score Crédit</dt>
       <dd class="mt-1 text-3xl font-extrabold">{{ client.creditScore }}</dd>
     </div>
 
     <!-- RETURN DATE -->
-    <div class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50">
-      <dt class="text-lg font-semibold">Date De Remettre L'argent Au Client </dt>
+    <div
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
+      <dt class="text-lg font-semibold">Date De Remettre L'argent Au Client</dt>
       <dd class="mt-1 text-xl font-bold">{{ requestDate }}</dd>
     </div>
 
     <!-- REFERENCES -->
-    <div *ngIf="client.references" class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50">
+    <div
+      *ngIf="client.references"
+      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+    >
       <dt class="text-lg font-semibold">Références</dt>
-      <dd class="mt-2 space-y-1 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
-        <ng-container *ngFor="let r of client.references">{{ r }}<br /></ng-container>
+      <dd
+        class="mt-2 space-y-1 text-center text-sm font-medium text-gray-500 dark:text-gray-400"
+      >
+        <ng-container *ngFor="let r of client.references"
+          >{{ r }}<br
+        /></ng-container>
       </dd>
     </div>
   </dl>
 </div>
 
 <!-- === ADMIN / DISTRIBUTOR EDIT PANEL === -->
-<div *ngIf="auth.isAdmin || auth.isDistributor" class="mx-auto my-8 max-w-7xl px-4">
+<div
+  *ngIf="auth.isAdmin || auth.isDistributor"
+  class="mx-auto my-8 max-w-7xl px-4"
+>
   <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
     <!-- Savings -->
-    <div *ngIf="auth.isAdmin" class="rounded-2xl bg-white p-6 shadow dark:bg-gray-800">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Épargnes</h3>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Valeur actuelle : <strong>{{ savings }}</strong></p>
-      <input [(ngModel)]="savings" type="number" class="mt-3 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white" />
-      <button (click)="setClientField('savings', savings)" class="mt-3 w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700">Confirmer</button>
+    <div
+      *ngIf="auth.isAdmin"
+      class="rounded-2xl bg-white p-6 shadow dark:bg-gray-800"
+    >
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Épargnes
+      </h3>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle : <strong>{{ savings }}</strong>
+      </p>
+      <input
+        [(ngModel)]="savings"
+        type="number"
+        class="mt-3 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+      />
+      <button
+        (click)="setClientField('savings', savings)"
+        class="mt-3 w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700"
+      >
+        Confirmer
+      </button>
     </div>
 
     <!-- Auditor name -->
     <div class="rounded-2xl bg-white p-6 shadow dark:bg-gray-800">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Nom de l’Audit</h3>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Nom actuel : <strong>{{ agentVerifyingName }}</strong></p>
-      <input [disabled]="!auth.isAdmin" [(ngModel)]="agentVerifyingName" type="text" class="mt-3 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white" />
-      <button *ngIf="!agentSubmmittedVerification || auth.isAdmin" (click)="toggle('showAuditConfirmation')" class="mt-3 w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700">Confirmer</button>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        Nom de l’Audit
+      </h3>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        Nom actuel : <strong>{{ agentVerifyingName }}</strong>
+      </p>
+      <input
+        [disabled]="!auth.isAdmin"
+        [(ngModel)]="agentVerifyingName"
+        type="text"
+        class="mt-3 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+      />
+      <button
+        *ngIf="!agentSubmmittedVerification || auth.isAdmin"
+        (click)="toggle('showAuditConfirmation')"
+        class="mt-3 w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700"
+      >
+        Confirmer
+      </button>
     </div>
   </div>
 </div>
 
 <!-- === ACTIONS: UPDATE / CANCEL / REFUND === -->
-<div class="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-4 px-4">
-  <a [routerLink]="['/request-update', id]" class="rounded-full bg-emerald-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-400/40">Demande de Mise à Jour</a>
-  <button *ngIf="client.type === 'register'" (click)="cancelRegistration()" class="rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40">Annuler Enregistrement</button>
-  <button (click)="openRefundDialog()" class="rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40">Demande de Remboursement après rejet</button>
+<div
+  class="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-4 px-4"
+>
+  <a
+    [routerLink]="['/request-update', id]"
+    class="rounded-full bg-emerald-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-400/40"
+    >Demande de Mise à Jour</a
+  >
+  <button
+    *ngIf="client.type === 'register'"
+    (click)="cancelRegistration()"
+    class="rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40"
+  >
+    Annuler Enregistrement
+  </button>
+  <button
+    (click)="openRefundDialog()"
+    class="rounded-full bg-red-600 px-6 py-3 text-sm font-medium text-white shadow-lg transition hover:scale-105 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-400/40"
+  >
+    Demande de Remboursement après rejet
+  </button>
 </div>
 
-<!-- === CHARTS === -->
+<!-- === CHARTS (Performance Rings) === -->
 <div class="mx-auto my-12 max-w-7xl px-4">
-  <div class="rounded-3xl bg-white/70 p-6 shadow-xl ring-1 ring-gray-200 backdrop-blur dark:bg-gray-800/70 dark:ring-gray-700">
-    <plotly-plot
-      *ngIf="client.debtCycle !== '1'"
-      [data]="graphCredit.data"
-      [layout]="graphCredit.layout"
-      class="h-[400px] w-full"
-    ></plotly-plot>
-    <plotly-plot
-      *ngIf="client.debtCycle === '1'"
-      [data]="graphWorthiness.data"
-      [layout]="graphWorthiness.layout"
-      class="h-[400px] w-full"
-    ></plotly-plot>
+  <div
+    class="rounded-3xl bg-white/70 p-6 shadow-xl ring-1 ring-gray-200 backdrop-blur dark:bg-gray-800/70 dark:ring-gray-700"
+  >
+    <!-- CREDIT SCORE RING (when debtCycle !== '1') -->
+    <div *ngIf="client.debtCycle !== '1'">
+      <!-- Title -->
+      <h3
+        class="mb-4 text-xl text-center font-bold tracking-tight text-slate-800 dark:text-slate-100"
+      >
+        Client Score Credit
+      </h3>
+
+      <!-- Ring -->
+      <div
+        class="container mt-2 flex mx-auto flex-col md:flex-row md:justify-center"
+      >
+        <div class="w-full max-w-xl mx-auto">
+          <div
+            class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm backdrop-blur-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
+          >
+            <div class="relative flex items-center justify-center">
+              <svg
+                [attr.width]="size"
+                [attr.height]="size"
+                [attr.viewBox]="'0 0 ' + size + ' ' + size"
+                class="drop-shadow-sm"
+              >
+                <defs>
+                  <!-- glow -->
+                  <filter
+                    id="perfGlowRegCredit"
+                    x="-50%"
+                    y="-50%"
+                    width="200%"
+                    height="200%"
+                  >
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+
+                  <!-- trail -->
+                  <linearGradient
+                    [attr.id]="gradIdCredit"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stop-color="#e5e7eb" />
+                    <stop offset="100%" stop-color="#cbd5e1" />
+                  </linearGradient>
+                </defs>
+
+                <!-- background ring -->
+                <circle
+                  [attr.cx]="center"
+                  [attr.cy]="center"
+                  [attr.r]="radius2"
+                  [attr.stroke]="'url(#' + gradIdCredit + ')'"
+                  [attr.stroke-width]="strokeWidth"
+                  fill="none"
+                ></circle>
+
+                <!-- tick marks (every 10%) -->
+                <g
+                  [attr.transform]="'translate(' + center + ',' + center + ')'"
+                >
+                  <ng-container *ngFor="let t of ticks">
+                    <line
+                      [attr.x1]="0"
+                      [attr.y1]="-radius2"
+                      [attr.x2]="0"
+                      [attr.y2]="-radius2 + 8"
+                      stroke="#c7d2fe"
+                      stroke-width="2"
+                      [attr.transform]="'rotate(' + t + ')'"
+                      class="opacity-50 dark:opacity-40"
+                    />
+                  </ng-container>
+                </g>
+
+                <!-- progress arc -->
+                <circle
+                  [attr.cx]="center"
+                  [attr.cy]="center"
+                  [attr.r]="radius2"
+                  [attr.stroke]="colorForPerf(creditScoreValue)"
+                  [attr.stroke-width]="strokeWidth"
+                  stroke-linecap="round"
+                  fill="none"
+                  [attr.stroke-dasharray]="
+                    progressDasharrayFor(creditScoreValue)
+                  "
+                  [attr.stroke-dashoffset]="0"
+                  [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'"
+                  filter="url(#perfGlowRegCredit)"
+                  class="transition-all duration-700 ease-out"
+                ></circle>
+              </svg>
+
+              <!-- center labels -->
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center"
+              >
+                <div
+                  class="text-4xl font-extrabold text-slate-900 dark:text-slate-100"
+                >
+                  {{ creditScoreValue | number : "1.0-0" }}%
+                </div>
+                <div
+                  class="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                >
+                  {{ monthFrenchNames[currentMonth] }} {{ currentYear }}
+                </div>
+              </div>
+
+              <!-- status chip -->
+              <div
+                class="absolute -bottom-1.5 right-1 flex items-center gap-1 text-[11px]"
+              >
+                <span
+                  class="inline-block h-2.5 w-2.5 rounded-full"
+                  [ngStyle]="{ background: colorForPerf(creditScoreValue) }"
+                ></span>
+                <span class="text-slate-500 dark:text-slate-400"
+                  >Score crédit</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /Ring -->
+    </div>
+
+    <!-- CREDITWORTHINESS RING (when debtCycle === '1') -->
+    <div *ngIf="client.debtCycle === '1'">
+      <!-- Title -->
+      <h3
+        class="mb-4 text-center text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100"
+      >
+        Score de Solvabilité
+      </h3>
+
+      <!-- Ring -->
+      <div
+        class="container mt-2 flex mx-auto flex-col md:flex-row md:justify-center"
+      >
+        <div class="w-full max-w-xl mx-auto">
+          <div
+            class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm backdrop-blur-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
+          >
+            <div class="relative flex items-center justify-center">
+              <svg
+                [attr.width]="size"
+                [attr.height]="size"
+                [attr.viewBox]="'0 0 ' + size + ' ' + size"
+                class="drop-shadow-sm"
+              >
+                <defs>
+                  <filter
+                    id="perfGlowRegWorth"
+                    x="-50%"
+                    y="-50%"
+                    width="200%"
+                    height="200%"
+                  >
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+
+                  <linearGradient
+                    [attr.id]="gradIdWorth"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stop-color="#e5e7eb" />
+                    <stop offset="100%" stop-color="#cbd5e1" />
+                  </linearGradient>
+                </defs>
+
+                <circle
+                  [attr.cx]="center"
+                  [attr.cy]="center"
+                  [attr.r]="radius2"
+                  [attr.stroke]="'url(#' + gradIdWorth + ')'"
+                  [attr.stroke-width]="strokeWidth"
+                  fill="none"
+                ></circle>
+
+                <g
+                  [attr.transform]="'translate(' + center + ',' + center + ')'"
+                >
+                  <ng-container *ngFor="let t of ticks">
+                    <line
+                      [attr.x1]="0"
+                      [attr.y1]="-radius2"
+                      [attr.x2]="0"
+                      [attr.y2]="-radius2 + 8"
+                      stroke="#c7d2fe"
+                      stroke-width="2"
+                      [attr.transform]="'rotate(' + t + ')'"
+                      class="opacity-50 dark:opacity-40"
+                    />
+                  </ng-container>
+                </g>
+
+                <circle
+                  [attr.cx]="center"
+                  [attr.cy]="center"
+                  [attr.r]="radius2"
+                  [attr.stroke]="colorForPerf(worthinessValue)"
+                  [attr.stroke-width]="strokeWidth"
+                  stroke-linecap="round"
+                  fill="none"
+                  [attr.stroke-dasharray]="
+                    progressDasharrayFor(worthinessValue)
+                  "
+                  [attr.stroke-dashoffset]="0"
+                  [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'"
+                  filter="url(#perfGlowRegWorth)"
+                  class="transition-all duration-700 ease-out"
+                ></circle>
+              </svg>
+
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center"
+              >
+                <div
+                  class="text-4xl font-extrabold text-slate-900 dark:text-slate-100"
+                >
+                  {{ worthinessValue | number : "1.0-0" }}%
+                </div>
+                <div
+                  class="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                >
+                  {{ monthFrenchNames[currentMonth] }} {{ currentYear }}
+                </div>
+              </div>
+
+              <div
+                class="absolute -bottom-1.5 right-1 flex items-center gap-1 text-[11px]"
+              >
+                <span
+                  class="inline-block h-2.5 w-2.5 rounded-full"
+                  [ngStyle]="{ background: colorForPerf(worthinessValue) }"
+                ></span>
+                <span class="text-slate-500 dark:text-slate-400"
+                  >Solvabilité</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /Ring -->
+    </div>
   </div>
 </div>
 
 <!-- === COMMENTS === -->
 <section class="bg-white dark:bg-gray-900 py-8 lg:py-16">
   <div class="mx-auto max-w-2xl px-4">
-    <h2 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">Commentaires</h2>
+    <h2 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
+      Commentaires
+    </h2>
 
     <!-- new comment form -->
     <div *ngIf="auth.isAdmin || auth.isDistributor" class="mb-10">
-      <label class="mb-2 block text-sm font-medium text-gray-900 dark:text-white">Nom de l’auteur</label>
-      <input [(ngModel)]="personPostingComment" type="text" class="mb-4 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white" placeholder="Jeanne Kiluwa" />
-      <textarea [(ngModel)]="comment" rows="5" class="mb-4 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white" placeholder="Votre commentaire..."></textarea>
-      <button (click)="addComment()" class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700">Poster</button>
+      <label
+        class="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
+        >Nom de l’auteur</label
+      >
+      <input
+        [(ngModel)]="personPostingComment"
+        type="text"
+        class="mb-4 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+        placeholder="Jeanne Kiluwa"
+      />
+      <textarea
+        [(ngModel)]="comment"
+        rows="5"
+        class="mb-4 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+        placeholder="Votre commentaire..."
+      ></textarea>
+      <button
+        (click)="addComment()"
+        class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700"
+      >
+        Poster
+      </button>
     </div>
 
     <!-- comments list -->
-    <article *ngFor="let c of (comments | slice:0:(auth.isAdmin ? comments.length : 2))" class="relative mb-8 rounded-3xl bg-white p-6 shadow-md dark:bg-gray-800">
-      <span class="absolute inset-y-0 left-0 w-1 rounded-l-3xl bg-gradient-to-b from-green-400 to-green-600"></span>
+    <article
+      *ngFor="
+        let c of comments | slice : 0 : (auth.isAdmin ? comments.length : 2)
+      "
+      class="relative mb-8 rounded-3xl bg-white p-6 shadow-md dark:bg-gray-800"
+    >
+      <span
+        class="absolute inset-y-0 left-0 w-1 rounded-l-3xl bg-gradient-to-b from-green-400 to-green-600"
+      ></span>
       <header class="mb-4 flex items-center">
-        <div class="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-          {{ c.name?.substring(0,2) }}
+        <div
+          class="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+        >
+          {{ c.name?.substring(0, 2) }}
         </div>
         <div class="flex flex-col">
-          <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ c.name }}</p>
-          <time class="text-xs text-gray-500 dark:text-gray-400">{{ c.timeFormatted }}</time>
+          <p class="text-sm font-semibold text-gray-900 dark:text-white">
+            {{ c.name }}
+          </p>
+          <time class="text-xs text-gray-500 dark:text-gray-400">{{
+            c.timeFormatted
+          }}</time>
         </div>
       </header>
       <!-- body -->
-      <blockquote class="relative rounded-2xl bg-gray-50 p-4 italic text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-        <svg aria-hidden="true" class="absolute left-2 top-2 h-5 w-5 text-green-400 opacity-30" fill="currentColor" viewBox="0 0 24 24"><path d="M7.17 15H4.31c.4-2.78 1.5-5.71 3.3-8.79L10 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01zm9 0h-2.86c.4-2.78 1.5-5.71 3.3-8.79L19 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01z"/></svg>
+      <blockquote
+        class="relative rounded-2xl bg-gray-50 p-4 italic text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+      >
+        <svg
+          aria-hidden="true"
+          class="absolute left-2 top-2 h-5 w-5 text-green-400 opacity-30"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M7.17 15H4.31c.4-2.78 1.5-5.71 3.3-8.79L10 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01zm9 0h-2.86c.4-2.78 1.5-5.71 3.3-8.79L19 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01z"
+          />
+        </svg>
         <p class="ml-6 leading-relaxed" *ngIf="c.comment">{{ c.comment }}</p>
-        <div *ngIf="c.audioUrl" class="mt-4 ml-6"><audio [src]="c.audioUrl" controls class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"></audio></div>
+        <div *ngIf="c.audioUrl" class="mt-4 ml-6">
+          <audio
+            [src]="c.audioUrl"
+            controls
+            class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"
+          ></audio>
+        </div>
       </blockquote>
     </article>
   </div>
 </section>
 
 <!-- === AUDIT CONFIRMATION MODAL === -->
-<div *ngIf="showAuditConfirmation" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-  <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-    <h2 class="mb-4 text-center text-lg font-semibold text-red-700">✅ Confirmation de Vérification (Audit)</h2>
+<div
+  *ngIf="showAuditConfirmation"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+>
+  <div
+    class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800"
+  >
+    <h2 class="mb-4 text-center text-lg font-semibold text-red-700">
+      ✅ Confirmation de Vérification (Audit)
+    </h2>
     <p class="mb-4 text-gray-700 dark:text-gray-300">
-      Vous êtes sur le point de valider les informations du client <strong>{{ client.firstName }} {{ client.lastName }}</strong>.
+      Vous êtes sur le point de valider les informations du client
+      <strong>{{ client.firstName }} {{ client.lastName }}</strong
+      >.
     </p>
-    <ul class="mb-4 list-disc space-y-2 pl-5 text-sm text-gray-800 dark:text-gray-200">
-      <li>J’ai rencontré ou parlé directement au client et vérifié les montants.</li>
+    <ul
+      class="mb-4 list-disc space-y-2 pl-5 text-sm text-gray-800 dark:text-gray-200"
+    >
+      <li>
+        J’ai rencontré ou parlé directement au client et vérifié les montants.
+      </li>
       <li>Le client comprend les conditions de remboursement.</li>
-      <li>En cas de non-remboursement prolongé, des mesures policières sont possibles.</li>
+      <li>
+        En cas de non-remboursement prolongé, des mesures policières sont
+        possibles.
+      </li>
       <li>La photo représente bien le lieu d’activité.</li>
     </ul>
-    <p class="mb-4 text-xs font-medium text-red-600">Toute fausse validation peut entraîner des sanctions.</p>
-    <label class="mb-4 flex items-center text-sm text-gray-800 dark:text-gray-200"><input type="checkbox" [(ngModel)]="isConfirmed" class="mr-2 h-5 w-5 rounded border-gray-300 text-green-600" />Je confirme avoir respecté toutes les règles ci-dessus.</label>
+    <p class="mb-4 text-xs font-medium text-red-600">
+      Toute fausse validation peut entraîner des sanctions.
+    </p>
+    <label
+      class="mb-4 flex items-center text-sm text-gray-800 dark:text-gray-200"
+      ><input
+        type="checkbox"
+        [(ngModel)]="isConfirmed"
+        class="mr-2 h-5 w-5 rounded border-gray-300 text-green-600"
+      />Je confirme avoir respecté toutes les règles ci-dessus.</label
+    >
     <div class="flex justify-between">
-      <button (click)="toggle('showAuditConfirmation')" class="rounded bg-gray-300 px-4 py-2 font-semibold text-gray-800 hover:bg-gray-400">Annuler</button>
-      <button [disabled]="!isConfirmed" (click)="setClientFieldAgent('agentVerifyingName', agentVerifyingName)" class="rounded bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50">Continuer</button>
+      <button
+        (click)="toggle('showAuditConfirmation')"
+        class="rounded bg-gray-300 px-4 py-2 font-semibold text-gray-800 hover:bg-gray-400"
+      >
+        Annuler
+      </button>
+      <button
+        [disabled]="!isConfirmed"
+        (click)="setClientFieldAgent('agentVerifyingName', agentVerifyingName)"
+        class="rounded bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+      >
+        Continuer
+      </button>
     </div>
   </div>
 </div>
 
 <!-- === REFUND MODAL === -->
-<div *ngIf="showRefundDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-  <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-    <h2 class="mb-4 text-center text-lg font-semibold text-red-700">Sélectionnez la date de remboursement</h2>
-    <label class="mb-2 block text-sm text-gray-700 dark:text-gray-200">Date souhaitée :</label>
-    <input type="date" class="mb-6 w-full rounded border p-2" [(ngModel)]="selectedReturnDate" [min]="minReturnDate" />
+<div
+  *ngIf="showRefundDialog"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+>
+  <div
+    class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800"
+  >
+    <h2 class="mb-4 text-center text-lg font-semibold text-red-700">
+      Sélectionnez la date de remboursement
+    </h2>
+    <label class="mb-2 block text-sm text-gray-700 dark:text-gray-200"
+      >Date souhaitée :</label
+    >
+    <input
+      type="date"
+      class="mb-6 w-full rounded border p-2"
+      [(ngModel)]="selectedReturnDate"
+      [min]="minReturnDate"
+    />
     <div class="flex justify-between">
-      <button (click)="showRefundDialog = false" class="rounded bg-gray-300 px-4 py-2 font-semibold text-gray-800 hover:bg-gray-400">Annuler</button>
-      <button (click)="confirmRequestCancel(client)" [disabled]="!selectedReturnDate" class="rounded bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50">Confirmer</button>
+      <button
+        (click)="showRefundDialog = false"
+        class="rounded bg-gray-300 px-4 py-2 font-semibold text-gray-800 hover:bg-gray-400"
+      >
+        Annuler
+      </button>
+      <button
+        (click)="confirmRequestCancel(client)"
+        [disabled]="!selectedReturnDate"
+        class="rounded bg-green-600 px-4 py-2 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+      >
+        Confirmer
+      </button>
     </div>
   </div>
 </div>

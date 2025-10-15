@@ -15,6 +15,62 @@ import { Audit } from 'src/app/models/management';
   styleUrls: ['./register-portal.component.css'],
 })
 export class RegiserPortalComponent {
+  // === Performance Ring shared state ===
+  size = 260;
+  strokeWidth = 16;
+  center = this.size / 2;
+  radius2 = this.center - this.strokeWidth / 2;
+
+  // unique gradient IDs for the two rings
+  gradIdCredit = `gradPerfRingC-${Math.random().toString(36).slice(2)}`;
+  gradIdWorth = `gradPerfRingW-${Math.random().toString(36).slice(2)}`;
+
+  // tick angles (every 10%)
+  ticks: number[] = Array.from({ length: 10 }, (_, i) => i * 36);
+
+  // Month/Year label
+  currentMonth = new Date().getMonth();
+  currentYear = new Date().getFullYear();
+  monthFrenchNames = [
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ];
+
+  // Clamp + compute stroke dasharray for any value
+  progressDasharrayFor(val: number): string {
+    const v = Math.max(0, Math.min(100, val ?? 0));
+    const c = 2 * Math.PI * this.radius2;
+    const filled = c * (v / 100);
+    return `${filled} ${c - filled}`;
+  }
+
+  // Use ComputationService's gradient
+  colorForPerf(v: number): string {
+    const clamped = Math.max(0, Math.min(100, v ?? 0));
+    return this.compute.getGradientColor(clamped);
+  }
+
+  // Convenient getters for values
+  get creditScoreValue(): number {
+    const raw = Number(this.client?.creditScore);
+    return Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
+  }
+
+  get worthinessValue(): number {
+    const raw = Number(this.client?.creditworthinessScore);
+    return Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
+  }
+
   client = new Client();
   minPay = '';
   employees: Employee[] = [];
