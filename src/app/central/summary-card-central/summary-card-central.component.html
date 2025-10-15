@@ -92,25 +92,25 @@
           />
         </div>
 
-        <!-- optional: min monthly contribution (best-effort if data exists) -->
+        <!-- min amountToPay -->
         <div class="flex items-center gap-2">
           <label class="text-xs text-slate-500 dark:text-slate-400"
-            >Min/mois</label
+            >Min à payer</label
           >
           <input
             type="number"
             min="0"
             step="1000"
-            [(ngModel)]="minMonthly"
+            [(ngModel)]="minAmountToPay"
             (input)="applyCardsFilters()"
             class="w-24 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-800 px-2 py-1 text-sm text-slate-900 dark:text-slate-100"
           />
           <input
             type="range"
             min="0"
-            max="500000"
+            max="2000000"
             step="5000"
-            [(ngModel)]="minMonthly"
+            [(ngModel)]="minAmountToPay"
             (input)="applyCardsFilters()"
           />
         </div>
@@ -200,10 +200,10 @@
                 >
                   <span>{{ formatDisplayPhone($any(c).phoneNumber) }} </span>
                   <span
-                    *ngIf="monthlyContribution(c) > 0"
+                    *ngIf="amountToPay($any(c)) > 0"
                     class="inline-flex items-center gap-1"
                   >
-                    • ≈ {{ toFcDisplay(monthlyContribution(c)) }} FC/mois
+                    • {{ toFcDisplay(amountToPay($any(c))) }} FC à payer
                   </span>
                 </div>
               </div>
@@ -372,25 +372,24 @@
         <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
           Critères
         </h4>
-
         <label class="mt-3 block text-xs text-gray-500 dark:text-gray-400"
-          >Min/mois (si renseigné)</label
+          >Min à payer</label
         >
         <div class="mt-1 flex items-center gap-2">
           <input
             type="number"
             min="0"
             step="1000"
-            [(ngModel)]="minMonthly"
+            [(ngModel)]="minAmountToPay"
             (input)="updateCardBulkRecipients()"
             class="w-24 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-700 px-2 py-1 text-sm text-gray-900 dark:text-gray-100"
           />
           <input
             type="range"
             min="0"
-            max="500000"
+            max="2000000"
             step="5000"
-            [(ngModel)]="minMonthly"
+            [(ngModel)]="minAmountToPay"
             (input)="updateCardBulkRecipients()"
           />
         </div>

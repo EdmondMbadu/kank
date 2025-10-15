@@ -63,7 +63,8 @@ export class SummaryCardCentralComponent {
   cardsAll: Card[] = [];
   cardsFiltered: Card[] = [];
   cardsSearchControl = new FormControl('');
-  minMonthly = 0; // optional filter (best effort)
+
+  minAmountToPay = 0; // ✅ new filter on Card.amountToPay
 
   cardUniqueLocations: string[] = [];
   cardSelectedLocations = new Set<string>();
@@ -239,13 +240,13 @@ export class SummaryCardCentralComponent {
       this.cardSelectedLocations.has(c.locationName || '')
     );
 
-    // optional: best-effort monthly filter (works if data fields exist)
-    const withMonthly = base.filter(
-      (c) => this.monthlyContribution(c) >= (Number(this.minMonthly) || 0)
+    // ✅ filter by amountToPay
+    const withMin = base.filter(
+      (c) => this.amountToPay(c) >= (Number(this.minAmountToPay) || 0)
     );
 
     // require a valid phone
-    const withPhone = withMonthly.filter(
+    const withPhone = withMin.filter(
       (c) =>
         !!(
           c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
@@ -260,6 +261,10 @@ export class SummaryCardCentralComponent {
               .includes(term) || (c.phoneNumber || '').includes(term)
         )
       : (withPhone as Card[]);
+  }
+
+  amountToPay(c: any): number {
+    return Number(c?.amountToPay ?? 0);
   }
 
   // ======== SINGLE SMS (CARDS) =========
@@ -294,7 +299,7 @@ export class SummaryCardCentralComponent {
     const loc = c.locationName || 'site';
     // MAX_AMOUNT is fixed to 400,000 FC for cards clients
     return `Mbote ${c.firstName || ''} ${c.lastName || ''},
-To moni ozali kosalela CARTE (épargne) na FONDATION GERVAIS. 
+To moni ozali kosalela CARTE na FONDATION GERVAIS. 
 Soki olingi kobanda kozua crédit ya liboso, tokoki kopesa yo {{MAX_AMOUNT}} FC. 
 Kende na FONDATION GERVAIS location {{LOCATION_NAME}}.
 Merci pona confiance na FONDATION GERVAIS`;
