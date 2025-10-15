@@ -33,7 +33,7 @@ export class SummaryCardCentralComponent {
   ) {}
 
   // Tri-state filter for finished cards
-  doneFilter: 'exclude' | 'only' | 'all' = 'exclude';
+  doneFilter: 'exclude' | 'only' | 'all' = 'all';
 
   cycleDoneFilter() {
     this.doneFilter =
