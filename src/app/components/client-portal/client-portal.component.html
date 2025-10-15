@@ -613,895 +613,972 @@
         <div
           class="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm backdrop-blur-md dark:border-slate-700 dark:from-slate-900 dark:to-slate-900/80"
         >
-          <div class="relative flex items-center justify-center">
-            <svg
-              [attr.width]="size"
-              [attr.height]="size"
-              [attr.viewBox]="'0 0 ' + size + ' ' + size"
-              class="drop-shadow-sm"
-            >
-              <defs>
-                <!-- subtle glow -->
-                <filter
-                  id="perfGlow"
-                  x="-50%"
-                  y="-50%"
-                  width="200%"
-                  height="200%"
-                >
-                  <feGaussianBlur stdDeviation="3.5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-
-                <!-- very faint trail gradient -->
-                <linearGradient
-                  [attr.id]="gradId"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stop-color="#e5e7eb" />
-                  <stop offset="100%" stop-color="#cbd5e1" />
-                </linearGradient>
-              </defs>
-
-              <!-- background ring -->
-              <circle
-                [attr.cx]="center"
-                [attr.cy]="center"
-                [attr.r]="radius2"
-                [attr.stroke]="'url(#' + gradId + ')'"
-                [attr.stroke-width]="strokeWidth"
-                fill="none"
-              ></circle>
-
-              <!-- tick marks (every 10%) -->
-              <g [attr.transform]="'translate(' + center + ',' + center + ')'">
-                <ng-container *ngFor="let t of ticks">
-                  <line
-                    [attr.x1]="0"
-                    [attr.y1]="-radius2"
-                    [attr.x2]="0"
-                    [attr.y2]="-radius2 + 8"
-                    stroke="#c7d2fe"
-                    stroke-width="2"
-                    [attr.transform]="'rotate(' + t + ')'"
-                    class="opacity-50 dark:opacity-40"
-                  />
-                </ng-container>
-              </g>
-
-              <!-- progress arc -->
-              <circle
-                [attr.cx]="center"
-                [attr.cy]="center"
-                [attr.r]="radius2"
-                [attr.stroke]="colorForPerf(avgPerf)"
-                [attr.stroke-width]="strokeWidth"
-                stroke-linecap="round"
-                fill="none"
-                [attr.stroke-dasharray]="progressDasharray()"
-                [attr.stroke-dashoffset]="0"
-                [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'"
-                filter="url(#perfGlow)"
-                class="transition-all duration-700 ease-out"
-              ></circle>
-            </svg>
-
-            <!-- center labels -->
-            <div
-              class="absolute inset-0 flex flex-col items-center justify-center"
-            >
-              <div
-                class="text-4xl font-extrabold text-slate-900 dark:text-slate-100"
-              >
-                {{ avgPerf | number : "1.0-0" }}%
-              </div>
-              <div
-                class="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
-              >
-                {{ monthFrenchNames[currentMonth] }} {{ currentYear }}
-              </div>
-            </div>
-
-            <!-- tiny status chip -->
-            <div
-              class="absolute -bottom-1.5 right-1 flex items-center gap-1 text-[11px]"
-            >
-              <span
-                class="inline-block h-2.5 w-2.5 rounded-full"
-                [ngStyle]="{ background: colorForPerf(avgPerf) }"
-              ></span>
-              <span class="text-slate-500 dark:text-slate-400"
-                >Score crédit</span
-              >
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- /PERFORMANCE RING -->
-  </div>
-</div>
-<!-- ==== /END ==== -->
-
-<div *ngIf="this.auth.isAdmin" class="container mx-auto p-4">
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-    <!-- Montant Emprunter -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Montant Emprunter
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ loanAmount }}</strong>
-      </p>
-      <input
-        [(ngModel)]="loanAmount"
-        type="number"
-        placeholder="Entrez le budget"
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('loanAmount', loanAmount)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-
-    <!-- Montant Restant -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Montant Restant
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ debtLeft }}</strong>
-      </p>
-      <input
-        [(ngModel)]="debtLeft"
-        type="number"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('debtLeft', debtLeft)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Montant A Payer
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ amountToPay }}</strong>
-      </p>
-      <input
-        [(ngModel)]="amountToPay"
-        type="number"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('amountToPay', amountToPay)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Montant Percu
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ amountPaid }}</strong>
-      </p>
-      <input
-        [(ngModel)]="amountPaid"
-        type="number"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('amountPaid', amountPaid)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Nombre Des Paiements Percu
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ numberOfPaymentsMade }}</strong>
-      </p>
-      <input
-        [(ngModel)]="numberOfPaymentsMade"
-        type="number"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('numberOfPaymentsMade', numberOfPaymentsMade)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Nombre Des Semaine Pour Payer
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ paymentPeriodRange }}</strong>
-      </p>
-      <input
-        [(ngModel)]="paymentPeriodRange"
-        type="number"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('paymentPeriodRange', paymentPeriodRange)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-
-    <!-- Montant Restant -->
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Epargnes
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ debtLeft }}</strong>
-      </p>
-      <input
-        [(ngModel)]="savings"
-        type="number"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('savings', savings)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Score Credit
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ creditScore }}</strong>
-      </p>
-      <input
-        [(ngModel)]="creditScore"
-        type="number"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('creditScore', creditScore)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-        Is Phone Number Correct
-      </h2>
-      <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-        Valeur actuelle: <strong>{{ isPhoneNumberCorrect }}</strong>
-      </p>
-      <input
-        [(ngModel)]="isPhoneNumberCorrect"
-        type="text"
-        placeholder=""
-        class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-      />
-      <button
-        (click)="setClientField('isPhoneCorrect', isPhoneNumberCorrect, true)"
-        class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
-      >
-        Confirmer
-      </button>
-    </div>
-  </div>
-</div>
-
-<section class="bg-white dark:bg-gray-900 py-8 lg:py-16 antialiased">
-  <div class="max-w-2xl mx-auto px-4">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
-        Commentaires...
-      </h2>
-    </div>
-    <div class="mb-6">
-      <div class="my-2">
-        <label
-          for="first_name"
-          class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-          >Nom de la Person qui poste</label
-        >
-        <input
-          [(ngModel)]="personPostingComment"
-          type="text"
-          id="first_name"
-          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-          placeholder="Jeanne Kiluwa"
-          required
-        />
-      </div>
-      <div
-        class="py-2 px-4 mb-4 bg-white rounded-lg rounded-t-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
-      >
-        <label for="comment" class="sr-only">Your comment</label>
-        <textarea
-          [(ngModel)]="comment"
-          id="comment"
-          rows="6"
-          class="px-0 w-full text-sm text-gray-900 border-0 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-gray-400 dark:bg-gray-800"
-          placeholder="Les détails sur les raisons pour lesquelles le client ne paie pas..."
-          required
-        ></textarea>
-      </div>
-      <div class="flex flex-wrap gap-4 justify-center mb-4">
-        <!-- Start Recording Button -->
-        <button
-          (click)="startRecording()"
-          [disabled]="isRecording"
-          class="flex items-center justify-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#1e90ff"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="mr-2"
-          >
-            <path
-              d="M12 1a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
-            ></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" y1="19" x2="12" y2="23"></line>
-            <line x1="8" y1="23" x2="16" y2="23"></line>
-          </svg>
-          <span class="text-sm font-medium text-blue-700">Commencer </span>
-        </button>
-
-        <!-- Stop Recording Button -->
-        <button
-          (click)="stopRecording()"
-          [disabled]="!isRecording"
-          class="flex items-center justify-center p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#ff0000"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="mr-2"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-          </svg>
-          <span class="text-sm font-medium text-red-700"> Arrêter </span>
-        </button>
-
-        <!-- Discard / Cancel Button -->
-        <button
-          (click)="discardAudio()"
-          [disabled]="!recordedAudioURL && !selectedAudioPreviewURL"
-          class="flex items-center justify-center p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#ff4500"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="mr-2"
-          >
-            <path d="M3 6h18"></path>
-            <path
-              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4
-                     a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-            ></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
-          </svg>
-          <span class="text-sm font-medium text-orange-700">Annuler</span>
-        </button>
-      </div>
-
-      <!-- Recording Progress and Timer -->
-      <!-- Recording Progress and Timer -->
-      <div *ngIf="isRecording" class="my-4">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-sm font-medium text-gray-700"
-            >Enregistrement en cours...</span
-          >
-          <span class="text-sm font-medium text-gray-700">{{
-            elapsedTime
-          }}</span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
           <div
-            class="bg-blue-600 h-2.5 rounded-full"
-            [style.width.%]="getLimitedProgress()"
-          ></div>
-        </div>
-      </div>
-
-      <!-- for IOS -->
-      <div *ngIf="selectedAudioPreviewURL" class="my-3">
-        <p>Aperçu de votre fichier audio</p>
-        <audio [src]="selectedAudioPreviewURL" controls></audio>
-      </div>
-      <!-- Audio Preview Section -->
-      <div class="my-6" *ngIf="recordedAudioURL">
-        <p class="text-sm font-medium text-gray-700 mb-2">
-          Aperçu de votre enregistrement:
-        </p>
-        <div
-          class="flex items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200"
-        >
-          <audio
-            [src]="recordedAudioURL"
-            controls
-            class="w-full max-w-md"
-          ></audio>
-        </div>
-      </div>
-
-      <!-- Audio File Upload Section -->
-      <div class="my-6">
-        <label
-          for="audioFile"
-          class="block text-sm font-medium text-gray-700 mb-2"
-        >
-          Téléverser un fichier audio (optionnel)
-        </label>
-        <div class="flex items-center justify-center w-full">
-          <label
-            for="audioFile"
-            class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
+            class="w-full rounded-3xl bg-white/70 p-6 shadow-lg ring-1 ring-gray-200 backdrop-blur dark:bg-gray-800/70 dark:ring-gray-700"
           >
-            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-              <!-- Microphone icon -->
+            <!-- Title -->
+            <h3
+              class="mb-4 text-center text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100"
+            >
+              Client Score Credit
+            </h3>
+
+            <div class="relative flex items-center justify-center">
               <svg
-                class="w-8 h-8 mb-2 text-gray-500"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                [attr.width]="size"
+                [attr.height]="size"
+                [attr.viewBox]="'0 0 ' + size + ' ' + size"
+                class="drop-shadow-sm"
               >
-                <!-- mic capsule -->
-                <rect x="9" y="2" width="6" height="12" rx="3"></rect>
-                <!-- arms -->
-                <path d="M5 10v2a7 7 0 0 0 14 0v-2"></path>
-                <!-- stand -->
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
+                <defs>
+                  <!-- subtle glow -->
+                  <filter
+                    id="perfGlow"
+                    x="-50%"
+                    y="-50%"
+                    width="200%"
+                    height="200%"
+                  >
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+
+                  <!-- very faint trail gradient -->
+                  <linearGradient
+                    [attr.id]="gradId"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="0%" stop-color="#e5e7eb" />
+                    <stop offset="100%" stop-color="#cbd5e1" />
+                  </linearGradient>
+                </defs>
+
+                <!-- background ring -->
+                <circle
+                  [attr.cx]="center"
+                  [attr.cy]="center"
+                  [attr.r]="radius2"
+                  [attr.stroke]="'url(#' + gradId + ')'"
+                  [attr.stroke-width]="strokeWidth"
+                  fill="none"
+                ></circle>
+
+                <!-- tick marks (every 10%) -->
+                <g
+                  [attr.transform]="'translate(' + center + ',' + center + ')'"
+                >
+                  <ng-container *ngFor="let t of ticks">
+                    <line
+                      [attr.x1]="0"
+                      [attr.y1]="-radius2"
+                      [attr.x2]="0"
+                      [attr.y2]="-radius2 + 8"
+                      stroke="#c7d2fe"
+                      stroke-width="2"
+                      [attr.transform]="'rotate(' + t + ')'"
+                      class="opacity-50 dark:opacity-40"
+                    />
+                  </ng-container>
+                </g>
+
+                <!-- progress arc -->
+                <circle
+                  [attr.cx]="center"
+                  [attr.cy]="center"
+                  [attr.r]="radius2"
+                  [attr.stroke]="colorForPerf(avgPerf)"
+                  [attr.stroke-width]="strokeWidth"
+                  stroke-linecap="round"
+                  fill="none"
+                  [attr.stroke-dasharray]="progressDasharray()"
+                  [attr.stroke-dashoffset]="0"
+                  [attr.transform]="'rotate(-90 ' + center + ' ' + center + ')'"
+                  filter="url(#perfGlow)"
+                  class="transition-all duration-700 ease-out"
+                ></circle>
               </svg>
 
-              <p class="text-sm text-gray-500">
-                <span class="font-semibold">Cliquez pour ajouter un audio</span>
-                ou glissez-déposez un fichier
+              <!-- center labels -->
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center"
+              >
+                <div
+                  class="text-4xl font-extrabold text-slate-900 dark:text-slate-100"
+                >
+                  {{ avgPerf | number : "1.0-0" }}%
+                </div>
+                <div
+                  class="mt-1 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                >
+                  {{ monthFrenchNames[currentMonth] }} {{ currentYear }}
+                </div>
+              </div>
+
+              <!-- tiny status chip -->
+              <div
+                class="absolute -bottom-1.5 right-1 flex items-center gap-1 text-[11px]"
+              >
+                <span
+                  class="inline-block h-2.5 w-2.5 rounded-full"
+                  [ngStyle]="{ background: colorForPerf(avgPerf) }"
+                ></span>
+                <span class="text-slate-500 dark:text-slate-400"
+                  >Score crédit</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==== /END ==== -->
+
+        <div *ngIf="this.auth.isAdmin" class="container mx-auto p-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            <!-- Montant Emprunter -->
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Montant Emprunter
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ loanAmount }}</strong>
               </p>
-              <p class="text-xs text-gray-500">
-                Format supporté: audio (MP3, WAV, etc.)
+              <input
+                [(ngModel)]="loanAmount"
+                type="number"
+                placeholder="Entrez le budget"
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="setClientField('loanAmount', loanAmount)"
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+
+            <!-- Montant Restant -->
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Montant Restant
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ debtLeft }}</strong>
               </p>
+              <input
+                [(ngModel)]="debtLeft"
+                type="number"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="setClientField('debtLeft', debtLeft)"
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
             </div>
 
-            <input
-              type="file"
-              id="audioFile"
-              accept=".m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*"
-              (change)="onAudioFileSelected($any($event.target).files)"
-              class="hidden"
-            />
-          </label>
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Montant A Payer
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ amountToPay }}</strong>
+              </p>
+              <input
+                [(ngModel)]="amountToPay"
+                type="number"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="setClientField('amountToPay', amountToPay)"
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Montant Percu
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ amountPaid }}</strong>
+              </p>
+              <input
+                [(ngModel)]="amountPaid"
+                type="number"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="setClientField('amountPaid', amountPaid)"
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Nombre Des Paiements Percu
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ numberOfPaymentsMade }}</strong>
+              </p>
+              <input
+                [(ngModel)]="numberOfPaymentsMade"
+                type="number"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="
+                  setClientField('numberOfPaymentsMade', numberOfPaymentsMade)
+                "
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Nombre Des Semaine Pour Payer
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ paymentPeriodRange }}</strong>
+              </p>
+              <input
+                [(ngModel)]="paymentPeriodRange"
+                type="number"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="
+                  setClientField('paymentPeriodRange', paymentPeriodRange)
+                "
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+
+            <!-- Montant Restant -->
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Epargnes
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ debtLeft }}</strong>
+              </p>
+              <input
+                [(ngModel)]="savings"
+                type="number"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="setClientField('savings', savings)"
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Score Credit
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ creditScore }}</strong>
+              </p>
+              <input
+                [(ngModel)]="creditScore"
+                type="number"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="setClientField('creditScore', creditScore)"
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4">
+              <h2
+                class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+              >
+                Is Phone Number Correct
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                Valeur actuelle: <strong>{{ isPhoneNumberCorrect }}</strong>
+              </p>
+              <input
+                [(ngModel)]="isPhoneNumberCorrect"
+                type="text"
+                placeholder=""
+                class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+              <button
+                (click)="
+                  setClientField('isPhoneCorrect', isPhoneNumberCorrect, true)
+                "
+                class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Attach images / videos -->
-      <div class="my-6 grid gap-4 md:grid-cols-2">
-        <!-- Image picker -->
-        <label
-          for="imageFile"
-          class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
-        >
-          <div class="flex flex-col items-center justify-center pt-5 pb-6">
-            <!-- Picture / Image icon -->
-            <svg
-              class="w-8 h-8 mb-2 text-gray-500"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+        <section class="bg-white dark:bg-gray-900 py-8 lg:py-16 antialiased">
+          <div class="max-w-2xl mx-auto px-4">
+            <div class="flex justify-between items-center mb-6">
+              <h2
+                class="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                Commentaires...
+              </h2>
+            </div>
+            <div class="mb-6">
+              <div class="my-2">
+                <label
+                  for="first_name"
+                  class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >Nom de la Person qui poste</label
+                >
+                <input
+                  [(ngModel)]="personPostingComment"
+                  type="text"
+                  id="first_name"
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                  placeholder="Jeanne Kiluwa"
+                  required
+                />
+              </div>
+              <div
+                class="py-2 px-4 mb-4 bg-white rounded-lg rounded-t-lg border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+              >
+                <label for="comment" class="sr-only">Your comment</label>
+                <textarea
+                  [(ngModel)]="comment"
+                  id="comment"
+                  rows="6"
+                  class="px-0 w-full text-sm text-gray-900 border-0 focus:ring-0 focus:outline-none dark:text-white dark:placeholder-gray-400 dark:bg-gray-800"
+                  placeholder="Les détails sur les raisons pour lesquelles le client ne paie pas..."
+                  required
+                ></textarea>
+              </div>
+              <div class="flex flex-wrap gap-4 justify-center mb-4">
+                <!-- Start Recording Button -->
+                <button
+                  (click)="startRecording()"
+                  [disabled]="isRecording"
+                  class="flex items-center justify-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#1e90ff"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="mr-2"
+                  >
+                    <path
+                      d="M12 1a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                    ></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                  <span class="text-sm font-medium text-blue-700"
+                    >Commencer
+                  </span>
+                </button>
+
+                <!-- Stop Recording Button -->
+                <button
+                  (click)="stopRecording()"
+                  [disabled]="!isRecording"
+                  class="flex items-center justify-center p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ff0000"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="mr-2"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                  <span class="text-sm font-medium text-red-700">
+                    Arrêter
+                  </span>
+                </button>
+
+                <!-- Discard / Cancel Button -->
+                <button
+                  (click)="discardAudio()"
+                  [disabled]="!recordedAudioURL && !selectedAudioPreviewURL"
+                  class="flex items-center justify-center p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ff4500"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="mr-2"
+                  >
+                    <path d="M3 6h18"></path>
+                    <path
+                      d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4
+                     a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    ></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                  </svg>
+                  <span class="text-sm font-medium text-orange-700"
+                    >Annuler</span
+                  >
+                </button>
+              </div>
+
+              <!-- Recording Progress and Timer -->
+              <!-- Recording Progress and Timer -->
+              <div *ngIf="isRecording" class="my-4">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium text-gray-700"
+                    >Enregistrement en cours...</span
+                  >
+                  <span class="text-sm font-medium text-gray-700">{{
+                    elapsedTime
+                  }}</span>
+                </div>
+                <div
+                  class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700"
+                >
+                  <div
+                    class="bg-blue-600 h-2.5 rounded-full"
+                    [style.width.%]="getLimitedProgress()"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- for IOS -->
+              <div *ngIf="selectedAudioPreviewURL" class="my-3">
+                <p>Aperçu de votre fichier audio</p>
+                <audio [src]="selectedAudioPreviewURL" controls></audio>
+              </div>
+              <!-- Audio Preview Section -->
+              <div class="my-6" *ngIf="recordedAudioURL">
+                <p class="text-sm font-medium text-gray-700 mb-2">
+                  Aperçu de votre enregistrement:
+                </p>
+                <div
+                  class="flex items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200"
+                >
+                  <audio
+                    [src]="recordedAudioURL"
+                    controls
+                    class="w-full max-w-md"
+                  ></audio>
+                </div>
+              </div>
+
+              <!-- Audio File Upload Section -->
+              <div class="my-6">
+                <label
+                  for="audioFile"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Téléverser un fichier audio (optionnel)
+                </label>
+                <div class="flex items-center justify-center w-full">
+                  <label
+                    for="audioFile"
+                    class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
+                  >
+                    <div
+                      class="flex flex-col items-center justify-center pt-5 pb-6"
+                    >
+                      <!-- Microphone icon -->
+                      <svg
+                        class="w-8 h-8 mb-2 text-gray-500"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <!-- mic capsule -->
+                        <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+                        <!-- arms -->
+                        <path d="M5 10v2a7 7 0 0 0 14 0v-2"></path>
+                        <!-- stand -->
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                      </svg>
+
+                      <p class="text-sm text-gray-500">
+                        <span class="font-semibold"
+                          >Cliquez pour ajouter un audio</span
+                        >
+                        ou glissez-déposez un fichier
+                      </p>
+                      <p class="text-xs text-gray-500">
+                        Format supporté: audio (MP3, WAV, etc.)
+                      </p>
+                    </div>
+
+                    <input
+                      type="file"
+                      id="audioFile"
+                      accept=".m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*"
+                      (change)="onAudioFileSelected($any($event.target).files)"
+                      class="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Attach images / videos -->
+              <div class="my-6 grid gap-4 md:grid-cols-2">
+                <!-- Image picker -->
+                <label
+                  for="imageFile"
+                  class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  <div
+                    class="flex flex-col items-center justify-center pt-5 pb-6"
+                  >
+                    <!-- Picture / Image icon -->
+                    <svg
+                      class="w-8 h-8 mb-2 text-gray-500"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <!-- frame -->
+                      <rect
+                        x="3"
+                        y="5"
+                        width="18"
+                        height="14"
+                        rx="2"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      />
+                      <!-- sun -->
+                      <circle cx="16" cy="10" r="2" fill="currentColor" />
+                      <!-- mountains -->
+                      <path
+                        d="M7 17l3.8-3.8a1 1 0 0 1 1.4 0L15 16l2-2 3 3H7z"
+                        fill="currentColor"
+                      />
+                    </svg>
+
+                    <p class="text-sm text-gray-500">
+                      <span class="font-semibold">Ajouter une image</span> (JPG,
+                      PNG, HEIC…)
+                    </p>
+                    <p class="text-xs text-gray-500">Max 10&nbsp;MB</p>
+                  </div>
+
+                  <input
+                    id="imageFile"
+                    type="file"
+                    accept="image/*"
+                    (change)="onImageSelected($any($event.target).files)"
+                    class="hidden"
+                  />
+                </label>
+
+                <!-- Video picker -->
+                <label
+                  for="videoFile"
+                  class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  <div
+                    class="flex flex-col items-center justify-center pt-5 pb-6"
+                  >
+                    <svg
+                      class="w-8 h-8 mb-2 text-gray-500"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <rect
+                        x="3"
+                        y="6"
+                        width="12"
+                        height="12"
+                        rx="2"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      />
+                    </svg>
+                    <p class="text-sm text-gray-500">
+                      <span class="font-semibold">Ajouter une vidéo</span> (MP4,
+                      MOV…)
+                    </p>
+                    <p class="text-xs text-gray-500">Max 100&nbsp;MB</p>
+                  </div>
+                  <input
+                    id="videoFile"
+                    type="file"
+                    accept="video/*"
+                    (change)="onVideoSelected($any($event.target).files)"
+                    class="hidden"
+                  />
+                </label>
+              </div>
+
+              <!-- Image preview + exact capture time -->
+              <div
+                *ngIf="selectedImagePreviewURL"
+                class="my-3 rounded-lg border p-3 bg-gray-50"
+              >
+                <div class="flex items-start gap-4">
+                  <img
+                    [src]="selectedImagePreviewURL"
+                    class="h-24 w-24 object-cover rounded-lg shadow"
+                  />
+                  <div class="text-sm text-gray-700">
+                    <div *ngIf="imageCaptureTimeISO">
+                      <strong>Prise le&nbsp;:</strong>
+                      {{ formatISOToDRC(imageCaptureTimeISO) }}
+                      <span class="text-gray-400"
+                        >({{ imageCaptureTimeSource }})</span
+                      >
+                    </div>
+                    <div *ngIf="imageMetaWH?.width">
+                      <strong>Taille&nbsp;:</strong> {{ imageMetaWH?.width }}×{{
+                        imageMetaWH?.height
+                      }}
+                      px
+                    </div>
+                    <div *ngIf="imageGPS">
+                      <strong>GPS&nbsp;:</strong> {{ imageGPS.lat }},
+                      {{ imageGPS.lng }}
+                    </div>
+                    <button
+                      type="button"
+                      (click)="clearSelectedImage()"
+                      class="mt-2 inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200"
+                    >
+                      Retirer l’image
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Video preview + exact capture time -->
+              <div
+                *ngIf="selectedVideoPreviewURL"
+                class="my-3 rounded-lg border p-3 bg-gray-50"
+              >
+                <div class="flex flex-col gap-2">
+                  <video
+                    [src]="selectedVideoPreviewURL"
+                    controls
+                    class="w-full max-w-md rounded-lg shadow"
+                  ></video>
+                  <div class="text-sm text-gray-700">
+                    <div *ngIf="videoCaptureTimeISO">
+                      <strong>Filmé le&nbsp;:</strong>
+                      {{ formatISOToDRC(videoCaptureTimeISO) }}
+                      <span class="text-gray-400"
+                        >({{ videoCaptureTimeSource }})</span
+                      >
+                    </div>
+                    <div *ngIf="videoMeta?.width">
+                      <strong>Taille&nbsp;:</strong> {{ videoMeta!.width }}×{{
+                        videoMeta!.height
+                      }}
+                      px
+                    </div>
+                    <div *ngIf="videoMeta?.durationSec">
+                      <strong>Durée&nbsp;:</strong>
+                      {{ videoMeta!.durationSec | number : "1.0-0" }} s
+                    </div>
+                    <button
+                      type="button"
+                      (click)="clearSelectedVideo()"
+                      class="mt-2 inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200"
+                    >
+                      Retirer la vidéo
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                (click)="addCommentWithAudioFile()"
+                type="button"
+                class="inline-flex items-center gap-2 py-2.5 px-4 text-xs font-medium text-white bg-green-700 rounded-lg focus:ring-4 focus:ring-green-200 dark:focus:ring-green-900 hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                [disabled]="isPosting"
+                aria-live="polite"
+              >
+                <!-- spinner while posting -->
+                <svg
+                  *ngIf="isPosting"
+                  class="h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    d="M4 12a8 8 0 018-8"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                  ></path>
+                </svg>
+                <span>{{ isPosting ? "Envoi…" : "Poster commentaire" }}</span>
+              </button>
+            </div>
+            <!--  modern block-quote style for each comment  -->
+            <article
+              *ngFor="
+                let c of comments
+                  | slice : 0 : (auth.isAdmin ? comments.length : 2);
+                let i = index
+              "
+              class="relative mx-auto mb-6 max-w-2xl rounded-3xl bg-white shadow-lg dark:bg-gray-800"
             >
-              <!-- frame -->
-              <rect
-                x="3"
-                y="5"
-                width="18"
-                height="14"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              />
-              <!-- sun -->
-              <circle cx="16" cy="10" r="2" fill="currentColor" />
-              <!-- mountains -->
-              <path
-                d="M7 17l3.8-3.8a1 1 0 0 1 1.4 0L15 16l2-2 3 3H7z"
-                fill="currentColor"
-              />
-            </svg>
+              <!-- decorative left ribbon  -->
+              <span
+                class="absolute inset-y-0 left-0 w-1 rounded-l-3xl bg-gradient-to-b from-green-400 to-green-600"
+              ></span>
 
-            <p class="text-sm text-gray-500">
-              <span class="font-semibold">Ajouter une image</span> (JPG, PNG,
-              HEIC…)
-            </p>
-            <p class="text-xs text-gray-500">Max 10&nbsp;MB</p>
+              <header class="flex items-center px-6 pt-5">
+                <!-- avatar -->
+                <div
+                  class="mr-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                >
+                  <span class="font-medium text-gray-600 dark:text-gray-300">
+                    {{ c.name?.substring(0, 2) }}
+                  </span>
+                </div>
+
+                <!-- name & date -->
+                <div class="flex flex-col">
+                  <p
+                    class="text-sm font-semibold text-gray-900 dark:text-white"
+                  >
+                    {{ c.name }}
+                  </p>
+                  <time
+                    [attr.datetime]="c['timeISO'] ?? ''"
+                    class="text-xs text-gray-500 dark:text-gray-400"
+                  >
+                    {{ c.timeFormatted }}
+                  </time>
+                </div>
+              </header>
+
+              <!-- comment body -->
+              <blockquote
+                class="relative mt-4 rounded-b-3xl bg-gray-50 px-6 pb-6 pt-4 italic text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+              >
+                <!-- quotation mark decoration -->
+                <svg
+                  aria-hidden="true"
+                  class="absolute left-3 top-3 h-5 w-5 text-green-400 opacity-30"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M7.17 15H4.31c.4-2.78 1.5-5.71 3.3-8.79L10 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01zm9 0h-2.86c.4-2.78 1.5-5.71 3.3-8.79L19 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01z"
+                  />
+                </svg>
+
+                <p class="ml-6 leading-relaxed" *ngIf="c.comment">
+                  {{ c.comment }}
+                </p>
+
+                <!-- audio (if any) -->
+                <div *ngIf="c.audioUrl" class="mt-4 ml-6">
+                  <audio
+                    [src]="c.audioUrl"
+                    controls
+                    class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"
+                  ></audio>
+                  <div
+                    *ngIf="c['audioMeta']?.captureTimeOriginalISO"
+                    class="mt-1 text-xs text-gray-600 dark:text-gray-400"
+                  >
+                    Enregistré le&nbsp;{{
+                      formatISOToDRC(c["audioMeta"].captureTimeOriginalISO)
+                    }}
+                    <span
+                      *ngIf="c['audioMeta']?.captureTimeSource"
+                      class="text-gray-400"
+                    >
+                      ({{ c["audioMeta"].captureTimeSource }})
+                    </span>
+                    <span *ngIf="c['audioMeta']?.durationSec"
+                      >&nbsp;•&nbsp;{{
+                        c["audioMeta"].durationSec | number : "1.0-0"
+                      }}
+                      s</span
+                    >
+                  </div>
+                </div>
+
+                <!-- attachments (images / videos) -->
+                <div *ngIf="c.attachments?.length" class="mt-4 ml-6 grid gap-4">
+                  <ng-container *ngFor="let att of c.attachments">
+                    <!-- image -->
+                    <figure
+                      *ngIf="att.type === 'image'"
+                      class="rounded-lg overflow-hidden"
+                    >
+                      <img
+                        [src]="att.url"
+                        class="max-h-64 rounded-lg shadow object-contain"
+                      />
+                      <figcaption
+                        class="mt-2 text-xs text-gray-600 dark:text-gray-400"
+                      >
+                        Prise le&nbsp;
+                        <span *ngIf="att.captureTimeOriginalISO">{{
+                          formatISOToDRC(att.captureTimeOriginalISO)
+                        }}</span>
+                        <span *ngIf="!att.captureTimeOriginalISO">—</span>
+                        <span
+                          class="text-gray-400"
+                          *ngIf="att.captureTimeSource"
+                          >&nbsp;({{ att.captureTimeSource }})</span
+                        >
+                      </figcaption>
+                    </figure>
+
+                    <!-- video -->
+                    <figure
+                      *ngIf="att.type === 'video'"
+                      class="rounded-lg overflow-hidden"
+                    >
+                      <video
+                        [src]="att.url"
+                        controls
+                        class="w-full max-w-lg rounded-lg shadow"
+                      ></video>
+                      <figcaption
+                        class="mt-2 text-xs text-gray-600 dark:text-gray-400"
+                      >
+                        Filmé le&nbsp;
+                        <span *ngIf="att.captureTimeOriginalISO">{{
+                          formatISOToDRC(att.captureTimeOriginalISO)
+                        }}</span>
+                        <span *ngIf="!att.captureTimeOriginalISO">—</span>
+                        <span
+                          class="text-gray-400"
+                          *ngIf="att.captureTimeSource"
+                          >&nbsp;({{ att.captureTimeSource }})</span
+                        >
+                        <span *ngIf="att.durationSec"
+                          >&nbsp;•&nbsp;{{
+                            att.durationSec | number : "1.0-0"
+                          }}
+                          s</span
+                        >
+                      </figcaption>
+                    </figure>
+                  </ng-container>
+                </div>
+              </blockquote>
+            </article>
           </div>
+        </section>
 
-          <input
-            id="imageFile"
-            type="file"
-            accept="image/*"
-            (change)="onImageSelected($any($event.target).files)"
-            class="hidden"
-          />
-        </label>
-
-        <!-- Video picker -->
-        <label
-          for="videoFile"
-          class="flex flex-col items-center justify-center w-full h-32 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-100 transition-colors"
-        >
-          <div class="flex flex-col items-center justify-center pt-5 pb-6">
-            <svg
-              class="w-8 h-8 mb-2 text-gray-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <rect
-                x="3"
-                y="6"
-                width="12"
-                height="12"
-                rx="2"
-                stroke="currentColor"
-                stroke-width="2"
-              />
-            </svg>
-            <p class="text-sm text-gray-500">
-              <span class="font-semibold">Ajouter une vidéo</span> (MP4, MOV…)
-            </p>
-            <p class="text-xs text-gray-500">Max 100&nbsp;MB</p>
-          </div>
-          <input
-            id="videoFile"
-            type="file"
-            accept="video/*"
-            (change)="onVideoSelected($any($event.target).files)"
-            class="hidden"
-          />
-        </label>
-      </div>
-
-      <!-- Image preview + exact capture time -->
-      <div
-        *ngIf="selectedImagePreviewURL"
-        class="my-3 rounded-lg border p-3 bg-gray-50"
-      >
-        <div class="flex items-start gap-4">
-          <img
-            [src]="selectedImagePreviewURL"
-            class="h-24 w-24 object-cover rounded-lg shadow"
-          />
-          <div class="text-sm text-gray-700">
-            <div *ngIf="imageCaptureTimeISO">
-              <strong>Prise le&nbsp;:</strong>
-              {{ formatISOToDRC(imageCaptureTimeISO) }}
-              <span class="text-gray-400">({{ imageCaptureTimeSource }})</span>
-            </div>
-            <div *ngIf="imageMetaWH?.width">
-              <strong>Taille&nbsp;:</strong> {{ imageMetaWH?.width }}×{{
-                imageMetaWH?.height
-              }}
-              px
-            </div>
-            <div *ngIf="imageGPS">
-              <strong>GPS&nbsp;:</strong> {{ imageGPS.lat }}, {{ imageGPS.lng }}
-            </div>
-            <button
-              type="button"
-              (click)="clearSelectedImage()"
-              class="mt-2 inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200"
-            >
-              Retirer l’image
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Video preview + exact capture time -->
-      <div
-        *ngIf="selectedVideoPreviewURL"
-        class="my-3 rounded-lg border p-3 bg-gray-50"
-      >
-        <div class="flex flex-col gap-2">
-          <video
-            [src]="selectedVideoPreviewURL"
-            controls
-            class="w-full max-w-md rounded-lg shadow"
-          ></video>
-          <div class="text-sm text-gray-700">
-            <div *ngIf="videoCaptureTimeISO">
-              <strong>Filmé le&nbsp;:</strong>
-              {{ formatISOToDRC(videoCaptureTimeISO) }}
-              <span class="text-gray-400">({{ videoCaptureTimeSource }})</span>
-            </div>
-            <div *ngIf="videoMeta?.width">
-              <strong>Taille&nbsp;:</strong> {{ videoMeta!.width }}×{{
-                videoMeta!.height
-              }}
-              px
-            </div>
-            <div *ngIf="videoMeta?.durationSec">
-              <strong>Durée&nbsp;:</strong>
-              {{ videoMeta!.durationSec | number : "1.0-0" }} s
-            </div>
-            <button
-              type="button"
-              (click)="clearSelectedVideo()"
-              class="mt-2 inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700 ring-1 ring-orange-200"
-            >
-              Retirer la vidéo
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <button
-        (click)="addCommentWithAudioFile()"
-        type="button"
-        class="inline-flex items-center gap-2 py-2.5 px-4 text-xs font-medium text-white bg-green-700 rounded-lg focus:ring-4 focus:ring-green-200 dark:focus:ring-green-900 hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
-        [disabled]="isPosting"
-        aria-live="polite"
-      >
-        <!-- spinner while posting -->
-        <svg
-          *ngIf="isPosting"
-          class="h-4 w-4 animate-spin"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          ></circle>
-          <path
-            class="opacity-75"
-            d="M4 12a8 8 0 018-8"
-            stroke="currentColor"
-            stroke-width="4"
-            stroke-linecap="round"
-          ></path>
-        </svg>
-        <span>{{ isPosting ? "Envoi…" : "Poster commentaire" }}</span>
-      </button>
-    </div>
-    <!--  modern block-quote style for each comment  -->
-    <article
-      *ngFor="
-        let c of comments | slice : 0 : (auth.isAdmin ? comments.length : 2);
-        let i = index
-      "
-      class="relative mx-auto mb-6 max-w-2xl rounded-3xl bg-white shadow-lg dark:bg-gray-800"
-    >
-      <!-- decorative left ribbon  -->
-      <span
-        class="absolute inset-y-0 left-0 w-1 rounded-l-3xl bg-gradient-to-b from-green-400 to-green-600"
-      ></span>
-
-      <header class="flex items-center px-6 pt-5">
-        <!-- avatar -->
+        <!-- Posting overlay -->
         <div
-          class="mr-3 flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+          *ngIf="isPosting"
+          class="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm"
         >
-          <span class="font-medium text-gray-600 dark:text-gray-300">
-            {{ c.name?.substring(0, 2) }}
-          </span>
-        </div>
-
-        <!-- name & date -->
-        <div class="flex flex-col">
-          <p class="text-sm font-semibold text-gray-900 dark:text-white">
-            {{ c.name }}
-          </p>
-          <time
-            [attr.datetime]="c['timeISO'] ?? ''"
-            class="text-xs text-gray-500 dark:text-gray-400"
-          >
-            {{ c.timeFormatted }}
-          </time>
-        </div>
-      </header>
-
-      <!-- comment body -->
-      <blockquote
-        class="relative mt-4 rounded-b-3xl bg-gray-50 px-6 pb-6 pt-4 italic text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-      >
-        <!-- quotation mark decoration -->
-        <svg
-          aria-hidden="true"
-          class="absolute left-3 top-3 h-5 w-5 text-green-400 opacity-30"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            d="M7.17 15H4.31c.4-2.78 1.5-5.71 3.3-8.79L10 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01zm9 0h-2.86c.4-2.78 1.5-5.71 3.3-8.79L19 7.4c-1.27 2.08-2.01 4.15-2.21 6.21.46-.39 1.02-.59 1.68-.59.83 0 1.49.28 1.97.83.48.55.72 1.31.72 2.27 0 .92-.29 1.68-.86 2.28-.58.61-1.37.91-2.37.91-1.01 0-1.82-.31-2.44-.93-.62-.61-.93-1.45-.93-2.53 0-.71.1-1.39.3-2.04h.01z"
-          />
-        </svg>
-
-        <p class="ml-6 leading-relaxed" *ngIf="c.comment">{{ c.comment }}</p>
-
-        <!-- audio (if any) -->
-        <div *ngIf="c.audioUrl" class="mt-4 ml-6">
-          <audio
-            [src]="c.audioUrl"
-            controls
-            class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"
-          ></audio>
           <div
-            *ngIf="c['audioMeta']?.captureTimeOriginalISO"
-            class="mt-1 text-xs text-gray-600 dark:text-gray-400"
+            class="flex items-center gap-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 px-5 py-3 shadow-2xl ring-1 ring-black/10 dark:ring-white/10"
           >
-            Enregistré le&nbsp;{{
-              formatISOToDRC(c["audioMeta"].captureTimeOriginalISO)
-            }}
-            <span
-              *ngIf="c['audioMeta']?.captureTimeSource"
-              class="text-gray-400"
-            >
-              ({{ c["audioMeta"].captureTimeSource }})
-            </span>
-            <span *ngIf="c['audioMeta']?.durationSec"
-              >&nbsp;•&nbsp;{{
-                c["audioMeta"].durationSec | number : "1.0-0"
-              }}
-              s</span
+            <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                d="M4 12a8 8 0 018-8"
+                stroke="currentColor"
+                stroke-width="4"
+                stroke-linecap="round"
+              ></path>
+            </svg>
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-200"
+              >Envoi du commentaire…</span
             >
           </div>
         </div>
-
-        <!-- attachments (images / videos) -->
-        <div *ngIf="c.attachments?.length" class="mt-4 ml-6 grid gap-4">
-          <ng-container *ngFor="let att of c.attachments">
-            <!-- image -->
-            <figure
-              *ngIf="att.type === 'image'"
-              class="rounded-lg overflow-hidden"
-            >
-              <img
-                [src]="att.url"
-                class="max-h-64 rounded-lg shadow object-contain"
-              />
-              <figcaption class="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                Prise le&nbsp;
-                <span *ngIf="att.captureTimeOriginalISO">{{
-                  formatISOToDRC(att.captureTimeOriginalISO)
-                }}</span>
-                <span *ngIf="!att.captureTimeOriginalISO">—</span>
-                <span class="text-gray-400" *ngIf="att.captureTimeSource"
-                  >&nbsp;({{ att.captureTimeSource }})</span
-                >
-              </figcaption>
-            </figure>
-
-            <!-- video -->
-            <figure
-              *ngIf="att.type === 'video'"
-              class="rounded-lg overflow-hidden"
-            >
-              <video
-                [src]="att.url"
-                controls
-                class="w-full max-w-lg rounded-lg shadow"
-              ></video>
-              <figcaption class="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                Filmé le&nbsp;
-                <span *ngIf="att.captureTimeOriginalISO">{{
-                  formatISOToDRC(att.captureTimeOriginalISO)
-                }}</span>
-                <span *ngIf="!att.captureTimeOriginalISO">—</span>
-                <span class="text-gray-400" *ngIf="att.captureTimeSource"
-                  >&nbsp;({{ att.captureTimeSource }})</span
-                >
-                <span *ngIf="att.durationSec"
-                  >&nbsp;•&nbsp;{{ att.durationSec | number : "1.0-0" }} s</span
-                >
-              </figcaption>
-            </figure>
-          </ng-container>
-        </div>
-      </blockquote>
-    </article>
-  </div>
-</section>
-
-<!-- Posting overlay -->
-<div
-  *ngIf="isPosting"
-  class="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm"
->
-  <div
-    class="flex items-center gap-3 rounded-2xl bg-white/90 dark:bg-slate-900/80 px-5 py-3 shadow-2xl ring-1 ring-black/10 dark:ring-white/10"
-  >
-    <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-      <circle
-        class="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        stroke-width="4"
-      ></circle>
-      <path
-        class="opacity-75"
-        d="M4 12a8 8 0 018-8"
-        stroke="currentColor"
-        stroke-width="4"
-        stroke-linecap="round"
-      ></path>
-    </svg>
-    <span class="text-sm font-medium text-slate-700 dark:text-slate-200"
-      >Envoi du commentaire…</span
-    >
+      </div>
+    </div>
   </div>
 </div>

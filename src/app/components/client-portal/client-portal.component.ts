@@ -138,11 +138,8 @@ export class ClientPortalComponent {
 
   // Simple color ramp (works well for stroke)
   colorForPerf(v: number): string {
-    if (v >= 90) return '#10b981'; // emerald-500
-    if (v >= 75) return '#22c55e'; // green-500
-    if (v >= 60) return '#eab308'; // amber-500
-    if (v >= 40) return '#f59e0b'; // amber-400
-    return '#ef4444'; // red-500
+    const clamped = Math.max(0, Math.min(100, v ?? 0));
+    return this.compute.getGradientColor(clamped);
   }
 
   id: any = '';
