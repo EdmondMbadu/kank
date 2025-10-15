@@ -508,10 +508,19 @@
               <button
                 *ngIf="true"
                 type="submit"
-                (click)="toggleAttendance()"
+                (click)="toggleAttendance('today')"
                 class="mt-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-900 transition"
               >
                 Présence
+              </button>
+
+              <button
+                *ngIf="shouldShowYesterdayPresence"
+                type="button"
+                (click)="toggleAttendance('yesterday')"
+                class="mt-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-200 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-800 transition"
+              >
+                Présence D'Hier
               </button>
 
               <button
@@ -1448,12 +1457,12 @@
       class="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b bg-white/95 dark:bg-gray-800/95 backdrop-blur border-gray-200 dark:border-gray-700"
     >
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Présence — {{ frenchDate }}
+        Présence — {{ attendanceModalDateLabel }}
       </h3>
       <button
         type="button"
         class="text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1.5"
-        (click)="toggleAttendance()"
+        (click)="closeAttendanceModal()"
       >
         <svg
           aria-hidden="true"
@@ -1509,8 +1518,15 @@
             </ng-template>
 
             <span class="text-xs text-gray-500">
-              Règle : ≤ {{ todayCutoffLabel }} → Présent • &gt;
-              {{ todayCutoffLabel }} → En retard • autre jour → Anomalie
+              Règle : ≤ {{ attendanceCutoffLabel }} → Présent • &gt;
+              {{ attendanceCutoffLabel }} → En retard • autre jour → Anomalie
+            </span>
+
+            <span
+              *ngIf="attendanceMode === 'yesterday'"
+              class="text-xs text-amber-600 dark:text-amber-400"
+            >
+              Pour ce rattrapage, seule une photo prise hier est acceptée.
             </span>
           </div>
 
@@ -1697,7 +1713,7 @@
         <button
           type="button"
           class="px-5 py-2.5 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100"
-          (click)="toggleAttendance()"
+          (click)="closeAttendanceModal()"
         >
           Annuler
         </button>

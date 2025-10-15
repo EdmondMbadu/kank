@@ -147,6 +147,8 @@ export class EmployeePageComponent implements OnInit {
   displayMakePayment: boolean = false;
   displayAttendance: boolean = false;
   attendance: string = '';
+  attendanceMode: 'today' | 'yesterday' = 'today';
+  attendanceTargetDate: Date = new Date();
   // today = this.time.todaysDateMonthDayYear();
 
   limitHour: number = 9;
@@ -253,6 +255,7 @@ export class EmployeePageComponent implements OnInit {
   ngOnInit(): void {
     this.retrieveEmployees();
     if (this.auth.isAdmninistrator) this.isAuthorized = true;
+    this.attendanceTargetDate = this.resolveAttendanceTargetDate('today');
   }
   public graphPerformance = {
     data: [{}],
@@ -922,8 +925,93 @@ export class EmployeePageComponent implements OnInit {
     }
   }
 
-  toggleAttendance() {
-    this.displayAttendance = !this.displayAttendance;
+  private resolveAttendanceTargetDate(mode: 'today' | 'yesterday'): Date {
+    const now = new Date();
+    const kinNow = this.kinDate(now);
+    if (mode === 'yesterday') {
+      const kinYesterday = new Date(kinNow.getTime());
+      kinYesterday.setDate(kinYesterday.getDate() - 1);
+      return kinYesterday;
+    }
+    return kinNow;
+  }
+
+  private dateToMonthDayYear(d: Date): string {
+    const parts = this.kinParts(d);
+    return `${parts.m}-${parts.d}-${parts.y}`;
+  }
+
+  private isoFromKinDate(d: Date): string {
+    const parts = this.kinParts(d);
+    const mm = String(parts.m).padStart(2, '0');
+    const dd = String(parts.d).padStart(2, '0');
+    return `${parts.y}-${mm}-${dd}`;
+  }
+
+  private buildLabelForTarget(targetDay: Date, takenAt?: Date): string {
+    const dayParts = this.kinParts(targetDay);
+    const timeParts = takenAt ? this.kinParts(takenAt) : dayParts;
+    const mm = String(dayParts.m);
+    const dd = String(dayParts.d);
+    const yyyy = String(dayParts.y);
+    const hh = String(timeParts.hh).padStart(2, '0');
+    const mn = String(timeParts.mm).padStart(2, '0');
+    const ss = String(timeParts.ss).padStart(2, '0');
+    return `${mm}-${dd}-${yyyy}-${hh}-${mn}-${ss}`;
+  }
+
+  private hasConfirmedPresenceForDay(targetDay: Date): boolean {
+    if (!this.employee?.attendance) return false;
+    const baseLabel = this.dateToMonthDayYear(targetDay);
+    return Object.entries(this.employee.attendance).some(([key, value]) => {
+      if (value !== 'P' && value !== 'L') return false;
+      return this.normalizeLabel(key) === baseLabel;
+    });
+  }
+
+  get attendanceModalDateLabel(): string {
+    const mdY = this.dateToMonthDayYear(this.attendanceTargetDate);
+    return this.time.convertDateToDayMonthYear(mdY);
+  }
+
+  get attendanceCutoffLabel(): string {
+    const { hour, minute } = this.getCutoffFor(this.attendanceTargetDate);
+    const hh = String(hour).padStart(2, '0');
+    const mm = String(minute).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  get shouldShowYesterdayPresence(): boolean {
+    const target = this.resolveAttendanceTargetDate('yesterday');
+    return !this.hasConfirmedPresenceForDay(target);
+  }
+
+  private openAttendanceModal(mode: 'today' | 'yesterday') {
+    this.attendanceMode = mode;
+    this.attendanceTargetDate = this.resolveAttendanceTargetDate(mode);
+    this.clearAttachment(this.employee);
+    this.displayAttendance = true;
+  }
+
+  closeAttendanceModal() {
+    if (!this.displayAttendance) return;
+    this.displayAttendance = false;
+    this.clearAttachment(this.employee);
+    this.attendanceMode = 'today';
+    this.attendanceTargetDate = this.resolveAttendanceTargetDate('today');
+    this.attendance = '';
+  }
+
+  toggleAttendance(mode: 'today' | 'yesterday' = 'today') {
+    if (this.displayAttendance) {
+      if (this.attendanceMode === mode) {
+        this.closeAttendanceModal();
+      } else {
+        this.openAttendanceModal(mode);
+      }
+      return;
+    }
+    this.openAttendanceModal(mode);
   }
   async updateEmployeeBonusInfoAndSignCheck() {
     // Update bonus amounts
@@ -1100,21 +1188,30 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
     this.attendance = '';
-    if (toggle) this.toggleAttendance();
+    if (toggle) this.closeAttendanceModal();
   }
 
   clearAttachment(em: any) {
+    if (!em) return;
     em._attachmentError = '';
     em._attachmentFile = null;
     em._attachmentPreview = null;
     em._attachmentType = null;
     em._attachmentSize = null;
+    em._attachmentTakenAt = null;
+    em._attachmentTakenAtSource = '';
+    em._attachmentDeviceInfo = null;
+    em._attachmentUA = null;
+    em._attachmentSoftId = null;
+    em._attachmentHash = null;
+    em._uploading = false;
   }
 
   async addAttendanceForEmployee(
     employee: any,
     attendanceValue: string,
-    dateLabel: string = ''
+    dateLabel: string = '',
+    targetDay?: Date
   ) {
     if (!attendanceValue) {
       alert('Remplissez la présence, Réessayez');
@@ -1123,10 +1220,14 @@ export class EmployeePageComponent implements OnInit {
 
     this.savingAttendance = true;
     try {
+      const target = targetDay
+        ? new Date(targetDay.getTime())
+        : new Date();
       const label =
         dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate();
-      const now = new Date();
-      const dateISO = now.toISOString().slice(0, 10);
+      const dateISO = targetDay
+        ? this.isoFromKinDate(target)
+        : target.toISOString().slice(0, 10);
       const plainLabel = this.normalizeLabel(label, dateISO);
 
       // 1) legacy + day-doc writes (existing code) ...
@@ -2229,12 +2330,17 @@ export class EmployeePageComponent implements OnInit {
    *  - same Kinshasa day & time  > 09:05 → 'L'
    *  - any other day (past/future)       → 'F'
    */
-  computeAttendanceFromPhoto(takenAt: Date | null): 'P' | 'L' | 'F' | '' {
+  computeAttendanceFromPhoto(
+    takenAt: Date | null,
+    targetDay: Date = this.attendanceTargetDate
+  ): 'P' | 'L' | 'F' | '' {
     if (!takenAt) return '';
-    const today = new Date();
-    if (!this.sameKinDay(takenAt, today)) return 'F';
+    const reference = targetDay
+      ? new Date(targetDay.getTime())
+      : new Date();
+    if (!this.sameKinDay(takenAt, reference)) return 'F';
 
-    const { hour: H, minute: M } = this.getCutoffFor(takenAt);
+    const { hour: H, minute: M } = this.getCutoffFor(reference);
     const p = this.kinParts(takenAt); // expects p.hh / p.mm in Kinshasa time
     if (p.hh < H) return 'P';
     if (p.hh > H) return 'L';
@@ -2255,15 +2361,21 @@ export class EmployeePageComponent implements OnInit {
       return;
     }
 
-    const status = this.computeAttendanceFromPhoto(when);
+    const targetDay =
+      this.attendanceTargetDate ||
+      this.resolveAttendanceTargetDate(this.attendanceMode);
+    const status = this.computeAttendanceFromPhoto(when, targetDay);
     if (!status) {
       alert('Statut non déterminé. Ajoutez une photo valide.');
       return;
     }
 
     this.attendance = status; // used by your pipeline
-    // 🔴 Do NOT pass a dateLabel → will use submission time for the key
-    await this.addAttendanceForEmployee(employee, status);
+    const label =
+      this.attendanceMode === 'today'
+        ? ''
+        : this.buildLabelForTarget(targetDay, when);
+    await this.addAttendanceForEmployee(employee, status, label, targetDay);
   }
 
   /** Kinshasa-localized Date from a UTC/Local Date */
