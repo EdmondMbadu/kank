@@ -1,8 +1,5 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { User } from 'src/app/models/user';
-import { AuthService } from 'src/app/services/auth.service';
-import { DataService } from 'src/app/services/data.service';
+import { PublicAuthService } from 'src/app/services/public-auth.service';
 
 @Component({
   selector: 'app-create-account',
@@ -17,9 +14,7 @@ export class CreateAccountComponent {
   rePassword: string = '';
 
   constructor(
-    private auth: AuthService,
-    private data: DataService,
-    private router: Router
+    private auth: PublicAuthService
   ) {}
   ngOnInit(): void {}
   createAccount() {

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { AuthService } from 'src/app/services/auth.service';
+import { PublicAuthService } from 'src/app/services/public-auth.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -8,7 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
 })
 export class ForgotPasswordComponent {
   email: string = '';
-  constructor(private auth: AuthService) {}
+  constructor(private auth: PublicAuthService) {}
   restorePassword() {
     this.auth.forgotPassword(this.email);
   }

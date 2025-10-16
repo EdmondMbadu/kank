@@ -9,7 +9,7 @@ import {
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
 import { firstValueFrom, Observable, of } from 'rxjs';
-import { filter, map, switchMap, take, tap } from 'rxjs/operators';
+import { filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
 import { Client, Comment } from '../models/client';
 import { Timestamp } from 'firebase/firestore';
@@ -18,19 +18,22 @@ import { ComputationService } from '../shrink/services/computation.service';
 import { Employee } from '../models/employee';
 import { Card } from '../models/card';
 import { Audit, Management } from '../models/management';
+
+const ADMIN_FLAG_KEY = 'kank-admin-flag';
+const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  user$: Observable<any>;
+  user$: Observable<User | null>;
   clientsRef$: Observable<any>;
   cardsRefs: Observable<any>;
   employeesRef$: Observable<any>;
   email?: Observable<any>;
   currentUser: any = {};
   managementInfo: any = {};
-  word: string = 'synergie';
-  distributor: string = 'plan';
+  private readonly adminWord = 'synergie';
+  private readonly distributorWord = 'plan';
   public isAdmninistrator: boolean = false;
   public isDistributoring: boolean = false;
   clientId: string = '';
@@ -46,13 +49,19 @@ export class AuthService {
     this.clientsRef$ = of(null);
     this.user$ = this.fireauth.authState.pipe(
       switchMap((user) => {
-        if (user) {
-          this.email = of(user.email);
-          return this.afs.doc<User>(`users/${user.uid}`).valueChanges();
-        } else {
+        if (!user) {
+          this.email = of(null);
           return of(null);
         }
-      })
+
+        this.email = of(user.email);
+
+        return this.afs
+          .doc<User>(`users/${user.uid}`)
+          .valueChanges()
+          .pipe(map((doc) => doc ?? null));
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
 
     this.clientsRef$ = this.fireauth.authState.pipe(
@@ -99,6 +108,7 @@ export class AuthService {
     // );
     this.getCurrentUser();
     this.getManagementInfoData();
+    this.restoreRoleFlags();
   }
   ngOnInit() {}
   getAllClients(): Observable<Client> {
@@ -177,8 +187,7 @@ export class AuthService {
     return this.fireauth // ← on retourne la promesse
       .signInWithEmailAndPassword(email, password)
       .then((res) => {
-        if (word === this.word) this.isAdmninistrator = true;
-        if (word === this.distributor) this.isDistributoring = true;
+        this.applyRoleWord(word);
 
         if (res.user?.emailVerified) {
           this.router.navigate(['/home']);
@@ -189,6 +198,7 @@ export class AuthService {
       .catch((err) => {
         // alert('Something went wrong'); // message inchangé
         // Pas de navigation vers « / » : on reste sur la page
+        this.clearRoleFlags();
         return Promise.reject(err); // ← on relaie l’erreur
       });
   }
@@ -615,8 +625,7 @@ export class AuthService {
       .signOut()
       .then(
         () => {
-          this.isAdmninistrator = false;
-          this.isDistributoring = false;
+          this.clearRoleFlags();
 
           this.router.navigate(['/']);
         },
@@ -715,6 +724,56 @@ export class AuthService {
       distributor: 'false',
     };
     return userRef.set(data, { merge: true });
+  }
+
+  private persistRoleFlags(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    localStorage.setItem(ADMIN_FLAG_KEY, String(this.isAdmninistrator));
+    localStorage.setItem(DISTRIBUTOR_FLAG_KEY, String(this.isDistributoring));
+  }
+
+  private normalizeSecret(value: string | null | undefined): string {
+    return (value ?? '').trim().toLowerCase();
+  }
+
+  public applyRoleWord(word: string): void {
+    const normalized = this.normalizeSecret(word);
+    this.isAdmninistrator = normalized === this.normalizeSecret(this.adminWord);
+    this.isDistributoring =
+      normalized === this.normalizeSecret(this.distributorWord);
+
+    this.persistRoleFlags();
+  }
+
+  public clearPersistedRoleFlags(): void {
+    this.clearRoleFlags();
+  }
+
+  private restoreRoleFlags(): void {
+    if (typeof window === 'undefined') {
+      this.isAdmninistrator = false;
+      this.isDistributoring = false;
+      return;
+    }
+
+    this.isAdmninistrator = localStorage.getItem(ADMIN_FLAG_KEY) === 'true';
+    this.isDistributoring =
+      localStorage.getItem(DISTRIBUTOR_FLAG_KEY) === 'true';
+  }
+
+  private clearRoleFlags(): void {
+    this.isAdmninistrator = false;
+    this.isDistributoring = false;
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    localStorage.removeItem(ADMIN_FLAG_KEY);
+    localStorage.removeItem(DISTRIBUTOR_FLAG_KEY);
   }
 
   deleteReview(reviewDocId: string, reviewToRemove: Comment): Promise<void> {

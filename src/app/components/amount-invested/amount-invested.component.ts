@@ -3,9 +3,9 @@ import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { FormControl } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, switchMap, of } from 'rxjs';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { User } from 'src/app/models/user';
 
 @Component({
   selector: 'app-amount-invested',
@@ -14,7 +14,7 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class AmountInvestedComponent implements OnInit {
   investmentAddAmount: string = '';
-  currentUser: any = {};
+  currentUser: User | null = null;
   searchControl = new FormControl();
   public investments: string[] = [];
   public investmentsDollar: string[] = [];
@@ -53,31 +53,30 @@ export class AmountInvestedComponent implements OnInit {
   }
   getCurrentUser() {
     this.auth.user$.subscribe((user) => {
-      this.currentUser = user;
-      this.investments = this.currentUser.investments;
-      this.investmentsDollar = this.currentUser.investmentsDollar;
-      let investmentsArray = Object.entries(user.investments).map(
-        ([key, value]): [string, string] => {
-          // Convert the value to string if it's not already a string.
-          // This is a basic conversion; adapt it if you need more complex handling.
-          return [key, String(value)];
-        }
+      this.currentUser = user ?? null;
+
+      const investments = this.currentUser?.investments ?? {};
+      const investmentsDollar = this.currentUser?.investmentsDollar ?? {};
+
+      let investmentsArray = Object.entries(investments).map(
+        ([key, value]): [string, string] => [key, String(value)]
       );
 
       investmentsArray =
         this.compute.sortArrayByDateDescendingOrder(investmentsArray);
-      // Extract the sorted payment values and dates into separate arrays
+
       this.investments = investmentsArray.map((entry) => entry[1]);
       this.investmentsDates = investmentsArray.map((entry) => entry[0]);
+      this.investmentsDollar = Object.values(investmentsDollar).map((value) =>
+        String(value)
+      );
       this.formatPaymentDates();
     });
   }
 
   formatPaymentDates() {
-    for (let p of this.investmentsDates) {
-      this.investmentsFormattedDates.push(
-        this.time.convertDateToDesiredFormat(p)
-      );
-    }
+    this.investmentsFormattedDates = this.investmentsDates.map((date) =>
+      this.time.convertDateToDesiredFormat(date)
+    );
   }
 }

@@ -7,7 +7,7 @@ import {
   NavigationCancel,
   NavigationError,
 } from '@angular/router';
-import { AuthService } from 'src/app/services/auth.service';
+import { PublicAuthService } from 'src/app/services/public-auth.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -21,7 +21,7 @@ export class LandingPageComponent {
   word = '';
   isLoading = false; // <── nouveau
 
-  constructor(private auth: AuthService, private router: Router) {
+  constructor(private auth: PublicAuthService, private router: Router) {
     /** ❶ Bascule le loader pendant toute navigation */
     this.router.events
       .pipe(filter((ev) => ev instanceof NavigationStart))

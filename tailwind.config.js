@@ -7,14 +7,7 @@ module.exports = {
   ],
 
   // Utility classes you build dynamically go here
-  safelist: [
-    // exact class names
-    "w-36",
-    "bg-green-700",
-    "text-red-600",
-    // or a RegExp pattern for whole families
-    { pattern: /(bg|text|border|ring)-(green|red|blue)-(100|200|300|400|500|600|700)/ }
-  ],
+  safelist: [],
 
   theme: { extend: {} },
   plugins: [],

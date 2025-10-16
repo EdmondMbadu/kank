@@ -3,6 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PlotlyModule } from 'angular-plotly.js';
 import * as PlotlyJS from 'plotly.js-basic-dist';
+import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
+import { AngularFireAuthModule } from '@angular/fire/compat/auth';
+import { AngularFireStorageModule } from '@angular/fire/compat/storage';
+import { AngularFireFunctionsModule } from '@angular/fire/compat/functions';
 import { ProtectedRoutingModule } from './protected-routing.module';
 import { SharedModule } from '../shared/shared.module';
 import { InvestementsSummaryComponent } from '../components/investements-summary/investements-summary.component';
@@ -72,6 +76,7 @@ import { GestionExpenseComponent } from '../gestion/gestion-expense/gestion-expe
 import { GestionServedComponent } from '../gestion/gestion-served/gestion-served.component';
 import { GestionBankComponent } from '../gestion/gestion-bank/gestion-bank.component';
 import { GestionLossComponent } from '../gestion/gestion-loss/gestion-loss.component';
+import { AuthGuard } from '../services/auth.guard';
 import { GestionInvestmentComponent } from '../gestion/gestion-investment/gestion-investment.component';
 import { TutorialComponent } from '../components/tutorial/tutorial.component';
 import { LossesComponent } from '../components/losses/losses.component';
@@ -181,9 +186,14 @@ PlotlyModule.plotlyjs = PlotlyJS;
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    AngularFirestoreModule,
+    AngularFireAuthModule,
+    AngularFireStorageModule,
+    AngularFireFunctionsModule,
     PlotlyModule,
     SharedModule,
     ProtectedRoutingModule,
   ],
+  providers: [AuthGuard],
 })
 export class ProtectedModule {}

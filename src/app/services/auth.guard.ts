@@ -5,7 +5,8 @@ import {
   RouterStateSnapshot,
   UrlTree,
 } from '@angular/router';
-import { Observable, map, take, tap } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError, filter, map, take, timeout } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { User } from '../models/user';
 
@@ -13,7 +14,10 @@ import { User } from '../models/user';
   providedIn: 'root',
 })
 export class AuthGuard {
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private auth: AuthService,
+    private router: Router
+  ) {}
   canActivate(
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
@@ -23,13 +27,14 @@ export class AuthGuard {
     | boolean
     | UrlTree {
     return this.auth.user$.pipe(
+      filter((user): user is User => Boolean(user)),
       take(1),
-      map((user: User) => !!user),
-      tap((loggedIn: any) => {
-        if (!loggedIn) {
-          console.log('Acced denied');
-          this.router.navigate(['/']);
-        }
+      map(() => true),
+      timeout(5000),
+      catchError(() => {
+        console.log('Acced denied');
+        this.router.navigate(['/']);
+        return of(false);
       })
     );
   }
