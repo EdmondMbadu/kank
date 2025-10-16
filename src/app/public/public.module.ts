@@ -8,6 +8,7 @@ import { ForgotPasswordComponent } from '../components/forgot-password/forgot-pa
 import { CreateAccountComponent } from '../components/create-account/create-account.component';
 import { VerifyEmailComponent } from '../components/verify-email/verify-email.component';
 import { PublicShellComponent } from './public-shell/public-shell.component';
+import { SharedModule } from 'src/app/shared/shared.module';
 
 @NgModule({
   declarations: [
@@ -17,10 +18,6 @@ import { PublicShellComponent } from './public-shell/public-shell.component';
     CreateAccountComponent,
     VerifyEmailComponent,
   ],
-  imports: [
-    CommonModule,
-    FormsModule,
-    PublicRoutingModule,
-  ],
+  imports: [CommonModule, FormsModule, PublicRoutingModule, SharedModule],
 })
 export class PublicModule {}
