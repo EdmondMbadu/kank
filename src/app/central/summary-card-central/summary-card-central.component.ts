@@ -386,6 +386,7 @@ export class SummaryCardCentralComponent {
 To moni ozali kosalela CARTE na FONDATION GERVAIS. 
 Soki olingi kobanda kozua crédit ya liboso, tokoki kopesa yo {{MAX_AMOUNT}} FC. 
 Kende na FONDATION GERVAIS location {{LOCATION_NAME}}.
+Mutungisi eza te, Fondation ya biso na biso
 Merci pona confiance na FONDATION GERVAIS`;
   }
 
