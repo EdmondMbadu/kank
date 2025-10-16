@@ -236,6 +236,25 @@ export class TodayCentralComponent {
     ];
   }
 
+  get todaySummaryCards() {
+    return this.summary.map((title, index) => ({
+      index,
+      title,
+      icon: this.imagePaths[index] ?? this.imagePaths[0],
+      amountFc: this.toNum(this.summaryContent[index]),
+      amountUsd: this.toNum(this.valuesConvertedToDollars[index]),
+      link: this.linkPaths[index] ?? null,
+    }));
+  }
+
+  get heroSnapshot() {
+    return [
+      { label: 'Paiements', value: this.toNum(this.dailyPayment), icon: '💸' },
+      { label: 'Réserves', value: this.toNum(this.dailyReserve), icon: '🏦' },
+      { label: 'Demandes', value: this.toNum(this.dailyRequest), icon: '📅' },
+    ];
+  }
+
   findDailyActivitiesCentralAmount() {
     this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.requestDate

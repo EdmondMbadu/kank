@@ -4,475 +4,547 @@
   [path]="'home'"
 ></app-navbar>
 
-<!-- investements -->
-
-<div class="container mx-auto px-4 mt-6">
-  <div
-    class="relative mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-md p-4 md:p-5 shadow-sm 0"
-  >
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <div
-          class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xl"
-        >
-          📈
-        </div>
-        <h1
-          class="min-w-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold tracking-tight leading-tight text-2xl md:text-4xl break-words whitespace-normal"
-        >
-          Activités Du Jour Central
+<section
+  class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 text-white"
+>
+  <div class="container mx-auto px-6 py-12">
+    <div
+      class="flex flex-col gap-10 md:flex-row md:items-center md:justify-between"
+    >
+      <div class="space-y-6">
+        <p class="text-xs uppercase tracking-[0.35em] text-white/60">
+          Central · Aujourd’hui
+        </p>
+        <h1 class="text-3xl font-semibold leading-tight md:text-4xl">
+          Activités du jour
         </h1>
+        <div class="flex flex-wrap gap-3">
+          <div
+            class="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur"
+            *ngFor="let stat of heroSnapshot"
+          >
+            <span
+              class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-lg font-semibold text-white"
+            >
+              {{ stat.icon }}
+            </span>
+            <div>
+              <p class="text-[11px] uppercase tracking-wide text-white/70">
+                {{ stat.label }}
+              </p>
+              <div class="flex items-baseline gap-1 text-white">
+                <span class="text-xl font-semibold">
+                  {{ stat.value | number : "1.0-0" }}
+                </span>
+                <span class="text-[11px] font-medium text-white/60">FC</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <span
-        class="sm:ml-auto inline-flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 text-sm font-medium text-slate-700 dark:text-slate-200 shadow order-last sm:order-none"
+      <div
+        class="w-full max-w-sm rounded-3xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-md"
       >
-        <time>{{ frenchDate }}</time>
-      </span>
+        <p class="text-[11px] uppercase tracking-[0.25em] text-white/60">
+          Date sélectionnée
+        </p>
+        <h2 class="mt-2 text-xl font-semibold text-white">
+          {{ frenchDate }}
+        </h2>
+        <label class="mt-5 block text-xs font-medium text-white/70">
+          Choisir une autre date
+        </label>
+        <input
+          [(ngModel)]="requestDate"
+          type="date"
+          class="mt-2 w-full rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/60"
+          (change)="findDailyActivitiesCentralAmount()"
+        />
+        <div class="mt-5 flex items-center gap-2 text-[11px] text-white/60">
+          <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
+          Données mises à jour
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container mx-auto -mt-10 px-6 pb-12">
+  <div
+    *ngIf="todaySummaryCards.length; else emptySummary"
+    class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+  >
+    <article
+      *ngFor="let card of todaySummaryCards"
+      class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
+    >
+      <div class="flex items-start gap-4">
+        <span
+          class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset"
+          [ngClass]="{
+            'bg-emerald-50 text-emerald-600 ring-emerald-200': card.index % 3 === 0,
+            'bg-sky-50 text-sky-600 ring-sky-200': card.index % 3 === 1,
+            'bg-amber-50 text-amber-600 ring-amber-200': card.index % 3 === 2
+          }"
+        >
+          <img
+            [src]="card.icon"
+            alt=""
+            class="h-6 w-6 object-contain"
+            loading="lazy"
+          />
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] uppercase tracking-wide text-slate-400">
+            Indicateur #{{ card.index + 1 }}
+          </p>
+          <h3
+            class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
+          >
+            {{ card.title }}
+          </h3>
+          <div class="mt-4 space-y-1">
+            <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+              FC {{ card.amountFc | number : "1.0-0" }}
+            </p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              ≈ $ {{ card.amountUsd | number : "1.0-0" }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="card.link" class="mt-6">
+        <a
+          [routerLink]="card.link"
+          class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-200"
+        >
+          Ouvrir
+          <svg
+            class="h-3.5 w-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </a>
+      </div>
+
+      <div
+        class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
+      ></div>
+    </article>
+  </div>
+
+  <ng-template #emptySummary>
+    <div
+      class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
+    >
+      Aucune donnée de synthèse disponible pour l’instant.
+    </div>
+  </ng-template>
+</section>
+
+<section
+  class="container mx-auto px-6 pb-16"
+  *ngIf="auth.isAdmin"
+>
+  <div class="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+    <div
+      class="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          Classement du jour
+        </h2>
+        <div
+          class="hidden items-center gap-2 text-xs text-slate-600 dark:text-slate-300 sm:flex"
+        >
+          <span
+            class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+          >
+            {{ toNum(dailyReserve) | number : "1.0-0" }} FC
+          </span>
+          <span
+            class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            {{ toNum(dailyReserveDollars) | number : "1.0-0" }} $
+          </span>
+        </div>
+      </div>
+
+      <div class="rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-700">
+        <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
+          <table
+            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
+          >
+            <thead
+              class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            >
+              <tr>
+                <th class="px-3 py-2 text-left">Rang</th>
+                <th class="px-2 py-2 text-left">Équipe</th>
+                <th class="px-3 py-2 text-right">Réserve (FC)</th>
+                <th class="px-3 py-2 text-right">Réserve ($)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let s of sortedReserveToday; let i = index"
+                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+              >
+                <td class="px-3 py-2">
+                  <span
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
+                        i === 0
+                    }"
+                    [title]="'Rang ' + (i + 1)"
+                  >
+                    {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
+                  </span>
+                </td>
+                <td class="px-2 py-2">
+                  <div class="font-medium text-slate-900 dark:text-slate-100">
+                    {{ s.firstName }}
+                  </div>
+                  <div
+                    class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
+                    aria-hidden="true"
+                  >
+                    <div
+                      class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                      [style.width.%]="
+                        percentOf(
+                          toNum(
+                            val(
+                              s,
+                              'totalReserveInDollars',
+                              'totalPaymentInDollars',
+                              'amountUsd'
+                            )
+                          ),
+                          reserveTodayUSDMax
+                        )
+                      "
+                    ></div>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{
+                      toNum(val(s, "totalReserve", "amount", "value"))
+                        | number : "1.0-0"
+                    }}
+                    FC
+                  </span>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{
+                      toNum(
+                        val(
+                          s,
+                          "totalReserveInDollars",
+                          "amountUsd",
+                          "valueUsd"
+                        )
+                      ) | number : "1.0-0"
+                    }}
+                    $
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot
+              class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
+            >
+              <tr>
+                <td class="px-3 py-2 font-semibold">Total</td>
+                <td class="px-2 py-2"></td>
+                <td class="px-3 py-2 text-right font-semibold">
+                  {{ toNum(dailyReserve) | number : "1.0-0" }} FC
+                </td>
+                <td class="px-3 py-2 text-right font-semibold">
+                  {{ toNum(dailyReserveDollars) | number : "1.0-0" }} $
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
     </div>
 
     <div
-      class="absolute -bottom-[2px] left-6 right-6 h-[3px] rounded-full bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-400"
-    ></div>
-  </div>
-</div>
-<div class="flex container mx-auto justify-center my-2">
-  <div class="">
-    <!-- <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900 "> Entrer La Date</label> -->
-    <input
-      [(ngModel)]="requestDate"
-      type="date"
-      id="first_name"
-      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 mb-2"
-      (change)="findDailyActivitiesCentralAmount()"
-      fplaceholder="11-2-2023"
-      required
-    />
-    <!-- <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " (click)="">Chercher</button> -->
-  </div>
-</div>
-
-<div
-  class="container flex flex-wrap items-center justify-center mx-auto md:flex-row"
->
-  <div class="flex-col w-60 m-6" *ngFor="let s of summary; let i = index">
-    <a
-      class="block max-w-sm p-6 bg-neutral-200 border border-gray-200 rounded-lg shadow hover:bg-green-100"
+      class="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
     >
-      <img
-        src="{{ imagePaths[i] }}"
-        alt=""
-        class="w-20 justify-center mx-auto"
-      />
-
-      <h5
-        class="my-2 text-2xl text-center font-bold tracking-tight text-gray-900"
-      >
-        {{ s }}
-      </h5>
-      <h2 class="font-bold text-lg text-green-700 text-center">
-        FC {{ summaryContent[i] | number : "1.0-0" }}
-      </h2>
-      <h2 class="font-bold text-lg text-yellow-900 text-center">
-        $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
-      </h2>
-    </a>
-  </div>
-
-  <div *ngIf="auth.isAdmin" class="container mx-auto px-4 py-4">
-    <!-- auto-wrap: 1col → 2col (md) → 3col (xl) -->
-    <div class="grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-3">
-      <!-- ====== CLASSEMENT DU JOUR ====== -->
-      <div
-        class="rounded-xl border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
-      >
-        <div class="mb-2 flex items-center justify-between">
-          <h2 class="text-lg font-semibold tracking-tight dark:text-slate-100">
-            Classement Du Jour
-          </h2>
-          <div
-            class="hidden sm:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          Classement paiement du jour
+        </h2>
+        <div
+          class="hidden items-center gap-2 text-xs text-slate-600 dark:text-slate-300 sm:flex"
+        >
+          <span
+            class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
           >
-            <span
-              class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
-            >
-              {{ toNum(dailyReserve) | number : "1.0-0" }} FC
-            </span>
-            <span
-              class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-            >
-              {{ toNum(dailyReserveDollars) | number : "1.0-0" }} $
-            </span>
-          </div>
-        </div>
-
-        <div class="rounded-lg ring-1 ring-slate-200 dark:ring-slate-700">
-          <div class="-mx-4 sm:overflow-visible overflow-x-auto overscroll-x-contain sm:mx-0">
-            <table class=" sm:min-w-0  min-w-[560px] w-full table-auto text-sm tabular-nums">
-              <thead
-                class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-              >
-                <tr>
-                  <th class="px-3 py-2 text-left">Rang</th>
-                  <th class="px-2 py-2 text-left">Équipe</th>
-                  <th class="px-3 py-2 text-right">Réserve (FC)</th>
-                  <th class="px-3 py-2 text-right">Réserve ($)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                <tr
-                  *ngFor="let s of sortedReserveToday; let i = index"
-                  class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
-                >
-                  <td class="px-3 py-2">
-                    <span
-                      class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
-                      [ngClass]="{
-                        'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
-                          i === 0
-                      }"
-                      [title]="'Rang ' + (i + 1)"
-                    >
-                      {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
-                    </span>
-                  </td>
-
-                  <td class="px-2 py-2">
-                    <div class="font-medium text-slate-900 dark:text-slate-100">
-                      {{ s.firstName }}
-                    </div>
-                    <div
-                      class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
-                      aria-hidden="true"
-                    >
-                      <div
-                        class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
-                        [style.width.%]="
-                          percentOf(
-                            toNum(
-                              val(
-                                s,
-                                'totalReserveInDollars',
-                                'totalPaymentInDollars',
-                                'amountUsd'
-                              )
-                            ),
-                            reserveTodayUSDMax
-                          )
-                        "
-                      ></div>
-                    </div>
-                  </td>
-
-                  <td class="px-3 py-2 text-right whitespace-nowrap">
-                    <span class="font-medium text-slate-900 dark:text-slate-100">
-                      {{
-                        toNum(val(s, "totalReserve", "amount", "value"))
-                          | number : "1.0-0"
-                      }}
-                      FC
-                    </span>
-                  </td>
-                  <td class="px-3 py-2 text-right whitespace-nowrap">
-                    <span class="font-medium text-slate-900 dark:text-slate-100">
-                      {{
-                        toNum(
-                          val(s, "totalReserveInDollars", "amountUsd", "valueUsd")
-                        ) | number : "1.0-0"
-                      }}
-                      $
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot
-                class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
-              >
-                <tr>
-                  <td class="px-3 py-2 font-semibold">Total</td>
-                  <td class="px-2 py-2"></td>
-                  <td class="px-3 py-2 text-right font-semibold">
-                    {{ toNum(dailyReserve) | number : "1.0-0" }} FC
-                  </td>
-                  <td class="px-3 py-2 text-right font-semibold">
-                    {{ toNum(dailyReserveDollars) | number : "1.0-0" }} $
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+            {{ toNum(dailyPayment) | number : "1.0-0" }} FC
+          </span>
+          <span
+            class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            {{ toNum(dailyPaymentDollars) | number : "1.0-0" }} $
+          </span>
         </div>
       </div>
 
-      <!-- ====== CLASSEMENT PAIEMENT DU JOUR ====== -->
-      <div
-        class="rounded-xl border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
-      >
-        <div class="mb-2 flex items-center justify-between">
-          <h2 class="text-lg font-semibold tracking-tight dark:text-slate-100">
-            Classement Paiement Du Jour
-          </h2>
-          <div
-            class="hidden sm:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"
+      <div class="rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-700">
+        <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
+          <table
+            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
           >
-            <span
-              class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+            <thead
+              class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             >
-              {{ toNum(dailyPayment) | number : "1.0-0" }} FC
-            </span>
-            <span
-              class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-            >
-              {{ toNum(dailyPaymentDollars) | number : "1.0-0" }} $
-            </span>
-          </div>
-        </div>
-
-        <div class="rounded-lg ring-1 ring-slate-200 dark:ring-slate-700">
-           <div class="-mx-4 sm:overflow-visible overflow-x-auto overscroll-x-contain sm:mx-0">
-            <table class=" sm:min-w-0   min-w-[560px] w-full table-auto text-sm tabular-nums">
-              <thead
-                class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              <tr>
+                <th class="px-3 py-2 text-left">Rang</th>
+                <th class="px-2 py-2 text-left">Équipe</th>
+                <th class="px-3 py-2 text-right">Paiement (FC)</th>
+                <th class="px-3 py-2 text-right">Paiement ($)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let s of sortedPaymentToday; let i = index"
+                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
               >
-                <tr>
-                  <th class="px-3 py-2 text-left">Rang</th>
-                  <th class="px-2 py-2 text-left">Équipe</th>
-                  <th class="px-3 py-2 text-right">Paiement (FC)</th>
-                  <th class="px-3 py-2 text-right">Paiement ($)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                <tr
-                  *ngFor="let s of sortedPaymentToday; let i = index"
-                  class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
-                >
-                  <td class="px-3 py-2">
-                    <span
-                      class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
-                      [ngClass]="{
-                        'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
-                          i === 0
-                      }"
-                      [title]="'Rang ' + (i + 1)"
-                    >
-                      {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
-                    </span>
-                  </td>
-
-                  <td class="px-2 py-2">
-                    <div class="font-medium text-slate-900 dark:text-slate-100">
-                      {{ s.firstName }}
-                    </div>
+                <td class="px-3 py-2">
+                  <span
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
+                        i === 0
+                    }"
+                    [title]="'Rang ' + (i + 1)"
+                  >
+                    {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
+                  </span>
+                </td>
+                <td class="px-2 py-2">
+                  <div class="font-medium text-slate-900 dark:text-slate-100">
+                    {{ s.firstName }}
+                  </div>
+                  <div
+                    class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
+                    aria-hidden="true"
+                  >
                     <div
-                      class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
-                      aria-hidden="true"
-                    >
-                      <div
-                        class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
-                        [style.width.%]="
-                          percentOf(
-                            toNum(
-                              val(
-                                s,
-                                'totalPaymentInDollars',
-                                'totalReserveInDollars',
-                                'amountUsd'
-                              )
-                            ),
-                            paymentTodayUSDMax
-                          )
-                        "
-                      ></div>
-                    </div>
-                  </td>
+                      class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                      [style.width.%]="
+                        percentOf(
+                          toNum(
+                            val(
+                              s,
+                              'totalPaymentInDollars',
+                              'totalReserveInDollars',
+                              'amountUsd'
+                            )
+                          ),
+                          paymentTodayUSDMax
+                        )
+                      "
+                    ></div>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{
+                      toNum(
+                        val(
+                          s,
+                          'totalPayment',
+                          'amount',
+                          'value',
+                          'totalReserve'
+                        )
+                      ) | number : "1.0-0"
+                    }}
+                    FC
+                  </span>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{
+                      toNum(
+                        val(
+                          s,
+                          'totalPaymentInDollars',
+                          'amountUsd',
+                          'valueUsd',
+                          'totalReserveInDollars'
+                        )
+                      ) | number : "1.0-0"
+                    }}
+                    $
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot
+              class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
+            >
+              <tr>
+                <td class="px-3 py-2 font-semibold">Total</td>
+                <td class="px-2 py-2"></td>
+                <td class="px-3 py-2 text-right font-semibold">
+                  {{ toNum(dailyPayment) | number : "1.0-0" }} FC
+                </td>
+                <td class="px-3 py-2 text-right font-semibold">
+                  {{ toNum(dailyPaymentDollars) | number : "1.0-0" }} $
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
 
-                  <td class="px-3 py-2 text-right whitespace-nowrap">
-                    <span class="font-medium text-slate-900 dark:text-slate-100">
-                      {{
-                        toNum(
-                          val(
-                            s,
-                            "totalPayment",
-                            "amount",
-                            "value",
-                            "totalReserve"
-                          )
-                        ) | number : "1.0-0"
-                      }}
-                      FC
-                    </span>
-                  </td>
-                  <td class="px-3 py-2 text-right whitespace-nowrap">
-                    <span class="font-medium text-slate-900 dark:text-slate-100">
-                      {{
-                        toNum(
-                          val(
-                            s,
-                            "totalPaymentInDollars",
-                            "amountUsd",
-                            "valueUsd",
-                            "totalReserveInDollars"
-                          )
-                        ) | number : "1.0-0"
-                      }}
-                      $
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot
-                class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
-              >
-                <tr>
-                  <td class="px-3 py-2 font-semibold">Total</td>
-                  <td class="px-2 py-2"></td>
-                  <td class="px-3 py-2 text-right font-semibold">
-                    {{ toNum(dailyPayment) | number : "1.0-0" }} FC
-                  </td>
-                  <td class="px-3 py-2 text-right font-semibold">
-                    {{ toNum(dailyPaymentDollars) | number : "1.0-0" }} $
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+    <div
+      class="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          Argent demandé demain
+        </h2>
+        <div
+          class="hidden items-center gap-2 text-xs text-slate-600 dark:text-slate-300 sm:flex"
+        >
+          <span
+            class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+          >
+            {{ toNum(dailyRequest) | number : "1.0-0" }} FC
+          </span>
+          <span
+            class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            {{ toNum(dailyRequestDollars) | number : "1.0-0" }} $
+          </span>
         </div>
       </div>
 
-      <!-- ====== ARGENT DEMANDÉ DEMAIN ====== -->
-      <div
-        class="rounded-xl border border-slate-200 bg-white/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
-      >
-        <div class="mb-2 flex items-center justify-between">
-          <h2 class="text-lg font-semibold tracking-tight dark:text-slate-100">
-            Argent Demandé Demain
-          </h2>
-          <div
-            class="hidden sm:flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"
+      <div class="rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-700">
+        <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
+          <table
+            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
           >
-            <span
-              class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+            <thead
+              class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             >
-              {{ toNum(dailyRequest) | number : "1.0-0" }} FC
-            </span>
-            <span
-              class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-            >
-              {{ toNum(dailyRequestDollars) | number : "1.0-0" }} $
-            </span>
-          </div>
-        </div>
-
-        <div class="rounded-lg ring-1 ring-slate-200 dark:ring-slate-700">
-           <div class=" sm:overflow-visible -mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
-            <table class=" min-w-[560px] sm:min-w-0  w-full table-auto text-sm tabular-nums">
-              <thead
-                class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              <tr>
+                <th class="px-3 py-2 text-left">Rang</th>
+                <th class="px-2 py-2 text-left">Équipe</th>
+                <th class="px-3 py-2 text-right">Demandé (FC)</th>
+                <th class="px-3 py-2 text-right">Demandé ($)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let s of sortedRequestedTomorrow; let i = index"
+                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
               >
-                <tr>
-                  <th class="px-3 py-2 text-left">Rang</th>
-                  <th class="px-2 py-2 text-left">Équipe</th>
-                  <th class="px-3 py-2 text-right">Demandé (FC)</th>
-                  <th class="px-3 py-2 text-right">Demandé ($)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                <tr
-                  *ngFor="let s of sortedRequestedTomorrow; let i = index"
-                  class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
-                >
-                  <td class="px-3 py-2">
-                    <span
-                      class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
-                      [ngClass]="{
-                        'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
-                          i === 0
-                      }"
-                      [title]="'Rang ' + (i + 1)"
-                    >
-                      {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
-                    </span>
-                  </td>
-
-                  <td class="px-2 py-2">
-                    <div class="font-medium text-slate-900 dark:text-slate-100">
-                      {{ s.firstName }}
-                    </div>
+                <td class="px-3 py-2">
+                  <span
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
+                        i === 0
+                    }"
+                    [title]="'Rang ' + (i + 1)"
+                  >
+                    {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
+                  </span>
+                </td>
+                <td class="px-2 py-2">
+                  <div class="font-medium text-slate-900 dark:text-slate-100">
+                    {{ s.firstName }}
+                  </div>
+                  <div
+                    class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
+                    aria-hidden="true"
+                  >
                     <div
-                      class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
-                      aria-hidden="true"
-                    >
-                      <div
-                        class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
-                        [style.width.%]="
-                          percentOf(
-                            toNum(
-                              val(
-                                s,
-                                'totalRequestedInDollars',
-                                'totalReserveInDollars',
-                                'amountUsd'
-                              )
-                            ),
-                            requestTomorrowUSDMax
-                          )
-                        "
-                      ></div>
-                    </div>
-                  </td>
-
-                  <td class="px-3 py-2 text-right whitespace-nowrap">
-                    <span class="font-medium text-slate-900 dark:text-slate-100">
-                      {{
-                        toNum(
-                          val(
-                            s,
-                            "totalRequested",
-                            "totalReserve",
-                            "amount",
-                            "value"
-                          )
-                        ) | number : "1.0-0"
-                      }}
-                      FC
-                    </span>
-                  </td>
-                  <td class="px-3 py-2 text-right whitespace-nowrap">
-                    <span class="font-medium text-slate-900 dark:text-slate-100">
-                      {{
-                        toNum(
-                          val(
-                            s,
-                            "totalRequestedInDollars",
-                            "totalReserveInDollars",
-                            "amountUsd",
-                            "valueUsd"
-                          )
-                        ) | number : "1.0-0"
-                      }}
-                      $
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot
-                class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
-              >
-                <tr>
-                  <td class="px-3 py-2 font-semibold">Total</td>
-                  <td class="px-2 py-2"></td>
-                  <td class="px-3 py-2 text-right font-semibold">
-                    {{ toNum(dailyRequest) | number : "1.0-0" }} FC
-                  </td>
-                  <td class="px-3 py-2 text-right font-semibold">
-                    {{ toNum(dailyRequestDollars) | number : "1.0-0" }} $
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                      class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                      [style.width.%]="
+                        percentOf(
+                          toNum(
+                            val(
+                              s,
+                              'totalRequestedInDollars',
+                              'totalReserveInDollars',
+                              'amountUsd'
+                            )
+                          ),
+                          requestTomorrowUSDMax
+                        )
+                      "
+                    ></div>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{
+                      toNum(
+                        val(
+                          s,
+                          'totalRequested',
+                          'totalReserve',
+                          'amount',
+                          'value'
+                        )
+                      ) | number : "1.0-0"
+                    }}
+                    FC
+                  </span>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <span class="font-medium text-slate-900 dark:text-slate-100">
+                    {{
+                      toNum(
+                        val(
+                          s,
+                          'totalRequestedInDollars',
+                          'totalReserveInDollars',
+                          'amountUsd',
+                          'valueUsd'
+                        )
+                      ) | number : "1.0-0"
+                    }}
+                    $
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot
+              class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
+            >
+              <tr>
+                <td class="px-3 py-2 font-semibold">Total</td>
+                <td class="px-2 py-2"></td>
+                <td class="px-3 py-2 text-right font-semibold">
+                  {{ toNum(dailyRequest) | number : "1.0-0" }} FC
+                </td>
+                <td class="px-3 py-2 text-right font-semibold">
+                  {{ toNum(dailyRequestDollars) | number : "1.0-0" }} $
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>
   </div>
-</div>
+</section>
