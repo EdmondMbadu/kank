@@ -121,6 +121,9 @@ export class SummaryCardCentralComponent {
   cardUniqueLocations: string[] = [];
   cardSelectedLocations = new Set<string>();
   cardsSelectAll = true;
+  excludeDuplicatePhones = false;
+  cardsPotentialDuplicateCount = 0;
+  cardsDuplicateCount = 0;
 
   // single SMS modal
   cardSmsModal = {
@@ -285,6 +288,11 @@ export class SummaryCardCentralComponent {
     this.applyCardsFilters();
   }
 
+  toggleDuplicatePhoneFilter() {
+    this.excludeDuplicatePhones = !this.excludeDuplicatePhones;
+    this.applyCardsFilters();
+  }
+
   applyCardsFilters() {
     const term = String(this.cardsSearchControl.value || '')
       .trim()
@@ -316,14 +324,27 @@ export class SummaryCardCentralComponent {
     );
 
     // 5) search
-    this.cardsFiltered = term
-      ? (withPhone as any[]).filter(
+    const afterSearch = term
+      ? ((withPhone as any[]).filter(
           (c) =>
             `${c.firstName || ''} ${c.middleName || ''} ${c.lastName || ''}`
               .toLowerCase()
               .includes(term) || (c.phoneNumber || '').includes(term)
-        )
+        ) as Card[])
       : (withPhone as Card[]);
+
+    this.cardsPotentialDuplicateCount = this.countDuplicatePhones(afterSearch);
+
+    const deduped = this.excludeDuplicatePhones
+      ? this.pruneDuplicatePhones(afterSearch)
+      : afterSearch;
+
+    this.cardsDuplicateCount = afterSearch.length - deduped.length;
+    this.cardsFiltered = deduped;
+
+    if (this.cardBulkModal.open) {
+      this.updateCardBulkRecipients();
+    }
   }
 
   amountToPay(c: any): number {
@@ -533,5 +554,37 @@ Merci pona confiance na FONDATION GERVAIS`;
 
   trackByLoc(index: number, loc: string) {
     return loc;
+  }
+
+  private normalizePhoneDigits(raw: any): string | null {
+    if (raw === null || raw === undefined) return null;
+    const digits = String(raw).replace(/\D/g, '');
+    return digits.length ? digits : null;
+  }
+
+  private countDuplicatePhones(list: Card[]): number {
+    const seen = new Set<string>();
+    let duplicates = 0;
+    for (const c of list as any[]) {
+      const digits = this.normalizePhoneDigits(c?.phoneNumber);
+      if (!digits) continue;
+      if (seen.has(digits)) duplicates += 1;
+      else seen.add(digits);
+    }
+    return duplicates;
+  }
+
+  private pruneDuplicatePhones(list: Card[]): Card[] {
+    const seen = new Set<string>();
+    const unique: Card[] = [];
+    for (const c of list as any[]) {
+      const digits = this.normalizePhoneDigits(c?.phoneNumber);
+      if (digits) {
+        if (seen.has(digits)) continue;
+        seen.add(digits);
+      }
+      unique.push(c);
+    }
+    return unique;
   }
 }

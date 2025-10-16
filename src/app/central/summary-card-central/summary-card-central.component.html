@@ -221,6 +221,71 @@
         </div>
 
         <!-- Locations -->
+        <div
+          class="mt-3 flex flex-wrap items-center justify-between gap-3"
+        >
+          <button
+            type="button"
+            [attr.aria-pressed]="excludeDuplicatePhones"
+            (click)="toggleDuplicatePhoneFilter()"
+            class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition focus:outline-none focus:ring-2"
+            [ngClass]="
+              excludeDuplicatePhones
+                ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 focus:ring-emerald-300'
+                : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:bg-slate-900 dark:text-emerald-200 dark:border-emerald-800 dark:hover:bg-slate-800 focus:ring-emerald-400/40'
+            "
+            title="Ignorer les clients partageant le même numéro"
+          >
+            <svg
+              class="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M4 7h16M4 12h16M4 17h16"
+                *ngIf="!excludeDuplicatePhones"
+              />
+              <path
+                *ngIf="excludeDuplicatePhones"
+                d="M5 12h4l2 3 4-6h4"
+              />
+            </svg>
+            <span>
+              {{
+                excludeDuplicatePhones
+                  ? "Numéros uniques activés"
+                  : "Filtrer numéros dupliqués"
+              }}
+            </span>
+            <span
+              *ngIf="cardsPotentialDuplicateCount > 0"
+              class="ml-1 inline-flex h-5 items-center justify-center rounded-full bg-white/20 px-2 text-[10px] font-semibold"
+            >
+              {{ cardsPotentialDuplicateCount }}
+            </span>
+          </button>
+          <span
+            class="text-[11px] text-slate-500 dark:text-slate-400"
+            *ngIf="cardsPotentialDuplicateCount > 0; else noDuplicatePhones"
+          >
+            {{ cardsPotentialDuplicateCount }} doublon(s) détecté(s)
+            <ng-container *ngIf="excludeDuplicatePhones">
+              — {{ cardsDuplicateCount }} exclu(s) de la sélection.
+            </ng-container>
+            <ng-container *ngIf="!excludeDuplicatePhones">
+              • activer le filtre pour éviter les envois multiples.
+            </ng-container>
+          </span>
+          <ng-template #noDuplicatePhones>
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">
+              Aucun numéro dupliqué détecté.
+            </span>
+          </ng-template>
+        </div>
+
+        <!-- Locations -->
         <div class="mt-3">
           <div class="flex items-center justify-between mb-2">
             <span
