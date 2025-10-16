@@ -556,6 +556,18 @@ Merci pona confiance na FONDATION GERVAIS`;
     return loc;
   }
 
+  get totalCardClients(): number {
+    return Number(this.summaryContent?.[0] ?? 0);
+  }
+
+  get activeCardClients(): number {
+    return Number(this.summaryContent?.[1] ?? 0);
+  }
+
+  get totalSavingsToReturn(): number {
+    return Number(this.summaryContent?.[2] ?? 0);
+  }
+
   private normalizePhoneDigits(raw: any): string | null {
     if (raw === null || raw === undefined) return null;
     const digits = String(raw).replace(/\D/g, '');

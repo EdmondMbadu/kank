@@ -4,50 +4,182 @@
   [path]="'home'"
 ></app-navbar>
 
-<!-- investements -->
-
-<div class="flex container mx-auto m-12 justify-center">
-  <h1 class="text-2xl md:text-4xl mr-10">Tableau Info Carte Central</h1>
-  <button
-    type="submit"
-    class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center"
-    routerLink="/client-info-card"
-  >
-    Info Clients Carte
-  </button>
-</div>
-
-<div
-  class="container flex flex-wrap flex-col items-center justify-center mx-auto md:flex-row"
+<!-- ===== Hero & Snapshot ===== -->
+<section
+  class="bg-gradient-to-r from-emerald-600 via-emerald-500 to-indigo-600 text-white"
 >
-  <div class="flex-col w-60 m-6" *ngFor="let s of summary; let i = index">
-    <a
-      routerLink="{{ linkPath[i] }}"
-      class="block max-w-sm p-6 bg-neutral-200 border border-gray-200 rounded-lg shadow hover:bg-green-100"
-    >
-      <img
-        src="{{ imagePaths[i] }}"
-        alt=""
-        class="w-20 justify-center mx-auto"
-      />
+  <div
+    class="container mx-auto flex flex-col gap-10 px-6 py-12 md:flex-row md:items-center md:justify-between lg:py-16"
+  >
+    <div class="max-w-3xl space-y-4">
+      <p class="text-xs uppercase tracking-[0.3em] text-white/70">
+        Carte clients · Central
+      </p>
+      <h1 class="text-3xl font-semibold leading-tight md:text-4xl lg:text-5xl">
+        Données en temps réel pour piloter vos portefeuilles carte
+      </h1>
+      <p class="text-sm text-white/80 md:text-base">
+        Visualisez d’un coup d’œil l’activité des clients carte, puis passez à
+        l’action grâce aux relances ciblées et aux envois groupés. L’ensemble du
+        tableau de bord se met à jour au fil de vos filtres.
+      </p>
+      <div class="flex flex-wrap gap-3 text-xs md:text-sm">
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 font-medium backdrop-blur"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M12 22c4.97 0 9-3.582 9-8s-4.03-8-9-8-9 3.582-9 8c0 2.8 1.58 5.27 4 6.74V22l3.54-2.12c.46.08.94.12 1.46.12z"
+            />
+          </svg>
+          {{ totalCardClients | number : "1.0-0" }} clients suivis
+        </span>
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 font-medium backdrop-blur"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M4 12h16" />
+            <path d="M12 4v16" />
+          </svg>
+          {{ activeCardClients | number : "1.0-0" }} actifs aujourd’hui
+        </span>
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 font-medium backdrop-blur"
+        >
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M4 6h16M4 12h16M4 18h16M7 9v8M12 9v8M17 9v8"
+            />
+          </svg>
+          {{ totalSavingsToReturn | number : "1.0-0" }} FC à restituer
+        </span>
+      </div>
+    </div>
 
-      <h5
-        class="my-2 text-2xl text-center font-bold tracking-tight text-gray-900"
+    <div
+      class="flex flex-col items-start gap-3 rounded-2xl bg-white/10 p-6 text-left shadow-lg backdrop-blur md:items-end md:text-right"
+    >
+      <p class="text-sm font-medium">Consulter tous les clients carte</p>
+      <p class="text-xs text-white/80">
+        Accédez à la fiche détaillée de chaque client carte, historique, notes
+        et paiements.
+      </p>
+      <a
+        routerLink="/client-info-card"
+        class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-semibold text-emerald-700 shadow transition hover:-translate-y-0.5 hover:bg-yellow-50 hover:text-emerald-900 focus:outline-none focus:ring-2 focus:ring-white/60"
       >
-        {{ s }}
-      </h5>
-      <h2 class="font-bold text-lg text-green-700 text-center" *ngIf="i > 1">
-        FC {{ summaryContent[i] | number : "1.0-0" }}
-      </h2>
-      <h2 class="font-bold text-lg text-yellow-900 text-center" *ngIf="i > 1">
-        $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
-      </h2>
-      <h2 class="font-bold text-lg text-green-700 text-center" *ngIf="i <= 1">
-        {{ summaryContent[i] }}
-      </h2>
+        <svg
+          class="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path d="m5 12 5 5 9-10" />
+        </svg>
+        Ouvrir le répertoire
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Summary cards ===== -->
+<section class="container mx-auto -mt-10 px-6 pb-12">
+  <div
+    class="grid grid-cols-1 gap-4 lg:grid-cols-3"
+    *ngIf="summary?.length; else emptySummary"
+  >
+    <a
+      *ngFor="let s of summary; let i = index"
+      routerLink="{{ linkPath[i] }}"
+      class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
+    >
+      <div class="flex items-start gap-4">
+        <span
+          class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 transition group-hover:bg-emerald-100 group-hover:text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800"
+        >
+          <img
+            [src]="imagePaths[i]"
+            alt=""
+            class="h-7 w-7 object-contain"
+            loading="lazy"
+          />
+        </span>
+        <div class="flex-1">
+          <p class="text-xs uppercase tracking-wide text-slate-400">
+            Indicateur #{{ i + 1 | number : "1.0-0" }}
+          </p>
+          <h3
+            class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100"
+          >
+            {{ s }}
+          </h3>
+          <div class="mt-4 space-y-1 text-slate-700 dark:text-slate-200">
+            <p
+              class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
+              *ngIf="i <= 1"
+            >
+              {{ summaryContent[i] | number : "1.0-0" }}
+            </p>
+            <ng-container *ngIf="i > 1">
+              <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+                FC {{ summaryContent[i] | number : "1.0-0" }}
+              </p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                ≈ $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+              </p>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="mt-6 flex items-center gap-2 text-xs font-medium text-emerald-600 transition group-hover:text-emerald-700 dark:text-emerald-300"
+      >
+        Accéder au détail
+        <svg
+          class="h-3.5 w-3.5 transition group-hover:translate-x-1"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </div>
+
+      <div
+        class="absolute inset-x-0 -bottom-12 h-24 bg-gradient-to-t from-emerald-500/10 via-transparent to-transparent transition group-hover:translate-y-12"
+      ></div>
     </a>
   </div>
-</div>
+
+  <ng-template #emptySummary>
+    <div
+      class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
+    >
+      Aucune donnée de synthèse disponible pour l’instant.
+    </div>
+  </ng-template>
+</section>
 
 <!-- ===================== CARDS CLIENTS – BULK INVITE DASHBOARD (ELEVATED UI) ===================== -->
 <section class="container mx-auto px-4 py-10" id="cards-bulk-dashboard">
