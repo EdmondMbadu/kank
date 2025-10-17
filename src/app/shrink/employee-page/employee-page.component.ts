@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   ElementRef,
+  OnDestroy,
   OnInit,
   ViewChild,
 } from '@angular/core';
@@ -17,7 +18,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { LocationCoordinates } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import firebase from 'firebase/compat/app';
 
 // at the top, with other imports
@@ -39,7 +40,7 @@ interface AuditReceipt {
   templateUrl: './employee-page.component.html',
   styleUrls: ['./employee-page.component.css'],
 })
-export class EmployeePageComponent implements OnInit {
+export class EmployeePageComponent implements OnInit, OnDestroy {
   // ── Attendance state picker (admin) ─────────────────────────────
   showStatePickerModal = false;
   public statePickerKey = ''; // key we will edit (e.g. "8-23-2025" or "8-23-2025-09-15-02")
@@ -238,6 +239,7 @@ export class EmployeePageComponent implements OnInit {
   isAuthorized = false; // page visible only when TRUE
   errorMsg = ''; // “code incorrect” feedback
   paymentCodeLoaded = false; // becomes true once we have the employee object
+  private employeesSub?: Subscription;
   constructor(
     private router: Router,
     private data: DataService,
@@ -256,6 +258,9 @@ export class EmployeePageComponent implements OnInit {
     this.retrieveEmployees();
     if (this.auth.isAdmninistrator) this.isAuthorized = true;
     this.attendanceTargetDate = this.resolveAttendanceTargetDate('today');
+  }
+  ngOnDestroy(): void {
+    this.employeesSub?.unsubscribe();
   }
   public graphPerformance = {
     data: [{}],
@@ -410,9 +415,36 @@ export class EmployeePageComponent implements OnInit {
     this.totalPayments = amount + bankFee + increase - absent - late - nothing;
     return this.totalPayments;
   }
+  private resetEmployeeState(): void {
+    this.employee = {};
+    this.employees = [];
+    this.paymentCodeLoaded = false;
+  }
   async retrieveEmployees(): Promise<void> {
-    this.auth.getAllEmployees().subscribe(async (data: any) => {
-      this.employees = data;
+    this.employeesSub?.unsubscribe();
+    this.employeesSub = this.auth.getAllEmployees().subscribe(async (data: any) => {
+      if (!data) {
+        this.resetEmployeeState();
+        return;
+      }
+
+      this.employees = Array.isArray(data) ? data : Object.values(data);
+      const selectedIndex = Number(this.id);
+      let selectedEmployee: Employee | undefined =
+        Number.isFinite(selectedIndex) && selectedIndex >= 0
+          ? this.employees[selectedIndex]
+          : undefined;
+
+      if (!selectedEmployee && typeof this.id === 'string') {
+        selectedEmployee = this.employees.find((em) => em.uid === this.id);
+      }
+
+      if (!selectedEmployee) {
+        this.resetEmployeeState();
+        return;
+      }
+
+      this.employee = selectedEmployee;
       this.paymentCodeLoaded = true; // we now know employee.paymentCode
 
       // set location coordinates
@@ -421,7 +453,6 @@ export class EmployeePageComponent implements OnInit {
         this.currentLat = Number(this.locationCoordinate.lattitude);
         this.currentLng = Number(this.locationCoordinate.longitude);
       }
-      this.employee = data[this.id];
       this.loadAuditReceipts();
       if (this.employee.dateJoined) {
         this.yearsAtCompany = this.compute.yearsSinceJoining(
