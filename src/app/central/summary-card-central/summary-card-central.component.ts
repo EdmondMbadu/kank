@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { Card } from 'src/app/models/card';
+import { Client } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -115,6 +116,7 @@ export class SummaryCardCentralComponent {
   cardsAll: Card[] = [];
   cardsFiltered: Card[] = [];
   cardsSearchControl = new FormControl('');
+  private cardsSearchTerm = '';
 
   minAmountToPay = 0; // ✅ new filter on Card.amountToPay
 
@@ -124,6 +126,12 @@ export class SummaryCardCentralComponent {
   excludeDuplicatePhones = false;
   cardsPotentialDuplicateCount = 0;
   cardsDuplicateCount = 0;
+  excludeCreditOverlap = false;
+  cardsCreditOverlapCount = 0;
+  cardsCreditOverlapRemoved = 0;
+  showOnlyDuplicateTypes: Array<'card' | 'credit'> = [];
+  cardDuplicateEntries: Card[] = [];
+  creditOverlapEntries: Card[] = [];
 
   // single SMS modal
   cardSmsModal = {
@@ -154,10 +162,14 @@ export class SummaryCardCentralComponent {
     '{{MAX_AMOUNT}}',
   ];
 
+  allCreditClients: Client[] = [];
+  private creditClientPhones = new Set<string>();
+
   ngOnInit(): void {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.getAllClientsCard();
+      this.getAllCreditClients();
     });
   }
 
@@ -183,6 +195,26 @@ export class SummaryCardCentralComponent {
     });
   }
 
+  getAllCreditClients() {
+    if (!this.allUsers.length) return;
+    let tempClients: Client[] = [];
+    let completedRequests = 0;
+
+    this.allUsers.forEach((user) => {
+      this.auth.getClientsOfAUser(user.uid!).subscribe((clients) => {
+        const tagged = clients.map((c) => ({
+          ...c,
+          locationName: user.firstName,
+        }));
+        tempClients = tempClients.concat(tagged);
+        completedRequests++;
+        if (completedRequests === this.allUsers.length) {
+          this.initializeCreditClients(tempClients);
+        }
+      });
+    });
+  }
+
   filterAndInitializeClientsCard(allClients: Card[]) {
     const unique = new Map<string, Card>();
     allClients.forEach((client: any) => {
@@ -196,6 +228,28 @@ export class SummaryCardCentralComponent {
     this.allClientsCard = Array.from(unique.values());
     this.initalizeInputs(); // existing summary
     this.buildCardsDataset(); // new dashboard dataset
+  }
+
+  private initializeCreditClients(allClients: Client[]) {
+    const unique = new Map<string, Client>();
+    allClients.forEach((client) => {
+      const key =
+        client.uid ||
+        client.trackingId ||
+        `${client.firstName}-${client.lastName}-${client.phoneNumber}`;
+      if (!unique.has(key)) unique.set(key, client);
+    });
+    this.allCreditClients = Array.from(unique.values());
+    this.buildCreditClientPhones();
+    this.applyCardsFilters();
+  }
+
+  private buildCreditClientPhones() {
+    this.creditClientPhones.clear();
+    for (const client of this.allCreditClients as any[]) {
+      const digits = this.normalizePhoneDigits(client?.phoneNumber);
+      if (digits) this.creditClientPhones.add(digits);
+    }
   }
 
   initalizeInputs() {
@@ -250,13 +304,15 @@ export class SummaryCardCentralComponent {
     this.resetCardLocationSelection(true);
 
     this.setupCardsSearch();
+    this.cardsSearchTerm = String(this.cardsSearchControl.value || '');
     this.applyCardsFilters();
   }
 
   private setupCardsSearch() {
     this.cardsSearchControl.valueChanges
       .pipe(debounceTime(250), distinctUntilChanged())
-      .subscribe(() => {
+      .subscribe((value) => {
+        this.cardsSearchTerm = value ? String(value) : '';
         this.applyCardsFilters();
       });
   }
@@ -293,10 +349,29 @@ export class SummaryCardCentralComponent {
     this.applyCardsFilters();
   }
 
+  toggleCreditOverlapFilter() {
+    this.excludeCreditOverlap = !this.excludeCreditOverlap;
+    this.applyCardsFilters();
+  }
+
+  toggleDuplicateView(type: 'card' | 'credit') {
+    if (this.showOnlyDuplicateTypes.includes(type)) {
+      this.showOnlyDuplicateTypes = this.showOnlyDuplicateTypes.filter(
+        (t) => t !== type
+      );
+    } else {
+      this.showOnlyDuplicateTypes = [...this.showOnlyDuplicateTypes, type];
+    }
+    this.applyCardsFilters();
+  }
+
   applyCardsFilters() {
     const term = String(this.cardsSearchControl.value || '')
       .trim()
       .toLowerCase();
+    this.cardsSearchTerm = term;
+    this.cardDuplicateEntries = [];
+    this.creditOverlapEntries = [];
 
     // 1) site filter
     let base = (this.cardsAll as any[]).filter((c) =>
@@ -329,22 +404,233 @@ export class SummaryCardCentralComponent {
           (c) =>
             `${c.firstName || ''} ${c.middleName || ''} ${c.lastName || ''}`
               .toLowerCase()
-              .includes(term) || (c.phoneNumber || '').includes(term)
+              .includes(term) ||
+            (c.phoneNumber || '').includes(term)
         ) as Card[])
       : (withPhone as Card[]);
 
-    this.cardsPotentialDuplicateCount = this.countDuplicatePhones(afterSearch);
+    const duplicateInfo = this.partitionCardDuplicates(afterSearch);
+    this.cardsPotentialDuplicateCount = duplicateInfo.totalDuplicateCount;
+    this.cardDuplicateEntries = duplicateInfo.duplicates;
 
     const deduped = this.excludeDuplicatePhones
-      ? this.pruneDuplicatePhones(afterSearch)
+      ? duplicateInfo.unique
       : afterSearch;
 
     this.cardsDuplicateCount = afterSearch.length - deduped.length;
-    this.cardsFiltered = deduped;
+
+    const creditInfo = this.filterCreditOverlap(deduped);
+    this.cardsCreditOverlapCount = creditInfo.overlap;
+    this.cardsCreditOverlapRemoved = creditInfo.removed;
+    this.creditOverlapEntries = creditInfo.overlapEntries;
+
+    const baseFiltered = creditInfo.filtered;
+    this.cardsFiltered = this.applyDuplicateViewSelection(baseFiltered);
 
     if (this.cardBulkModal.open) {
       this.updateCardBulkRecipients();
     }
+  }
+
+  get cardsListSummary(): string {
+    const count = this.cardsFiltered.length;
+    const total = this.cardsAll?.length ?? count;
+    if (this.showOnlyDuplicateTypes.length > 0) {
+      const segments: string[] = [];
+      if (this.showOnlyDuplicateTypes.includes('card')) {
+        segments.push(`${this.cardDuplicateEntries.length} doublon(s) carte`);
+      }
+      if (this.showOnlyDuplicateTypes.includes('credit')) {
+        segments.push(
+          `${this.creditOverlapEntries.length} doublon(s) crédit`
+        );
+      }
+      const detail = segments.length ? segments.join(' + ') : '—';
+      return `Vue doublons (${detail}) · ${count} client(s)`;
+    }
+    if (this.cardsSearchTerm.trim().length > 0) {
+      return `Résultats de la recherche · ${count} client(s)`;
+    }
+    if (count === total) {
+      return `Tous les clients carte · ${total} client(s)`;
+    }
+    return `Sélection actuelle · ${count} client(s)`;
+  }
+
+  private applyDuplicateViewSelection(base: Card[]): Card[] {
+    if (this.showOnlyDuplicateTypes.length === 0) return base;
+
+    const includeCard = this.showOnlyDuplicateTypes.includes('card');
+    const includeCredit = this.showOnlyDuplicateTypes.includes('credit');
+
+    const pool: Card[] = [];
+    if (includeCard) pool.push(...this.cardDuplicateEntries);
+    if (includeCredit) pool.push(...this.creditOverlapEntries);
+
+    if (pool.length === 0) return [];
+
+    return this.uniqueCardsByIdentity(pool);
+  }
+
+  private matchesCardBirthday(card: Card): boolean {
+    return true;
+  }
+
+  private extractMonthDayVariants(input: string | undefined | null) {
+    if (!input) return [];
+    const parts = input.match(/\d+/g);
+    if (!parts || parts.length < 2) return [];
+
+    const nums = parts.map((p) => Number(p));
+    const results: Array<{ month: number; day: number }> = [];
+    const seen = new Set<string>();
+
+    const addCandidate = (month?: number, day?: number) => {
+      if (
+        month == null ||
+        day == null ||
+        !Number.isFinite(month) ||
+        !Number.isFinite(day)
+      )
+        return;
+      if (month < 1 || month > 12) return;
+      if (day < 1 || day > 31) return;
+      const key = `${month}-${day}`;
+      if (!seen.has(key)) {
+        results.push({ month, day });
+        seen.add(key);
+      }
+    };
+
+    const [a, b, c] = nums;
+    if (nums.length >= 3) {
+      if (a > 31) addCandidate(b, c); // yyyy-mm-dd
+      if (a >= 1 && a <= 31 && b >= 1 && b <= 12) addCandidate(b, a); // dd-mm-yyyy
+      if (b > 12 && a <= 12) addCandidate(a, b); // mm-dd-yyyy
+      if (a > 31) addCandidate(c, b); // yyyy-dd-mm
+      if (c > 31) addCandidate(a, b); // mm-dd-yyyy (year last)
+      addCandidate(b, c);
+      addCandidate(c, b);
+    } else {
+      addCandidate(a, b);
+      addCandidate(b, a);
+    }
+
+    return results;
+  }
+
+  private formatCardBirthdayDateForDisplay(target: {
+    month: number;
+    day: number;
+  }) {
+    const date = new Date(2000, target.month - 1, target.day);
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+    });
+  }
+
+  private createTargetFromDate(date: Date) {
+    return {
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+    };
+  }
+
+  private toMonthDayFromDateInput(value: string) {
+    if (!value) return null;
+    const parts = value.split('-');
+    if (parts.length < 3) return null;
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+    if (!Number.isFinite(month) || !Number.isFinite(day)) return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return { month, day };
+  }
+
+  private partitionCardDuplicates(list: Card[]) {
+    const unique: Card[] = [];
+    const duplicates: Card[] = [];
+    const groups = new Map<string, Card[]>();
+    const seenDigits = new Set<string>();
+
+    list.forEach((card) => {
+      const digits = this.normalizePhoneDigits((card as any)?.phoneNumber);
+      if (!digits) {
+        unique.push(card);
+        return;
+      }
+      const group = groups.get(digits);
+      if (group) {
+        group.push(card);
+      } else {
+        groups.set(digits, [card]);
+      }
+      if (!seenDigits.has(digits)) {
+        unique.push(card);
+        seenDigits.add(digits);
+      }
+    });
+
+    let totalDuplicateCount = 0;
+
+    for (const [digits, group] of groups.entries()) {
+      if (group.length > 1) {
+        duplicates.push(...group);
+        totalDuplicateCount += group.length - 1;
+      }
+    }
+
+    return { unique, duplicates, totalDuplicateCount };
+  }
+
+  private filterCreditOverlap(list: Card[]) {
+    if (!this.creditClientPhones.size) {
+      return {
+        filtered: [...list],
+        removed: 0,
+        overlap: 0,
+        overlapEntries: [] as Card[],
+      };
+    }
+
+    const filtered: Card[] = [];
+    const overlapEntries: Card[] = [];
+    let overlap = 0;
+    let removed = 0;
+
+    for (const c of list as any[]) {
+      const digits = this.normalizePhoneDigits(c?.phoneNumber);
+      if (digits && this.creditClientPhones.has(digits)) {
+        overlap += 1;
+        overlapEntries.push(c);
+        if (this.excludeCreditOverlap) {
+          removed += 1;
+          continue;
+        }
+      }
+      filtered.push(c);
+    }
+
+    return { filtered, removed, overlap, overlapEntries };
+  }
+
+  private uniqueCardsByIdentity(list: Card[]): Card[] {
+    const seen = new Set<string>();
+    const out: Card[] = [];
+    for (const card of list) {
+      const key = this.cardIdentityKey(card);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(card);
+    }
+    return out;
+  }
+
+  private cardIdentityKey(c: Card): string {
+    const digits =
+      this.normalizePhoneDigits((c as any)?.phoneNumber) || 'no-phone';
+    return c.uid || c.trackingId || `${c.firstName || ''}-${c.lastName || ''}-${digits}`;
   }
 
   amountToPay(c: any): number {
@@ -575,29 +861,4 @@ Merci pona confiance na FONDATION GERVAIS`;
     return digits.length ? digits : null;
   }
 
-  private countDuplicatePhones(list: Card[]): number {
-    const seen = new Set<string>();
-    let duplicates = 0;
-    for (const c of list as any[]) {
-      const digits = this.normalizePhoneDigits(c?.phoneNumber);
-      if (!digits) continue;
-      if (seen.has(digits)) duplicates += 1;
-      else seen.add(digits);
-    }
-    return duplicates;
-  }
-
-  private pruneDuplicatePhones(list: Card[]): Card[] {
-    const seen = new Set<string>();
-    const unique: Card[] = [];
-    for (const c of list as any[]) {
-      const digits = this.normalizePhoneDigits(c?.phoneNumber);
-      if (digits) {
-        if (seen.has(digits)) continue;
-        seen.add(digits);
-      }
-      unique.push(c);
-    }
-    return unique;
-  }
 }

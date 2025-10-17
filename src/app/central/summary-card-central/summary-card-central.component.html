@@ -353,68 +353,233 @@
         </div>
 
         <!-- Locations -->
+        <p
+          class="mt-2 text-[11px] font-semibold text-emerald-600 dark:text-emerald-300"
+        >
+          {{ cardsListSummary }}
+        </p>
+
+        <!-- Phone duplicate filters -->
         <div
           class="mt-3 flex flex-wrap items-center justify-between gap-3"
         >
-          <button
-            type="button"
-            [attr.aria-pressed]="excludeDuplicatePhones"
-            (click)="toggleDuplicatePhoneFilter()"
-            class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition focus:outline-none focus:ring-2"
-            [ngClass]="
-              excludeDuplicatePhones
-                ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 focus:ring-emerald-300'
-                : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:bg-slate-900 dark:text-emerald-200 dark:border-emerald-800 dark:hover:bg-slate-800 focus:ring-emerald-400/40'
-            "
-            title="Ignorer les clients partageant le même numéro"
-          >
-            <svg
-              class="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M4 7h16M4 12h16M4 17h16"
-                *ngIf="!excludeDuplicatePhones"
-              />
-              <path
-                *ngIf="excludeDuplicatePhones"
-                d="M5 12h4l2 3 4-6h4"
-              />
-            </svg>
-            <span>
-              {{
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              [attr.aria-pressed]="excludeDuplicatePhones"
+              (click)="toggleDuplicatePhoneFilter()"
+              class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition focus:outline-none focus:ring-2"
+              [ngClass]="
                 excludeDuplicatePhones
-                  ? "Numéros uniques activés"
-                  : "Filtrer numéros dupliqués"
-              }}
-            </span>
-            <span
-              *ngIf="cardsPotentialDuplicateCount > 0"
-              class="ml-1 inline-flex h-5 items-center justify-center rounded-full bg-white/20 px-2 text-[10px] font-semibold"
+                  ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 focus:ring-emerald-300'
+                  : 'bg-white text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:bg-slate-900 dark:text-emerald-200 dark:border-emerald-800 dark:hover:bg-slate-800 focus:ring-emerald-400/40'
+              "
+              title="Ignorer les clients partageant le même numéro"
             >
-              {{ cardsPotentialDuplicateCount }}
-            </span>
-          </button>
-          <span
-            class="text-[11px] text-slate-500 dark:text-slate-400"
-            *ngIf="cardsPotentialDuplicateCount > 0; else noDuplicatePhones"
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M4 7h16M4 12h16M4 17h16"
+                  *ngIf="!excludeDuplicatePhones"
+                />
+                <path
+                  *ngIf="excludeDuplicatePhones"
+                  d="M5 12h4l2 3 4-6h4"
+                />
+              </svg>
+              <span>
+                {{
+                  excludeDuplicatePhones
+                    ? "Numéros uniques activés"
+                    : "Filtrer numéros dupliqués"
+                }}
+              </span>
+              <span
+                *ngIf="cardsPotentialDuplicateCount > 0"
+                class="ml-1 inline-flex h-5 items-center justify-center rounded-full bg-white/20 px-2 text-[10px] font-semibold"
+              >
+                {{ cardsPotentialDuplicateCount }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              [attr.aria-pressed]="excludeCreditOverlap"
+              (click)="toggleCreditOverlapFilter()"
+              class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition focus:outline-none focus:ring-2"
+              [ngClass]="
+                excludeCreditOverlap
+                  ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 focus:ring-indigo-300'
+                  : 'bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50 dark:bg-slate-900 dark:text-indigo-200 dark:border-indigo-800 dark:hover:bg-slate-800 focus:ring-indigo-400/40'
+              "
+              title="Retirer les clients carte déjà présents dans le crédit"
+            >
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M8 11l4 4 4-8" />
+              </svg>
+              <span>
+                {{
+                  excludeCreditOverlap
+                    ? "Crédit exclus activé"
+                    : "Filtrer doublons Crédit"
+                }}
+              </span>
+              <span
+                *ngIf="cardsCreditOverlapCount > 0"
+                class="ml-1 inline-flex h-5 items-center justify-center rounded-full bg-white/20 px-2 text-[10px] font-semibold"
+              >
+                {{ cardsCreditOverlapCount }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              [attr.aria-pressed]="showOnlyDuplicateTypes.includes('card')"
+              (click)="toggleDuplicateView('card')"
+              class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition focus:outline-none focus:ring-2"
+              [disabled]="
+                cardDuplicateEntries.length === 0 &&
+                !showOnlyDuplicateTypes.includes('card')
+              "
+              [ngClass]="
+                showOnlyDuplicateTypes.includes('card')
+                  ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600 focus:ring-amber-200'
+                  : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-50 dark:bg-slate-900 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-slate-800 focus:ring-amber-400/40'
+              "
+              title="Afficher uniquement les doublons au sein des cartes"
+            >
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="8.5" cy="8.5" r="4" />
+                <circle cx="15.5" cy="15.5" r="4" />
+                <path d="m14 10 4-4" />
+              </svg>
+              <span>
+                {{
+                  showOnlyDuplicateTypes.includes('card')
+                    ? "Vue doublons Carte"
+                    : "Voir doublons Carte"
+                }}
+              </span>
+              <span
+                *ngIf="cardDuplicateEntries.length > 0"
+                class="ml-1 inline-flex h-5 items-center justify-center rounded-full bg-white/20 px-2 text-[10px] font-semibold"
+              >
+                {{ cardDuplicateEntries.length }}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              [attr.aria-pressed]="showOnlyDuplicateTypes.includes('credit')"
+              (click)="toggleDuplicateView('credit')"
+              class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium border transition focus:outline-none focus:ring-2"
+              [disabled]="
+                creditOverlapEntries.length === 0 &&
+                !showOnlyDuplicateTypes.includes('credit')
+              "
+              [ngClass]="
+                showOnlyDuplicateTypes.includes('credit')
+                  ? 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700 focus:ring-purple-200'
+                  : 'bg-white text-purple-700 border-purple-300 hover:bg-purple-50 dark:bg-slate-900 dark:text-purple-200 dark:border-purple-800 dark:hover:bg-slate-800 focus:ring-purple-400/40'
+              "
+              title="Afficher uniquement les cartes qui partagent un numéro avec un client crédit"
+            >
+              <svg
+                class="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M9 5h-1a4 4 0 0 0-4 4v1m0 4v1a4 4 0 0 0 4 4h1m6-14h1a4 4 0 0 1 4 4v1m0 4v1a4 4 0 0 1-4 4h-1"
+                />
+                <path d="M8 12h8" />
+              </svg>
+              <span>
+                {{
+                  showOnlyDuplicateTypes.includes('credit')
+                    ? "Vue doublons Crédit"
+                    : "Voir doublons Crédit"
+                }}
+              </span>
+              <span
+                *ngIf="creditOverlapEntries.length > 0"
+                class="ml-1 inline-flex h-5 items-center justify-center rounded-full bg-white/20 px-2 text-[10px] font-semibold"
+              >
+                {{ creditOverlapEntries.length }}
+              </span>
+            </button>
+          </div>
+
+          <div
+            class="flex flex-col items-start gap-1 text-[11px] text-slate-500 dark:text-slate-400"
           >
-            {{ cardsPotentialDuplicateCount }} doublon(s) détecté(s)
-            <ng-container *ngIf="excludeDuplicatePhones">
-              — {{ cardsDuplicateCount }} exclu(s) de la sélection.
-            </ng-container>
-            <ng-container *ngIf="!excludeDuplicatePhones">
-              • activer le filtre pour éviter les envois multiples.
-            </ng-container>
-          </span>
-          <ng-template #noDuplicatePhones>
-            <span class="text-[11px] text-slate-500 dark:text-slate-400">
-              Aucun numéro dupliqué détecté.
+            <span
+              *ngIf="cardsPotentialDuplicateCount > 0; else noDuplicatePhones"
+            >
+              {{ cardsPotentialDuplicateCount }} doublon(s) détecté(s)
+              <ng-container *ngIf="excludeDuplicatePhones">
+                — {{ cardsDuplicateCount }} exclu(s) de la sélection.
+              </ng-container>
+              <ng-container *ngIf="!excludeDuplicatePhones">
+                • activer le filtre pour éviter les envois multiples.
+              </ng-container>
             </span>
-          </ng-template>
+            <ng-template #noDuplicatePhones>
+              <span>Aucun numéro dupliqué détecté.</span>
+            </ng-template>
+
+            <span *ngIf="cardsCreditOverlapCount > 0; else noCreditOverlap">
+              {{ cardsCreditOverlapCount }} client(s) carte ont déjà un dossier
+              crédit
+              <ng-container *ngIf="excludeCreditOverlap">
+                — {{ cardsCreditOverlapRemoved }} retiré(s) de la sélection.
+              </ng-container>
+              <ng-container *ngIf="!excludeCreditOverlap">
+                • activer le filtre pour éviter les doublons inter-portefeuilles.
+              </ng-container>
+            </span>
+            <ng-template #noCreditOverlap>
+              <span>Aucun chevauchement détecté avec les clients crédit.</span>
+            </ng-template>
+
+            <span *ngIf="showOnlyDuplicateTypes.length > 0">
+              Vue doublons active :
+              <ng-container *ngIf="showOnlyDuplicateTypes.includes('card')">
+                Carte
+              </ng-container>
+              <ng-container
+                *ngIf="
+                  showOnlyDuplicateTypes.includes('card') &&
+                  showOnlyDuplicateTypes.includes('credit')
+                "
+              >
+                +
+              </ng-container>
+              <ng-container *ngIf="showOnlyDuplicateTypes.includes('credit')">
+                Crédit
+              </ng-container>
+              — {{ cardsFiltered.length }} client(s)
+            </span>
+          </div>
         </div>
 
         <!-- Locations -->
@@ -503,87 +668,95 @@
       <div
         class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
-        <div
-          class="max-h-[460px] overflow-auto divide-y divide-gray-200 dark:divide-gray-700"
-        >
+        <ng-container *ngIf="cardsFiltered.length > 0; else noCardsFiltered">
           <div
-            *ngFor="let c of cardsFiltered"
-            class="px-4 py-3 flex items-center justify-between hover:bg-emerald-50/60 dark:hover:bg-slate-800/60"
+            class="max-h-[460px] overflow-auto divide-y divide-gray-200 dark:divide-gray-700"
           >
-            <div class="min-w-0 flex items-center gap-3">
-              <div
-                class="relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100"
-              >
-                {{ $any(c).firstName || "CL" | slice : 0 : 2 }}
-              </div>
-              <div class="min-w-0">
-                <p
-                  class="truncate text-sm font-medium text-slate-900 dark:text-slate-100"
-                >
-                  {{ $any(c).firstName }} {{ $any(c).lastName }}
-                  {{ $any(c).middleName }}
-                </p>
+            <div
+              *ngFor="let c of cardsFiltered"
+              class="px-4 py-3 flex items-center justify-between hover:bg-emerald-50/60 dark:hover:bg-slate-800/60"
+            >
+              <div class="min-w-0 flex items-center gap-3">
                 <div
-                  class="mt-0.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
+                  class="relative inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100"
                 >
-                  <span>{{ formatDisplayPhone($any(c).phoneNumber) }}</span>
-                  <span
-                    *ngIf="amountToPay($any(c)) > 0"
-                    class="inline-flex items-center gap-1"
+                  {{ $any(c).firstName || "CL" | slice : 0 : 2 }}
+                </div>
+                <div class="min-w-0">
+                  <p
+                    class="truncate text-sm font-medium text-slate-900 dark:text-slate-100"
                   >
-                    • {{ toFcDisplay(amountToPay($any(c))) }} FC à payer
-                  </span>
-                  <span
-                    *ngIf="isCardDone($any(c))"
-                    class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 border border-rose-200 dark:border-rose-800"
+                    {{ $any(c).firstName }} {{ $any(c).lastName }}
+                    {{ $any(c).middleName }}
+                  </p>
+                  <div
+                    class="mt-0.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"
                   >
-                    Terminé
-                  </span>
+                    <span>{{ formatDisplayPhone($any(c).phoneNumber) }}</span>
+                    <span
+                      *ngIf="amountToPay($any(c)) > 0"
+                      class="inline-flex items-center gap-1"
+                    >
+                      • {{ toFcDisplay(amountToPay($any(c))) }} FC à payer
+                    </span>
+                    <span
+                      *ngIf="isCardDone($any(c))"
+                      class="text-[10px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200 border border-rose-200 dark:border-rose-800"
+                    >
+                      Terminé
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="flex items-center gap-3">
-              <span
-                class="text-[11px] font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800"
-              >
-                {{ $any(c).locationName || "site" }}
-              </span>
-              <a
-                class="text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
-                [routerLink]="[
-                  '/client-portal',
-                  $any(c).trackingId || $any(c).uid
-                ]"
-              >
-                Portail →
-              </a>
-              <button
-                type="button"
-                class="inline-flex items-center gap-1 rounded-md bg-slate-900 text-white dark:bg-slate-700 px-3 py-1.5 text-xs hover:bg-slate-800"
-                (click)="openCardSmsModal(c)"
-                title="Envoyer un SMS à ce client"
-              >
-                <svg
-                  class="h-3.5 w-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
+              <div class="flex items-center gap-3">
+                <span
+                  class="text-[11px] font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800"
                 >
-                  <path
-                    d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"
-                  />
-                </svg>
-                SMS
-              </button>
+                  {{ $any(c).locationName || "site" }}
+                </span>
+                <a
+                  class="text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400"
+                  [routerLink]="[
+                    '/client-portal',
+                    $any(c).trackingId || $any(c).uid
+                  ]"
+                >
+                  Portail →
+                </a>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-md bg-slate-900 text-white dark:bg-slate-700 px-3 py-1.5 text-xs hover:bg-slate-800"
+                  (click)="openCardSmsModal(c)"
+                  title="Envoyer un SMS à ce client"
+                >
+                  <svg
+                    class="h-3.5 w-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path
+                      d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"
+                    />
+                  </svg>
+                  SMS
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </ng-container>
       </div>
     </div>
   </div>
 </section>
+
+<ng-template #noCardsFiltered>
+  <div class="p-6 text-center text-sm text-slate-500 dark:text-slate-300">
+    Aucun client ne correspond aux filtres et sélections actuels.
+  </div>
+</ng-template>
 
 <!-- ==== SMS MODAL (single / cards) ==== -->
 <div
