@@ -1220,9 +1220,7 @@ export class EmployeePageComponent implements OnInit {
 
     this.savingAttendance = true;
     try {
-      const target = targetDay
-        ? new Date(targetDay.getTime())
-        : new Date();
+      const target = targetDay ? new Date(targetDay.getTime()) : new Date();
       const label =
         dateLabel && dateLabel.trim() ? dateLabel : this.time.todaysDate();
       const dateISO = targetDay
@@ -1978,12 +1976,6 @@ export class EmployeePageComponent implements OnInit {
     });
 
     await Promise.all(tasks);
-
-    // Debug: ensure keys match your table labels like "8-12-2025"
-    console.log(
-      'attachments cache keys:',
-      Object.keys(this.monthAttachmentsByLabel)
-    );
   }
 
   /** Normalize any of:
@@ -2335,9 +2327,7 @@ export class EmployeePageComponent implements OnInit {
     targetDay: Date = this.attendanceTargetDate
   ): 'P' | 'L' | 'F' | '' {
     if (!takenAt) return '';
-    const reference = targetDay
-      ? new Date(targetDay.getTime())
-      : new Date();
+    const reference = targetDay ? new Date(targetDay.getTime()) : new Date();
     if (!this.sameKinDay(takenAt, reference)) return 'F';
 
     const { hour: H, minute: M } = this.getCutoffFor(reference);

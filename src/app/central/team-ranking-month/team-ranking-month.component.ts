@@ -256,7 +256,6 @@ export class TeamRankingMonthComponent {
 
     // Convert the Map values back to an array
     this.allEmployees = Array.from(uniqueEmployees.values());
-    console.log('all employees', allEmployees);
 
     // Filter employees who are currently "Travaille" (working)
     this.allEmployees = this.allEmployees.filter((data) => {
