@@ -95,7 +95,7 @@ export class TrackingComponent {
     'Reserve',
     'Benefice Réel',
   ];
-  valuesConvertedToDollars: string[] = [];
+  valuesConvertedToDollars: number[] = [];
   maxNumberOfClients: number = this.data.generalMaxNumberOfClients;
   objectifPerformance: string = '';
 
@@ -117,7 +117,7 @@ export class TrackingComponent {
   monthBudget: string = '';
   amountBudget: string = '';
   amountBudgetPending: string = '';
-  summaryContent: string[] = [];
+  summaryContent: number[] = [];
   moneyInHands: string = '';
   maxNumberOfDaysToLend: Number = 0;
   startingBudget: string = '';
@@ -134,10 +134,14 @@ export class TrackingComponent {
       ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
       : this.data.generalMaxNumberOfDaysToLend;
 
-    let realBenefit = (
-      Number(this.auth.currentUser.totalDebtLeft) -
-      Number(this.auth.currentUser.amountInvested)
-    ).toString();
+    const totalDebtLeft = this.toFiniteNumber(
+      this.auth.currentUser.totalDebtLeft
+    );
+    const amountInvested = this.toFiniteNumber(
+      this.auth.currentUser.amountInvested
+    );
+    const realBenefit = (totalDebtLeft ?? 0) - (amountInvested ?? 0);
+
     this.monthBudget =
       this.auth.currentUser.monthBudget === ''
         ? '0'
@@ -162,43 +166,68 @@ export class TrackingComponent {
     this.startingBudget = this.auth.currentUser.startingBudget
       ? this.auth.currentUser.startingBudget
       : '0';
-    let cardM =
-      this.auth.currentUser.cardsMoney === undefined
-        ? '0'
-        : this.auth.currentUser.cardsMoney;
-    let ts = this.data.findTotalClientSavings(this.clients!);
+    const clientsSavings = this.toFiniteNumber(
+      this.auth.currentUser.clientsSavings
+    );
+    const cardsMoney = this.toFiniteNumber(this.auth.currentUser.cardsMoney);
+    const moneyInHands = this.toFiniteNumber(
+      this.auth.currentUser.moneyInHands
+    );
+    const enMain = (moneyInHands ?? 0) + (cardsMoney ?? 0);
+    const monthBudgetNumber = this.toFiniteNumber(this.monthBudget);
+    const monthBudgetPendingNumber = this.toFiniteNumber(
+      this.amountBudgetPending
+    );
+    const expensesAmount = this.toFiniteNumber(
+      this.auth.currentUser.expensesAmount
+    );
+    const reserveDollar = this.toFiniteNumber(
+      this.auth.currentUser.reserveAmountDollar
+    );
+    const reserveCdf = this.toFiniteNumber(
+      this.compute.convertUsDollarsToCongoleseFranc(
+        (reserveDollar ?? 0).toString()
+      )
+    );
 
-    let enMain = Number(this.auth.currentUser.moneyInHands) + Number(cardM);
     this.summaryContent = [
-      ` ${this.auth.currentUser.clientsSavings}`,
-      ` ${enMain}`,
-      `${this.monthBudget}`,
-      `${this.amountBudgetPending}`,
-      ` ${this.auth.currentUser.expensesAmount}`,
-
-      ` ${this.compute.convertUsDollarsToCongoleseFranc(
-        this.auth.currentUser.reserveAmountDollar
-      )}`,
-
-      `${realBenefit}`,
+      clientsSavings ?? 0,
+      enMain,
+      monthBudgetNumber ?? 0,
+      monthBudgetPendingNumber ?? 0,
+      expensesAmount ?? 0,
+      reserveCdf ?? 0,
+      realBenefit,
     ];
 
     this.valuesConvertedToDollars = [
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.clientsSavings
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.monthBudget)}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.amountBudgetPending
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.auth.currentUser.expensesAmount
-      )}`,
-
-      ` ${this.auth.currentUser.reserveAmountDollar}`,
-
-      `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
+      this.toFiniteNumber(
+        this.compute.convertCongoleseFrancToUsDollars(
+          (clientsSavings ?? 0).toString()
+        )
+      ) ?? 0,
+      this.toFiniteNumber(
+        this.compute.convertCongoleseFrancToUsDollars(enMain.toString())
+      ) ?? 0,
+      this.toFiniteNumber(
+        this.compute.convertCongoleseFrancToUsDollars(
+          (monthBudgetNumber ?? 0).toString()
+        )
+      ) ?? 0,
+      this.toFiniteNumber(
+        this.compute.convertCongoleseFrancToUsDollars(
+          (monthBudgetPendingNumber ?? 0).toString()
+        )
+      ) ?? 0,
+      this.toFiniteNumber(
+        this.compute.convertCongoleseFrancToUsDollars(
+          (expensesAmount ?? 0).toString()
+        )
+      ) ?? 0,
+      reserveDollar ?? 0,
+      this.toFiniteNumber(
+        this.compute.convertCongoleseFrancToUsDollars(realBenefit.toString())
+      ) ?? 0,
     ];
 
     // only show the first two
@@ -224,6 +253,27 @@ export class TrackingComponent {
 
   isNumber(value: string): boolean {
     return !isNaN(Number(value));
+  }
+
+  private toFiniteNumber(value: unknown): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : null;
+    }
+
+    const normalized = value
+      .toString()
+      .trim()
+      .replace(/[^0-9.-]+/g, '');
+
+    if (!normalized || normalized === '-' || normalized === '.' || normalized === '-.') {
+      return null;
+    }
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private async checkGeoPermission() {
