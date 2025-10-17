@@ -45,6 +45,10 @@ export class HomeCentralComponent implements OnInit {
   // master list search
   searchControl = new FormControl('');
   filteredItems: Client[] = [];
+  birthdayFilterMode: 'all' | 'today' | 'tomorrow' | 'custom' = 'all';
+  customBirthdayInput = '';
+  private birthdayTarget: { month: number; day: number } | null = null;
+  private searchTerm = '';
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
 
@@ -135,8 +139,8 @@ export class HomeCentralComponent implements OnInit {
     this.allClients = Array.from(unique.values());
 
     this.initalizeInputs();
-    this.filteredItems = this.allClients ?? [];
     this.setupSearch();
+    this.applyClientFilters();
 
     // build finished-debt dataset + filters
     this.buildFinishedAll();
@@ -271,20 +275,184 @@ export class HomeCentralComponent implements OnInit {
     this.searchControl.valueChanges
       .pipe(debounceTime(300), distinctUntilChanged())
       .subscribe((term) => {
-        if (!term) {
-          this.filteredItems = this.allClients ?? [];
-          return;
-        }
-        const v = String(term).toLowerCase();
-        this.filteredItems = (this.allClients ?? []).filter(
-          (cl) =>
-            cl.firstName?.toLowerCase().includes(v) ||
-            cl.lastName?.toLowerCase().includes(v) ||
-            cl.middleName?.toLowerCase().includes(v) ||
-            cl.phoneNumber?.includes(v) ||
-            cl.locationName?.toLowerCase().includes(v)
-        );
+        this.searchTerm = term ? String(term) : '';
+        this.applyClientFilters();
       });
+  }
+
+  setBirthdayFilter(mode: 'all' | 'today' | 'tomorrow' | 'custom') {
+    this.birthdayFilterMode = mode;
+
+    if (mode === 'all') {
+      this.customBirthdayInput = '';
+      this.birthdayTarget = null;
+    } else if (mode === 'today') {
+      this.customBirthdayInput = '';
+      this.birthdayTarget = this.createTargetFromDate(new Date());
+    } else if (mode === 'tomorrow') {
+      this.customBirthdayInput = '';
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      this.birthdayTarget = this.createTargetFromDate(tomorrow);
+    } else if (mode === 'custom') {
+      this.birthdayTarget = this.toMonthDayFromDateInput(this.customBirthdayInput);
+    }
+
+    this.applyClientFilters();
+  }
+
+  onCustomBirthdayDateChange(event: Event) {
+    const value =
+      (event.target as HTMLInputElement | null)?.value?.trim() || '';
+    this.customBirthdayInput = value;
+    this.birthdayTarget = this.toMonthDayFromDateInput(value);
+    this.birthdayFilterMode = 'custom';
+    this.applyClientFilters();
+  }
+
+  isBirthdayFilter(mode: 'all' | 'today' | 'tomorrow' | 'custom') {
+    return this.birthdayFilterMode === mode;
+  }
+
+  birthdayButtonClasses(mode: 'all' | 'today' | 'tomorrow' | 'custom') {
+    return {
+      'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+        this.isBirthdayFilter(mode),
+      'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+        !this.isBirthdayFilter(mode),
+    };
+  }
+
+  get birthdayFilterSummary(): string | null {
+    switch (this.birthdayFilterMode) {
+      case 'today':
+        return this.birthdayTarget
+          ? "Anniversaires d'aujourd'hui"
+          : null;
+      case 'tomorrow':
+        return this.birthdayTarget ? 'Anniversaires de demain' : null;
+      case 'custom':
+        if (!this.birthdayTarget) return null;
+        const formatted = this.formatBirthdayDateForDisplay(this.birthdayTarget);
+        return formatted ? `Anniversaires du ${formatted}` : null;
+      default:
+        return null;
+    }
+  }
+
+  private applyClientFilters() {
+    const base = (this.allClients ?? []).filter((client) =>
+      this.matchesSearchTerm(client, this.searchTerm)
+    );
+
+    this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
+  }
+
+  private matchesSearchTerm(client: Client, rawTerm: string): boolean {
+    const term = rawTerm.trim().toLowerCase();
+    if (!term) return true;
+
+    const fields = [
+      client.firstName,
+      client.lastName,
+      client.middleName,
+      client.phoneNumber,
+      client.locationName,
+    ];
+
+    return fields.some((f) => (f || '').toLowerCase().includes(term));
+  }
+
+  private matchesBirthdayFilter(client: Client): boolean {
+    if (this.birthdayFilterMode === 'all') return true;
+
+    if (!this.birthdayTarget) return false;
+
+    const variants = this.extractMonthDayVariants(client.birthDate);
+    if (variants.length === 0) return false;
+
+    return variants.some(
+      (entry) =>
+        entry.month === this.birthdayTarget!.month &&
+        entry.day === this.birthdayTarget!.day
+    );
+  }
+
+  private extractMonthDayVariants(input: string | undefined | null) {
+    if (!input) return [];
+    const parts = input.match(/\d+/g);
+    if (!parts || parts.length < 2) return [];
+
+    const nums = parts.map((p) => Number(p));
+
+    const results: Array<{ month: number; day: number }> = [];
+    const seen = new Set<string>();
+
+    const addCandidate = (month: number | undefined, day: number | undefined) => {
+      if (
+        month == null ||
+        day == null ||
+        !Number.isFinite(month) ||
+        !Number.isFinite(day)
+      )
+        return;
+      if (month < 1 || month > 12) return;
+      if (day < 1 || day > 31) return;
+      const key = `${month}-${day}`;
+      if (!seen.has(key)) {
+        results.push({ month, day });
+        seen.add(key);
+      }
+    };
+
+    const [a, b, c] = nums;
+
+    if (nums.length >= 3) {
+      // Treat as yyyy-mm-dd
+      if (a > 31) addCandidate(b, c);
+      // Treat as mm-dd-yyyy
+      if (c > 31) addCandidate(a, b);
+      // Treat as dd-mm-yyyy
+      if (a >= 1 && a <= 31 && b >= 1 && b <= 12) addCandidate(b, a);
+      // Treat as yyyy-dd-mm
+      if (a > 31) addCandidate(c, b);
+      // Generic fallbacks
+      addCandidate(a, b);
+      addCandidate(b, a);
+      addCandidate(b, c);
+      addCandidate(c, b);
+    } else {
+      addCandidate(a, b);
+      addCandidate(b, a);
+    }
+
+    return results;
+  }
+
+  private formatBirthdayDateForDisplay(target: { month: number; day: number }) {
+    const date = new Date(2000, target.month - 1, target.day);
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+    });
+  }
+
+  private createTargetFromDate(date: Date): { month: number; day: number } {
+    return {
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+    };
+  }
+
+  private toMonthDayFromDateInput(value: string) {
+    if (!value) return null;
+    const parts = value.split('-');
+    if (parts.length < 3) return null;
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+    if (!Number.isFinite(month) || !Number.isFinite(day)) return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return { month, day };
   }
 
   // ===== scheduled-to-pay reminders (existing) =====
