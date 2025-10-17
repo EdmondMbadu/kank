@@ -835,11 +835,10 @@ export class GestionDayComponent implements OnInit {
     let sortedReserve = this.sortKeysAndValuesReserve(time);
     // let reserveDates = sortedReserve[0];
     let reserveAmounts = this.compute.convertToDollarsArray(sortedReserve[1]);
-    console.log('reserve data', sortedReserve[0]);
 
     let sortedServe = this.sortKeysAndValuesServe(time);
     // let serveDates = sortedServe[0];
-    console.log('serve data', sortedServe[0]);
+
     let serveAmounts = this.compute.convertToDollarsArray(sortedServe[1]);
 
     // Create two traces

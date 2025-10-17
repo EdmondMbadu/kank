@@ -342,7 +342,6 @@ export class TrackingMonthCentralComponent {
       .convertCongoleseFrancToUsDollars(this.givenMonthTotalPaymentAmount)
       .toString();
 
-    console.log('given month total reserve', this.sortedReserveMonth);
     this.summaryContent = [
       `${this.givenMonthTotalPaymentAmount}`,
       `${this.givenMonthTotalLendingAmount}`,

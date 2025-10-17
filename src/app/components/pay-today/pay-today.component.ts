@@ -68,7 +68,6 @@ export class PayTodayComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
-      console.log('employees', this.employees);
       this.addIds();
     });
   }

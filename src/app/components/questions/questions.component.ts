@@ -46,7 +46,6 @@ export class QuestionsComponent implements OnInit {
       // this.auditInfo = data[0];
       this.audits = data;
       // this.audits = this.auditInfo;
-      console.log('this.auditInfo', this.audits);
       this.retrieveClients();
     });
   }
@@ -162,7 +161,6 @@ export class QuestionsComponent implements OnInit {
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
-      console.log('this.clients', this.clients);
 
       // Match each pendingClient with an actual client by ID
       this.audits.forEach((audit) => {

@@ -41,7 +41,7 @@ export class RequestClientCardComponent {
   retrieveClientCard(): void {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
-      console.log('this.clientCard', this.clientCard);
+
       this.totalPaidToday = this.sumPaymentsMadeToday(
         this.clientCard.payments!
       );

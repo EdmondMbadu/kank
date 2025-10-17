@@ -1534,7 +1534,7 @@ export class EmployeePageComponent implements OnInit {
   }
 
   requestVacation() {
-    console.log('empolyee attendance', this.employee.attendance);
+    
     if (!this.time.isValidRequestDateForVacation(this.requestDate)) {
       return;
     }
