@@ -6,6 +6,7 @@ import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
 import { LocationCoordinates } from 'src/app/models/user';
+import { coerceToNumber } from 'src/app/utils/number-utils';
 type GeoStatus = 'granted' | 'prompt' | 'denied' | 'unknown';
 @Component({
   selector: 'app-tracking',
@@ -134,12 +135,8 @@ export class TrackingComponent {
       ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
       : this.data.generalMaxNumberOfDaysToLend;
 
-    const totalDebtLeft = this.toFiniteNumber(
-      this.auth.currentUser.totalDebtLeft
-    );
-    const amountInvested = this.toFiniteNumber(
-      this.auth.currentUser.amountInvested
-    );
+    const totalDebtLeft = coerceToNumber(this.auth.currentUser.totalDebtLeft);
+    const amountInvested = coerceToNumber(this.auth.currentUser.amountInvested);
     const realBenefit = (totalDebtLeft ?? 0) - (amountInvested ?? 0);
 
     this.monthBudget =
@@ -166,25 +163,19 @@ export class TrackingComponent {
     this.startingBudget = this.auth.currentUser.startingBudget
       ? this.auth.currentUser.startingBudget
       : '0';
-    const clientsSavings = this.toFiniteNumber(
-      this.auth.currentUser.clientsSavings
-    );
-    const cardsMoney = this.toFiniteNumber(this.auth.currentUser.cardsMoney);
-    const moneyInHands = this.toFiniteNumber(
-      this.auth.currentUser.moneyInHands
-    );
+    const clientsSavings = coerceToNumber(this.auth.currentUser.clientsSavings);
+    const cardsMoney = coerceToNumber(this.auth.currentUser.cardsMoney);
+    const moneyInHands = coerceToNumber(this.auth.currentUser.moneyInHands);
     const enMain = (moneyInHands ?? 0) + (cardsMoney ?? 0);
-    const monthBudgetNumber = this.toFiniteNumber(this.monthBudget);
-    const monthBudgetPendingNumber = this.toFiniteNumber(
+    const monthBudgetNumber = coerceToNumber(this.monthBudget);
+    const monthBudgetPendingNumber = coerceToNumber(
       this.amountBudgetPending
     );
-    const expensesAmount = this.toFiniteNumber(
-      this.auth.currentUser.expensesAmount
-    );
-    const reserveDollar = this.toFiniteNumber(
+    const expensesAmount = coerceToNumber(this.auth.currentUser.expensesAmount);
+    const reserveDollar = coerceToNumber(
       this.auth.currentUser.reserveAmountDollar
     );
-    const reserveCdf = this.toFiniteNumber(
+    const reserveCdf = coerceToNumber(
       this.compute.convertUsDollarsToCongoleseFranc(
         (reserveDollar ?? 0).toString()
       )
@@ -201,31 +192,31 @@ export class TrackingComponent {
     ];
 
     this.valuesConvertedToDollars = [
-      this.toFiniteNumber(
+      coerceToNumber(
         this.compute.convertCongoleseFrancToUsDollars(
           (clientsSavings ?? 0).toString()
         )
       ) ?? 0,
-      this.toFiniteNumber(
+      coerceToNumber(
         this.compute.convertCongoleseFrancToUsDollars(enMain.toString())
       ) ?? 0,
-      this.toFiniteNumber(
+      coerceToNumber(
         this.compute.convertCongoleseFrancToUsDollars(
           (monthBudgetNumber ?? 0).toString()
         )
       ) ?? 0,
-      this.toFiniteNumber(
+      coerceToNumber(
         this.compute.convertCongoleseFrancToUsDollars(
           (monthBudgetPendingNumber ?? 0).toString()
         )
       ) ?? 0,
-      this.toFiniteNumber(
+      coerceToNumber(
         this.compute.convertCongoleseFrancToUsDollars(
           (expensesAmount ?? 0).toString()
         )
       ) ?? 0,
       reserveDollar ?? 0,
-      this.toFiniteNumber(
+      coerceToNumber(
         this.compute.convertCongoleseFrancToUsDollars(realBenefit.toString())
       ) ?? 0,
     ];
@@ -253,27 +244,6 @@ export class TrackingComponent {
 
   isNumber(value: string): boolean {
     return !isNaN(Number(value));
-  }
-
-  private toFiniteNumber(value: unknown): number | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
-    if (typeof value === 'number') {
-      return Number.isFinite(value) ? value : null;
-    }
-
-    const normalized = value
-      .toString()
-      .trim()
-      .replace(/[^0-9.-]+/g, '');
-
-    if (!normalized || normalized === '-' || normalized === '.' || normalized === '-.') {
-      return null;
-    }
-
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private async checkGeoPermission() {
