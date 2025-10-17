@@ -256,7 +256,6 @@ export class GestionDayComponent implements OnInit {
         cards: this.auth.getClientsCardOfAUser(user.uid!).pipe(take(1)),
       }).subscribe(
         ({ clients, cards }) => {
-          console.log('[DEBUG] user doc:', user);
           let userTotal = 0;
           let reserveTotal = 0;
           let userTotalToday = 0;

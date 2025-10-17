@@ -4,6 +4,7 @@ import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { coerceToNumber } from 'src/app/utils/number-utils';
 
 @Component({
   selector: 'app-tracking-central',
@@ -42,7 +43,7 @@ export class TrackingCentralComponent {
     'Argent en Main',
     'Benefice Réel',
   ];
-  valuesConvertedToDollars: string[] = [];
+  valuesConvertedToDollars: number[] = [];
 
   imagePaths: string[] = [
     '../../../assets/img/saving.svg',
@@ -53,52 +54,70 @@ export class TrackingCentralComponent {
   ];
 
   today = this.time.todaysDateMonthDayYear();
-  summaryContent: string[] = [];
+  summaryContent: number[] = [];
   initalizeInputs() {
-    let savings = this.compute
-      .findTotalAllUsersGivenField(this.allUsers, 'clientsSavings')
-      .toString();
-    let expenses = this.compute
-      .findTotalAllUsersGivenField(this.allUsers, 'expensesAmount')
-      .toString();
-    let reserveDollar = this.compute
-      .findTotalAllUsersGivenField(this.allUsers, 'reserveAmountDollar')
-      .toString();
-    let moneyHand = this.compute
-      .findTotalAllUsersGivenField(this.allUsers, 'moneyInHands')
-      .toString();
-    let invested = this.compute
-      .findTotalAllUsersGivenField(this.allUsers, 'amountInvested')
-      .toString();
-    let debtTotal = this.compute.findTotalAllUsersGivenField(
-      this.allUsers,
-      'totalDebtLeft'
-    );
-    let cardM = this.compute.findTotalAllUsersGivenField(
-      this.allUsers,
-      'cardsMoney'
-    );
+    const savings =
+      coerceToNumber(
+        this.compute.findTotalAllUsersGivenField(this.allUsers, 'clientsSavings')
+      ) ?? 0;
+    const expenses =
+      coerceToNumber(
+        this.compute.findTotalAllUsersGivenField(this.allUsers, 'expensesAmount')
+      ) ?? 0;
+    const reserveDollar =
+      coerceToNumber(
+        this.compute.findTotalAllUsersGivenField(
+          this.allUsers,
+          'reserveAmountDollar'
+        )
+      ) ?? 0;
+    const moneyHand =
+      coerceToNumber(
+        this.compute.findTotalAllUsersGivenField(this.allUsers, 'moneyInHands')
+      ) ?? 0;
+    const invested =
+      coerceToNumber(
+        this.compute.findTotalAllUsersGivenField(this.allUsers, 'amountInvested')
+      ) ?? 0;
+    const debtTotal =
+      coerceToNumber(
+        this.compute.findTotalAllUsersGivenField(this.allUsers, 'totalDebtLeft')
+      ) ?? 0;
+    const cardM =
+      coerceToNumber(
+        this.compute.findTotalAllUsersGivenField(this.allUsers, 'cardsMoney')
+      ) ?? 0;
 
-    // this.currentClients = [];
-    let realBenefit = (Number(debtTotal) - Number(invested)).toString();
+    const realBenefit = debtTotal - invested;
 
-    let enMain = Number(moneyHand) + Number(cardM);
+    const enMain = moneyHand + cardM;
+    const reserveCdf =
+      coerceToNumber(
+        this.compute.convertUsDollarsToCongoleseFranc(reserveDollar.toString())
+      ) ?? 0;
+
     this.summaryContent = [
-      ` ${savings}`,
-      ` ${expenses}`,
-      ` ${this.compute.convertUsDollarsToCongoleseFranc(reserveDollar)}`,
-
-      ` ${enMain}`,
-      `${realBenefit}`,
+      savings,
+      expenses,
+      reserveCdf,
+      enMain,
+      realBenefit,
     ];
 
     this.valuesConvertedToDollars = [
-      `${this.compute.convertCongoleseFrancToUsDollars(savings)}`,
-
-      `${this.compute.convertCongoleseFrancToUsDollars(expenses)}`,
-      ` ${reserveDollar}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(enMain.toString())}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(realBenefit)}`,
+      coerceToNumber(
+        this.compute.convertCongoleseFrancToUsDollars(savings.toString())
+      ) ?? 0,
+      coerceToNumber(
+        this.compute.convertCongoleseFrancToUsDollars(expenses.toString())
+      ) ?? 0,
+      reserveDollar,
+      coerceToNumber(
+        this.compute.convertCongoleseFrancToUsDollars(enMain.toString())
+      ) ?? 0,
+      coerceToNumber(
+        this.compute.convertCongoleseFrancToUsDollars(realBenefit.toString())
+      ) ?? 0,
     ];
   }
 }
