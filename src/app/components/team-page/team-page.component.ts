@@ -78,7 +78,7 @@ export class TeamPageComponent implements OnInit {
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
       this.employees = data;
-      console.log('all the employees', this.employees);
+
       if (this.employees !== null) {
         this.displayEditEmployees = new Array(this.employees.length).fill(
           false
@@ -222,11 +222,6 @@ export class TeamPageComponent implements OnInit {
   /** Met à jour this.vacation (= jours restants) */
   numberOfVacationDaysLeft(employee: Employee) {
     const acceptedDays = Number(employee.vacationAcceptedNumberOfDays) || 0;
-    console.log(
-      ' employee accepted number of days',
-      employee.firstName,
-      acceptedDays
-    );
 
     return this.TOTAL_VACATION_DAYS - acceptedDays;
   }

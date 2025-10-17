@@ -228,7 +228,6 @@ export class ClientPortalComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
-      console.log('the client', this.client);
       this.age = this.compute.computeAge(this.client.birthDate);
       this.birthDateDisplay = this.formatBirthDate(this.client.birthDate);
 
@@ -265,7 +264,11 @@ export class ClientPortalComponent {
     const day = Number(dayStr);
     const month = Number(monthStr);
     const year = Number(yearStr);
-    if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+    if (
+      !Number.isFinite(day) ||
+      !Number.isFinite(month) ||
+      !Number.isFinite(year)
+    ) {
       return birth;
     }
     const date = new Date(year, month - 1, day);
