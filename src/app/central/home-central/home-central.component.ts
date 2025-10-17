@@ -340,6 +340,19 @@ export class HomeCentralComponent implements OnInit {
     }
   }
 
+  get clientListSummary(): string {
+    const count = this.filteredItems.length;
+    if (this.birthdayFilterSummary) {
+      return `${this.birthdayFilterSummary} · ${count} client(s)`;
+    }
+    const hasSearch = this.searchTerm.trim().length > 0;
+    const baseTotal = this.allClients?.length ?? count;
+    if (hasSearch) {
+      return `Résultats de la recherche · ${count} client(s)`;
+    }
+    return `Tous les clients · ${baseTotal} client(s)`;
+  }
+
   private applyClientFilters() {
     const base = (this.allClients ?? []).filter((client) =>
       this.matchesSearchTerm(client, this.searchTerm)
