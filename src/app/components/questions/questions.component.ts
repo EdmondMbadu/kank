@@ -43,9 +43,9 @@ export class QuestionsComponent implements OnInit {
   clients: Client[] = [];
   ngOnInit(): void {
     this.auth.getAuditInfo().subscribe((data) => {
-      // this.auditInfo = data[0];
-      this.audits = data;
-      // this.audits = this.auditInfo;
+      this.audits = Array.isArray(data)
+        ? (data.filter(Boolean) as Audit[])
+        : [];
       this.retrieveClients();
     });
   }
@@ -160,21 +160,31 @@ export class QuestionsComponent implements OnInit {
   }
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = data;
+      this.clients = Array.isArray(data)
+        ? (data.filter(Boolean) as Client[])
+        : [];
+
+      if (!this.clients.length || !this.audits.length) {
+        return;
+      }
 
       // Match each pendingClient with an actual client by ID
       this.audits.forEach((audit) => {
-        if (!audit.pendingClients) return;
+        if (!Array.isArray(audit.pendingClients)) return;
 
         audit.pendingClients.forEach((pc) => {
+          if (!pc?.clientId) return;
+
           // Find the index of the client whose uid matches pc.clientId
           const matchIndex = this.clients.findIndex(
-            (c) => c.uid === pc.clientId
+            (c) => c?.uid === pc.clientId
           );
 
           if (matchIndex !== -1) {
             // Store the index as the pendingId
             pc.pendingId = matchIndex.toString();
+          } else {
+            pc.pendingId = undefined;
           }
         });
       });

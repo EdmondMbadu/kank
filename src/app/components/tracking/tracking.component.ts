@@ -28,7 +28,9 @@ export class TrackingComponent {
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = data;
+      this.clients = Array.isArray(data)
+        ? (data.filter(Boolean) as Client[])
+        : [];
       this.initalizeInputs();
     });
   }
@@ -125,56 +127,48 @@ export class TrackingComponent {
   teamCode: string = '';
 
   initalizeInputs() {
-    this.maxNumberOfClients = Number(this.auth.currentUser.maxNumberOfClients)
-      ? Number(this.auth.currentUser.maxNumberOfClients)
+    const user = this.auth.currentUser;
+    if (!user) {
+      this.resetTrackingState();
+      return;
+    }
+
+    this.maxNumberOfClients = Number(user.maxNumberOfClients)
+      ? Number(user.maxNumberOfClients)
       : this.data.generalMaxNumberOfClients;
 
-    this.maxNumberOfDaysToLend = Number(
-      this.auth.currentUser.maxNumberOfDaysToLend
-    )
-      ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
+    this.maxNumberOfDaysToLend = Number(user.maxNumberOfDaysToLend)
+      ? Number(user.maxNumberOfDaysToLend)
       : this.data.generalMaxNumberOfDaysToLend;
 
-    const totalDebtLeft = coerceToNumber(this.auth.currentUser.totalDebtLeft);
-    const amountInvested = coerceToNumber(this.auth.currentUser.amountInvested);
+    const totalDebtLeft = coerceToNumber(user.totalDebtLeft);
+    const amountInvested = coerceToNumber(user.amountInvested);
     const realBenefit = (totalDebtLeft ?? 0) - (amountInvested ?? 0);
 
     this.monthBudget =
-      this.auth.currentUser.monthBudget === ''
+      user.monthBudget === '' || user.monthBudget === undefined
         ? '0'
-        : this.auth.currentUser.monthBudget;
+        : user.monthBudget!;
     this.objectifPerformance =
-      this.auth.currentUser.objectifPerformance === ''
+      user.objectifPerformance === '' || user.objectifPerformance === undefined
         ? '0'
-        : this.auth.currentUser.objectifPerformance;
+        : user.objectifPerformance!;
     this.amountBudgetPending =
-      this.auth.currentUser.monthBudgetPending === ''
+      user.monthBudgetPending === '' || user.monthBudgetPending === undefined
         ? '0'
-        : this.auth.currentUser.monthBudgetPending;
-    this.housePayment = this.auth.currentUser.housePayment
-      ? this.auth.currentUser.housePayment
-      : '0';
-    this.moneyInHands = this.auth.currentUser.moneyInHands
-      ? this.auth.currentUser.moneyInHands
-      : '0';
-    this.teamCode = this.auth.currentUser.teamCode
-      ? this.auth.currentUser.teamCode
-      : '';
-    this.startingBudget = this.auth.currentUser.startingBudget
-      ? this.auth.currentUser.startingBudget
-      : '0';
-    const clientsSavings = coerceToNumber(this.auth.currentUser.clientsSavings);
-    const cardsMoney = coerceToNumber(this.auth.currentUser.cardsMoney);
-    const moneyInHands = coerceToNumber(this.auth.currentUser.moneyInHands);
+        : user.monthBudgetPending!;
+    this.housePayment = user.housePayment ? user.housePayment : '0';
+    this.moneyInHands = user.moneyInHands ? user.moneyInHands : '0';
+    this.teamCode = user.teamCode ? user.teamCode : '';
+    this.startingBudget = user.startingBudget ? user.startingBudget : '0';
+    const clientsSavings = coerceToNumber(user.clientsSavings);
+    const cardsMoney = coerceToNumber(user.cardsMoney);
+    const moneyInHands = coerceToNumber(user.moneyInHands);
     const enMain = (moneyInHands ?? 0) + (cardsMoney ?? 0);
     const monthBudgetNumber = coerceToNumber(this.monthBudget);
-    const monthBudgetPendingNumber = coerceToNumber(
-      this.amountBudgetPending
-    );
-    const expensesAmount = coerceToNumber(this.auth.currentUser.expensesAmount);
-    const reserveDollar = coerceToNumber(
-      this.auth.currentUser.reserveAmountDollar
-    );
+    const monthBudgetPendingNumber = coerceToNumber(this.amountBudgetPending);
+    const expensesAmount = coerceToNumber(user.expensesAmount);
+    const reserveDollar = coerceToNumber(user.reserveAmountDollar);
     const reserveCdf = coerceToNumber(
       this.compute.convertUsDollarsToCongoleseFranc(
         (reserveDollar ?? 0).toString()
@@ -225,6 +219,19 @@ export class TrackingComponent {
     if (!this.auth.isAdmninistrator) {
       this.summary = this.compute.filterOutElements(this.summary, 4);
     }
+  }
+  private resetTrackingState(): void {
+    this.maxNumberOfClients = this.data.generalMaxNumberOfClients;
+    this.maxNumberOfDaysToLend = this.data.generalMaxNumberOfDaysToLend;
+    this.monthBudget = '0';
+    this.objectifPerformance = '0';
+    this.amountBudgetPending = '0';
+    this.housePayment = '0';
+    this.moneyInHands = '0';
+    this.teamCode = '';
+    this.startingBudget = '0';
+    this.summaryContent = [0, 0, 0, 0, 0, 0, 0];
+    this.valuesConvertedToDollars = [0, 0, 0, 0, 0, 0, 0];
   }
 
   async setUserField(field: string, value: any, pass = '') {
