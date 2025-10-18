@@ -4,99 +4,158 @@
   [path]="'home'"
 ></app-navbar>
 
-<!-- investements -->
+<!-- Investissements -->
 
-<div class="container mx-auto px-4 mt-4 mb-2">
-  <div
-    class="relative mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-md p-4 md:p-5 shadow-sm"
-  >
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <div
-          class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xl"
-        >
-          📈
-        </div>
-        <h1
-          class="min-w-0 bg-gradient-to-r text-center from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold tracking-tight leading-tight text-2xl md:text-4xl break-words whitespace-normal"
-        >
-          Activités Central Du Mois
+<section
+  class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 text-white"
+>
+  <div class="container mx-auto px-6 py-12">
+    <div
+      class="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <div class="space-y-6">
+        <p class="text-xs uppercase tracking-[0.35em] text-white/60">
+          Central · Ce mois
+        </p>
+        <h1 class="text-3xl font-semibold leading-tight md:text-4xl">
+          Activités du mois
         </h1>
+        <p class="max-w-xl text-sm text-white/70">
+          Surveillez la santé financière du réseau et comparez rapidement les
+          performances mensuelles. Sélectionnez une nouvelle période pour mettre
+          les chiffres à jour.
+        </p>
+        <div class="flex flex-wrap gap-3 text-xs text-white/70">
+          <span
+            class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur"
+          >
+            <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
+            Période analysée&nbsp;:
+            {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}
+          </span>
+          <span
+            class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 backdrop-blur"
+          >
+            <span class="h-2 w-2 rounded-full bg-cyan-300"></span>
+            Comparaison réserve&nbsp;:
+            {{ time.monthFrenchNames[reserveComparisonMonth - 1] }}
+            {{ reserveComparisonYear }}
+          </span>
+          <span
+            class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 backdrop-blur"
+          >
+            <span class="h-2 w-2 rounded-full bg-sky-300"></span>
+            Comparaison paiement&nbsp;:
+            {{ time.monthFrenchNames[paymentComparisonMonth - 1] }}
+            {{ paymentComparisonYear }}
+          </span>
+        </div>
       </div>
 
-      <span
-        class="sm:ml-auto inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm md:text-lg selection:font-medium text-slate-700 shadow order-last sm:order-none"
+      <div
+        class="w-full max-w-sm rounded-3xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-md"
       >
-        <time>{{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}</time>
-      </span>
+        <p class="text-[11px] uppercase tracking-[0.25em] text-white/60">
+          Sélection de la période
+        </p>
+        <h2 class="mt-2 text-xl font-semibold text-white">
+          {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}
+        </h2>
+        <div class="mt-6 space-y-4">
+          <label class="block text-xs font-medium text-white/70">
+            Choisir un mois
+            <select
+              [(ngModel)]="givenMonth"
+              class="mt-2 w-full rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/60"
+              (change)="initalizeInputs()"
+            >
+              <option *ngFor="let month of monthsList" [ngValue]="month">
+                {{ time.monthFrenchNames[month - 1] }}
+              </option>
+            </select>
+          </label>
+          <label class="block text-xs font-medium text-white/70">
+            Choisir une année
+            <select
+              [(ngModel)]="givenYear"
+              class="mt-2 w-full rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/60"
+              (change)="initalizeInputs()"
+            >
+              <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                {{ year }}
+              </option>
+            </select>
+          </label>
+        </div>
+        <div class="mt-6 space-y-2 text-[11px] text-white/60">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
+            Données rafraîchies après chaque sélection
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-white/60"></span>
+            Les comparaisons se mettent à jour dans les tableaux ci-dessous
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
+</section>
 
+<section class="container mx-auto -mt-10 px-6 pb-12">
+  <div
+    *ngIf="summary?.length; else emptySummary"
+    class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
+  >
+    <article
+      *ngFor="let label of summary; let i = index"
+      class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
+    >
+      <div class="flex items-start gap-4">
+        <span
+          class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200"
+        >
+          <img
+            [src]="imagePaths[i]"
+            alt=""
+            class="h-7 w-7 object-contain"
+            loading="lazy"
+          />
+        </span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] uppercase tracking-wide text-slate-400">
+            Indicateur #{{ i + 1 }}
+          </p>
+          <h3
+            class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
+          >
+            {{ label }}
+          </h3>
+          <div class="mt-4 space-y-1">
+            <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+              FC {{ summaryContent[i] | number : "1.0-0" }}
+            </p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              ≈ $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
+      ></div>
+    </article>
+  </div>
+
+  <ng-template #emptySummary>
     <div
-      class="absolute -bottom-[2px] left-6 right-6 h-[3px] rounded-full bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-400"
-    ></div>
-  </div>
-</div>
-<div class="flex container mx-auto justify-center text-center space-x-8">
-  <div class="mb-6">
-    <!-- <label for="payments" class="block mb-2 text-md font-medium text-gray-900 m-2">Mois: {{givenMonth}}</label> -->
-    <select
-      id="payments"
-      [(ngModel)]="givenMonth"
-      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-      (change)="initalizeInputs()"
+      class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
     >
-      <option *ngFor="let month of monthsList" [ngValue]="month">
-        {{ time.monthFrenchNames[month - 1] }}
-      </option>
-
-      <!-- <option [ngValue]="maxRange">Max</option> -->
-    </select>
-  </div>
-
-  <div class="mb-6">
-    <!-- <label for="payments" class="block mb-2 text-md font-medium text-gray-900 m-2">Année: {{givenYear}}</label> -->
-    <select
-      id="payments"
-      [(ngModel)]="givenYear"
-      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-      (change)="initalizeInputs()"
-    >
-      <option *ngFor="let year of this.time.yearsList" [ngValue]="year">
-        {{ year }}
-      </option>
-
-      <!-- <option [ngValue]="maxRange">Max</option> -->
-    </select>
-  </div>
-</div>
-
-<div
-  class="container flex flex-wrap flex-col items-center justify-center mx-auto md:flex-row"
->
-  <div class="flex-col w-60 m-6" *ngFor="let s of summary; let i = index">
-    <a
-      class="block max-w-sm p-6 bg-neutral-200 border border-gray-200 rounded-lg shadow hover:bg-green-100"
-    >
-      <img
-        src="{{ imagePaths[i] }}"
-        alt=""
-        class="w-20 justify-center mx-auto"
-      />
-
-      <h5
-        class="my-2 text-2xl text-center font-bold tracking-tight text-gray-900"
-      >
-        {{ s }}
-      </h5>
-      <h2 class="font-bold text-lg text-green-700 text-center">
-        FC {{ summaryContent[i] | number : "1.0-0" }}
-      </h2>
-      <h2 class="font-bold text-lg text-yellow-900 text-center">
-        $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
-      </h2>
-    </a>
-  </div>
-</div>
+      Aucune donnée de synthèse disponible pour l’instant.
+    </div>
+  </ng-template>
+</section>
 
 <div class="container mx-auto px-4 py-6">
   <!-- one-per-row, no forced side-by-side -->
