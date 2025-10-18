@@ -96,56 +96,60 @@
     <a
       *ngFor="let s of summary; let i = index"
       [routerLink]="linkPaths[i]"
-      class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
+      class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
     >
-      <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0 space-y-3">
-          <p
-            class="text-[13px] uppercase tracking-wide text-slate-900 dark:text-slate-400 font-bold"
-          >
-            {{ s }}
-          </p>
-          <ng-container *ngIf="i === 0">
-            <p
-              class="text-3xl font-semibold"
-              [ngClass]="{
-                'text-emerald-600 dark:text-emerald-300': lossRatio <= 2,
-                'text-rose-600 dark:text-rose-300': lossRatio > 2
-              }"
-            >
-              {{ summaryContent[i] }} %
-            </p>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
-              Ratio des pertes par rapport à la réserve du mois.
-            </p>
-          </ng-container>
-
-          <ng-container *ngIf="i !== 0">
-            <p
-              class="text-2xl font-semibold text-slate-900 dark:text-slate-100"
-            >
-              FC {{ summaryContent[i] | number : "1.0-0" }}
-            </p>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-              ≈ $
-              {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
-            </p>
-          </ng-container>
-        </div>
+      <div class="flex items-start gap-4">
         <span
-          class="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 ring-1 ring-slate-200 transition group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:ring-emerald-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:group-hover:bg-emerald-900/40 dark:group-hover:text-emerald-200 dark:group-hover:ring-emerald-800"
+          class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset"
+          [ngClass]="{
+            'bg-emerald-50 text-emerald-600 ring-emerald-200': i % 3 === 0,
+            'bg-sky-50 text-sky-600 ring-sky-200': i % 3 === 1,
+            'bg-amber-50 text-amber-600 ring-amber-200': i % 3 === 2
+          }"
         >
           <img
             [src]="imagePaths[i]"
             alt=""
-            class="h-7 w-7 object-contain"
+            class="h-6 w-6 object-contain"
             loading="lazy"
           />
         </span>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] uppercase tracking-wide text-slate-400">
+            Indicateur #{{ i + 1 }}
+          </p>
+          <h3 class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+            {{ s }}
+          </h3>
+          <div class="mt-4 space-y-1">
+            <ng-container *ngIf="i === 0; else monetaryBlock">
+              <p
+                class="text-2xl font-semibold"
+                [ngClass]="{
+                  'text-emerald-600 dark:text-emerald-300': lossRatio <= 2,
+                  'text-rose-600 dark:text-rose-300': lossRatio > 2
+                }"
+              >
+                {{ summaryContent[i] }} %
+              </p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Ratio des pertes par rapport à la réserve du mois.
+              </p>
+            </ng-container>
+            <ng-template #monetaryBlock>
+              <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+                FC {{ summaryContent[i] | number : "1.0-0" }}
+              </p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                ≈ $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+              </p>
+            </ng-template>
+          </div>
+        </div>
       </div>
 
       <div
-        class="mt-8 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
+        class="mt-6 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:gap-1.5 group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
       >
         Consulter
         <svg
@@ -158,6 +162,10 @@
           <path d="m9 18 6-6-6-6" />
         </svg>
       </div>
+
+      <div
+        class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
+      ></div>
     </a>
   </div>
 </section>
