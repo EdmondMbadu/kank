@@ -184,7 +184,7 @@ export class TeamPageComponent implements OnInit {
     if (!this.auth.isAdmninistrator) {
       if (this.employees) {
         this.employees = this.employees.filter((emp) => {
-          return emp?.status === 'Travaille';
+          return emp?.status === 'Travaille' || emp?.status === 'Vacance';
         });
       }
     }
