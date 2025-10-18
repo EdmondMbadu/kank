@@ -255,6 +255,14 @@ export class TodayCentralComponent {
     ];
   }
 
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  trackByLabel(_index: number, item: { label: string }): string {
+    return item.label;
+  }
+
   findDailyActivitiesCentralAmount() {
     this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.requestDate
