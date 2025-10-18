@@ -4,184 +4,225 @@
   [path]="'home'"
 ></app-navbar>
 
-<!-- investements -->
-
-<div class="container mx-auto px-4 mt-4 mb-2">
-  <div
-    class="relative mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-md p-4 md:p-5 shadow-sm"
-  >
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <div
-          class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xl"
-        >
-          📈
+<section
+  class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 text-white"
+>
+  <div class="container mx-auto px-6 pb-14 pt-12">
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+      <div class="space-y-6">
+        <p class="text-xs uppercase tracking-[0.35em] text-white/60">
+          Gestion · Mensuel
+        </p>
+        <div class="space-y-3">
+          <h1 class="text-3xl font-semibold leading-tight md:text-4xl">
+            Gestion du mois
+          </h1>
+          <p class="max-w-xl text-sm text-white/70">
+            Sélectionnez une période pour visualiser les synthèses financières,
+            les montants convertis et l’évolution de la réserve.
+          </p>
         </div>
-        <h1
-          class="min-w-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold tracking-tight leading-tight text-2xl md:text-4xl break-words whitespace-normal"
-        >
-          Gestion Du Mois
-        </h1>
+
+        <div class="flex flex-wrap items-center gap-3 text-xs text-white/70">
+          <span
+            class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5"
+          >
+            <span class="text-white/90">Période active</span>
+            <span class="font-semibold text-white">
+              {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}
+            </span>
+          </span>
+          <span
+            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5"
+          >
+            <span class="text-white/80">Aujourd’hui</span>
+            <span class="font-medium text-white">{{ today }}</span>
+          </span>
+        </div>
       </div>
 
-      <span
-        class="sm:ml-auto inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm md:text-lg font-medium text-slate-700 shadow order-last sm:order-none"
+      <div
+        class="w-full rounded-3xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur"
       >
-        <time
-          >{{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}
-        </time>
-      </span>
+        <p class="text-[11px] uppercase tracking-[0.25em] text-white/60">
+          Paramètres
+        </p>
+        <div class="mt-4 space-y-4">
+          <label class="block text-xs font-medium text-white/60">
+            Mois
+            <select
+              id="month-selector"
+              [(ngModel)]="givenMonth"
+              class="mt-2 w-full rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/60"
+              (change)="initalizeInputs()"
+            >
+              <option
+                *ngFor="let month of monthsList"
+                class="text-slate-900"
+                [ngValue]="month"
+              >
+                {{ time.monthFrenchNames[month - 1] }}
+              </option>
+            </select>
+          </label>
+
+          <label class="block text-xs font-medium text-white/60">
+            Année
+            <select
+              id="year-selector"
+              [(ngModel)]="givenYear"
+              class="mt-2 w-full rounded-xl border border-white/30 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/60"
+              (change)="initalizeInputs()"
+            >
+              <option
+                *ngFor="let year of yearsList"
+                class="text-slate-900"
+                [ngValue]="year"
+              >
+                {{ year }}
+              </option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container mx-auto -mt-16 px-6 pb-12">
+  <div
+    class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+  >
+    <a
+      *ngFor="let s of summary; let i = index"
+      [routerLink]="linkPaths[i]"
+      class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0 space-y-3">
+          <p
+            class="text-[13px] uppercase tracking-wide text-slate-900 dark:text-slate-400 font-bold"
+          >
+            {{ s }}
+          </p>
+          <ng-container *ngIf="i === 0">
+            <p
+              class="text-3xl font-semibold"
+              [ngClass]="{
+                'text-emerald-600 dark:text-emerald-300': lossRatio <= 2,
+                'text-rose-600 dark:text-rose-300': lossRatio > 2
+              }"
+            >
+              {{ summaryContent[i] }} %
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Ratio des pertes par rapport à la réserve du mois.
+            </p>
+          </ng-container>
+
+          <ng-container *ngIf="i !== 0">
+            <p
+              class="text-2xl font-semibold text-slate-900 dark:text-slate-100"
+            >
+              FC {{ summaryContent[i] | number : "1.0-0" }}
+            </p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              ≈ $
+              {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+            </p>
+          </ng-container>
+        </div>
+        <span
+          class="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 ring-1 ring-slate-200 transition group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:ring-emerald-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:group-hover:bg-emerald-900/40 dark:group-hover:text-emerald-200 dark:group-hover:ring-emerald-800"
+        >
+          <img
+            [src]="imagePaths[i]"
+            alt=""
+            class="h-7 w-7 object-contain"
+            loading="lazy"
+          />
+        </span>
+      </div>
+
+      <div
+        class="mt-8 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
+      >
+        Consulter
+        <svg
+          class="h-3.5 w-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </div>
+    </a>
+  </div>
+</section>
+
+<section class="container mx-auto px-6 pb-16">
+  <div
+    class="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+  >
+    <div
+      class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <div>
+        <h2
+          class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+        >
+          Réserve totale par mois
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Montants convertis en dollars américains pour le suivi de la réserve.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          (click)="updateReserveGraphics(compute.quarter1)"
+          type="button"
+          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+        >
+          3M
+        </button>
+        <button
+          (click)="updateReserveGraphics(compute.quarter2)"
+          type="button"
+          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+        >
+          6M
+        </button>
+        <button
+          (click)="updateReserveGraphics(compute.quarter3)"
+          type="button"
+          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+        >
+          9M
+        </button>
+        <button
+          (click)="updateReserveGraphics(compute.quarter4)"
+          type="button"
+          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+        >
+          1A
+        </button>
+        <button
+          (click)="updateReserveGraphics(maxRange)"
+          type="button"
+          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+        >
+          Max
+        </button>
+      </div>
     </div>
 
     <div
-      class="absolute -bottom-[2px] left-6 right-6 h-[3px] rounded-full bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-400"
-    ></div>
-  </div>
-</div>
-<div class="flex container mx-auto justify-center text-center space-x-8">
-  <div class="mb-6">
-    <!-- <label for="payments" class="block mb-2 text-md font-medium text-gray-900 m-2">Mois: {{givenMonth}}</label> -->
-    <select
-      id="payments"
-      [(ngModel)]="givenMonth"
-      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-      (change)="initalizeInputs()"
+      class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner dark:bg-slate-950/60"
     >
-      <option *ngFor="let month of monthsList" [ngValue]="month">
-        {{ time.monthFrenchNames[month - 1] }}
-      </option>
-
-      <!-- <option [ngValue]="maxRange">Max</option> -->
-    </select>
-  </div>
-
-  <div class="mb-6">
-    <!-- <label for="payments" class="block mb-2 text-md font-medium text-gray-900 m-2">Année: {{givenYear}}</label> -->
-    <select
-      id="payments"
-      [(ngModel)]="givenYear"
-      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-      (change)="initalizeInputs()"
-    >
-      <option *ngFor="let year of yearsList" [ngValue]="year">
-        {{ year }}
-      </option>
-
-      <!-- <option [ngValue]="maxRange">Max</option> -->
-    </select>
-  </div>
-</div>
-
-<div
-  class="container flex flex-wrap flex-col items-center justify-center mx-auto md:flex-row"
->
-  <div class="flex-col w-60 m-6" *ngFor="let s of summary; let i = index">
-    <a
-      routerLink="{{ linkPaths[i] }}"
-      class="block max-w-sm p-6 bg-neutral-200 border border-gray-200 rounded-lg shadow hover:bg-green-100"
-    >
-      <img
-        src="{{ imagePaths[i] }}"
-        alt=""
-        class="w-20 justify-center mx-auto"
-      />
-      <div *ngIf="i == 0">
-        <h2
-          *ngIf="lossRatio <= 2"
-          class="font-bold text-lg text-green-700 text-center"
-        >
-          {{ summaryContent[i] }} %
-        </h2>
-        <h2
-          *ngIf="lossRatio > 2"
-          class="font-bold text-lg text-red-700 text-center"
-        >
-          {{ summaryContent[i] }} %
-        </h2>
-      </div>
-
-      <h5
-        class="my-2 text-2xl text-center font-bold tracking-tight text-gray-900"
-      >
-        {{ s }}
-      </h5>
-      <h2 *ngIf="i != 0" class="font-bold text-lg text-green-700 text-center">
-        FC {{ summaryContent[i] | number : "1.0-0" }}
-      </h2>
-      <h2 *ngIf="i != 0" class="font-bold text-lg text-yellow-900 text-center">
-        $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
-      </h2>
-    </a>
-  </div>
-</div>
-
-<div
-  class="container lg:block flex mx-auto shadow-xl flex-col md:justify-center md:flex-row"
->
-  <div class="flex flex-col">
-    <div class="container mx-auto px-4 mt-2 mb-6">
-      <div
-        class="relative mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-md p-4 md:p-5 shadow-sm"
-      >
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div class="flex items-center gap-3 min-w-0">
-            <div
-              class="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xl"
-            >
-              📈
-            </div>
-            <h1
-              class="min-w-0 bg-gradient-to-r text-center from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent font-extrabold tracking-tight leading-tight text-2xl md:text-4xl break-words whitespace-normal"
-            >
-              Reserve Total Par Mois
-            </h1>
-          </div>
-        </div>
-
-        <div
-          class="absolute -bottom-[2px] left-6 right-6 h-[3px] rounded-full bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-400"
-        ></div>
-      </div>
+      <plotly-plot [data]="graph.data" [layout]="graph.layout"></plotly-plot>
     </div>
-
-    <div class="inline-flex rounded-md shadow-sm mx-auto" role="group">
-      <button
-        (click)="updateReserveGraphics(compute.quarter1)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        3M
-      </button>
-      <button
-        (click)="updateReserveGraphics(compute.quarter2)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        6M
-      </button>
-      <button
-        (click)="updateReserveGraphics(compute.quarter3)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        9M
-      </button>
-      <button
-        (click)="updateReserveGraphics(compute.quarter4)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        1A
-      </button>
-      <button
-        (click)="updateReserveGraphics(maxRange)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        Max
-      </button>
-    </div>
-
-    <plotly-plot [data]="graph.data" [layout]="graph.layout"></plotly-plot>
   </div>
-</div>
+</section>
