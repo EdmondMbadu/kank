@@ -267,6 +267,24 @@
         }}
       </button>
     </div>
+    <div
+      *ngIf="auth.isAdmin && rankingMode === 'dailyPayments'"
+      class="flex justify-center mb-8"
+    >
+      <button
+        type="button"
+        (click)="toggleDailyAmounts()"
+        class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+      >
+        <span
+          class="h-2 w-2 rounded-full"
+          [ngClass]="showDailyAmounts ? 'bg-emerald-500' : 'bg-slate-300'"
+        ></span>
+        {{
+          showDailyAmounts ? "Masquer les montants" : "Afficher les montants"
+        }}
+      </button>
+    </div>
     <!-- Employee Leaderboard -->
     <!-- PERFORMANCE SECTION -->
     <div *ngIf="rankingMode === 'performance'" class="space-y-4">
@@ -571,7 +589,10 @@
             </div>
           </div>
 
-          <div *ngIf="auth.isAdmin" class="mt-3 flex flex-col gap-1">
+          <div
+            *ngIf="auth.isAdmin && showDailyAmounts"
+            class="mt-3 flex flex-col gap-1"
+          >
             <div class="flex items-baseline gap-2">
               <div
                 [ngClass]="
@@ -640,7 +661,7 @@
             </div>
 
             <div
-              *ngIf="this.auth.isAdmin"
+              *ngIf="this.auth.isAdmin && showDailyAmounts"
               class="text-right flex flex-col items-end gap-0.5"
             >
               <div class="text-sm font-semibold">

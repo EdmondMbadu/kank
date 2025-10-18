@@ -48,6 +48,7 @@ export class TeamRankingMonthComponent {
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
   showMonthlyAmounts = true;
+  showDailyAmounts = false;
   performanceEmployees: Employee[] = [];
 
   // state: all closed initially
@@ -64,6 +65,9 @@ export class TeamRankingMonthComponent {
 
   toggleMonthlyAmounts(): void {
     this.showMonthlyAmounts = !this.showMonthlyAmounts;
+  }
+  toggleDailyAmounts(): void {
+    this.showDailyAmounts = !this.showDailyAmounts;
   }
 
   allLocations: any[] = [];
