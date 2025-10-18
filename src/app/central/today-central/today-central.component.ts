@@ -249,9 +249,24 @@ export class TodayCentralComponent {
 
   get heroSnapshot() {
     return [
-      { label: 'Paiements', value: this.toNum(this.dailyPayment), icon: '💸' },
-      { label: 'Réserves', value: this.toNum(this.dailyReserve), icon: '🏦' },
-      { label: 'Demandes', value: this.toNum(this.dailyRequest), icon: '📅' },
+      {
+        label: 'Paiements',
+        value: this.toNum(this.dailyPayment),
+        valueUsd: this.toNum(this.dailyPaymentDollars),
+        icon: '💸',
+      },
+      {
+        label: 'Réserves',
+        value: this.toNum(this.dailyReserve),
+        valueUsd: this.toNum(this.dailyReserveDollars),
+        icon: '🏦',
+      },
+      {
+        label: 'Demandes',
+        value: this.toNum(this.dailyRequest),
+        valueUsd: this.toNum(this.dailyRequestDollars),
+        icon: '📅',
+      },
     ];
   }
 
