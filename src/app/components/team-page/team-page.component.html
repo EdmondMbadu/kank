@@ -234,204 +234,231 @@
 <ng-container *ngFor="let em of employees; let i = index">
   <div
     *ngIf="displayEditEmployees[i]"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+    class="fixed inset-0 z-50 bg-black/50"
+    role="dialog"
+    aria-modal="true"
   >
+    <!-- outer wrapper scrolls vertically if needed -->
     <div
-      class="w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-gray-800"
+      class="flex min-h-screen items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-y-contain"
     >
-      <h2
-        class="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-white"
+      <!-- modal panel: vertical scroll only; no horizontal -->
+      <div
+        class="w-full max-w-2xl rounded-3xl bg-white shadow-xl dark:bg-gray-800 max-h-[90svh] overflow-y-auto overflow-x-hidden [-webkit-overflow-scrolling:touch] break-words"
       >
-        Modifier Employé(e)
-      </h2>
-
-      <!-- hidden file inputs (kept outside visible grid) -->
-      <input
-        type="file"
-        id="getCV"
-        class="hidden"
-        (change)="startUploadCV($any($event.target).files, employees[i])"
-      />
-      <input
-        type="file"
-        id="getContract"
-        class="hidden"
-        (change)="startUploadContract($any($event.target).files, employees[i])"
-      />
-      <input
-        type="file"
-        id="getBank"
-        class="hidden"
-        (change)="
-          startUploadContract($any($event.target).files, employees[i], 'bank')
-        "
-      />
-
-      <div class="grid gap-4 sm:grid-cols-2">
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Nom
-          <input
-            [(ngModel)]="employees[i].lastName"
-            type="text"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
-
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Postnom
-          <input
-            [(ngModel)]="employees[i].middleName"
-            type="text"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
-
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Prénom
-          <input
-            [(ngModel)]="employees[i].firstName"
-            type="text"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
-
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Téléphone
-          <input
-            [(ngModel)]="employees[i].phoneNumber"
-            type="text"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Jour De Vacances Accepter
-          <input
-            [(ngModel)]="employees[i].vacationAcceptedNumberOfDays"
-            type="text"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Arrival Hour
-          <input
-            [(ngModel)]="employees[i].arrivalHour"
-            type="text"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Arrival Minute
-          <input
-            [(ngModel)]="employees[i].arrivalMinute"
-            type="text"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
-
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Role
-          <select
-            [(ngModel)]="employees[i].role"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+        <!-- Header -->
+        <div class="px-6 pt-6 pb-2">
+          <h2
+            class="text-center text-xl font-semibold text-gray-900 dark:text-white"
           >
-            <option></option>
-            <option>Manager</option>
-            <option>Agent Marketing</option>
-            <option>Gestionnaire</option>
-            <option>Gestionnaire Regionale</option>
-            <option>Auditrice</option>
-            <option>Manager Regionale</option>
-            <option>Stagaire</option>
-          </select>
-        </label>
+            Modifier Employé(e)
+          </h2>
+        </div>
 
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Date de Naissance
-          <input
-            [(ngModel)]="employees[i].dateOfBirth"
-            type="date"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
+        <!-- hidden file inputs -->
+        <input
+          type="file"
+          id="getCV"
+          class="hidden"
+          (change)="startUploadCV($any($event.target).files, employees[i])"
+        />
+        <input
+          type="file"
+          id="getContract"
+          class="hidden"
+          (change)="
+            startUploadContract($any($event.target).files, employees[i])
+          "
+        />
+        <input
+          type="file"
+          id="getBank"
+          class="hidden"
+          (change)="
+            startUploadContract($any($event.target).files, employees[i], 'bank')
+          "
+        />
 
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Sexe
-          <select
-            [(ngModel)]="employees[i].sex"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          >
-            <option></option>
-            <option>Masculin</option>
-            <option>Feminin</option>
-          </select>
-        </label>
+        <!-- Content -->
+        <div class="px-6 pb-6">
+          <!-- stack to one column on phones -->
+          <div class="grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Nom
+              <input
+                [(ngModel)]="employees[i].lastName"
+                type="text"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
 
-        <label class="text-sm font-medium text-gray-700 dark:text-white">
-          Statut
-          <select
-            [(ngModel)]="employees[i].status"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          >
-            <option></option>
-            <option>Travaille</option>
-            <option>Quitté</option>
-            <option>Malade</option>
-            <option>Absent</option>
-            <option>Vacance</option>
-            <option>Empeché</option>
-            <option>Transferé</option>
-          </select>
-        </label>
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Postnom
+              <input
+                [(ngModel)]="employees[i].middleName"
+                type="text"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
 
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Date de Début
-          <input
-            [(ngModel)]="employees[i].dateJoined"
-            type="date"
-            class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-          />
-        </label>
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Prénom
+              <input
+                [(ngModel)]="employees[i].firstName"
+                type="text"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Téléphone
+              <input
+                [(ngModel)]="employees[i].phoneNumber"
+                type="text"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Jour De Vacances Accepter
+              <input
+                [(ngModel)]="employees[i].vacationAcceptedNumberOfDays"
+                type="text"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Arrival Hour
+              <input
+                [(ngModel)]="employees[i].arrivalHour"
+                type="text"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Arrival Minute
+              <input
+                [(ngModel)]="employees[i].arrivalMinute"
+                type="text"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Role
+              <select
+                [(ngModel)]="employees[i].role"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              >
+                <option></option>
+                <option>Manager</option>
+                <option>Agent Marketing</option>
+                <option>Gestionnaire</option>
+                <option>Gestionnaire Regionale</option>
+                <option>Auditrice</option>
+                <option>Manager Regionale</option>
+                <option>Stagaire</option>
+              </select>
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Date de Naissance
+              <input
+                [(ngModel)]="employees[i].dateOfBirth"
+                type="date"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Sexe
+              <select
+                [(ngModel)]="employees[i].sex"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              >
+                <option></option>
+                <option>Masculin</option>
+                <option>Feminin</option>
+              </select>
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-white">
+              Statut
+              <select
+                [(ngModel)]="employees[i].status"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              >
+                <option></option>
+                <option>Travaille</option>
+                <option>Quitté</option>
+                <option>Malade</option>
+                <option>Absent</option>
+                <option>Vacance</option>
+                <option>Empeché</option>
+                <option>Transferé</option>
+              </select>
+            </label>
+
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Date de Début
+              <input
+                [(ngModel)]="employees[i].dateJoined"
+                type="date"
+                class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+              />
+            </label>
+          </div>
+
+          <!-- attach docs: compact + wrapping buttons -->
+          <div class="mt-6 flex flex-wrap gap-3">
+            <button
+              (click)="onCVClick()"
+              class="shrink-0 rounded-lg bg-indigo-600 px-3 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Attacher CV
+            </button>
+            <button
+              (click)="onFieldClick('getContract')"
+              class="shrink-0 rounded-lg bg-indigo-600 px-3 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Contrat
+            </button>
+            <button
+              (click)="onFieldClick('getBank')"
+              class="shrink-0 rounded-lg bg-indigo-600 px-3 py-2 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Rawbank
+            </button>
+          </div>
+        </div>
+
+        <!-- Sticky footer -->
+        <div
+          class="sticky bottom-0 left-0 right-0 border-top border-gray-200 bg-white/95 px-6 py-3 backdrop-blur dark:bg-gray-800/95 dark:border-gray-700"
+        >
+          <div class="flex justify-center flex-wrap gap-3 sm:gap-6">
+            <button
+              (click)="toggleEditEmployee(i)"
+              class="rounded-full bg-gray-300 px-4 py-2 text-sm sm:px-6 sm:py-2 sm:text-base font-medium text-gray-800 hover:bg-gray-400"
+            >
+              Annuler
+            </button>
+            <button
+              (click)="updateEmployeeInfo(i)"
+              class="rounded-full bg-emerald-600 px-4 py-2 text-sm sm:px-6 sm:py-2 sm:text-base font-medium text-white hover:bg-emerald-700"
+            >
+              Enregistrer
+            </button>
+          </div>
+        </div>
       </div>
-
-      <!-- attach docs -->
-      <div class="mt-6 grid gap-4 sm:grid-cols-3">
-        <button
-          (click)="onCVClick()"
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
-        >
-          Attacher CV
-        </button>
-        <button
-          (click)="onFieldClick('getContract')"
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
-        >
-          Contrat
-        </button>
-        <button
-          (click)="onFieldClick('getBank')"
-          class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700"
-        >
-          Rawbank
-        </button>
-      </div>
-
-      <!-- actions -->
-      <div class="mt-8 flex justify-center gap-6">
-        <button
-          (click)="toggleEditEmployee(i)"
-          class="rounded-full bg-gray-300 px-6 py-2 font-medium text-gray-800 hover:bg-gray-400"
-        >
-          Annuler
-        </button>
-        <button
-          (click)="updateEmployeeInfo(i)"
-          class="rounded-full bg-emerald-600 px-6 py-2 font-medium text-white hover:bg-emerald-700"
-        >
-          Enregistrer
-        </button>
-      </div>
+      <!-- /panel -->
     </div>
+    <!-- /outer wrapper -->
   </div>
+  <!-- /overlay -->
 </ng-container>
 
 <!-- === ADD NEW EMPLOYEE MODAL === -->
