@@ -38,6 +38,10 @@ export class PaymentActivityComponent implements OnInit {
       this.client = data[Number(this.id)];
 
       let paymentsArray = Object.entries(this.client.payments!);
+      // remove the 0 amount payments UI ( means nothing)
+      paymentsArray = paymentsArray.filter(
+        (item: any) => item[1] !== 0 && item[1] !== '0'
+      );
       paymentsArray =
         this.compute.sortArrayByDateDescendingOrder(paymentsArray);
       // Extract the sorted payment values and dates into separate arrays
