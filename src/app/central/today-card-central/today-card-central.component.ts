@@ -17,7 +17,13 @@ export class TodayCardCentralComponent {
     private time: TimeService,
     private compute: ComputationService
   ) {}
+
   allUsers: User[] = [];
+
+  requestDate: string = this.time.getTodaysDateYearMonthDay();
+  selectedDateKey: string = this.time.todaysDateMonthDayYear();
+  displayDate: string = this.time.convertDateToDayMonthYear(this.selectedDateKey);
+
   ngOnInit(): void {
     if (this.auth.isAdmin) {
       this.auth.getAllUsersInfo().subscribe((data) => {
@@ -44,28 +50,29 @@ export class TodayCardCentralComponent {
     '../../../assets/img/daily-reimbursement.png',
   ];
 
-  today: string = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   initalizeInputs() {
+    const dateKey = this.selectedDateKey;
+
     this.dailyCardPayments = this.compute
       .findTodayTotalResultsGivenField(
         this.allUsers,
         'dailyCardPayments',
-        this.today
+        dateKey
       )
       .toString();
     this.dailyCardReturns = this.compute
       .findTodayTotalResultsGivenField(
         this.allUsers,
         'dailyCardReturns',
-        this.today
+        dateKey
       )
       .toString();
     this.dailyCardBenefits = this.compute
       .findTodayTotalResultsGivenField(
         this.allUsers,
         'dailyCardBenefits',
-        this.today
+        dateKey
       )
       .toString();
     this.dailyCardPayments =
@@ -89,5 +96,20 @@ export class TodayCardCentralComponent {
         this.dailyCardBenefits
       )}`,
     ];
+  }
+
+  onDateChange(date: string) {
+    if (!date) {
+      return;
+    }
+    this.requestDate = date;
+    this.selectedDateKey = this.time.convertDateToMonthDayYear(date);
+    this.displayDate = this.time.convertDateToDayMonthYear(
+      this.selectedDateKey
+    );
+
+    if (this.allUsers.length) {
+      this.initalizeInputs();
+    }
   }
 }
