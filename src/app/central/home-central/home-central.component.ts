@@ -49,6 +49,7 @@ export class HomeCentralComponent implements OnInit {
   customBirthdayInput = '';
   private birthdayTarget: { month: number; day: number } | null = null;
   private searchTerm = '';
+  minCreditScore = 0;
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
 
@@ -342,21 +343,35 @@ export class HomeCentralComponent implements OnInit {
 
   get clientListSummary(): string {
     const count = this.filteredItems.length;
-    if (this.birthdayFilterSummary) {
-      return `${this.birthdayFilterSummary} · ${count} client(s)`;
-    }
     const hasSearch = this.searchTerm.trim().length > 0;
     const baseTotal = this.allClients?.length ?? count;
-    if (hasSearch) {
-      return `Résultats de la recherche · ${count} client(s)`;
+    const hasScoreFilter = Number(this.minCreditScore) > 0;
+
+    if (!this.birthdayFilterSummary && !hasSearch && !hasScoreFilter) {
+      return `Tous les clients · ${baseTotal} client(s)`;
     }
-    return `Tous les clients · ${baseTotal} client(s)`;
+
+    const parts: string[] = [];
+    if (this.birthdayFilterSummary) {
+      parts.push(this.birthdayFilterSummary);
+    } else if (hasSearch) {
+      parts.push('Résultats de la recherche');
+    } else {
+      parts.push('Tous les clients');
+    }
+
+    if (hasScoreFilter) {
+      parts.push(`Score ≥ ${this.minCreditScore}`);
+    }
+
+    parts.push(`${count} client(s)`);
+    return parts.join(' · ');
   }
 
   private applyClientFilters() {
-    const base = (this.allClients ?? []).filter((client) =>
-      this.matchesSearchTerm(client, this.searchTerm)
-    );
+    const base = (this.allClients ?? [])
+      .filter((client) => this.matchesSearchTerm(client, this.searchTerm))
+      .filter((client) => this.matchesCreditScore(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
   }
@@ -374,6 +389,24 @@ export class HomeCentralComponent implements OnInit {
     ];
 
     return fields.some((f) => (f || '').toLowerCase().includes(term));
+  }
+
+  onCreditScoreChange(rawValue: number | string) {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) {
+      this.minCreditScore = 0;
+    } else {
+      this.minCreditScore = Math.min(Math.max(Math.round(value), 0), 100);
+    }
+    this.applyClientFilters();
+  }
+
+  private matchesCreditScore(client: Client): boolean {
+    const min = Number(this.minCreditScore) || 0;
+    if (min <= 0) return true;
+    const score = Number(client.creditScore);
+    if (!Number.isFinite(score)) return false;
+    return score >= min;
   }
 
   private matchesBirthdayFilter(client: Client): boolean {
