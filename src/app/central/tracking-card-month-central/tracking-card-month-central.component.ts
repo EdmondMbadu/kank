@@ -47,7 +47,7 @@ export class TrackingCardMonthCentralComponent {
     'Retrait Carte Du Mois Central',
     'Benefice Carte Du Mois Central ',
   ];
-  valuesConvertedToDollars: string[] = [];
+  valuesConvertedToDollars: number[] = [];
   givenMonthTotalCardPaymentAmount: string = '';
   givenMonthTotalCardBenefitAmount: string = '';
   givenMonthTotalCardReturnAmount: string = '';
@@ -59,7 +59,7 @@ export class TrackingCardMonthCentralComponent {
   ];
 
   today = this.time.todaysDateMonthDayYear();
-  summaryContent: string[] = [];
+  summaryContent: number[] = [];
   initalizeInputs() {
     this.givenMonthTotalCardPaymentAmount =
       this.compute.findTotalGivenMonthForAllUsers(
@@ -85,21 +85,38 @@ export class TrackingCardMonthCentralComponent {
         this.givenYear
       );
 
-    this.summaryContent = [
-      `${this.givenMonthTotalCardPaymentAmount}`,
-      `${this.givenMonthTotalCardReturnAmount}`,
-      `${this.givenMonthTotalCardBenefitAmount}`,
-    ];
+    const totalPayments =
+      Number(this.givenMonthTotalCardPaymentAmount) || 0;
+    const totalReturns =
+      Number(this.givenMonthTotalCardReturnAmount) || 0;
+    const totalBenefits =
+      Number(this.givenMonthTotalCardBenefitAmount) || 0;
+
+    this.summaryContent = [totalPayments, totalReturns, totalBenefits];
+
     this.valuesConvertedToDollars = [
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalCardPaymentAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalCardReturnAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalCardBenefitAmount
-      )}`,
+      Number(
+        this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalCardPaymentAmount
+        )
+      ) || 0,
+      Number(
+        this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalCardReturnAmount
+        )
+      ) || 0,
+      Number(
+        this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalCardBenefitAmount
+        )
+      ) || 0,
     ];
+  }
+
+  onPeriodChange(): void {
+    if (!this.allUsers.length) {
+      return;
+    }
+    this.initalizeInputs();
   }
 }

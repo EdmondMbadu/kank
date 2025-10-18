@@ -1,49 +1,139 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<!-- investements -->
+<section class="relative overflow-hidden bg-slate-950 text-white">
+  <div
+    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900 to-emerald-900/80"
+  ></div>
+  <div
+    class="pointer-events-none absolute -left-24 top-16 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl"
+  ></div>
+  <div class="container relative mx-auto px-6 py-16">
+    <div
+      class="flex flex-col gap-10 md:flex-row md:items-end md:justify-between"
+    >
+      <div class="space-y-4">
+        <p class="text-xs uppercase tracking-[0.35em] text-white/50">
+          Central · Cartes
+        </p>
+        <h1 class="text-3xl font-semibold md:text-4xl">
+          Activités Carte · {{ time.monthFrenchNames[givenMonth - 1] }}
+          {{ givenYear }}
+        </h1>
+        <p class="max-w-xl text-sm text-white/70">
+          Consultez les volumes mensuels agrégés et ouvrez directement les
+          dossiers liés.
+        </p>
+      </div>
 
-    <div class="flex container mx-auto m-12 justify-center text-center">
-        <h1 class="text-2xl md:text-4xl mr-10 ">Activités Carte De {{time.monthFrenchNames[givenMonth-1]}} {{givenYear}} Central </h1>
-
-    </div>
-    <div class="flex container mx-auto justify-center text-center space-x-8">
-
-        <div class="mb-6 ">
-            <!-- <label for="payments" class="block mb-2 text-md font-medium text-gray-900 m-2">Mois: {{givenMonth}}</label> -->
-            <select  id="payments" [(ngModel)]="givenMonth"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="initalizeInputs()" >
-            <option *ngFor="let month of monthsList" [ngValue]="month">{{time.monthFrenchNames[month-1]}}</option>
-           
-            <!-- <option [ngValue]="maxRange">Max</option> -->
+      <div
+        class="w-full max-w-md rounded-3xl border border-white/10 bg-white/10 p-6 text-sm text-white/80 backdrop-blur-xl"
+      >
+        <p class="text-[11px] uppercase tracking-[0.3em] text-white/50">
+          Période analysée
+        </p>
+        <h2 class="mt-2 text-lg font-semibold text-white">
+          Ajustez le mois et l'année
+        </h2>
+        <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label class="space-y-2 text-xs tracking-[0.18em] text-white/60">
+            Mois
+            <select
+              [(ngModel)]="givenMonth"
+              class="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium tracking-wide text-white/90 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200/60"
+              (ngModelChange)="onPeriodChange()"
+            >
+              <option
+                *ngFor="let month of monthsList"
+                [ngValue]="month"
+                class="text-slate-900"
+              >
+                {{ time.monthFrenchNames[month - 1] }}
+              </option>
             </select>
+          </label>
+          <label class="space-y-2 text-xs tracking-[0.18em] text-white/60">
+            Année
+            <select
+              [(ngModel)]="givenYear"
+              class="w-full rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium tracking-wide text-white/90 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-200/60"
+              (ngModelChange)="onPeriodChange()"
+            >
+              <option
+                *ngFor="let year of time.yearsList"
+                [ngValue]="year"
+                class="text-slate-900"
+              >
+                {{ year }}
+              </option>
+            </select>
+          </label>
+        </div>
+        <p class="mt-4 text-xs text-white/60">
+          Les montants incluent paiements, retraits et bénéfices carte cumulés.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container mx-auto -mt-14 px-6 pb-16">
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+    <a
+      *ngFor="let s of summary; let i = index"
+      [routerLink]="linkPaths[i]"
+      class="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_25px_60px_-30px_rgba(15,23,42,0.45)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_35px_75px_-28px_rgba(16,185,129,0.55)] dark:border-slate-700 dark:bg-slate-900/80"
+    >
+      <div
+        class="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/0 via-emerald-400/10 to-sky-400/20 opacity-0 transition duration-300 group-hover:opacity-100"
+      ></div>
+
+      <div class="relative flex flex-1 flex-col gap-6">
+        <div class="flex items-center gap-4">
+          <span
+            class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/40"
+          >
+            <img
+              [src]="imagePaths[i]"
+              alt=""
+              class="h-7 w-7 object-contain"
+              loading="lazy"
+            />
+          </span>
+          <h3
+            class="text-base font-semibold text-slate-900 dark:text-slate-100"
+          >
+            {{ s }}
+          </h3>
         </div>
 
-        <div class="mb-6 ">
-            <!-- <label for="payments" class="block mb-2 text-md font-medium text-gray-900 m-2">Année: {{givenYear}}</label> -->
-            <select id="payments" [(ngModel)]="givenYear"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "  (change)="initalizeInputs()">
-            <option  *ngFor="let year of this.time.yearsList" [ngValue]="year">{{year}}</option>
-          
-            <!-- <option [ngValue]="maxRange">Max</option> -->
-            </select>
+        <div class="space-y-1">
+          <p class="text-3xl font-semibold text-slate-900 dark:text-white">
+            FC {{ summaryContent[i] || 0 | number : "1.0-0" }}
+          </p>
+          <p class="text-base font-semibold text-green-700">
+            ≈ $ {{ valuesConvertedToDollars[i] || 0 | number : "1.0-0" }}
+          </p>
         </div>
-        
-        
 
-    </div>
-
-
-<div class="container  flex flex-wrap flex-col items-center justify-center  mx-auto md:flex-row">
-
-    <div class="flex-col w-60  m-6 " *ngFor="let s of summary; let i = index;  ">
-        <a routerLink="{{linkPaths[i]}}" class="block max-w-sm  p-6 bg-neutral-200 border border-gray-200 rounded-lg  shadow hover:bg-green-100">
-            <img src="{{imagePaths[i]}}" alt="" class="w-20  justify-center mx-auto ">
-            
-            <h5 class="my-2 text-2xl text-center font-bold  tracking-tight text-gray-900">{{s}}</h5>
-            <h2 class="font-bold text-lg text-green-700 text-center" > FC {{summaryContent[i] | number:'1.0-0'}} </h2>
-            <h2 class="font-bold text-lg text-yellow-900 text-center" > $ {{valuesConvertedToDollars[i] | number:'1.0-0'}}</h2>
-         
-        </a>
-    </div>
-    
-
-
-</div>
+        <span
+          class="mt-auto inline-flex items-center gap-2 text-xs font-semibold text-emerald-600 transition group-hover:gap-3 group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
+        >
+          Ouvrir
+          <svg
+            class="h-3.5 w-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </span>
+      </div>
+    </a>
+  </div>
+</section>
