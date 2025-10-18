@@ -114,49 +114,51 @@
     >
       <div class="flex items-start gap-4">
         <span
-          class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 transition group-hover:bg-emerald-100 group-hover:text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 dark:ring-emerald-800"
+          class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset"
+          [ngClass]="{
+            'bg-emerald-50 text-emerald-600 ring-emerald-200': i % 3 === 0,
+            'bg-sky-50 text-sky-600 ring-sky-200': i % 3 === 1,
+            'bg-amber-50 text-amber-600 ring-amber-200': i % 3 === 2
+          }"
         >
           <img
             [src]="imagePaths[i]"
             alt=""
-            class="h-7 w-7 object-contain"
+            class="h-6 w-6 object-contain"
             loading="lazy"
           />
         </span>
-        <div class="flex-1">
-          <p class="text-xs uppercase tracking-wide text-slate-400">
-            Indicateur #{{ i + 1 | number : "1.0-0" }}
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] uppercase tracking-wide text-slate-400">
+            Indicateur #{{ i + 1 }}
           </p>
-          <h3
-            class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100"
-          >
+          <h3 class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
             {{ s }}
           </h3>
-          <div class="mt-4 space-y-1 text-slate-700 dark:text-slate-200">
-            <p
-              class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
-              *ngIf="i <= 1"
-            >
-              {{ summaryContent[i] | number : "1.0-0" }}
-            </p>
-            <ng-container *ngIf="i > 1">
+          <div class="mt-4 space-y-1">
+            <ng-container *ngIf="i <= 1; else monetaryBlock">
               <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
-                FC {{ summaryContent[i] | number : "1.0-0" }}
-              </p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                ≈ $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+                {{ summaryContent[i] | number : '1.0-0' }}
               </p>
             </ng-container>
+            <ng-template #monetaryBlock>
+              <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+                FC {{ summaryContent[i] | number : '1.0-0' }}
+              </p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                ≈ $ {{ valuesConvertedToDollars[i] | number : '1.0-0' }}
+              </p>
+            </ng-template>
           </div>
         </div>
       </div>
 
       <div
-        class="mt-6 flex items-center gap-2 text-xs font-medium text-emerald-600 transition group-hover:text-emerald-700 dark:text-emerald-300"
+        class="mt-6 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:gap-1.5 group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
       >
         Accéder au détail
         <svg
-          class="h-3.5 w-3.5 transition group-hover:translate-x-1"
+          class="h-3.5 w-3.5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -167,7 +169,7 @@
       </div>
 
       <div
-        class="absolute inset-x-0 -bottom-12 h-24 bg-gradient-to-t from-emerald-500/10 via-transparent to-transparent transition group-hover:translate-y-12"
+        class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
       ></div>
     </a>
   </div>
