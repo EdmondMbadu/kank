@@ -23,7 +23,9 @@ export class ReviewsComponent implements OnInit {
   performanceValue = 0;
 
   // objet graphique
-  graphPerf: any = { data: [], layout: {} };
+  graphPerf: any = { data: [], layout: {}, config: {} };
+  latestPerformance: number | null = null;
+  performanceDelta: number | null = null;
   toggleForm() {
     this.showForm = !this.showForm;
   }
@@ -498,7 +500,9 @@ export class ReviewsComponent implements OnInit {
   /** Histogramme mensuel coloré – date affichée = 1 mois en arrière */
   private buildPerformanceGraph() {
     if (!this.reviews?.length) {
-      this.graphPerf = { data: [], layout: {} };
+      this.graphPerf = { data: [], layout: {}, config: {} };
+      this.latestPerformance = null;
+      this.performanceDelta = null;
       return;
     }
 
@@ -549,26 +553,78 @@ export class ReviewsComponent implements OnInit {
     );
 
     /* --- 3. Moyenne par mois --- */
-    const values = labels.map(
-      (l) => +(buckets[l].total / buckets[l].count).toFixed(1)
-    );
+    const values = labels
+      .map((l) => +(buckets[l].total / buckets[l].count).toFixed(1))
+      .map((val) => Math.min(100, Math.max(0, val)));
+
+    if (!values.length) {
+      this.graphPerf = { data: [], layout: {}, config: {} };
+      this.latestPerformance = null;
+      this.performanceDelta = null;
+      return;
+    }
+
+    this.latestPerformance = values.at(-1) ?? null;
+    this.performanceDelta =
+      values.length > 1
+        ? Number((values.at(-1)! - values.at(-2)!).toFixed(1))
+        : null;
 
     /* --- 4. Couleur dynamique --- */
-    let barColor = '#16a34a'; // vert
-    if (values.length > 1 && values.at(-1)! < values.at(-2)!)
-      barColor = '#dc2626'; // rouge
+    const colors: string[] = values.map((value) =>
+      this.compute.getGradientColor(value)
+    );
+    const trendIsDown =
+      this.performanceDelta !== null && this.performanceDelta < 0;
+    if (colors.length) {
+      const lastColor = this.compute.getGradientColor(values.at(-1)!);
+      colors[colors.length - 1] = trendIsDown ? '#dc2626' : lastColor;
+    }
 
     /* --- 5. Plotly --- */
     this.graphPerf = {
       data: [
-        { x: labels, y: values, type: 'bar', marker: { color: barColor } },
+        {
+          x: labels,
+          y: values,
+          type: 'bar',
+          marker: {
+            color: colors,
+            line: { color: 'rgba(15, 23, 42, 0.08)', width: 1 },
+            opacity: 0.9,
+          },
+          hovertemplate: '%{x}<br><b>%{y:.1f}%</b><extra></extra>',
+        },
       ],
       layout: {
-        title: 'Performance moyenne par mois (%)',
-        yaxis: { title: '%', rangemode: 'tozero' },
-        xaxis: { title: 'Mois', tickangle: -30 },
-        margin: { t: 40, r: 10, l: 40, b: 80 },
+        title: {
+          text: 'Performance moyenne par mois',
+          font: { size: 18, color: '#0f172a' },
+          automargin: true,
+        },
+        yaxis: {
+          title: '%',
+          range: [0, 100],
+          tickmode: 'linear',
+          dtick: 10,
+          ticksuffix: '%',
+          gridcolor: 'rgba(148, 163, 184, 0.25)',
+          zerolinecolor: 'rgba(148, 163, 184, 0.35)',
+          fixedrange: true,
+        },
+        xaxis: {
+          title: '',
+          tickangle: -20,
+          showgrid: false,
+          tickfont: { size: 12 },
+        },
+        height: 280,
+        bargap: 0.3,
+        margin: { t: 30, r: 12, l: 50, b: 60 },
+        plot_bgcolor: 'rgba(255,255,255,0)',
+        paper_bgcolor: 'rgba(255,255,255,0)',
       },
+      config: { responsive: true, displayModeBar: false },
     };
   }
 

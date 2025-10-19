@@ -255,16 +255,56 @@
 
   <!-- ░░░ HISTOGRAMME PERFORMANCE ░░░ -->
   <section *ngIf="graphPerf.data.length"
-          class="bg-white dark:bg-gray-900 py-8">
+           class="py-8 bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900/80">
     <div class="max-w-5xl mx-auto px-4">
-      <h2 class="text-2xl font-semibold text-center mb-4
-                text-gray-900 dark:text-white">
-        Performance De L'Equipe mensuelle
-      </h2>
+      <div class="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70 shadow-lg backdrop-blur">
+        <div class="flex flex-wrap items-start justify-between gap-3 px-6 pt-6">
+          <div class="space-y-1">
+            <h2 class="text-xl font-semibold text-slate-900 dark:text-white">
+              Performance mensuelle de l’équipe
+            </h2>
+            <p class="text-sm text-slate-500 dark:text-slate-300">
+              Moyenne des pourcentages de performance publiés dans les avis.
+            </p>
+          </div>
 
-      <plotly-plot [data]="graphPerf.data"
-                  [layout]="graphPerf.layout">
-      </plotly-plot>
+          <div *ngIf="latestPerformance !== null" class="text-right">
+            <p class="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              Dernier mois
+            </p>
+            <div class="flex items-center justify-end gap-2">
+              <span class="text-3xl font-semibold text-slate-900 dark:text-white">
+                {{ latestPerformance | number:'1.0-1' }}%
+              </span>
+              <span *ngIf="performanceDelta !== null"
+                    class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold"
+                    [ngClass]="{
+                      'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300': performanceDelta >= 0,
+                      'bg-rose-100 text-rose-700 dark:bg-rose-400/10 dark:text-rose-300': performanceDelta < 0
+                    }">
+                <svg *ngIf="performanceDelta !== null"
+                     class="w-3.5 h-3.5"
+                     [ngClass]="{
+                       'rotate-180': performanceDelta < 0
+                     }"
+                     fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 3.5a1 1 0 0 1 .832.445l4.5 6a1 1 0 1 1-1.664 1.11L11 7.868V16a1 1 0 1 1-2 0V7.868L6.332 11.055a1 1 0 0 1-1.664-1.11l4.5-6A1 1 0 0 1 10 3.5Z"/>
+                </svg>
+                <span>
+                  {{ performanceDelta >= 0 ? '+' : '' }}{{ performanceDelta | number:'1.0-1' }}%
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-3 pb-6 pt-2">
+          <plotly-plot [data]="graphPerf.data"
+                       [layout]="graphPerf.layout"
+                       [config]="graphPerf.config">
+          </plotly-plot>
+        </div>
+      </div>
     </div>
   </section>
 
