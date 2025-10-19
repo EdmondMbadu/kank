@@ -24,6 +24,15 @@ export class ReviewsComponent implements OnInit {
 
   // objet graphique
   graphPerf: any = { data: [], layout: {}, config: {} };
+  readonly performanceRanges: Array<{
+    value: '3m' | '6m' | 'max';
+    label: string;
+  }> = [
+    { value: '3m', label: '3 mois' },
+    { value: '6m', label: '6 mois' },
+    { value: 'max', label: 'Max (12 mois)' },
+  ];
+  selectedRange: '3m' | '6m' | 'max' = 'max';
   latestPerformance: number | null = null;
   performanceDelta: number | null = null;
   toggleForm() {
@@ -548,12 +557,12 @@ export class ReviewsComponent implements OnInit {
       const [mFr, y] = s.split(' ');
       return new Date(+y, monthsFr.indexOf(mFr));
     };
-    const labels = Object.keys(buckets).sort(
+    let labels = Object.keys(buckets).sort(
       (a, b) => +parseKey(a) - +parseKey(b)
     );
 
     /* --- 3. Moyenne par mois --- */
-    const values = labels
+    let values = labels
       .map((l) => +(buckets[l].total / buckets[l].count).toFixed(1))
       .map((val) => Math.min(100, Math.max(0, val)));
 
@@ -562,6 +571,20 @@ export class ReviewsComponent implements OnInit {
       this.latestPerformance = null;
       this.performanceDelta = null;
       return;
+    }
+
+    let monthsToKeep = 0;
+    if (this.selectedRange === 'max') {
+      monthsToKeep = Math.min(labels.length, 12); // last year, capped to available data
+    } else {
+      const limitMap: Record<'3m' | '6m', number> = { '3m': 3, '6m': 6 };
+      monthsToKeep = limitMap[this.selectedRange];
+    }
+
+    if (monthsToKeep > 0 && labels.length > monthsToKeep) {
+      const startIndex = Math.max(labels.length - monthsToKeep, 0);
+      labels = labels.slice(startIndex);
+      values = values.slice(startIndex);
     }
 
     this.latestPerformance = values.at(-1) ?? null;
@@ -626,6 +649,14 @@ export class ReviewsComponent implements OnInit {
       },
       config: { responsive: true, displayModeBar: false },
     };
+  }
+
+  setPerformanceRange(range: '3m' | '6m' | 'max') {
+    if (this.selectedRange === range) {
+      return;
+    }
+    this.selectedRange = range;
+    this.buildPerformanceGraph();
   }
 
   savePerformance(c: Comment) {
