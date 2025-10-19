@@ -418,6 +418,7 @@ export class TeamRankingMonthComponent {
     );
     return [sortedKeys, values];
   }
+
   // In team-ranking-month.component.ts
   // async addAttendanceForEmployee(
   //   employee: Employee,
@@ -688,12 +689,7 @@ export class TeamRankingMonthComponent {
         if (!isInactive) continue;
 
         const ownerUid = meta.ownerUid;
-        // Find a recipient: any active employee in the visible list with same owner/location
-        const recipient = this.allEmployees.find(
-          (r: any) =>
-            (r?.tempUser?.uid || this.auth.currentUser.uid) === ownerUid &&
-            (r.status || '') === 'Travaille'
-        );
+        const recipient = this.findRecipientForTotals(ownerUid);
         if (!recipient) continue; // nobody active at this location → skip
 
         const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
@@ -851,6 +847,41 @@ export class TeamRankingMonthComponent {
     }
     return keys;
   }
+
+  private readonly allowedRecipientRoles = [
+    'manager',
+    'agent marketing',
+    'agent',
+  ];
+
+  private normalizeRole(role?: string | null): string {
+    return (role || '').trim().toLowerCase();
+  }
+
+  private findRecipientForTotals(ownerUid: string): Employee | undefined {
+    const eligible = this.allEmployees.filter((r: any) => {
+      const sameOwner =
+        (r?.tempUser?.uid || this.auth.currentUser.uid) === ownerUid;
+      const working = (r.status || '') === 'Travaille';
+      const roleOk = this.allowedRecipientRoles.includes(
+        this.normalizeRole(r.role)
+      );
+      return sameOwner && working && roleOk;
+    });
+
+    const manager = eligible.find(
+      (e) => this.normalizeRole(e.role) === 'manager'
+    );
+    if (manager) return manager;
+
+    const agentMarketing = eligible.find(
+      (e) => this.normalizeRole(e.role) === 'agent marketing'
+    );
+    if (agentMarketing) return agentMarketing;
+
+    return eligible.find((e) => this.normalizeRole(e.role) === 'agent');
+  }
+
   private async loadMonthlyTotalsForEmployees() {
     if (!this.allEmployees?.length) return;
     this.loadingMonthly = true;
@@ -912,11 +943,7 @@ export class TeamRankingMonthComponent {
         const isInactive = (donor.status || '') !== 'Travaille';
         if (!isInactive) continue;
 
-        const recipient = this.allEmployees.find(
-          (r: any) =>
-            (r?.tempUser?.uid || this.auth.currentUser.uid) === meta.ownerUid &&
-            (r.status || '') === 'Travaille'
-        );
+        const recipient = this.findRecipientForTotals(meta.ownerUid);
         if (!recipient) continue;
 
         const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
