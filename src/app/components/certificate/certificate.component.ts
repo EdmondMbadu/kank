@@ -3,6 +3,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import { Certificate } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
@@ -17,12 +18,11 @@ export class CertificateComponent implements OnInit {
     public auth: AuthService,
     private storage: AngularFireStorage,
     private data: DataService,
-    public time: TimeService
-  ) {
-    this.resetCertificateForm();
-  }
+    public time: TimeService,
+    private compute: ComputationService
+  ) {}
 
-  selectedBest?: Certificate;
+  selectedBest: Certificate = {};
   best: any = {};
   url: string = '';
   certificateId: string = '';
@@ -42,7 +42,19 @@ export class CertificateComponent implements OnInit {
   year = this.currentDate.getFullYear();
   preposition: string = 'De';
 
-  certificate: Certificate = {};
+  certificate: Certificate = {
+    month: '',
+    year: '',
+    bestTeam: '',
+    bestEmployee: '',
+    bestEmployeePerformance: '',
+    bestTeamCertificatePath: '',
+    bestTeamCertificateDownloadUrl: '',
+    bestEmployeeCertificatePath: '',
+    bestEmployeeCertificateDownloadUrl: '',
+    bestManagerCertificatePath: '',
+    bestManagerCertificateDownloadUrl: '',
+  };
   displayAddTeam: boolean = false;
   ngOnInit(): void {
     if (this.givenMonth < 0) {
@@ -63,21 +75,16 @@ export class CertificateComponent implements OnInit {
       this.updateSelection();
     });
   }
-
   toggleDisplayAddTeam() {
-    if (!this.displayAddTeam) {
-      this.resetCertificateForm();
-    }
     this.displayAddTeam = !this.displayAddTeam;
   }
 
   updateSelection() {
-    this.selectedBest =
-      this.selectTeamAndEmployeeByMonthAndYear(
-        this.certificates,
-        this.time.monthFrenchNames[this.givenMonth],
-        this.givenYear.toString()
-      ) || undefined;
+    this.selectedBest = this.selectTeamAndEmployeeByMonthAndYear(
+      this.certificates,
+      this.time.monthFrenchNames[this.givenMonth],
+      this.givenYear.toString()
+    );
     this.preposition = this.time.findPrepositionStartWithVowelOrConsonant(
       this.time.monthFrenchNames[this.givenMonth]
     );
@@ -87,11 +94,11 @@ export class CertificateComponent implements OnInit {
     certificate: Certificate[],
     userEnteredMonth: string,
     userEnteredYear: string
-  ): Certificate | undefined {
+  ) {
     const selectedObject = certificate.find(
       (item) => item.month === userEnteredMonth && item.year === userEnteredYear
     );
-    return selectedObject;
+    return selectedObject!;
   }
 
   async startUploadCertificate(event: FileList, id: string) {
@@ -137,42 +144,15 @@ export class CertificateComponent implements OnInit {
       this.certificate.bestManagerCertificatePath = path;
     }
   }
+  onClick(id: string) {
+    const fileInput = document.getElementById(id) as HTMLInputElement;
+    fileInput.click();
+  }
 
   updateData() {
-    this.certificate.month =
-      this.time.monthFrenchNames[
-        (this.givenMonth + 12) % 12
-      ];
-    this.certificate.year =
-      this.givenMonth < 0
-        ? (this.givenYear - 1).toString()
-        : this.givenYear.toString();
-    const nextCertificates = [...this.certificates, { ...this.certificate }];
-    this.certificates = nextCertificates;
+    this.certificates.push(this.certificate);
     this.data.addCertificateData(this.certificates, this.certificateId);
     this.router.navigate(['/home']);
-    this.displayAddTeam = false;
-    this.resetCertificateForm();
-    this.updateSelection();
   }
   choose() {}
-
-  private resetCertificateForm(): void {
-    const normalizedMonthIndex = (this.givenMonth + 12) % 12;
-    const normalizedYear =
-      this.givenMonth < 0 ? this.givenYear - 1 : this.givenYear;
-    this.certificate = {
-      month: this.time.monthFrenchNames[normalizedMonthIndex],
-      year: normalizedYear.toString(),
-      bestTeam: '',
-      bestEmployee: '',
-      bestEmployeePerformance: '',
-      bestTeamCertificatePath: '',
-      bestTeamCertificateDownloadUrl: '',
-      bestEmployeeCertificatePath: '',
-      bestEmployeeCertificateDownloadUrl: '',
-      bestManagerCertificatePath: '',
-      bestManagerCertificateDownloadUrl: '',
-    };
-  }
 }

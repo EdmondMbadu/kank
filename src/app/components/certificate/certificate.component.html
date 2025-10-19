@@ -1,415 +1,184 @@
-<app-navbar
-  [email]="auth.currentUser?.email"
-  [firstName]="auth.currentUser?.firstName"
-  [path]="'home'"
-></app-navbar>
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
 
-<section class="certificate-page">
-  <div class="certificate-hero container">
-    <div class="hero-copy">
-      <span class="hero-eyebrow">Fierté Fondation Gervais</span>
-      <h1 class="hero-title">Tableau d'honneur</h1>
-      <span class="hero-period">
-        {{ preposition }} {{ time.monthFrenchNames[givenMonth] }}
-        {{ givenYear }}
-      </span>
-      <p class="hero-subtitle">
-        Découvrez les équipes et talents qui se démarquent ce mois-ci et
-        partagez leurs succès.
-      </p>
-      <button
-        *ngIf="auth.isAdmin"
-        type="button"
-        class="primary-action"
-        (click)="toggleDisplayAddTeam()"
-      >
-        + Ajouter un certificat
-      </button>
+<div class="container  flex flex-wrap items-center justify-center  mx-auto md:flex-row space-x-4">
+
+    <div class="flex flex-col container mx-auto m-4 justify-center text-center">
+        <h2 class="text-2xl md:text-4xl mx-auto px-6 font-bold">Les Meilleurs {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}</h2>
+       
+     </div>
+     <div class="flex flex-row m-2 container mx-auto justify-center text-center">
+        <button *ngIf="auth.isAdmin" type="submit" (click)="toggleDisplayAddTeam()"  class=" text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Ajouter</button>
+    </div>
+     <div class="flex container mx-auto justify-center text-center space-x-8">
+
+        <div class="mb-6 ">
+
+            <select  id="payments" [(ngModel)]="givenMonth"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="updateSelection()" >
+            <option *ngFor=" let month of  monthsList" [ngValue]="month">{{time.monthFrenchNames[month]}}</option>
+           
+   
+            </select>
+        </div>
+
+        <div class="mb-6 ">
+
+            <select id="payments" [(ngModel)]="givenYear"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "  (change)="updateSelection()">
+            <option  *ngFor=" let year of yearsList" [ngValue]="year">{{year}}</option>
+          
+
+            </select>
+        </div>
+      
+        
+        
+
     </div>
 
-    <div class="hero-controls">
-      <div class="selector">
-        <label class="selector-label" for="monthSelect">Mois</label>
-        <div class="selector-control">
-          <select
-            id="monthSelect"
-            class="selector-input"
-            [(ngModel)]="givenMonth"
-            (ngModelChange)="updateSelection()"
-          >
-            <option *ngFor="let month of monthsList" [ngValue]="month">
-              {{ time.monthFrenchNames[month] }}
-            </option>
-          </select>
-        </div>
-      </div>
+   
 
-      <div class="selector">
-        <label class="selector-label" for="yearSelect">Année</label>
-        <div class="selector-control">
-          <select
-            id="yearSelect"
-            class="selector-input"
-            [(ngModel)]="givenYear"
-            (ngModelChange)="updateSelection()"
-          >
-            <option *ngFor="let year of yearsList" [ngValue]="year">
-              {{ year }}
-            </option>
-          </select>
+        <div class="l max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+            <a *ngIf="selectedBest && selectedBest.bestTeam"  href="{{selectedBest.bestTeamCertificateDownloadUrl}}" target="_blank" >
+                <img class="rounded-t-lg " src="{{selectedBest.bestTeamCertificateDownloadUrl}}" alt="" />
+            </a>
+            <div class="p-5 ">
+                <a *ngIf="selectedBest && selectedBest.bestTeam "  >
+                    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Équipe {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: <span class="font-bold text-green-600"> {{selectedBest.bestTeam}}</span></h5>
+                </a>
+                <p *ngIf="selectedBest!==undefined && selectedBest.bestTeam !==undefined"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">
+                    Félicitations 🎉 🎉 🎉</p>
+           
+                
+            </div>
         </div>
-      </div>
+
+        <div class=" max-w-xl container  bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+            <a *ngIf="selectedBest && selectedBest.bestEmployee" target="_blank" href="{{selectedBest.bestTeamCertificateDownloadUrl}}">
+                <img *ngIf="selectedBest && selectedBest.bestEmployee"  class="rounded-t-lg " src="{{selectedBest.bestEmployeeCertificateDownloadUrl}}" alt="" />
+            </a>
+            <div class="p-5 ">
+                <a >
+                    <h5 *ngIf="selectedBest && selectedBest.bestEmployee"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Employé {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: <span class="font-bold text-green-600"> {{selectedBest.bestEmployee}}</span></h5>
+                </a>
+                <p *ngIf="selectedBest && selectedBest.bestEmployee"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">Performance : {{selectedBest.bestEmployeePerformance}}. 
+                    Félicitations 🎉🎉🎉</p>
+                
+            </div>
+        </div>
+
+        <div class="max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 ">
+            <a *ngIf="selectedBest && selectedBest.bestManager" target="_blank" href="{{selectedBest.bestManagerCertificateDownloadUrl}}">
+                <img *ngIf="selectedBest && selectedBest.bestManager"  class="rounded-t-lg " src="{{selectedBest.bestManagerCertificateDownloadUrl}}" alt="" />
+            </a>
+            <div class="p-5 ">
+                <a >
+                    <h5 *ngIf="selectedBest && selectedBest.bestManager"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Manager {{preposition}}  {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: <span class="fon-bold text-green-600">{{selectedBest.bestManager}}</span> </h5>
+                </a>
+                <p *ngIf="selectedBest && selectedBest.bestManager"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">
+                    Félicitations 🎉 🎉 🎉</p>
+                
+            </div>
+        </div>
+
     </div>
-  </div>
+  
 
-  <ng-container *ngIf="selectedBest; else emptyState">
-    <div class="certificate-grid container">
-      <article
-        *ngIf="selectedBest?.bestTeam"
-        class="certificate-card accent-team"
-      >
-        <span class="card-accent" aria-hidden="true"></span>
-        <span class="card-badge">Meilleure équipe</span>
-        <a
-          *ngIf="selectedBest?.bestTeamCertificateDownloadUrl"
-          class="card-media"
-          [href]="selectedBest?.bestTeamCertificateDownloadUrl"
-          target="_blank"
-          rel="noopener"
-        >
-          <img
-            [src]="selectedBest?.bestTeamCertificateDownloadUrl"
-            alt="Certificat de la meilleure équipe"
-          />
-        </a>
-        <div
-          *ngIf="!selectedBest?.bestTeamCertificateDownloadUrl"
-          class="card-media placeholder"
-        >
-          <span>Aucun certificat partagé</span>
-        </div>
-        <div class="card-body">
-          <h3>
-            {{ selectedBest?.bestTeam }}
-          </h3>
-          <p>Félicitations pour ce travail d'équipe exemplaire 🎉</p>
-          <a
-            *ngIf="selectedBest?.bestTeamCertificateDownloadUrl"
-            class="card-link"
-            [href]="selectedBest?.bestTeamCertificateDownloadUrl"
-            target="_blank"
-            rel="noopener"
-          >
-            Voir le certificat
-          </a>
-        </div>
-      </article>
+      
+    
 
-      <!-- Best employee highlight card -->
-      <article
-        *ngIf="selectedBest?.bestEmployee"
-        class="certificate-card accent-employee"
-      >
-        <span class="card-accent" aria-hidden="true"></span>
-        <span class="card-badge">Meilleur employé</span>
-        <a
-          *ngIf="selectedBest?.bestEmployeeCertificateDownloadUrl"
-          class="card-media"
-          [href]="selectedBest?.bestEmployeeCertificateDownloadUrl"
-          target="_blank"
-          rel="noopener"
-        >
-          <img
-            [src]="selectedBest?.bestEmployeeCertificateDownloadUrl"
-            alt="Certificat du meilleur employé"
-          />
-        </a>
-        <div
-          *ngIf="!selectedBest?.bestEmployeeCertificateDownloadUrl"
-          class="card-media placeholder"
-        >
-          <span>Aucun certificat partagé</span>
-        </div>
-        <div class="card-body">
-          <h3>
-            {{ selectedBest?.bestEmployee }}
-          </h3>
-          <p>
-            Performance :
-            <strong>{{ selectedBest?.bestEmployeePerformance }}</strong>
-          </p>
-          <a
-            *ngIf="selectedBest?.bestEmployeeCertificateDownloadUrl"
-            class="card-link"
-            [href]="selectedBest?.bestEmployeeCertificateDownloadUrl"
-            target="_blank"
-            rel="noopener"
-          >
-            Voir le certificat
-          </a>
-        </div>
-      </article>
 
-      <article
-        *ngIf="selectedBest?.bestManager"
-        class="certificate-card accent-manager"
-      >
-        <span class="card-accent" aria-hidden="true"></span>
-        <span class="card-badge">Meilleur manager</span>
-        <a
-          *ngIf="selectedBest?.bestManagerCertificateDownloadUrl"
-          class="card-media"
-          [href]="selectedBest?.bestManagerCertificateDownloadUrl"
-          target="_blank"
-          rel="noopener"
-        >
-          <img
-            [src]="selectedBest?.bestManagerCertificateDownloadUrl"
-            alt="Certificat du meilleur manager"
-          />
-        </a>
-        <div
-          *ngIf="!selectedBest?.bestManagerCertificateDownloadUrl"
-          class="card-media placeholder"
-        >
-          <span>Aucun certificat partagé</span>
-        </div>
-        <div class="card-body">
-          <h3>
-            {{ selectedBest?.bestManager }}
-          </h3>
-          <p>Une inspiration pour toute l'équipe ✨</p>
-          <a
-            *ngIf="selectedBest?.bestManagerCertificateDownloadUrl"
-            class="card-link"
-            [href]="selectedBest?.bestManagerCertificateDownloadUrl"
-            target="_blank"
-            rel="noopener"
-          >
-            Voir le certificat
-          </a>
-        </div>
-      </article>
-    </div>
-  </ng-container>
 
-  <ng-template #emptyState>
-    <div class="empty-state container">
-      <div class="empty-card">
-        <h3>Aucun lauréat pour cette période</h3>
-        <p>
-          Sélectionnez un autre mois ou, si vous êtes administrateur, ajoutez
-          les gagnants pour garder l'équipe motivée.
-        </p>
-        <button
-          *ngIf="auth.isAdmin"
-          type="button"
-          class="secondary-action"
-          (click)="toggleDisplayAddTeam()"
-        >
+
+<div *ngIf="displayAddTeam" 
+     id="defaultModal" 
+     tabindex="-1" 
+     aria-hidden="true" 
+     class="bg-gray-900 bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden">
+  <div class="relative p-4 w-full max-w-2xl max-h-full">
+    <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+      <!-- header -->
+      <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           Ajouter un certificat
+        </h3>
+        <button type="button" 
+                class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900
+                       rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center 
+                       dark:hover:bg-gray-600 dark:hover:text-white"
+                (click)="toggleDisplayAddTeam()">
+          <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" 
+               fill="none" viewBox="0 0 14 14">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" 
+                  stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+          </svg>
+          <span class="sr-only">Close modal</span>
+        </button>
+      </div>
+      <!-- body -->
+      <div class="p-4 md:p-5 space-y-4">
+        <form class="grid gap-4 sm:grid-cols-2 sm:gap-6">
+          <div class="sm:col-span-2">
+            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Mois</label>
+            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.month" placeholder="octobre" required="">
+          </div>
+          <div>
+            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Année </label>
+            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.year" placeholder="2024" required="">
+          </div>
+          <div>
+            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleure Équipe </label>
+            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestTeam" placeholder="Pumbu" required="">
+          </div>
+          <div>
+            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleure Employé</label>
+            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestEmployee" placeholder="Helene Tsimba" required="">
+          </div>
+          <div>
+            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleur  Employé Performance (%)</label>
+            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestEmployeePerformance" placeholder="95" required="">
+          </div>
+          <div>
+            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleure Manager</label>
+            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestManager" placeholder="Naomie Botuli" required="">
+          </div>
+        </form>
+
+        <div class="mb-4">
+          <h1 class="mb-4">Attacher Certificat de Meilleure Équipe</h1>
+          <input type="file" id="getTeam" style="display:none" (change)="startUploadCertificate($any($event.target).files,'getTeam')">
+          <img *ngIf="certificate.bestTeamCertificateDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getTeam')" src="../../../assets/img/file.png" alt="file">
+          <img *ngIf="certificate.bestTeamCertificateDownloadUrl!==''"  class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getTeam')" [src]="this.certificate.bestTeamCertificateDownloadUrl" alt="file">
+        </div>
+
+        <div class="mb-4">
+          <h1 class="mb-4">Attacher le Certificat de Meilleure Employé</h1>
+          <input type="file" id="getEmploye" style="display:none" (change)="startUploadCertificate($any($event.target).files,'getEmploye')">
+          <img *ngIf="certificate.bestEmployeeCertificateDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getEmploye')" src="../../../assets/img/file.png" alt="file">
+          <img *ngIf="certificate.bestEmployeeCertificateDownloadUrl!==''"  class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getEmploye')" [src]="this.certificate.bestEmployeeCertificateDownloadUrl" alt="file">
+        </div>
+
+        <div class="mb-4">
+          <h1 class="mb-4">Attacher le Certificat de Meilleure Manager</h1>
+          <input type="file" id="getManager" style="display:none" (change)="startUploadCertificate($any($event.target).files, 'getManager')">
+          <img *ngIf="certificate.bestManagerCertificateDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getManager')" src="../../../assets/img/file.png" alt="file">
+          <img *ngIf="certificate.bestManagerCertificateDownloadUrl!==''"  class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getManager')" [src]="this.certificate.bestManagerCertificateDownloadUrl" alt="file">
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="flex justify-center space-x-4 mt-6 mb-6">
+        <button type="button" 
+                (click)="toggleDisplayAddTeam()"
+                class="text-white bg-green-700 hover:bg-green-800 focus:ring-4
+                       font-medium rounded-full text-sm px-5 py-2.5">
+          Annuler
+        </button>
+        <button type="button" 
+                (click)="updateData()"
+                class="text-white bg-red-700 hover:bg-red-800 focus:ring-4
+                       font-medium rounded-full text-sm px-5 py-2.5">
+          Ajouter
         </button>
       </div>
     </div>
-  </ng-template>
-</section>
-
-<div
-  *ngIf="displayAddTeam"
-  class="modal-backdrop"
-  role="dialog"
-  aria-modal="true"
->
-  <div class="modal-panel">
-    <header class="modal-header">
-      <div>
-        <h2 id="addCertificateTitle">Ajouter un certificat</h2>
-        <p>
-          Renseignez les gagnants du mois sélectionné et joignez leurs
-          certificats officiels.
-        </p>
-      </div>
-      <button
-        type="button"
-        class="icon-button"
-        aria-label="Fermer"
-        (click)="toggleDisplayAddTeam()"
-      >
-        ×
-      </button>
-    </header>
-
-    <div class="modal-body">
-      <div class="form-grid">
-        <label class="form-field">
-          <span class="field-label">Mois</span>
-          <input
-            class="text-input"
-            type="text"
-            [value]="certificate.month"
-            readonly
-          />
-        </label>
-
-        <label class="form-field">
-          <span class="field-label">Année</span>
-          <input
-            class="text-input"
-            type="text"
-            [value]="certificate.year"
-            readonly
-          />
-        </label>
-
-        <label class="form-field">
-          <span class="field-label">Meilleure équipe</span>
-          <input
-            class="text-input"
-            type="text"
-            name="bestTeam"
-            [(ngModel)]="certificate.bestTeam"
-            placeholder="Ex : Pumbu"
-          />
-        </label>
-
-        <label class="form-field">
-          <span class="field-label">Meilleur employé</span>
-          <input
-            class="text-input"
-            type="text"
-            name="bestEmployee"
-            [(ngModel)]="certificate.bestEmployee"
-            placeholder="Ex : Helene Tsimba"
-          />
-        </label>
-
-        <label class="form-field">
-          <span class="field-label"> Performance du meilleur employé (%) </span>
-          <input
-            class="text-input"
-            type="text"
-            name="bestEmployeePerformance"
-            [(ngModel)]="certificate.bestEmployeePerformance"
-            placeholder="Ex : 95"
-          />
-        </label>
-
-        <label class="form-field">
-          <span class="field-label">Meilleur manager</span>
-          <input
-            class="text-input"
-            type="text"
-            name="bestManager"
-            [(ngModel)]="certificate.bestManager"
-            placeholder="Ex : Naomie Botuli"
-          />
-        </label>
-      </div>
-
-      <div class="upload-grid">
-        <div class="upload-field">
-          <span class="field-label">Certificat - meilleure équipe</span>
-          <label class="upload-card" for="getTeam">
-            <ng-container
-              *ngIf="
-                certificate.bestTeamCertificateDownloadUrl;
-                else teamPlaceholder
-              "
-            >
-              <img
-                [src]="certificate.bestTeamCertificateDownloadUrl"
-                alt="Aperçu du certificat équipe"
-              />
-            </ng-container>
-          </label>
-          <input
-            id="getTeam"
-            class="hidden-file-input"
-            type="file"
-            (change)="
-              startUploadCertificate($any($event.target).files, 'getTeam')
-            "
-          />
-          <ng-template #teamPlaceholder>
-            <div class="upload-placeholder">
-              <span>Déposer ou cliquer pour téléverser</span>
-            </div>
-          </ng-template>
-        </div>
-
-        <div class="upload-field">
-          <span class="field-label">Certificat - meilleur employé</span>
-          <label class="upload-card" for="getEmploye">
-            <ng-container
-              *ngIf="
-                certificate.bestEmployeeCertificateDownloadUrl;
-                else employeePlaceholder
-              "
-            >
-              <img
-                [src]="certificate.bestEmployeeCertificateDownloadUrl"
-                alt="Aperçu du certificat employé"
-              />
-            </ng-container>
-          </label>
-          <input
-            id="getEmploye"
-            class="hidden-file-input"
-            type="file"
-            (change)="
-              startUploadCertificate($any($event.target).files, 'getEmploye')
-            "
-          />
-          <ng-template #employeePlaceholder>
-            <div class="upload-placeholder">
-              <span>Déposer ou cliquer pour téléverser</span>
-            </div>
-          </ng-template>
-        </div>
-
-        <div class="upload-field">
-          <span class="field-label">Certificat - meilleur manager</span>
-          <label class="upload-card" for="getManager">
-            <ng-container
-              *ngIf="
-                certificate.bestManagerCertificateDownloadUrl;
-                else managerPlaceholder
-              "
-            >
-              <img
-                [src]="certificate.bestManagerCertificateDownloadUrl"
-                alt="Aperçu du certificat manager"
-              />
-            </ng-container>
-          </label>
-          <input
-            id="getManager"
-            class="hidden-file-input"
-            type="file"
-            (change)="
-              startUploadCertificate($any($event.target).files, 'getManager')
-            "
-          />
-          <ng-template #managerPlaceholder>
-            <div class="upload-placeholder">
-              <span>Déposer ou cliquer pour téléverser</span>
-            </div>
-          </ng-template>
-        </div>
-      </div>
-    </div>
-
-    <footer class="modal-footer">
-      <button
-        type="button"
-        class="secondary-action"
-        (click)="toggleDisplayAddTeam()"
-      >
-        Annuler
-      </button>
-      <button type="button" class="primary-action" (click)="updateData()">
-        Ajouter
-      </button>
-    </footer>
   </div>
 </div>
