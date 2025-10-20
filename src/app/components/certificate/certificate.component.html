@@ -1,91 +1,162 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" ></app-navbar>
+<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
 
-<div class="container  flex flex-wrap items-center justify-center  mx-auto md:flex-row space-x-4">
-
-    <div class="flex flex-col container mx-auto m-4 justify-center text-center">
-        <h2 class="text-2xl md:text-4xl mx-auto px-6 font-bold">Les Meilleurs {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}</h2>
-       
-     </div>
-     <div class="flex flex-row m-2 container mx-auto justify-center text-center">
-        <button *ngIf="auth.isAdmin" type="submit" (click)="toggleDisplayAddTeam()"  class=" text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Ajouter</button>
-    </div>
-     <div class="flex container mx-auto justify-center text-center space-x-8">
-
-        <div class="mb-6 ">
-
-            <select  id="payments" [(ngModel)]="givenMonth"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="updateSelection()" >
-            <option *ngFor=" let month of  monthsList" [ngValue]="month">{{time.monthFrenchNames[month]}}</option>
-           
-   
-            </select>
+<section class="min-h-screen bg-slate-50">
+  <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="flex flex-col gap-8">
+      <div class="flex flex-col items-center text-center lg:flex-row lg:items-end lg:justify-between lg:text-left">
+        <div class="space-y-3">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-500">Tableau d'honneur</p>
+          <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">Les Meilleurs {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}</h2>
+          <p class="text-sm text-slate-600 sm:text-base">Chaque certificat met en lumière les performances exceptionnelles du mois sélectionné.</p>
         </div>
+        <button
+          *ngIf="auth.isAdmin"
+          type="button"
+          (click)="toggleDisplayAddTeam()"
+          class="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 lg:mt-0"
+        >
+          <span aria-hidden="true">＋</span>
+          Ajouter
+        </button>
+      </div>
 
-        <div class="mb-6 ">
-
-            <select id="payments" [(ngModel)]="givenYear"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "  (change)="updateSelection()">
-            <option  *ngFor=" let year of yearsList" [ngValue]="year">{{year}}</option>
-          
-
-            </select>
+      <div class="flex flex-wrap items-center justify-center gap-4 rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-inset ring-slate-200 sm:justify-between">
+        <div class="flex flex-wrap items-center gap-4">
+          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500" for="monthFilter">Mois</label>
+          <select
+            id="monthFilter"
+            [(ngModel)]="givenMonth"
+            (change)="updateSelection()"
+            class="w-40 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          >
+            <option *ngFor="let month of monthsList" [ngValue]="month">{{time.monthFrenchNames[month]}}</option>
+          </select>
         </div>
-      
-        
-        
+        <div class="flex flex-wrap items-center gap-4">
+          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500" for="yearFilter">Année</label>
+          <select
+            id="yearFilter"
+            [(ngModel)]="givenYear"
+            (change)="updateSelection()"
+            class="w-28 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          >
+            <option *ngFor="let year of yearsList" [ngValue]="year">{{year}}</option>
+          </select>
+        </div>
+      </div>
 
-    </div>
-
-   
-
-        <div class="l max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-            <a *ngIf="selectedBest && selectedBest.bestTeam"  href="{{selectedBest.bestTeamCertificateDownloadUrl}}" target="_blank" >
-                <img class="rounded-t-lg " src="{{selectedBest.bestTeamCertificateDownloadUrl}}" alt="" />
+      <ng-container *ngIf="selectedBest; else emptyCertificates">
+        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <article
+            *ngIf="selectedBest && selectedBest.bestTeam"
+            class="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl"
+          >
+            <a
+              class="relative block aspect-[4/3] overflow-hidden bg-slate-100"
+              [href]="selectedBest.bestTeamCertificateDownloadUrl"
+              target="_blank"
+            >
+              <img
+                class="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                [src]="selectedBest.bestTeamCertificateDownloadUrl"
+                alt="Certificat meilleure équipe"
+              />
             </a>
-            <div class="p-5 ">
-                <a *ngIf="selectedBest && selectedBest.bestTeam "  >
-                    <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Équipe {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: <span class="font-bold text-green-600"> {{selectedBest.bestTeam}}</span></h5>
-                </a>
-                <p *ngIf="selectedBest!==undefined && selectedBest.bestTeam !==undefined"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">
-                    Félicitations 🎉 🎉 🎉</p>
-           
-                
+            <div class="flex flex-1 flex-col gap-3 px-6 py-5">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">Meilleure équipe</p>
+              <h3 class="text-lg font-semibold text-slate-900">
+                Félicitations à <span class="text-emerald-600">{{selectedBest.bestTeam}}</span>
+              </h3>
+              <p class="text-sm text-slate-600">Toute l'équipe a réalisé une performance remarquable ce mois-ci.</p>
+              <a
+                class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
+                [href]="selectedBest.bestTeamCertificateDownloadUrl"
+                target="_blank"
+              >
+                Consulter le certificat
+                <span aria-hidden="true">↗</span>
+              </a>
             </div>
-        </div>
+          </article>
 
-        <div class=" max-w-xl container  bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
-            <a *ngIf="selectedBest && selectedBest.bestEmployee" target="_blank" href="{{selectedBest.bestTeamCertificateDownloadUrl}}">
-                <img *ngIf="selectedBest && selectedBest.bestEmployee"  class="rounded-t-lg " src="{{selectedBest.bestEmployeeCertificateDownloadUrl}}" alt="" />
+          <article
+            *ngIf="selectedBest && selectedBest.bestEmployee"
+            class="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl"
+          >
+            <a
+              class="relative block aspect-[4/3] overflow-hidden bg-slate-100"
+              [href]="selectedBest.bestEmployeeCertificateDownloadUrl"
+              target="_blank"
+            >
+              <img
+                class="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                [src]="selectedBest.bestEmployeeCertificateDownloadUrl"
+                alt="Certificat meilleure employée"
+              />
             </a>
-            <div class="p-5 ">
-                <a >
-                    <h5 *ngIf="selectedBest && selectedBest.bestEmployee"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Employé {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: <span class="font-bold text-green-600"> {{selectedBest.bestEmployee}}</span></h5>
-                </a>
-                <p *ngIf="selectedBest && selectedBest.bestEmployee"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">Performance : {{selectedBest.bestEmployeePerformance}}. 
-                    Félicitations 🎉🎉🎉</p>
-                
+            <div class="flex flex-1 flex-col gap-3 px-6 py-5">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">Meilleur employé</p>
+              <h3 class="text-lg font-semibold text-slate-900">
+                Bravo à <span class="text-emerald-600">{{selectedBest.bestEmployee}}</span>
+              </h3>
+              <span class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600">
+                Performance {{selectedBest.bestEmployeePerformance}}
+              </span>
+              <p class="text-sm text-slate-600">Un exemple d'engagement et de constance au quotidien.</p>
+              <a
+                class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
+                [href]="selectedBest.bestEmployeeCertificateDownloadUrl"
+                target="_blank"
+              >
+                Consulter le certificat
+                <span aria-hidden="true">↗</span>
+              </a>
             </div>
-        </div>
+          </article>
 
-        <div class="max-w-xl bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 ">
-            <a *ngIf="selectedBest && selectedBest.bestManager" target="_blank" href="{{selectedBest.bestManagerCertificateDownloadUrl}}">
-                <img *ngIf="selectedBest && selectedBest.bestManager"  class="rounded-t-lg " src="{{selectedBest.bestManagerCertificateDownloadUrl}}" alt="" />
+          <article
+            *ngIf="selectedBest && selectedBest.bestManager"
+            class="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl"
+          >
+            <a
+              class="relative block aspect-[4/3] overflow-hidden bg-slate-100"
+              [href]="selectedBest.bestManagerCertificateDownloadUrl"
+              target="_blank"
+            >
+              <img
+                class="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                [src]="selectedBest.bestManagerCertificateDownloadUrl"
+                alt="Certificat meilleur manager"
+              />
             </a>
-            <div class="p-5 ">
-                <a >
-                    <h5 *ngIf="selectedBest && selectedBest.bestManager"  class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">Meilleure Manager {{preposition}}  {{time.monthFrenchNames[givenMonth]}} {{givenYear}}: <span class="fon-bold text-green-600">{{selectedBest.bestManager}}</span> </h5>
-                </a>
-                <p *ngIf="selectedBest && selectedBest.bestManager"  class="mb-3 font-normal text-gray-700 dark:text-gray-400">
-                    Félicitations 🎉 🎉 🎉</p>
-                
+            <div class="flex flex-1 flex-col gap-3 px-6 py-5">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">Meilleur manager</p>
+              <h3 class="text-lg font-semibold text-slate-900">
+                Félicitations à <span class="text-emerald-600">{{selectedBest.bestManager}}</span>
+              </h3>
+              <p class="text-sm text-slate-600">Leadership inspirant et résultats durables.</p>
+              <a
+                class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
+                [href]="selectedBest.bestManagerCertificateDownloadUrl"
+                target="_blank"
+              >
+                Consulter le certificat
+                <span aria-hidden="true">↗</span>
+              </a>
             </div>
+          </article>
         </div>
+      </ng-container>
 
+      <ng-template #emptyCertificates>
+        <div class="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-slate-300 bg-white/70 px-8 py-16 text-center text-slate-500">
+          <span class="text-4xl" aria-hidden="true">📄</span>
+          <p class="text-sm sm:text-base">Sélectionnez un mois et une année pour découvrir les lauréats du moment.</p>
+        </div>
+      </ng-template>
     </div>
-  
-
-      
-    
-
-
+  </div>
+</section>
 
 
 <div *ngIf="displayAddTeam" 
