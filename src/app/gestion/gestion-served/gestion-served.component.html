@@ -1,7 +1,8 @@
 <app-navbar
   [email]="auth.currentUser.email"
   [firstName]="auth.currentUser.firstName"
-  [path]="'home'">
+  [path]="'home'"
+>
 </app-navbar>
 
 <!-- Page container -->
@@ -13,18 +14,21 @@
         Argent à Servir
       </h1>
       <!-- subtle glow -->
-      <div aria-hidden="true" class="pointer-events-none absolute -top-6 -left-6 h-16 w-16 rounded-full bg-emerald-400/10 blur-2xl"></div>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute -top-6 -left-6 h-16 w-16 rounded-full bg-emerald-400/10 blur-2xl"
+      ></div>
     </div>
 
     <!-- Quick stat: moneyInHands now -->
     <div
-      class="hidden sm:flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-2 shadow-sm ring-1 ring-black/5
-             dark:border-emerald-700/40 dark:bg-slate-800">
+      class="hidden sm:flex items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-2 shadow-sm ring-1 ring-black/5 dark:border-emerald-700/40 dark:bg-slate-800"
+    >
       <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
       <div class="text-sm text-slate-500 dark:text-slate-100">
         <div class="">En caisse</div>
         <div class="font-semibold">
-          FC {{ managementInfo?.moneyInHands || 0 | number:'1.0-0' }}
+          FC {{ managementInfo?.moneyInHands || 0 | number : "1.0-0" }}
         </div>
       </div>
     </div>
@@ -32,20 +36,28 @@
 
   <!-- Action card -->
   <section
-    class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-black/5
-           dark:border-slate-700 dark:bg-slate-800">
+    class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
+  >
     <!-- decorative gradient blur -->
-    <div aria-hidden="true" class="pointer-events-none absolute -top-16 -right-16 h-44 w-44 rounded-full bg-emerald-400/15 blur-3xl"></div>
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute -top-16 -right-16 h-44 w-44 rounded-full bg-emerald-400/15 blur-3xl"
+    ></div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- Input -->
       <div class="md:col-span-2">
-        <label for="reserve" class="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+        <label
+          for="reserve"
+          class="block mb-2 text-sm font-medium text-slate-700 dark:text-slate-200"
+        >
           Montant à servir (FC)
         </label>
 
         <div class="relative">
-          <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm select-none">
+          <span
+            class="absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm select-none"
+          >
             FC
           </span>
           <input
@@ -54,10 +66,9 @@
             inputmode="numeric"
             autocomplete="off"
             [(ngModel)]="reserveAmount"
-            class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3 py-2.5 text-slate-900 shadow-sm
-                   focus:border-emerald-500 focus:ring-emerald-500
-                   dark:bg-slate-700 dark:text-white dark:border-slate-600"
-            placeholder="20000" />
+            class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-10 pr-3 py-2.5 text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+            placeholder="20000"
+          />
         </div>
 
         <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -66,22 +77,23 @@
       </div>
 
       <!-- Buttons -->
-      <div class="flex md:flex-col gap-3 items-stretch justify-end md:justify-start">
+      <div
+        class="flex md:flex-col gap-3 items-stretch justify-end md:justify-start"
+      >
         <button
           type="button"
           routerLink="/gestion-today"
-          class="inline-flex dark:text-white items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium
-                 hover:bg-slate-50 active:bg-slate-100
-                 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700">
+          class="inline-flex dark:text-white items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700"
+        >
           Annuler
         </button>
 
         <button
           type="button"
           (click)="addToReserve()"
-          [disabled]="!canSubmit()"
-          class="inline-flex  items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white
-                 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed">
+          [disabled]="!canSubmit() && !this.auth.isAdmin"
+          class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           Ajouter
         </button>
       </div>
@@ -91,9 +103,11 @@
   <!-- Timeline -->
   <section class="mt-10">
     <div
-      class="dark:text-white relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-black/5
-             dark:border-slate-700 dark:bg-slate-800">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      class="dark:text-white relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
+    >
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+      >
         <h2 class="text-lg md:text-xl font-bold">Chronologie</h2>
 
         <!-- Search (optional, decorative now) -->
@@ -102,13 +116,21 @@
             type="text"
             [(ngModel)]="query"
             (input)="onQuery()"
-            class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 py-2.5 text-sm text-slate-900 shadow-sm
-                   focus:border-emerald-500 focus:ring-emerald-500
-                   dark:bg-slate-700 dark:text-white dark:border-slate-600"
-            placeholder="Chercher le montant…" />
-          <svg class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+            class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+            placeholder="Chercher le montant…"
+          />
+          <svg
+            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+            viewBox="0 0 20 20"
+            fill="none"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+            />
           </svg>
         </div>
       </div>
@@ -119,15 +141,17 @@
           <li
             *ngFor="let r of filtered; trackBy: trackByDateKey"
             routerLink="/gestion-today"
-            class="group cursor-pointer py-4 sm:py-5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40">
+            class="group cursor-pointer py-4 sm:py-5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40"
+          >
             <div class="flex items-start gap-4">
               <!-- Avatar -->
               <div
-                class="relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full
-                       bg-gradient-to-br from-emerald-100 to-emerald-200 ring-1 ring-emerald-600/20
-                       dark:from-emerald-700/30 dark:to-emerald-600/30">
-                <span class="font-semibold text-emerald-800 dark:text-emerald-100">
-                  {{ auth.currentUser.firstName?.substring(0,2) }}
+                class="relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 ring-1 ring-emerald-600/20 dark:from-emerald-700/30 dark:to-emerald-600/30"
+              >
+                <span
+                  class="font-semibold text-emerald-800 dark:text-emerald-100"
+                >
+                  {{ auth.currentUser.firstName?.substring(0, 2) }}
                 </span>
               </div>
 
@@ -138,31 +162,40 @@
                   <p class="text-sm font-medium text-slate-900 dark:text-white">
                     {{ r.dateLabel }}
                   </p>
-                  <span class="hidden sm:inline-block h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-500"></span>
-                  <span class="text-xs text-slate-500 dark:text-slate-300">Argent marqué</span>
+                  <span
+                    class="hidden sm:inline-block h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-500"
+                  ></span>
+                  <span class="text-xs text-slate-500 dark:text-slate-300"
+                    >Argent marqué</span
+                  >
                 </div>
 
                 <!-- amount given -->
                 <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <div class="text-base font-semibold text-slate-900 dark:text-white">
-                    FC {{ r.amount | number:'1.0-0' }}
+                  <div
+                    class="text-base font-semibold text-slate-900 dark:text-white"
+                  >
+                    FC {{ r.amount | number : "1.0-0" }}
                   </div>
 
                   <!-- pill -->
                   <span
-                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
-                           bg-emerald-100 text-emerald-800 ring-1 ring-emerald-500/20
-                           dark:bg-emerald-900/30 dark:text-emerald-200">
+                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium bg-emerald-100 text-emerald-800 ring-1 ring-emerald-500/20 dark:bg-emerald-900/30 dark:text-emerald-200"
+                  >
                     À servir
                   </span>
                 </div>
 
                 <!-- leftover at same moment -->
                 <div class="mt-1 text-sm">
-                  <span class="text-slate-500 dark:text-slate-300">Solde après :</span>
-                  <span class="ml-1 font-medium text-slate-900 dark:text-white"
-                        *ngIf="r.leftAfter !== null; else dash">
-                    FC {{ r.leftAfter | number:'1.0-0' }}
+                  <span class="text-slate-500 dark:text-slate-300"
+                    >Solde après :</span
+                  >
+                  <span
+                    class="ml-1 font-medium text-slate-900 dark:text-white"
+                    *ngIf="r.leftAfter !== null; else dash"
+                  >
+                    FC {{ r.leftAfter | number : "1.0-0" }}
                   </span>
                   <ng-template #dash>
                     <span class="text-slate-400 dark:text-slate-500">—</span>
@@ -171,9 +204,18 @@
               </div>
 
               <!-- right icon -->
-              <svg class="h-5 w-5 text-slate-300 group-hover:text-emerald-500 transition-colors" viewBox="0 0 20 20" fill="none">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="m7 5 6 5-6 5" />
+              <svg
+                class="h-5 w-5 text-slate-300 group-hover:text-emerald-500 transition-colors"
+                viewBox="0 0 20 20"
+                fill="none"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="m7 5 6 5-6 5"
+                />
               </svg>
             </div>
           </li>
@@ -181,8 +223,9 @@
           <!-- Empty state -->
           <li *ngIf="filtered.length === 0" class="py-12">
             <div class="flex flex-col items-center justify-center text-center">
-              <div class="h-10 w-10 rounded-full bg-slate-100 ring-1 ring-slate-200 flex items-center justify-center
-                          dark:bg-slate-700 dark:ring-slate-600">
+              <div
+                class="h-10 w-10 rounded-full bg-slate-100 ring-1 ring-slate-200 flex items-center justify-center dark:bg-slate-700 dark:ring-slate-600"
+              >
                 <div class="h-2 w-2 rounded-full bg-slate-400"></div>
               </div>
               <p class="mt-4 text-sm text-slate-500 dark:text-slate-300">
