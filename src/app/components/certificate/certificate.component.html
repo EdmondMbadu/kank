@@ -1,13 +1,29 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<app-navbar
+  [email]="this.auth.currentUser.email"
+  [firstName]="this.auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
 <section class="min-h-screen bg-slate-50">
   <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-8">
-      <div class="flex flex-col items-center text-center lg:flex-row lg:items-end lg:justify-between lg:text-left">
+      <div
+        class="flex flex-col items-center text-center lg:flex-row lg:items-end lg:justify-between lg:text-left"
+      >
         <div class="space-y-3">
-          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-500">Tableau d'honneur</p>
-          <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">Les Meilleurs {{preposition}} {{time.monthFrenchNames[givenMonth]}} {{givenYear}}</h2>
-          <p class="text-sm text-slate-600 sm:text-base">Chaque certificat met en lumière les performances exceptionnelles du mois sélectionné.</p>
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-500"
+          >
+            Tableau d'honneur
+          </p>
+          <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">
+            Les Meilleurs {{ preposition }}
+            {{ time.monthFrenchNames[givenMonth] }} {{ givenYear }}
+          </h2>
+          <p class="text-sm text-slate-600 sm:text-base">
+            Chaque certificat met en lumière les performances exceptionnelles du
+            mois sélectionné.
+          </p>
         </div>
         <button
           *ngIf="auth.isAdmin"
@@ -20,27 +36,41 @@
         </button>
       </div>
 
-      <div class="flex flex-wrap items-center justify-center gap-4 rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-inset ring-slate-200 sm:justify-between">
+      <div
+        class="flex flex-wrap items-center justify-center gap-4 rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-inset ring-slate-200 sm:justify-between"
+      >
         <div class="flex flex-wrap items-center gap-4">
-          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500" for="monthFilter">Mois</label>
+          <label
+            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
+            for="monthFilter"
+            >Mois</label
+          >
           <select
             id="monthFilter"
             [(ngModel)]="givenMonth"
             (change)="updateSelection()"
             class="w-40 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
           >
-            <option *ngFor="let month of monthsList" [ngValue]="month">{{time.monthFrenchNames[month]}}</option>
+            <option *ngFor="let month of monthsList" [ngValue]="month">
+              {{ time.monthFrenchNames[month] }}
+            </option>
           </select>
         </div>
         <div class="flex flex-wrap items-center gap-4">
-          <label class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500" for="yearFilter">Année</label>
+          <label
+            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
+            for="yearFilter"
+            >Année</label
+          >
           <select
             id="yearFilter"
             [(ngModel)]="givenYear"
             (change)="updateSelection()"
             class="w-28 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
           >
-            <option *ngFor="let year of yearsList" [ngValue]="year">{{year}}</option>
+            <option *ngFor="let year of yearsList" [ngValue]="year">
+              {{ year }}
+            </option>
           </select>
         </div>
       </div>
@@ -63,11 +93,20 @@
               />
             </a>
             <div class="flex flex-1 flex-col gap-3 px-6 py-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">Meilleure équipe</p>
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500"
+              >
+                Meilleure équipe
+              </p>
               <h3 class="text-lg font-semibold text-slate-900">
-                Félicitations à <span class="text-emerald-600">{{selectedBest.bestTeam}}</span>
+                Félicitations à
+                <span class="text-emerald-600">{{
+                  selectedBest.bestTeam
+                }}</span>
               </h3>
-              <p class="text-sm text-slate-600">Toute l'équipe a réalisé une performance remarquable ce mois-ci.</p>
+              <p class="text-sm text-slate-600">
+                Toute l'équipe a réalisé une performance remarquable ce mois-ci.
+              </p>
               <a
                 class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
                 [href]="selectedBest.bestTeamCertificateDownloadUrl"
@@ -95,14 +134,25 @@
               />
             </a>
             <div class="flex flex-1 flex-col gap-3 px-6 py-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">Meilleur employé</p>
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500"
+              >
+                Meilleur employé
+              </p>
               <h3 class="text-lg font-semibold text-slate-900">
-                Bravo à <span class="text-emerald-600">{{selectedBest.bestEmployee}}</span>
+                Bravo à
+                <span class="text-emerald-600">{{
+                  selectedBest.bestEmployee
+                }}</span>
               </h3>
-              <span class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600">
-                Performance {{selectedBest.bestEmployeePerformance}}
+              <span
+                class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600"
+              >
+                Performance {{ selectedBest.bestEmployeePerformance }}%
               </span>
-              <p class="text-sm text-slate-600">Un exemple d'engagement et de constance au quotidien.</p>
+              <p class="text-sm text-slate-600">
+                Un exemple d'engagement et de constance au quotidien.
+              </p>
               <a
                 class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
                 [href]="selectedBest.bestEmployeeCertificateDownloadUrl"
@@ -130,11 +180,20 @@
               />
             </a>
             <div class="flex flex-1 flex-col gap-3 px-6 py-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">Meilleur manager</p>
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500"
+              >
+                Meilleur manager
+              </p>
               <h3 class="text-lg font-semibold text-slate-900">
-                Félicitations à <span class="text-emerald-600">{{selectedBest.bestManager}}</span>
+                Félicitations à
+                <span class="text-emerald-600">{{
+                  selectedBest.bestManager
+                }}</span>
               </h3>
-              <p class="text-sm text-slate-600">Leadership inspirant et résultats durables.</p>
+              <p class="text-sm text-slate-600">
+                Leadership inspirant et résultats durables.
+              </p>
               <a
                 class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
                 [href]="selectedBest.bestManagerCertificateDownloadUrl"
@@ -149,37 +208,55 @@
       </ng-container>
 
       <ng-template #emptyCertificates>
-        <div class="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-slate-300 bg-white/70 px-8 py-16 text-center text-slate-500">
+        <div
+          class="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-slate-300 bg-white/70 px-8 py-16 text-center text-slate-500"
+        >
           <span class="text-4xl" aria-hidden="true">📄</span>
-          <p class="text-sm sm:text-base">Sélectionnez un mois et une année pour découvrir les lauréats du moment.</p>
+          <p class="text-sm sm:text-base">
+            Sélectionnez un mois et une année pour découvrir les lauréats du
+            moment.
+          </p>
         </div>
       </ng-template>
     </div>
   </div>
 </section>
 
-
-<div *ngIf="displayAddTeam" 
-     id="defaultModal" 
-     tabindex="-1" 
-     aria-hidden="true" 
-     class="bg-gray-900 bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden">
+<div
+  *ngIf="displayAddTeam"
+  id="defaultModal"
+  tabindex="-1"
+  aria-hidden="true"
+  class="bg-gray-900 bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center overflow-y-auto overflow-x-hidden"
+>
   <div class="relative p-4 w-full max-w-2xl max-h-full">
     <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
       <!-- header -->
-      <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
+      <div
+        class="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600"
+      >
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
           Ajouter un certificat
         </h3>
-        <button type="button" 
-                class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900
-                       rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center 
-                       dark:hover:bg-gray-600 dark:hover:text-white"
-                (click)="toggleDisplayAddTeam()">
-          <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" 
-               fill="none" viewBox="0 0 14 14">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" 
-                  stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+        <button
+          type="button"
+          class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
+          (click)="toggleDisplayAddTeam()"
+        >
+          <svg
+            class="w-3 h-3"
+            aria-hidden="true"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 14 14"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+            />
           </svg>
           <span class="sr-only">Close modal</span>
         </button>
@@ -188,65 +265,201 @@
       <div class="p-4 md:p-5 space-y-4">
         <form class="grid gap-4 sm:grid-cols-2 sm:gap-6">
           <div class="sm:col-span-2">
-            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Mois</label>
-            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.month" placeholder="octobre" required="">
+            <label
+              for="firstName"
+              class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >Mois</label
+            >
+            <input
+              type="text"
+              name="firstName"
+              id="firstname"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+              [(ngModel)]="certificate.month"
+              placeholder="octobre"
+              required=""
+            />
           </div>
           <div>
-            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Année </label>
-            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.year" placeholder="2024" required="">
+            <label
+              for="firstName"
+              class="block mb-2 text-sm font-medium text-gray-900"
+            >
+              Année
+            </label>
+            <input
+              type="text"
+              name="firstName"
+              id="firstname"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+              [(ngModel)]="certificate.year"
+              placeholder="2024"
+              required=""
+            />
           </div>
           <div>
-            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleure Équipe </label>
-            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestTeam" placeholder="Pumbu" required="">
+            <label
+              for="firstName"
+              class="block mb-2 text-sm font-medium text-gray-900"
+            >
+              Meilleure Équipe
+            </label>
+            <input
+              type="text"
+              name="firstName"
+              id="firstname"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+              [(ngModel)]="certificate.bestTeam"
+              placeholder="Pumbu"
+              required=""
+            />
           </div>
           <div>
-            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleure Employé</label>
-            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestEmployee" placeholder="Helene Tsimba" required="">
+            <label
+              for="firstName"
+              class="block mb-2 text-sm font-medium text-gray-900"
+            >
+              Meilleure Employé</label
+            >
+            <input
+              type="text"
+              name="firstName"
+              id="firstname"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+              [(ngModel)]="certificate.bestEmployee"
+              placeholder="Helene Tsimba"
+              required=""
+            />
           </div>
           <div>
-            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleur  Employé Performance (%)</label>
-            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestEmployeePerformance" placeholder="95" required="">
+            <label
+              for="firstName"
+              class="block mb-2 text-sm font-medium text-gray-900"
+            >
+              Meilleur Employé Performance (%)</label
+            >
+            <input
+              type="text"
+              name="firstName"
+              id="firstname"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+              [(ngModel)]="certificate.bestEmployeePerformance"
+              placeholder="95"
+              required=""
+            />
           </div>
           <div>
-            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Meilleure Manager</label>
-            <input type="text" name="firstName" id="firstname" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" [(ngModel)]="certificate.bestManager" placeholder="Naomie Botuli" required="">
+            <label
+              for="firstName"
+              class="block mb-2 text-sm font-medium text-gray-900"
+            >
+              Meilleure Manager</label
+            >
+            <input
+              type="text"
+              name="firstName"
+              id="firstname"
+              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+              [(ngModel)]="certificate.bestManager"
+              placeholder="Naomie Botuli"
+              required=""
+            />
           </div>
         </form>
 
         <div class="mb-4">
           <h1 class="mb-4">Attacher Certificat de Meilleure Équipe</h1>
-          <input type="file" id="getTeam" style="display:none" (change)="startUploadCertificate($any($event.target).files,'getTeam')">
-          <img *ngIf="certificate.bestTeamCertificateDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getTeam')" src="../../../assets/img/file.png" alt="file">
-          <img *ngIf="certificate.bestTeamCertificateDownloadUrl!==''"  class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getTeam')" [src]="this.certificate.bestTeamCertificateDownloadUrl" alt="file">
+          <input
+            type="file"
+            id="getTeam"
+            style="display: none"
+            (change)="
+              startUploadCertificate($any($event.target).files, 'getTeam')
+            "
+          />
+          <img
+            *ngIf="certificate.bestTeamCertificateDownloadUrl === ''"
+            class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onClick('getTeam')"
+            src="../../../assets/img/file.png"
+            alt="file"
+          />
+          <img
+            *ngIf="certificate.bestTeamCertificateDownloadUrl !== ''"
+            class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onClick('getTeam')"
+            [src]="this.certificate.bestTeamCertificateDownloadUrl"
+            alt="file"
+          />
         </div>
 
         <div class="mb-4">
           <h1 class="mb-4">Attacher le Certificat de Meilleure Employé</h1>
-          <input type="file" id="getEmploye" style="display:none" (change)="startUploadCertificate($any($event.target).files,'getEmploye')">
-          <img *ngIf="certificate.bestEmployeeCertificateDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getEmploye')" src="../../../assets/img/file.png" alt="file">
-          <img *ngIf="certificate.bestEmployeeCertificateDownloadUrl!==''"  class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getEmploye')" [src]="this.certificate.bestEmployeeCertificateDownloadUrl" alt="file">
+          <input
+            type="file"
+            id="getEmploye"
+            style="display: none"
+            (change)="
+              startUploadCertificate($any($event.target).files, 'getEmploye')
+            "
+          />
+          <img
+            *ngIf="certificate.bestEmployeeCertificateDownloadUrl === ''"
+            class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onClick('getEmploye')"
+            src="../../../assets/img/file.png"
+            alt="file"
+          />
+          <img
+            *ngIf="certificate.bestEmployeeCertificateDownloadUrl !== ''"
+            class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onClick('getEmploye')"
+            [src]="this.certificate.bestEmployeeCertificateDownloadUrl"
+            alt="file"
+          />
         </div>
 
         <div class="mb-4">
           <h1 class="mb-4">Attacher le Certificat de Meilleure Manager</h1>
-          <input type="file" id="getManager" style="display:none" (change)="startUploadCertificate($any($event.target).files, 'getManager')">
-          <img *ngIf="certificate.bestManagerCertificateDownloadUrl===''"  class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getManager')" src="../../../assets/img/file.png" alt="file">
-          <img *ngIf="certificate.bestManagerCertificateDownloadUrl!==''"  class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg " (click)="onClick('getManager')" [src]="this.certificate.bestManagerCertificateDownloadUrl" alt="file">
+          <input
+            type="file"
+            id="getManager"
+            style="display: none"
+            (change)="
+              startUploadCertificate($any($event.target).files, 'getManager')
+            "
+          />
+          <img
+            *ngIf="certificate.bestManagerCertificateDownloadUrl === ''"
+            class="w-20 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onClick('getManager')"
+            src="../../../assets/img/file.png"
+            alt="file"
+          />
+          <img
+            *ngIf="certificate.bestManagerCertificateDownloadUrl !== ''"
+            class="w-24 mx-auto rounded-lg sm:rounded-none sm:rounded-l-lg"
+            (click)="onClick('getManager')"
+            [src]="this.certificate.bestManagerCertificateDownloadUrl"
+            alt="file"
+          />
         </div>
       </div>
 
       <!-- footer -->
       <div class="flex justify-center space-x-4 mt-6 mb-6">
-        <button type="button" 
-                (click)="toggleDisplayAddTeam()"
-                class="text-white bg-green-700 hover:bg-green-800 focus:ring-4
-                       font-medium rounded-full text-sm px-5 py-2.5">
+        <button
+          type="button"
+          (click)="toggleDisplayAddTeam()"
+          class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 font-medium rounded-full text-sm px-5 py-2.5"
+        >
           Annuler
         </button>
-        <button type="button" 
-                (click)="updateData()"
-                class="text-white bg-red-700 hover:bg-red-800 focus:ring-4
-                       font-medium rounded-full text-sm px-5 py-2.5">
+        <button
+          type="button"
+          (click)="updateData()"
+          class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 font-medium rounded-full text-sm px-5 py-2.5"
+        >
           Ajouter
         </button>
       </div>
