@@ -324,9 +324,14 @@ export class AuthService {
     return clientRef.set(data, { merge: true });
   }
 
-  addReview(review: Comment): Promise<void> {
+  addReview(review: Comment, targetUserId?: string): Promise<void> {
+    const uid = targetUserId ?? this.currentUser?.uid;
+    if (!uid) {
+      return Promise.reject(new Error("Aucun utilisateur cible pour l'avis."));
+    }
+
     const reviewsCollection = this.afs.collection<any>(
-      `users/${this.currentUser.uid}/reviews/`
+      `users/${uid}/reviews/`
     );
 
     return reviewsCollection
@@ -343,7 +348,7 @@ export class AuthService {
           updatedReviews.push(review); // Add a single review object
 
           return this.afs
-            .doc(`users/${this.currentUser.uid}/reviews/${reviewId}`)
+            .doc(`users/${uid}/reviews/${reviewId}`)
             .set({ reviews: updatedReviews }, { merge: true });
         } else {
           // Create a new document with a generated reviewId
@@ -353,9 +358,7 @@ export class AuthService {
             reviewId: reviewId,
           };
 
-          return this.afs
-            .doc(`users/${this.currentUser.uid}/reviews/${reviewId}`)
-            .set(data);
+          return this.afs.doc(`users/${uid}/reviews/${reviewId}`).set(data);
         }
       });
   }

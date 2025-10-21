@@ -1,8 +1,10 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { Comment } from 'src/app/models/client';
+import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -13,7 +15,7 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
   templateUrl: './reviews.component.html',
   styleUrls: ['./reviews.component.css'],
 })
-export class ReviewsComponent implements OnInit {
+export class ReviewsComponent implements OnInit, OnDestroy {
   personPostingComment?: string = '';
   numberofStars: string = '';
   comment?: string = '';
@@ -78,6 +80,12 @@ export class ReviewsComponent implements OnInit {
   elapsedTime = '00:00';
   recordingProgress = 0;
   private recordingTimer: any;
+  allUsers: User[] = [];
+  selectedTargetUserId: string | null = null;
+  isAuthenticated = false;
+  private authSub?: Subscription;
+  private reviewsSub?: Subscription;
+  private usersSub?: Subscription;
 
   constructor(
     private router: Router,
@@ -98,14 +106,58 @@ export class ReviewsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Ensure user is available before fetching reviews
+    this.authSub = this.auth.user$.subscribe((user) => {
+      this.isAuthenticated = !!user;
 
-    this.auth.getReviews().subscribe((data: any) => {
-      this.reviews = data[0].reviews;
-      this.reviewId = data[0].reviewId;
-      // console.log('reviews', this.reviews);
+      if (this.reviewsSub) {
+        this.reviewsSub.unsubscribe();
+        this.reviewsSub = undefined;
+      }
+
+      if (user?.uid) {
+        this.reviewsSub = this.auth.getReviews().subscribe((data: any[]) => {
+          if (data?.length) {
+            const doc = data[0] || {};
+            this.reviews = doc.reviews || [];
+            this.reviewId = doc.reviewId || '';
+          } else {
+            this.reviews = [];
+            this.reviewId = '';
+          }
+          this.setReviews();
+        });
+      } else {
+        this.reviews = [];
+        this.reviewId = '';
+        this.setReviews();
+      }
+    });
+
+    this.usersSub = this.auth.getAllUsersInfo().subscribe((users) => {
+      const list = users ?? [];
+      this.allUsers = list.slice().sort((a: User, b: User) => {
+        const aName = (
+          a.firstName ||
+          a.lastName ||
+          a.email ||
+          ''
+        ).toLowerCase();
+        const bName = (
+          b.firstName ||
+          b.lastName ||
+          b.email ||
+          ''
+        ).toLowerCase();
+        return aName.localeCompare(bName);
+      });
       this.setReviews();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.authSub?.unsubscribe();
+    this.reviewsSub?.unsubscribe();
+    this.usersSub?.unsubscribe();
   }
 
   setReviews() {
@@ -118,6 +170,13 @@ export class ReviewsComponent implements OnInit {
         comment.starsNumber = Number(comment.stars);
         comment.__editingPerf = false; // ← initialise
         comment.__perfDraft = comment.performance ?? 0; // ← brouillon
+        const resolvedLabel = this.getUserLabelById(
+          comment.targetUserId,
+          comment.targetUserLastName ?? ''
+        );
+        if (resolvedLabel) {
+          comment.targetUserLastName = resolvedLabel;
+        }
       });
     }
     this.reviews.sort((a: any, b: any) => {
@@ -149,6 +208,16 @@ export class ReviewsComponent implements OnInit {
   }
   getLimitedProgress(): number {
     return Math.min(this.recordingProgress, 100);
+  }
+  private getUserLabelById(userId?: string | null, fallback = ''): string {
+    if (!userId) {
+      return fallback;
+    }
+    const user = this.allUsers.find((u) => u.uid === userId);
+    return user?.firstName || user?.lastName || user?.email || fallback;
+  }
+  getSelectedTargetLabel(): string {
+    return this.getUserLabelById(this.selectedTargetUserId);
   }
   private pad(num: number): string {
     return num < 10 ? `0${num}` : `${num}`;
@@ -248,7 +317,7 @@ export class ReviewsComponent implements OnInit {
     };
   }
 
-  private async uploadRecordedBlobAndThenPostComment() {
+  private async uploadRecordedBlobAndThenPostComment(targetUserId: string) {
     try {
       // Convert Blob -> File
       const fileName = `recorded-${Date.now()}.webm`;
@@ -256,12 +325,12 @@ export class ReviewsComponent implements OnInit {
         type: this.recordedBlob!.type,
       });
 
-      const path = `reviews/${this.auth.currentUser.uid}-${fileName}`;
+      const path = `reviews/${targetUserId}-${fileName}`;
       const uploadTask = await this.storage.upload(path, audioFile);
       const downloadURL = await uploadTask.ref.getDownloadURL();
 
       // Now finalize
-      this.addReview(downloadURL);
+      this.addReview(downloadURL, targetUserId);
 
       // Reset local fields
       this.recordedBlob = undefined;
@@ -271,10 +340,10 @@ export class ReviewsComponent implements OnInit {
       alert('Erreur lors du téléversement de votre enregistrement.');
     }
   }
-  private async uploadSelectedFileAndThenPostComment() {
+  private async uploadSelectedFileAndThenPostComment(targetUserId: string) {
     try {
       const fileName = `upload-${Date.now()}-${this.selectedAudioFile?.name}`;
-      const path = `reviews/${this.auth.currentUser.uid}-${fileName}`;
+      const path = `reviews/${targetUserId}-${fileName}`;
 
       const uploadTask = await this.storage.upload(
         path,
@@ -283,7 +352,7 @@ export class ReviewsComponent implements OnInit {
       const downloadURL = await uploadTask.ref.getDownloadURL();
 
       // Now finalize
-      this.addReview(downloadURL);
+      this.addReview(downloadURL, targetUserId);
 
       // Reset local fields
       if (this.selectedAudioPreviewURL) {
@@ -364,6 +433,10 @@ export class ReviewsComponent implements OnInit {
       alert('Veuillez saisir votre cote.');
       return;
     }
+    if (!this.selectedTargetUserId) {
+      alert('Veuillez sélectionner la localisation (utilisateur) visée.');
+      return;
+    }
 
     // 2) Check for text or audio
     const hasText = this.comment && this.comment.trim().length > 0;
@@ -385,16 +458,17 @@ export class ReviewsComponent implements OnInit {
       return;
     }
 
+    const targetUserId = this.selectedTargetUserId;
+
     // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
     if (hasRecordedAudio) {
-      this.uploadRecordedBlobAndThenPostComment();
+      this.uploadRecordedBlobAndThenPostComment(targetUserId);
     } else if (hasUploadedAudio) {
-      this.uploadSelectedFileAndThenPostComment();
+      this.uploadSelectedFileAndThenPostComment(targetUserId);
     } else {
       // just text
-      this.addReview('');
+      this.addReview('', targetUserId);
     }
-    alert('Commentaire publié avec succès !');
   }
   deleteReview(idx: number, r: Comment) {
     if (!confirm('Supprimer définitivement ce commentaire ?')) return;
@@ -419,7 +493,8 @@ export class ReviewsComponent implements OnInit {
   }
 
   /** ---------- 1. Injecter les metrics + visible dans le payload ---------- */
-  addReview(audioUrl: string) {
+  addReview(audioUrl: string, targetUserId: string) {
+    const targetLabel = this.getUserLabelById(targetUserId);
     const review: Comment = {
       name: this.personPostingComment,
       comment: this.comment,
@@ -432,6 +507,8 @@ export class ReviewsComponent implements OnInit {
       cahier: this.metrics[2].value,
       suiviClients: this.metrics[3].value,
       relationClient: this.metrics[4].value,
+      targetUserId,
+      targetUserLastName: targetLabel,
       // ⬇️  inclure performance uniquement si admin OU valeur > 0
       ...(this.auth.isAdmin && this.performanceValue > 0
         ? { performance: this.performanceValue }
@@ -439,7 +516,7 @@ export class ReviewsComponent implements OnInit {
     };
 
     this.auth
-      .addReview(review)
+      .addReview(review, targetUserId)
       .then(() => {
         // reset
         this.personPostingComment = '';
@@ -451,8 +528,14 @@ export class ReviewsComponent implements OnInit {
         this.selectedAudioFile = undefined;
         this.selectedAudioPreviewURL = undefined;
         this.performanceValue = 0;
-        this.reviews.unshift(review); // affichage immédiat
-        this.buildPerformanceGraph(); // remet l’histogramme à jour
+        if (
+          this.isAuthenticated &&
+          this.auth.currentUser?.uid === targetUserId
+        ) {
+          this.reviews.unshift(review); // affichage immédiat pour l'utilisateur concerné
+          this.setReviews();
+        }
+        alert('Commentaire publié avec succès !');
         /* ✅ confirmation à l’utilisateur */
         // alert('Commentaire publié avec succès !');
         /*  └─ remplacez par un toast/snackbar si vous en utilisez un */

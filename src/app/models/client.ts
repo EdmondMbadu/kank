@@ -91,6 +91,8 @@ export class Comment {
   __perfDraft?: number;
   __editingComment?: boolean;
   __commentDraft?: string;
+  targetUserId?: string;
+  targetUserLastName?: string;
 
   [key: string]: any;
   // NEW:
