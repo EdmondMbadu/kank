@@ -39,10 +39,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
 
   phoneError = '';
 
-  constructor(
-    public auth: AuthService,
-    private afs: AngularFirestore
-  ) {}
+  constructor(public auth: AuthService, private afs: AngularFirestore) {}
 
   get isEditing(): boolean {
     return this.editingId !== null;
@@ -61,12 +58,31 @@ export class PriseContactComponent implements OnInit, OnDestroy {
 
   async submit(): Promise<void> {
     const trimmed = this.getTrimmedForm();
-    if (!trimmed.firstName || !trimmed.lastName || !trimmed.phoneNumber) {
+    this.phoneError = '';
+    const missingFields: string[] = [];
+    if (!trimmed.firstName) {
+      missingFields.push('le prénom');
+    }
+    if (!trimmed.lastName) {
+      missingFields.push('le nom');
+    }
+    if (!trimmed.phoneNumber) {
+      missingFields.push('le téléphone');
+      this.phoneError = 'Veuillez completer un numéro.';
+    }
+
+    if (missingFields.length) {
+      window.alert(
+        `Veuillez completer les champs ${missingFields
+          .join(', ')
+          .replace(/,([^,]*)$/, ' et$1')} avant d’enregistrer.`
+      );
       return;
     }
 
     if (!this.isValidPhone(trimmed.phoneNumber)) {
       this.phoneError = 'Le numéro doit contenir exactement 10 chiffres.';
+      window.alert(this.phoneError);
       return;
     }
 
@@ -189,18 +205,19 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     this.contactsSub = this.contactsCollection
       .snapshotChanges()
       .pipe(
-        map((snaps) =>
-          snaps.map((snap) => {
-            const data = snap.payload.doc.data();
-            return {
-              id: snap.payload.doc.id,
-              ...data,
-              createdAt: this.coerceToMillis(data.createdAt),
-              updatedAt: data.updatedAt
-                ? this.coerceToMillis(data.updatedAt)
-                : undefined,
-            };
-          }) as ContactEntry[]
+        map(
+          (snaps) =>
+            snaps.map((snap) => {
+              const data = snap.payload.doc.data();
+              return {
+                id: snap.payload.doc.id,
+                ...data,
+                createdAt: this.coerceToMillis(data.createdAt),
+                updatedAt: data.updatedAt
+                  ? this.coerceToMillis(data.updatedAt)
+                  : undefined,
+              };
+            }) as ContactEntry[]
         )
       )
       .subscribe((contacts) => {
