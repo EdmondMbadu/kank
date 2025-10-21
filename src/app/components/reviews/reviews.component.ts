@@ -567,6 +567,13 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   }
 
   goHome() {
+    if (this.isAuthenticated) {
+      this.router.navigate(['/home']);
+      return;
+    }
+    // else{
+
+    // }
     this.router.navigate(['/']);
   }
 
