@@ -195,7 +195,15 @@
                       {{ contact.phoneNumber }}
                     </td>
                     <td class="px-4 py-4 sm:px-6 text-slate-500">
-                      {{ contact.createdAt | date : "mediumDate" }}
+                      <div>
+                        {{ contact.createdAt | date : "dd MMM yyyy 'à' HH:mm" }}
+                      </div>
+                      <div
+                        *ngIf="contact.updatedAt && contact.updatedAt !== contact.createdAt"
+                        class="text-xs text-slate-400"
+                      >
+                        Modifié le {{ contact.updatedAt | date : "dd MMM yyyy 'à' HH:mm" }}
+                      </div>
                     </td>
                     <td class="px-4 py-4 sm:px-6">
                       <div class="flex justify-end gap-2">
