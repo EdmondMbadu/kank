@@ -2591,6 +2591,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const acceptedVacations =
+      Number(this.employee.vacationAcceptedNumberOfDays) || 0;
+    const remainingDays = this.TOTAL_VACATION_DAYS - acceptedVacations;
+    if (remainingDays <= 0) {
+      alert(
+        "Vous n'avez plus de jours de vacances disponibles pour cette période."
+      );
+      this.closeStatePicker();
+      return;
+    }
+
     const confirmed = confirm(
       'Confirmez-vous vouloir marquer cette journée comme vacances ? Seul un administrateur pourra modifier ce choix.'
     );
@@ -2600,10 +2611,21 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     const newAtt = { ...(this.employee.attendance ?? {}) };
     newAtt[normalizedLabel] = 'V';
+    const updatedAccepted = acceptedVacations + 1;
 
     try {
       await this.data.updateEmployeeAttendance(newAtt, employeeId);
+      await this.data.updateEmployeeNumberOfAcceptedVacation(
+        updatedAccepted.toString(),
+        employeeId
+      );
       this.employee.attendance = newAtt;
+      this.employee.vacationAcceptedNumberOfDays =
+        updatedAccepted.toString();
+      this.vacation = Math.max(
+        0,
+        this.TOTAL_VACATION_DAYS - updatedAccepted
+      );
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (e) {
       alert('❌ Impossible de marquer cette journée comme vacances.');
