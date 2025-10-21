@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AuthService } from 'src/app/services/auth.service';
 
 type ContactFormModel = {
   firstName: string;
@@ -20,6 +21,8 @@ export class PriseContactComponent {
   contacts: ContactEntry[] = [];
   form: ContactFormModel = this.createEmptyForm();
   editingIndex: number | null = null;
+
+  constructor(public auth: AuthService) {}
 
   get isEditing(): boolean {
     return this.editingIndex !== null;

@@ -1,7 +1,11 @@
 <div
   class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50"
 >
-  <app-navbar [path]="'prise-contact'"></app-navbar>
+  <app-navbar
+    [email]="auth.currentUser?.email || ''"
+    [firstName]="auth.currentUser?.firstName || ''"
+    [path]="'home'"
+  ></app-navbar>
 
   <main
     class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8"
