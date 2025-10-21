@@ -1,232 +1,583 @@
-
 <!-- Navbar -->
-<nav class="relative   bg-green-700">
-    <div class="container flex mx-auto items-center justify-between">
-   
-      <div class="flex flex-row items-center space-x-10">
-        <img src="../assets/img/kank-updated.png" alt="" class="flex max-w-[10rem] p-2" routerLink="/{{path}}">
-      <div  *ngIf="email!==''" class="flex flex-row items-center space-x-10" >
-            <div class="hidden md:block  flex-col justify-center" routerLink="/home">
-              <img src="../../../assets/img/white-house.png" class="w-10 h-10  hover:w-11 hover:h-11" alt="">
-              <h1 *ngIf="currentHome" class=" {{current}}"></h1>
-
-            </div>
-            <div routerLink="/client-info-current" class="hidden md:block">
-              <img src="../../../assets/img/file.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
-              <h1 *ngIf="currentClientInfo" class=" {{current}}"></h1>
-            </div>
-            <div routerLink="/register-client" class="hidden md:block">
-              <img src="../../../assets/img/new-client.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
-              <h1 *ngIf="currentNewClient" class=" {{current}}"></h1>
-            </div>
-            <!-- <div routerLink="/new-card" class="hidden md:block">
+<nav class="relative bg-green-700">
+  <div class="container flex mx-auto items-center justify-between">
+    <div class="flex flex-row items-center space-x-10">
+      <img
+        src="../assets/img/kank-updated.png"
+        alt=""
+        class="flex max-w-[10rem] p-2"
+        routerLink="/{{ path }}"
+      />
+      <div *ngIf="email !== ''" class="flex flex-row items-center space-x-10">
+        <div class="hidden md:block flex-col justify-center" routerLink="/home">
+          <img
+            src="../../../assets/img/white-house.png"
+            class="w-10 h-10 hover:w-11 hover:h-11"
+            alt=""
+          />
+          <h1 *ngIf="currentHome" class=" {{ current }}"></h1>
+        </div>
+        <div routerLink="/client-info-current" class="hidden md:block">
+          <img
+            src="../../../assets/img/file.png"
+            class="w-10 hover:w-12 hover:h-12 h-10"
+            alt=""
+          />
+          <h1 *ngIf="currentClientInfo" class=" {{ current }}"></h1>
+        </div>
+        <div routerLink="/register-client" class="hidden md:block">
+          <img
+            src="../../../assets/img/new-client.png"
+            class="w-10 hover:w-12 hover:h-12 h-10"
+            alt=""
+          />
+          <h1 *ngIf="currentNewClient" class=" {{ current }}"></h1>
+        </div>
+        <!-- <div routerLink="/new-card" class="hidden md:block">
               <img src="../../../assets/img/card.png" class="w-10 hover:w-12 hover:h-12 h-10" alt="">
               <h1 *ngIf="currentNewClientCard" class=" {{current}}"></h1>
             </div> -->
-            <div routerLink="/team-page" class="hidden md:block">
-              <img src="../../../assets/img/staff.png" class="w-14  hover:w-16 hover:h-16 h-14 mr-4" alt="">
-              <h1 *ngIf="currentEmployeePage" class=" {{current}}"></h1>
-            </div>
-          </div>
-        
+        <div routerLink="/team-page" class="hidden md:block">
+          <img
+            src="../../../assets/img/staff.png"
+            class="w-14 hover:w-16 hover:h-16 h-14 mr-4"
+            alt=""
+          />
+          <h1 *ngIf="currentEmployeePage" class=" {{ current }}"></h1>
+        </div>
       </div>
-      <div *ngIf="email!==''" class=" mr-4 relative inline-block text-left">
-        <div>
-          <button type="button" class="inline-flex  w-full justify-center gap-x-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" id="menu-button" aria-expanded="true" (click)="toggleMenu()">
-            {{firstName}}
-            <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+    </div>
+    <div *ngIf="email !== ''" class="mr-4 relative inline-block text-left">
+      <div>
+        <button
+          type="button"
+          class="inline-flex w-full justify-center gap-x-1.5 rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          id="menu-button"
+          aria-expanded="true"
+          (click)="toggleMenu()"
+        >
+          {{ firstName }}
+          <svg
+            class="-mr-1 h-5 w-5 text-gray-400"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        *ngIf="hide == false"
+        class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+        role="menu"
+      >
+        <div class="py-1">
+          <button
+            *ngIf="auth.isAdmninistrator"
+            (click)="toggleCentralDropDown()"
+            id="doubleDropdownButton"
+            data-dropdown-toggle="doubleDropdown"
+            data-dropdown-placement="right-start"
+            type="button"
+            class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 font-extrabold dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+          >
+            Central
+            <svg
+              class="-mr-1 h-5 w-5 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd"
+              />
             </svg>
           </button>
-        </div>
 
-        <div *ngIf="hide ==false" class="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu"  >
-          <div class="py-1" >
+          <div *ngIf="centralDropDown">
+            <a
+              routerLink="/home-central"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >Depart</a
+            >
+            <a
+              routerLink="/team-ranking-month"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >Employées</a
+            >
 
-            <button *ngIf="auth.isAdmninistrator" (click)="toggleCentralDropDown()" id="doubleDropdownButton" data-dropdown-toggle="doubleDropdown" data-dropdown-placement="right-start" type="button" class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 font-extrabold dark:hover:bg-gray-600 dark:hover:text-white text-lg">Central
-              <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-              </svg></button>
-
-              <div *ngIf="centralDropDown">
-                <a  routerLink="/home-central"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Depart</a>
-                <a  routerLink="/team-ranking-month"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a>
-
-                <!-- <a   class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a> -->
-                <a routerLink="/tracking-central"   class=" block px-6 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Trésorerie</a>
-  
-              </div>
-              <div>
-                <button *ngIf="centralDropDown" (click)="toggleCentralCreditDropDown()" id="doubleDropdownButton" data-dropdown-toggle="doubleDropdown" data-dropdown-placement="right-start" type="button" class="flex items-center justify-between w-full px-6 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg">Central Credit
-                  <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                  </svg></button>
-                <div *ngIf="centralCreditDropDown"  id="doubleDropdown" class="z-10 mx-6 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
-                  <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="doubleDropdownButton">
-
-                 
-                    <li>
-                      <a routerLink="/today-central"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Jour</a>
-                    </li>
-                    <li>
-                      <a routerLink="/tracking-month-central"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Mois</a>
-                    </li>
-                    <!-- <li>
+            <!-- <a   class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a> -->
+            <a
+              routerLink="/tracking-central"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >Trésorerie</a
+            >
+          </div>
+          <div>
+            <button
+              *ngIf="centralDropDown"
+              (click)="toggleCentralCreditDropDown()"
+              id="doubleDropdownButton"
+              data-dropdown-toggle="doubleDropdown"
+              data-dropdown-placement="right-start"
+              type="button"
+              class="flex items-center justify-between w-full px-6 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+            >
+              Central Credit
+              <svg
+                class="-mr-1 h-5 w-5 text-gray-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+            <div
+              *ngIf="centralCreditDropDown"
+              id="doubleDropdown"
+              class="z-10 mx-6 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+            >
+              <ul
+                class="py-2 text-sm text-gray-700 dark:text-gray-200"
+                aria-labelledby="doubleDropdownButton"
+              >
+                <li>
+                  <a
+                    routerLink="/today-central"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Activités Du Jour</a
+                  >
+                </li>
+                <li>
+                  <a
+                    routerLink="/tracking-month-central"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Activités Du Mois</a
+                  >
+                </li>
+                <!-- <li>
                       <a routerLink="/tracking-card-month"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Retracer Les Activités</a>
                     </li> -->
-                  </ul>
-              </div>
-              </div>
-             
-              <div>
-                <button *ngIf="centralDropDown" (click)="toggleCentralCardDropDown()"  id="doubleDropdownButton" data-dropdown-toggle="doubleDropdown" data-dropdown-placement="right-start" type="button" class="flex items-center justify-between w-full px-6 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg">Central Card
-                  <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                  </svg></button>
-               
-                <div *ngIf="centralCardDropDown"  id="doubleDropdown" class="z-10 mx-6  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
-                  <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="doubleDropdownButton">
-                    <li>
-                      <a routerLink="/summary-card-central" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Résumé </a>
-                    </li>
-                    <!-- <li>
-                      <a routerLink="/client-info-card" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Tresorerie</a>
-                    </li> -->
-                    <li>
-                      <a routerLink="/today-card-central"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Jour</a>
-                    </li>
-                    <li>
-                      <a routerLink="/tracking-card-month-central"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Mois</a>
-                    </li>
-                  </ul>
-              </div>
-              </div>
-              <button *ngIf="auth.isAdmninistrator || auth.isDistributoring" (click)="toggleGestionDropDown()" id="doubleDropdownButton" data-dropdown-toggle="doubleDropdown" data-dropdown-placement="right-start" type="button" class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 font-extrabold dark:hover:bg-gray-600 dark:hover:text-white text-lg">Gestion
-                <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                </svg></button>
-  
-                <div *ngIf="gestionDropDown">
-                
-                    <a routerLink="/today-central"class="block px-6 py-2 text-lg hover:bg-slate-100">Activités Du Jour</a>
-               
-                  <a  routerLink="/gestion-today"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Gestion Du Jour</a>
-                  <a  routerLink="/questions"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Audit Verification</a>
-                  <a *ngIf="auth.isAdmninistrator || auth.isDistributoring" routerLink="/team-ranking-month"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a>
-
-                  <a *ngIf="auth.isAdmninistrator "  routerLink="/gestion-month"  class=" block px-6 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Gestion Du Mois</a>
-                 
-    
-                </div>
-              
-             
-             
-
-
-            <a routerLink="/home"  class="text-gray-700 block px-4 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Depart</a>
-
-         
-              <button (click)="toggleCreditDropDown()" id="doubleDropdownButton" data-dropdown-toggle="doubleDropdown" data-dropdown-placement="right-start" type="button" class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg">Credit
-                <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                </svg></button>
-                <div *ngIf="creditDropDown"  id="doubleDropdown" class="z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
-                  <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="doubleDropdownButton">
-                    <!-- <li>
-                      <a routerLink="/home"   class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Résumé</a>
-                    </li> -->
-                    <li>
-                      <a routerLink="/client-info-current"   class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Info Client</a>
-                    </li>
-                    <li>
-                      <a routerLink="/info-register" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Info Client Enregistrer</a>
-                    </li>
-                    <!-- <li>
-                      <a routerLink="/new-client"  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Nouveau Client Epargne</a>
-                    </li> -->
-                    <li>
-                      <a routerLink="/register-client" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Enregistrer Client</a>
-                    </li>
-                    <li>
-                      <a routerLink="/today" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Jour</a>
-                    </li>
-                   
-                    <li>
-                      <a *ngIf="this.auth.isAdmninistrator" routerLink="/tracking-month" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Mois</a>
-                    </li>
-                    <li>
-                      <a routerLink="/retrace" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Retracer  Activités</a>
-                    </li>
-                    <li>
-                      <a *ngIf="this.auth.isAdmninistrator"  routerLink="/benefit"  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Bénéfice & Performance</a>
-                    </li>
-                  </ul>
-              </div>
-              <button (click)="toggleCardDropDown()" id="doubleDropdownButton" data-dropdown-toggle="doubleDropdown" data-dropdown-placement="right-start" type="button" class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg">Carte
-                <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                </svg></button>
-                <div *ngIf="cardDropDown"  id="doubleDropdown" class="z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
-                  <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="doubleDropdownButton">
-                    <li>
-                      <a routerLink="/summary-card" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Résumé </a>
-                    </li>
-                    <li>
-                      <a routerLink="/client-info-card/all" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Info Client</a>
-                    </li>
-                    <li>
-                      <a routerLink="/new-card"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Nouveau Client </a>
-                    </li>
-                    <li>
-                      <a routerLink="/today-card"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Jour</a>
-                    </li>
-                    <li>
-                      <a routerLink="/tracking-card-month"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Activités Du Mois</a>
-                    </li>
-                  </ul>
-              </div>
-              <a routerLink="/tracking"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Trésorerie</a>
-         
-
-              <button (click)="toggle('employeeInfo')" id="doubleDropdownButton" data-dropdown-toggle="doubleDropdown" data-dropdown-placement="right-start" type="button" class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg">Employées & Autres
-                <svg class="-mr-1 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                </svg></button>
-                <div *ngIf="employeeInfo"  id="doubleDropdown" class="z-10  bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
-                  <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="doubleDropdownButton">
-                    <li>
-                      <a  routerLink="/team-page" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Employées</a>
-                    </li>
-                    <li>
-                      <a routerLink="/certificate" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Certificats</a>
-                    </li>
-                    <li>
-                      <a routerLink="/tutorial"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Apercu & Tutoriels</a>
-                    </li>
-                    <li>
-                      <a routerLink="/reviews"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Commentaires pour l'Équipe</a>
-                    </li>
-                     <li>
-                      <a routerLink="/team-ranking-month"class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Classement & Rotation</a>
-                    </li>
-                  </ul>
-              </div>
-            <!-- <a routerLink="/team-page"  class=" block px-4 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a> -->
-            <!-- <a routerLink="/tracking"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Trésorerie</a> -->
-            <!-- <a routerLink="/certificate"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Certificats</a>
-            <a routerLink="/tutorial"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Tutoriels & Autres</a>
-             -->
-            <a (click)="logOut()"  class="text-gray-700 block px-4 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-1">
-              Se Déconnecter</a>
-       
+              </ul>
+            </div>
           </div>
 
+          <div>
+            <button
+              *ngIf="centralDropDown"
+              (click)="toggleCentralCardDropDown()"
+              id="doubleDropdownButton"
+              data-dropdown-toggle="doubleDropdown"
+              data-dropdown-placement="right-start"
+              type="button"
+              class="flex items-center justify-between w-full px-6 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+            >
+              Central Card
+              <svg
+                class="-mr-1 h-5 w-5 text-gray-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
 
+            <div
+              *ngIf="centralCardDropDown"
+              id="doubleDropdown"
+              class="z-10 mx-6 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+            >
+              <ul
+                class="py-2 text-sm text-gray-700 dark:text-gray-200"
+                aria-labelledby="doubleDropdownButton"
+              >
+                <li>
+                  <a
+                    routerLink="/summary-card-central"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Résumé
+                  </a>
+                </li>
+                <!-- <li>
+                      <a routerLink="/client-info-card" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Tresorerie</a>
+                    </li> -->
+                <li>
+                  <a
+                    routerLink="/today-card-central"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Activités Du Jour</a
+                  >
+                </li>
+                <li>
+                  <a
+                    routerLink="/tracking-card-month-central"
+                    class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                    >Activités Du Mois</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
+          <button
+            *ngIf="auth.isAdmninistrator || auth.isDistributoring"
+            (click)="toggleGestionDropDown()"
+            id="doubleDropdownButton"
+            data-dropdown-toggle="doubleDropdown"
+            data-dropdown-placement="right-start"
+            type="button"
+            class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 font-extrabold dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+          >
+            Gestion
+            <svg
+              class="-mr-1 h-5 w-5 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+
+          <div *ngIf="gestionDropDown">
+            <a
+              routerLink="/today-central"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              >Activités Du Jour</a
+            >
+
+            <a
+              routerLink="/gestion-today"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >Gestion Du Jour</a
+            >
+            <a
+              routerLink="/questions"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >Audit Verification</a
+            >
+            <a
+              *ngIf="auth.isAdmninistrator || auth.isDistributoring"
+              routerLink="/team-ranking-month"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >Employées</a
+            >
+
+            <a
+              *ngIf="auth.isAdmninistrator"
+              routerLink="/gestion-month"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >Gestion Du Mois</a
+            >
+          </div>
+
+          <a
+            routerLink="/home"
+            class="text-gray-700 block px-4 py-2 text-lg hover:bg-slate-100"
+            role="menuitem"
+            tabindex="-1"
+            id="menu-item-0"
+            >Depart</a
+          >
+
+          <button
+            (click)="toggleCreditDropDown()"
+            id="doubleDropdownButton"
+            data-dropdown-toggle="doubleDropdown"
+            data-dropdown-placement="right-start"
+            type="button"
+            class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+          >
+            Credit
+            <svg
+              class="-mr-1 h-5 w-5 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div
+            *ngIf="creditDropDown"
+            id="doubleDropdown"
+            class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+          >
+            <ul
+              class="py-2 text-sm text-gray-700 dark:text-gray-200"
+              aria-labelledby="doubleDropdownButton"
+            >
+              <li>
+                <a
+                  routerLink="/prise-contact"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Prise De Contact</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/client-info-current"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Info Client</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/info-register"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Info Client Enregistrer</a
+                >
+              </li>
+              <!-- <li>
+                      <a routerLink="/new-client"  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Nouveau Client Epargne</a>
+                    </li> -->
+              <li>
+                <a
+                  routerLink="/register-client"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Enregistrer Client</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/today"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Activités Du Jour</a
+                >
+              </li>
+
+              <li>
+                <a
+                  *ngIf="this.auth.isAdmninistrator"
+                  routerLink="/tracking-month"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Activités Du Mois</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/retrace"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Retracer Activités</a
+                >
+              </li>
+              <li>
+                <a
+                  *ngIf="this.auth.isAdmninistrator"
+                  routerLink="/benefit"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Bénéfice & Performance</a
+                >
+              </li>
+            </ul>
+          </div>
+          <button
+            (click)="toggleCardDropDown()"
+            id="doubleDropdownButton"
+            data-dropdown-toggle="doubleDropdown"
+            data-dropdown-placement="right-start"
+            type="button"
+            class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+          >
+            Carte
+            <svg
+              class="-mr-1 h-5 w-5 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div
+            *ngIf="cardDropDown"
+            id="doubleDropdown"
+            class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+          >
+            <ul
+              class="py-2 text-sm text-gray-700 dark:text-gray-200"
+              aria-labelledby="doubleDropdownButton"
+            >
+              <li>
+                <a
+                  routerLink="/summary-card"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Résumé
+                </a>
+              </li>
+              <li>
+                <a
+                  routerLink="/client-info-card/all"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Info Client</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/new-card"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Nouveau Client
+                </a>
+              </li>
+              <li>
+                <a
+                  routerLink="/today-card"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Activités Du Jour</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/tracking-card-month"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Activités Du Mois</a
+                >
+              </li>
+            </ul>
+          </div>
+          <a
+            routerLink="/tracking"
+            class="block px-4 py-2 text-lg hover:bg-slate-100"
+            role="menuitem"
+            tabindex="-1"
+            id="menu-item-0"
+            >Trésorerie</a
+          >
+
+          <button
+            (click)="toggle('employeeInfo')"
+            id="doubleDropdownButton"
+            data-dropdown-toggle="doubleDropdown"
+            data-dropdown-placement="right-start"
+            type="button"
+            class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+          >
+            Employées & Autres
+            <svg
+              class="-mr-1 h-5 w-5 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+          <div
+            *ngIf="employeeInfo"
+            id="doubleDropdown"
+            class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+          >
+            <ul
+              class="py-2 text-sm text-gray-700 dark:text-gray-200"
+              aria-labelledby="doubleDropdownButton"
+            >
+              <li>
+                <a
+                  routerLink="/team-page"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Employées</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/certificate"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Certificats</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/tutorial"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Apercu & Tutoriels</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/reviews"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Commentaires pour l'Équipe</a
+                >
+              </li>
+              <li>
+                <a
+                  routerLink="/team-ranking-month"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                  >Classement & Rotation</a
+                >
+              </li>
+            </ul>
+          </div>
+          <!-- <a routerLink="/team-page"  class=" block px-4 py-2 text-lg hover:bg-slate-100" role="menuitem" tabindex="-1" id="menu-item-0">Employées</a> -->
+          <!-- <a routerLink="/tracking"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Trésorerie</a> -->
+          <!-- <a routerLink="/certificate"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Certificats</a>
+            <a routerLink="/tutorial"  class=" block px-4 py-2 text-lg hover:bg-slate-100 " role="menuitem" tabindex="-1" id="menu-item-0">Tutoriels & Autres</a>
+             -->
+          <a
+            (click)="logOut()"
+            class="text-gray-700 block px-4 py-2 text-lg hover:bg-slate-100"
+            role="menuitem"
+            tabindex="-1"
+            id="menu-item-1"
+          >
+            Se Déconnecter</a
+          >
         </div>
       </div>
-
-
- 
+    </div>
   </div>
-  </nav>
-  
+</nav>
