@@ -140,7 +140,9 @@
           <div
             class="rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-2 text-right text-sm font-medium text-indigo-700"
           >
-            <span class="block text-xs uppercase tracking-widest text-indigo-400">
+            <span
+              class="block text-xs uppercase tracking-widest text-indigo-400"
+            >
               Total affiché
             </span>
             <span class="text-lg font-semibold text-indigo-700">
@@ -175,10 +177,11 @@
                     <td class="px-4 py-4 sm:px-6">
                       <div class="font-semibold text-slate-800">
                         {{ contact.firstName }}
+
+                        <span class="font-normal">{{ contact.lastName }}</span>
                         <span *ngIf="contact.middleName" class="font-normal">
                           {{ contact.middleName }}
                         </span>
-                        <span class="uppercase">{{ contact.lastName }}</span>
                       </div>
                     </td>
                     <td class="px-4 py-4 sm:px-6 text-slate-500">
@@ -226,7 +229,8 @@
                 Aucun résultat pour cette recherche
               </h3>
               <p class="max-w-sm text-sm text-slate-500">
-                Ajustez vos critères pour retrouver un prospect par nom ou par numéro.
+                Ajustez vos critères pour retrouver un prospect par nom ou par
+                numéro.
               </p>
             </ng-container>
             <ng-template #noContacts>
@@ -239,8 +243,8 @@
                 Aucun contact enregistré
               </h3>
               <p class="max-w-sm text-sm text-slate-500">
-                Ajoutez votre premier prospect grâce au formulaire ci-dessus pour
-                commencer votre suivi.
+                Ajoutez votre premier prospect grâce au formulaire ci-dessus
+                pour commencer votre suivi.
               </p>
             </ng-template>
           </div>
