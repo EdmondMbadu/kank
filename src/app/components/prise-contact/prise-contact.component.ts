@@ -33,6 +33,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   form: ContactFormModel = this.createEmptyForm();
   editingId: string | null = null;
   searchTerm = '';
+  isExplanationExpanded = false;
   private contactsCollection?: AngularFirestoreCollection<ContactDocument>;
   private userSub?: Subscription;
   private contactsSub?: Subscription;
@@ -42,6 +43,10 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   private successTimer?: ReturnType<typeof setTimeout>;
 
   constructor(public auth: AuthService, private afs: AngularFirestore) {}
+
+  toggleExplanation(): void {
+    this.isExplanationExpanded = !this.isExplanationExpanded;
+  }
 
   get isEditing(): boolean {
     return this.editingId !== null;

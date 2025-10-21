@@ -30,14 +30,33 @@
           <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
             Prise de contact
           </h1>
-          <p class="max-w-2xl text-sm text-slate-500 sm:text-base">
-            Il est parfois difficile de convaincre directement les clients de
-            s’enregistrer. Dans ce cas, vous pouvez simplement collecter leurs
-            informations — nom et numéro de téléphone — et le système leur
-            enverra automatiquement un rappel chaque semaine pour les inviter à
-            venir s’enregistrer afin d’obtenir un prêt, au moment où ils
-            deviendraient intéressés plus tard.
-          </p>
+          <div class="space-y-2">
+            <button
+              type="button"
+              (click)="toggleExplanation()"
+              class="flex items-center gap-2 text-sm font-semibold text-indigo-600 transition hover:text-indigo-700"
+            >
+              <span>
+                {{ isExplanationExpanded ? "Masquer" : "Pourquoi collecter ces informations ?" }}
+              </span>
+              <span
+                class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current text-xs"
+              >
+                {{ isExplanationExpanded ? "−" : "+" }}
+              </span>
+            </button>
+            <div
+              *ngIf="isExplanationExpanded"
+              class="max-w-2xl rounded-2xl border border-indigo-100 bg-indigo-50/40 px-4 py-3 text-sm text-slate-600 sm:text-base"
+            >
+              Il est parfois difficile de convaincre directement les clients de
+              s’enregistrer. Dans ce cas, vous pouvez simplement collecter leurs
+              informations — nom et numéro de téléphone — et le système leur
+              enverra automatiquement un rappel chaque semaine pour les inviter à
+              venir s’enregistrer afin d’obtenir un prêt, au moment où ils
+              deviendraient intéressés plus tard.
+            </div>
+          </div>
         </header>
 
         <form class="space-y-6" (ngSubmit)="submit()" #formRef="ngForm">
