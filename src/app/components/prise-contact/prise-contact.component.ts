@@ -38,6 +38,8 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   private contactsSub?: Subscription;
 
   phoneError = '';
+  successMessage = '';
+  private successTimer?: ReturnType<typeof setTimeout>;
 
   constructor(public auth: AuthService, private afs: AngularFirestore) {}
 
@@ -105,6 +107,11 @@ export class PriseContactComponent implements OnInit, OnDestroy {
         });
       }
       this.resetForm();
+      this.flashSuccess(
+        this.isEditing
+          ? 'Contact mis à jour avec succès.'
+          : 'Contact ajouté avec succès.'
+      );
     } catch (error) {
       console.error('Failed to persist contact', error);
     }
@@ -248,5 +255,15 @@ export class PriseContactComponent implements OnInit, OnDestroy {
 
   private normalize(value: string): string {
     return value.trim().toLowerCase();
+  }
+
+  private flashSuccess(message: string): void {
+    if (this.successTimer) {
+      clearTimeout(this.successTimer);
+    }
+    this.successMessage = message;
+    this.successTimer = setTimeout(() => {
+      this.successMessage = '';
+    }, 2500);
   }
 }
