@@ -86,6 +86,8 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   private authSub?: Subscription;
   private reviewsSub?: Subscription;
   private usersSub?: Subscription;
+  submissionSuccess = false;
+  submissionTargetLabel = '';
 
   constructor(
     private router: Router,
@@ -108,6 +110,9 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.authSub = this.auth.user$.subscribe((user) => {
       this.isAuthenticated = !!user;
+      if (!this.isAuthenticated) {
+        this.showForm = true;
+      }
 
       if (this.reviewsSub) {
         this.reviewsSub.unsubscribe();
@@ -518,27 +523,17 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.auth
       .addReview(review, targetUserId)
       .then(() => {
-        // reset
-        this.personPostingComment = '';
-        this.comment = '';
-        this.numberofStars = '';
-        this.metrics.forEach((m) => (m.value = 0));
-        this.recordedBlob = undefined;
-        this.recordedAudioURL = undefined;
-        this.selectedAudioFile = undefined;
-        this.selectedAudioPreviewURL = undefined;
-        this.performanceValue = 0;
-        if (
-          this.isAuthenticated &&
-          this.auth.currentUser?.uid === targetUserId
-        ) {
-          this.reviews.unshift(review); // affichage immédiat pour l'utilisateur concerné
+        this.previewOpen = false;
+        const showForCurrentUser =
+          this.isAuthenticated && this.auth.currentUser?.uid === targetUserId;
+        if (showForCurrentUser) {
+          this.reviews.unshift(review);
           this.setReviews();
         }
-        alert('Commentaire publié avec succès !');
-        /* ✅ confirmation à l’utilisateur */
-        // alert('Commentaire publié avec succès !');
-        /*  └─ remplacez par un toast/snackbar si vous en utilisez un */
+        this.resetComposerState();
+        this.submissionTargetLabel = targetLabel;
+        this.submissionSuccess = true;
+        this.showForm = false;
       })
       .catch((err) => {
         console.error('Erreur d’enregistrement :', err);
@@ -558,6 +553,17 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.previewOpen = false;
     // on publie sans redemander la confirmation
     this.addReviewWithOrWithoutAudioFile(false);
+  }
+  sendAnotherFeedback() {
+    this.submissionSuccess = false;
+    this.submissionTargetLabel = '';
+    this.previewOpen = false;
+    this.resetComposerState();
+    this.showForm = true;
+  }
+
+  goHome() {
+    this.router.navigate(['/']);
   }
 
   /** ---------- 4. Méthodes d’affichage / filtrage ---------- */
@@ -587,6 +593,37 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     document.body.appendChild(a); // Firefox exige que le lien soit dans le DOM
     a.click();
     document.body.removeChild(a);
+  }
+
+  private resetComposerState(): void {
+    this.personPostingComment = '';
+    this.comment = '';
+    this.numberofStars = '';
+    this.metrics.forEach((m) => (m.value = 0));
+    this.performanceValue = 0;
+    this.commentAudioUrl = '';
+
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.isRecording = false;
+    this.audioChunks = [];
+    if (this.recordedAudioURL) {
+      URL.revokeObjectURL(this.recordedAudioURL);
+    }
+    this.recordedAudioURL = undefined;
+    this.recordedBlob = undefined;
+
+    if (this.selectedAudioPreviewURL) {
+      URL.revokeObjectURL(this.selectedAudioPreviewURL);
+    }
+    this.selectedAudioPreviewURL = undefined;
+    this.selectedAudioFile = undefined;
+
+    this.elapsedTime = '00:00';
+    this.recordingProgress = 0;
+    this.selectedTargetUserId = null;
+    this.previewOpen = false;
   }
 
   /** Histogramme mensuel coloré – date affichée = 1 mois en arrière */

@@ -6,6 +6,8 @@
   [path]="'home'">
 </app-navbar>
 
+<ng-container *ngIf="!submissionSuccess; else feedbackSuccess">
+
 <!-- ░░░ OBJECTIF MENSUEL ░░░ -->
 <!-- <section class="py-6 max-w-lg mx-auto">
   <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm flex items-center gap-6">
@@ -218,6 +220,44 @@
   </div>
   </div>
 </section>
+</ng-container>
+
+<ng-template #feedbackSuccess>
+  <section class="min-h-[70vh] py-16 bg-gradient-to-br from-white via-slate-50 to-blue-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center">
+    <div class="max-w-2xl mx-auto px-6 py-12 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/70 dark:border-slate-700 text-center space-y-6">
+      <div class="flex justify-center">
+        <div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+          <svg class="w-8 h-8 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+          </svg>
+        </div>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
+        Merci pour votre retour&nbsp;!
+      </h1>
+      <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+        Votre message a bien été envoyé
+        <ng-container *ngIf="submissionTargetLabel; else teamLabel">
+          à <span class="font-semibold text-blue-600 dark:text-blue-300">{{ submissionTargetLabel }}</span>.
+        </ng-container>
+      </p>
+      <ng-template #teamLabel>
+        &nbsp;à notre équipe.
+      </ng-template>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+        <button (click)="sendAnotherFeedback()"
+                class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition">
+          Envoyer un autre feedback
+        </button>
+        <button (click)="goHome()"
+                class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-gray-100 text-slate-700 font-medium hover:bg-gray-200 transition dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+          Retour à l’accueil
+        </button>
+      </div>
+    </div>
+  </section>
+</ng-template>
 
 <div *ngIf="!isAuthenticated" class="max-w-3xl mx-auto px-4 py-6 text-center text-sm text-gray-600 dark:text-gray-300">
   Connectez-vous pour consulter les commentaires existants et les indicateurs de performance.
