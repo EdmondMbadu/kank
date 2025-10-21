@@ -89,8 +89,9 @@ export class RegiserPortalComponent {
   showAuditConfirmation: boolean = false;
   isConfirmed: boolean = false;
   audits: Audit[] = [];
-  suspiciousClientLink: string | null = null;
   suspiciousReason = '';
+  similarClients: Array<{ link: string; label: string; overlap: number }> = [];
+  showSimilarClients = true;
 
   // ====== Nouveaux champs ======
   showRefundDialog = false;
@@ -125,10 +126,10 @@ export class RegiserPortalComponent {
   };
   toast: any;
   dateJoined: string = '';
-  /** Cherche un autre client partageant ≥ 2 noms avec celui affiché.
+  /** Cherche les autres clients partageant ≥ 2 noms avec celui affiché.
    *  currentIdx  = index (position) du client courant dans `all`.
    *  all         = tableau complet des clients.
-   *  Met à jour `suspiciousClientLink` et `suspiciousReason` si besoin. */
+   *  Met à jour `similarClients` (avec le nombre de noms en commun) et `suspiciousReason`. */
   private detectSuspicious(currentIdx: number, all: Client[]): void {
     const norm = (s?: string) => (s ?? '').trim().toLowerCase();
     const cur = all[currentIdx];
@@ -138,25 +139,43 @@ export class RegiserPortalComponent {
       norm(cur.lastName),
     ];
 
-    all.some((other, i) => {
-      if (i === currentIdx) return false;
-      const otherNames = [
-        norm(other.firstName),
-        norm(other.middleName),
-        norm(other.lastName),
-      ];
-      const matches = curNames.filter(
-        (n) => n && otherNames.includes(n)
-      ).length;
+    const matches = all
+      .map((other, i) => {
+        if (i === currentIdx) {
+          return null;
+        }
+        const otherNames = [
+          norm(other.firstName),
+          norm(other.middleName),
+          norm(other.lastName),
+        ];
+        const overlap = curNames.filter(
+          (n) => n && otherNames.includes(n)
+        ).length;
 
-      if (matches >= 2) {
-        this.suspiciousReason =
-          '2 noms similaires à un client déjà dans le système';
-        this.suspiciousClientLink = `/client-portal/${i}`; // ← index, pas uid
-        return true; // stop search
-      }
-      return false;
-    });
+        if (overlap >= 2) {
+          const displayName = [other.firstName, other.middleName, other.lastName]
+            .filter((part) => !!part?.trim())
+            .join(' ');
+
+          return {
+            link: `/client-portal/${i}`,
+            label: displayName || 'Client inconnu',
+            overlap,
+          };
+        }
+        return null;
+      })
+      .filter(
+        (entry): entry is { link: string; label: string; overlap: number } =>
+          entry !== null
+      )
+      .sort((a, b) => b.overlap - a.overlap || a.label.localeCompare(b.label));
+
+    this.similarClients = matches;
+    this.suspiciousReason = matches.length
+      ? '2 noms similaires à un client déjà dans le système'
+      : '';
   }
 
   public graphCredit = {

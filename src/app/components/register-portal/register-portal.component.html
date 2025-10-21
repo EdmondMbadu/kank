@@ -146,19 +146,51 @@
 </div>
 
 <!-- suspicious banner -->
-<div *ngIf="suspiciousClientLink" class="mx-auto mt-4 max-w-7xl px-4">
+<div *ngIf="similarClients.length" class="mx-auto mt-4 max-w-7xl px-4">
   <div
-    class="flex flex-col items-center justify-between gap-2 rounded-lg border-l-4 border-yellow-500 bg-yellow-100 p-4 text-yellow-700 shadow sm:flex-row"
+    class="rounded-lg border border-yellow-200 bg-yellow-50 text-yellow-800 shadow"
   >
-    <p class="font-semibold">
-      ⚠️ Client suspect &mdash;
-      <span class="text-red-600">{{ suspiciousReason }}</span>
-    </p>
-    <a
-      [routerLink]="suspiciousClientLink"
-      class="underline text-blue-600 hover:text-blue-800"
-      >Voir l’autre client</a
+    <button
+      type="button"
+      (click)="showSimilarClients = !showSimilarClients"
+      class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold transition hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+      [attr.aria-expanded]="showSimilarClients"
     >
+      <span>
+        ⚠️ {{ similarClients.length === 1 ? 'Client similaire détecté' : 'Clients similaires détectés' }}
+        <span class="block text-sm font-normal text-yellow-700">
+          {{ suspiciousReason }}
+        </span>
+      </span>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        class="h-5 w-5 transition-transform duration-200"
+        [class.rotate-180]="showSimilarClients"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.085l3.71-3.854a.75.75 0 0 1 1.08 1.04l-4.24 4.4a.75.75 0 0 1-1.08 0l-4.24-4.4a.75.75 0 0 1 .02-1.06Z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+    <div
+      *ngIf="showSimilarClients"
+      class="space-y-2 border-t border-yellow-200 px-4 py-3 text-sm"
+    >
+      <a
+        *ngFor="let match of similarClients"
+        [routerLink]="match.link"
+        class="flex items-center justify-between rounded-md bg-white px-3 py-2 text-blue-700 shadow-sm transition hover:bg-blue-50 hover:text-blue-900"
+      >
+        <span class="font-medium">{{ match.label }}</span>
+        <span class="text-xs text-yellow-600">
+          {{ match.overlap }} nom{{ match.overlap > 1 ? 's' : '' }} en commun
+        </span>
+      </a>
+    </div>
   </div>
 </div>
 
