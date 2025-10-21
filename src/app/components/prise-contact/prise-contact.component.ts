@@ -32,6 +32,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   contacts: ContactEntry[] = [];
   form: ContactFormModel = this.createEmptyForm();
   editingId: string | null = null;
+  searchTerm = '';
   private contactsCollection?: AngularFirestoreCollection<ContactDocument>;
   private userSub?: Subscription;
   private contactsSub?: Subscription;
@@ -130,6 +131,30 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     this.resetForm();
   }
 
+  get filteredContacts(): ContactEntry[] {
+    if (!this.searchTerm.trim()) {
+      return this.contacts;
+    }
+
+    const normalizedSearch = this.normalize(this.searchTerm);
+    const digitSearch = normalizedSearch.replace(/\D/g, '');
+
+    return this.contacts.filter((contact) => {
+      const fullName = this.normalize(
+        `${contact.firstName} ${contact.middleName ?? ''} ${contact.lastName}`
+      );
+      const phoneDigits = (contact.phoneNumber ?? '').replace(/\D/g, '');
+      return (
+        (normalizedSearch.length > 0 && fullName.includes(normalizedSearch)) ||
+        (digitSearch.length > 0 && phoneDigits.includes(digitSearch))
+      );
+    });
+  }
+
+  get filteredTotal(): number {
+    return this.filteredContacts.length;
+  }
+
   private createEmptyForm(): ContactFormModel {
     return {
       firstName: '',
@@ -202,5 +227,9 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   private isValidPhone(value: string): boolean {
     const digitsOnly = value.replace(/\D/g, '');
     return digitsOnly.length === 10 && /^\d{10}$/.test(value);
+  }
+
+  private normalize(value: string): string {
+    return value.trim().toLowerCase();
   }
 }

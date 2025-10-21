@@ -120,7 +120,36 @@
           </p>
         </header>
 
-        <ng-container *ngIf="contacts.length; else emptyState">
+        <div
+          class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div class="relative w-full sm:max-w-xs">
+            <input
+              type="search"
+              [(ngModel)]="searchTerm"
+              placeholder="Rechercher par nom ou téléphone"
+              class="w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"
+            />
+            <span
+              class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+            >
+              🔍
+            </span>
+          </div>
+
+          <div
+            class="rounded-2xl border border-indigo-100 bg-indigo-50/60 px-4 py-2 text-right text-sm font-medium text-indigo-700"
+          >
+            <span class="block text-xs uppercase tracking-widest text-indigo-400">
+              Total affiché
+            </span>
+            <span class="text-lg font-semibold text-indigo-700">
+              {{ filteredTotal }}
+            </span>
+          </div>
+        </div>
+
+        <ng-container *ngIf="filteredContacts.length; else emptyState">
           <div
             class="overflow-hidden rounded-2xl border border-slate-100 shadow-sm"
           >
@@ -139,7 +168,10 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
-                  <tr *ngFor="let contact of contacts" class="text-sm text-slate-600">
+                  <tr
+                    *ngFor="let contact of filteredContacts"
+                    class="text-sm text-slate-600"
+                  >
                     <td class="px-4 py-4 sm:px-6">
                       <div class="font-semibold text-slate-800">
                         {{ contact.firstName }}
@@ -184,18 +216,33 @@
           <div
             class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-white to-slate-50/50 px-6 py-12 text-center"
           >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10"
-            >
-              <span class="text-lg font-semibold text-indigo-500">+</span>
-            </div>
-            <h3 class="text-lg font-semibold text-slate-800">
-              Aucun contact enregistré
-            </h3>
-            <p class="max-w-sm text-sm text-slate-500">
-              Ajoutez votre premier prospect grâce au formulaire ci-dessus pour
-              commencer votre suivi.
-            </p>
+            <ng-container *ngIf="contacts.length; else noContacts">
+              <div
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10"
+              >
+                <span class="text-lg font-semibold text-amber-500">?</span>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-800">
+                Aucun résultat pour cette recherche
+              </h3>
+              <p class="max-w-sm text-sm text-slate-500">
+                Ajustez vos critères pour retrouver un prospect par nom ou par numéro.
+              </p>
+            </ng-container>
+            <ng-template #noContacts>
+              <div
+                class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10"
+              >
+                <span class="text-lg font-semibold text-indigo-500">+</span>
+              </div>
+              <h3 class="text-lg font-semibold text-slate-800">
+                Aucun contact enregistré
+              </h3>
+              <p class="max-w-sm text-sm text-slate-500">
+                Ajoutez votre premier prospect grâce au formulaire ci-dessus pour
+                commencer votre suivi.
+              </p>
+            </ng-template>
           </div>
         </ng-template>
       </div>
