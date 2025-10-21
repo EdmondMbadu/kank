@@ -120,6 +120,9 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       }
 
       if (user?.uid) {
+        if (!this.selectedTargetUserId) {
+          this.selectedTargetUserId = user.uid;
+        }
         this.reviewsSub = this.auth.getReviews().subscribe((data: any[]) => {
           if (data?.length) {
             const doc = data[0] || {};
@@ -132,6 +135,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
           this.setReviews();
         });
       } else {
+        this.selectedTargetUserId = null;
         this.reviews = [];
         this.reviewId = '';
         this.setReviews();
@@ -622,7 +626,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
     this.elapsedTime = '00:00';
     this.recordingProgress = 0;
-    this.selectedTargetUserId = null;
+    this.selectedTargetUserId = this.auth.currentUser?.uid ?? null;
     this.previewOpen = false;
   }
 
