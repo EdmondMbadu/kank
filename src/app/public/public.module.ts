@@ -8,6 +8,7 @@ import { ForgotPasswordComponent } from '../components/forgot-password/forgot-pa
 import { CreateAccountComponent } from '../components/create-account/create-account.component';
 import { VerifyEmailComponent } from '../components/verify-email/verify-email.component';
 import { PublicShellComponent } from './public-shell/public-shell.component';
+import { PriseContactComponent } from '../components/prise-contact/prise-contact.component';
 import { SharedModule } from 'src/app/shared/shared.module';
 
 @NgModule({
@@ -17,6 +18,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
     ForgotPasswordComponent,
     CreateAccountComponent,
     VerifyEmailComponent,
+    PriseContactComponent,
   ],
   imports: [CommonModule, FormsModule, PublicRoutingModule, SharedModule],
 })

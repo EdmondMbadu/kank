@@ -1,0 +1,197 @@
+<div
+  class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50"
+>
+  <app-navbar [path]="'prise-contact'"></app-navbar>
+
+  <main
+    class="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8"
+  >
+    <section
+      class="rounded-3xl bg-white/90 shadow-2xl shadow-indigo-100 ring-1 ring-slate-100 backdrop-blur"
+    >
+      <div class="space-y-6 px-6 py-8 sm:px-10">
+        <header class="space-y-3">
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-500"
+          >
+            Prospection
+          </p>
+          <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
+            Prise de contact
+          </h1>
+          <p class="max-w-2xl text-sm text-slate-500 sm:text-base">
+            Renseignez rapidement les informations clés des prospects afin de
+            garder une base claire avant de planifier vos suivis.
+          </p>
+        </header>
+
+        <form class="space-y-6" (ngSubmit)="submit()" #formRef="ngForm">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="flex flex-col text-sm font-semibold text-slate-600">
+              Prénom *
+              <input
+                type="text"
+                [(ngModel)]="form.firstName"
+                name="firstName"
+                required
+                placeholder="Ex: Mireille"
+                class="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-normal text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              />
+            </label>
+
+            <label class="flex flex-col text-sm font-semibold text-slate-600">
+              Nom *
+              <input
+                type="text"
+                [(ngModel)]="form.lastName"
+                name="middleName"
+                placeholder="Optionnel"
+                class="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-normal text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              />
+            </label>
+
+            <label class="flex flex-col text-sm font-semibold text-slate-600">
+              Post-Nom
+              <input
+                type="text"
+                [(ngModel)]="form.middleName"
+                name="lastName"
+                required
+                placeholder="Ex: Kouassi"
+                class="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-normal text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              />
+            </label>
+
+            <label class="flex flex-col text-sm font-semibold text-slate-600">
+              Téléphone *
+              <input
+                type="tel"
+                [(ngModel)]="form.phoneNumber"
+                name="phoneNumber"
+                required
+                placeholder="Ex: 0700000000"
+                class="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-normal text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              />
+            </label>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              class="inline-flex items-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-300/40 transition hover:-translate-y-0.5 hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              type="submit"
+            >
+              {{ isEditing ? "Mettre à jour" : "Ajouter" }}
+            </button>
+
+            <button
+              class="inline-flex items-center rounded-full border border-transparent bg-indigo-50 px-6 py-3 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-200"
+              type="button"
+              *ngIf="isEditing"
+              (click)="cancelEdit()"
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section
+      class="rounded-3xl bg-white/90 shadow-2xl shadow-indigo-100 ring-1 ring-slate-100 backdrop-blur"
+    >
+      <div class="space-y-6 px-6 py-8 sm:px-10">
+        <header class="space-y-2">
+          <h2 class="text-xl font-semibold text-slate-900 sm:text-2xl">
+            Contacts enregistrés
+          </h2>
+          <p class="text-sm text-slate-500">
+            Retrouver l’ensemble des prospects saisis. Modifiez ou supprimez une
+            fiche en un clic.
+          </p>
+        </header>
+
+        <ng-container *ngIf="contacts.length; else emptyState">
+          <div
+            class="overflow-hidden rounded-2xl border border-slate-100 shadow-sm"
+          >
+            <div class="overflow-auto">
+              <table class="min-w-full divide-y divide-slate-100">
+                <thead class="bg-slate-50/70">
+                  <tr
+                    class="text-left text-xs font-semibold uppercase tracking-wider text-slate-600"
+                  >
+                    <th scope="col" class="px-4 py-3 sm:px-6">Nom complet</th>
+                    <th scope="col" class="px-4 py-3 sm:px-6">Téléphone</th>
+                    <th scope="col" class="px-4 py-3 sm:px-6">Ajouté le</th>
+                    <th scope="col" class="px-4 py-3 sm:px-6 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  <tr
+                    *ngFor="let contact of contacts; let i = index"
+                    class="text-sm text-slate-600"
+                  >
+                    <td class="px-4 py-4 sm:px-6">
+                      <div class="font-semibold text-slate-800">
+                        {{ contact.firstName }}
+                        <span *ngIf="contact.middleName" class="font-normal">
+                          {{ contact.middleName }}
+                        </span>
+                        <span class="uppercase">{{ contact.lastName }}</span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 sm:px-6 text-slate-500">
+                      {{ contact.phoneNumber }}
+                    </td>
+                    <td class="px-4 py-4 sm:px-6 text-slate-500">
+                      {{ contact.createdAt | date : "mediumDate" }}
+                    </td>
+                    <td class="px-4 py-4 sm:px-6">
+                      <div class="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          class="inline-flex items-center rounded-full border border-transparent bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+                          (click)="editContact(i)"
+                        >
+                          Modifier
+                        </button>
+                        <button
+                          type="button"
+                          class="inline-flex items-center rounded-full bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-500/20"
+                          (click)="deleteContact(i)"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #emptyState>
+          <div
+            class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-white to-slate-50/50 px-6 py-12 text-center"
+          >
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10"
+            >
+              <span class="text-lg font-semibold text-indigo-500">+</span>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-800">
+              Aucun contact enregistré
+            </h3>
+            <p class="max-w-sm text-sm text-slate-500">
+              Ajoutez votre premier prospect grâce au formulaire ci-dessus pour
+              commencer votre suivi.
+            </p>
+          </div>
+        </ng-template>
+      </div>
+    </section>
+  </main>
+</div>

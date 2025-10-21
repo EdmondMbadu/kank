@@ -6,6 +6,7 @@ import { ForgotPasswordComponent } from '../components/forgot-password/forgot-pa
 import { CreateAccountComponent } from '../components/create-account/create-account.component';
 import { VerifyEmailComponent } from '../components/verify-email/verify-email.component';
 import { PublicShellComponent } from './public-shell/public-shell.component';
+import { PriseContactComponent } from '../components/prise-contact/prise-contact.component';
 
 const routes: Routes = [
   {
@@ -15,6 +16,7 @@ const routes: Routes = [
       { path: '', component: LandingPageComponent, pathMatch: 'full' },
       { path: 'forgot-password', component: ForgotPasswordComponent },
       { path: 'create-account', component: CreateAccountComponent },
+      { path: 'prise-contact', component: PriseContactComponent },
       { path: 'verify-email', component: VerifyEmailComponent },
     ],
   },
