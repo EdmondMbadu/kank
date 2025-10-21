@@ -7,6 +7,7 @@ import { CreateAccountComponent } from '../components/create-account/create-acco
 import { VerifyEmailComponent } from '../components/verify-email/verify-email.component';
 import { PublicShellComponent } from './public-shell/public-shell.component';
 import { PriseContactComponent } from '../components/prise-contact/prise-contact.component';
+import { AuthGuard } from '../services/auth.guard';
 
 const routes: Routes = [
   {
@@ -16,7 +17,11 @@ const routes: Routes = [
       { path: '', component: LandingPageComponent, pathMatch: 'full' },
       { path: 'forgot-password', component: ForgotPasswordComponent },
       { path: 'create-account', component: CreateAccountComponent },
-      { path: 'prise-contact', component: PriseContactComponent },
+      {
+        path: 'prise-contact',
+        component: PriseContactComponent,
+        canActivate: [AuthGuard],
+      },
       { path: 'verify-email', component: VerifyEmailComponent },
     ],
   },

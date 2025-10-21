@@ -44,10 +44,10 @@
             </label>
 
             <label class="flex flex-col text-sm font-semibold text-slate-600">
-              Nom *
+              Deuxième prénom
               <input
                 type="text"
-                [(ngModel)]="form.lastName"
+                [(ngModel)]="form.middleName"
                 name="middleName"
                 placeholder="Optionnel"
                 class="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-normal text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
@@ -55,10 +55,10 @@
             </label>
 
             <label class="flex flex-col text-sm font-semibold text-slate-600">
-              Post-Nom
+              Nom *
               <input
                 type="text"
-                [(ngModel)]="form.middleName"
+                [(ngModel)]="form.lastName"
                 name="lastName"
                 required
                 placeholder="Ex: Kouassi"
@@ -76,6 +76,12 @@
                 placeholder="Ex: 0700000000"
                 class="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-normal text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
               />
+              <span
+                *ngIf="phoneError"
+                class="mt-2 text-xs font-medium text-rose-600"
+              >
+                {{ phoneError }}
+              </span>
             </label>
           </div>
 
@@ -133,10 +139,7 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
-                  <tr
-                    *ngFor="let contact of contacts; let i = index"
-                    class="text-sm text-slate-600"
-                  >
+                  <tr *ngFor="let contact of contacts" class="text-sm text-slate-600">
                     <td class="px-4 py-4 sm:px-6">
                       <div class="font-semibold text-slate-800">
                         {{ contact.firstName }}
@@ -157,14 +160,14 @@
                         <button
                           type="button"
                           class="inline-flex items-center rounded-full border border-transparent bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
-                          (click)="editContact(i)"
+                          (click)="editContact(contact)"
                         >
                           Modifier
                         </button>
                         <button
                           type="button"
                           class="inline-flex items-center rounded-full bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-500/20"
-                          (click)="deleteContact(i)"
+                          (click)="deleteContact(contact)"
                         >
                           Supprimer
                         </button>

@@ -1,5 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  AngularFirestore,
+  AngularFirestoreCollection,
+} from '@angular/fire/compat/firestore';
+import { Subscription } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { AuthService } from 'src/app/services/auth.service';
+import { User } from 'src/app/models/user';
 
 type ContactFormModel = {
   firstName: string;
@@ -8,68 +15,114 @@ type ContactFormModel = {
   phoneNumber: string;
 };
 
-type ContactEntry = ContactFormModel & {
-  createdAt: Date;
-  updatedAt?: Date;
+type ContactDocument = ContactFormModel & {
+  createdAt: number;
+  updatedAt?: number;
+};
+
+type ContactEntry = ContactDocument & {
+  id: string;
 };
 
 @Component({
   selector: 'app-prise-contact',
   templateUrl: './prise-contact.component.html',
 })
-export class PriseContactComponent {
+export class PriseContactComponent implements OnInit, OnDestroy {
   contacts: ContactEntry[] = [];
   form: ContactFormModel = this.createEmptyForm();
-  editingIndex: number | null = null;
+  editingId: string | null = null;
+  private contactsCollection?: AngularFirestoreCollection<ContactDocument>;
+  private userSub?: Subscription;
+  private contactsSub?: Subscription;
 
-  constructor(public auth: AuthService) {}
+  phoneError = '';
+
+  constructor(
+    public auth: AuthService,
+    private afs: AngularFirestore
+  ) {}
 
   get isEditing(): boolean {
-    return this.editingIndex !== null;
+    return this.editingId !== null;
   }
 
-  submit(): void {
+  ngOnInit(): void {
+    this.userSub = this.auth.user$
+      .pipe(filter((user): user is User => Boolean(user)))
+      .subscribe((user) => this.initializeCollection(user));
+  }
+
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
+    this.contactsSub?.unsubscribe();
+  }
+
+  async submit(): Promise<void> {
     const trimmed = this.getTrimmedForm();
     if (!trimmed.firstName || !trimmed.lastName || !trimmed.phoneNumber) {
       return;
     }
 
-    if (this.isEditing && this.editingIndex !== null) {
-      this.contacts[this.editingIndex] = {
-        ...this.contacts[this.editingIndex],
-        ...trimmed,
-        updatedAt: new Date(),
-      };
-    } else {
-      this.contacts = [
-        {
-          ...trimmed,
-          createdAt: new Date(),
-        },
-        ...this.contacts,
-      ];
+    if (!this.isValidPhone(trimmed.phoneNumber)) {
+      this.phoneError = 'Le numéro doit contenir exactement 10 chiffres.';
+      return;
     }
 
-    this.resetForm();
-  }
+    this.phoneError = '';
 
-  editContact(index: number): void {
-    const selected = this.contacts[index];
-    this.form = {
-      firstName: selected.firstName,
-      middleName: selected.middleName,
-      lastName: selected.lastName,
-      phoneNumber: selected.phoneNumber,
-    };
-    this.editingIndex = index;
-  }
+    if (!this.contactsCollection) {
+      return;
+    }
 
-  deleteContact(index: number): void {
-    this.contacts = this.contacts.filter((_, i) => i !== index);
-    if (this.editingIndex === index) {
+    try {
+      if (this.isEditing && this.editingId) {
+        await this.contactsCollection.doc(this.editingId).update({
+          ...trimmed,
+          updatedAt: Date.now(),
+        });
+      } else {
+        await this.contactsCollection.add({
+          ...trimmed,
+          createdAt: Date.now(),
+        });
+      }
       this.resetForm();
-    } else if (this.editingIndex !== null && index < this.editingIndex) {
-      this.editingIndex = this.editingIndex - 1;
+    } catch (error) {
+      console.error('Failed to persist contact', error);
+    }
+  }
+
+  editContact(entry: ContactEntry): void {
+    this.form = {
+      firstName: entry.firstName,
+      middleName: entry.middleName,
+      lastName: entry.lastName,
+      phoneNumber: entry.phoneNumber,
+    };
+    this.editingId = entry.id;
+  }
+
+  async deleteContact(entry: ContactEntry): Promise<void> {
+    if (!this.contactsCollection) {
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Supprimer ${entry.firstName} ${entry.lastName} de la liste ?`
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      await this.contactsCollection.doc(entry.id).delete();
+    } catch (error) {
+      console.error('Failed to delete contact', error);
+    }
+
+    if (this.editingId === entry.id) {
+      this.resetForm();
     }
   }
 
@@ -97,6 +150,57 @@ export class PriseContactComponent {
 
   private resetForm(): void {
     this.form = this.createEmptyForm();
-    this.editingIndex = null;
+    this.editingId = null;
+  }
+
+  private initializeCollection(user: User): void {
+    this.contactsSub?.unsubscribe();
+
+    this.contactsCollection = this.afs.collection<ContactDocument>(
+      `users/${user.uid}/prise_contact`,
+      (ref) => ref.orderBy('createdAt', 'desc')
+    );
+
+    this.contactsSub = this.contactsCollection
+      .snapshotChanges()
+      .pipe(
+        map((snaps) =>
+          snaps.map((snap) => {
+            const data = snap.payload.doc.data();
+            return {
+              id: snap.payload.doc.id,
+              ...data,
+              createdAt: this.coerceToMillis(data.createdAt),
+              updatedAt: data.updatedAt
+                ? this.coerceToMillis(data.updatedAt)
+                : undefined,
+            };
+          }) as ContactEntry[]
+        )
+      )
+      .subscribe((contacts) => {
+        this.contacts = contacts;
+      });
+  }
+
+  private coerceToMillis(value: any): number {
+    if (!value) {
+      return Date.now();
+    }
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (value instanceof Date) {
+      return value.getTime();
+    }
+    if (typeof value.toDate === 'function') {
+      return value.toDate().getTime();
+    }
+    return Date.now();
+  }
+
+  private isValidPhone(value: string): boolean {
+    const digitsOnly = value.replace(/\D/g, '');
+    return digitsOnly.length === 10 && /^\d{10}$/.test(value);
   }
 }
