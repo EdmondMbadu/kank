@@ -35,6 +35,14 @@ interface AuditReceipt {
   amount?: number;
 }
 
+type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N';
+
+type PickerStateOption = {
+  code: AttendanceStateCode;
+  label: string;
+  hint?: string;
+};
+
 @Component({
   selector: 'app-employee-page',
   templateUrl: './employee-page.component.html',
@@ -45,7 +53,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showStatePickerModal = false;
   public statePickerKey = ''; // key we will edit (e.g. "8-23-2025" or "8-23-2025-09-15-02")
   public statePickerCurr: string | undefined; // current state at that key, if any
-  selectedState: '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' = '';
+  selectedState: AttendanceStateCode = '';
+  statePickerMode: 'admin' | 'employee' = 'admin';
 
   showCollectionsEditor = false;
   editorDayKey = '';
@@ -54,11 +63,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   editorBusy = false;
   editorErr = '';
 
-  pickerStates: Array<{
-    code: '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N';
-    label: string;
-    hint?: string;
-  }> = [
+  pickerStates: PickerStateOption[] = [
     { code: '', label: '— Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
     { code: 'A', label: 'Absent' },
@@ -67,6 +72,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     { code: 'VP', label: 'Vacances en cours' },
     { code: 'N', label: 'Néant' },
   ];
+  employeePickerStates: PickerStateOption[] = [
+    {
+      code: 'V',
+      label: 'Vacances',
+      hint: 'Cette journée sera marquée comme vacances.',
+    },
+  ];
+  activePickerStates: PickerStateOption[] = this.pickerStates;
 
   /** dayKey "M-D-YYYY" -> { expected, total } */
   monthlyDayTotals: Record<string, { expected: number; total: number }> = {};
@@ -783,6 +796,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   generateInvoiceBonus() {
     this.compute.generateInvoice(this.employee, 'Bonus');
   }
+
+  private hasAttendanceForLabel(label: string): boolean {
+    const attendance = this.employee?.attendance || {};
+    return Object.keys(attendance).some(
+      (key) => this.normalizeLabel(key) === label
+    );
+  }
+
   generateAttendanceTable(month: number, year: number) {
     const tableBody = document.getElementById('attendance-body');
     // Ensure the element exists before proceeding
@@ -841,12 +862,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           }
 
           const attendance = matchedKey ? dict[matchedKey] : undefined;
-          // ➜ nouvelle partie : clic administrateur
+          const keyUsed = matchedKey ?? dateStr;
+          const dateLabel = dateStr;
           if (this.auth.isAdmninistrator) {
-            cell.classList.add('cursor-pointer'); // curseur main
-            const keyUsed = matchedKey ?? dateStr; // celui qu’on doit ré-écrire
+            cell.classList.add('cursor-pointer');
             cell.addEventListener('click', () =>
-              this.onAttendanceCellClick(keyUsed, attendance)
+              this.onAttendanceCellClick(keyUsed, attendance, 'admin')
+            );
+          } else if (!attendance) {
+            cell.classList.add('cursor-pointer');
+            cell.addEventListener('click', () =>
+              this.onAttendanceCellClick(dateLabel, undefined, 'employee')
             );
           }
           if (attendance) {
@@ -925,9 +951,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             cell.classList.add('border', 'border-black', 'p-4');
             cell.innerHTML = date.toString();
           }
-          // Build a plain date label "M-D-YYYY" (already have dateStr)
-          const dateLabel = dateStr;
-
           // If an attachment exists for this date, append a small icon
           const att = this.findAttachmentForDay(dateLabel);
           if (att) {
@@ -1854,11 +1877,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   /* ─── 3.  Clic sur la cellule → ouvrir le modal ──────────────── */
-  private onAttendanceCellClick(dateKey: string, curr?: string) {
-    if (!this.auth.isAdmninistrator) return;
+  private onAttendanceCellClick(
+    dateKey: string,
+    curr: string | undefined,
+    mode: 'admin' | 'employee' = 'admin'
+  ) {
+    const normalizedLabel = this.normalizeLabel(dateKey);
+    if (mode === 'admin' && !this.auth.isAdmninistrator) {
+      return;
+    }
+    this.statePickerMode = mode;
+    this.activePickerStates =
+      mode === 'admin' ? this.pickerStates : this.employeePickerStates;
     this.statePickerKey = dateKey;
     this.statePickerCurr = curr;
-    this.selectedState = (curr as any) ?? ''; // preselect current (or empty)
+    this.selectedState =
+      mode === 'employee'
+        ? 'V'
+        : ((curr as AttendanceStateCode | undefined) ?? '');
     this.showStatePickerModal = true;
   }
 
@@ -2502,25 +2538,75 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   /* ─── Appliquer le choix du modal ────────────────────────────── */
   async applySelectedAttendanceState() {
-    if (!this.auth.isAdmninistrator || !this.statePickerKey) return;
-
-    const key = this.statePickerKey;
-    const choice = this.selectedState; // '' means "empty" → delete
-    const newAtt = { ...(this.employee.attendance ?? {}) };
-
-    if (!choice) {
-      // empty ⇒ delete entry if present
-      if (newAtt[key] !== undefined) delete newAtt[key];
-    } else {
-      newAtt[key] = choice;
+    if (!this.statePickerKey) {
+      return;
     }
 
+    if (this.statePickerMode === 'admin') {
+      if (!this.auth.isAdmninistrator) {
+        return;
+      }
+      const key = this.statePickerKey;
+      const choice = this.selectedState; // '' means "empty" → delete
+      const newAtt = { ...(this.employee.attendance ?? {}) };
+
+      if (!choice) {
+        if (newAtt[key] !== undefined) delete newAtt[key];
+      } else {
+        newAtt[key] = choice;
+      }
+
+      try {
+        await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
+        this.employee.attendance = newAtt;
+        this.generateAttendanceTable(this.givenMonth, this.givenYear);
+      } catch (e) {
+        alert('❌ Impossible de mettre à jour la présence');
+        console.error(e);
+      } finally {
+        this.closeStatePicker();
+      }
+      return;
+    }
+
+    if (this.auth.isAdmninistrator) {
+      return;
+    }
+
+    const normalizedLabel = this.normalizeLabel(this.statePickerKey);
+    if (this.hasAttendanceForLabel(normalizedLabel)) {
+      alert('Cette journée est déjà renseignée.');
+      this.closeStatePicker();
+      return;
+    }
+
+    if (this.selectedState !== 'V') {
+      alert("Option non autorisée pour l'employé.");
+      return;
+    }
+
+    const employeeId = this.employee?.uid;
+    if (!employeeId) {
+      alert("Impossible d'identifier l'employé pour cette action.");
+      return;
+    }
+
+    const confirmed = confirm(
+      'Confirmez-vous vouloir marquer cette journée comme vacances ? Seul un administrateur pourra modifier ce choix.'
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const newAtt = { ...(this.employee.attendance ?? {}) };
+    newAtt[normalizedLabel] = 'V';
+
     try {
-      await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
+      await this.data.updateEmployeeAttendance(newAtt, employeeId);
       this.employee.attendance = newAtt;
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (e) {
-      alert('❌ Impossible de mettre à jour la présence');
+      alert('❌ Impossible de marquer cette journée comme vacances.');
       console.error(e);
     } finally {
       this.closeStatePicker();
@@ -2558,6 +2644,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.statePickerKey = '';
     this.statePickerCurr = undefined;
     this.selectedState = '';
+    this.statePickerMode = 'admin';
+    this.activePickerStates = this.pickerStates;
   }
 
   private mmKey(y: number, m: number) {

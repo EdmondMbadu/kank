@@ -2299,7 +2299,12 @@
       class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700"
     >
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-        Choisir l’état — {{ friendlyFromKey(statePickerKey) }}
+        {{
+          statePickerMode === 'admin'
+            ? "Choisir l’état"
+            : "Demander des vacances"
+        }}
+        — {{ friendlyFromKey(statePickerKey) }}
       </h3>
       <button
         class="text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-lg p-1.5"
@@ -2314,7 +2319,7 @@
     <div class="px-4 py-4 space-y-3">
       <div class="grid grid-cols-2 gap-2">
         <button
-          *ngFor="let s of pickerStates"
+          *ngFor="let s of activePickerStates"
           type="button"
           (click)="selectedState = s.code"
           class="w-full rounded-xl px-3 py-2 text-sm text-left ring-1 transition hover:shadow text-gray-900"
@@ -2341,8 +2346,18 @@
         </button>
       </div>
 
-      <div class="text-xs text-gray-500 dark:text-gray-400">
+      <div
+        *ngIf="statePickerMode === 'admin'"
+        class="text-xs text-gray-500 dark:text-gray-400"
+      >
         Astuce : <strong>— Aucun</strong> efface la valeur de cette journée.
+      </div>
+      <div
+        *ngIf="statePickerMode === 'employee'"
+        class="text-xs text-amber-600 dark:text-amber-300"
+      >
+        Une fois confirmé, seul un administrateur pourra modifier cette
+        journée.
       </div>
     </div>
 
@@ -2351,7 +2366,7 @@
       class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between"
     >
       <button
-        *ngIf="statePickerCurr"
+        *ngIf="statePickerCurr && statePickerMode === 'admin'"
         type="button"
         (click)="deleteAttendanceStateForKey()"
         class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-white bg-rose-600 hover:bg-rose-700"
@@ -2372,7 +2387,7 @@
           (click)="applySelectedAttendanceState()"
           class="px-4 py-2 rounded-full text-sm font-medium text-white bg-green-700 hover:bg-green-800"
         >
-          Enregistrer
+          {{ statePickerMode === 'admin' ? 'Enregistrer' : 'Confirmer' }}
         </button>
       </div>
     </div>
