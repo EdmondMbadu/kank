@@ -31,8 +31,12 @@
             Prise de contact
           </h1>
           <p class="max-w-2xl text-sm text-slate-500 sm:text-base">
-            Renseignez rapidement les informations clés des prospects afin de
-            garder une base claire avant de planifier vos suivis.
+            Il est parfois difficile de convaincre directement les clients de
+            s’enregistrer. Dans ce cas, vous pouvez simplement collecter leurs
+            informations — nom et numéro de téléphone — et le système leur
+            enverra automatiquement un rappel chaque semaine pour les inviter à
+            venir s’enregistrer afin d’obtenir un prêt, au moment où ils
+            deviendraient intéressés plus tard.
           </p>
         </header>
 
@@ -199,10 +203,14 @@
                         {{ contact.createdAt | date : "dd MMM yyyy 'à' HH:mm" }}
                       </div>
                       <div
-                        *ngIf="contact.updatedAt && contact.updatedAt !== contact.createdAt"
+                        *ngIf="
+                          contact.updatedAt &&
+                          contact.updatedAt !== contact.createdAt
+                        "
                         class="text-xs text-slate-400"
                       >
-                        Modifié le {{ contact.updatedAt | date : "dd MMM yyyy 'à' HH:mm" }}
+                        Modifié le
+                        {{ contact.updatedAt | date : "dd MMM yyyy 'à' HH:mm" }}
                       </div>
                     </td>
                     <td class="px-4 py-4 sm:px-6">
