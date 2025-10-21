@@ -148,18 +148,25 @@
 <!-- suspicious banner -->
 <div *ngIf="similarClients.length" class="mx-auto mt-4 max-w-7xl px-4">
   <div
-    class="rounded-lg border border-yellow-200 bg-yellow-50 text-yellow-800 shadow"
+    class="overflow-hidden rounded-xl border border-yellow-300 bg-gradient-to-r from-yellow-50 via-yellow-50 to-white text-yellow-800 shadow-lg shadow-yellow-100 ring-1 ring-yellow-200/70"
   >
     <button
       type="button"
       (click)="showSimilarClients = !showSimilarClients"
-      class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-semibold transition hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+      class="flex w-full items-center justify-between gap-3 px-5 py-4 text-left font-semibold transition hover:bg-yellow-100/80 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-yellow-50"
       [attr.aria-expanded]="showSimilarClients"
     >
-      <span>
-        ⚠️ {{ similarClients.length === 1 ? 'Client similaire détecté' : 'Clients similaires détectés' }}
-        <span class="block text-sm font-normal text-yellow-700">
-          {{ suspiciousReason }}
+      <span class="flex flex-col gap-1">
+        <span>
+          ⚠️
+          {{
+            similarClients.length === 1
+              ? "Client similaire détecté"
+              : "Clients similaires détectés"
+          }}
+        </span>
+        <span class="text-sm font-normal text-yellow-700">
+          Vérifiez ces clients similaires avant de poursuivre. {{ suspiciousReason }}
         </span>
       </span>
       <svg
@@ -178,7 +185,7 @@
     </button>
     <div
       *ngIf="showSimilarClients"
-      class="space-y-2 border-t border-yellow-200 px-4 py-3 text-sm"
+      class="space-y-2 border-t border-yellow-200 bg-white/60 px-5 py-4 text-sm"
     >
       <a
         *ngFor="let match of similarClients"
@@ -188,7 +195,7 @@
         <span class="font-medium">{{ match.label }}</span>
         <span class="flex items-center gap-3 text-xs text-yellow-600">
           <span>
-            {{ match.overlap }} nom{{ match.overlap > 1 ? 's' : '' }} en commun
+            {{ match.overlap }} nom{{ match.overlap > 1 ? "s" : "" }} en commun
           </span>
           <span
             class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-blue-700 text-[11px] font-semibold uppercase tracking-wide"
