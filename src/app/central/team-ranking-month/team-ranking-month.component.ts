@@ -36,6 +36,8 @@ export class TeamRankingMonthComponent {
   yearsList: number[] = this.time.yearsList;
   // top-level props
   paidEmployeesToday: any[] = [];
+  public excludedEmployees: any[] = []; // holds NaN or ≤ 0 employees
+  public showExcludedForAdmin = false; // admin toggle to include them
 
   // team-ranking-month.component.ts (add near top-level props)
   rankingMode: 'performance' | 'dailyPayments' | 'monthlyPayments' =
@@ -731,24 +733,57 @@ export class TeamRankingMonthComponent {
   }
 
   // Keep your existing performance sorting, but factor it out for reuse
-  private sortEmployeesByPerformance() {
+  // private sortEmployeesByPerformance() {
+  //   if (!Array.isArray(this.allEmployees)) {
+  //     this.performanceEmployees = [];
+  //     return;
+  //   }
+
+  //   this.allEmployees.sort((a, b) => {
+  //     const aVal = parseFloat(a.performancePercentageMonth ?? '0');
+  //     const bVal = parseFloat(b.performancePercentageMonth ?? '0');
+  //     const aPerf = isNaN(aVal) ? 0 : aVal;
+  //     const bPerf = isNaN(bVal) ? 0 : bVal;
+  //     return bPerf - aPerf;
+  //   });
+
+  //   this.performanceEmployees = this.allEmployees.filter((employee) => {
+  //     const value = parseFloat(employee.performancePercentageMonth ?? '0');
+  //     return !isNaN(value) && value > 0;
+  //   });
+  // }
+  public sortEmployeesByPerformance() {
     if (!Array.isArray(this.allEmployees)) {
       this.performanceEmployees = [];
+      this.excludedEmployees = [];
       return;
     }
 
     this.allEmployees.sort((a, b) => {
       const aVal = parseFloat(a.performancePercentageMonth ?? '0');
       const bVal = parseFloat(b.performancePercentageMonth ?? '0');
-      const aPerf = isNaN(aVal) ? 0 : aVal;
-      const bPerf = isNaN(bVal) ? 0 : bVal;
+      const aPerf = isNaN(aVal) ? -Infinity : aVal; // NaN goes last
+      const bPerf = isNaN(bVal) ? -Infinity : bVal;
       return bPerf - aPerf;
     });
 
-    this.performanceEmployees = this.allEmployees.filter((employee) => {
-      const value = parseFloat(employee.performancePercentageMonth ?? '0');
-      return !isNaN(value) && value > 0;
-    });
+    const valid: any[] = [];
+    const excluded: any[] = [];
+
+    for (const employee of this.allEmployees) {
+      const v = parseFloat(employee.performancePercentageMonth ?? '0');
+      if (!isNaN(v) && v > 0) valid.push(employee);
+      else excluded.push(employee);
+    }
+
+    this.excludedEmployees = excluded;
+
+    // If admin enabled the toggle, merge excluded back into the displayed list
+    if (this.auth?.isAdmin && this.showExcludedForAdmin) {
+      this.performanceEmployees = [...valid, ...excluded];
+    } else {
+      this.performanceEmployees = valid;
+    }
   }
 
   trophyMeta(rank: number) {

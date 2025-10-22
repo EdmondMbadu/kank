@@ -307,6 +307,21 @@
           Somme des paiements inscrits par employé
         </p>
       </div>
+      <!-- Admin-only toggle to include excluded employees -->
+      <div *ngIf="auth?.isAdmin" class="flex justify-end">
+        <label class="text-sm text-slate-600 flex items-center gap-2">
+          <input
+            type="checkbox"
+            [checked]="showExcludedForAdmin"
+            (change)="
+              showExcludedForAdmin = !showExcludedForAdmin;
+              sortEmployeesByPerformance()
+            "
+          />
+          Inclure les employés exclus (NaN ou ≤ 0)
+        </label>
+      </div>
+
       <div
         *ngFor="let em of performanceEmployees; let i = index"
         class="relative bg-white rounded-2xl p-4 md:p-5 shadow-sm ring-1 flex items-center gap-4"
