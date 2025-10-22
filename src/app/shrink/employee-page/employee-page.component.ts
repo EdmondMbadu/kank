@@ -1886,6 +1886,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (mode === 'admin' && !this.auth.isAdmninistrator) {
       return;
     }
+    if (mode === 'employee' && this.isFutureKinDateLabel(normalizedLabel)) {
+      return;
+    }
     this.statePickerMode = mode;
     this.activePickerStates =
       mode === 'admin' ? this.pickerStates : this.employeePickerStates;
@@ -2069,6 +2072,30 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const ub = this.ts(b.uploadedAt);
       return (tb !== -Infinity ? tb : ub) - (ta !== -Infinity ? ta : ua);
     })[0];
+  }
+
+  private labelToDateParts(label: string):
+    | { y: number; m: number; d: number }
+    | null {
+    if (!label) return null;
+    const parts = label.split('-');
+    if (parts.length < 3) return null;
+    const m = Number(parts[0]);
+    const d = Number(parts[1]);
+    const y = Number(parts[2]);
+    if (!Number.isFinite(m) || !Number.isFinite(d) || !Number.isFinite(y)) {
+      return null;
+    }
+    return { y, m, d };
+  }
+
+  private isFutureKinDateLabel(label: string): boolean {
+    const parts = this.labelToDateParts(label);
+    if (!parts) return false;
+    const today = this.kinParts(new Date());
+    if (parts.y !== today.y) return parts.y > today.y;
+    if (parts.m !== today.m) return parts.m > today.m;
+    return parts.d > today.d;
   }
 
   private findAttachmentForDay(dateLabel: string) {
@@ -2576,6 +2603,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const normalizedLabel = this.normalizeLabel(this.statePickerKey);
     if (this.hasAttendanceForLabel(normalizedLabel)) {
       alert('Cette journée est déjà renseignée.');
+      this.closeStatePicker();
+      return;
+    }
+    if (this.isFutureKinDateLabel(normalizedLabel)) {
       this.closeStatePicker();
       return;
     }
