@@ -165,8 +165,8 @@
             placeholder="- Attitude générale, incidents ou remarques à signaler"
           ></textarea>
 
-          <!-- small attachment icon placed under the textarea, right-aligned -->
-          <div class="flex justify-end mt-2">
+          <!-- small attachment icon placed under the textarea, left-aligned -->
+          <div class="flex justify-start mt-2">
             <label
               for="imageFile"
               title="Ajouter une image"
@@ -196,11 +196,22 @@
             />
           </div>
 
-          <div *ngIf="selectedImagePreviewURL" class="mt-3">
+          <div *ngIf="selectedImagePreviewURL" class="mt-3 relative">
             <img
               [src]="selectedImagePreviewURL"
               class="max-h-40 rounded object-contain w-full border"
             />
+            <button
+              type="button"
+              (click)="clearSelectedImage()"
+              class="absolute -top-1 -right-1 bg-white rounded-full p-0.5 border shadow text-gray-600 hover:bg-gray-100"
+              title="Retirer l'image"
+              aria-label="Retirer l'image"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 

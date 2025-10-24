@@ -711,6 +711,23 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.previewOpen = false;
   }
 
+  /** Clear only the selected image (used by the small remove button) */
+  clearSelectedImage(): void {
+    if (this.selectedImagePreviewURL) {
+      try {
+        URL.revokeObjectURL(this.selectedImagePreviewURL);
+      } catch (e) {
+        // ignore
+      }
+    }
+    this.selectedImagePreviewURL = undefined;
+    this.selectedImageFile = undefined;
+
+    // reset the input element so same file can be reselected later
+    const input = document.getElementById('imageFile') as HTMLInputElement;
+    if (input) input.value = '';
+  }
+
   /** Histogramme mensuel coloré – date affichée = 1 mois en arrière */
   private buildPerformanceGraph() {
     if (!this.reviews?.length) {
