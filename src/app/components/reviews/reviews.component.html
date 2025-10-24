@@ -164,6 +164,44 @@
             class="w-full p-2.5 rounded-lg border focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white resize-y"
             placeholder="- Attitude générale, incidents ou remarques à signaler"
           ></textarea>
+
+          <!-- small attachment icon placed under the textarea, right-aligned -->
+          <div class="flex justify-end mt-2">
+            <label
+              for="imageFile"
+              title="Ajouter une image"
+              class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-dashed border-gray-300 hover:bg-gray-50 cursor-pointer p-1 text-sm text-gray-600 dark:text-gray-300"
+            >
+              <svg
+                class="w-5 h-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21.44 11.05L12.7 19.79a4.5 4.5 0 01-6.36-6.36l8.76-8.76a3.25 3.25 0 014.6 4.6l-8.76 8.76a1.75 1.75 0 11-2.47-2.47l7.55-7.55"
+                />
+              </svg>
+            </label>
+            <input
+              type="file"
+              id="imageFile"
+              accept="image/*"
+              (change)="onImageFileSelected($any($event.target).files)"
+              class="hidden"
+            />
+          </div>
+
+          <div *ngIf="selectedImagePreviewURL" class="mt-3">
+            <img
+              [src]="selectedImagePreviewURL"
+              class="max-h-40 rounded object-contain w-full border"
+            />
+          </div>
         </div>
 
         <!-- Étoiles -->
@@ -345,6 +383,8 @@
           </label>
         </div>
 
+        <!-- (moved image input next to textarea) -->
+
         <!-- Bouton aperçu -->
         <div class="flex justify-end">
           <button
@@ -488,6 +528,14 @@
             controls
             class="w-full rounded"
           ></audio>
+        </ng-container>
+
+        <ng-container *ngIf="selectedImagePreviewURL">
+          <p class="font-semibold mt-3">Aperçu image :</p>
+          <img
+            [src]="selectedImagePreviewURL"
+            class="w-full max-h-64 object-contain rounded"
+          />
         </ng-container>
       </div>
 
@@ -693,6 +741,18 @@
           >
             {{ c.comment }}
           </blockquote>
+
+          <!-- show image attachments immediately under the comment (or alone if no comment) -->
+          <ng-container *ngIf="c.attachments?.length">
+            <div *ngFor="let a of c.attachments" class="mt-2">
+              <ng-container *ngIf="a.type === 'image'">
+                <img
+                  [src]="a.url"
+                  class="w-full max-h-56 object-contain rounded"
+                />
+              </ng-container>
+            </div>
+          </ng-container>
 
           <!-- pencil icon visible only for admins -->
           <button

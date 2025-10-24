@@ -76,6 +76,9 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
   selectedAudioFile?: File;
   selectedAudioPreviewURL?: string; // For local preview
+  // Optional image attachment
+  selectedImageFile?: File;
+  selectedImagePreviewURL?: string;
 
   elapsedTime = '00:00';
   recordingProgress = 0;
@@ -375,6 +378,40 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async uploadImageAndThenPostComment(targetUserId: string) {
+    try {
+      if (!this.selectedImageFile) return;
+
+      const fileName = `image-${Date.now()}-${this.selectedImageFile.name}`;
+      const path = `reviews/${targetUserId}-${fileName}`;
+
+      const uploadTask = await this.storage.upload(
+        path,
+        this.selectedImageFile
+      );
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      const attachment = {
+        type: 'image',
+        url: downloadURL,
+        mimeType: this.selectedImageFile.type,
+        size: this.selectedImageFile.size,
+      } as any;
+
+      this.addReview('', targetUserId, [attachment]);
+
+      // cleanup
+      if (this.selectedImagePreviewURL) {
+        URL.revokeObjectURL(this.selectedImagePreviewURL);
+      }
+      this.selectedImagePreviewURL = undefined;
+      this.selectedImageFile = undefined;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert("Erreur lors du téléversement de l'image.");
+    }
+  }
+
   // Let user discard the current recording if they don’t want it
   discardAudio() {
     // 1) If we were actively recording, stop the recorder
@@ -432,6 +469,31 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
     console.log('Audio file selected:', file);
   }
+  onImageFileSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+
+    // basic validations
+    if (file.size >= 10000000) {
+      alert("L'image dépasse la limite de 10MB.");
+      return;
+    }
+    if (file.type.split('/')[0] !== 'image') {
+      alert('Veuillez choisir une image (jpg, png, ...).');
+      return;
+    }
+
+    this.selectedImageFile = file;
+    if (this.selectedImagePreviewURL)
+      URL.revokeObjectURL(this.selectedImagePreviewURL);
+    this.selectedImagePreviewURL = URL.createObjectURL(file);
+
+    // reset input so selecting the same file again triggers change
+    const input = document.getElementById('imageFile') as HTMLInputElement;
+    if (input) input.value = '';
+
+    console.log('Image file selected:', file);
+  }
   addReviewWithOrWithoutAudioFile(confirmUser = true) {
     // 1) Must have a name
     if (!this.personPostingComment || !this.personPostingComment.trim()) {
@@ -451,8 +513,9 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     const hasText = this.comment && this.comment.trim().length > 0;
     const hasRecordedAudio = !!this.recordedBlob; // if user used mic
     const hasUploadedAudio = !!this.selectedAudioFile; // if user selected a file
+    const hasImage = !!this.selectedImageFile; // optional image
 
-    if (!hasText && !hasRecordedAudio && !hasUploadedAudio) {
+    if (!hasText && !hasRecordedAudio && !hasUploadedAudio && !hasImage) {
       alert(
         'Veuillez saisir un commentaire OU un fichier audio (enregistré ou téléversé).'
       );
@@ -469,11 +532,13 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
     const targetUserId = this.selectedTargetUserId;
 
-    // 4) If we do have audio, upload it. Priority: recorded first, else selected file.
+    // 4) If we do have audio, upload it. Priority: recorded first, else selected file. If no audio but an image exists, upload the image.
     if (hasRecordedAudio) {
       this.uploadRecordedBlobAndThenPostComment(targetUserId);
     } else if (hasUploadedAudio) {
       this.uploadSelectedFileAndThenPostComment(targetUserId);
+    } else if (hasImage) {
+      this.uploadImageAndThenPostComment(targetUserId);
     } else {
       // just text
       this.addReview('', targetUserId);
@@ -502,7 +567,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   }
 
   /** ---------- 1. Injecter les metrics + visible dans le payload ---------- */
-  addReview(audioUrl: string, targetUserId: string) {
+  addReview(audioUrl: string, targetUserId: string, attachments?: Array<any>) {
     const targetLabel = this.getUserLabelById(targetUserId);
     const review: Comment = {
       name: this.personPostingComment,
@@ -518,6 +583,8 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       relationClient: this.metrics[4].value,
       targetUserId,
       targetUserLastName: targetLabel,
+      // include attachments if any
+      ...(attachments && attachments.length ? { attachments } : {}),
       // ⬇️  inclure performance uniquement si admin OU valeur > 0
       ...(this.auth.isAdmin && this.performanceValue > 0
         ? { performance: this.performanceValue }
@@ -630,6 +697,13 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     }
     this.selectedAudioPreviewURL = undefined;
     this.selectedAudioFile = undefined;
+
+    // image cleanup
+    if (this.selectedImagePreviewURL) {
+      URL.revokeObjectURL(this.selectedImagePreviewURL);
+    }
+    this.selectedImagePreviewURL = undefined;
+    this.selectedImageFile = undefined;
 
     this.elapsedTime = '00:00';
     this.recordingProgress = 0;
