@@ -18,6 +18,8 @@ type ContactFormModel = {
 type ContactDocument = ContactFormModel & {
   createdAt: number;
   updatedAt?: number;
+  /** NEW: normalized digits-only phone (for uniqueness checks) */
+  phoneDigits?: string;
 };
 
 type ContactEntry = ContactDocument & {
@@ -63,16 +65,18 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     this.contactsSub?.unsubscribe();
   }
 
+  /** Helper: keep only digits for comparison/storage */
+  private getPhoneDigits(value: string): string {
+    return (value || '').replace(/\D/g, '');
+  }
+
   async submit(): Promise<void> {
     const trimmed = this.getTrimmedForm();
     this.phoneError = '';
+
     const missingFields: string[] = [];
-    if (!trimmed.firstName) {
-      missingFields.push('le prénom');
-    }
-    if (!trimmed.lastName) {
-      missingFields.push('le nom');
-    }
+    if (!trimmed.firstName) missingFields.push('le prénom');
+    if (!trimmed.lastName) missingFields.push('le nom');
     if (!trimmed.phoneNumber) {
       missingFields.push('le téléphone');
       this.phoneError = 'Veuillez completer un numéro.';
@@ -93,21 +97,62 @@ export class PriseContactComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.phoneError = '';
-
     if (!this.contactsCollection) {
       return;
     }
+
+    // === DUPLICATE CHECKS ===
+    const phoneDigits = this.getPhoneDigits(trimmed.phoneNumber);
+
+    // 1) Local (quick) check: block if another contact already has this number
+    const duplicateLocal = this.contacts.some((c) => {
+      const same = this.getPhoneDigits(c.phoneNumber) === phoneDigits;
+      const notSelf = !this.isEditing || c.id !== this.editingId;
+      return same && notSelf;
+    });
+    if (duplicateLocal) {
+      this.phoneError = 'Ce numéro existe déjà dans vos contacts.';
+      window.alert(
+        'Ce numéro existe déjà dans vos contacts — ajout/modification annulé(e).'
+      );
+      return;
+    }
+
+    // 2) Firestore (authoritative) check to avoid race conditions
+    try {
+      const snap = await this.contactsCollection.ref
+        .where('phoneDigits', '==', phoneDigits)
+        .limit(2)
+        .get();
+
+      const conflictingDoc = snap.docs.find((d) => d.id !== this.editingId);
+      if (conflictingDoc) {
+        this.phoneError = 'Ce numéro existe déjà dans vos contacts.';
+        window.alert(
+          'Ce numéro existe déjà dans vos contacts — ajout/modification annulé(e).'
+        );
+        return;
+      }
+    } catch (e) {
+      console.error('Duplicate check failed:', e);
+      // If duplicate check fails, be conservative and block to prevent dupes
+      this.phoneError = 'Vérification du numéro impossible. Réessayez.';
+      window.alert(this.phoneError);
+      return;
+    }
+    // === END DUPLICATE CHECKS ===
 
     try {
       if (this.isEditing && this.editingId) {
         await this.contactsCollection.doc(this.editingId).update({
           ...trimmed,
+          phoneDigits, // NEW
           updatedAt: Date.now(),
         });
       } else {
         await this.contactsCollection.add({
           ...trimmed,
+          phoneDigits, // NEW
           createdAt: Date.now(),
         });
       }
@@ -133,16 +178,12 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   }
 
   async deleteContact(entry: ContactEntry): Promise<void> {
-    if (!this.contactsCollection) {
-      return;
-    }
+    if (!this.contactsCollection) return;
 
     const confirmDelete = window.confirm(
       `Supprimer ${entry.firstName} ${entry.lastName} de la liste ?`
     );
-    if (!confirmDelete) {
-      return;
-    }
+    if (!confirmDelete) return;
 
     try {
       await this.contactsCollection.doc(entry.id).delete();
@@ -150,9 +191,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
       console.error('Failed to delete contact', error);
     }
 
-    if (this.editingId === entry.id) {
-      this.resetForm();
-    }
+    if (this.editingId === entry.id) this.resetForm();
   }
 
   cancelEdit(): void {
@@ -160,9 +199,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   }
 
   get filteredContacts(): ContactEntry[] {
-    if (!this.searchTerm.trim()) {
-      return this.contacts;
-    }
+    if (!this.searchTerm.trim()) return this.contacts;
 
     const normalizedSearch = this.normalize(this.searchTerm);
     const digitSearch = normalizedSearch.replace(/\D/g, '');
@@ -204,6 +241,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   private resetForm(): void {
     this.form = this.createEmptyForm();
     this.editingId = null;
+    this.phoneError = '';
   }
 
   private initializeCollection(user: User): void {
@@ -238,18 +276,10 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   }
 
   private coerceToMillis(value: any): number {
-    if (!value) {
-      return Date.now();
-    }
-    if (typeof value === 'number') {
-      return value;
-    }
-    if (value instanceof Date) {
-      return value.getTime();
-    }
-    if (typeof value.toDate === 'function') {
-      return value.toDate().getTime();
-    }
+    if (!value) return Date.now();
+    if (typeof value === 'number') return value;
+    if (value instanceof Date) return value.getTime();
+    if (typeof value.toDate === 'function') return value.toDate().getTime();
     return Date.now();
   }
 
@@ -263,9 +293,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   }
 
   private flashSuccess(message: string): void {
-    if (this.successTimer) {
-      clearTimeout(this.successTimer);
-    }
+    if (this.successTimer) clearTimeout(this.successTimer);
     this.successMessage = message;
     this.successTimer = setTimeout(() => {
       this.successMessage = '';
