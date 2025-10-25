@@ -332,9 +332,7 @@ export class AuthService {
       return Promise.reject(new Error("Aucun utilisateur cible pour l'avis."));
     }
 
-    const reviewsCollection = this.afs.collection<any>(
-      `users/${uid}/reviews/`
-    );
+    const reviewsCollection = this.afs.collection<any>(`users/${uid}/reviews/`);
 
     return reviewsCollection
       .snapshotChanges()
@@ -781,7 +779,10 @@ export class AuthService {
     localStorage.removeItem(DISTRIBUTOR_FLAG_KEY);
   }
 
-  async deleteReview(reviewDocId: string, reviewToRemove: Comment): Promise<void> {
+  async deleteReview(
+    reviewDocId: string,
+    reviewToRemove: Comment
+  ): Promise<void> {
     const uid = this.currentUser.uid;
     const docRef = this.afs.doc<{ reviews: Comment[] }>(
       `users/${uid}/reviews/${reviewDocId}`
@@ -796,12 +797,17 @@ export class AuthService {
 
     // Prefer unique identifiers (time + name) when available. Fallback to
     // deep-equality stringify comparison only if necessary.
-    const hasKeys = !!(reviewToRemove && reviewToRemove.time && reviewToRemove.name);
+    const hasKeys = !!(
+      reviewToRemove &&
+      reviewToRemove.time &&
+      reviewToRemove.name
+    );
 
     const next = current.filter((r) => {
       let isMatch = false;
       if (hasKeys) {
-        isMatch = r.time === reviewToRemove.time && r.name === reviewToRemove.name;
+        isMatch =
+          r.time === reviewToRemove.time && r.name === reviewToRemove.name;
       } else {
         try {
           isMatch = JSON.stringify(r) === JSON.stringify(reviewToRemove);
@@ -825,7 +831,10 @@ export class AuthService {
             // refFromURL may throw if URL is not a storage URL; wrap in try/catch
             await this.storage.storage.refFromURL(url).delete();
           } catch (err) {
-            console.warn('Could not delete storage file for review attachment:', err);
+            console.warn(
+              'Could not delete storage file for review attachment:',
+              err
+            );
           }
         }
       }
