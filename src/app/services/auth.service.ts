@@ -9,6 +9,7 @@ import {
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
 import { firstValueFrom, Observable, of } from 'rxjs';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
 import { Client, Comment } from '../models/client';
@@ -44,7 +45,8 @@ export class AuthService {
     private afs: AngularFirestore,
     private router: Router,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private storage: AngularFireStorage
   ) {
     this.clientsRef$ = of(null);
     this.user$ = this.fireauth.authState.pipe(
@@ -779,24 +781,57 @@ export class AuthService {
     localStorage.removeItem(DISTRIBUTOR_FLAG_KEY);
   }
 
-  deleteReview(reviewDocId: string, reviewToRemove: Comment): Promise<void> {
+  async deleteReview(reviewDocId: string, reviewToRemove: Comment): Promise<void> {
     const uid = this.currentUser.uid;
     const docRef = this.afs.doc<{ reviews: Comment[] }>(
       `users/${uid}/reviews/${reviewDocId}`
     );
 
-    return firstValueFrom(docRef.get()).then((snap) => {
-      if (!snap.exists) return;
+    const snap = await firstValueFrom(docRef.get());
+    if (!snap.exists) return;
 
-      const current = snap.data()!.reviews || [];
+    const current = snap.data()!.reviews || [];
 
-      /* compare *after* stringify to catch deep equality */
-      const next = current.filter(
-        (r) => JSON.stringify(r) !== JSON.stringify(reviewToRemove)
-      );
+    const removed: Comment[] = [];
 
-      return docRef.update({ reviews: next });
+    // Prefer unique identifiers (time + name) when available. Fallback to
+    // deep-equality stringify comparison only if necessary.
+    const hasKeys = !!(reviewToRemove && reviewToRemove.time && reviewToRemove.name);
+
+    const next = current.filter((r) => {
+      let isMatch = false;
+      if (hasKeys) {
+        isMatch = r.time === reviewToRemove.time && r.name === reviewToRemove.name;
+      } else {
+        try {
+          isMatch = JSON.stringify(r) === JSON.stringify(reviewToRemove);
+        } catch (e) {
+          isMatch = false;
+        }
+      }
+      if (isMatch) removed.push(r);
+      return !isMatch;
     });
+
+    // Best-effort: if the removed review(s) had attachments, try to delete
+    // the corresponding files from Firebase Storage. Do not fail the whole
+    // operation if storage deletion fails.
+    for (const rem of removed) {
+      const atts = (rem as any).attachments || [];
+      for (const att of atts) {
+        const url = att?.url;
+        if (url) {
+          try {
+            // refFromURL may throw if URL is not a storage URL; wrap in try/catch
+            await this.storage.storage.refFromURL(url).delete();
+          } catch (err) {
+            console.warn('Could not delete storage file for review attachment:', err);
+          }
+        }
+      }
+    }
+
+    return docRef.update({ reviews: next });
   }
 
   updateReviewVisibility(
