@@ -80,6 +80,10 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   selectedImageFile?: File;
   selectedImagePreviewURL?: string;
 
+  // Admin image-replace target: stores which review/attachment index we are editing
+  adminReplaceTarget: { reviewIndex: number; attachmentIndex: number } | null =
+    null;
+
   elapsedTime = '00:00';
   recordingProgress = 0;
   private recordingTimer: any;
@@ -709,6 +713,188 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.recordingProgress = 0;
     this.selectedTargetUserId = this.auth.currentUser?.uid ?? null;
     this.previewOpen = false;
+  }
+
+  /** Build a cleaned copy of reviews suitable for saving to Firestore (strip UI props) */
+  private buildCleanedReviews(
+    updatedIndex?: number,
+    updatedReview?: any
+  ): Comment[] {
+    const cleaned: Comment[] = (this.reviews || []).map(
+      (r: any, idx: number) => {
+        // remove UI-only fields
+        const {
+          __editingPerf,
+          __perfDraft,
+          __commentDraft,
+          __editingComment,
+          timeFormatted,
+          starsNumber,
+          ...rest
+        } = r as any;
+        return { ...(rest as Comment) } as Comment;
+      }
+    );
+
+    if (
+      typeof updatedIndex === 'number' &&
+      updatedReview !== undefined &&
+      cleaned[updatedIndex]
+    ) {
+      cleaned[updatedIndex] = updatedReview;
+    }
+
+    return cleaned;
+  }
+
+  /** Admin action: remove an image attachment from an existing review */
+  async adminRemoveImage(idx: number, attachment: any) {
+    if (!confirm("Supprimer l'image de ce commentaire ?")) return;
+
+    try {
+      const review = this.reviews[idx];
+      if (!review) return;
+
+      // Find attachment index inside the review (in case we passed the object)
+      const attIdx = (review.attachments || []).findIndex(
+        (a: any) => a.url === attachment.url
+      );
+      if (attIdx === -1) return;
+
+      // Try to delete file from storage (best-effort)
+      const url = attachment?.url;
+      if (url) {
+        try {
+          await this.storage.storage.refFromURL(url).delete();
+        } catch (err) {
+          console.warn(
+            'Could not delete storage file, continuing to remove reference:',
+            err
+          );
+        }
+      }
+
+      // Build updated review object without the attachment
+      const updatedReview: any = { ...(review as any) };
+      const newAttachments = (updatedReview.attachments || []).slice();
+      newAttachments.splice(attIdx, 1);
+      if (newAttachments.length) {
+        updatedReview.attachments = newAttachments;
+      } else {
+        delete updatedReview.attachments;
+      }
+
+      // Persist to Firestore
+      const cleaned = this.buildCleanedReviews(idx, updatedReview);
+      await this.auth.updateReview(this.reviewId, cleaned);
+
+      // Update UI
+      this.reviews = cleaned as any;
+      this.setReviews();
+      alert('Image retirée avec succès.');
+    } catch (err) {
+      console.error('adminRemoveImage error:', err);
+      alert("Impossible de retirer l'image.");
+    }
+  }
+
+  /** Trigger admin replace flow: open hidden file input and remember target */
+  adminTriggerReplaceImage(reviewIndex: number, attachment: any) {
+    const review = this.reviews[reviewIndex];
+    if (!review) return;
+
+    const attIdx = (review.attachments || []).findIndex(
+      (a: any) => a.url === attachment.url
+    );
+    if (attIdx === -1) return;
+
+    this.adminReplaceTarget = { reviewIndex, attachmentIndex: attIdx };
+
+    // trigger a global hidden input (create or reuse)
+    let input = document.getElementById(
+      'adminReplaceImage'
+    ) as HTMLInputElement | null;
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.id = 'adminReplaceImage';
+      input.style.display = 'none';
+      input.addEventListener('change', (ev: any) => {
+        const files = ev.target.files as FileList;
+        this.onAdminReplaceImage(files);
+      });
+      document.body.appendChild(input);
+    }
+
+    input.value = ''; // reset
+    input.click();
+  }
+
+  /** Handler for the admin replace input */
+  async onAdminReplaceImage(files: FileList | null) {
+    if (!files || files.length === 0 || !this.adminReplaceTarget) return;
+    const file = files[0];
+
+    // basic validations (mirror composer)
+    if (file.size >= 10000000) {
+      alert("L'image dépasse la limite de 10MB.");
+      this.adminReplaceTarget = null;
+      return;
+    }
+    if (file.type.split('/')[0] !== 'image') {
+      alert('Veuillez choisir une image (jpg, png, ...).');
+      this.adminReplaceTarget = null;
+      return;
+    }
+
+    const { reviewIndex, attachmentIndex } = this.adminReplaceTarget;
+    this.adminReplaceTarget = null; // reset early
+
+    try {
+      const review = this.reviews[reviewIndex];
+      if (!review) return;
+
+      // Upload new image
+      const fileName = `reviews/${
+        review.targetUserId ?? this.auth.currentUser?.uid
+      }-${Date.now()}-${file.name}`;
+      const uploadTask = await this.storage.upload(fileName, file);
+      const newUrl = await uploadTask.ref.getDownloadURL();
+
+      // Delete old file (best-effort)
+      const oldAttachment = (review.attachments || [])[attachmentIndex];
+      if (oldAttachment?.url) {
+        try {
+          await this.storage.storage.refFromURL(oldAttachment.url).delete();
+        } catch (e) {
+          console.warn('Could not delete previous storage file:', e);
+        }
+      }
+
+      // Replace attachment in review
+      const updatedReview: any = { ...(review as any) };
+      const newAttachments = (updatedReview.attachments || []).slice();
+      newAttachments[attachmentIndex] = {
+        type: 'image',
+        url: newUrl,
+        mimeType: file.type,
+        size: file.size,
+      };
+      updatedReview.attachments = newAttachments;
+
+      // Persist updated reviews array
+      const cleaned = this.buildCleanedReviews(reviewIndex, updatedReview);
+      await this.auth.updateReview(this.reviewId, cleaned);
+
+      // Update UI
+      this.reviews = cleaned as any;
+      this.setReviews();
+      alert('Image remplacée avec succès.');
+    } catch (err) {
+      console.error('onAdminReplaceImage error:', err);
+      alert("Impossible de remplacer l'image.");
+    }
   }
 
   /** Clear only the selected image (used by the small remove button) */

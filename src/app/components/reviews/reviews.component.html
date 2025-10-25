@@ -772,6 +772,25 @@
                   [src]="a.url"
                   class="w-full max-h-56 object-contain rounded"
                 />
+                <!-- Admin controls: remove or replace this image -->
+                <div *ngIf="auth.isAdmin" class="mt-2 flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    (click)="adminTriggerReplaceImage(i, a)"
+                    class="px-2 py-1 text-xs rounded bg-yellow-500 hover:bg-yellow-600 text-white"
+                    title="Remplacer l'image"
+                  >
+                    Remplacer
+                  </button>
+                  <button
+                    type="button"
+                    (click)="adminRemoveImage(i, a)"
+                    class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-700 text-white"
+                    title="Retirer l'image"
+                  >
+                    Retirer
+                  </button>
+                </div>
               </ng-container>
             </div>
           </ng-container>
