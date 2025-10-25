@@ -178,12 +178,10 @@ export class TeamRankingMonthComponent {
         this.currentEmployees.forEach((em: any) => {
           this.computePerformances(employees, em);
 
-          if (em?.paymentAmount) {
-            // NEW: add to salary-only bucket
-            this.totalSalary = (
-              Number(this.totalSalary) + Number(em.paymentAmount)
-            ).toString();
-          }
+          // NOTE: do NOT accumulate `totalSalary` here. We defer computing
+          // the salary total until we've deduped and filtered employees
+          // (see `filterAndInitializeEmployees`) so the UI total only
+          // reflects the employees actually displayed.
 
           if (em?.totalBonusThisMonth) {
             this.totalBonus = (
@@ -211,7 +209,15 @@ export class TeamRankingMonthComponent {
 
           this.setGraphics();
 
-          // 3) compute Actual total = salaries + loyers
+          // 3) compute Actual totals. Compute `totalSalary` from the
+          // deduped/filtered `allEmployees` array so it matches the
+          // employees that are actually displayed in the payroll table.
+          this.totalSalary = this.allEmployees
+            .map((e: any) => Number(e.paymentAmount || 0))
+            .reduce((s: number, v: number) => s + v, 0)
+            .toString();
+
+          // Global total = salaries + house payments
           this.total = (
             Number(this.totalSalary) + Number(this.totalHouse)
           ).toString();
