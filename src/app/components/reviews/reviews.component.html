@@ -772,23 +772,74 @@
                   [src]="a.url"
                   class="w-full max-h-56 object-contain rounded"
                 />
-                <!-- Admin controls: remove or replace this image -->
+                <!-- Admin controls: replace or remove this image (icon buttons) -->
                 <div *ngIf="auth.isAdmin" class="mt-2 flex gap-2 justify-end">
                   <button
                     type="button"
                     (click)="adminTriggerReplaceImage(i, a)"
-                    class="px-2 py-1 text-xs rounded bg-yellow-500 hover:bg-yellow-600 text-white"
+                    class="p-2 rounded bg-yellow-500 hover:bg-yellow-600 text-white inline-flex items-center justify-center"
                     title="Remplacer l'image"
+                    aria-label="Remplacer l'image"
                   >
-                    Remplacer
+                    <!-- refresh/replace icon -->
+                    <svg
+                      class="w-4 h-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M20 12a8 8 0 10-2.47 5.53L20 20"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M20 4v6h-6"
+                      />
+                    </svg>
                   </button>
+
                   <button
                     type="button"
                     (click)="adminRemoveImage(i, a)"
-                    class="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-700 text-white"
+                    class="p-2 rounded bg-red-600 hover:bg-red-700 text-white inline-flex items-center justify-center"
                     title="Retirer l'image"
+                    aria-label="Retirer l'image"
                   >
-                    Retirer
+                    <!-- trash icon -->
+                    <svg
+                      class="w-4 h-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M3 6h18"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M8 6v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M10 11v6m4-6v6"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+                      />
+                    </svg>
                   </button>
                 </div>
               </ng-container>
