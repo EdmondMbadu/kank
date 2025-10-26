@@ -374,15 +374,18 @@ export class HomeCentralComponent implements OnInit {
     const hasDebtFilter = this.debtStatusFilter !== 'all';
     const hasQuitteFilter = this.quitteStatusFilter !== 'all';
 
-    if (
+    const isDefaultView =
       !this.birthdayFilterSummary &&
       !hasSearch &&
       !hasScoreFilter &&
       !hasLoanFilter &&
       !hasDebtFilter &&
-      !hasQuitteFilter
-    ) {
-      return `Tous les clients · ${baseTotal} client(s)`;
+      !hasQuitteFilter;
+
+    if (isDefaultView) {
+      const parts = [`Tous les clients · ${baseTotal} client(s)`];
+      parts.push(`Dette FC ${this.formatFc(this.filteredDebtTotal)}`);
+      return parts.join(' · ');
     }
 
     const parts: string[] = [];
