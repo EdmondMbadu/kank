@@ -387,6 +387,13 @@ export class AuthService {
       .valueChanges({ idField: 'id' });
   }
 
+  deleteIdeaSubmission(ideaId: string): Promise<void> {
+    if (!ideaId) {
+      return Promise.reject(new Error('Identifiant de la Boîte à idées manquant.'));
+    }
+    return this.afs.doc(`ideaBox/${ideaId}`).delete();
+  }
+
   registerNewClient(client: Client) {
     const now = new Date();
     const year = now.getFullYear();

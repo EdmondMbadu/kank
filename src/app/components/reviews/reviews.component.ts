@@ -798,6 +798,27 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.ideaElapsedTime = '00:00';
     this.ideaRecordingProgress = 0;
   }
+
+  sendAnotherIdea(): void {
+    this.ideaSubmissionSuccess = false;
+    this.ideaSubmissionMessage = '';
+    this.showIdeaForm = true;
+    this.resetIdeaForm();
+  }
+
+  goToIdeasSection(): void {
+    this.ideaSubmissionSuccess = false;
+    this.ideaSubmissionMessage = '';
+    this.router.navigate(['/team-ranking-month'], {
+      fragment: 'boite-a-idees',
+    });
+  }
+
+  goToLogin(): void {
+    this.ideaSubmissionSuccess = false;
+    this.ideaSubmissionMessage = '';
+    this.router.navigate(['/']);
+  }
   addReviewWithOrWithoutAudioFile(confirmUser = true) {
     // 1) Must have a name
     if (!this.personPostingComment || !this.personPostingComment.trim()) {

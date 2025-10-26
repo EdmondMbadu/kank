@@ -1271,7 +1271,7 @@
 </section>
 
 <!-- Boîte à idées -->
-<div class="mx-auto container max-w-5xl px-4 -mt-6 md:-mt-2 mb-12">
+<div id="boite-a-idees" class="mx-auto container max-w-5xl px-4 -mt-6 md:-mt-2 mb-12">
   <div
     class="rounded-3xl border border-purple-100 bg-gradient-to-br from-white via-purple-50 to-blue-50/40 shadow-lg shadow-purple-100/60"
   >
@@ -1280,20 +1280,39 @@
       (click)="toggleIdeaPanel()"
       class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-left px-6 py-5"
     >
-      <div>
-        <p class="text-xs uppercase tracking-[0.2em] text-purple-500">
-          Boîte à idées
-        </p>
-        <h3 class="text-xl md:text-2xl font-semibold text-slate-900">
-          Les inspirations déposées par les équipes
-        </h3>
-        <p class="text-sm text-slate-500">
-          {{
-            ideaSubmissions.length
-              ? "Découvrez les initiatives partagées récemment."
-              : "Aucune idée n’a encore été déposée."
-          }}
-        </p>
+      <div class="flex gap-4">
+        <div
+          class="hidden sm:flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-100 to-blue-100 text-purple-700 shadow-inner shadow-purple-200"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M9 18h6m-3 3v-3m-4-7a5 5 0 0110 0c0 1.657-.895 3.106-2.25 4A2.75 2.75 0 0114 17.25v.5H10v-.5A2.75 2.75 0 018.25 14C6.895 13.106 6 11.657 6 10z"
+            />
+          </svg>
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-purple-500">
+            Boîte à idées
+          </p>
+          <h3 class="text-xl md:text-2xl font-semibold text-slate-900">
+            Les inspirations déposées par les équipes
+          </h3>
+          <p class="text-sm text-slate-500">
+            {{
+              ideaSubmissions.length
+                ? "Découvrez les initiatives partagées récemment."
+                : "Aucune idée n’a encore été déposée."
+            }}
+          </p>
+        </div>
       </div>
       <div class="flex items-center gap-3 self-end md:self-auto">
         <span
@@ -1376,14 +1395,61 @@
                     </svg>
                     Idée #{{ idx + 1 }}
                   </span>
+                  <button
+                    *ngIf="auth.isAdmin"
+                    type="button"
+                    (click)="deleteIdea(idea)"
+                    [disabled]="ideaDeletionBusyId === idea.id"
+                    class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-medium text-red-600 hover:bg-red-100 disabled:opacity-60"
+                  >
+                    <svg
+                      *ngIf="ideaDeletionBusyId !== idea.id"
+                      class="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M6 7h12m-9 0V5a2 2 0 012-2h2a2 2 0 012 2v2m-7 0h8m-9 0l1 12a2 2 0 002 2h4a2 2 0 002-2l1-12"
+                      />
+                    </svg>
+                    <svg
+                      *ngIf="ideaDeletionBusyId === idea.id"
+                      class="h-3.5 w-3.5 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        opacity="0.3"
+                      ></circle>
+                      <path
+                        d="M22 12a10 10 0 0 1-10 10"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      ></path>
+                    </svg>
+                    Supprimer
+                  </button>
                 </div>
               </div>
-              <p class="mt-3 text-sm md:text-base leading-relaxed text-slate-600">
-                {{ idea.ideaText }}
+              <p
+                class="mt-3 text-sm md:text-base leading-relaxed text-slate-600"
+                [ngClass]="{ 'italic text-slate-500': !auth.isAdmin }"
+              >
+                {{ displayIdeaText(idea) }}
               </p>
 
               <div
-                *ngIf="(idea.attachments?.length || idea.audioUrl)"
+                *ngIf="auth.isAdmin && (idea.attachments?.length || idea.audioUrl)"
                 class="mt-4 space-y-3"
               >
                 <div

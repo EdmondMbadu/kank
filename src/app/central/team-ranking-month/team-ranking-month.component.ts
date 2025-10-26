@@ -67,6 +67,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   ideaPanelOpen = false;
   ideaLoading = false;
   private ideaSub?: Subscription;
+  ideaDeletionBusyId: string | null = null;
 
   // single toggle function
   toggle(section: 'payroll' | 'bonus' | 'loyer') {
@@ -118,6 +119,40 @@ export class TeamRankingMonthComponent implements OnDestroy {
       }
     }
     return idea?.createdAt ?? '';
+  }
+
+  displayIdeaText(idea: IdeaSubmission): string {
+    const text = idea?.ideaText?.trim() ?? '';
+    if (!text) {
+      return '';
+    }
+    if (this.auth.isAdmin) {
+      return text;
+    }
+    const firstWord = text.split(/\s+/)[0];
+    return firstWord + (firstWord.length ? '…' : '');
+  }
+
+  canViewIdeaDetails(): boolean {
+    return this.auth.isAdmin;
+  }
+
+  async deleteIdea(idea: IdeaSubmission): Promise<void> {
+    if (!this.auth.isAdmin || !idea?.id) {
+      return;
+    }
+    if (!confirm('Supprimer définitivement cette idée ?')) {
+      return;
+    }
+    this.ideaDeletionBusyId = idea.id;
+    try {
+      await this.auth.deleteIdeaSubmission(idea.id);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'idée :", error);
+      alert("Impossible de supprimer cette idée pour l'instant.");
+    } finally {
+      this.ideaDeletionBusyId = null;
+    }
   }
 
   allLocations: any[] = [];
