@@ -375,6 +375,18 @@ export class AuthService {
     return this.afs.doc(`ideaBox/${id}`).set(payload);
   }
 
+  getIdeaSubmissions(limitCount?: number) {
+    return this.afs
+      .collection<IdeaSubmission>('ideaBox', (ref) => {
+        let query = ref.orderBy('createdAtISO', 'desc');
+        if (limitCount && limitCount > 0) {
+          query = query.limit(limitCount);
+        }
+        return query;
+      })
+      .valueChanges({ idField: 'id' });
+  }
+
   registerNewClient(client: Client) {
     const now = new Date();
     const year = now.getFullYear();

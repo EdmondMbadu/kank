@@ -1,22 +1,24 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { Client } from 'src/app/models/client';
 import { AttendanceAttachment, Employee } from 'src/app/models/employee';
 import { User } from 'src/app/models/user';
+import { IdeaSubmission } from 'src/app/models/idea';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { DataService } from 'src/app/services/data.service';
 import exifr from 'exifr';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-team-ranking-month',
   templateUrl: './team-ranking-month.component.html',
   styleUrls: ['./team-ranking-month.component.css'],
 })
-export class TeamRankingMonthComponent {
+export class TeamRankingMonthComponent implements OnDestroy {
   averagePerformancePercentage: string = '0'; // Add this line
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
@@ -60,9 +62,19 @@ export class TeamRankingMonthComponent {
     loyer: false,
   };
 
+  // Boîte à idées feed
+  ideaSubmissions: IdeaSubmission[] = [];
+  ideaPanelOpen = false;
+  ideaLoading = false;
+  private ideaSub?: Subscription;
+
   // single toggle function
   toggle(section: 'payroll' | 'bonus' | 'loyer') {
     this.collapse[section] = !this.collapse[section];
+  }
+
+  toggleIdeaPanel(): void {
+    this.ideaPanelOpen = !this.ideaPanelOpen;
   }
 
   toggleMonthlyAmounts(): void {
@@ -70,6 +82,42 @@ export class TeamRankingMonthComponent {
   }
   toggleDailyAmounts(): void {
     this.showDailyAmounts = !this.showDailyAmounts;
+  }
+
+  private listenToIdeaBox(): void {
+    this.ideaLoading = true;
+    this.ideaSub?.unsubscribe();
+    this.ideaSub = this.auth.getIdeaSubmissions().subscribe((ideas) => {
+      this.ideaSubmissions = ideas ?? [];
+      this.ideaLoading = false;
+    });
+  }
+
+  get visibleIdeaSubmissions(): IdeaSubmission[] {
+    return this.auth.isAdmin
+      ? this.ideaSubmissions
+      : this.ideaSubmissions.slice(0, 2);
+  }
+
+  get hasMoreIdeas(): boolean {
+    return !this.auth.isAdmin && this.ideaSubmissions.length > 2;
+  }
+
+  formatIdeaDate(idea: IdeaSubmission): string {
+    if (idea?.createdAtISO) {
+      const date = new Date(idea.createdAtISO);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleString('fr-FR', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+    }
+    return idea?.createdAt ?? '';
   }
 
   allLocations: any[] = [];
@@ -93,6 +141,11 @@ export class TeamRankingMonthComponent {
       // this is really weird. maybe some apsect of angular. but it works for now
       if (this.allUsers.length > 1) this.getAllEmployees();
     });
+    this.listenToIdeaBox();
+  }
+
+  ngOnDestroy(): void {
+    this.ideaSub?.unsubscribe();
   }
   // --- Performance ring geometry ---
   size = 220; // svg canvas
