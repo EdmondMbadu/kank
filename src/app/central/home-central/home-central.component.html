@@ -387,7 +387,16 @@
       <p
         class="mt-2 text-xs font-medium text-emerald-600 dark:text-emerald-300"
       >
-        {{ clientListSummary }}
+        <span>{{ clientListSummaryBase }}</span>
+        <ng-container *ngIf="hasFilteredDebtTotal">
+          <span class="text-slate-400"> · </span>
+          <span class="text-emerald-600 dark:text-emerald-300 font-semibold">
+            Dette FC {{ filteredDebtTotalFcDisplay }}
+          </span>
+          <span class="text-sky-500 font-semibold">
+            (≈ $ {{ filteredDebtTotalUsdDisplay }})
+          </span>
+        </ng-container>
       </p>
 
       <ul

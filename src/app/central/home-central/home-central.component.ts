@@ -364,7 +364,7 @@ export class HomeCentralComponent implements OnInit {
     }
   }
 
-  get clientListSummary(): string {
+  get clientListSummaryBase(): string {
     const count = this.filteredItems.length;
     const hasSearch = this.searchTerm.trim().length > 0;
     const baseTotal = this.allClients?.length ?? count;
@@ -383,9 +383,7 @@ export class HomeCentralComponent implements OnInit {
       !hasQuitteFilter;
 
     if (isDefaultView) {
-      const parts = [`Tous les clients · ${baseTotal} client(s)`];
-      parts.push(`Dette FC ${this.formatFc(this.filteredDebtTotal)}`);
-      return parts.join(' · ');
+      return `Tous les clients · ${baseTotal} client(s)`;
     }
 
     const parts: string[] = [];
@@ -422,7 +420,6 @@ export class HomeCentralComponent implements OnInit {
     }
 
     parts.push(`${count} client(s)`);
-    parts.push(`Dette FC ${this.formatFc(this.filteredDebtTotal)}`);
     return parts.join(' · ');
   }
 
@@ -594,6 +591,24 @@ export class HomeCentralComponent implements OnInit {
     const normalized = typeof value === 'string' ? value.replace(/[^0-9.-]/g, '') : String(value);
     const num = Number(normalized);
     return Number.isFinite(num) ? num : 0;
+  }
+
+  get filteredDebtTotalFcDisplay(): string {
+    return this.formatFc(this.filteredDebtTotal);
+  }
+
+  get filteredDebtTotalUsdDisplay(): string {
+    const usdRaw = Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.filteredDebtTotal.toString()
+      )
+    );
+    if (!Number.isFinite(usdRaw)) return '0';
+    return usdRaw.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+
+  get hasFilteredDebtTotal(): boolean {
+    return this.filteredDebtTotal > 0;
   }
 
   private matchesBirthdayFilter(client: Client): boolean {
