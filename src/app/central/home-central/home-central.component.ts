@@ -73,6 +73,8 @@ export class HomeCentralComponent implements OnInit {
   uniqueLocations: string[] = [];
   selectedLocations = new Set<string>();
   selectAllLocations = true;
+  masterSelectedLocations = new Set<string>();
+  masterSelectAllLocations = true;
 
   // single SMS modal
   smsModal = {
@@ -373,6 +375,7 @@ export class HomeCentralComponent implements OnInit {
       this.loanAmountFilterValue !== null && this.loanAmountFilterValue > 0;
     const hasDebtFilter = this.debtStatusFilter !== 'all';
     const hasQuitteFilter = this.quitteStatusFilter !== 'all';
+    const hasLocationFilter = !this.masterSelectAllLocations;
 
     const isDefaultView =
       !this.birthdayFilterSummary &&
@@ -380,7 +383,7 @@ export class HomeCentralComponent implements OnInit {
       !hasScoreFilter &&
       !hasLoanFilter &&
       !hasDebtFilter &&
-      !hasQuitteFilter;
+      !hasQuitteFilter && !hasLocationFilter;
 
     if (isDefaultView) {
       return `Tous les clients · ${baseTotal} client(s)`;
@@ -418,6 +421,11 @@ export class HomeCentralComponent implements OnInit {
           : 'Statut ≠ « Quitté »'
       );
     }
+    if (hasLocationFilter) {
+      parts.push(
+        `${this.masterSelectedLocations.size} site(s)`
+      );
+    }
 
     parts.push(`${count} client(s)`);
     return parts.join(' · ');
@@ -429,7 +437,8 @@ export class HomeCentralComponent implements OnInit {
       .filter((client) => this.matchesCreditScore(client))
       .filter((client) => this.matchesLoanAmount(client))
       .filter((client) => this.matchesDebtStatus(client))
-      .filter((client) => this.matchesQuitteStatus(client));
+      .filter((client) => this.matchesQuitteStatus(client))
+      .filter((client) => this.matchesMasterLocation(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
@@ -576,6 +585,13 @@ export class HomeCentralComponent implements OnInit {
       default:
         return true;
     }
+  }
+
+  private matchesMasterLocation(client: Client): boolean {
+    if (this.masterSelectAllLocations || this.masterSelectedLocations.size === 0)
+      return true;
+    const loc = client.locationName || '';
+    return this.masterSelectedLocations.has(loc);
   }
 
   private calculateFilteredDebtTotal(list: Client[]): number {
@@ -755,6 +771,7 @@ export class HomeCentralComponent implements OnInit {
       if (c.locationName) set.add(c.locationName);
     }
     this.uniqueLocations = Array.from(set).sort((a, b) => a.localeCompare(b));
+    this.resetMasterLocationSelection(true);
   }
 
   private resetLocationSelection(all = true) {
@@ -764,6 +781,16 @@ export class HomeCentralComponent implements OnInit {
       this.selectAllLocations = true;
     } else {
       this.selectAllLocations = false;
+    }
+  }
+
+  private resetMasterLocationSelection(all = true) {
+    this.masterSelectedLocations.clear();
+    if (all) {
+      this.uniqueLocations.forEach((l) => this.masterSelectedLocations.add(l));
+      this.masterSelectAllLocations = true;
+    } else {
+      this.masterSelectAllLocations = false;
     }
   }
 
@@ -779,6 +806,21 @@ export class HomeCentralComponent implements OnInit {
     this.selectAllLocations =
       this.selectedLocations.size === this.uniqueLocations.length;
     this.applyFinishedFilters();
+  }
+
+  toggleMasterAllLocations() {
+    this.masterSelectAllLocations = !this.masterSelectAllLocations;
+    this.resetMasterLocationSelection(this.masterSelectAllLocations);
+    this.applyClientFilters();
+  }
+
+  toggleMasterLocation(loc: string) {
+    if (this.masterSelectedLocations.has(loc))
+      this.masterSelectedLocations.delete(loc);
+    else this.masterSelectedLocations.add(loc);
+    this.masterSelectAllLocations =
+      this.masterSelectedLocations.size === this.uniqueLocations.length;
+    this.applyClientFilters();
   }
 
   private setupFdSearch() {
