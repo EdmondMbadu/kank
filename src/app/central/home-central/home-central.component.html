@@ -249,6 +249,40 @@
         </div>
 
         <div
+          class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-300"
+        >
+          <span
+            class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
+          >
+            Statut
+          </span>
+          <button
+            type="button"
+            (click)="setQuitteStatusFilter('all')"
+            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            [ngClass]="quitteStatusButtonClasses('all')"
+          >
+            Tous
+          </button>
+          <button
+            type="button"
+            (click)="setQuitteStatusFilter('quitte')"
+            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            [ngClass]="quitteStatusButtonClasses('quitte')"
+          >
+            Marqués « Quitté »
+          </button>
+          <button
+            type="button"
+            (click)="setQuitteStatusFilter('active')"
+            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            [ngClass]="quitteStatusButtonClasses('active')"
+          >
+            Non « Quitté »
+          </button>
+        </div>
+
+        <div
           class="flex w-full flex-col gap-4 text-xs text-slate-500 dark:text-slate-400 xl:flex-row xl:items-start xl:gap-6"
         >
           <div class="flex flex-wrap items-center gap-2">
