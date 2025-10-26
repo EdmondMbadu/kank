@@ -54,6 +54,7 @@ export class HomeCentralComponent implements OnInit {
   loanAmountFilterMode: 'min' | 'exact' = 'min';
   debtStatusFilter: 'all' | 'withDebt' | 'withoutDebt' = 'all';
   quitteStatusFilter: 'all' | 'quitte' | 'active' = 'all';
+  filteredDebtTotal = 0;
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
 
@@ -418,6 +419,7 @@ export class HomeCentralComponent implements OnInit {
     }
 
     parts.push(`${count} client(s)`);
+    parts.push(`Dette FC ${this.formatFc(this.filteredDebtTotal)}`);
     return parts.join(' · ');
   }
 
@@ -430,6 +432,7 @@ export class HomeCentralComponent implements OnInit {
       .filter((client) => this.matchesQuitteStatus(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
+    this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
   }
 
   private matchesSearchTerm(client: Client, rawTerm: string): boolean {
@@ -573,6 +576,21 @@ export class HomeCentralComponent implements OnInit {
       default:
         return true;
     }
+  }
+
+  private calculateFilteredDebtTotal(list: Client[]): number {
+    if (!list || list.length === 0) return 0;
+    return list.reduce((sum, client) => {
+      const debt = this.parseDebtLeft(client.debtLeft);
+      return sum + (debt > 0 ? debt : 0);
+    }, 0);
+  }
+
+  private parseDebtLeft(value: string | number | undefined | null): number {
+    if (value === undefined || value === null) return 0;
+    const normalized = typeof value === 'string' ? value.replace(/[^0-9.-]/g, '') : String(value);
+    const num = Number(normalized);
+    return Number.isFinite(num) ? num : 0;
   }
 
   private matchesBirthdayFilter(client: Client): boolean {
