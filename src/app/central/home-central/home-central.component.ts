@@ -96,6 +96,15 @@ export class HomeCentralComponent implements OnInit {
   };
   bulkSending = false;
 
+  generalBulkModal = {
+    open: false,
+    message: '' as string,
+    recipients: [] as Client[],
+    excludedNoPhone: 0,
+    result: null as BulkResult | null,
+  };
+  generalBulkSending = false;
+
   placeholderTokens = [
     '{{FULL_NAME}}',
     '{{firstName}}',
@@ -442,6 +451,7 @@ export class HomeCentralComponent implements OnInit {
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
+    if (this.generalBulkModal.open) this.updateGeneralBulkRecipients();
   }
 
   private matchesSearchTerm(client: Client, rawTerm: string): boolean {
@@ -947,10 +957,7 @@ Merci pona confiance na FONDATION GERVAIS`;
 
     for (const c of base) {
       const score = Number(c.creditScore ?? 0);
-      const okPhone = !!(
-        c.phoneNumber && ('' + c.phoneNumber).replace(/\D/g, '').length >= 10
-      );
-      if (!okPhone) {
+      if (!this.hasDialablePhone(c)) {
         excludedNoPhone += 1;
         continue;
       }
@@ -998,6 +1005,81 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.bulkSending = false;
   }
 
+  // ===== general custom bulk (master list) =====
+  get generalEligibleCount(): number {
+    return this.filteredItems.filter((c) => this.hasDialablePhone(c)).length;
+  }
+
+  openGeneralBulkModal() {
+    this.generalBulkModal.open = true;
+    this.generalBulkModal.result = null;
+    this.applyGeneralDefaultTemplate();
+    this.updateGeneralBulkRecipients();
+  }
+
+  closeGeneralBulkModal() {
+    this.generalBulkModal.open = false;
+    this.generalBulkModal.message = '';
+    this.generalBulkModal.recipients = [];
+    this.generalBulkModal.result = null;
+    this.generalBulkSending = false;
+  }
+
+  applyGeneralDefaultTemplate() {
+    this.generalBulkModal.message = `Mbote {{FULL_NAME}},
+Nous suivons ta situation au sein de FONDATION GERVAIS (site {{LOCATION_NAME}}).
+Contacte vite ton agent pour actualiser ta situation.
+Merci pour ta confiance !`;
+  }
+
+  updateGeneralBulkRecipients() {
+    const list: Client[] = [];
+    let excluded = 0;
+    for (const c of this.filteredItems) {
+      if (this.hasDialablePhone(c)) list.push(c);
+      else excluded += 1;
+    }
+    this.generalBulkModal.recipients = list;
+    this.generalBulkModal.excludedNoPhone = excluded;
+  }
+
+  async sendGeneralBulkSms() {
+    if (
+      !this.generalBulkModal.message?.trim() ||
+      this.generalBulkModal.recipients.length === 0
+    )
+      return;
+
+    this.generalBulkSending = true;
+    const failures: BulkFailure[] = [];
+    let succeeded = 0;
+
+    for (const c of this.generalBulkModal.recipients) {
+      try {
+        const text = this.personalizeMessage(this.generalBulkModal.message, c);
+        await this.messaging.sendCustomSMS(c.phoneNumber!, text, {
+          reason: 'custom_general_filters',
+          clientId: c.trackingId || c.uid || null,
+          clientName: `${c.firstName} ${c.lastName}`.trim(),
+          locationName: c.locationName || null,
+        });
+        succeeded += 1;
+      } catch (e: any) {
+        console.error('General bulk SMS error', e);
+        failures.push({ client: c, error: e?.message || 'Échec d’envoi' });
+      }
+    }
+
+    const total = this.generalBulkModal.recipients.length;
+    this.generalBulkModal.result = {
+      total,
+      succeeded,
+      failed: failures.length,
+      failures,
+    };
+    this.generalBulkSending = false;
+  }
+
   // ===== helpers =====
   creditBadgeStyle(score: string | number | null | undefined) {
     const val = Number(score) || 0;
@@ -1013,6 +1095,10 @@ Merci pona confiance na FONDATION GERVAIS`;
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
     return raw;
   }
+  private hasDialablePhone(client: Client | null | undefined): boolean {
+    if (!client || !client.phoneNumber) return false;
+    return ('' + client.phoneNumber).replace(/\D/g, '').length >= 10;
+  }
   estimatedSegments(text: string = '') {
     const len = text.length;
     const segSize = 160;
@@ -1021,6 +1107,12 @@ Merci pona confiance na FONDATION GERVAIS`;
   previewPersonalized() {
     const first = this.bulkModal.recipients?.[0];
     return first ? this.personalizeMessage(this.bulkModal.message, first) : '—';
+  }
+  generalPreviewPersonalized() {
+    const first = this.generalBulkModal.recipients?.[0];
+    return first
+      ? this.personalizeMessage(this.generalBulkModal.message, first)
+      : '—';
   }
   private formatFc(n: number | string): string {
     return Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
