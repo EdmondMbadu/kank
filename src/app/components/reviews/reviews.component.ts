@@ -91,7 +91,6 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
   // --- Boîte à idées ---
   showIdeaForm = false;
-  ideaInfoVisible = false;
   ideaEmployeeName = '';
   ideaText = '';
   ideaSelectedImageFile?: File;
@@ -526,10 +525,6 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   /* ---------------------- Boîte à idées helpers ---------------------- */
   toggleIdeaForm(): void {
     this.showIdeaForm = !this.showIdeaForm;
-  }
-
-  toggleIdeaInfo(): void {
-    this.ideaInfoVisible = !this.ideaInfoVisible;
   }
 
   async startIdeaRecording() {
