@@ -50,6 +50,8 @@ export class HomeCentralComponent implements OnInit {
   private birthdayTarget: { month: number; day: number } | null = null;
   private searchTerm = '';
   minCreditScore = 0;
+  loanAmountFilterValue: number | null = null;
+  loanAmountFilterMode: 'min' | 'exact' = 'min';
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
 
@@ -346,8 +348,15 @@ export class HomeCentralComponent implements OnInit {
     const hasSearch = this.searchTerm.trim().length > 0;
     const baseTotal = this.allClients?.length ?? count;
     const hasScoreFilter = Number(this.minCreditScore) > 0;
+    const hasLoanFilter =
+      this.loanAmountFilterValue !== null && this.loanAmountFilterValue > 0;
 
-    if (!this.birthdayFilterSummary && !hasSearch && !hasScoreFilter) {
+    if (
+      !this.birthdayFilterSummary &&
+      !hasSearch &&
+      !hasScoreFilter &&
+      !hasLoanFilter
+    ) {
       return `Tous les clients · ${baseTotal} client(s)`;
     }
 
@@ -363,6 +372,12 @@ export class HomeCentralComponent implements OnInit {
     if (hasScoreFilter) {
       parts.push(`Score ≥ ${this.minCreditScore}`);
     }
+    if (hasLoanFilter && this.loanAmountFilterValue !== null) {
+      const comparator = this.loanAmountFilterMode === 'exact' ? '=' : '≥';
+      parts.push(
+        `Prêt ${comparator} FC ${this.formatFc(this.loanAmountFilterValue)}`
+      );
+    }
 
     parts.push(`${count} client(s)`);
     return parts.join(' · ');
@@ -371,7 +386,8 @@ export class HomeCentralComponent implements OnInit {
   private applyClientFilters() {
     const base = (this.allClients ?? [])
       .filter((client) => this.matchesSearchTerm(client, this.searchTerm))
-      .filter((client) => this.matchesCreditScore(client));
+      .filter((client) => this.matchesCreditScore(client))
+      .filter((client) => this.matchesLoanAmount(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
   }
@@ -401,12 +417,72 @@ export class HomeCentralComponent implements OnInit {
     this.applyClientFilters();
   }
 
+  onLoanAmountChange(rawValue: number | string | null) {
+    if (rawValue === null || rawValue === '') {
+      this.loanAmountFilterValue = null;
+      this.applyClientFilters();
+      return;
+    }
+
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      this.loanAmountFilterValue = null;
+    } else {
+      this.loanAmountFilterValue = Math.round(parsed);
+    }
+    this.applyClientFilters();
+  }
+
+  setLoanAmountFilterMode(mode: 'min' | 'exact') {
+    if (this.loanAmountFilterMode === mode) return;
+    this.loanAmountFilterMode = mode;
+    this.applyClientFilters();
+  }
+
+  isLoanAmountFilterMode(mode: 'min' | 'exact') {
+    return this.loanAmountFilterMode === mode;
+  }
+
+  clearLoanAmountFilter() {
+    if (this.loanAmountFilterValue === null) return;
+    this.loanAmountFilterValue = null;
+    this.applyClientFilters();
+  }
+
   private matchesCreditScore(client: Client): boolean {
     const min = Number(this.minCreditScore) || 0;
     if (min <= 0) return true;
     const score = Number(client.creditScore);
     if (!Number.isFinite(score)) return false;
     return score >= min;
+  }
+
+  private matchesLoanAmount(client: Client): boolean {
+    const target = this.loanAmountFilterValue;
+    if (target === null || target <= 0) return true;
+
+    const parseAmount = (value: string | number | undefined | null) => {
+      if (value === undefined || value === null) return null;
+      if (typeof value === 'string') {
+        const cleaned = value.replace(/[^0-9.-]/g, '').trim();
+        if (!cleaned) return null;
+        const num = Number(cleaned);
+        return Number.isFinite(num) ? num : null;
+      }
+      const num = Number(value);
+      return Number.isFinite(num) ? num : null;
+    };
+
+    const amount = [client.loanAmount, client.amountToPay, client.requestAmount]
+      .map((value) => parseAmount(value))
+      .find((num) => num !== null);
+
+    if (amount === undefined || amount === null) return false;
+
+    if (this.loanAmountFilterMode === 'exact') {
+      return amount === target;
+    }
+    return amount >= target;
   }
 
   private matchesBirthdayFilter(client: Client): boolean {

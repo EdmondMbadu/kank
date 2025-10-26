@@ -215,14 +215,14 @@
         </div>
 
         <div
-          class="flex flex-col gap-2 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:gap-3"
+          class="flex w-full flex-col gap-4 text-xs text-slate-500 dark:text-slate-400 xl:flex-row xl:items-start xl:gap-6"
         >
-          <span
-            class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
-          >
-            Score min.
-          </span>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <span
+              class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
+            >
+              Score min.
+            </span>
             <input
               type="number"
               min="0"
@@ -244,6 +244,74 @@
             <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">
               ≥ {{ minCreditScore }}
             </span>
+          </div>
+
+          <div
+            class="w-full rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
+              >
+                Montant prêt
+              </span>
+              <div
+                class="inline-flex overflow-hidden rounded-full border border-slate-200 dark:border-slate-600"
+              >
+                <button
+                  type="button"
+                  (click)="setLoanAmountFilterMode('min')"
+                  class="px-3 py-1 text-[11px] font-semibold transition"
+                  [ngClass]="{
+                    'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('min'),
+                    'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('min')
+                  }"
+                >
+                  ≥ Min
+                </button>
+                <button
+                  type="button"
+                  (click)="setLoanAmountFilterMode('exact')"
+                  class="px-3 py-1 text-[11px] font-semibold transition"
+                  [ngClass]="{
+                    'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('exact'),
+                    'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('exact')
+                  }"
+                >
+                  = Exact
+                </button>
+              </div>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                [ngModel]="loanAmountFilterValue !== null ? loanAmountFilterValue : ''"
+                (ngModelChange)="onLoanAmountChange($event)"
+                placeholder="Ex : 2 000 000"
+                class="w-36 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
+              <button
+                type="button"
+                *ngIf="loanAmountFilterValue !== null"
+                (click)="clearLoanAmountFilter()"
+                class="text-[11px] font-semibold text-rose-600 transition hover:text-rose-500"
+              >
+                Effacer
+              </button>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <ng-container *ngIf="loanAmountFilterValue !== null; else loanHint">
+                {{
+                  isLoanAmountFilterMode('exact')
+                    ? 'Clients avec exactement'
+                    : 'Clients avec au moins'
+                }}
+                {{ loanAmountFilterValue | number : '1.0-0' }} FC.
+              </ng-container>
+              <ng-template #loanHint>
+                Indiquez un montant pour filtrer les clients selon leur prêt accordé.
+              </ng-template>
+            </p>
           </div>
         </div>
       </div>
