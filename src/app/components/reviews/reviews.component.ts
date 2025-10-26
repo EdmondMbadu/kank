@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 
 import { Comment } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
+import { IdeaAttachment, IdeaSubmission } from 'src/app/models/idea';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -87,6 +88,28 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   elapsedTime = '00:00';
   recordingProgress = 0;
   private recordingTimer: any;
+
+  // --- Boîte à idées ---
+  showIdeaForm = false;
+  ideaInfoVisible = false;
+  ideaEmployeeName = '';
+  ideaText = '';
+  ideaSelectedImageFile?: File;
+  ideaSelectedImagePreviewURL?: string;
+  ideaSelectedAudioFile?: File;
+  ideaSelectedAudioPreviewURL?: string;
+  ideaMediaRecorder?: MediaRecorder;
+  ideaAudioChunks: BlobPart[] = [];
+  ideaRecordedBlob?: Blob;
+  ideaRecordedAudioURL?: string;
+  ideaIsRecording = false;
+  ideaElapsedTime = '00:00';
+  ideaRecordingProgress = 0;
+  private ideaRecordingTimer: any;
+  ideaSubmissionBusy = false;
+  ideaSubmissionSuccess = false;
+  ideaSubmissionMessage = '';
+
   allUsers: User[] = [];
   selectedTargetUserId: string | null = null;
   isAuthenticated = false;
@@ -174,6 +197,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.authSub?.unsubscribe();
     this.reviewsSub?.unsubscribe();
     this.usersSub?.unsubscribe();
+    this.stopIdeaTimer();
   }
 
   setReviews() {
@@ -497,6 +521,287 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     if (input) input.value = '';
 
     console.log('Image file selected:', file);
+  }
+
+  /* ---------------------- Boîte à idées helpers ---------------------- */
+  toggleIdeaForm(): void {
+    this.showIdeaForm = !this.showIdeaForm;
+  }
+
+  toggleIdeaInfo(): void {
+    this.ideaInfoVisible = !this.ideaInfoVisible;
+  }
+
+  async startIdeaRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferredMimeTypes = [
+        'audio/mp4;codecs=mp4a',
+        'audio/ogg;codecs=opus',
+        'audio/webm;codecs=opus',
+      ];
+
+      let selectedMimeType = '';
+      for (const mt of preferredMimeTypes) {
+        if (MediaRecorder.isTypeSupported(mt)) {
+          selectedMimeType = mt;
+          break;
+        }
+      }
+      const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
+
+      this.ideaMediaRecorder = new MediaRecorder(stream, options);
+      this.ideaAudioChunks = [];
+
+      this.ideaMediaRecorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) {
+          this.ideaAudioChunks.push(event.data);
+        }
+      };
+
+      this.ideaMediaRecorder.start();
+      this.ideaIsRecording = true;
+      this.ideaRecordingProgress = 0;
+      this.ideaElapsedTime = '00:00';
+      this.startIdeaTimer();
+    } catch (error) {
+      console.error("Impossible d'accéder au micro :", error);
+      alert(
+        'Accès au micro refusé. Vérifiez vos permissions puis réessayez.'
+      );
+    }
+  }
+
+  stopIdeaRecording() {
+    if (!this.ideaMediaRecorder) return;
+    this.ideaMediaRecorder.stop();
+    this.ideaIsRecording = false;
+    this.stopIdeaTimer();
+
+    this.ideaMediaRecorder.onstop = () => {
+      this.ideaRecordedBlob = new Blob(this.ideaAudioChunks, {
+        type: 'audio/webm',
+      });
+      this.ideaRecordedAudioURL = URL.createObjectURL(this.ideaRecordedBlob);
+      this.cd.detectChanges();
+    };
+  }
+
+  discardIdeaAudio() {
+    if (this.ideaMediaRecorder && this.ideaMediaRecorder.state !== 'inactive') {
+      this.ideaMediaRecorder.stop();
+    }
+    this.ideaIsRecording = false;
+    this.stopIdeaTimer();
+
+    this.ideaAudioChunks = [];
+    if (this.ideaRecordedAudioURL) {
+      URL.revokeObjectURL(this.ideaRecordedAudioURL);
+    }
+    this.ideaRecordedAudioURL = undefined;
+    this.ideaRecordedBlob = undefined;
+
+    if (this.ideaSelectedAudioPreviewURL) {
+      URL.revokeObjectURL(this.ideaSelectedAudioPreviewURL);
+    }
+    this.ideaSelectedAudioPreviewURL = undefined;
+    this.ideaSelectedAudioFile = undefined;
+
+    const input = document.getElementById(
+      'ideaAudioFile'
+    ) as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
+
+    this.ideaElapsedTime = '00:00';
+    this.ideaRecordingProgress = 0;
+  }
+
+  onIdeaAudioFileSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+
+    if (file.size >= 20000000) {
+      alert('Le fichier audio dépasse la limite de 20MB.');
+      return;
+    }
+    if (file.type.split('/')[0] !== 'audio') {
+      alert('Veuillez sélectionner un fichier audio valide.');
+      return;
+    }
+
+    this.ideaSelectedAudioFile = file;
+    if (this.ideaSelectedAudioPreviewURL) {
+      URL.revokeObjectURL(this.ideaSelectedAudioPreviewURL);
+    }
+    this.ideaSelectedAudioPreviewURL = URL.createObjectURL(file);
+
+    if (this.ideaRecordedAudioURL) {
+      URL.revokeObjectURL(this.ideaRecordedAudioURL);
+      this.ideaRecordedAudioURL = undefined;
+      this.ideaRecordedBlob = undefined;
+    }
+
+    const input = document.getElementById(
+      'ideaAudioFile'
+    ) as HTMLInputElement | null;
+    if (input) input.value = '';
+  }
+
+  onIdeaImageFileSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+
+    if (file.size >= 10000000) {
+      alert("L'image dépasse la limite de 10MB.");
+      return;
+    }
+    if (file.type.split('/')[0] !== 'image') {
+      alert('Veuillez sélectionner une image (jpg, png, ...).');
+      return;
+    }
+
+    this.ideaSelectedImageFile = file;
+    if (this.ideaSelectedImagePreviewURL) {
+      URL.revokeObjectURL(this.ideaSelectedImagePreviewURL);
+    }
+    this.ideaSelectedImagePreviewURL = URL.createObjectURL(file);
+
+    const input = document.getElementById(
+      'ideaImageFile'
+    ) as HTMLInputElement | null;
+    if (input) input.value = '';
+  }
+
+  clearIdeaSelectedImage(): void {
+    if (this.ideaSelectedImagePreviewURL) {
+      URL.revokeObjectURL(this.ideaSelectedImagePreviewURL);
+    }
+    this.ideaSelectedImagePreviewURL = undefined;
+    this.ideaSelectedImageFile = undefined;
+
+    const input = document.getElementById(
+      'ideaImageFile'
+    ) as HTMLInputElement | null;
+    if (input) input.value = '';
+  }
+
+  getIdeaLimitedProgress(): number {
+    return Math.min(this.ideaRecordingProgress, 100);
+  }
+
+  private startIdeaTimer(): void {
+    this.stopIdeaTimer();
+    let seconds = 0;
+    this.ideaRecordingTimer = setInterval(() => {
+      seconds++;
+      this.ideaElapsedTime = this.formatTime(seconds);
+      this.ideaRecordingProgress = (seconds / 60) * 100;
+    }, 1000);
+  }
+
+  private stopIdeaTimer(): void {
+    if (this.ideaRecordingTimer) {
+      clearInterval(this.ideaRecordingTimer);
+      this.ideaRecordingTimer = undefined;
+    }
+  }
+
+  async submitIdea() {
+    if (this.ideaSubmissionBusy) {
+      return;
+    }
+    if (!this.ideaEmployeeName || !this.ideaEmployeeName.trim()) {
+      alert('Veuillez saisir votre nom.');
+      return;
+    }
+    if (!this.ideaText || !this.ideaText.trim()) {
+      alert('Veuillez décrire votre idée.');
+      return;
+    }
+
+    this.ideaSubmissionBusy = true;
+    this.ideaSubmissionSuccess = false;
+    this.ideaSubmissionMessage = '';
+
+    try {
+      const [imageAttachment, audioUrl] = await Promise.all([
+        this.uploadIdeaImageAttachment(),
+        this.uploadIdeaAudioAsset(),
+      ]);
+
+      const payload: IdeaSubmission = {
+        employeeName: this.ideaEmployeeName.trim(),
+        ideaText: this.ideaText.trim(),
+        createdAt: this.time.todaysDate(),
+        createdAtISO: new Date().toISOString(),
+        userId: this.auth.currentUser?.uid ?? null,
+        ...(audioUrl ? { audioUrl } : {}),
+        ...(imageAttachment ? { attachments: [imageAttachment] } : {}),
+      };
+
+      await this.auth.addIdeaSubmission(payload);
+      this.ideaSubmissionSuccess = true;
+      this.ideaSubmissionMessage =
+        'Merci ! Votre idée a été déposée dans la Boîte à idées.';
+      this.resetIdeaForm();
+    } catch (error) {
+      console.error("Erreur lors de l'envoi vers la Boîte à idées :", error);
+      alert(
+        "Impossible d'enregistrer votre idée pour le moment. Veuillez réessayer."
+      );
+    } finally {
+      this.ideaSubmissionBusy = false;
+    }
+  }
+
+  private async uploadIdeaImageAttachment(): Promise<IdeaAttachment | null> {
+    if (!this.ideaSelectedImageFile) {
+      return null;
+    }
+
+    const file = this.ideaSelectedImageFile;
+    const path = `idea-box/images/${Date.now()}-${file.name}`;
+    const uploadTask = await this.storage.upload(path, file);
+    const downloadURL = await uploadTask.ref.getDownloadURL();
+
+    return {
+      type: 'image',
+      url: downloadURL,
+      mimeType: file.type,
+      size: file.size,
+    };
+  }
+
+  private async uploadIdeaAudioAsset(): Promise<string | null> {
+    if (this.ideaRecordedBlob) {
+      const fileName = `recorded-${Date.now()}.webm`;
+      const path = `idea-box/audio/${fileName}`;
+      const audioFile = new File([this.ideaRecordedBlob], fileName, {
+        type: this.ideaRecordedBlob.type || 'audio/webm',
+      });
+      const uploadTask = await this.storage.upload(path, audioFile);
+      return uploadTask.ref.getDownloadURL();
+    }
+
+    if (this.ideaSelectedAudioFile) {
+      const fileName = `${Date.now()}-${this.ideaSelectedAudioFile.name}`;
+      const path = `idea-box/audio/${fileName}`;
+      const uploadTask = await this.storage.upload(path, this.ideaSelectedAudioFile);
+      return uploadTask.ref.getDownloadURL();
+    }
+
+    return null;
+  }
+
+  private resetIdeaForm(): void {
+    this.ideaEmployeeName = '';
+    this.ideaText = '';
+    this.discardIdeaAudio();
+    this.clearIdeaSelectedImage();
+    this.ideaElapsedTime = '00:00';
+    this.ideaRecordingProgress = 0;
   }
   addReviewWithOrWithoutAudioFile(confirmUser = true) {
     // 1) Must have a name

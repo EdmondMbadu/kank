@@ -13,6 +13,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
 import { Client, Comment } from '../models/client';
+import { IdeaSubmission } from '../models/idea';
 import { Timestamp } from 'firebase/firestore';
 import { TimeService } from './time.service';
 import { ComputationService } from '../shrink/services/computation.service';
@@ -361,6 +362,17 @@ export class AuthService {
           return this.afs.doc(`users/${uid}/reviews/${reviewId}`).set(data);
         }
       });
+  }
+
+  addIdeaSubmission(idea: IdeaSubmission): Promise<void> {
+    const id = this.afs.createId();
+    const payload: IdeaSubmission = {
+      ...idea,
+      id,
+      userId: idea.userId ?? this.currentUser?.uid ?? null,
+    };
+
+    return this.afs.doc(`ideaBox/${id}`).set(payload);
   }
 
   registerNewClient(client: Client) {

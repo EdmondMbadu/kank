@@ -432,6 +432,244 @@
       </div>
     </div>
   </section>
+
+  <!-- ░░░ BOÎTE À IDÉES ░░░ -->
+  <section class="py-8 bg-white dark:bg-slate-900/40">
+    <div class="max-w-3xl mx-auto px-4 space-y-4">
+      <div class="flex items-start gap-3">
+        <button
+          type="button"
+          (click)="toggleIdeaForm()"
+          class="flex-1 flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-5 py-4 shadow-md"
+        >
+          <div class="flex items-center gap-2 text-lg font-semibold">
+            <svg
+              class="w-7 h-7 text-purple-600 dark:text-purple-400"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 19v-7m0 0V5m0 7h7m-7 0H5"
+              />
+            </svg>
+            Boîte à idées
+          </div>
+          <svg
+            class="w-6 h-6 text-gray-500 transform transition-transform duration-200"
+            [ngClass]="{ 'rotate-90': showIdeaForm }"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          (click)="toggleIdeaInfo()"
+          class="w-11 h-11 flex items-center justify-center rounded-full border border-dashed border-purple-400 text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
+          title="Pourquoi une Boîte à idées ?"
+        >
+          ?
+        </button>
+      </div>
+
+      <div
+        *ngIf="ideaInfoVisible"
+        class="text-sm text-slate-600 dark:text-slate-300 bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4"
+      >
+        Cet espace est dédié à la créativité et à l’amélioration continue. Partagez
+        vos idées pour rendre la Fondation plus performante, plus proche de ses
+        équipes et plus efficace au quotidien.
+      </div>
+
+      <div
+        *ngIf="ideaSubmissionSuccess && ideaSubmissionMessage"
+        class="rounded-lg border border-emerald-200 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 px-4 py-3 text-sm"
+      >
+        {{ ideaSubmissionMessage }}
+      </div>
+
+      <div
+        *ngIf="showIdeaForm"
+        class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-6 space-y-6 shadow"
+      >
+        <div>
+          <label
+            class="block mb-1 font-medium text-sm text-gray-800 dark:text-gray-200"
+            >Nom de l’employé</label
+          >
+          <input
+            [(ngModel)]="ideaEmployeeName"
+            type="text"
+            class="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Ex. Micheline K."
+          />
+        </div>
+
+        <div>
+          <label
+            class="block mb-1 font-medium text-sm text-gray-800 dark:text-gray-200"
+            >Votre idée</label
+          >
+          <textarea
+            [(ngModel)]="ideaText"
+            rows="4"
+            class="w-full p-2.5 rounded-lg border focus:ring-purple-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white resize-y"
+            placeholder="Décrivez votre idée, le problème adressé et l’impact attendu."
+          ></textarea>
+        </div>
+
+        <!-- Image attachment -->
+        <div>
+          <label class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200"
+            >Illustration (facultatif)</label
+          >
+          <div class="flex items-center gap-2">
+            <label
+              for="ideaImageFile"
+              class="inline-flex items-center justify-center w-36 h-12 rounded-lg border border-dashed border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer text-sm text-purple-600 dark:text-purple-300"
+            >
+              + Ajouter une image
+            </label>
+            <input
+              type="file"
+              id="ideaImageFile"
+              accept="image/*"
+              (change)="onIdeaImageFileSelected($any($event.target).files)"
+              class="hidden"
+            />
+            <button
+              *ngIf="ideaSelectedImagePreviewURL"
+              type="button"
+              (click)="clearIdeaSelectedImage()"
+              class="text-xs text-gray-500 hover:underline"
+            >
+              Retirer
+            </button>
+          </div>
+
+          <div *ngIf="ideaSelectedImagePreviewURL" class="mt-3 relative">
+            <img
+              [src]="ideaSelectedImagePreviewURL"
+              class="max-h-48 rounded object-contain w-full border"
+            />
+          </div>
+        </div>
+
+        <!-- Audio controls -->
+        <div class="space-y-3">
+          <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+            Ajouter un message audio (facultatif)
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <button
+              type="button"
+              (click)="startIdeaRecording()"
+              [disabled]="ideaIsRecording"
+              class="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-50 hover:bg-purple-100 disabled:opacity-40 transition"
+            >
+              <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+              Enregistrer
+            </button>
+            <button
+              type="button"
+              (click)="stopIdeaRecording()"
+              [disabled]="!ideaIsRecording"
+              class="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 disabled:opacity-40 transition"
+            >
+              ◼︎ Arrêter
+            </button>
+            <button
+              type="button"
+              (click)="discardIdeaAudio()"
+              [disabled]="!ideaRecordedAudioURL && !ideaSelectedAudioPreviewURL"
+              class="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 transition"
+            >
+              Effacer
+            </button>
+          </div>
+
+          <div *ngIf="ideaIsRecording">
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Enregistrement en cours</span>
+              <span class="font-mono">{{ ideaElapsedTime }}</span>
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded">
+              <div
+                class="h-2 bg-purple-600 rounded"
+                [style.width.%]="getIdeaLimitedProgress()"
+              ></div>
+            </div>
+          </div>
+
+          <div *ngIf="ideaRecordedAudioURL || ideaSelectedAudioPreviewURL" class="mt-2">
+            <audio
+              [src]="ideaRecordedAudioURL || ideaSelectedAudioPreviewURL"
+              controls
+              class="w-full"
+            ></audio>
+          </div>
+
+          <div>
+            <label
+              class="block text-xs font-medium mb-1 text-gray-600 dark:text-gray-300"
+              >Importer un fichier audio</label
+            >
+            <label
+              for="ideaAudioFile"
+              class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <span class="text-xs text-gray-500"
+                >Cliquez ou déposez un fichier (mp3, wav, m4a…)</span
+              >
+              <input
+                type="file"
+                id="ideaAudioFile"
+                accept="audio/*"
+                (change)="onIdeaAudioFileSelected($any($event.target).files)"
+                class="hidden"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            type="button"
+            (click)="submitIdea()"
+            [disabled]="ideaSubmissionBusy"
+            class="inline-flex items-center gap-2 py-2.5 px-5 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 disabled:opacity-50"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 10l9-7 9 7-9 7-9-7z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 10v8l9 6 9-6v-8"
+              />
+            </svg>
+            {{ ideaSubmissionBusy ? "Envoi..." : "Partager l’idée" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
 </ng-container>
 
 <ng-template #feedbackSuccess>
