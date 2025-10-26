@@ -52,6 +52,7 @@ export class HomeCentralComponent implements OnInit {
   minCreditScore = 0;
   loanAmountFilterValue: number | null = null;
   loanAmountFilterMode: 'min' | 'exact' = 'min';
+  debtStatusFilter: 'all' | 'withDebt' | 'withoutDebt' = 'all';
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
 
@@ -326,6 +327,15 @@ export class HomeCentralComponent implements OnInit {
     };
   }
 
+  debtStatusButtonClasses(mode: 'all' | 'withDebt' | 'withoutDebt') {
+    return {
+      'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+        this.isDebtStatusFilter(mode),
+      'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+        !this.isDebtStatusFilter(mode),
+    };
+  }
+
   get birthdayFilterSummary(): string | null {
     switch (this.birthdayFilterMode) {
       case 'today':
@@ -350,12 +360,14 @@ export class HomeCentralComponent implements OnInit {
     const hasScoreFilter = Number(this.minCreditScore) > 0;
     const hasLoanFilter =
       this.loanAmountFilterValue !== null && this.loanAmountFilterValue > 0;
+    const hasDebtFilter = this.debtStatusFilter !== 'all';
 
     if (
       !this.birthdayFilterSummary &&
       !hasSearch &&
       !hasScoreFilter &&
-      !hasLoanFilter
+      !hasLoanFilter &&
+      !hasDebtFilter
     ) {
       return `Tous les clients · ${baseTotal} client(s)`;
     }
@@ -378,6 +390,13 @@ export class HomeCentralComponent implements OnInit {
         `Prêt ${comparator} FC ${this.formatFc(this.loanAmountFilterValue)}`
       );
     }
+    if (hasDebtFilter) {
+      parts.push(
+        this.debtStatusFilter === 'withDebt'
+          ? 'Avec dette > 0'
+          : 'Dettes réglées'
+      );
+    }
 
     parts.push(`${count} client(s)`);
     return parts.join(' · ');
@@ -387,7 +406,8 @@ export class HomeCentralComponent implements OnInit {
     const base = (this.allClients ?? [])
       .filter((client) => this.matchesSearchTerm(client, this.searchTerm))
       .filter((client) => this.matchesCreditScore(client))
-      .filter((client) => this.matchesLoanAmount(client));
+      .filter((client) => this.matchesLoanAmount(client))
+      .filter((client) => this.matchesDebtStatus(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
   }
@@ -449,6 +469,16 @@ export class HomeCentralComponent implements OnInit {
     this.applyClientFilters();
   }
 
+  setDebtStatusFilter(mode: 'all' | 'withDebt' | 'withoutDebt') {
+    if (this.debtStatusFilter === mode) return;
+    this.debtStatusFilter = mode;
+    this.applyClientFilters();
+  }
+
+  isDebtStatusFilter(mode: 'all' | 'withDebt' | 'withoutDebt') {
+    return this.debtStatusFilter === mode;
+  }
+
   private matchesCreditScore(client: Client): boolean {
     const min = Number(this.minCreditScore) || 0;
     if (min <= 0) return true;
@@ -483,6 +513,24 @@ export class HomeCentralComponent implements OnInit {
       return amount === target;
     }
     return amount >= target;
+  }
+
+  private matchesDebtStatus(client: Client): boolean {
+    switch (this.debtStatusFilter) {
+      case 'withDebt':
+        return this.clientHasDebtLeft(client);
+      case 'withoutDebt':
+        return !this.clientHasDebtLeft(client);
+      default:
+        return true;
+    }
+  }
+
+  private clientHasDebtLeft(client: Client): boolean {
+    const raw = client.debtLeft ?? client.debtInProcess ?? 0;
+    const num = Number(String(raw).replace(/[^0-9.-]/g, ''));
+    if (!Number.isFinite(num)) return false;
+    return num > 0;
   }
 
   private matchesBirthdayFilter(client: Client): boolean {
