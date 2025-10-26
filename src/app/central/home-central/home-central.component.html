@@ -157,229 +157,223 @@
         </div>
       </div>
 
-      <div
-        class="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
-      >
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            (click)="setBirthdayFilter('all')"
-            class="rounded-full px-4 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="birthdayButtonClasses('all')"
-          >
-            Tous
-          </button>
-          <button
-            type="button"
-            (click)="setBirthdayFilter('today')"
-            class="rounded-full px-4 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="birthdayButtonClasses('today')"
-          >
-            Anniversaires aujourd'hui
-          </button>
-          <button
-            type="button"
-            (click)="setBirthdayFilter('tomorrow')"
-            class="rounded-full px-4 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="birthdayButtonClasses('tomorrow')"
-          >
-            Anniversaires demain
-          </button>
-          <button
-            type="button"
-            (click)="setBirthdayFilter('custom')"
-            class="rounded-full px-4 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="birthdayButtonClasses('custom')"
-          >
-            Choisir une date
-          </button>
-        </div>
-
+      <div class="mt-5 space-y-4">
         <div
-          *ngIf="isBirthdayFilter('custom')"
-          class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300"
+          class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
         >
-          <label
-            class="font-medium"
-            for="birthday-filter-date"
-          >
-            Date choisie
-          </label>
-          <input
-            id="birthday-filter-date"
-            type="date"
-            [value]="customBirthdayInput"
-            (change)="onCustomBirthdayDateChange($event)"
-            class="w-full rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-          />
-        </div>
-
-        <div
-          class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-300"
-        >
-          <span
-            class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
-          >
-            Dette
-          </span>
-          <button
-            type="button"
-            (click)="setDebtStatusFilter('all')"
-            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="debtStatusButtonClasses('all')"
-          >
-            Tous
-          </button>
-          <button
-            type="button"
-            (click)="setDebtStatusFilter('withDebt')"
-            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="debtStatusButtonClasses('withDebt')"
-          >
-            Avec dette
-          </button>
-          <button
-            type="button"
-            (click)="setDebtStatusFilter('withoutDebt')"
-            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="debtStatusButtonClasses('withoutDebt')"
-          >
-            Sans dette
-          </button>
-        </div>
-
-        <div
-          class="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-300"
-        >
-          <span
-            class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
-          >
-            Statut
-          </span>
-          <button
-            type="button"
-            (click)="setQuitteStatusFilter('all')"
-            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="quitteStatusButtonClasses('all')"
-          >
-            Tous
-          </button>
-          <button
-            type="button"
-            (click)="setQuitteStatusFilter('quitte')"
-            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="quitteStatusButtonClasses('quitte')"
-          >
-            Marqués « Quitté »
-          </button>
-          <button
-            type="button"
-            (click)="setQuitteStatusFilter('active')"
-            class="rounded-full px-4 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-            [ngClass]="quitteStatusButtonClasses('active')"
-          >
-            Non « Quitté »
-          </button>
-        </div>
-
-        <div
-          class="flex w-full flex-col gap-4 text-xs text-slate-500 dark:text-slate-400 xl:flex-row xl:items-start xl:gap-6"
-        >
-          <div class="flex flex-wrap items-center gap-2">
-            <span
-              class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            Anniversaires
+          </p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              (click)="setBirthdayFilter('all')"
+              class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              [ngClass]="birthdayButtonClasses('all')"
             >
-              Score min.
-            </span>
+              Tous
+            </button>
+            <button
+              type="button"
+              (click)="setBirthdayFilter('today')"
+              class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              [ngClass]="birthdayButtonClasses('today')"
+            >
+              Aujourd'hui
+            </button>
+            <button
+              type="button"
+              (click)="setBirthdayFilter('tomorrow')"
+              class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              [ngClass]="birthdayButtonClasses('tomorrow')"
+            >
+              Demain
+            </button>
+            <button
+              type="button"
+              (click)="setBirthdayFilter('custom')"
+              class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              [ngClass]="birthdayButtonClasses('custom')"
+            >
+              Choisir
+            </button>
+          </div>
+          <div
+            *ngIf="isBirthdayFilter('custom')"
+            class="mt-3 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300"
+          >
+            <label class="font-medium" for="birthday-filter-date">Date</label>
             <input
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              [(ngModel)]="minCreditScore"
-              (ngModelChange)="onCreditScoreChange($event)"
-              class="w-16 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              id="birthday-filter-date"
+              type="date"
+              [value]="customBirthdayInput"
+              (change)="onCustomBirthdayDateChange($event)"
+              class="flex-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              [(ngModel)]="minCreditScore"
-              (ngModelChange)="onCreditScoreChange($event)"
-              class="w-32 accent-emerald-500"
-            />
-            <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">
-              ≥ {{ minCreditScore }}
-            </span>
+          </div>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+          <div
+            class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+          >
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+              Dette & Statut
+            </p>
+            <div class="mt-2 space-y-3">
+              <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span class="font-semibold text-slate-500 dark:text-slate-300">Dette</span>
+                <button
+                  type="button"
+                  (click)="setDebtStatusFilter('all')"
+                  class="rounded-full px-3 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  [ngClass]="debtStatusButtonClasses('all')"
+                >
+                  Tous
+                </button>
+                <button
+                  type="button"
+                  (click)="setDebtStatusFilter('withDebt')"
+                  class="rounded-full px-3 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  [ngClass]="debtStatusButtonClasses('withDebt')"
+                >
+                  Avec
+                </button>
+                <button
+                  type="button"
+                  (click)="setDebtStatusFilter('withoutDebt')"
+                  class="rounded-full px-3 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  [ngClass]="debtStatusButtonClasses('withoutDebt')"
+                >
+                  Sans
+                </button>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <span class="font-semibold text-slate-500 dark:text-slate-300">Statut</span>
+                <button
+                  type="button"
+                  (click)="setQuitteStatusFilter('all')"
+                  class="rounded-full px-3 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  [ngClass]="quitteStatusButtonClasses('all')"
+                >
+                  Tous
+                </button>
+                <button
+                  type="button"
+                  (click)="setQuitteStatusFilter('quitte')"
+                  class="rounded-full px-3 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  [ngClass]="quitteStatusButtonClasses('quitte')"
+                >
+                  « Quitté »
+                </button>
+                <button
+                  type="button"
+                  (click)="setQuitteStatusFilter('active')"
+                  class="rounded-full px-3 py-1.5 font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  [ngClass]="quitteStatusButtonClasses('active')"
+                >
+                  Actifs
+                </button>
+              </div>
+            </div>
           </div>
 
           <div
-            class="w-full rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+            class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
           >
-            <div class="flex flex-wrap items-center gap-2">
-              <span
-                class="font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-200"
-              >
-                Montant prêt
-              </span>
-              <div
-                class="inline-flex overflow-hidden rounded-full border border-slate-200 dark:border-slate-600"
-              >
-                <button
-                  type="button"
-                  (click)="setLoanAmountFilterMode('min')"
-                  class="px-3 py-1 text-[11px] font-semibold transition"
-                  [ngClass]="{
-                    'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('min'),
-                    'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('min')
-                  }"
-                >
-                  ≥ Min
-                </button>
-                <button
-                  type="button"
-                  (click)="setLoanAmountFilterMode('exact')"
-                  class="px-3 py-1 text-[11px] font-semibold transition"
-                  [ngClass]="{
-                    'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('exact'),
-                    'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('exact')
-                  }"
-                >
-                  = Exact
-                </button>
-              </div>
-              <input
-                type="number"
-                min="0"
-                step="1000"
-                [ngModel]="loanAmountFilterValue !== null ? loanAmountFilterValue : ''"
-                (ngModelChange)="onLoanAmountChange($event)"
-                placeholder="Ex : 2 000 000"
-                class="w-36 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-              <button
-                type="button"
-                *ngIf="loanAmountFilterValue !== null"
-                (click)="clearLoanAmountFilter()"
-                class="text-[11px] font-semibold text-rose-600 transition hover:text-rose-500"
-              >
-                Effacer
-              </button>
-            </div>
-            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-              <ng-container *ngIf="loanAmountFilterValue !== null; else loanHint">
-                {{
-                  isLoanAmountFilterMode('exact')
-                    ? 'Clients avec exactement'
-                    : 'Clients avec au moins'
-                }}
-                {{ loanAmountFilterValue | number : '1.0-0' }} FC.
-              </ng-container>
-              <ng-template #loanHint>
-                Indiquez un montant pour filtrer les clients selon leur prêt accordé.
-              </ng-template>
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+              Score & Prêt
             </p>
+            <div class="mt-2 space-y-3">
+              <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
+                <span class="font-semibold text-slate-600 dark:text-slate-200">Score min.</span>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  [(ngModel)]="minCreditScore"
+                  (ngModelChange)="onCreditScoreChange($event)"
+                  class="w-16 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  [(ngModel)]="minCreditScore"
+                  (ngModelChange)="onCreditScoreChange($event)"
+                  class="w-28 flex-1 accent-emerald-500"
+                />
+                <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">
+                  ≥ {{ minCreditScore }}
+                </span>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-semibold text-[11px] uppercase tracking-wide text-slate-600 dark:text-slate-200">
+                    Montant prêt
+                  </span>
+                  <div
+                    class="inline-flex overflow-hidden rounded-full border border-slate-200 dark:border-slate-600"
+                  >
+                    <button
+                      type="button"
+                      (click)="setLoanAmountFilterMode('min')"
+                      class="px-3 py-1 text-[11px] font-semibold transition"
+                      [ngClass]="{
+                        'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('min'),
+                        'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('min')
+                      }"
+                    >
+                      ≥ Min
+                    </button>
+                    <button
+                      type="button"
+                      (click)="setLoanAmountFilterMode('exact')"
+                      class="px-3 py-1 text-[11px] font-semibold transition"
+                      [ngClass]="{
+                        'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('exact'),
+                        'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('exact')
+                      }"
+                    >
+                      = Exact
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    [ngModel]="loanAmountFilterValue !== null ? loanAmountFilterValue : ''"
+                    (ngModelChange)="onLoanAmountChange($event)"
+                    placeholder="Ex : 2 000 000"
+                    class="w-32 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    *ngIf="loanAmountFilterValue !== null"
+                    (click)="clearLoanAmountFilter()"
+                    class="text-[11px] font-semibold text-rose-600 transition hover:text-rose-500"
+                  >
+                    Effacer
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                  <ng-container *ngIf="loanAmountFilterValue !== null; else loanHint">
+                    {{
+                      isLoanAmountFilterMode('exact')
+                        ? 'Clients avec exactement'
+                        : 'Clients avec au moins'
+                    }}
+                    {{ loanAmountFilterValue | number : '1.0-0' }} FC.
+                  </ng-container>
+                  <ng-template #loanHint>
+                    Indiquez un montant pour filtrer les clients selon leur prêt accordé.
+                  </ng-template>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
