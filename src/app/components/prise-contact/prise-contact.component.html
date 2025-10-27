@@ -113,6 +113,21 @@
                 {{ phoneError }}
               </span>
             </label>
+            <label
+              class="flex flex-col text-sm font-semibold text-slate-600 sm:col-span-2"
+            >
+              Origine / Tags
+              <input
+                type="text"
+                [(ngModel)]="form.originTagsInput"
+                name="originTagsInput"
+                placeholder="Ex: Marché central, Référence Mireille"
+                class="mt-2 w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-normal text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+              <span class="mt-2 text-xs font-medium text-slate-400">
+                Séparez les lieux avec une virgule pour ajouter plusieurs tags.
+              </span>
+            </label>
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
@@ -157,6 +172,8 @@
             <input
               type="search"
               [(ngModel)]="searchTerm"
+              (ngModelChange)="onSearchTermChange()"
+              name="searchTerm"
               placeholder="Rechercher par nom ou téléphone"
               class="w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-50"
             />
@@ -166,19 +183,62 @@
               🔍
             </span>
           </div>
-
           <div
-            class="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-2 text-right text-sm font-medium text-emerald-700"
+            class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
           >
-            <span
-              class="block text-xs uppercase tracking-widest text-emerald-400"
+            <div
+              class="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-2 text-right text-sm font-medium text-emerald-700"
             >
-              Total affiché
-            </span>
-            <span class="text-lg font-semibold text-emerald-700">
-              {{ filteredTotal }}
-            </span>
+              <span
+                class="block text-xs uppercase tracking-widest text-emerald-400"
+              >
+                Total affiché
+              </span>
+              <span class="text-lg font-semibold text-emerald-700">
+                {{ filteredTotal }}
+              </span>
+            </div>
+            <button
+              *ngIf="auth.isAdmin"
+              type="button"
+              (click)="openBulkModal()"
+              class="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-300/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+            >
+              Envoyer un SMS groupé
+            </button>
           </div>
+        </div>
+
+        <div
+          *ngIf="auth.isAdmin && availableTags.length"
+          class="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-700"
+        >
+          <span class="text-xs font-semibold uppercase tracking-[0.2em]">
+            Tags
+          </span>
+          <button
+            type="button"
+            (click)="clearTagFilters()"
+            [ngClass]="
+              hasActiveTagFilter
+                ? 'inline-flex items-center rounded-full border border-emerald-400 bg-white px-3 py-1 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100'
+                : 'inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow'
+            "
+          >
+            Tous
+          </button>
+          <button
+            type="button"
+            *ngFor="let tag of availableTags"
+            (click)="toggleTag(tag)"
+            [ngClass]="
+              isTagSelected(tag.value)
+                ? 'inline-flex items-center rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white shadow'
+                : 'inline-flex items-center rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-50'
+            "
+          >
+            {{ tag.label }}
+          </button>
         </div>
 
         <ng-container *ngIf="filteredContacts.length; else emptyState">
@@ -193,6 +253,7 @@
                   >
                     <th scope="col" class="px-4 py-3 sm:px-6">Nom complet</th>
                     <th scope="col" class="px-4 py-3 sm:px-6">Téléphone</th>
+                    <th scope="col" class="px-4 py-3 sm:px-6">Tags</th>
                     <th scope="col" class="px-4 py-3 sm:px-6">Ajouté le</th>
                     <th scope="col" class="px-4 py-3 sm:px-6 text-right">
                       Actions
@@ -213,9 +274,30 @@
                           {{ contact.middleName }}
                         </span>
                       </div>
+                      <div
+                        *ngIf="auth.isAdmin && contact.ownerName"
+                        class="mt-1 text-xs font-medium uppercase tracking-wider text-slate-400"
+                      >
+                        Ajouté par {{ contact.ownerName }}
+                      </div>
                     </td>
                     <td class="px-4 py-4 sm:px-6 text-slate-500">
                       {{ contact.phoneNumber }}
+                    </td>
+                    <td class="px-4 py-4 sm:px-6 text-slate-500">
+                      <ng-container *ngIf="contact.originTags?.length; else noTags">
+                        <div class="flex flex-wrap gap-1">
+                          <span
+                            *ngFor="let tag of contact.originTags"
+                            class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-600"
+                          >
+                            {{ tag }}
+                          </span>
+                        </div>
+                      </ng-container>
+                      <ng-template #noTags>
+                        <span class="text-xs text-slate-400">—</span>
+                      </ng-template>
                     </td>
                     <td class="px-4 py-4 sm:px-6 text-slate-500">
                       <div>
@@ -294,4 +376,123 @@
       </div>
     </section>
   </main>
+
+  <div
+    *ngIf="auth.isAdmin && bulkModal.open"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 px-4 py-6"
+  >
+    <div
+      class="relative w-full max-w-2xl rounded-3xl bg-white px-6 py-6 shadow-2xl sm:px-8"
+    >
+      <button
+        type="button"
+        (click)="closeBulkModal()"
+        class="absolute right-4 top-4 text-sm font-semibold text-slate-400 transition hover:text-slate-600"
+      >
+        ✕
+      </button>
+
+      <h3 class="text-2xl font-semibold text-slate-900">
+        Envoi groupé aux prospects
+      </h3>
+      <p class="mt-2 text-sm text-slate-500">
+        {{ bulkModal.recipients.length }}
+        {{ bulkModal.recipients.length > 1 ? "contacts recevront" : "contact recevra" }}
+        le message sélectionné.
+      </p>
+      <p
+        *ngIf="bulkModal.excludedNoPhone"
+        class="mt-1 text-xs font-semibold text-amber-600"
+      >
+        {{ bulkModal.excludedNoPhone }} prospect(s) sans numéro valide sont
+        exclus automatiquement.
+      </p>
+
+      <div class="mt-5 space-y-3">
+        <label class="block text-sm font-semibold text-slate-700">
+          Message
+          <textarea
+            rows="6"
+            [(ngModel)]="bulkModal.message"
+            name="bulkMessage"
+            class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+          ></textarea>
+        </label>
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <span>Variables disponibles :</span>
+          <span
+            *ngFor="let token of placeholderTokens"
+            class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-1 font-semibold text-slate-500"
+          >
+            {{ token }}
+          </span>
+        </div>
+      </div>
+
+      <div
+        *ngIf="bulkPreviewMessage"
+        class="mt-5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+      >
+        <span
+          class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+          >Aperçu</span
+        >
+        <p class="whitespace-pre-line">
+          {{ bulkPreviewMessage }}
+        </p>
+      </div>
+
+      <div
+        *ngIf="bulkModal.result"
+        class="mt-5 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-700"
+      >
+        <div class="font-semibold">
+          {{ bulkModal.result.succeeded }} /
+          {{ bulkModal.result.total }} envois réussis
+        </div>
+        <div *ngIf="bulkModal.result.failed" class="text-xs text-rose-500">
+          {{ bulkModal.result.failed }} échec(s)
+        </div>
+        <ul
+          *ngIf="bulkModal.result.failed"
+          class="space-y-2 text-xs text-rose-600"
+        >
+          <li
+            *ngFor="let failure of bulkModal.result.failures"
+            class="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2"
+          >
+            {{ failure.contact.firstName }} {{ failure.contact.lastName }} —
+            {{ failure.error }}
+          </li>
+        </ul>
+      </div>
+
+      <div
+        class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end"
+      >
+        <button
+          type="button"
+          (click)="closeBulkModal()"
+          class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+        >
+          Fermer
+        </button>
+        <button
+          type="button"
+          (click)="sendBulkMessages()"
+          [disabled]="
+            bulkSending ||
+            !bulkModal.message.trim() ||
+            bulkModal.recipients.length === 0
+          "
+          class="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-300/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+        >
+          <span *ngIf="bulkSending" class="animate-pulse">Envoi…</span>
+          <span *ngIf="!bulkSending">
+            Envoyer maintenant ({{ bulkModal.recipients.length }})
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
