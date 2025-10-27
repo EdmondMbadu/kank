@@ -9,24 +9,18 @@ import { AuthService } from 'src/app/services/auth.service';
 import { User } from 'src/app/models/user';
 import { MessagingService } from 'src/app/services/messaging.service';
 
-type ContactFormFields = {
+type ContactFormModel = {
   firstName: string;
   middleName: string;
   lastName: string;
   phoneNumber: string;
 };
 
-type ContactFormModel = ContactFormFields & {
-  originTagsInput: string;
-};
-
-type ContactDocument = ContactFormFields & {
+type ContactDocument = ContactFormModel & {
   createdAt: number;
   updatedAt?: number;
   /** NEW: normalized digits-only phone (for uniqueness checks) */
   phoneDigits?: string;
-  /** NEW: capture where this recruit comes from */
-  originTags?: string[];
   /** Track owner to support admin aggregation */
   ownerId?: string;
   ownerName?: string;
@@ -35,9 +29,10 @@ type ContactDocument = ContactFormFields & {
 type ContactEntry = ContactDocument & {
   id: string;
   docPath: string;
+  ownerKey: string;
 };
 
-type TagOption = { label: string; value: string };
+type LocationOption = { label: string; value: string };
 
 type BulkFailure = { contact: ContactEntry; error: string };
 type BulkResult = {
@@ -58,8 +53,8 @@ export class PriseContactComponent implements OnInit, OnDestroy {
   private editingDocPath: string | null = null;
   searchTerm = '';
   isExplanationExpanded = false;
-  availableTags: TagOption[] = [];
-  private selectedTagValues = new Set<string>();
+  availableLocations: LocationOption[] = [];
+  private selectedOwnerKeys = new Set<string>();
 
   bulkModal = {
     open: false,
@@ -69,7 +64,7 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     result: null as BulkResult | null,
   };
   bulkSending = false;
-  placeholderTokens = ['{{FULL_NAME}}', '{{firstName}}', '{{lastName}}', '{{TAGS}}'];
+  placeholderTokens = ['{{FULL_NAME}}', '{{firstName}}', '{{lastName}}', '{{LOCATION}}'];
 
   private currentUser?: User;
   private contactsCollection?: AngularFirestoreCollection<ContactDocument>;
@@ -142,9 +137,6 @@ export class PriseContactComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const { originTagsInput, ...baseFields } = trimmed;
-    const originTags = this.parseTags(originTagsInput);
-
     // === DUPLICATE CHECKS ===
     const phoneDigits = this.getPhoneDigits(trimmed.phoneNumber);
 
@@ -194,15 +186,13 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     try {
       if (this.isEditing && this.editingDocPath) {
         await this.afs.doc<ContactDocument>(this.editingDocPath).update({
-          ...baseFields,
-          originTags,
+          ...trimmed,
           phoneDigits,
           updatedAt: Date.now(),
         });
       } else {
         await this.contactsCollection.add({
-          ...baseFields,
-          originTags,
+          ...trimmed,
           phoneDigits,
           createdAt: Date.now(),
           ownerId: this.currentUser?.uid || this.auth.currentUser?.uid || undefined,
@@ -229,7 +219,6 @@ export class PriseContactComponent implements OnInit, OnDestroy {
       middleName: entry.middleName,
       lastName: entry.lastName,
       phoneNumber: entry.phoneNumber,
-      originTagsInput: (entry.originTags ?? []).join(', '),
     };
     this.editingId = entry.id;
     this.editingDocPath = entry.docPath;
@@ -258,27 +247,27 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     this.handleFiltersChanged();
   }
 
-  toggleTag(option: TagOption): void {
+  toggleLocation(option: LocationOption): void {
     if (!this.auth.isAdmin) return;
-    if (this.selectedTagValues.has(option.value)) {
-      this.selectedTagValues.delete(option.value);
+    if (this.selectedOwnerKeys.has(option.value)) {
+      this.selectedOwnerKeys.delete(option.value);
     } else {
-      this.selectedTagValues.add(option.value);
+      this.selectedOwnerKeys.add(option.value);
     }
     this.handleFiltersChanged();
   }
 
-  clearTagFilters(): void {
-    this.selectedTagValues.clear();
+  clearLocationFilters(): void {
+    this.selectedOwnerKeys.clear();
     this.handleFiltersChanged();
   }
 
-  isTagSelected(value: string): boolean {
-    return this.selectedTagValues.has(value);
+  isLocationSelected(value: string): boolean {
+    return this.selectedOwnerKeys.has(value);
   }
 
-  get hasActiveTagFilter(): boolean {
-    return this.selectedTagValues.size > 0;
+  get hasActiveLocationFilter(): boolean {
+    return this.selectedOwnerKeys.size > 0;
   }
 
   openBulkModal(): void {
@@ -371,13 +360,10 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     const search = this.searchTerm.trim();
     let base = this.contacts;
 
-    if (this.auth.isAdmin && this.selectedTagValues.size > 0) {
-      base = base.filter((contact) => {
-        const tags = (contact.originTags ?? []).map((tag) =>
-          this.normalizeTag(tag)
-        );
-        return tags.some((tag) => this.selectedTagValues.has(tag));
-      });
+    if (this.auth.isAdmin && this.selectedOwnerKeys.size > 0) {
+      base = base.filter((contact) =>
+        this.selectedOwnerKeys.has(contact.ownerKey)
+      );
     }
 
     if (!search) return base;
@@ -407,40 +393,23 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     }
   }
 
-  private parseTags(input: string): string[] {
-    if (!input) return [];
-    const tags = input
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0);
-    return Array.from(new Set(tags));
-  }
-
-  private updateAvailableTags(): void {
+  private updateAvailableLocations(): void {
     const map = new Map<string, string>();
     this.contacts.forEach((contact) => {
-      (contact.originTags ?? []).forEach((tag) => {
-        const normalized = this.normalizeTag(tag);
-        if (!normalized) return;
-        if (!map.has(normalized)) map.set(normalized, tag);
-      });
+      const label = contact.ownerName || 'Non attribué';
+      if (!map.has(contact.ownerKey)) {
+        map.set(contact.ownerKey, label);
+      }
     });
 
-    this.availableTags = Array.from(map.entries())
-      .map(([value, label]) => ({
-        value,
-        label,
-      }))
+    this.availableLocations = Array.from(map.entries())
+      .map(([value, label]) => ({ value, label }))
       .sort((a, b) => a.label.localeCompare(b.label));
 
-    const allowed = new Set(this.availableTags.map((option) => option.value));
-    Array.from(this.selectedTagValues).forEach((value) => {
-      if (!allowed.has(value)) this.selectedTagValues.delete(value);
+    const allowed = new Set(this.availableLocations.map((option) => option.value));
+    Array.from(this.selectedOwnerKeys).forEach((value) => {
+      if (!allowed.has(value)) this.selectedOwnerKeys.delete(value);
     });
-  }
-
-  private normalizeTag(tag: string): string {
-    return tag ? tag.trim().toLowerCase() : '';
   }
 
   private extractOwnerIdFromPath(path: string): string | undefined {
@@ -448,9 +417,20 @@ export class PriseContactComponent implements OnInit, OnDestroy {
     return match?.[1];
   }
 
+  private buildOwnerKey(
+    ownerId: string | undefined,
+    ownerName: string | undefined,
+    docPath: string
+  ): string {
+    if (ownerId) return `id:${ownerId}`;
+    const label = ownerName?.trim();
+    if (label) return `name:${label.toLowerCase()}`;
+    return `doc:${docPath}`;
+  }
+
   private defaultBulkTemplate(): string {
     return `Bonjour {{FULL_NAME}},
-Nous serions ravis de vous accueillir chez Fondation Gervais.
+Nous serions ravis de vous accueillir chez Fondation Gervais {{LOCATION}}.
 Passez nous voir pour finaliser votre inscription.`;
   }
 
@@ -459,12 +439,12 @@ Passez nous voir pour finaliser votre inscription.`;
     contact: ContactEntry
   ): string {
     if (!template) return '';
-    const tagsLabel = (contact.originTags ?? []).join(', ');
+    const location = contact.ownerName || 'Fondation Gervais';
     return template
       .replace(/{{FULL_NAME}}/g, `${contact.firstName} ${contact.lastName}`.trim())
       .replace(/{{firstName}}/g, contact.firstName || '')
       .replace(/{{lastName}}/g, contact.lastName || '')
-      .replace(/{{TAGS}}/g, tagsLabel);
+      .replace(/{{LOCATION}}/g, location);
   }
 
   private hasDialablePhone(contact: ContactEntry): boolean {
@@ -478,7 +458,6 @@ Passez nous voir pour finaliser votre inscription.`;
       middleName: '',
       lastName: '',
       phoneNumber: '',
-      originTagsInput: '',
     };
   }
 
@@ -488,7 +467,6 @@ Passez nous voir pour finaliser votre inscription.`;
       middleName: this.form.middleName.trim(),
       lastName: this.form.lastName.trim(),
       phoneNumber: this.form.phoneNumber.trim(),
-      originTagsInput: this.form.originTagsInput.trim(),
     };
   }
 
@@ -522,13 +500,19 @@ Passez nous voir pour finaliser votre inscription.`;
           snaps.map((snap) => {
             const data = snap.payload.doc.data();
             const docPath = snap.payload.doc.ref.path;
-            const rawTags = Array.isArray(data.originTags)
-              ? (data.originTags as string[])
-              : [];
-            const cleanedTags = rawTags
-              .map((tag) => tag?.toString?.() ?? '')
-              .map((tag) => tag.trim())
-              .filter((tag) => !!tag);
+            const ownerId =
+              data.ownerId ?? this.extractOwnerIdFromPath(docPath) ?? undefined;
+            const ownerName =
+              data.ownerName ||
+              (ownerId && ownerId === this.currentUser?.uid
+                ? this.currentUser?.firstName
+                : undefined);
+            const resolvedOwnerName = ownerName ?? 'Non attribué';
+            const ownerKey = this.buildOwnerKey(
+              ownerId,
+              resolvedOwnerName,
+              docPath
+            );
 
             const contact: ContactEntry = {
               id: snap.payload.doc.id,
@@ -542,9 +526,9 @@ Passez nous voir pour finaliser votre inscription.`;
                 ? this.coerceToMillis(data.updatedAt)
                 : undefined,
               phoneDigits: data.phoneDigits,
-              originTags: cleanedTags,
-              ownerId: data.ownerId ?? this.extractOwnerIdFromPath(docPath),
-              ownerName: data.ownerName,
+              ownerId,
+              ownerName: resolvedOwnerName,
+              ownerKey,
             };
             return contact;
           })
@@ -552,7 +536,7 @@ Passez nous voir pour finaliser votre inscription.`;
       )
       .subscribe((contacts) => {
         this.contacts = contacts;
-        this.updateAvailableTags();
+        this.updateAvailableLocations();
         if (this.auth.isAdmin && this.bulkModal.open) {
           this.updateBulkRecipients();
         }
