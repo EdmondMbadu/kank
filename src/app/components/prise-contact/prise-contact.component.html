@@ -37,7 +37,11 @@
               class="flex items-center gap-2 text-sm font-semibold text-emerald-600 transition hover:text-emerald-700"
             >
               <span>
-                {{ isExplanationExpanded ? "Masquer" : "Pourquoi collecter ces informations ?" }}
+                {{
+                  isExplanationExpanded
+                    ? "Masquer"
+                    : "Pourquoi collecter ces informations ?"
+                }}
               </span>
               <span
                 class="inline-flex h-5 w-5 items-center justify-center rounded-full border border-current text-xs"
@@ -52,8 +56,8 @@
               Il est parfois difficile de convaincre directement les clients de
               s’enregistrer. Dans ce cas, vous pouvez simplement collecter leurs
               informations — nom et numéro de téléphone — et le système leur
-              enverra automatiquement un rappel chaque semaine pour les inviter à
-              venir s’enregistrer afin d’obtenir un prêt, au moment où ils
+              enverra automatiquement un rappel chaque semaine pour les inviter
+              à venir s’enregistrer afin d’obtenir un prêt, au moment où ils
               deviendraient intéressés plus tard.
             </div>
           </div>
@@ -74,7 +78,7 @@
             </label>
 
             <label class="flex flex-col text-sm font-semibold text-slate-600">
-              Deuxième prénom
+              Postnom
               <input
                 type="text"
                 [(ngModel)]="form.middleName"
@@ -374,7 +378,11 @@
       </h3>
       <p class="mt-2 text-sm text-slate-500">
         {{ bulkModal.recipients.length }}
-        {{ bulkModal.recipients.length > 1 ? "contacts recevront" : "contact recevra" }}
+        {{
+          bulkModal.recipients.length > 1
+            ? "contacts recevront"
+            : "contact recevra"
+        }}
         le message sélectionné.
       </p>
       <p
@@ -424,8 +432,8 @@
         class="mt-5 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-700"
       >
         <div class="font-semibold">
-          {{ bulkModal.result.succeeded }} /
-          {{ bulkModal.result.total }} envois réussis
+          {{ bulkModal.result.succeeded }} / {{ bulkModal.result.total }} envois
+          réussis
         </div>
         <div *ngIf="bulkModal.result.failed" class="text-xs text-rose-500">
           {{ bulkModal.result.failed }} échec(s)
