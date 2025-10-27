@@ -39,7 +39,7 @@ export class TeamPageComponent implements OnInit {
     targetClientCount: 0,
   };
   bulkAction = {
-    activeTab: 'transfer' as 'transfer' | 'copy' | 'duplicates',
+    activeTab: 'transfer' as 'transfer' | 'copy' | 'swap' | 'duplicates',
     subset: 'all' as 'all' | 'count',
     count: null as number | null,
     randomize: true,
@@ -480,60 +480,91 @@ export class TeamPageComponent implements OnInit {
     }
   }
 
-  setBulkTab(tab: 'transfer' | 'copy' | 'duplicates'): void {
+  setBulkTab(tab: 'transfer' | 'copy' | 'swap' | 'duplicates'): void {
     this.bulkAction.activeTab = tab;
     if (tab !== 'duplicates') {
       this.bulkAction.duplicateIds = [];
     }
+    if (tab === 'swap') {
+      this.bulkAction.subset = 'all';
+      this.bulkAction.count = null;
+    } else if (this.bulkAction.subset === 'count') {
+      this.clampBulkCount();
+    }
   }
 
   setSubset(mode: 'all' | 'count'): void {
+    if (this.bulkAction.activeTab === 'swap') {
+      this.bulkAction.subset = 'all';
+      this.bulkAction.count = null;
+      return;
+    }
     this.bulkAction.subset = mode;
     this.clampBulkCount();
   }
 
-  canExecuteMoveOrCopy(): boolean {
+  canExecuteBulkAction(): boolean {
     return (
       !!this.transfer.sourceId &&
       !!this.transfer.targetId &&
       this.transfer.sourceId !== this.transfer.targetId &&
-      this.transfer.sourceClientCount > 0 &&
-      (this.bulkAction.subset === 'all' ||
-        (this.bulkAction.count !== null && this.bulkAction.count > 0))
+      (this.bulkAction.activeTab === 'swap'
+        ? this.transfer.sourceClientCount > 0 ||
+          this.transfer.targetClientCount > 0
+        : this.transfer.sourceClientCount > 0 &&
+          (this.bulkAction.subset === 'all' ||
+            (this.bulkAction.count !== null && this.bulkAction.count > 0)))
     );
   }
 
   confirmBulkAction() {
-    if (!this.canExecuteMoveOrCopy()) {
+    if (!this.canExecuteBulkAction()) {
       return;
     }
 
     this.isTransferring = true;
     const { sourceId, targetId } = this.transfer;
-    const count =
-      this.bulkAction.subset === 'count'
-        ? this.bulkAction.count ?? undefined
-        : undefined;
-    const randomize = this.bulkAction.randomize;
+    const sourceName = this.getEmployeeName(sourceId);
+    const targetName = this.getEmployeeName(targetId);
 
-    const action =
-      this.bulkAction.activeTab === 'copy'
-        ? this.data.copyClientsToEmployee(sourceId!, targetId!, {
-            count,
-            randomize,
-          })
-        : this.data.transferCurrentClients(sourceId!, targetId!, {
-            count,
-            randomize,
-          });
+    let action: Promise<any>;
+    if (this.bulkAction.activeTab === 'swap') {
+      action = this.data.swapClientsBetweenEmployees(sourceId!, targetId!);
+    } else {
+      const count =
+        this.bulkAction.subset === 'count'
+          ? this.bulkAction.count ?? undefined
+          : undefined;
+      const randomize = this.bulkAction.randomize;
+      action =
+        this.bulkAction.activeTab === 'copy'
+          ? this.data.copyClientsToEmployee(sourceId!, targetId!, {
+              count,
+              randomize,
+            })
+          : this.data.transferCurrentClients(sourceId!, targetId!, {
+              count,
+              randomize,
+            });
+    }
 
     action
-      .then((affectedCount) => {
+      .then((result) => {
         this.isTransferring = false;
-        const actionLabel =
-          this.bulkAction.activeTab === 'copy' ? 'copié(s)' : 'transféré(s)';
-        this.closeTransferModal();
-        alert(`${affectedCount} client(s) ${actionLabel} avec succès.`);
+
+        if (this.bulkAction.activeTab === 'swap') {
+          const swapResult = result as { toFirst: number; toSecond: number };
+          this.closeTransferModal();
+          alert(
+            `Échange terminé : ${swapResult.toSecond} client(s) vers ${targetName || 'B'} et ${swapResult.toFirst} client(s) vers ${sourceName || 'A'}.`
+          );
+        } else {
+          const affectedCount = result as number;
+          const actionLabel =
+            this.bulkAction.activeTab === 'copy' ? 'copié(s)' : 'transféré(s)';
+          this.closeTransferModal();
+          alert(`${affectedCount} client(s) ${actionLabel} avec succès.`);
+        }
         this.retreiveClients();
       })
       .catch((err) => {

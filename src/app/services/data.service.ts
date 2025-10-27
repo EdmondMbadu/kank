@@ -480,6 +480,98 @@ export class DataService {
   }
 
   /**
+   * Swap the entire client lists between two employees.
+   * - Employee A receives B's clients and vice-versa
+   * - Each client's `agent` field is updated to the new owner
+   * - Clients that both employees already shared keep their current agent assignment
+   * Returns the number of clients reassigned to each employee.
+   */
+  async swapClientsBetweenEmployees(
+    firstEmployeeId: string,
+    secondEmployeeId: string
+  ): Promise<{ toFirst: number; toSecond: number }> {
+    if (firstEmployeeId === secondEmployeeId) {
+      throw new Error('Les deux employés doivent être différents.');
+    }
+
+    const tenantUid = this.auth.currentUser.uid;
+
+    const firstRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${firstEmployeeId}`
+    ).ref;
+    const secondRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${secondEmployeeId}`
+    ).ref;
+
+    const [firstSnap, secondSnap] = await Promise.all([
+      firstRef.get(),
+      secondRef.get(),
+    ]);
+    if (!firstSnap.exists) {
+      throw new Error('Premier employé introuvable');
+    }
+    if (!secondSnap.exists) {
+      throw new Error('Deuxième employé introuvable');
+    }
+
+    const firstData = firstSnap.data() || {};
+    const secondData = secondSnap.data() || {};
+
+    const rawFirst: string[] = (firstData.clients ??
+      firstData.currentClients ??
+      []) as string[];
+    const rawSecond: string[] = (secondData.clients ??
+      secondData.currentClients ??
+      []) as string[];
+
+    const firstUnique = Array.from(new Set(rawFirst));
+    const secondUnique = Array.from(new Set(rawSecond));
+
+    if (!firstUnique.length && !secondUnique.length) {
+      return { toFirst: 0, toSecond: 0 };
+    }
+
+    const secondSet = new Set(secondUnique);
+    const shared = new Set(firstUnique.filter((id) => secondSet.has(id)));
+
+    // Swap the arrays (still deduped)
+    await this.afs.firestore.runTransaction(async (tx) => {
+      tx.update(firstRef, { clients: secondUnique });
+      tx.update(secondRef, { clients: firstUnique });
+    });
+
+    const assignToFirst = secondUnique.filter((id) => !shared.has(id));
+    const assignToSecond = firstUnique.filter((id) => !shared.has(id));
+
+    for (const ids of this.chunk(assignToFirst, 450)) {
+      const batch = this.afs.firestore.batch();
+      ids.forEach((clientId) => {
+        const cRef = this.afs.doc(
+          `users/${tenantUid}/clients/${clientId}`
+        ).ref;
+        batch.update(cRef, { agent: firstEmployeeId });
+      });
+      await batch.commit();
+    }
+
+    for (const ids of this.chunk(assignToSecond, 450)) {
+      const batch = this.afs.firestore.batch();
+      ids.forEach((clientId) => {
+        const cRef = this.afs.doc(
+          `users/${tenantUid}/clients/${clientId}`
+        ).ref;
+        batch.update(cRef, { agent: secondEmployeeId });
+      });
+      await batch.commit();
+    }
+
+    return {
+      toFirst: assignToFirst.length,
+      toSecond: assignToSecond.length,
+    };
+  }
+
+  /**
    * Copy clients from employee A -> employee B.
    * - Adds selected clients to B (deduped); A keeps them.
    * - Does NOT touch the client.agent (original owner keeps it).

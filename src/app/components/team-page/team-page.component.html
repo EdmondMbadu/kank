@@ -626,7 +626,7 @@
       </button>
     </div>
 
-    <div class="mt-4 grid gap-2 text-sm font-medium text-gray-600 dark:text-gray-200 sm:grid-cols-3">
+    <div class="mt-4 grid gap-2 text-sm font-medium text-gray-600 dark:text-gray-200 sm:grid-cols-2 lg:grid-cols-4">
       <button
         type="button"
         (click)="setBulkTab('transfer')"
@@ -644,6 +644,15 @@
         class="rounded-2xl border border-gray-200 px-4 py-3 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700"
       >
         Copier (dupliquer)
+      </button>
+      <button
+        type="button"
+        (click)="setBulkTab('swap')"
+        [class.bg-emerald-100]="bulkAction.activeTab === 'swap'"
+        [class.text-emerald-800]="bulkAction.activeTab === 'swap'"
+        class="rounded-2xl border border-gray-200 px-4 py-3 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700"
+      >
+        Échanger (swap)
       </button>
       <button
         type="button"
@@ -667,6 +676,11 @@
         <p *ngSwitchCase="'copy'">
           Ajoute les clients sélectionnés à l'employé B tout en les laissant
           chez l'employé A (double suivi).
+        </p>
+        <p *ngSwitchCase="'swap'">
+          Échange tous les clients entre les deux employés. Si un côté n'a aucun
+          client, l'opération agit comme un simple transfert dans la direction
+          opposée.
         </p>
         <p *ngSwitchCase="'duplicates'">
           Identifie les clients qui apparaissent chez les deux employés et
@@ -724,7 +738,7 @@
 
     <!-- Subset controls -->
     <div
-      *ngIf="bulkAction.activeTab !== 'duplicates'"
+      *ngIf="bulkAction.activeTab === 'transfer' || bulkAction.activeTab === 'copy'"
       class="mt-6 grid gap-4 sm:grid-cols-2"
     >
       <label
@@ -837,7 +851,7 @@
         Annuler
       </button>
       <button
-        [disabled]="!canExecuteMoveOrCopy() || isTransferring"
+        [disabled]="!canExecuteBulkAction() || isTransferring"
         (click)="confirmBulkAction()"
         class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
@@ -861,8 +875,14 @@
             stroke-width="4"
           />
         </svg>
-        {{ bulkAction.activeTab === 'copy' ? 'Copier' : 'Transférer' }} les
-        clients
+        {{
+          bulkAction.activeTab === 'swap'
+            ? 'Échanger'
+            : bulkAction.activeTab === 'copy'
+            ? 'Copier'
+            : 'Transférer'
+        }}
+        les clients
       </button>
     </div>
 
