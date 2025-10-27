@@ -376,16 +376,40 @@ export class DataService {
     return out;
   }
 
+  private pickClientIds(
+    sourceIds: string[],
+    count?: number,
+    randomize: boolean = true
+  ): string[] {
+    const unique = Array.from(new Set(sourceIds));
+    if (!count || count >= unique.length) {
+      return unique;
+    }
+
+    if (!randomize) {
+      return unique.slice(0, count);
+    }
+
+    const shuffled = [...unique];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    return shuffled.slice(0, count);
+  }
+
   /**
-   * Transfer all clients from employee A -> employee B.
-   * - Clears A.clients
-   * - Adds to B.clients (deduped, not overwritten)
+   * Transfer clients from employee A -> employee B.
+   * - Removes the selected clients from A
+   * - Adds them (deduped) to B
    * - Updates each client { agent: B }
-   * Returns the count of moved clients.
+   * Returns the count of selected clients.
    */
   async transferCurrentClients(
     sourceEmployeeId: string,
-    targetEmployeeId: string
+    targetEmployeeId: string,
+    opts?: { count?: number; randomize?: boolean }
   ): Promise<number> {
     const tenantUid = this.auth.currentUser.uid;
 
@@ -413,22 +437,29 @@ export class DataService {
 
     // De-duplicate both sides first
     const srcUnique = Array.from(new Set(rawSrc));
+    const selectedIds = this.pickClientIds(
+      srcUnique,
+      opts?.count,
+      opts?.randomize ?? true
+    );
+    const selectedSet = new Set(selectedIds);
     const dstSet = new Set(rawDst);
 
     // What will actually be ADDED to B (not already there)
-    const toAdd = srcUnique.filter((id) => !dstSet.has(id));
+    const toAdd = selectedIds.filter((id) => !dstSet.has(id));
 
     // New target array = union (still deduped)
-    const newDst = Array.from(new Set([...rawDst, ...srcUnique]));
+    const newDst = Array.from(new Set([...rawDst, ...selectedIds]));
+    const remainingSrc = rawSrc.filter((id) => !selectedSet.has(id));
 
     // 1) Update A (clear) and B (union) atomically
     await this.afs.firestore.runTransaction(async (tx) => {
-      tx.update(srcRef, { clients: [] });
+      tx.update(srcRef, { clients: remainingSrc });
       tx.update(dstRef, { clients: newDst });
     });
 
     // 2) Reassign each client’s agent to B (use ALL unique from A)
-    const toReassign = srcUnique;
+    const toReassign = selectedIds;
     const chunk = <T>(arr: T[], size: number) =>
       arr.reduce<T[][]>(
         (acc, _, i) => (i % size ? acc : [...acc, arr.slice(i, i + size)]),
@@ -444,8 +475,114 @@ export class DataService {
       await batch.commit();
     }
 
-    // Return the number of clients ACTUALLY added to B
+    // Return the number of clients we attempted to move (selected)
+    return selectedIds.length;
+  }
+
+  /**
+   * Copy clients from employee A -> employee B.
+   * - Adds selected clients to B (deduped); A keeps them.
+   * - Does NOT touch the client.agent (original owner keeps it).
+   * Returns the number of clients newly added to B.
+   */
+  async copyClientsToEmployee(
+    sourceEmployeeId: string,
+    targetEmployeeId: string,
+    opts?: { count?: number; randomize?: boolean }
+  ): Promise<number> {
+    const tenantUid = this.auth.currentUser.uid;
+
+    const srcRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${sourceEmployeeId}`
+    ).ref;
+    const dstRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${targetEmployeeId}`
+    ).ref;
+
+    const [srcSnap, dstSnap] = await Promise.all([srcRef.get(), dstRef.get()]);
+    if (!srcSnap.exists) throw new Error('Source employee not found');
+    if (!dstSnap.exists) throw new Error('Target employee not found');
+
+    const srcData = srcSnap.data() || {};
+    const dstData = dstSnap.data() || {};
+
+    const rawSrc: string[] = (srcData.clients ??
+      srcData.currentClients ??
+      []) as string[];
+    const rawDst: string[] = (dstData.clients ??
+      dstData.currentClients ??
+      []) as string[];
+
+    const srcUnique = Array.from(new Set(rawSrc));
+    const selectedIds = this.pickClientIds(
+      srcUnique,
+      opts?.count,
+      opts?.randomize ?? true
+    );
+
+    const dstSet = new Set(rawDst);
+    const toAdd = selectedIds.filter((id) => !dstSet.has(id));
+    if (!toAdd.length) {
+      return 0;
+    }
+
+    const newDst = Array.from(new Set([...rawDst, ...selectedIds]));
+    await dstRef.update({ clients: newDst });
+
     return toAdd.length;
+  }
+
+  /**
+   * Remove duplicate client IDs that exist on both employees.
+   * removeFrom: 'source' removes from employee A, 'target' removes from B.
+   * Returns the number of duplicates removed.
+   */
+  async removeDuplicateClientsBetweenEmployees(
+    sourceEmployeeId: string,
+    targetEmployeeId: string,
+    removeFrom: 'source' | 'target'
+  ): Promise<number> {
+    const tenantUid = this.auth.currentUser.uid;
+
+    const srcRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${sourceEmployeeId}`
+    ).ref;
+    const dstRef = this.afs.doc<any>(
+      `users/${tenantUid}/employees/${targetEmployeeId}`
+    ).ref;
+
+    const [srcSnap, dstSnap] = await Promise.all([srcRef.get(), dstRef.get()]);
+    if (!srcSnap.exists) throw new Error('Source employee not found');
+    if (!dstSnap.exists) throw new Error('Target employee not found');
+
+    const srcData = srcSnap.data() || {};
+    const dstData = dstSnap.data() || {};
+
+    const rawSrc: string[] = (srcData.clients ??
+      srcData.currentClients ??
+      []) as string[];
+    const rawDst: string[] = (dstData.clients ??
+      dstData.currentClients ??
+      []) as string[];
+
+    const srcSet = new Set(rawSrc);
+    const dstSet = new Set(rawDst);
+    const duplicates = [...srcSet].filter((id) => dstSet.has(id));
+
+    if (!duplicates.length) {
+      return 0;
+    }
+
+    const dupSet = new Set(duplicates);
+    if (removeFrom === 'source') {
+      const updated = rawSrc.filter((id) => !dupSet.has(id));
+      await srcRef.update({ clients: updated });
+    } else {
+      const updated = rawDst.filter((id) => !dupSet.has(id));
+      await dstRef.update({ clients: updated });
+    }
+
+    return duplicates.length;
   }
 
   updateEmployeeInfo(employee: Employee) {

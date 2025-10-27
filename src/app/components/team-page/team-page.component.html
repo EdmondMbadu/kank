@@ -224,9 +224,23 @@
 
   <button
     (click)="openTransferModal()"
-    class="rounded-full bg-red-500 px-6 py-3 text-sm font-medium text-white ring-2 ring-white/30 backdrop-blur transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-white/50"
+    class="flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg ring-2 ring-white/30 backdrop-blur transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-white/50"
   >
-    Transférer des Clients
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="1.8"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M7 7h10M7 12h7m-7 5h10"
+      />
+    </svg>
+    Copier / Transférer des Clients
   </button>
 </div>
 
@@ -591,28 +605,83 @@
   </div>
 </div>
 
-<!-- === TRANSFER CLIENTS MODAL === -->
+<!-- === ADMIN BULK CLIENTS MODAL === -->
 <div
   *ngIf="transferModalVisible"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
 >
   <div
-    class="w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-xl dark:bg-gray-800"
+    class="w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-gray-900"
   >
-    <h2
-      class="mb-6 text-center text-xl font-semibold text-gray-900 dark:text-white"
-    >
-      Transférer des Clients (A → B)
-    </h2>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        Gestion avancée des clients
+      </h2>
+      <button
+        type="button"
+        (click)="closeTransferModal()"
+        class="text-sm font-medium text-gray-500 hover:text-gray-800"
+      >
+        Fermer
+      </button>
+    </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
-      <!-- Source -->
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-        Source (Employé A)
+    <div class="mt-4 grid gap-2 text-sm font-medium text-gray-600 dark:text-gray-200 sm:grid-cols-3">
+      <button
+        type="button"
+        (click)="setBulkTab('transfer')"
+        [class.bg-emerald-100]="bulkAction.activeTab === 'transfer'"
+        [class.text-emerald-800]="bulkAction.activeTab === 'transfer'"
+        class="rounded-2xl border border-gray-200 px-4 py-3 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700"
+      >
+        Transférer (déplacer)
+      </button>
+      <button
+        type="button"
+        (click)="setBulkTab('copy')"
+        [class.bg-emerald-100]="bulkAction.activeTab === 'copy'"
+        [class.text-emerald-800]="bulkAction.activeTab === 'copy'"
+        class="rounded-2xl border border-gray-200 px-4 py-3 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700"
+      >
+        Copier (dupliquer)
+      </button>
+      <button
+        type="button"
+        (click)="setBulkTab('duplicates')"
+        [class.bg-emerald-100]="bulkAction.activeTab === 'duplicates'"
+        [class.text-emerald-800]="bulkAction.activeTab === 'duplicates'"
+        class="rounded-2xl border border-gray-200 px-4 py-3 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-gray-700"
+      >
+        Nettoyer les doublons
+      </button>
+    </div>
+
+    <div
+      class="mt-4 rounded-2xl bg-gray-50 p-4 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+    >
+      <ng-container [ngSwitch]="bulkAction.activeTab">
+        <p *ngSwitchCase="'transfer'">
+          Déplace tous les clients sélectionnés de l'employé A vers l'employé B
+          et met à jour l'agent responsable.
+        </p>
+        <p *ngSwitchCase="'copy'">
+          Ajoute les clients sélectionnés à l'employé B tout en les laissant
+          chez l'employé A (double suivi).
+        </p>
+        <p *ngSwitchCase="'duplicates'">
+          Identifie les clients qui apparaissent chez les deux employés et
+          retire les doublons du côté souhaité.
+        </p>
+      </ng-container>
+    </div>
+
+    <div class="mt-6 grid gap-4 sm:grid-cols-2">
+      <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+        Employé A (source)
         <select
           [(ngModel)]="transfer.sourceId"
           (change)="onSourceChange()"
-          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+          class="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         >
           <option [ngValue]="null">Sélectionner…</option>
           <option *ngFor="let e of employees" [value]="e.uid">
@@ -624,12 +693,12 @@
         </select>
       </label>
 
-      <!-- Target -->
-      <label class="text-sm font-medium text-gray-700 dark:text-gray-200">
-        Cible (Employé B)
+      <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+        Employé B (cible)
         <select
           [(ngModel)]="transfer.targetId"
-          class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+          (change)="onTargetChange()"
+          class="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         >
           <option [ngValue]="null">Sélectionner…</option>
           <option *ngFor="let e of employees" [value]="e.uid">
@@ -640,31 +709,12 @@
           </option>
         </select>
       </label>
-    </div>
-
-    <!-- Preview / safety notes -->
-    <div
-      class="mt-4 rounded-xl bg-yellow-50 p-4 text-sm text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-100"
-    >
-      <p class="font-medium">Règles :</p>
-      <ul class="list-disc pl-5 space-y-1">
-        <li>
-          Tous les clients de A seront ajoutés à B (les clients déjà chez B ne
-          seront pas dupliqués).
-        </li>
-        <li>
-          A n’aura plus aucun client dans son tableau <code>clients</code>.
-        </li>
-        <li>
-          Le champ <code>agent</code> de chaque client sera mis à jour vers B
-          pour garder la cohérence.
-        </li>
-      </ul>
     </div>
 
     <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
       <div>
-        Clients chez A : <strong>{{ transfer.sourceClientCount }}</strong>
+        Clients chez A :
+        <strong>{{ transfer.sourceClientCount }}</strong>
       </div>
       <div>
         Clients chez B (avant) :
@@ -672,19 +722,124 @@
       </div>
     </div>
 
+    <!-- Subset controls -->
+    <div
+      *ngIf="bulkAction.activeTab !== 'duplicates'"
+      class="mt-6 grid gap-4 sm:grid-cols-2"
+    >
+      <label
+        class="flex cursor-pointer flex-col rounded-2xl border border-gray-200 p-4 text-sm dark:border-gray-700 dark:text-gray-200"
+      >
+        <div class="flex items-center gap-2">
+          <input
+            type="radio"
+            name="bulkSubset"
+            [checked]="bulkAction.subset === 'all'"
+            (change)="setSubset('all')"
+          />
+          <span class="font-semibold">Tous les clients</span>
+        </div>
+        <span class="mt-2 text-xs text-gray-500">
+          Déplace / copie {{ transfer.sourceClientCount }} clients.
+        </span>
+      </label>
+
+      <label
+        class="flex cursor-pointer flex-col rounded-2xl border border-gray-200 p-4 text-sm dark:border-gray-700 dark:text-gray-200"
+      >
+        <div class="flex items-center gap-2">
+          <input
+            type="radio"
+            name="bulkSubset"
+            [checked]="bulkAction.subset === 'count'"
+            (change)="setSubset('count')"
+          />
+          <span class="font-semibold">Nombre précis</span>
+        </div>
+        <div class="mt-3 flex items-center gap-3">
+          <input
+            type="number"
+            min="1"
+            [max]="transfer.sourceClientCount"
+            [(ngModel)]="bulkAction.count"
+            (input)="clampBulkCount()"
+            class="w-24 rounded-xl border border-gray-200 p-2 text-center dark:border-gray-700 dark:bg-gray-800"
+            [disabled]="bulkAction.subset !== 'count'"
+          />
+          <label class="flex items-center gap-2 text-xs text-gray-500">
+            <input
+              type="checkbox"
+              [(ngModel)]="bulkAction.randomize"
+              [disabled]="bulkAction.subset !== 'count'"
+            />
+            Sélection aléatoire
+          </label>
+        </div>
+      </label>
+    </div>
+
+    <!-- Duplicate tools -->
+    <div
+      *ngIf="bulkAction.activeTab === 'duplicates'"
+      class="mt-6 rounded-2xl border border-dashed border-yellow-400/60 p-4 text-sm text-gray-700 dark:border-yellow-400/40 dark:text-gray-200"
+    >
+      <p class="font-semibold">
+        Doublons trouvés : {{ bulkAction.duplicateIds.length }}
+      </p>
+      <div
+        class="mt-3 max-h-52 overflow-y-auto rounded-xl bg-white/60 p-3 text-xs dark:bg-gray-800/80"
+      >
+        <p *ngIf="!bulkAction.duplicateIds.length" class="text-gray-500">
+          Cliquez sur &laquo; Trouver les doublons &raquo; pour analyser les
+          deux employés.
+        </p>
+        <ul *ngIf="bulkAction.duplicateIds.length" class="space-y-2">
+          <li
+            *ngFor="let dup of bulkAction.duplicateIds"
+            class="rounded-lg border border-gray-100 px-3 py-2 dark:border-gray-700"
+          >
+            {{ getClientDisplayName(dup) }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="mt-4 flex flex-col gap-2 text-xs text-gray-500">
+        <label class="flex items-center gap-2">
+          <input
+            type="radio"
+            name="duplicateOwner"
+            value="source"
+            [(ngModel)]="bulkAction.duplicatesRemoveFrom"
+          />
+          Retirer du côté de {{ getEmployeeName(transfer.sourceId) || 'A' }}
+        </label>
+        <label class="flex items-center gap-2">
+          <input
+            type="radio"
+            name="duplicateOwner"
+            value="target"
+            [(ngModel)]="bulkAction.duplicatesRemoveFrom"
+          />
+          Retirer du côté de {{ getEmployeeName(transfer.targetId) || 'B' }}
+        </label>
+      </div>
+    </div>
+
     <!-- Actions -->
-    <div class="mt-8 flex justify-center gap-4">
+    <div
+      class="mt-8 flex flex-wrap justify-center gap-4"
+      *ngIf="bulkAction.activeTab !== 'duplicates'"
+    >
       <button
         (click)="closeTransferModal()"
-        class="rounded-full bg-gray-300 px-6 py-2 font-medium text-gray-800 hover:bg-gray-400"
+        class="rounded-full bg-gray-200 px-6 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300"
       >
         Annuler
       </button>
-
       <button
-        [disabled]="!canTransfer() || isTransferring"
-        (click)="confirmTransfer()"
-        class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+        [disabled]="!canExecuteMoveOrCopy() || isTransferring"
+        (click)="confirmBulkAction()"
+        class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <svg
           *ngIf="isTransferring"
@@ -706,7 +861,76 @@
             stroke-width="4"
           />
         </svg>
-        Confirmer le transfert
+        {{ bulkAction.activeTab === 'copy' ? 'Copier' : 'Transférer' }} les
+        clients
+      </button>
+    </div>
+
+    <div
+      class="mt-8 flex flex-wrap justify-center gap-3"
+      *ngIf="bulkAction.activeTab === 'duplicates'"
+    >
+      <button
+        (click)="closeTransferModal()"
+        class="rounded-full bg-gray-200 px-6 py-2 text-sm font-medium text-gray-800 hover:bg-gray-300"
+      >
+        Annuler
+      </button>
+      <button
+        (click)="findDuplicateClients()"
+        class="rounded-full bg-amber-500 px-6 py-2 text-sm font-medium text-white hover:bg-amber-600"
+        [disabled]="bulkAction.duplicatesLoading || !transfer.sourceId || !transfer.targetId"
+      >
+        <span *ngIf="!bulkAction.duplicatesLoading">Trouver les doublons</span>
+        <span *ngIf="bulkAction.duplicatesLoading" class="flex items-center gap-2">
+          <svg
+            class="h-4 w-4 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h3z"
+            ></path>
+          </svg>
+          Scan…
+        </span>
+      </button>
+      <button
+        (click)="removeFoundDuplicates()"
+        [disabled]="!bulkAction.duplicateIds.length || isTransferring"
+        class="inline-flex items-center gap-2 rounded-full bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <svg
+          *ngIf="isTransferring"
+          class="h-4 w-4 animate-spin"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h3z"
+          ></path>
+        </svg>
+        Retirer les doublons
       </button>
     </div>
   </div>

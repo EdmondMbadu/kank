@@ -38,6 +38,16 @@ export class TeamPageComponent implements OnInit {
     sourceClientCount: 0,
     targetClientCount: 0,
   };
+  bulkAction = {
+    activeTab: 'transfer' as 'transfer' | 'copy' | 'duplicates',
+    subset: 'all' as 'all' | 'count',
+    count: null as number | null,
+    randomize: true,
+    duplicateIds: [] as string[],
+    duplicatesRemoveFrom: 'source' as 'source' | 'target',
+    duplicatesLoading: false,
+  };
+  private clientDictionary: Record<string, Client> = {};
 
   ngOnInit(): void {
     this.retreiveClients();
@@ -106,8 +116,18 @@ export class TeamPageComponent implements OnInit {
   retreiveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.allClients = data;
+      this.buildClientDictionary();
       this.findClientsWithDebts();
       this.retrieveEmployees();
+    });
+  }
+
+  private buildClientDictionary(): void {
+    this.clientDictionary = {};
+    this.allClients?.forEach((client) => {
+      if (client.uid) {
+        this.clientDictionary[client.uid] = client;
+      }
     });
   }
   addNewEmployee() {
@@ -403,16 +423,37 @@ export class TeamPageComponent implements OnInit {
       sourceClientCount: 0,
       targetClientCount: 0,
     };
+    this.bulkAction = {
+      activeTab: 'transfer',
+      subset: 'all',
+      count: null,
+      randomize: true,
+      duplicateIds: [],
+      duplicatesRemoveFrom: 'source',
+      duplicatesLoading: false,
+    };
   }
 
   closeTransferModal() {
     this.transferModalVisible = false;
+    this.bulkAction.duplicateIds = [];
   }
 
   onSourceChange() {
     const src = this.employees.find((e) => e.uid === this.transfer.sourceId);
     this.transfer.sourceClientCount =
       src?.currentClients?.length ?? src?.clients?.length ?? 0;
+    this.clampBulkCount();
+    if (this.bulkAction.activeTab === 'duplicates') {
+      this.bulkAction.duplicateIds = [];
+    }
+  }
+
+  onTargetChange() {
+    this.updateTargetCount();
+    if (this.bulkAction.activeTab === 'duplicates') {
+      this.bulkAction.duplicateIds = [];
+    }
   }
 
   private updateTargetCount() {
@@ -421,35 +462,164 @@ export class TeamPageComponent implements OnInit {
       dst?.currentClients?.length ?? dst?.clients?.length ?? 0;
   }
 
-  canTransfer(): boolean {
+  public clampBulkCount(): void {
+    if (this.bulkAction.subset === 'all') {
+      this.bulkAction.count = null;
+      return;
+    }
+    const max = this.transfer.sourceClientCount;
+    if (max === 0) {
+      this.bulkAction.count = null;
+      return;
+    }
+    if (!this.bulkAction.count || this.bulkAction.count < 1) {
+      this.bulkAction.count = 1;
+    }
+    if (this.bulkAction.count > max) {
+      this.bulkAction.count = max;
+    }
+  }
+
+  setBulkTab(tab: 'transfer' | 'copy' | 'duplicates'): void {
+    this.bulkAction.activeTab = tab;
+    if (tab !== 'duplicates') {
+      this.bulkAction.duplicateIds = [];
+    }
+  }
+
+  setSubset(mode: 'all' | 'count'): void {
+    this.bulkAction.subset = mode;
+    this.clampBulkCount();
+  }
+
+  canExecuteMoveOrCopy(): boolean {
     return (
       !!this.transfer.sourceId &&
       !!this.transfer.targetId &&
       this.transfer.sourceId !== this.transfer.targetId &&
-      this.transfer.sourceClientCount > 0
+      this.transfer.sourceClientCount > 0 &&
+      (this.bulkAction.subset === 'all' ||
+        (this.bulkAction.count !== null && this.bulkAction.count > 0))
     );
   }
 
-  confirmTransfer() {
-    if (!this.canTransfer()) {
+  confirmBulkAction() {
+    if (!this.canExecuteMoveOrCopy()) {
       return;
     }
+
     this.isTransferring = true;
     const { sourceId, targetId } = this.transfer;
+    const count =
+      this.bulkAction.subset === 'count'
+        ? this.bulkAction.count ?? undefined
+        : undefined;
+    const randomize = this.bulkAction.randomize;
 
-    this.data
-      .transferCurrentClients(sourceId!, targetId!)
-      .then((movedCount) => {
+    const action =
+      this.bulkAction.activeTab === 'copy'
+        ? this.data.copyClientsToEmployee(sourceId!, targetId!, {
+            count,
+            randomize,
+          })
+        : this.data.transferCurrentClients(sourceId!, targetId!, {
+            count,
+            randomize,
+          });
+
+    action
+      .then((affectedCount) => {
         this.isTransferring = false;
+        const actionLabel =
+          this.bulkAction.activeTab === 'copy' ? 'copié(s)' : 'transféré(s)';
         this.closeTransferModal();
-        alert(`${movedCount} client(s) transféré(s) avec succès.`);
-        // Refresh data so UI recomputes currentClients
+        alert(`${affectedCount} client(s) ${actionLabel} avec succès.`);
         this.retreiveClients();
       })
       .catch((err) => {
         this.isTransferring = false;
-        console.error('Transfer error:', err);
-        alert('Une erreur est survenue lors du transfert. Réessayez.');
+        console.error('Bulk action error:', err);
+        alert(
+          "Une erreur est survenue lors de l'opération. Réessayez dans un instant."
+        );
+      });
+  }
+
+  getClientDisplayName(id: string): string {
+    const client = this.clientDictionary[id];
+    if (!client) return id;
+    const composed = `${client.firstName || ''} ${client.middleName || ''} ${
+      client.lastName || ''
+    }`
+      .replace(/\s+/g, ' ')
+      .trim();
+    return composed || client.name || client.phoneNumber || id;
+  }
+
+  getEmployeeName(id: string | null): string {
+    if (!id) {
+      return '';
+    }
+    const emp = this.employees.find((e) => e.uid === id);
+    if (!emp) {
+      return '';
+    }
+    return `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+  }
+
+  findDuplicateClients() {
+    if (
+      !this.transfer.sourceId ||
+      !this.transfer.targetId ||
+      this.transfer.sourceId === this.transfer.targetId
+    ) {
+      alert('Sélectionnez deux employés différents.');
+      return;
+    }
+    this.bulkAction.duplicatesLoading = true;
+    const src = this.employees.find((e) => e.uid === this.transfer.sourceId);
+    const dst = this.employees.find((e) => e.uid === this.transfer.targetId);
+
+    const srcClients = src?.clients ?? src?.currentClients ?? [];
+    const dstSet = new Set(dst?.clients ?? dst?.currentClients ?? []);
+    const duplicates = Array.from(new Set(srcClients)).filter((uid) =>
+      dstSet.has(uid)
+    );
+
+    this.bulkAction.duplicateIds = duplicates;
+    this.bulkAction.duplicatesLoading = false;
+  }
+
+  removeFoundDuplicates() {
+    if (!this.bulkAction.duplicateIds.length) {
+      return;
+    }
+    if (!this.transfer.sourceId || !this.transfer.targetId) {
+      return;
+    }
+
+    this.isTransferring = true;
+    const removeFrom = this.bulkAction.duplicatesRemoveFrom;
+    this.data
+      .removeDuplicateClientsBetweenEmployees(
+        this.transfer.sourceId,
+        this.transfer.targetId,
+        removeFrom
+      )
+      .then((removedCount) => {
+        this.isTransferring = false;
+        alert(
+          `${removedCount} doublon(s) retiré(s) de l'employé ${
+            removeFrom === 'source' ? 'A' : 'B'
+          }.`
+        );
+        this.bulkAction.duplicateIds = [];
+        this.retreiveClients();
+      })
+      .catch((err) => {
+        this.isTransferring = false;
+        console.error('Duplicate cleanup error:', err);
+        alert("Impossible de retirer les doublons pour l'instant. Réessayez.");
       });
   }
 }
