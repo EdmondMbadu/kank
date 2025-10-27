@@ -482,6 +482,15 @@
       >
         <p class="text-xs font-medium text-emerald-600 dark:text-emerald-300">
           <span>{{ clientListSummaryBase }}</span>
+          <ng-container *ngIf="hasSelectedPaymentDayTotal">
+            <span class="text-slate-400"> · </span>
+            <span class="font-semibold text-amber-600 dark:text-amber-300">
+              Attendu ce jour FC {{ selectedPaymentDayTotalFcDisplay }}
+            </span>
+            <span class="text-sky-500 font-semibold">
+              (≈ $ {{ selectedPaymentDayTotalUsdDisplay }})
+            </span>
+          </ng-container>
           <ng-container *ngIf="hasFilteredDebtTotal">
             <span class="text-slate-400"> · </span>
             <span class="text-emerald-600 dark:text-emerald-300 font-semibold">

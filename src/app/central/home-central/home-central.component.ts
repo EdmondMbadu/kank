@@ -59,6 +59,7 @@ export class HomeCentralComponent implements OnInit {
     'Sunday',
   ];
   selectedPaymentDay: string | null = null;
+  selectedPaymentDayTotal = 0;
   minCreditScore = 0;
   loanAmountFilterValue: number | null = null;
   loanAmountFilterMode: 'min' | 'exact' = 'min';
@@ -511,6 +512,7 @@ export class HomeCentralComponent implements OnInit {
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
+    this.updateSelectedPaymentDayTotal();
     if (this.generalBulkModal.open) this.updateGeneralBulkRecipients();
   }
 
@@ -697,6 +699,63 @@ export class HomeCentralComponent implements OnInit {
     }, 0);
   }
 
+  private updateSelectedPaymentDayTotal() {
+    if (!this.selectedPaymentDay) {
+      this.selectedPaymentDayTotal = 0;
+      return;
+    }
+
+    const total = this.filteredItems.reduce((sum, client) => {
+      const expected = this.expectedPaymentForClient(client);
+      return sum + (expected > 0 ? expected : 0);
+    }, 0);
+
+    this.selectedPaymentDayTotal = Math.max(total, 0);
+  }
+
+  private expectedPaymentForClient(client: Client): number {
+    const amountToPay = this.parseMonetary(client.amountToPay);
+    const amountPaid = this.parseMonetary(client.amountPaid);
+    const debtLeft = this.parseMonetary(client.debtLeft);
+    const paymentPeriod = Number(client.paymentPeriodRange);
+
+    const remaining = Math.max(amountToPay - amountPaid, 0);
+    const basePayment =
+      Number.isFinite(paymentPeriod) && paymentPeriod > 0
+        ? amountToPay / paymentPeriod
+        : 0;
+
+    let due = Number.isFinite(basePayment) && basePayment > 0 ? basePayment : 0;
+
+    if (due <= 0) {
+      due = remaining;
+    }
+
+    if (debtLeft > 0 && (due <= 0 || debtLeft < due)) {
+      due = debtLeft;
+    }
+
+    if (remaining > 0 && (due <= 0 || due > remaining)) {
+      due = remaining;
+    }
+
+    return due > 0 && Number.isFinite(due) ? due : 0;
+  }
+
+  private parseMonetary(value: string | number | undefined | null): number {
+    if (value === undefined || value === null) return 0;
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : 0;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.replace(/[^0-9.-]/g, '').trim();
+      if (!normalized) return 0;
+      const num = Number(normalized);
+      return Number.isFinite(num) ? num : 0;
+    }
+    return 0;
+  }
+
   private parseDebtLeft(value: string | number | undefined | null): number {
     if (value === undefined || value === null) return 0;
     const normalized = typeof value === 'string' ? value.replace(/[^0-9.-]/g, '') : String(value);
@@ -720,6 +779,24 @@ export class HomeCentralComponent implements OnInit {
 
   get hasFilteredDebtTotal(): boolean {
     return this.filteredDebtTotal > 0;
+  }
+
+  get selectedPaymentDayTotalFcDisplay(): string {
+    return this.formatFc(this.selectedPaymentDayTotal);
+  }
+
+  get selectedPaymentDayTotalUsdDisplay(): string {
+    const usdRaw = Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.selectedPaymentDayTotal.toString()
+      )
+    );
+    if (!Number.isFinite(usdRaw)) return '0';
+    return usdRaw.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+
+  get hasSelectedPaymentDayTotal(): boolean {
+    return this.selectedPaymentDayTotal > 0;
   }
 
   private matchesBirthdayFilter(client: Client): boolean {
