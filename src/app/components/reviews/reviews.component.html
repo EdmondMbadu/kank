@@ -39,52 +39,61 @@
     class="bg-gradient-to-br from-white to-blue-50 dark:from-gray-900 dark:to-slate-800 py-2"
   >
     <div class="max-w-3xl mx-auto px-4 space-y-4">
-      <!-- Tête cliquable -->
-      <button
-        (click)="toggleForm()"
-        class="w-full flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-5 py-4 shadow-md"
-      >
-        <div
-          class="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white"
+      <div class="flex items-center gap-3">
+        <button
+          (click)="toggleForm()"
+          class="flex-1 flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-4 py-3 shadow-md"
         >
+          <div
+            class="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white"
+          >
+            <svg
+              class="w-6 h-6 text-blue-600 dark:text-blue-400"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 19v-7m0 0V5m0 7h7m-7 0H5"
+              />
+            </svg>
+            Ajouter Un Commentaire Pour L'Equipe
+          </div>
           <svg
-            class="w-7 h-7 text-blue-600 dark:text-blue-400"
+            class="w-5 h-5 text-gray-500 transform transition-transform duration-200"
+            [ngClass]="{ 'rotate-90': showForm }"
             fill="none"
             stroke="currentColor"
-            stroke-width="1.5"
+            stroke-width="2"
             viewBox="0 0 24 24"
           >
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M12 19v-7m0 0V5m0 7h7m-7 0H5"
+              d="M9 5l7 7-7 7"
             />
           </svg>
-          Ajouter Un Commentaire Pour L'Equipe
-        </div>
-
-        <!-- Chevron animé -->
-        <svg
-          class="w-6 h-6 text-gray-500 transform transition-transform duration-200"
-          [ngClass]="{ 'rotate-90': showForm }"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
+        </button>
+        <button
+          type="button"
+          (click)="toggleCommentDescription()"
+          class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </button>
+          ?
+        </button>
+      </div>
 
       <div
-        class="text-sm text-slate-600 dark:text-slate-300 bg-blue-50/70 dark:bg-slate-800/60 border border-blue-200 dark:border-slate-700 rounded-lg px-4 py-3"
+        *ngIf="showCommentDescription"
+        class="text-xs text-slate-600 dark:text-slate-300 bg-blue-50/70 dark:bg-slate-800/60 border border-blue-200 dark:border-slate-700 rounded-lg px-3 py-2"
       >
         Partagez vos impressions ou conseils constructifs pour aider l’équipe à
         progresser, renforcer la collaboration et améliorer ses performances.
+        Vos propositions resteront confidentielles et ne seront visibles que par
+        l’administrateur.
       </div>
 
       <!-- Contenu repliable -->
@@ -443,15 +452,15 @@
   <!-- ░░░ BOÎTE À IDÉES ░░░ -->
   <section class="py-2 bg-white dark:bg-slate-900/40">
     <div class="max-w-3xl mx-auto px-4 space-y-4">
-      <div class="flex items-start gap-3">
+      <div class="flex items-center gap-3">
         <button
           type="button"
           (click)="toggleIdeaForm()"
-          class="flex-1 flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-5 py-4 shadow-md"
+          class="flex-1 flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-4 py-3 shadow-md"
         >
-          <div class="flex items-center gap-2 text-lg font-semibold">
+          <div class="flex items-center gap-2 text-base font-semibold">
             <svg
-              class="w-7 h-7 text-purple-600 dark:text-purple-400"
+              class="w-6 h-6 text-purple-600 dark:text-purple-400"
               fill="none"
               stroke="currentColor"
               stroke-width="1.5"
@@ -466,7 +475,7 @@
             Boîte à idées
           </div>
           <svg
-            class="w-6 h-6 text-gray-500 transform transition-transform duration-200"
+            class="w-5 h-5 text-gray-500 transform transition-transform duration-200"
             [ngClass]="{ 'rotate-90': showIdeaForm }"
             fill="none"
             stroke="currentColor"
@@ -480,10 +489,18 @@
             />
           </svg>
         </button>
+        <button
+          type="button"
+          (click)="toggleIdeaDescription()"
+          class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+        >
+          ?
+        </button>
       </div>
 
       <div
-        class="text-sm text-slate-600 dark:text-slate-300 bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4"
+        *ngIf="showIdeaDescription"
+        class="text-xs text-slate-600 dark:text-slate-300 bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-2"
       >
         Cet espace est dédié à la créativité et à l’amélioration continue.
         Partagez vos idées pour rendre la Fondation plus performante, plus
@@ -955,13 +972,13 @@
 <!-- ░░░ HISTOGRAMME PERFORMANCE ░░░ -->
 <section
   *ngIf="isAuthenticated && graphPerf.data.length"
-  class="py-8 bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900/80"
+  class="py-2 bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900/80"
 >
   <div class="max-w-5xl mx-auto px-4">
     <div
       class="rounded-2xl border border-slate-200/70 dark:border-slate-700 bg-white/90 dark:bg-slate-900/70 shadow-lg backdrop-blur"
     >
-      <div class="flex flex-wrap items-start justify-between gap-3 px-6 pt-6">
+      <div class="flex flex-wrap items-start justify-between gap-3 px-6 pt-2">
         <div class="space-y-1">
           <h2 class="text-xl font-semibold text-slate-900 dark:text-white">
             Performance mensuelle de l’équipe

@@ -22,6 +22,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   comment?: string = '';
   reviews: Comment[] = [];
   showForm = false;
+  showCommentDescription = false;
   // valeur du champ Performance
   performanceValue = 0;
 
@@ -40,6 +41,11 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   performanceDelta: number | null = null;
   toggleForm() {
     this.showForm = !this.showForm;
+    this.showCommentDescription = this.showForm;
+  }
+  toggleCommentDescription(): void {
+    this.showCommentDescription = !this.showCommentDescription;
+    this.showForm = this.showCommentDescription;
   }
   /* ---------- NOUVEAU : sliders ---------- */
   metrics = [
@@ -91,6 +97,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
   // --- Boîte à idées ---
   showIdeaForm = false;
+  showIdeaDescription = false;
   ideaEmployeeName = '';
   ideaText = '';
   ideaSelectedImageFile?: File;
@@ -525,6 +532,11 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   /* ---------------------- Boîte à idées helpers ---------------------- */
   toggleIdeaForm(): void {
     this.showIdeaForm = !this.showIdeaForm;
+    this.showIdeaDescription = this.showIdeaForm;
+  }
+  toggleIdeaDescription(): void {
+    this.showIdeaDescription = !this.showIdeaDescription;
+    this.showIdeaForm = this.showIdeaDescription;
   }
 
   async startIdeaRecording() {
@@ -804,6 +816,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.ideaSubmissionMessage = '';
     this.showIdeaForm = true;
     this.resetIdeaForm();
+    this.showIdeaDescription = true;
   }
 
   goToIdeasSection(): void {
@@ -956,6 +969,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.previewOpen = false;
     this.resetComposerState();
     this.showForm = true;
+    this.showCommentDescription = true;
   }
 
   goHome() {
