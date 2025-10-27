@@ -122,15 +122,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   displayIdeaText(idea: IdeaSubmission): string {
-    const text = idea?.ideaText?.trim() ?? '';
-    if (!text) {
-      return '';
-    }
-    if (this.auth.isAdmin) {
-      return text;
-    }
-    const firstWord = text.split(/\s+/)[0];
-    return firstWord + (firstWord.length ? '…' : '');
+    return idea?.ideaText?.trim() ?? '';
   }
 
   canViewIdeaDetails(): boolean {
