@@ -62,7 +62,9 @@
 </section>
 
 <section class="container mx-auto -mt-12 px-6 pb-16">
-  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  <div
+    class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+  >
     <a
       *ngFor="let s of summary; let i = index"
       [routerLink]="linkPath[i]"
@@ -88,21 +90,27 @@
           <p class="text-[11px] uppercase tracking-wide text-slate-400">
             Indicateur #{{ i + 1 }}
           </p>
-          <h3 class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+          <h3
+            class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
+          >
             {{ s }}
           </h3>
           <div class="mt-4 space-y-1">
             <ng-container *ngIf="i <= 2; else monetaryBlock">
-              <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+              <p
+                class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
+              >
                 {{ summaryContent[i] }}
               </p>
             </ng-container>
             <ng-template #monetaryBlock>
-              <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
-                FC {{ summaryContent[i] | number : '1.0-0' }}
+              <p
+                class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
+              >
+                FC {{ summaryContent[i] | number : "1.0-0" }}
               </p>
               <p class="text-sm text-slate-500 dark:text-slate-400">
-                ≈ $ {{ valuesConvertedToDollars[i] | number : '1.0-0' }}
+                ≈ $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
               </p>
             </ng-template>
           </div>
@@ -161,7 +169,9 @@
         <div
           class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
         >
-          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+          <p
+            class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+          >
             Anniversaires
           </p>
           <div class="mt-2 flex flex-wrap gap-2">
@@ -213,16 +223,49 @@
           </div>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-3">
+        <div class="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">
           <div
             class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
           >
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
+              Jour de paiement
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                (click)="setPaymentDayFilter(null)"
+                class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                [ngClass]="paymentDayButtonClasses(null)"
+              >
+                Tous
+              </button>
+              <button
+                *ngFor="let day of paymentDayOptions"
+                type="button"
+                (click)="setPaymentDayFilter(day)"
+                class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                [ngClass]="paymentDayButtonClasses(day)"
+              >
+                {{ displayPaymentDay(day) }}
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+          >
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
               Dette & Statut
             </p>
             <div class="mt-2 space-y-3">
               <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
-                <span class="font-semibold text-slate-500 dark:text-slate-300">Dette</span>
+                <span class="font-semibold text-slate-500 dark:text-slate-300"
+                  >Dette</span
+                >
                 <button
                   type="button"
                   (click)="setDebtStatusFilter('all')"
@@ -249,7 +292,9 @@
                 </button>
               </div>
               <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
-                <span class="font-semibold text-slate-500 dark:text-slate-300">Statut</span>
+                <span class="font-semibold text-slate-500 dark:text-slate-300"
+                  >Statut</span
+                >
                 <button
                   type="button"
                   (click)="setQuitteStatusFilter('all')"
@@ -281,12 +326,18 @@
           <div
             class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
           >
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
               Score & Prêt
             </p>
             <div class="mt-2 space-y-3">
-              <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
-                <span class="font-semibold text-slate-600 dark:text-slate-200">Score min.</span>
+              <div
+                class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300"
+              >
+                <span class="font-semibold text-slate-600 dark:text-slate-200"
+                  >Score min.</span
+                >
                 <input
                   type="number"
                   min="0"
@@ -305,14 +356,18 @@
                   (ngModelChange)="onCreditScoreChange($event)"
                   class="w-28 flex-1 accent-emerald-500"
                 />
-                <span class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300">
+                <span
+                  class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300"
+                >
                   ≥ {{ minCreditScore }}
                 </span>
               </div>
 
               <div class="space-y-2">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="font-semibold text-[11px] uppercase tracking-wide text-slate-600 dark:text-slate-200">
+                  <span
+                    class="font-semibold text-[11px] uppercase tracking-wide text-slate-600 dark:text-slate-200"
+                  >
                     Montant prêt
                   </span>
                   <div
@@ -323,8 +378,10 @@
                       (click)="setLoanAmountFilterMode('min')"
                       class="px-3 py-1 text-[11px] font-semibold transition"
                       [ngClass]="{
-                        'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('min'),
-                        'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('min')
+                        'bg-emerald-500 text-white shadow-sm':
+                          isLoanAmountFilterMode('min'),
+                        'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800':
+                          !isLoanAmountFilterMode('min')
                       }"
                     >
                       ≥ Min
@@ -334,8 +391,10 @@
                       (click)="setLoanAmountFilterMode('exact')"
                       class="px-3 py-1 text-[11px] font-semibold transition"
                       [ngClass]="{
-                        'bg-emerald-500 text-white shadow-sm': isLoanAmountFilterMode('exact'),
-                        'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800': !isLoanAmountFilterMode('exact')
+                        'bg-emerald-500 text-white shadow-sm':
+                          isLoanAmountFilterMode('exact'),
+                        'bg-transparent text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800':
+                          !isLoanAmountFilterMode('exact')
                       }"
                     >
                       = Exact
@@ -345,7 +404,11 @@
                     type="number"
                     min="0"
                     step="1000"
-                    [ngModel]="loanAmountFilterValue !== null ? loanAmountFilterValue : ''"
+                    [ngModel]="
+                      loanAmountFilterValue !== null
+                        ? loanAmountFilterValue
+                        : ''
+                    "
                     (ngModelChange)="onLoanAmountChange($event)"
                     placeholder="Ex : 2 000 000"
                     class="w-32 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
@@ -360,16 +423,19 @@
                   </button>
                 </div>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400">
-                  <ng-container *ngIf="loanAmountFilterValue !== null; else loanHint">
+                  <ng-container
+                    *ngIf="loanAmountFilterValue !== null; else loanHint"
+                  >
                     {{
-                      isLoanAmountFilterMode('exact')
-                        ? 'Clients avec exactement'
-                        : 'Clients avec au moins'
+                      isLoanAmountFilterMode("exact")
+                        ? "Clients avec exactement"
+                        : "Clients avec au moins"
                     }}
-                    {{ loanAmountFilterValue | number : '1.0-0' }} FC.
+                    {{ loanAmountFilterValue | number : "1.0-0" }} FC.
                   </ng-container>
                   <ng-template #loanHint>
-                    Indiquez un montant pour filtrer les clients selon leur prêt accordé.
+                    Indiquez un montant pour filtrer les clients selon leur prêt
+                    accordé.
                   </ng-template>
                 </p>
               </div>
@@ -380,7 +446,9 @@
             class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
           >
             <div class="flex items-center justify-between">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+              <p
+                class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+              >
                 Sites (clients)
               </p>
               <button
@@ -390,12 +458,10 @@
                 [class.text-white]="masterSelectAllLocations"
                 (click)="toggleMasterAllLocations()"
               >
-                {{ masterSelectAllLocations ? 'Tous ✓' : 'Tous' }}
+                {{ masterSelectAllLocations ? "Tous " : "Tous" }}
               </button>
             </div>
-            <div
-              class="mt-3 flex flex-wrap gap-2 max-h-28 overflow-auto pr-1"
-            >
+            <div class="mt-3 flex flex-wrap gap-2 max-h-28 overflow-auto pr-1">
               <button
                 *ngFor="let loc of uniqueLocations"
                 type="button"
@@ -404,7 +470,7 @@
                 [class.text-white]="masterSelectedLocations.has(loc)"
                 (click)="toggleMasterLocation(loc)"
               >
-                {{ loc || '—' }}
+                {{ loc || "—" }}
               </button>
             </div>
           </div>
@@ -414,9 +480,7 @@
       <div
         class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
       >
-        <p
-          class="text-xs font-medium text-emerald-600 dark:text-emerald-300"
-        >
+        <p class="text-xs font-medium text-emerald-600 dark:text-emerald-300">
           <span>{{ clientListSummaryBase }}</span>
           <ng-container *ngIf="hasFilteredDebtTotal">
             <span class="text-slate-400"> · </span>
@@ -467,7 +531,9 @@
             </div>
 
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+              <p
+                class="truncate text-sm font-medium text-slate-900 dark:text-slate-100"
+              >
                 {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
               </p>
               <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -475,11 +541,15 @@
               </p>
             </div>
 
-            <div class="min-w-fit text-xs font-medium text-emerald-600 dark:text-emerald-300">
+            <div
+              class="min-w-fit text-xs font-medium text-emerald-600 dark:text-emerald-300"
+            >
               {{ c.locationName }}
             </div>
 
-            <div class="min-w-fit text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <div
+              class="min-w-fit text-sm font-semibold text-slate-900 dark:text-slate-100"
+            >
               FC {{ c.debtLeft | number : "1.0-0" }}
             </div>
           </div>
@@ -562,7 +632,9 @@
           <div
             class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
           >
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
               Rechercher
             </p>
             <div class="relative mt-2">
@@ -591,10 +663,14 @@
           <div
             class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
           >
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
               Score minimum
             </p>
-            <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
+            <div
+              class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300"
+            >
               <input
                 type="number"
                 min="0"
@@ -623,7 +699,9 @@
           <div
             class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 flex flex-col justify-between"
           >
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
               Relance rapide
             </p>
             <button
@@ -640,7 +718,9 @@
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <path d="M3 10v4a3 3 0 0 0 3 3h1l7 4v-18l-7 4H6a3 3 0 0 0-3 3z" />
+                <path
+                  d="M3 10v4a3 3 0 0 0 3 3h1l7 4v-18l-7 4H6a3 3 0 0 0-3 3z"
+                />
                 <path d="M14 7s5-2 7-3v16c-2-1-7-3-7-3" />
               </svg>
               Relancer ({{ finishedFiltered.length }})
@@ -653,7 +733,9 @@
           class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
         >
           <div class="flex items-center justify-between">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
               Sites actifs
             </p>
             <button
@@ -663,12 +745,10 @@
               [class.text-white]="selectAllLocations"
               (click)="toggleAllLocations()"
             >
-              {{ selectAllLocations ? 'Tous les sites ✓' : 'Tous les sites' }}
+              {{ selectAllLocations ? "Tous les sites ✓" : "Tous les sites" }}
             </button>
           </div>
-          <div
-            class="mt-3 flex flex-wrap gap-2 max-h-32 overflow-auto pr-1"
-          >
+          <div class="mt-3 flex flex-wrap gap-2 max-h-32 overflow-auto pr-1">
             <button
               *ngFor="let loc of uniqueLocations"
               type="button"
@@ -777,7 +857,10 @@
   aria-modal="true"
   role="dialog"
 >
-  <div class="absolute inset-0 bg-black/50" (click)="closeGeneralBulkModal()"></div>
+  <div
+    class="absolute inset-0 bg-black/50"
+    (click)="closeGeneralBulkModal()"
+  ></div>
   <div
     class="relative z-10 w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900"
   >
@@ -799,9 +882,14 @@
       </button>
     </div>
 
-    <div class="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+    <div
+      class="mt-4 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400"
+    >
       <span class="font-semibold uppercase tracking-wide">Variables :</span>
-      <span *ngFor="let token of placeholderTokens" class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] dark:bg-slate-800">
+      <span
+        *ngFor="let token of placeholderTokens"
+        class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] dark:bg-slate-800"
+      >
         {{ token }}
       </span>
       <button
@@ -820,9 +908,13 @@
       placeholder="Tapez votre message personnalisé..."
     ></textarea>
 
-    <div class="mt-2 flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-      <span>{{ generalBulkModal.message.length || 0 }} caractères · ~
-        {{ estimatedSegments(generalBulkModal.message) }} segment(s) SMS</span>
+    <div
+      class="mt-2 flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span
+        >{{ generalBulkModal.message.length || 0 }} caractères · ~
+        {{ estimatedSegments(generalBulkModal.message) }} segment(s) SMS</span
+      >
       <span class="font-medium text-slate-600 dark:text-slate-300">
         Aperçu : {{ generalPreviewPersonalized() }}
       </span>
@@ -838,9 +930,17 @@
       <button
         class="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 disabled:opacity-50"
         (click)="sendGeneralBulkSms()"
-        [disabled]="generalBulkSending || !generalBulkModal.message.trim() || generalBulkModal.recipients.length === 0"
+        [disabled]="
+          generalBulkSending ||
+          !generalBulkModal.message.trim() ||
+          generalBulkModal.recipients.length === 0
+        "
       >
-        {{ generalBulkSending ? 'Envoi…' : 'Envoyer à ' + generalBulkModal.recipients.length + ' client(s)' }}
+        {{
+          generalBulkSending
+            ? "Envoi…"
+            : "Envoyer à " + generalBulkModal.recipients.length + " client(s)"
+        }}
       </button>
     </div>
 
@@ -855,9 +955,14 @@
           | Échecs : <strong>{{ generalBulkModal.result.failed }}</strong>
         </span>
       </p>
-      <ul *ngIf="generalBulkModal.result.failures?.length" class="mt-2 space-y-1">
+      <ul
+        *ngIf="generalBulkModal.result.failures?.length"
+        class="mt-2 space-y-1"
+      >
         <li *ngFor="let f of generalBulkModal.result.failures">
-          <span class="font-semibold">{{ f.client.firstName }} {{ f.client.lastName }}</span>
+          <span class="font-semibold"
+            >{{ f.client.firstName }} {{ f.client.lastName }}</span
+          >
           — {{ f.error }}
         </li>
       </ul>

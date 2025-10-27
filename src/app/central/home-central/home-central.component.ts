@@ -49,6 +49,16 @@ export class HomeCentralComponent implements OnInit {
   customBirthdayInput = '';
   private birthdayTarget: { month: number; day: number } | null = null;
   private searchTerm = '';
+  paymentDayOptions: string[] = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  selectedPaymentDay: string | null = null;
   minCreditScore = 0;
   loanAmountFilterValue: number | null = null;
   loanAmountFilterMode: 'min' | 'exact' = 'min';
@@ -340,6 +350,49 @@ export class HomeCentralComponent implements OnInit {
     };
   }
 
+  setPaymentDayFilter(day: string | null) {
+    if (day === null) {
+      if (this.selectedPaymentDay !== null) {
+        this.selectedPaymentDay = null;
+        this.applyClientFilters();
+      }
+      return;
+    }
+
+    const normalized = this.normalizePaymentDay(day);
+    const nextValue =
+      normalized && this.selectedPaymentDay === normalized ? null : normalized;
+
+    if (this.selectedPaymentDay === nextValue) return;
+
+    this.selectedPaymentDay = nextValue;
+    this.applyClientFilters();
+  }
+
+  isPaymentDaySelected(day: string | null) {
+    if (day === null) return this.selectedPaymentDay === null;
+    const normalized = this.normalizePaymentDay(day);
+    return (
+      !!normalized &&
+      !!this.selectedPaymentDay &&
+      normalized === this.selectedPaymentDay
+    );
+  }
+
+  paymentDayButtonClasses(day: string | null) {
+    const isActive = this.isPaymentDaySelected(day);
+    return {
+      'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white': isActive,
+      'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+        !isActive,
+    };
+  }
+
+  displayPaymentDay(day: string | null) {
+    if (!day) return 'Tous';
+    return this.time.englishToFrenchDay?.[day] || day;
+  }
+
   debtStatusButtonClasses(mode: 'all' | 'withDebt' | 'withoutDebt') {
     return {
       'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
@@ -384,6 +437,7 @@ export class HomeCentralComponent implements OnInit {
       this.loanAmountFilterValue !== null && this.loanAmountFilterValue > 0;
     const hasDebtFilter = this.debtStatusFilter !== 'all';
     const hasQuitteFilter = this.quitteStatusFilter !== 'all';
+    const hasPaymentDayFilter = !!this.selectedPaymentDay;
     const hasLocationFilter = !this.masterSelectAllLocations;
 
     const isDefaultView =
@@ -392,7 +446,9 @@ export class HomeCentralComponent implements OnInit {
       !hasScoreFilter &&
       !hasLoanFilter &&
       !hasDebtFilter &&
-      !hasQuitteFilter && !hasLocationFilter;
+      !hasQuitteFilter &&
+      !hasPaymentDayFilter &&
+      !hasLocationFilter;
 
     if (isDefaultView) {
       return `Tous les clients · ${baseTotal} client(s)`;
@@ -430,6 +486,9 @@ export class HomeCentralComponent implements OnInit {
           : 'Statut ≠ « Quitté »'
       );
     }
+    if (hasPaymentDayFilter && this.selectedPaymentDay) {
+      parts.push(`Paiement : ${this.displayPaymentDay(this.selectedPaymentDay)}`);
+    }
     if (hasLocationFilter) {
       parts.push(
         `${this.masterSelectedLocations.size} site(s)`
@@ -447,7 +506,8 @@ export class HomeCentralComponent implements OnInit {
       .filter((client) => this.matchesLoanAmount(client))
       .filter((client) => this.matchesDebtStatus(client))
       .filter((client) => this.matchesQuitteStatus(client))
-      .filter((client) => this.matchesMasterLocation(client));
+      .filter((client) => this.matchesMasterLocation(client))
+      .filter((client) => this.matchesPaymentDay(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
@@ -602,6 +662,31 @@ export class HomeCentralComponent implements OnInit {
       return true;
     const loc = client.locationName || '';
     return this.masterSelectedLocations.has(loc);
+  }
+
+  private matchesPaymentDay(client: Client): boolean {
+    if (!this.selectedPaymentDay) return true;
+    const clientDay = this.normalizePaymentDay(client.paymentDay);
+    if (!clientDay) return false;
+    return clientDay === this.selectedPaymentDay;
+  }
+
+  private normalizePaymentDay(day: string | undefined | null): string | null {
+    if (!day) return null;
+    const trimmed = day.trim();
+    if (!trimmed) return null;
+    const lower = trimmed.toLowerCase();
+
+    const englishMatch = this.paymentDayOptions.find(
+      (opt) => opt.toLowerCase() === lower
+    );
+    if (englishMatch) return englishMatch;
+
+    for (const [eng, fr] of Object.entries(this.time.englishToFrenchDay)) {
+      if (fr.toLowerCase() === lower) return eng;
+    }
+
+    return trimmed;
   }
 
   private calculateFilteredDebtTotal(list: Client[]): number {
