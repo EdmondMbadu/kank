@@ -197,18 +197,60 @@ export class ComputationService {
     // ],
   ];
   minimumPayment(client: Client) {
-    const pay = Number(client.amountToPay) / Number(client.paymentPeriodRange);
-    return pay.toString();
+    const amountToPay = Number(client.amountToPay);
+    const paymentPeriod = Number(client.paymentPeriodRange);
+    const debtLeft = Number(client.debtLeft);
+    const amountPaid = Number(client.amountPaid);
+
+    let pay =
+      Number.isFinite(amountToPay) && Number.isFinite(paymentPeriod) && paymentPeriod > 0
+        ? amountToPay / paymentPeriod
+        : 0;
+
+    const remaining =
+      Number.isFinite(amountToPay) && Number.isFinite(amountPaid)
+        ? Math.max(amountToPay - amountPaid, 0)
+        : 0;
+
+    if (remaining > 0 && (pay <= 0 || remaining < pay)) {
+      pay = remaining;
+    }
+
+    if (Number.isFinite(debtLeft) && debtLeft > 0 && (pay <= 0 || debtLeft < pay)) {
+      pay = debtLeft;
+    }
+
+    return Math.max(pay, 0).toString();
   }
   computeExpectedPerDate(clients: Client[]) {
     let total = 0;
 
     for (let client of clients) {
       if (Number(client.amountToPay) - Number(client.amountPaid) >= 0) {
-        const pay =
-          Number(client.amountToPay) / Number(client.paymentPeriodRange);
+        const amountToPay = Number(client.amountToPay);
+        const paymentPeriod = Number(client.paymentPeriodRange);
+        const amountPaid = Number(client.amountPaid);
+        const debtLeft = Number(client.debtLeft);
 
-        total += pay;
+        let pay =
+          Number.isFinite(amountToPay) && Number.isFinite(paymentPeriod) && paymentPeriod > 0
+            ? amountToPay / paymentPeriod
+            : 0;
+
+        const remaining =
+          Number.isFinite(amountToPay) && Number.isFinite(amountPaid)
+            ? Math.max(amountToPay - amountPaid, 0)
+            : 0;
+
+        if (remaining > 0 && (pay <= 0 || remaining < pay)) {
+          pay = remaining;
+        }
+
+        if (Number.isFinite(debtLeft) && debtLeft > 0 && (pay <= 0 || debtLeft < pay)) {
+          pay = debtLeft;
+        }
+
+        total += Math.max(pay, 0);
       }
     }
     return total;
