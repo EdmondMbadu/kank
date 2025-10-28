@@ -393,6 +393,14 @@ export class ReviewsComponent implements OnInit, OnDestroy {
               return;
             }
 
+            const normalizedStatus = (employee.status || '')
+              .toString()
+              .trim()
+              .toLowerCase();
+            if (normalizedStatus !== 'travaille') {
+              return;
+            }
+
             const enriched: Employee = {
               ...employee,
               tempUser: user,
@@ -436,6 +444,8 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     ) {
       this.individualSelectedTargetUserId =
         this.employeeOptions[0].uid ?? null;
+    } else if (!this.employeeOptions.length) {
+      this.individualSelectedTargetUserId = null;
     }
   }
   private getUserLabelById(userId?: string | null, fallback = ''): string {
