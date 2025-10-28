@@ -426,8 +426,411 @@
         <!-- Bouton aperçu -->
         <div class="flex justify-end">
           <button
-            (click)="showPreview()"
+            (click)="showPreview('team')"
             class="inline-flex gap-2 items-center py-2.5 px-5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-900 shadow"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15 12H3m6 8v-16"
+              />
+            </svg>
+            Aperçu
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░░ COMMENTAIRE INDIVIDUEL ░░░ -->
+  <section
+    class="bg-gradient-to-br from-white to-violet-50 dark:from-slate-900 dark:to-slate-800 py-2"
+  >
+    <div class="max-w-3xl mx-auto px-4 space-y-4">
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          (click)="toggleIndividualForm()"
+          class="flex-1 flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-4 py-3 shadow-md"
+        >
+          <div
+            class="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white"
+          >
+            <svg
+              class="w-6 h-6 text-violet-600 dark:text-violet-400"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 19v-7m0 0V5m0 7h7m-7 0H5"
+              />
+            </svg>
+            Ajouter un Commentaire Individuel
+          </div>
+          <svg
+            class="w-5 h-5 text-gray-500 transform transition-transform duration-200"
+            [ngClass]="{ 'rotate-90': individualShowForm }"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          (click)="toggleIndividualCommentDescription()"
+          class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+        >
+          ?
+        </button>
+      </div>
+
+      <div
+        *ngIf="individualShowCommentDescription"
+        class="text-xs text-slate-600 dark:text-slate-300 bg-violet-50/70 dark:bg-slate-800/60 border border-violet-200 dark:border-slate-700 rounded-lg px-3 py-2"
+      >
+        Évaluez un membre de l’équipe selon les métriques ci-dessous. Chaque axe
+        précise ce qu’il mesure et les critères d’observation attendus pour
+        guider votre feedback.
+      </div>
+
+      <div
+        *ngIf="individualShowForm"
+        class="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-6 space-y-8 shadow"
+      >
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label
+              class="block mb-1 font-medium text-sm text-gray-800 dark:text-gray-200"
+            >
+              Votre nom
+            </label>
+            <input
+              [(ngModel)]="individualPersonPostingComment"
+              type="text"
+              class="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="Ex. Jeanne K."
+            />
+          </div>
+
+          <div>
+            <label
+              class="block mb-1 font-medium text-sm text-gray-800 dark:text-gray-200"
+            >
+              Employé concerné
+            </label>
+            <select
+              [(ngModel)]="individualSelectedTargetUserId"
+              class="w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-violet-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              [disabled]="!employeeOptions.length"
+            >
+              <option [ngValue]="null" disabled>
+                -- Sélectionnez un employé --
+              </option>
+              <option
+                *ngFor="let employee of employeeOptions"
+                [ngValue]="employee.uid"
+              >
+                {{ displayEmployeeOption(employee) }}
+              </option>
+            </select>
+            <p
+              *ngIf="!employeeOptions.length"
+              class="mt-1 text-xs text-rose-500 dark:text-rose-300"
+            >
+              Aucun employé disponible pour le moment.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <ng-container *ngFor="let m of individualMetrics">
+            <div>
+              <label
+                class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
+              >
+                {{ m.label }}
+                <span
+                  [style.color]="compute.getGradientColor(m.value * 10)"
+                  class="font-bold"
+                  >{{ m.value }}</span
+                >/10
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step="1"
+                [(ngModel)]="m.value"
+                class="w-full h-2 bg-gray-200 rounded-lg accent-violet-600 cursor-pointer transition-all"
+                [style.accentColor]="compute.getGradientColor(m.value * 10)"
+              />
+            </div>
+          </ng-container>
+        </div>
+
+        <div>
+          <label
+            class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200"
+          >
+            Observations
+          </label>
+          <textarea
+            [(ngModel)]="individualComment"
+            rows="4"
+            class="w-full p-2.5 rounded-lg border focus:ring-violet-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white resize-y"
+            placeholder="- Forces, axes d’amélioration, exemples concrets"
+          ></textarea>
+
+          <div class="flex justify-start mt-2">
+            <label
+              for="individualImageFile"
+              title="Ajouter une image"
+              class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-dashed border-gray-300 hover:bg-gray-50 cursor-pointer p-1 text-sm text-gray-600 dark:text-gray-300"
+            >
+              <svg
+                class="w-5 h-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21.44 11.05L12.7 19.79a4.5 4.5 0 01-6.36-6.36l8.76-8.76a3.25 3.25 0 014.6 4.6l-8.76 8.76a1.75 1.75 0 11-2.47-2.47l7.55-7.55"
+                />
+              </svg>
+            </label>
+            <input
+              type="file"
+              id="individualImageFile"
+              accept="image/*"
+              (change)="
+                onIndividualImageFileSelected($any($event.target).files)
+              "
+              class="hidden"
+            />
+          </div>
+
+          <div *ngIf="individualSelectedImagePreviewURL" class="mt-3 relative">
+            <img
+              [src]="individualSelectedImagePreviewURL"
+              class="max-h-40 rounded object-contain w-full border"
+              alt="Aperçu du fichier image ajouté"
+            />
+            <button
+              type="button"
+              (click)="clearIndividualSelectedImage()"
+              class="absolute -top-1 -right-1 bg-white rounded-full p-0.5 border shadow text-gray-600 hover:bg-gray-100"
+              title="Retirer l'image"
+              aria-label="Retirer l'image"
+            >
+              <svg
+                class="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label
+            class="block mb-1 text-sm font-medium text-gray-800 dark:text-gray-200"
+          >
+            Cote globale (0-5 étoiles)
+          </label>
+          <select
+            [(ngModel)]="individualNumberOfStars"
+            class="w-full p-2.5 rounded-lg border focus:ring-violet-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option *ngFor="let s of [0, 1, 2, 3, 4, 5]" [value]="s">
+              {{ s }}
+            </option>
+          </select>
+        </div>
+
+        <div class="flex flex-wrap gap-4 justify-center">
+          <button
+            (click)="startIndividualRecording()"
+            [disabled]="individualIsRecording"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-50 hover:bg-violet-100 active:scale-95 transition disabled:opacity-40"
+          >
+            <svg
+              class="w-5 h-5 text-violet-600"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 1a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19 10v2a7 7 0 0 1-14 0v-2"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 19v4m-4 0h8"
+              />
+            </svg>
+            Commencer
+          </button>
+          <button
+            (click)="stopIndividualRecording()"
+            [disabled]="!individualIsRecording"
+            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-95 transition disabled:opacity-40"
+          >
+            <svg
+              class="w-5 h-5 text-rose-600"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 9l6 6m0-6-6 6"
+              />
+            </svg>
+            Arrêter
+          </button>
+          <button
+            (click)="discardIndividualAudio()"
+            [disabled]="
+              !individualRecordedAudioURL && !individualSelectedAudioPreviewURL
+            "
+            class="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-50 hover:bg-orange-100 active:scale-95 transition disabled:opacity-40"
+          >
+            <svg
+              class="w-5 h-5 text-orange-600"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M10 11v6m4-6v6"
+              />
+            </svg>
+            Annuler
+          </button>
+        </div>
+
+        <div *ngIf="individualIsRecording">
+          <div class="flex justify-between text-sm mt-2">
+            <span class="text-gray-600 dark:text-gray-300"
+              >Enregistrement…</span
+            >
+            <span class="font-mono">{{ individualElapsedTime }}</span>
+          </div>
+          <div class="w-full h-2 bg-gray-300 rounded">
+            <div
+              class="h-2 bg-violet-600 rounded"
+              [style.width.%]="getIndividualLimitedProgress()"
+            ></div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="
+            individualSelectedAudioPreviewURL || individualRecordedAudioURL
+          "
+          class="mt-4"
+        >
+          <audio
+            [src]="
+              individualSelectedAudioPreviewURL || individualRecordedAudioURL
+            "
+            controls
+            class="w-full"
+          ></audio>
+        </div>
+
+        <div class="mt-4">
+          <label
+            class="block text-sm font-medium mb-1 text-gray-800 dark:text-gray-200"
+          >
+            Téléverser un fichier audio
+          </label>
+          <label
+            for="individualAudioFile"
+            class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          >
+            <svg
+              class="w-8 h-8 text-gray-500 mb-2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M16 16v-1a4 4 0 0 0-8 0v1m12-4a4 4 0 1 0-8-3.464M16 16v1a4 4 0 0 1-8 0v-1m12-4a4 4 0 1 1-8-3.464"
+              />
+            </svg>
+            <span class="text-xs text-gray-500"
+              >Cliquez ou déposez un fichier (mp3, wav…)</span
+            >
+            <input
+              type="file"
+              id="individualAudioFile"
+              accept="audio/*"
+              (change)="
+                onIndividualAudioFileSelected($any($event.target).files)
+              "
+              class="hidden"
+            />
+          </label>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            (click)="showPreview('individual')"
+            class="inline-flex gap-2 items-center py-2.5 px-5 text-sm font-medium text-white bg-violet-600 rounded-lg hover:bg-violet-700 focus:ring-4 focus:ring-violet-300 dark:focus:ring-violet-900 shadow"
           >
             <svg
               class="w-5 h-5"
@@ -912,37 +1315,89 @@
       <!-- scrollable body -->
       <div class="px-6 pb-4 mt-3 overflow-y-auto">
         <p>
-          <span class="font-semibold">Auteur :</span> {{ personPostingComment }}
+          <span class="font-semibold">Auteur :</span>
+          {{
+            previewContext === "individual"
+              ? individualPersonPostingComment
+              : personPostingComment
+          }}
         </p>
-        <p *ngIf="getSelectedTargetLabel()" class="mt-2">
-          <span class="font-semibold">Localisation :</span>
-          {{ getSelectedTargetLabel() }}
-        </p>
+        <ng-container
+          *ngIf="
+            (
+              previewContext === 'individual'
+                ? getIndividualSelectedTargetLabel(
+                    individualSelectedTargetUserId
+                  )
+                : getSelectedTargetLabel(selectedTargetUserId)
+            ) as previewTarget
+          "
+        >
+          <p *ngIf="previewTarget" class="mt-2">
+            <span class="font-semibold">
+              {{
+                previewContext === "individual" ? "Employé" : "Localisation"
+              }}
+              :
+            </span>
+            {{ previewTarget }}
+          </p>
+        </ng-container>
 
-        <div *ngFor="let m of metrics" class="mt-2">
+        <div
+          *ngFor="
+            let m of previewContext === 'individual'
+              ? individualMetrics
+              : metrics
+          "
+          class="mt-2"
+        >
           <p>
             <span class="font-semibold">{{ m.label }} :</span> {{ m.value }} /
             10
           </p>
         </div>
 
-        <p *ngIf="comment" class="mt-3">
-          <span class="font-semibold">Observations :</span> {{ comment }}
-        </p>
-
-        <ng-container *ngIf="recordedAudioURL || selectedAudioPreviewURL">
-          <p class="font-semibold mt-3">Aperçu audio :</p>
-          <audio
-            [src]="recordedAudioURL || selectedAudioPreviewURL"
-            controls
-            class="w-full rounded"
-          ></audio>
+        <ng-container
+          *ngIf="
+            (
+              previewContext === 'individual'
+                ? individualComment
+                : comment
+            ) as previewComment
+          "
+        >
+          <p *ngIf="previewComment" class="mt-3">
+            <span class="font-semibold">Observations :</span>
+            {{ previewComment }}
+          </p>
         </ng-container>
 
-        <ng-container *ngIf="selectedImagePreviewURL">
+        <ng-container
+          *ngIf="
+            (
+              previewContext === 'individual'
+                ? individualRecordedAudioURL || individualSelectedAudioPreviewURL
+                : recordedAudioURL || selectedAudioPreviewURL
+            ) as previewAudio
+          "
+        >
+          <p class="font-semibold mt-3">Aperçu audio :</p>
+          <audio [src]="previewAudio" controls class="w-full rounded"></audio>
+        </ng-container>
+
+        <ng-container
+          *ngIf="
+            (
+              previewContext === 'individual'
+                ? individualSelectedImagePreviewURL
+                : selectedImagePreviewURL
+            ) as previewImage
+          "
+        >
           <p class="font-semibold mt-3">Aperçu image :</p>
           <img
-            [src]="selectedImagePreviewURL"
+            [src]="previewImage"
             class="w-full max-h-64 object-contain rounded"
           />
         </ng-container>
@@ -954,7 +1409,7 @@
       >
         <div class="flex justify-end gap-4">
           <button
-            (click)="previewOpen = false"
+            (click)="previewOpen = false; previewContext = null"
             class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600"
           >
             Modifier
@@ -1122,7 +1577,9 @@
           <!-- n’afficher que si la valeur existe -->
           <ng-container *ngIf="c[kv.key] !== undefined">
             <div class="flex items-center text-sm dark:text-white">
-              <span class="w-48 break-words">{{ kv.label }}</span>
+              <span class="w-48 break-words">
+                {{ getMetricLabel(kv.key, c.scope) }}
+              </span>
 
               <div class="flex-1 h-2 bg-gray-200 rounded mx-2">
                 <div

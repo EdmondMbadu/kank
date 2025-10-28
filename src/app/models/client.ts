@@ -86,6 +86,7 @@ export class Comment {
   cahier?: number;
   suiviClients?: number;
   relationClient?: number;
+  attitudeEquipe?: number;
   performance?: number;
   __editingPerf?: boolean;
   __perfDraft?: number;
@@ -93,6 +94,7 @@ export class Comment {
   __commentDraft?: string;
   targetUserId?: string;
   targetUserLastName?: string;
+  scope?: 'team' | 'individual';
 
   [key: string]: any;
   // NEW:

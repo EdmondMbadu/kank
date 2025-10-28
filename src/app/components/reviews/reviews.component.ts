@@ -5,11 +5,21 @@ import { Subscription } from 'rxjs';
 
 import { Comment } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
+import { Employee } from 'src/app/models/employee';
 import { IdeaAttachment, IdeaSubmission } from 'src/app/models/idea';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+
+type MetricDefinition = {
+  key: string;
+  label: string;
+  measure?: string;
+  criteria?: string;
+};
+
+type MetricState = MetricDefinition & { value: number };
 
 @Component({
   selector: 'app-reviews',
@@ -47,31 +57,83 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.showCommentDescription = !this.showCommentDescription;
     this.showForm = this.showCommentDescription;
   }
+  toggleIndividualForm(): void {
+    this.individualShowForm = !this.individualShowForm;
+    this.individualShowCommentDescription = this.individualShowForm;
+  }
+  toggleIndividualCommentDescription(): void {
+    this.individualShowCommentDescription = !this.individualShowCommentDescription;
+    this.individualShowForm = this.individualShowCommentDescription;
+  }
   /* ---------- NOUVEAU : sliders ---------- */
-  metrics = [
-    { key: 'ponctualite', label: 'Arrive à l’heure', value: 0 },
-    { key: 'proprete', label: 'La Foundation est propre', value: 0 },
-    { key: 'cahier', label: 'Cahiers et carnets à jour et corrects', value: 0 },
+  readonly teamMetricDefinitions: MetricDefinition[] = [
+    { key: 'ponctualite', label: "Arrive à l’heure" },
+    { key: 'proprete', label: 'La Foundation est propre' },
+    {
+      key: 'cahier',
+      label: 'Cahiers et carnets à jour et corrects',
+    },
     {
       key: 'suiviClients',
       label: 'A visité les clients ne s’étant pas présentés pour payer',
-      value: 0,
     },
     {
       key: 'relationClient',
       label: 'Traite les clients avec respect et sérieux',
-      value: 0,
     },
   ];
 
-  /** liste statique pour l’affichage des barres */
-  metricsKeys = this.metrics.map((m: any) => ({
-    key: m.key,
-    label: m.label,
+  readonly individualMetricDefinitions: MetricDefinition[] = [
+    {
+      key: 'ponctualite',
+      label: 'Ponctualité & Présence',
+      measure: 'Respect du temps de travail',
+      criteria: 'Arrivée à l’heure, pauses raisonnables, disponibilité',
+    },
+    {
+      key: 'proprete',
+      label: 'Tenue & Organisation du Poste / Matériel',
+      measure: 'Professionnalisme dans la présentation et l’ordre',
+      criteria: 'Uniforme propre, bureau propre, cahiers/carnets bien tenus',
+    },
+    {
+      key: 'suiviClients',
+      label: 'Suivi des Clients (Rappel & Visites)',
+      measure: 'Engagement dans le suivi de portefeuille',
+      criteria: 'Appels réguliers, visites des absents, suivi des cas compliqués',
+    },
+    {
+      key: 'relationClient',
+      label: 'Qualité de l’Interaction Client',
+      measure: 'Respect, écoute, transparence',
+      criteria: 'Ton utilisé, patience, capacité à expliquer clairement',
+    },
+    {
+      key: 'attitudeEquipe',
+      label: "Attitude & Esprit d’Équipe",
+      measure: 'Collaboration et contribution au bon climat interne',
+      criteria: 'Respect des collègues, initiative, volonté d’aider',
+    },
+  ];
+
+  metrics: MetricState[] = this.teamMetricDefinitions.map((def) => ({
+    ...def,
+    value: 0,
   }));
+
+  individualMetrics: MetricState[] = this.individualMetricDefinitions.map(
+    (def) => ({
+      ...def,
+      value: 0,
+    })
+  );
+
+  /** liste statique pour l’affichage des barres */
+  readonly metricsKeys = this.buildMetricsKeys();
 
   /* ---------- Aperçu ---------- */
   previewOpen = false;
+  previewContext: 'team' | 'individual' | null = null;
 
   teamCode: string = '';
   isRecording = false;
@@ -86,6 +148,26 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   // Optional image attachment
   selectedImageFile?: File;
   selectedImagePreviewURL?: string;
+
+  // Individual comment composer state
+  individualShowForm = false;
+  individualShowCommentDescription = false;
+  individualPersonPostingComment = '';
+  individualNumberOfStars: string = '';
+  individualComment = '';
+  individualSelectedTargetUserId: string | null = null;
+  individualIsRecording = false;
+  individualMediaRecorder!: MediaRecorder;
+  individualAudioChunks: BlobPart[] = [];
+  individualRecordedBlob?: Blob;
+  individualRecordedAudioURL?: string;
+  individualSelectedAudioFile?: File;
+  individualSelectedAudioPreviewURL?: string;
+  individualSelectedImageFile?: File;
+  individualSelectedImagePreviewURL?: string;
+  individualElapsedTime = '00:00';
+  individualRecordingProgress = 0;
+  private individualRecordingTimer: any;
 
   // Admin image-replace target: stores which review/attachment index we are editing
   adminReplaceTarget: { reviewIndex: number; attachmentIndex: number } | null =
@@ -117,6 +199,8 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   ideaSubmissionMessage = '';
 
   allUsers: User[] = [];
+  employeeOptions: Employee[] = [];
+  private employeeSubs: Subscription[] = [];
   selectedTargetUserId: string | null = null;
   isAuthenticated = false;
   private authSub?: Subscription;
@@ -124,6 +208,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   private usersSub?: Subscription;
   submissionSuccess = false;
   submissionTargetLabel = '';
+  submissionContext: 'team' | 'individual' | null = null;
 
   constructor(
     private router: Router,
@@ -159,6 +244,9 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         if (!this.selectedTargetUserId) {
           this.selectedTargetUserId = user.uid;
         }
+        if (!this.individualSelectedTargetUserId) {
+          this.individualSelectedTargetUserId = user.uid;
+        }
         this.reviewsSub = this.auth.getReviews().subscribe((data: any[]) => {
           if (data?.length) {
             const doc = data[0] || {};
@@ -172,6 +260,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         });
       } else {
         this.selectedTargetUserId = null;
+        this.individualSelectedTargetUserId = null;
         this.reviews = [];
         this.reviewId = '';
         this.setReviews();
@@ -195,6 +284,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         ).toLowerCase();
         return aName.localeCompare(bName);
       });
+      this.refreshEmployeeOptions();
       this.setReviews();
     });
   }
@@ -203,6 +293,9 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.authSub?.unsubscribe();
     this.reviewsSub?.unsubscribe();
     this.usersSub?.unsubscribe();
+    this.employeeSubs.forEach((sub) => sub.unsubscribe());
+    this.employeeSubs = [];
+    this.stopIndividualTimer();
     this.stopIdeaTimer();
   }
 
@@ -216,10 +309,16 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         comment.starsNumber = Number(comment.stars);
         comment.__editingPerf = false; // ← initialise
         comment.__perfDraft = comment.performance ?? 0; // ← brouillon
-        const resolvedLabel = this.getUserLabelById(
-          comment.targetUserId,
-          comment.targetUserLastName ?? ''
-        );
+        const resolvedLabel =
+          comment.scope === 'individual'
+            ? this.getEmployeeLabelById(
+                comment.targetUserId,
+                comment.targetUserLastName ?? ''
+              )
+            : this.getUserLabelById(
+                comment.targetUserId,
+                comment.targetUserLastName ?? ''
+              );
         if (resolvedLabel) {
           comment.targetUserLastName = resolvedLabel;
         }
@@ -247,6 +346,20 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       this.recordingProgress = (seconds / 60) * 100; // Assuming max recording time is 60 seconds
     }, 1000);
   }
+  private startIndividualTimer() {
+    let seconds = 0;
+    this.individualRecordingTimer = setInterval(() => {
+      seconds++;
+      this.individualElapsedTime = this.formatTime(seconds);
+      this.individualRecordingProgress = (seconds / 60) * 100;
+    }, 1000);
+  }
+  private stopIndividualTimer() {
+    if (this.individualRecordingTimer) {
+      clearInterval(this.individualRecordingTimer);
+      this.individualRecordingTimer = undefined;
+    }
+  }
   private formatTime(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -255,6 +368,76 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   getLimitedProgress(): number {
     return Math.min(this.recordingProgress, 100);
   }
+  getIndividualLimitedProgress(): number {
+    return Math.min(this.individualRecordingProgress, 100);
+  }
+  private refreshEmployeeOptions(): void {
+    this.employeeSubs.forEach((sub) => sub.unsubscribe());
+    this.employeeSubs = [];
+    this.employeeOptions = [];
+
+    if (!this.allUsers?.length) {
+      return;
+    }
+
+    const seen = new Map<string, Employee>();
+    this.allUsers.forEach((user) => {
+      const sub = this.auth
+        .getAllEmployeesGivenUser(user)
+        .subscribe((employees) => {
+          const employeeList: Employee[] = Array.isArray(employees)
+            ? (employees as Employee[])
+            : [];
+          employeeList.forEach((employee) => {
+            if (!employee?.uid) {
+              return;
+            }
+
+            const enriched: Employee = {
+              ...employee,
+              tempUser: user,
+              tempLocationHolder:
+                employee.tempLocationHolder || user.firstName || '',
+            };
+            seen.set(employee.uid, enriched);
+          });
+
+          this.employeeOptions = Array.from(seen.values()).sort((a, b) => {
+            const nameA = `${(a.firstName || '').trim()} ${(a.lastName || '').trim()}`
+              .trim()
+              .toLowerCase();
+            const nameB = `${(b.firstName || '').trim()} ${(b.lastName || '').trim()}`
+              .trim()
+              .toLowerCase();
+
+            if (nameA && nameB) {
+              const cmp = nameA.localeCompare(nameB);
+              if (cmp !== 0) {
+                return cmp;
+              }
+            }
+
+            return (a.tempLocationHolder || '')
+              .toLowerCase()
+              .localeCompare((b.tempLocationHolder || '').toLowerCase());
+          });
+
+          this.ensureIndividualDefaultTarget();
+          this.setReviews();
+        });
+
+      this.employeeSubs.push(sub);
+    });
+  }
+  private ensureIndividualDefaultTarget(): void {
+    if (
+      !this.individualSelectedTargetUserId &&
+      this.employeeOptions.length > 0
+    ) {
+      this.individualSelectedTargetUserId =
+        this.employeeOptions[0].uid ?? null;
+    }
+  }
   private getUserLabelById(userId?: string | null, fallback = ''): string {
     if (!userId) {
       return fallback;
@@ -262,8 +445,66 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     const user = this.allUsers.find((u) => u.uid === userId);
     return user?.firstName || user?.lastName || user?.email || fallback;
   }
-  getSelectedTargetLabel(): string {
-    return this.getUserLabelById(this.selectedTargetUserId);
+  private getEmployeeLabelById(
+    employeeId?: string | null,
+    fallback = ''
+  ): string {
+    if (!employeeId) {
+      return fallback;
+    }
+    const employee = this.employeeOptions.find((e) => e.uid === employeeId);
+    if (!employee) {
+      return fallback;
+    }
+
+    const name = [employee.firstName, employee.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const location =
+      employee.tempLocationHolder || employee.tempUser?.firstName || '';
+
+    if (name && location) {
+      return `${name} – ${location}`;
+    }
+    if (name) {
+      return name;
+    }
+    if (location) {
+      return location;
+    }
+    return fallback || employee.uid || '';
+  }
+  getSelectedTargetLabel(
+    targetUserId: string | null | undefined = this.selectedTargetUserId
+  ): string {
+    return this.getUserLabelById(targetUserId);
+  }
+  getIndividualSelectedTargetLabel(
+    targetUserId: string | null | undefined = this.individualSelectedTargetUserId
+  ): string {
+    return this.getEmployeeLabelById(targetUserId);
+  }
+  displayEmployeeOption(employee: Employee | null | undefined): string {
+    if (!employee) {
+      return '';
+    }
+    return this.getEmployeeLabelById(employee.uid, '');
+  }
+  getMetricLabel(metricKey: string, scope?: 'team' | 'individual'): string {
+    if (scope === 'individual') {
+      const individual = this.individualMetricDefinitions.find(
+        (def) => def.key === metricKey
+      );
+      if (individual?.label) {
+        return individual.label;
+      }
+    }
+
+    const team =
+      this.teamMetricDefinitions.find((def) => def.key === metricKey) ||
+      this.individualMetricDefinitions.find((def) => def.key === metricKey);
+    return team?.label ?? metricKey;
   }
   private pad(num: number): string {
     return num < 10 ? `0${num}` : `${num}`;
@@ -363,6 +604,66 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     };
   }
 
+  async startIndividualRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferredMimeTypes = [
+        'audio/mp4;codecs=mp4a',
+        'audio/ogg;codecs=opus',
+        'audio/webm;codecs=opus',
+      ];
+
+      let selectedMimeType = '';
+      for (const mt of preferredMimeTypes) {
+        if (MediaRecorder.isTypeSupported(mt)) {
+          selectedMimeType = mt;
+          break;
+        }
+      }
+      const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
+
+      this.individualMediaRecorder = new MediaRecorder(stream, options);
+      this.individualAudioChunks = [];
+
+      this.individualMediaRecorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) {
+          this.individualAudioChunks.push(event.data);
+        }
+      };
+
+      this.individualMediaRecorder.start();
+      this.individualIsRecording = true;
+      this.individualRecordingProgress = 0;
+      this.individualElapsedTime = '00:00';
+      this.startIndividualTimer();
+    } catch (err) {
+      console.error('Error accessing microphone for individual feedback:', err);
+      alert(
+        'Impossible d’accéder au microphone pour le commentaire individuel.'
+      );
+    }
+  }
+
+  stopIndividualRecording() {
+    if (!this.individualMediaRecorder) {
+      return;
+    }
+
+    this.individualMediaRecorder.stop();
+    this.individualIsRecording = false;
+    this.stopIndividualTimer();
+
+    this.individualMediaRecorder.onstop = () => {
+      this.individualRecordedBlob = new Blob(this.individualAudioChunks, {
+        type: 'audio/webm',
+      });
+      this.individualRecordedAudioURL = URL.createObjectURL(
+        this.individualRecordedBlob
+      );
+      this.cd.detectChanges();
+    };
+  }
+
   private async uploadRecordedBlobAndThenPostComment(targetUserId: string) {
     try {
       // Convert Blob -> File
@@ -376,7 +677,10 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       const downloadURL = await uploadTask.ref.getDownloadURL();
 
       // Now finalize
-      this.addReview(downloadURL, targetUserId);
+      this.submitReview('team', {
+        audioUrl: downloadURL,
+        targetUserId,
+      });
 
       // Reset local fields
       this.recordedBlob = undefined;
@@ -398,7 +702,10 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       const downloadURL = await uploadTask.ref.getDownloadURL();
 
       // Now finalize
-      this.addReview(downloadURL, targetUserId);
+      this.submitReview('team', {
+        audioUrl: downloadURL,
+        targetUserId,
+      });
 
       // Reset local fields
       if (this.selectedAudioPreviewURL) {
@@ -409,6 +716,110 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error uploading selected file:', error);
       alert('Erreur lors du téléversement du fichier audio.');
+    }
+  }
+
+  private async uploadIndividualRecordedBlobAndThenPostComment(
+    targetUserId: string
+  ) {
+    try {
+      const fileName = `recorded-individual-${Date.now()}.webm`;
+      const audioFile = new File([this.individualRecordedBlob!], fileName, {
+        type: this.individualRecordedBlob!.type,
+      });
+
+      const path = `reviews/${targetUserId}-${fileName}`;
+      const uploadTask = await this.storage.upload(path, audioFile);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      this.submitReview('individual', {
+        audioUrl: downloadURL,
+        targetUserId,
+      });
+
+      this.individualRecordedBlob = undefined;
+      this.individualRecordedAudioURL = '';
+    } catch (error) {
+      console.error(
+        'Error uploading recorded blob for individual comment:',
+        error
+      );
+      alert('Erreur lors du téléversement de votre enregistrement individuel.');
+    }
+  }
+
+  private async uploadIndividualSelectedFileAndThenPostComment(
+    targetUserId: string
+  ) {
+    try {
+      const fileName = `upload-individual-${Date.now()}-${
+        this.individualSelectedAudioFile?.name
+      }`;
+      const path = `reviews/${targetUserId}-${fileName}`;
+
+      const uploadTask = await this.storage.upload(
+        path,
+        this.individualSelectedAudioFile!
+      );
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      this.submitReview('individual', {
+        audioUrl: downloadURL,
+        targetUserId,
+      });
+
+      if (this.individualSelectedAudioPreviewURL) {
+        URL.revokeObjectURL(this.individualSelectedAudioPreviewURL);
+      }
+      this.individualSelectedAudioPreviewURL = undefined;
+      this.individualSelectedAudioFile = undefined;
+    } catch (error) {
+      console.error(
+        'Error uploading selected file for individual comment:',
+        error
+      );
+      alert('Erreur lors du téléversement du fichier audio individuel.');
+    }
+  }
+
+  private async uploadIndividualImageAndThenPostComment(
+    targetUserId: string
+  ) {
+    try {
+      if (!this.individualSelectedImageFile) return;
+
+      const fileName = `image-individual-${Date.now()}-${
+        this.individualSelectedImageFile.name
+      }`;
+      const path = `reviews/${targetUserId}-${fileName}`;
+
+      const uploadTask = await this.storage.upload(
+        path,
+        this.individualSelectedImageFile
+      );
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+
+      const attachment = {
+        type: 'image',
+        url: downloadURL,
+        mimeType: this.individualSelectedImageFile.type,
+        size: this.individualSelectedImageFile.size,
+      } as any;
+
+      this.submitReview('individual', {
+        audioUrl: '',
+        targetUserId,
+        attachments: [attachment],
+      });
+
+      if (this.individualSelectedImagePreviewURL) {
+        URL.revokeObjectURL(this.individualSelectedImagePreviewURL);
+      }
+      this.individualSelectedImagePreviewURL = undefined;
+      this.individualSelectedImageFile = undefined;
+    } catch (error) {
+      console.error('Error uploading image for individual comment:', error);
+      alert("Erreur lors du téléversement de l'image individuelle.");
     }
   }
 
@@ -432,7 +843,11 @@ export class ReviewsComponent implements OnInit, OnDestroy {
         size: this.selectedImageFile.size,
       } as any;
 
-      this.addReview('', targetUserId, [attachment]);
+      this.submitReview('team', {
+        audioUrl: '',
+        targetUserId,
+        attachments: [attachment],
+      });
 
       // cleanup
       if (this.selectedImagePreviewURL) {
@@ -473,6 +888,36 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     console.log('Audio canceled/reset.');
   }
 
+  discardIndividualAudio() {
+    if (
+      this.individualMediaRecorder &&
+      this.individualMediaRecorder.state !== 'inactive'
+    ) {
+      this.individualMediaRecorder.stop();
+    }
+    this.individualIsRecording = false;
+    this.individualAudioChunks = [];
+    this.individualRecordedBlob = undefined;
+    if (this.individualRecordedAudioURL) {
+      URL.revokeObjectURL(this.individualRecordedAudioURL);
+    }
+    this.individualRecordedAudioURL = undefined;
+    this.stopIndividualTimer();
+
+    if (this.individualSelectedAudioPreviewURL) {
+      URL.revokeObjectURL(this.individualSelectedAudioPreviewURL);
+    }
+    this.individualSelectedAudioPreviewURL = undefined;
+    this.individualSelectedAudioFile = undefined;
+
+    const input = document.getElementById(
+      'individualAudioFile'
+    ) as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
+  }
+
   onAudioFileSelected(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
       return;
@@ -503,6 +948,37 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
     console.log('Audio file selected:', file);
   }
+  onIndividualAudioFileSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    const file = fileList[0];
+
+    if (file.size >= 20000000) {
+      alert('Le fichier audio dépasse la limite de 20MB.');
+      return;
+    }
+
+    if (file.type.split('/')[0] !== 'audio') {
+      alert('Veuillez choisir un fichier audio valide.');
+      return;
+    }
+
+    this.individualSelectedAudioFile = file;
+
+    if (this.individualSelectedAudioPreviewURL) {
+      URL.revokeObjectURL(this.individualSelectedAudioPreviewURL);
+    }
+    this.individualSelectedAudioPreviewURL = URL.createObjectURL(file);
+
+    const input = document.getElementById(
+      'individualAudioFile'
+    ) as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
+  }
   onImageFileSelected(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
     const file = fileList[0];
@@ -527,6 +1003,31 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     if (input) input.value = '';
 
     console.log('Image file selected:', file);
+  }
+
+  onIndividualImageFileSelected(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+
+    if (file.size >= 10000000) {
+      alert("L'image dépasse la limite de 10MB.");
+      return;
+    }
+    if (file.type.split('/')[0] !== 'image') {
+      alert('Veuillez choisir une image (jpg, png, ...).');
+      return;
+    }
+
+    this.individualSelectedImageFile = file;
+    if (this.individualSelectedImagePreviewURL) {
+      URL.revokeObjectURL(this.individualSelectedImagePreviewURL);
+    }
+    this.individualSelectedImagePreviewURL = URL.createObjectURL(file);
+
+    const input = document.getElementById(
+      'individualImageFile'
+    ) as HTMLInputElement | null;
+    if (input) input.value = '';
   }
 
   /* ---------------------- Boîte à idées helpers ---------------------- */
@@ -868,7 +1369,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const targetUserId = this.selectedTargetUserId;
+    const targetUserId = this.selectedTargetUserId!;
 
     // 4) If we do have audio, upload it. Priority: recorded first, else selected file. If no audio but an image exists, upload the image.
     if (hasRecordedAudio) {
@@ -879,7 +1380,67 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       this.uploadImageAndThenPostComment(targetUserId);
     } else {
       // just text
-      this.addReview('', targetUserId);
+      this.submitReview('team', {
+        audioUrl: '',
+        targetUserId,
+      });
+    }
+  }
+  addIndividualReviewWithOrWithoutAudioFile(confirmUser = true) {
+    if (
+      !this.individualPersonPostingComment ||
+      !this.individualPersonPostingComment.trim()
+    ) {
+      alert('Veuillez saisir votre nom.');
+      return;
+    }
+    if (
+      !this.individualNumberOfStars ||
+      !this.individualNumberOfStars.trim()
+    ) {
+      alert('Veuillez saisir votre cote.');
+      return;
+    }
+    if (!this.individualSelectedTargetUserId) {
+      alert("Veuillez sélectionner l'employé concerné.");
+      return;
+    }
+
+    const hasText =
+      this.individualComment && this.individualComment.trim().length > 0;
+    const hasRecordedAudio = !!this.individualRecordedBlob;
+    const hasUploadedAudio = !!this.individualSelectedAudioFile;
+    const hasImage = !!this.individualSelectedImageFile;
+
+    if (!hasText && !hasRecordedAudio && !hasUploadedAudio && !hasImage) {
+      alert(
+        'Veuillez saisir un commentaire, ajouter une image ou fournir un fichier audio.'
+      );
+      return;
+    }
+
+    if (
+      confirmUser &&
+      !confirm(
+        'Êtes-vous sûr de vouloir publier ce commentaire individuel ?'
+      )
+    ) {
+      return;
+    }
+
+    const targetUserId = this.individualSelectedTargetUserId!;
+
+    if (hasRecordedAudio) {
+      this.uploadIndividualRecordedBlobAndThenPostComment(targetUserId);
+    } else if (hasUploadedAudio) {
+      this.uploadIndividualSelectedFileAndThenPostComment(targetUserId);
+    } else if (hasImage) {
+      this.uploadIndividualImageAndThenPostComment(targetUserId);
+    } else {
+      this.submitReview('individual', {
+        audioUrl: '',
+        targetUserId,
+      });
     }
   }
   deleteReview(idx: number, r: Comment) {
@@ -904,45 +1465,100 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       });
   }
 
+  private buildMetricsKeys(): Array<{ key: string; label: string }> {
+    const map = new Map<string, string>();
+    this.teamMetricDefinitions.forEach(({ key, label }) => {
+      if (!map.has(key)) {
+        map.set(key, label);
+      }
+    });
+    this.individualMetricDefinitions.forEach(({ key, label }) => {
+      if (!map.has(key)) {
+        map.set(key, label);
+      }
+    });
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label }));
+  }
+
+  private buildMetricsPayload(source: MetricState[]): Record<string, number> {
+    return source.reduce((acc, metric) => {
+      acc[metric.key] = metric.value;
+      return acc;
+    }, {} as Record<string, number>);
+  }
+
   /** ---------- 1. Injecter les metrics + visible dans le payload ---------- */
-  addReview(audioUrl: string, targetUserId: string, attachments?: Array<any>) {
-    const targetLabel = this.getUserLabelById(targetUserId);
-    const review: Comment = {
-      name: this.personPostingComment,
-      comment: this.comment,
-      time: this.time.todaysDate(),
-      stars: this.numberofStars,
+  private submitReview(
+    context: 'team' | 'individual',
+    {
       audioUrl,
-      visible: false, // masqué par défaut
-      ponctualite: this.metrics[0].value,
-      proprete: this.metrics[1].value,
-      cahier: this.metrics[2].value,
-      suiviClients: this.metrics[3].value,
-      relationClient: this.metrics[4].value,
+      targetUserId,
+      attachments,
+    }: {
+      audioUrl: string;
+      targetUserId: string;
+      attachments?: Array<any>;
+    }
+  ) {
+    const isTeam = context === 'team';
+    const metricsSource = isTeam ? this.metrics : this.individualMetrics;
+    const nameSource = isTeam
+      ? this.personPostingComment
+      : this.individualPersonPostingComment;
+    const commentSource = isTeam ? this.comment : this.individualComment;
+    const starsSource = isTeam
+      ? this.numberofStars
+      : this.individualNumberOfStars;
+    const performanceSource =
+      isTeam && this.auth.isAdmin && this.performanceValue > 0
+        ? this.performanceValue
+        : undefined;
+
+    const targetLabel = isTeam
+      ? this.getUserLabelById(targetUserId)
+      : this.getEmployeeLabelById(targetUserId);
+    const metricsPayload = this.buildMetricsPayload(metricsSource);
+
+    const review: Comment = {
+      name: nameSource?.trim() ?? '',
+      comment: commentSource?.trim() ?? '',
+      time: this.time.todaysDate(),
+      stars: (starsSource ?? '').toString(),
+      audioUrl,
+      visible: false,
+      ...metricsPayload,
       targetUserId,
       targetUserLastName: targetLabel,
-      // include attachments if any
       ...(attachments && attachments.length ? { attachments } : {}),
-      // ⬇️  inclure performance uniquement si admin OU valeur > 0
-      ...(this.auth.isAdmin && this.performanceValue > 0
-        ? { performance: this.performanceValue }
+      ...(performanceSource !== undefined
+        ? { performance: performanceSource }
         : {}),
+      ...(context === 'individual' ? { scope: 'individual' } : {}),
     };
 
     this.auth
       .addReview(review, targetUserId)
       .then(() => {
         this.previewOpen = false;
+        this.previewContext = null;
         const showForCurrentUser =
           this.isAuthenticated && this.auth.currentUser?.uid === targetUserId;
         if (showForCurrentUser) {
           this.reviews.unshift(review);
           this.setReviews();
         }
-        this.resetComposerState();
+
+        if (isTeam) {
+          this.resetTeamComposerState();
+          this.showForm = false;
+        } else {
+          this.resetIndividualComposerState();
+          this.individualShowForm = false;
+        }
+
         this.submissionTargetLabel = targetLabel;
         this.submissionSuccess = true;
-        this.showForm = false;
+        this.submissionContext = context;
       })
       .catch((err) => {
         console.error('Erreur d’enregistrement :', err);
@@ -950,26 +1566,69 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       });
   }
   /* === Aperçu === */
-  showPreview() {
-    if (!this.personPostingComment!.trim()) {
-      alert('Veuillez saisir votre nom.');
-      return;
+  showPreview(context: 'team' | 'individual') {
+    if (context === 'team') {
+      if (!this.personPostingComment || !this.personPostingComment.trim()) {
+        alert('Veuillez saisir votre nom.');
+        return;
+      }
+      if (!this.numberofStars || !this.numberofStars.trim()) {
+        alert('Veuillez saisir votre cote.');
+        return;
+      }
+      if (!this.selectedTargetUserId) {
+        alert('Veuillez sélectionner la localisation (utilisateur) visée.');
+        return;
+      }
+    } else {
+      if (
+        !this.individualPersonPostingComment ||
+        !this.individualPersonPostingComment.trim()
+      ) {
+        alert('Veuillez saisir votre nom.');
+        return;
+      }
+      if (
+        !this.individualNumberOfStars ||
+        !this.individualNumberOfStars.trim()
+      ) {
+        alert('Veuillez saisir votre cote.');
+        return;
+      }
+      if (!this.individualSelectedTargetUserId) {
+        alert("Veuillez sélectionner l'employé concerné.");
+        return;
+      }
     }
+    this.previewContext = context;
     this.previewOpen = true;
   }
   /** ---------- 3. Bouton « Publier » dans le modal ---------- */
   publishComment() {
+    const context = this.previewContext ?? 'team';
     this.previewOpen = false;
     // on publie sans redemander la confirmation
-    this.addReviewWithOrWithoutAudioFile(false);
+    if (context === 'individual') {
+      this.addIndividualReviewWithOrWithoutAudioFile(false);
+    } else {
+      this.addReviewWithOrWithoutAudioFile(false);
+    }
   }
   sendAnotherFeedback() {
     this.submissionSuccess = false;
     this.submissionTargetLabel = '';
     this.previewOpen = false;
-    this.resetComposerState();
-    this.showForm = true;
-    this.showCommentDescription = true;
+    this.previewContext = null;
+    this.resetTeamComposerState();
+    this.resetIndividualComposerState();
+    if (this.submissionContext === 'individual') {
+      this.individualShowForm = true;
+      this.individualShowCommentDescription = true;
+    } else {
+      this.showForm = true;
+      this.showCommentDescription = true;
+    }
+    this.submissionContext = null;
   }
 
   goHome() {
@@ -1012,7 +1671,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     document.body.removeChild(a);
   }
 
-  private resetComposerState(): void {
+  private resetTeamComposerState(): void {
     this.personPostingComment = '';
     this.comment = '';
     this.numberofStars = '';
@@ -1025,6 +1684,10 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     }
     this.isRecording = false;
     this.audioChunks = [];
+    if (this.recordingTimer) {
+      clearInterval(this.recordingTimer);
+      this.recordingTimer = undefined;
+    }
     if (this.recordedAudioURL) {
       URL.revokeObjectURL(this.recordedAudioURL);
     }
@@ -1047,7 +1710,45 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.elapsedTime = '00:00';
     this.recordingProgress = 0;
     this.selectedTargetUserId = this.auth.currentUser?.uid ?? null;
-    this.previewOpen = false;
+  }
+
+  private resetIndividualComposerState(): void {
+    this.individualPersonPostingComment = '';
+    this.individualComment = '';
+    this.individualNumberOfStars = '';
+    this.individualMetrics.forEach((m) => (m.value = 0));
+
+    if (
+      this.individualMediaRecorder &&
+      this.individualMediaRecorder.state !== 'inactive'
+    ) {
+      this.individualMediaRecorder.stop();
+    }
+    this.individualIsRecording = false;
+    this.individualAudioChunks = [];
+    this.stopIndividualTimer();
+    if (this.individualRecordedAudioURL) {
+      URL.revokeObjectURL(this.individualRecordedAudioURL);
+    }
+    this.individualRecordedAudioURL = undefined;
+    this.individualRecordedBlob = undefined;
+
+    if (this.individualSelectedAudioPreviewURL) {
+      URL.revokeObjectURL(this.individualSelectedAudioPreviewURL);
+    }
+    this.individualSelectedAudioPreviewURL = undefined;
+    this.individualSelectedAudioFile = undefined;
+
+    if (this.individualSelectedImagePreviewURL) {
+      URL.revokeObjectURL(this.individualSelectedImagePreviewURL);
+    }
+    this.individualSelectedImagePreviewURL = undefined;
+    this.individualSelectedImageFile = undefined;
+
+    this.individualElapsedTime = '00:00';
+    this.individualRecordingProgress = 0;
+    this.individualSelectedTargetUserId =
+      this.employeeOptions[0]?.uid ?? null;
   }
 
   /** Build a cleaned copy of reviews suitable for saving to Firestore (strip UI props) */
@@ -1246,6 +1947,23 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
     // reset the input element so same file can be reselected later
     const input = document.getElementById('imageFile') as HTMLInputElement;
+    if (input) input.value = '';
+  }
+
+  clearIndividualSelectedImage(): void {
+    if (this.individualSelectedImagePreviewURL) {
+      try {
+        URL.revokeObjectURL(this.individualSelectedImagePreviewURL);
+      } catch (e) {
+        // ignore
+      }
+    }
+    this.individualSelectedImagePreviewURL = undefined;
+    this.individualSelectedImageFile = undefined;
+
+    const input = document.getElementById(
+      'individualImageFile'
+    ) as HTMLInputElement;
     if (input) input.value = '';
   }
 
