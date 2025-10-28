@@ -458,7 +458,9 @@
           (click)="toggleIdeaForm()"
           class="flex-1 flex items-center justify-between bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg px-4 py-3 shadow-md"
         >
-          <div class="flex items-center gap-2 text-base font-semibold">
+          <div
+            class="flex items-center gap-2 text-base font-semibold dark:text-white"
+          >
             <svg
               class="w-6 h-6 text-purple-600 dark:text-purple-400"
               fill="none"
@@ -492,7 +494,7 @@
         <button
           type="button"
           (click)="toggleIdeaDescription()"
-          class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          class="w-10 h-10 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-900"
         >
           ?
         </button>
@@ -500,7 +502,7 @@
 
       <div
         *ngIf="showIdeaDescription"
-        class="text-xs text-slate-600 dark:text-slate-300 bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-2"
+        class="text-xs text-slate-600 dark:text-white bg-purple-50/70 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg px-3 py-2"
       >
         Cet espace est dédié à la créativité et à l’amélioration continue.
         Partagez vos idées pour rendre la Fondation plus performante, plus
