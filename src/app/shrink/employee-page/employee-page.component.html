@@ -601,19 +601,19 @@
 
             <section
               class="w-full mt-6 space-y-4"
-              *ngIf="
-                auth.isAdmin || individualReviewsForDisplay.length > 0
-              "
+              *ngIf="auth.isAdmin || individualReviewsForDisplay.length > 0"
             >
               <div class="flex items-end justify-between">
                 <div>
-                  <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
+                  <h3
+                    class="text-xl font-semibold text-slate-900 dark:text-white"
+                  >
                     Commentaires individuels
                   </h3>
-                  <p class="text-sm text-slate-600 dark:text-slate-300">
+                  <!-- <p class="text-sm text-slate-600 dark:text-slate-300">
                     Retour partagé pour cet employé. Seul l’administrateur voit
                     les avis non publiés.
-                  </p>
+                  </p> -->
                 </div>
                 <ng-container *ngIf="individualReviewsLoading">
                   <span
@@ -645,9 +645,7 @@
 
               <ng-container *ngIf="!individualReviewsLoading">
                 <p
-                  *ngIf="
-                    !individualReviewsForDisplay.length && auth.isAdmin
-                  "
+                  *ngIf="!individualReviewsForDisplay.length && auth.isAdmin"
                   class="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
                 >
                   Aucun commentaire individuel n’a encore été ajouté pour cet
@@ -660,8 +658,10 @@
                 >
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p class="text-base font-semibold text-slate-900 dark:text-white">
-                        {{ review.name || 'Anonyme' }}
+                      <p
+                        class="text-base font-semibold text-slate-900 dark:text-white"
+                      >
+                        {{ review.name || "Anonyme" }}
                       </p>
                       <p class="text-xs text-slate-500 dark:text-slate-300">
                         {{ review.timeFormatted || review.time }}
@@ -724,7 +724,9 @@
                           <path
                             d="M19 6l-.867 12.142A2 2 0 0116.138 20H7.862a2 2 0 01-1.995-1.858L5 6"
                           />
-                          <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                          <path
+                            d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"
+                          />
                         </svg>
                         Supprimer
                       </button>
@@ -736,24 +738,32 @@
                       <ng-container *ngIf="review[metric.key] !== undefined">
                         <div class="flex flex-col gap-1 text-sm">
                           <div class="flex items-center justify-between">
-                            <span class="font-medium text-slate-700 dark:text-slate-200">
+                            <span
+                              class="font-medium text-slate-700 dark:text-slate-200"
+                            >
                               {{ getIndividualMetricLabel(metric.key) }}
                             </span>
                             <span
                               class="font-semibold"
                               [style.color]="
-                                compute.getGradientColor((review[metric.key] || 0) * 10)
+                                compute.getGradientColor(
+                                  (review[metric.key] || 0) * 10
+                                )
                               "
                             >
                               {{ review[metric.key] }}/10
                             </span>
                           </div>
-                          <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                          <div
+                            class="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                          >
                             <div
                               class="h-2 rounded-full"
                               [style.width.%]="(review[metric.key] / 10) * 100"
                               [style.backgroundColor]="
-                                compute.getGradientColor((review[metric.key] || 0) * 10)
+                                compute.getGradientColor(
+                                  (review[metric.key] || 0) * 10
+                                )
                               "
                             ></div>
                           </div>
@@ -769,17 +779,28 @@
                       {{ review.comment }}
                     </p>
 
-                    <div *ngIf="review.audioUrl" class="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
-                      <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                    <div
+                      *ngIf="review.audioUrl"
+                      class="rounded-lg bg-slate-50 p-3 dark:bg-slate-800"
+                    >
+                      <p
+                        class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+                      >
                         Audio
                       </p>
-                      <audio [src]="review.audioUrl" controls class="w-full"></audio>
+                      <audio
+                        [src]="review.audioUrl"
+                        controls
+                        class="w-full"
+                      ></audio>
                     </div>
 
                     <ng-container *ngIf="review.attachments?.length">
                       <div *ngFor="let attachment of review.attachments">
                         <ng-container *ngIf="attachment.type === 'image'">
-                          <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                          <p
+                            class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+                          >
                             Image
                           </p>
                           <img
@@ -2496,7 +2517,7 @@
     >
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
         {{
-          statePickerMode === 'admin'
+          statePickerMode === "admin"
             ? "Choisir l’état"
             : "Demander des vacances"
         }}
@@ -2552,8 +2573,7 @@
         *ngIf="statePickerMode === 'employee'"
         class="text-xs text-amber-600 dark:text-amber-300"
       >
-        Une fois confirmé, seul un administrateur pourra modifier cette
-        journée.
+        Une fois confirmé, seul un administrateur pourra modifier cette journée.
       </div>
     </div>
 
@@ -2583,7 +2603,7 @@
           (click)="applySelectedAttendanceState()"
           class="px-4 py-2 rounded-full text-sm font-medium text-white bg-green-700 hover:bg-green-800"
         >
-          {{ statePickerMode === 'admin' ? 'Enregistrer' : 'Confirmer' }}
+          {{ statePickerMode === "admin" ? "Enregistrer" : "Confirmer" }}
         </button>
       </div>
     </div>
