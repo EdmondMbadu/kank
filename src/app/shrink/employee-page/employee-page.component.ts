@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Employee } from 'src/app/models/employee';
+import { Comment } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
@@ -80,6 +81,51 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     },
   ];
   activePickerStates: PickerStateOption[] = this.pickerStates;
+
+  // ── Commentaires individuels ───────────────────────
+  individualReviews: Comment[] = [];
+  private individualReviewsSub?: Subscription;
+  individualReviewsLoading = false;
+  readonly individualMetricDefinitions: Array<{
+    key: string;
+    label: string;
+    measure: string;
+    criteria: string;
+  }> = [
+    {
+      key: 'ponctualite',
+      label: 'Ponctualité & Présence',
+      measure: 'Respect du temps de travail',
+      criteria: 'Arrivée à l’heure, pauses raisonnables, disponibilité',
+    },
+    {
+      key: 'proprete',
+      label: 'Tenue & Organisation du Poste / Matériel',
+      measure: 'Professionnalisme dans la présentation et l’ordre',
+      criteria: 'Uniforme propre, bureau propre, cahiers/carnets bien tenus',
+    },
+    {
+      key: 'suiviClients',
+      label: 'Suivi des Clients (Rappel & Visites)',
+      measure: 'Engagement dans le suivi de portefeuille',
+      criteria: 'Appels réguliers, visites des absents, suivi des cas compliqués',
+    },
+    {
+      key: 'relationClient',
+      label: 'Qualité de l’Interaction Client',
+      measure: 'Respect, écoute, transparence',
+      criteria: 'Ton utilisé, patience, capacité à expliquer clairement',
+    },
+    {
+      key: 'attitudeEquipe',
+      label: "Attitude & Esprit d’Équipe",
+      measure: 'Collaboration et contribution au bon climat interne',
+      criteria: 'Respect des collègues, initiative, volonté d’aider',
+    },
+  ];
+  readonly individualMetricKeys = this.individualMetricDefinitions.map(
+    ({ key, label }) => ({ key, label })
+  );
 
   /** dayKey "M-D-YYYY" -> { expected, total } */
   monthlyDayTotals: Record<string, { expected: number; total: number }> = {};
@@ -274,6 +320,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
   ngOnDestroy(): void {
     this.employeesSub?.unsubscribe();
+    this.individualReviewsSub?.unsubscribe();
   }
   public graphPerformance = {
     data: [{}],
@@ -301,6 +348,62 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             amount: d.amount ?? 0,
           };
         });
+      });
+  }
+  private loadIndividualReviews(targetUid?: string | null): void {
+    this.individualReviewsSub?.unsubscribe();
+    this.individualReviewsSub = undefined;
+    this.individualReviews = [];
+
+    if (!targetUid) {
+      this.individualReviewsLoading = false;
+      return;
+    }
+
+    this.individualReviewsLoading = true;
+    this.individualReviewsSub = this.auth
+      .getReviewsForTarget(targetUid)
+      .subscribe({
+        next: (reviews) => {
+          const scoped = (reviews || []).filter(
+            (review) => review && review.scope === 'individual'
+          );
+
+          const processed = scoped.map((review) => {
+            const normalized: Comment = { ...review };
+            normalized.starsNumber = Number(review.stars ?? 0);
+            normalized.timeFormatted = review.time
+              ? this.time.convertDateToDesiredFormat(review.time)
+              : '';
+            return normalized;
+          });
+
+          processed.sort((a, b) => {
+            const parse = (value?: string) => {
+              if (!value) return 0;
+              const parts = value.split('-').map(Number);
+              if (parts.length < 6) return 0;
+              const [month, day, year, hour, minute, second] = parts;
+              return new Date(
+                year,
+                (month || 1) - 1,
+                day || 1,
+                hour || 0,
+                minute || 0,
+                second || 0
+              ).getTime();
+            };
+            return parse(b.time) - parse(a.time);
+          });
+
+          this.individualReviews = processed;
+          this.individualReviewsLoading = false;
+        },
+        error: (err) => {
+          console.error('Failed to load individual reviews:', err);
+          this.individualReviews = [];
+          this.individualReviewsLoading = false;
+        },
       });
   }
   public graphMonthPerformance = {
@@ -338,6 +441,23 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   get perfBg(): string {
     // light tint for the chip background
     return this.perfColor.replace('rgb(', 'rgba(').replace(')', ',0.12)');
+  }
+
+  get individualReviewsForDisplay(): Comment[] {
+    return this.auth.isAdmin
+      ? this.individualReviews
+      : this.individualReviews.filter((review) => review.visible);
+  }
+
+  getIndividualMetricLabel(key: string): string {
+    return (
+      this.individualMetricDefinitions.find((def) => def.key === key)?.label ||
+      key
+    );
+  }
+
+  getIndividualMetricDefinition(key: string) {
+    return this.individualMetricDefinitions.find((def) => def.key === key);
   }
 
   toggle(property: 'showRequestVacation' | 'isLoading') {
@@ -432,6 +552,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.employee = {};
     this.employees = [];
     this.paymentCodeLoaded = false;
+    this.individualReviews = [];
+    this.individualReviewsSub?.unsubscribe();
+    this.individualReviewsSub = undefined;
+    this.individualReviewsLoading = false;
   }
   async retrieveEmployees(): Promise<void> {
     this.employeesSub?.unsubscribe();
@@ -458,6 +582,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       }
 
       this.employee = selectedEmployee;
+      this.loadIndividualReviews(this.employee.uid);
       this.paymentCodeLoaded = true; // we now know employee.paymentCode
 
       // set location coordinates

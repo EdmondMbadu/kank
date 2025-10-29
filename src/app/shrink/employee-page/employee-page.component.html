@@ -599,6 +599,162 @@
               </button>
             </div>
 
+            <section
+              class="w-full mt-6 space-y-4"
+              *ngIf="
+                auth.isAdmin || individualReviewsForDisplay.length > 0
+              "
+            >
+              <div class="flex items-end justify-between">
+                <div>
+                  <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
+                    Commentaires individuels
+                  </h3>
+                  <p class="text-sm text-slate-600 dark:text-slate-300">
+                    Retour partagé pour cet employé. Seul l’administrateur voit
+                    les avis non publiés.
+                  </p>
+                </div>
+                <ng-container *ngIf="individualReviewsLoading">
+                  <span
+                    class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  >
+                    <svg
+                      class="h-4 w-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                      />
+                      <path
+                        class="opacity-75"
+                        d="M4 12a8 8 0 018-8"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                    Chargement…
+                  </span>
+                </ng-container>
+              </div>
+
+              <ng-container *ngIf="!individualReviewsLoading">
+                <p
+                  *ngIf="
+                    !individualReviewsForDisplay.length && auth.isAdmin
+                  "
+                  class="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+                >
+                  Aucun commentaire individuel n’a encore été ajouté pour cet
+                  employé.
+                </p>
+
+                <div
+                  *ngFor="let review of individualReviewsForDisplay"
+                  class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                >
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p class="text-base font-semibold text-slate-900 dark:text-white">
+                        {{ review.name || 'Anonyme' }}
+                      </p>
+                      <p class="text-xs text-slate-500 dark:text-slate-300">
+                        {{ review.timeFormatted || review.time }}
+                      </p>
+                    </div>
+                    <div class="flex flex-col items-end gap-1 text-xs">
+                      <span
+                        class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path
+                            d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.786 1.402 8.171L12 18.896l-7.336 3.871 1.402-8.171L.132 9.21l8.2-1.192z"
+                          />
+                        </svg>
+                        {{ review.starsNumber ?? 0 }}/5
+                      </span>
+                      <span
+                        *ngIf="!review.visible"
+                        class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                      >
+                        Non publié
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <ng-container *ngFor="let metric of individualMetricKeys">
+                      <ng-container *ngIf="review[metric.key] !== undefined">
+                        <div class="flex flex-col gap-1 text-sm">
+                          <div class="flex items-center justify-between">
+                            <span class="font-medium text-slate-700 dark:text-slate-200">
+                              {{ getIndividualMetricLabel(metric.key) }}
+                            </span>
+                            <span
+                              class="font-semibold"
+                              [style.color]="
+                                compute.getGradientColor((review[metric.key] || 0) * 10)
+                              "
+                            >
+                              {{ review[metric.key] }}/10
+                            </span>
+                          </div>
+                          <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              class="h-2 rounded-full"
+                              [style.width.%]="(review[metric.key] / 10) * 100"
+                              [style.backgroundColor]="
+                                compute.getGradientColor((review[metric.key] || 0) * 10)
+                              "
+                            ></div>
+                          </div>
+                        </div>
+                      </ng-container>
+                    </ng-container>
+                  </div>
+
+                  <div
+                    class="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-200"
+                  >
+                    <p *ngIf="review.comment" class="whitespace-pre-line">
+                      {{ review.comment }}
+                    </p>
+
+                    <div *ngIf="review.audioUrl" class="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
+                      <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                        Audio
+                      </p>
+                      <audio [src]="review.audioUrl" controls class="w-full"></audio>
+                    </div>
+
+                    <ng-container *ngIf="review.attachments?.length">
+                      <div *ngFor="let attachment of review.attachments">
+                        <ng-container *ngIf="attachment.type === 'image'">
+                          <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                            Image
+                          </p>
+                          <img
+                            [src]="attachment.url"
+                            alt="Preuve visuelle"
+                            class="w-full max-h-60 rounded-lg object-contain border border-slate-200 dark:border-slate-700"
+                          />
+                        </ng-container>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+              </ng-container>
+            </section>
+
             <div class="w-full max-w-2xl mt-3 ml-0 sm:ml-4 space-y-2">
               <div
                 *ngIf="geoStatus !== 'granted'"

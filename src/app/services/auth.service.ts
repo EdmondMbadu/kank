@@ -141,6 +141,23 @@ export class AuthService {
       })
     );
   }
+  getReviewsForTarget(targetUid: string | null | undefined): Observable<Comment[]> {
+    if (!targetUid) {
+      return of([]);
+    }
+    return this.afs
+      .collection<{ reviews: Comment[] }>(`users/${targetUid}/reviews/`)
+      .valueChanges()
+      .pipe(
+        map((docs) => {
+          if (!docs || !docs.length) {
+            return [];
+          }
+          const aggregate = docs[0]?.reviews ?? [];
+          return Array.isArray(aggregate) ? aggregate : [];
+        })
+      );
+  }
 
   getCertificateInfo() {
     return this.afs.collection<Client>(`certificate/`).valueChanges();
