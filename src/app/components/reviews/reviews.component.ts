@@ -62,12 +62,13 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.individualShowCommentDescription = this.individualShowForm;
   }
   toggleIndividualCommentDescription(): void {
-    this.individualShowCommentDescription = !this.individualShowCommentDescription;
+    this.individualShowCommentDescription =
+      !this.individualShowCommentDescription;
     this.individualShowForm = this.individualShowCommentDescription;
   }
   /* ---------- NOUVEAU : sliders ---------- */
   readonly teamMetricDefinitions: MetricDefinition[] = [
-    { key: 'ponctualite', label: "Arrive à l’heure" },
+    { key: 'ponctualite', label: 'Arrive à l’heure' },
     { key: 'proprete', label: 'La Foundation est propre' },
     {
       key: 'cahier',
@@ -92,7 +93,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     },
     {
       key: 'proprete',
-      label: 'Tenue & Organisation du Poste / Matériel',
+      label: 'Respect des Procédures & Traçabilité (e.g commentaires, etc)',
       measure: 'Professionnalisme dans la présentation et l’ordre',
       criteria: 'Uniforme propre, bureau propre, cahiers/carnets bien tenus',
     },
@@ -100,17 +101,18 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       key: 'suiviClients',
       label: 'Suivi des Clients (Rappel & Visites)',
       measure: 'Engagement dans le suivi de portefeuille',
-      criteria: 'Appels réguliers, visites des absents, suivi des cas compliqués',
+      criteria:
+        'Appels réguliers, visites des absents, suivi des cas compliqués',
     },
     {
       key: 'relationClient',
-      label: 'Qualité de l’Interaction Client',
+      label: 'Qualité de l’Interaction  avec les Clients',
       measure: 'Respect, écoute, transparence',
       criteria: 'Ton utilisé, patience, capacité à expliquer clairement',
     },
     {
       key: 'attitudeEquipe',
-      label: "Attitude & Esprit d’Équipe",
+      label: 'Attitude & Esprit d’Équipe',
       measure: 'Collaboration et contribution au bon climat interne',
       criteria: 'Respect des collègues, initiative, volonté d’aider',
     },
@@ -412,10 +414,14 @@ export class ReviewsComponent implements OnInit, OnDestroy {
           });
 
           this.employeeOptions = Array.from(seen.values()).sort((a, b) => {
-            const nameA = `${(a.firstName || '').trim()} ${(a.lastName || '').trim()}`
+            const nameA = `${(a.firstName || '').trim()} ${(
+              a.lastName || ''
+            ).trim()}`
               .trim()
               .toLowerCase();
-            const nameB = `${(b.firstName || '').trim()} ${(b.lastName || '').trim()}`
+            const nameB = `${(b.firstName || '').trim()} ${(
+              b.lastName || ''
+            ).trim()}`
               .trim()
               .toLowerCase();
 
@@ -443,8 +449,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       !this.individualSelectedTargetUserId &&
       this.employeeOptions.length > 0
     ) {
-      this.individualSelectedTargetUserId =
-        this.employeeOptions[0].uid ?? null;
+      this.individualSelectedTargetUserId = this.employeeOptions[0].uid ?? null;
     } else if (!this.employeeOptions.length) {
       this.individualSelectedTargetUserId = null;
     }
@@ -492,7 +497,8 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     return this.getUserLabelById(targetUserId);
   }
   getIndividualSelectedTargetLabel(
-    targetUserId: string | null | undefined = this.individualSelectedTargetUserId
+    targetUserId: string | null | undefined = this
+      .individualSelectedTargetUserId
   ): string {
     return this.getEmployeeLabelById(targetUserId);
   }
@@ -793,9 +799,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async uploadIndividualImageAndThenPostComment(
-    targetUserId: string
-  ) {
+  private async uploadIndividualImageAndThenPostComment(targetUserId: string) {
     try {
       if (!this.individualSelectedImageFile) return;
 
@@ -1085,9 +1089,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       this.startIdeaTimer();
     } catch (error) {
       console.error("Impossible d'accéder au micro :", error);
-      alert(
-        'Accès au micro refusé. Vérifiez vos permissions puis réessayez.'
-      );
+      alert('Accès au micro refusé. Vérifiez vos permissions puis réessayez.');
     }
   }
 
@@ -1307,7 +1309,10 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     if (this.ideaSelectedAudioFile) {
       const fileName = `${Date.now()}-${this.ideaSelectedAudioFile.name}`;
       const path = `idea-box/audio/${fileName}`;
-      const uploadTask = await this.storage.upload(path, this.ideaSelectedAudioFile);
+      const uploadTask = await this.storage.upload(
+        path,
+        this.ideaSelectedAudioFile
+      );
       return uploadTask.ref.getDownloadURL();
     }
 
@@ -1405,10 +1410,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       alert('Veuillez saisir votre nom.');
       return;
     }
-    if (
-      !this.individualNumberOfStars ||
-      !this.individualNumberOfStars.trim()
-    ) {
+    if (!this.individualNumberOfStars || !this.individualNumberOfStars.trim()) {
       alert('Veuillez saisir votre cote.');
       return;
     }
@@ -1432,9 +1434,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
     if (
       confirmUser &&
-      !confirm(
-        'Êtes-vous sûr de vouloir publier ce commentaire individuel ?'
-      )
+      !confirm('Êtes-vous sûr de vouloir publier ce commentaire individuel ?')
     ) {
       return;
     }
@@ -1761,8 +1761,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
 
     this.individualElapsedTime = '00:00';
     this.individualRecordingProgress = 0;
-    this.individualSelectedTargetUserId =
-      this.employeeOptions[0]?.uid ?? null;
+    this.individualSelectedTargetUserId = this.employeeOptions[0]?.uid ?? null;
     this.individualPerformanceValue = 0;
   }
 
