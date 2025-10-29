@@ -929,14 +929,22 @@ export class AuthService {
       });
   }
   /** Remplace entièrement le tableau reviews du document concerné */
-  updateReviewPerformance(reviewDocId: string, reviews: Comment[]) {
-    const uid = this.currentUser.uid; // utilisateur courant
+  updateReviewPerformance(
+    reviewDocId: string,
+    reviews: Comment[],
+    targetUid?: string
+  ) {
+    const uid = targetUid ?? this.currentUser.uid; // utilisateur courant
     const docRef = this.afs.doc(`users/${uid}/reviews/${reviewDocId}`);
     return docRef.update({ reviews }); // ← Firestore set-merge
   }
   /** Écrase complètement le tableau reviews du document reviews/{reviewDocId} */
-  updateReview(reviewDocId: string, reviews: Comment[]): Promise<void> {
-    const uid = this.currentUser.uid; // UID de l’utilisateur connecté
+  updateReview(
+    reviewDocId: string,
+    reviews: Comment[],
+    targetUid?: string
+  ): Promise<void> {
+    const uid = targetUid ?? this.currentUser.uid; // UID de l’utilisateur connecté
     const docRef = this.afs.doc<{ reviews: Comment[] }>(
       `users/${uid}/reviews/${reviewDocId}`
     );

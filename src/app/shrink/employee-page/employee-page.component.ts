@@ -381,6 +381,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             normalized.timeFormatted = review.time
               ? this.time.convertDateToDesiredFormat(review.time)
               : '';
+            (normalized as any).__editing = false;
+            (normalized as any).__draftComment = normalized.comment ?? '';
+            (normalized as any).__draftPerformance = normalized.performance ?? 0;
+            (normalized as any).__saving = false;
             return normalized;
           });
 
@@ -475,6 +479,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       __perfDraft,
       __editingComment,
       __commentDraft,
+      __editing,
+      __draftComment,
+      __draftPerformance,
+      __saving,
       ...rest
     } = review as any;
     return { ...(rest as Comment) };
@@ -527,6 +535,65 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         console.error('Failed to delete review:', error);
         alert(
           "Impossible de supprimer ce commentaire. Veuillez réessayer dans un instant."
+        );
+      });
+  }
+
+  onStartEditIndividualReview(review: any): void {
+    if (!this.auth.isAdmin) {
+      return;
+    }
+    review.__editing = true;
+    review.__draftComment = review.comment ?? '';
+    review.__draftPerformance = review.performance ?? 0;
+  }
+
+  onCancelEditIndividualReview(review: any): void {
+    review.__editing = false;
+    review.__draftComment = review.comment ?? '';
+    review.__draftPerformance = review.performance ?? 0;
+  }
+
+  onSaveIndividualReview(review: any): void {
+    if (
+      !this.auth.isAdmin ||
+      !this.individualReviewDocId ||
+      !this.employee?.uid
+    ) {
+      return;
+    }
+
+    const sanitizedDraftComment = (review.__draftComment || '').trim();
+    const draftPerformance = Number(review.__draftPerformance ?? 0);
+
+    const previousComment = review.comment ?? '';
+    const previousPerformance = review.performance ?? 0;
+
+    review.comment = sanitizedDraftComment;
+    review.performance = isNaN(draftPerformance) ? 0 : draftPerformance;
+    review.__saving = true;
+
+    const cleaned = this.individualReviews.map((rev) =>
+      this.sanitizeReviewForPersistence(rev)
+    );
+
+    this.auth
+      .updateReview(
+        this.individualReviewDocId,
+        cleaned,
+        this.employee.uid
+      )
+      .then(() => {
+        review.__editing = false;
+        review.__saving = false;
+      })
+      .catch((error) => {
+        console.error('Failed to update review:', error);
+        review.comment = previousComment;
+        review.performance = previousPerformance;
+        review.__saving = false;
+        alert(
+          "Impossible d'enregistrer les modifications. Veuillez réessayer."
         );
       });
   }

@@ -168,6 +168,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   individualElapsedTime = '00:00';
   individualRecordingProgress = 0;
   private individualRecordingTimer: any;
+  individualPerformanceValue = 0;
 
   // Admin image-replace target: stores which review/attachment index we are editing
   adminReplaceTarget: { reviewIndex: number; attachmentIndex: number } | null =
@@ -1519,10 +1520,13 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     const starsSource = isTeam
       ? this.numberofStars
       : this.individualNumberOfStars;
-    const performanceSource =
-      isTeam && this.auth.isAdmin && this.performanceValue > 0
+    const performanceSource = isTeam
+      ? this.auth.isAdmin && this.performanceValue > 0
         ? this.performanceValue
-        : undefined;
+        : undefined
+      : this.auth.isAdmin && this.individualPerformanceValue > 0
+      ? this.individualPerformanceValue
+      : undefined;
 
     const targetLabel = isTeam
       ? this.getUserLabelById(targetUserId)
@@ -1759,6 +1763,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     this.individualRecordingProgress = 0;
     this.individualSelectedTargetUserId =
       this.employeeOptions[0]?.uid ?? null;
+    this.individualPerformanceValue = 0;
   }
 
   /** Build a cleaned copy of reviews suitable for saving to Firestore (strip UI props) */
