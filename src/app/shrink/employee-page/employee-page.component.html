@@ -688,6 +688,46 @@
                       >
                         Non publié
                       </span>
+                      <label
+                        *ngIf="auth.isAdmin"
+                        class="mt-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                      >
+                        <input
+                          type="checkbox"
+                          class="h-3.5 w-3.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          [checked]="review.visible"
+                          (change)="
+                            onToggleIndividualReviewVisibility(
+                              review,
+                              $any($event.target).checked
+                            )
+                          "
+                        />
+                        <span>Visible employés</span>
+                      </label>
+                      <button
+                        *ngIf="auth.isAdmin"
+                        type="button"
+                        (click)="onDeleteIndividualReview(review)"
+                        class="mt-1 inline-flex items-center gap-1 rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 dark:focus:ring-rose-500 transition"
+                      >
+                        <svg
+                          class="h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path
+                            d="M19 6l-.867 12.142A2 2 0 0116.138 20H7.862a2 2 0 01-1.995-1.858L5 6"
+                          />
+                          <path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                        </svg>
+                        Supprimer
+                      </button>
                     </div>
                   </div>
 

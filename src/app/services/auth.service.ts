@@ -141,20 +141,27 @@ export class AuthService {
       })
     );
   }
-  getReviewsForTarget(targetUid: string | null | undefined): Observable<Comment[]> {
+  getReviewsForTarget(
+    targetUid: string | null | undefined
+  ): Observable<{ reviewDocId: string | null; reviews: Comment[] }> {
     if (!targetUid) {
-      return of([]);
+      return of({ reviewDocId: null, reviews: [] });
     }
     return this.afs
       .collection<{ reviews: Comment[] }>(`users/${targetUid}/reviews/`)
-      .valueChanges()
+      .snapshotChanges()
       .pipe(
-        map((docs) => {
-          if (!docs || !docs.length) {
-            return [];
+        map((actions) => {
+          if (!actions || !actions.length) {
+            return { reviewDocId: null, reviews: [] };
           }
-          const aggregate = docs[0]?.reviews ?? [];
-          return Array.isArray(aggregate) ? aggregate : [];
+          const action = actions[0];
+          const data = action.payload.doc.data() || {};
+          const aggregate = (data.reviews ?? []) as Comment[];
+          return {
+            reviewDocId: action.payload.doc.id,
+            reviews: Array.isArray(aggregate) ? aggregate : [],
+          };
         })
       );
   }
@@ -829,9 +836,10 @@ export class AuthService {
 
   async deleteReview(
     reviewDocId: string,
-    reviewToRemove: Comment
+    reviewToRemove: Comment,
+    targetUid?: string
   ): Promise<void> {
-    const uid = this.currentUser.uid;
+    const uid = targetUid ?? this.currentUser.uid;
     const docRef = this.afs.doc<{ reviews: Comment[] }>(
       `users/${uid}/reviews/${reviewDocId}`
     );
@@ -893,11 +901,11 @@ export class AuthService {
 
   updateReviewVisibility(
     reviewId: string,
-    updatedReview: Comment
+    updatedReview: Comment,
+    targetUid?: string
   ): Promise<void> {
-    const docRef = this.afs.doc<any>(
-      `users/${this.currentUser.uid}/reviews/${reviewId}`
-    );
+    const uid = targetUid ?? this.currentUser.uid;
+    const docRef = this.afs.doc<any>(`users/${uid}/reviews/${reviewId}`);
 
     return docRef
       .valueChanges()

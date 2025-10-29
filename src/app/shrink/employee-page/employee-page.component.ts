@@ -86,6 +86,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   individualReviews: Comment[] = [];
   private individualReviewsSub?: Subscription;
   individualReviewsLoading = false;
+  individualReviewDocId: string | null = null;
   readonly individualMetricDefinitions: Array<{
     key: string;
     label: string;
@@ -354,6 +355,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.individualReviewsSub?.unsubscribe();
     this.individualReviewsSub = undefined;
     this.individualReviews = [];
+    this.individualReviewDocId = null;
 
     if (!targetUid) {
       this.individualReviewsLoading = false;
@@ -364,8 +366,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.individualReviewsSub = this.auth
       .getReviewsForTarget(targetUid)
       .subscribe({
-        next: (reviews) => {
-          const scoped = (reviews || []).filter(
+        next: (result) => {
+          const reviewDocId = result?.reviewDocId ?? null;
+          const reviews = result?.reviews ?? [];
+          this.individualReviewDocId = reviewDocId;
+
+          const scoped = reviews.filter(
             (review) => review && review.scope === 'individual'
           );
 
@@ -402,6 +408,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Failed to load individual reviews:', err);
           this.individualReviews = [];
+          this.individualReviewDocId = null;
           this.individualReviewsLoading = false;
         },
       });
@@ -458,6 +465,70 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   getIndividualMetricDefinition(key: string) {
     return this.individualMetricDefinitions.find((def) => def.key === key);
+  }
+
+  private sanitizeReviewForPersistence(review: Comment): Comment {
+    const {
+      timeFormatted,
+      starsNumber,
+      __editingPerf,
+      __perfDraft,
+      __editingComment,
+      __commentDraft,
+      ...rest
+    } = review as any;
+    return { ...(rest as Comment) };
+  }
+
+  onToggleIndividualReviewVisibility(review: Comment, visible: boolean): void {
+    if (
+      !this.auth.isAdmin ||
+      !this.individualReviewDocId ||
+      !this.employee?.uid
+    ) {
+      return;
+    }
+
+    const previous = review.visible ?? false;
+    review.visible = visible;
+    const payload = this.sanitizeReviewForPersistence(review);
+
+    this.auth
+      .updateReviewVisibility(
+        this.individualReviewDocId,
+        payload,
+        this.employee.uid
+      )
+      .catch((error) => {
+        console.error('Failed to update review visibility:', error);
+        review.visible = previous;
+        alert(
+          "Impossible de mettre à jour la visibilité du commentaire. Veuillez réessayer."
+        );
+      });
+  }
+
+  onDeleteIndividualReview(review: Comment): void {
+    if (
+      !this.auth.isAdmin ||
+      !this.individualReviewDocId ||
+      !this.employee?.uid
+    ) {
+      return;
+    }
+    if (!confirm('Supprimer définitivement ce commentaire ?')) {
+      return;
+    }
+
+    const payload = this.sanitizeReviewForPersistence(review);
+    this.auth
+      .deleteReview(this.individualReviewDocId, payload, this.employee.uid)
+      .catch((error) => {
+        console.error('Failed to delete review:', error);
+        alert(
+          "Impossible de supprimer ce commentaire. Veuillez réessayer dans un instant."
+        );
+      });
   }
 
   toggle(property: 'showRequestVacation' | 'isLoading') {
