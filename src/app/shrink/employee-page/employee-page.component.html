@@ -1254,45 +1254,91 @@
                 Performance
               </h1>
 
-              <div
-                class="inline-flex mx-auto mb-4 rounded-lg overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700"
+            <div
+              class="flex flex-wrap items-center justify-center gap-2 px-4 mb-4"
+            >
+              <button
+                type="button"
+                class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+                [disabled]="performanceMaxRange === 0"
+                [ngClass]="
+                  performanceActiveRange === '3M'
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+                "
+                (click)="setPerformanceRange('3M')"
               >
-                <button
-                  (click)="updatePerformanceGraphics(compute.week)"
-                  type="button"
-                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-                >
-                  1S
-                </button>
-                <button
-                  (click)="updatePerformanceGraphics(compute.month)"
-                  type="button"
-                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-                >
-                  1M
-                </button>
-                <button
-                  (click)="updatePerformanceGraphics(compute.year)"
-                  type="button"
-                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-                >
-                  1A
-                </button>
-                <button
-                  (click)="updatePerformanceGraphics(maxRange)"
-                  type="button"
-                  class="px-4 py-2 text-sm font-medium text-slate-900 bg-white hover:bg-slate-50 focus:z-10 focus:ring-2 focus:ring-blue-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-                >
-                  Max
-                </button>
-              </div>
+                3M
+              </button>
+              <button
+                type="button"
+                class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+                [disabled]="performanceMaxRange === 0"
+                [ngClass]="
+                  performanceActiveRange === '6M'
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+                "
+                (click)="setPerformanceRange('6M')"
+              >
+                6M
+              </button>
+              <button
+                type="button"
+                class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+                [disabled]="performanceMaxRange === 0"
+                [ngClass]="
+                  performanceActiveRange === '9M'
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+                "
+                (click)="setPerformanceRange('9M')"
+              >
+                9M
+              </button>
+              <button
+                type="button"
+                class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+                [disabled]="performanceMaxRange === 0"
+                [ngClass]="
+                  performanceActiveRange === '1A'
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+                "
+                (click)="setPerformanceRange('1A')"
+              >
+                1A
+              </button>
+              <button
+                type="button"
+                class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+                [disabled]="performanceMaxRange === 0"
+                [ngClass]="
+                  performanceActiveRange === 'MAX'
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+                "
+                (click)="setPerformanceRange('MAX')"
+              >
+                Max
+              </button>
+            </div>
 
-              <div class="px-4 pb-5">
+            <div class="px-4 pb-5">
+              <ng-container *ngIf="performanceMaxRange > 0; else noPerformanceData">
                 <plotly-plot
                   [data]="graphPerformance.data"
                   [layout]="graphPerformance.layout"
                 ></plotly-plot>
-              </div>
+              </ng-container>
+              <ng-template #noPerformanceData>
+                <div
+                  class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 py-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+                >
+                  Aucune donnée de performance historique disponible pour le moment.
+                </div>
+              </ng-template>
+            </div>
             </div>
           </div>
         </article>

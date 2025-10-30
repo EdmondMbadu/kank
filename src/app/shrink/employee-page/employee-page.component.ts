@@ -44,6 +44,8 @@ type PickerStateOption = {
   hint?: string;
 };
 
+type PerformanceRangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
+
 @Component({
   selector: 'app-employee-page',
   templateUrl: './employee-page.component.html',
@@ -271,7 +273,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
-  graphicPerformanceTimeRange: number = 5;
+  performanceActiveRange: PerformanceRangeKey = '3M';
+  private readonly performanceRangeMap: Record<PerformanceRangeKey, number> = {
+    '3M': 3,
+    '6M': 6,
+    '9M': 9,
+    '1A': 12,
+    'MAX': 0,
+  };
+  performanceMaxRange = 0;
+  private performanceGraphLabels: string[] = [];
+  private performanceGraphValues: number[] = [];
   maxRange: number = 0;
   bonusPercentage: number = 0;
   checkVisible: string = 'false';
@@ -323,13 +335,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.employeesSub?.unsubscribe();
     this.individualReviewsSub?.unsubscribe();
   }
-  public graphPerformance = {
-    data: [{}],
-    layout: {
-      title: 'Performance Points',
-      barmode: 'bar',
-    },
-  };
+  public graphPerformance = this.createEmptyPerformanceGraph();
   /* ─── Fetch on init ─────────────────────────────── */
   private loadAuditReceipts() {
     const limit = this.auth.isAdmin ? 50 : 2;
@@ -823,7 +829,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
       this.generateCollectionsTable(this.givenMonth, this.givenYear);
 
-      this.updatePerformanceGraphics(this.graphicPerformanceTimeRange);
+      this.updatePerformanceGraphics(
+        this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+      );
     });
   }
 
@@ -854,27 +862,73 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
     return result;
   }
-  sortKeysAndValuesPerformance(time: number) {
-    const sortedKeys = Object.keys(this.employee.dailyPoints!)
-      .sort((a, b) => +this.time.toDate(a) - +this.time.toDate(b))
-      .slice(-time);
+  private aggregatePerformanceByMonth(): [string[], string[]] {
+    const aggregates = new Map<string, { achieved: number; total: number }>();
 
-    // to allow for infinity ( when the totalpoint is 0, yet the dailypoint is not zero), add one where the value of total is zero
-    for (let key in this.employee.dailyPoints) {
-      if (this.employee.totalDailyPoints![key] === '0') {
-        this.employee.dailyPoints[key] = (
-          Number(this.employee.dailyPoints[key]) + 1
-        ).toString();
-        this.employee.totalDailyPoints![key] = '1';
+    const accumulate = (
+      dailyPoints?: { [key: string]: string },
+      totalPoints?: { [key: string]: string }
+    ) => {
+      if (!dailyPoints) {
+        return;
       }
+
+      Object.entries(dailyPoints).forEach(([rawDate, rawAchieved]) => {
+        const [month, , year] = rawDate.split('-');
+        if (!month || !year) {
+          return;
+        }
+
+        const achieved = this.sanitizeNumeric(rawAchieved);
+        const total = this.sanitizeNumeric(totalPoints?.[rawDate]);
+
+        const safeAchieved = Number.isFinite(achieved) ? achieved : 0;
+        const safeTotal = Number.isFinite(total) && total > 0
+          ? total
+          : safeAchieved > 0
+          ? safeAchieved
+          : 1;
+
+        const key = `${month}-${year}`;
+        const previous = aggregates.get(key) ?? { achieved: 0, total: 0 };
+
+        aggregates.set(key, {
+          achieved: previous.achieved + safeAchieved,
+          total: previous.total + safeTotal,
+        });
+      });
+    };
+
+    if (this.employee?.role === 'Manager') {
+      (this.employees ?? []).forEach((member) =>
+        accumulate(member?.dailyPoints, member?.totalDailyPoints)
+      );
+    } else {
+      accumulate(this.employee?.dailyPoints, this.employee?.totalDailyPoints);
     }
-    const values = sortedKeys.map((key) =>
-      (
-        (Number(this.employee.dailyPoints![key]) * 100) /
-        Number(this.employee.totalDailyPoints![key])
-      ).toString()
+
+    const sortedEntries = Array.from(aggregates.entries()).sort(
+      ([keyA], [keyB]) => {
+        const [monthA, yearA] = keyA.split('-').map(Number);
+        const [monthB, yearB] = keyB.split('-').map(Number);
+
+        const dateA = new Date(yearA || 0, (monthA || 1) - 1).getTime();
+        const dateB = new Date(yearB || 0, (monthB || 1) - 1).getTime();
+
+        return dateA - dateB;
+      }
     );
-    return [sortedKeys, values];
+
+    const labels = sortedEntries.map(([key]) => key);
+    const values = sortedEntries.map(([_, aggregate]) => {
+      const percentage =
+        aggregate.total > 0
+          ? (aggregate.achieved / aggregate.total) * 100
+          : 0;
+      return percentage.toString();
+    });
+
+    return [labels, values];
   }
   toggleMakePayment() {
     this.displayMakePayment = !this.displayMakePayment;
@@ -906,33 +960,62 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.paymentCheckVisible =
       this.paymentCheckVisible === 'true' ? 'false' : 'true';
   }
-  updatePerformanceGraphics(time: number) {
-    let sorted = this.sortKeysAndValuesPerformance(time);
-    this.recentPerformanceDates = sorted[0];
-    // console.log(' the sorted values are', sorted);
-    this.recentPerformanceNumbers = this.compute.convertToNumbers(sorted[1]);
-    const color = this.compute.findColor(sorted[1]);
+  updatePerformanceGraphics(range: number) {
+    if (!this.employee) {
+      this.performanceMaxRange = 0;
+      this.maxRange = 0;
+      this.graphPerformance = this.createEmptyPerformanceGraph();
+      return;
+    }
+
+    const [labels, values] = this.aggregatePerformanceByMonth();
+    this.performanceMaxRange = labels.length;
+    this.maxRange = labels.length;
+
+    const [selectedLabels, selectedValues] = this.sliceForRange(
+      labels,
+      values,
+      range
+    );
+
+    if (!selectedLabels.length) {
+      this.recentPerformanceDates = [];
+      this.recentPerformanceNumbers = [];
+      this.performanceGraphLabels = [];
+      this.performanceGraphValues = [];
+      this.graphPerformance = this.createEmptyPerformanceGraph();
+      return;
+    }
+
+    this.recentPerformanceDates = selectedLabels;
+    this.recentPerformanceNumbers = selectedValues.map((value) =>
+      Number.parseFloat(value)
+    );
+    this.performanceGraphLabels = selectedLabels.map((label) =>
+      this.formatMonthYearLabel(label)
+    );
+    this.performanceGraphValues = this.recentPerformanceNumbers.map((value) =>
+      Number.isFinite(value) ? Math.round(value * 100) / 100 : 0
+    );
+
+    const color = selectedValues.length
+      ? this.compute.findColor(selectedValues)
+      : this.compute.colorPositive;
 
     this.graphPerformance = {
       data: [
         {
-          x: this.recentPerformanceDates,
-          y: this.recentPerformanceNumbers,
-          type: 'scatter',
-          mode: 'lines',
-          marker: { color: 'rgb(0,76,153)' },
-          line: {
-            color: color,
-            shape: 'spline',
-            // width: 1200,
-          },
+          x: this.performanceGraphLabels,
+          y: this.performanceGraphValues,
+          type: 'bar',
+          marker: { color },
         },
       ],
-      layout: {
-        title: 'Performance Points',
-        barmode: 'stack',
-      },
+      layout: this.createPerformanceLayout(),
     };
+    if (!selectedLabels.length) {
+      this.graphPerformance = this.createEmptyPerformanceGraph();
+    }
     let num = Number(this.performancePercentageMonth);
     let gaugeColor = this.compute.getGradientColor(Number(num));
 
@@ -958,6 +1041,78 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         margin: { t: 20, b: 20, l: 20, r: 20 }, // Adjust margins
         responsive: true, // Make the chart responsive
       },
+    };
+  }
+
+  setPerformanceRange(key: PerformanceRangeKey) {
+    this.performanceActiveRange = key;
+    this.updatePerformanceGraphics(this.rangeValueFromPerformanceKey(key));
+  }
+
+  private sliceForRange<T>(
+    labels: T[],
+    values: string[],
+    range: number
+  ): [T[], string[]] {
+    if (!labels.length) {
+      return [[], []];
+    }
+
+    const targetRange = range > 0 ? Math.min(range, labels.length) : labels.length;
+    const startIndex = Math.max(labels.length - targetRange, 0);
+
+    return [labels.slice(startIndex), values.slice(startIndex)];
+  }
+
+  private formatMonthYearLabel(key: string): string {
+    const [month, year] = key.split('-');
+    const monthIndex = Number(month) - 1;
+    const monthName =
+      this.time.monthFrenchNames?.[monthIndex] ??
+      this.time.monthFrenchNames?.[((monthIndex % 12) + 12) % 12] ??
+      month;
+    return `${monthName} ${year}`.trim();
+  }
+
+  private sanitizeNumeric(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.replace(/[\s,]/g, '');
+      const parsed = Number.parseFloat(normalized);
+      return Number.isFinite(parsed) ? parsed : NaN;
+    }
+    return NaN;
+  }
+
+  private rangeValueFromPerformanceKey(key: PerformanceRangeKey): number {
+    return this.performanceRangeMap[key] ?? 0;
+  }
+
+  private createPerformanceLayout() {
+    return {
+      title: 'Performance % par mois',
+      barmode: 'stack',
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: '#0f172a' },
+      margin: { t: 48, r: 24, l: 48, b: 64 },
+      yaxis: { ticksuffix: '%', rangemode: 'tozero' },
+    };
+  }
+
+  private createEmptyPerformanceGraph() {
+    return {
+      data: [
+        {
+          x: [] as string[],
+          y: [] as number[],
+          type: 'bar',
+          marker: { color: this.compute.colorPositive },
+        },
+      ],
+      layout: this.createPerformanceLayout(),
     };
   }
 
