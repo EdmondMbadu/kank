@@ -163,8 +163,8 @@
       <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
         <li
           class="py-3 sm:py-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-600"
-          *ngFor="let item of moneyBank | keyvalue; let i = index"
-          routerLink="/gestion-today"
+          *ngFor="let entry of moneyBankEntries; let i = index"
+          (click)="goToGestionToday()"
         >
           <div class="flex items-center space-x-4">
             <div
@@ -178,16 +178,65 @@
               <p
                 class="truncate text-sm font-medium text-gray-900 dark:text-white"
               >
-                {{ moneyBankDates[i] }}
+                {{ entry.displayDate }}
               </p>
               <!-- <p class="text-sm text-gray-500 truncate dark:text-gray-400">
                         {{paymentDates[i].replaceAll('-','/').substring(0,9)}}
                         </p> -->
             </div>
 
-            <div class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-              $ {{ moneyBankAmounts[i] | number : "1.0-0" }}
-            </div>
+            <ng-container *ngIf="editingIndex === i; else amountDisplay">
+              <div class="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  [(ngModel)]="editingValue"
+                  class="w-28 rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm text-slate-900 focus:border-green-500 focus:ring-green-500"
+                  (click)="$event.stopPropagation()"
+                />
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="rounded-full bg-green-700 px-3 py-1 text-xs font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+                    [disabled]="isSavingEntry"
+                    (click)="saveEditedAmount(i); $event.stopPropagation()"
+                  >
+                    Sauver
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    (click)="cancelEditing(); $event.stopPropagation()"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #amountDisplay>
+              <div class="flex items-center gap-2">
+                <div class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  $ {{ entry.amount | number : "1.0-0" }}
+                </div>
+                <button
+                  *ngIf="auth.isAdmin"
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  (click)="startEditing(i); $event.stopPropagation()"
+                >
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path
+                      d="M4 13.5V16h2.5l7.29-7.29a1 1 0 0 0 0-1.42L12.71 5.5a1 1 0 0 0-1.42 0L4 12.29Z"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Modifier
+                </button>
+              </div>
+            </ng-template>
           </div>
         </li>
       </ul>

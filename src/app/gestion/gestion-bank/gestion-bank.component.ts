@@ -16,6 +16,11 @@ export class GestionBankComponent {
   moneyBank: any = [];
   moneyBankAmounts: string[] = [];
   moneyBankDates: string[] = [];
+  moneyBankEntries: Array<{
+    key: string;
+    displayDate: string;
+    amount: string;
+  }> = [];
   rateUsed: string = '';
   loss: string = '';
   moneyInDollar: string = '';
@@ -28,6 +33,9 @@ export class GestionBankComponent {
   showRateEditor = false;
   tmpRateDollar: number;
   tmpRateFranc: number;
+  editingIndex: number | null = null;
+  editingValue: string = '';
+  isSavingEntry = false;
 
   constructor(
     public auth: AuthService,
@@ -86,14 +94,22 @@ export class GestionBankComponent {
     }
   }
   getCurrentServed() {
-    this.moneyBank = this.managementInfo!.bankDepositDollars;
+    const bankEntries = this.managementInfo?.bankDepositDollars || {};
+    this.moneyBank = bankEntries;
 
-    let currentMoneyBank = this.compute.sortArrayByDateDescendingOrder(
-      Object.entries(this.managementInfo!.bankDepositDollars!)
+    const sortedEntries = this.compute.sortArrayByDateDescendingOrder(
+      Object.entries(bankEntries)
     );
-    this.moneyBankAmounts = currentMoneyBank.map((entry) => entry[1]);
-    this.moneyBankDates = currentMoneyBank.map((entry) =>
-      this.time.convertTimeFormat(entry[0])
+
+    this.moneyBankEntries = sortedEntries.map(([date, amount]) => ({
+      key: date,
+      displayDate: this.time.convertTimeFormat(date),
+      amount,
+    }));
+
+    this.moneyBankAmounts = this.moneyBankEntries.map((entry) => entry.amount);
+    this.moneyBankDates = this.moneyBankEntries.map(
+      (entry) => entry.displayDate
     );
   }
 
@@ -142,5 +158,65 @@ export class GestionBankComponent {
     if (target === 'today') this.rateToday = v.toString();
     else this.rateUsed = v.toString();
     this.compteDollarAmount?.();
+  }
+
+  goToGestionToday() {
+    if (this.editingIndex !== null) {
+      return;
+    }
+    this.router.navigate(['/gestion-today']);
+  }
+
+  startEditing(index: number) {
+    if (!this.auth.isAdmin) {
+      return;
+    }
+    const target = this.moneyBankEntries[index];
+    if (!target) {
+      return;
+    }
+    this.editingIndex = index;
+    this.editingValue = target.amount ?? '';
+  }
+
+  cancelEditing() {
+    this.editingIndex = null;
+    this.editingValue = '';
+  }
+
+  async saveEditedAmount(index: number) {
+    if (!this.auth.isAdmin) {
+      return;
+    }
+    const entry = this.moneyBankEntries[index];
+    if (!entry) {
+      return;
+    }
+
+    const trimmed = this.editingValue?.trim();
+    if (!trimmed) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+
+    if (isNaN(Number(trimmed))) {
+      alert('Entrez un nombre valide.');
+      return;
+    }
+
+    this.isSavingEntry = true;
+    try {
+      await this.data.updateBankDepositDollarEntry(entry.key, trimmed);
+      if (this.managementInfo?.bankDepositDollars) {
+        this.managementInfo.bankDepositDollars[entry.key] = trimmed;
+      }
+      this.getCurrentServed();
+      this.cancelEditing();
+    } catch (err) {
+      console.error('Failed to update bank deposit amount', err);
+      alert('La mise à jour du montant a échoué. Réessayez.');
+    } finally {
+      this.isSavingEntry = false;
+    }
   }
 }
