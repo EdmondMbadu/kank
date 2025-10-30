@@ -1480,6 +1480,7 @@
             <input
               type="text"
               [(ngModel)]="code"
+              (ngModelChange)="code = $event?.trim?.() ?? $event"
               id="simple-search"
               class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none w-full"
               placeholder="Entrer Le Code..."
@@ -1498,7 +1499,7 @@
         </div>
       </div>
 
-      <div *ngIf="code === paymentCode" class="p-4">
+      <div *ngIf="code?.trim() === paymentCode" class="p-4">
         <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
           <li
             class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
@@ -1623,6 +1624,7 @@
 
     <input
       [(ngModel)]="code"
+      (ngModelChange)="code = $event?.trim?.() ?? $event"
       (keyup.enter)="verifyCode()"
       type="text"
       class="w-full mb-4 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -2423,6 +2425,7 @@
             placeholder="code"
             required=""
             [(ngModel)]="code"
+            (ngModelChange)="code = $event?.trim?.() ?? $event"
           />
         </div>
 

@@ -828,13 +828,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   toggleBonusIfCodeCorrect() {
-    if (this.code === this.paymentCode && this.checkVisible === 'true') {
+    const entered = (this.code || '').trim();
+    const expected = (this.paymentCode || '').trim();
+    if (entered === expected && this.checkVisible === 'true') {
       this.toggleBonus();
       this.toggleCode();
-    } else if (
-      this.code === this.paymentCode &&
-      this.paymentCheckVisible === 'true'
-    ) {
+    } else if (entered === expected && this.paymentCheckVisible === 'true') {
       this.togglePayment();
       this.toggleCode();
     } else {
