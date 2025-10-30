@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { User } from 'src/app/models/user';
+import { User, UserDailyField } from 'src/app/models/user';
+
+type RangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -64,6 +66,29 @@ export class TrackingMonthCentralComponent {
     'Budget Emprunts Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
+
+  private readonly rangeKeyMap: Record<RangeKey, number> = {
+    '3M': 3,
+    '6M': 6,
+    '9M': 9,
+    '1A': 12,
+    'MAX': 0,
+  };
+
+  reserveActiveRange: RangeKey = '3M';
+  paymentActiveRange: RangeKey = '3M';
+
+  reserveGraph = this.createEmptyGraph('Réserve en $');
+  paymentGraph = this.createEmptyGraph('Paiement en $');
+
+  reserveMaxRange = 0;
+  paymentMaxRange = 0;
+
+  private reserveGraphLabels: string[] = [];
+  private reserveGraphSeriesUsd: number[] = [];
+  private paymentGraphLabels: string[] = [];
+  private paymentGraphSeriesUsd: number[] = [];
+
   givenMonthTotalPaymentAmount: string = '';
   givenMonthTotalPaymentAmountDollars: string = '';
   givenMonthTotalSavingAmount: string = '';
@@ -292,6 +317,9 @@ export class TrackingMonthCentralComponent {
 
     this.updateReserveTableData();
     this.updatePaymentTableData();
+
+    this.updateReserveGraphics(this.rangeValueFromKey(this.reserveActiveRange));
+    this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
   }
 
   updateReserveTableData(): void {
@@ -458,6 +486,204 @@ export class TrackingMonthCentralComponent {
         : currTotal > 0
         ? '100'
         : '0';
+  }
+
+  setReserveRange(key: RangeKey): void {
+    this.reserveActiveRange = key;
+    this.updateReserveGraphics(this.rangeValueFromKey(key));
+  }
+
+  setPaymentRange(key: RangeKey): void {
+    this.paymentActiveRange = key;
+    this.updatePaymentGraphics(this.rangeValueFromKey(key));
+  }
+
+  updateReserveGraphics(range: number): void {
+    const [labels, values] = this.aggregateMonthlyField('reserve');
+    this.reserveMaxRange = labels.length;
+
+    const [selectedLabels, selectedValues] = this.sliceForRange(
+      labels,
+      values,
+      range
+    );
+
+    this.reserveGraphLabels = selectedLabels.map((label) =>
+      this.formatMonthYearLabel(label)
+    );
+    this.reserveGraphSeriesUsd = this.compute.convertToDollarsArray(
+      selectedValues
+    );
+
+    const color = selectedValues.length
+      ? this.compute.findColor(selectedValues)
+      : this.compute.colorPositive;
+
+    this.reserveGraph = {
+      data: [
+        {
+          x: this.reserveGraphLabels,
+          y: this.reserveGraphSeriesUsd,
+          type: 'bar',
+          mode: 'lines',
+          marker: { color },
+          line: { color: 'rgb(34, 139, 34)' },
+        },
+      ],
+      layout: this.createGraphLayout('Réserve en $'),
+    };
+  }
+
+  updatePaymentGraphics(range: number): void {
+    const [labels, values] = this.aggregateMonthlyField('dailyReimbursement');
+    this.paymentMaxRange = labels.length;
+
+    const [selectedLabels, selectedValues] = this.sliceForRange(
+      labels,
+      values,
+      range
+    );
+
+    this.paymentGraphLabels = selectedLabels.map((label) =>
+      this.formatMonthYearLabel(label)
+    );
+    this.paymentGraphSeriesUsd = this.compute.convertToDollarsArray(
+      selectedValues
+    );
+
+    const color = selectedValues.length
+      ? this.compute.findColor(selectedValues)
+      : '#0ea5e9';
+
+    this.paymentGraph = {
+      data: [
+        {
+          x: this.paymentGraphLabels,
+          y: this.paymentGraphSeriesUsd,
+          type: 'bar',
+          mode: 'lines',
+          marker: { color },
+          line: { color: 'rgb(14, 165, 233)' },
+        },
+      ],
+      layout: this.createGraphLayout('Paiement en $'),
+    };
+  }
+
+  private aggregateMonthlyField(field: UserDailyField): [string[], string[]] {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      return [[], []];
+    }
+
+    const aggregated = new Map<string, number>();
+
+    for (const user of this.allUsers) {
+      const dailyData = user[field];
+      if (!dailyData) continue;
+
+      for (const [rawDate, rawValue] of Object.entries(dailyData)) {
+        const parts = rawDate.split('-');
+        if (parts.length < 3) continue;
+
+        const month = parts[0];
+        const year = parts[2];
+        if (!month || !year) continue;
+
+        const numericValue = this.sanitizeNumeric(rawValue);
+        if (!Number.isFinite(numericValue)) continue;
+
+        const monthYearKey = `${month}-${year}`;
+        aggregated.set(
+          monthYearKey,
+          (aggregated.get(monthYearKey) ?? 0) + numericValue
+        );
+      }
+    }
+
+    const sortedEntries = Array.from(aggregated.entries()).sort(
+      ([keyA], [keyB]) => {
+        const [monthA, yearA] = keyA.split('-').map((part) => Number(part));
+        const [monthB, yearB] = keyB.split('-').map((part) => Number(part));
+
+        const dateA = new Date(yearA || 0, (monthA || 1) - 1).getTime();
+        const dateB = new Date(yearB || 0, (monthB || 1) - 1).getTime();
+
+        return dateA - dateB;
+      }
+    );
+
+    const labels = sortedEntries.map(([key]) => key);
+    const values = sortedEntries.map(([, value]) => value.toString());
+
+    return [labels, values];
+  }
+
+  private sliceForRange<T>(
+    labels: T[],
+    values: string[],
+    range: number
+  ): [T[], string[]] {
+    if (!labels.length) {
+      return [[], []];
+    }
+
+    const targetRange = range > 0 ? Math.min(range, labels.length) : labels.length;
+    const startIndex = Math.max(labels.length - targetRange, 0);
+
+    return [labels.slice(startIndex), values.slice(startIndex)];
+  }
+
+  private formatMonthYearLabel(monthYear: string): string {
+    const [month, year] = monthYear.split('-');
+    const monthIndex = Number(month) - 1;
+    const monthName =
+      this.time.monthFrenchNames?.[monthIndex] ??
+      this.time.monthFrenchNames?.[((monthIndex % 12) + 12) % 12] ??
+      month;
+    return `${monthName} ${year}`.trim();
+  }
+
+  private sanitizeNumeric(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.replace(/[\s,]/g, '');
+      const parsed = parseFloat(normalized);
+      return Number.isFinite(parsed) ? parsed : NaN;
+    }
+    return NaN;
+  }
+
+  private rangeValueFromKey(key: RangeKey): number {
+    return this.rangeKeyMap[key] ?? 0;
+  }
+
+  private createGraphLayout(title: string) {
+    return {
+      title,
+      barmode: 'stack',
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: '#0f172a' },
+      margin: { t: 48, r: 24, l: 48, b: 64 },
+    };
+  }
+
+  private createEmptyGraph(title: string) {
+    return {
+      data: [
+        {
+          x: [] as string[],
+          y: [] as number[],
+          type: 'bar',
+          mode: 'lines',
+          marker: { color: this.compute.colorPositive },
+          line: { color: 'rgb(34, 139, 34)' },
+        },
+      ],
+      layout: this.createGraphLayout(title),
+    };
   }
 
   toNum(v: any): number {

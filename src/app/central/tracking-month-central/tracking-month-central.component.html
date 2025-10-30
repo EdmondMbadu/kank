@@ -665,3 +665,213 @@
     </div>
   </div>
 </div>
+
+<section class="container mx-auto px-6 pb-16">
+  <div class="grid grid-cols-1 gap-8 xl:grid-cols-2">
+    <div
+      class="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div>
+          <h2
+            class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+          >
+            Évolution de la réserve
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Historique consolidé de la réserve mensuelle convertie en dollars.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="reserveMaxRange === 0"
+            [ngClass]="
+              reserveActiveRange === '3M'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setReserveRange('3M')"
+          >
+            3M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="reserveMaxRange === 0"
+            [ngClass]="
+              reserveActiveRange === '6M'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setReserveRange('6M')"
+          >
+            6M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="reserveMaxRange === 0"
+            [ngClass]="
+              reserveActiveRange === '9M'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setReserveRange('9M')"
+          >
+            9M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="reserveMaxRange === 0"
+            [ngClass]="
+              reserveActiveRange === '1A'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setReserveRange('1A')"
+          >
+            1A
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="reserveMaxRange === 0"
+            [ngClass]="
+              reserveActiveRange === 'MAX'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setReserveRange('MAX')"
+          >
+            Max
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner dark:bg-slate-950/60"
+        *ngIf="reserveMaxRange > 0; else noReserveData"
+      >
+        <plotly-plot
+          [data]="reserveGraph.data"
+          [layout]="reserveGraph.layout"
+        ></plotly-plot>
+      </div>
+      <ng-template #noReserveData>
+        <div
+          class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-300"
+        >
+          Aucune réserve historique disponible pour le moment.
+        </div>
+      </ng-template>
+    </div>
+
+    <div
+      class="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div>
+          <h2
+            class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+          >
+            Évolution des paiements
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Historique consolidé des paiements mensuels convertis en dollars.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-sky-500"
+            [disabled]="paymentMaxRange === 0"
+            [ngClass]="
+              paymentActiveRange === '3M'
+                ? 'border-sky-400 bg-sky-50 text-sky-700 dark:border-sky-500 dark:bg-sky-900/30 dark:text-sky-200'
+                : 'border-slate-200 text-slate-600 hover:border-sky-400 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300'
+            "
+            (click)="setPaymentRange('3M')"
+          >
+            3M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-sky-500"
+            [disabled]="paymentMaxRange === 0"
+            [ngClass]="
+              paymentActiveRange === '6M'
+                ? 'border-sky-400 bg-sky-50 text-sky-700 dark:border-sky-500 dark:bg-sky-900/30 dark:text-sky-200'
+                : 'border-slate-200 text-slate-600 hover:border-sky-400 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300'
+            "
+            (click)="setPaymentRange('6M')"
+          >
+            6M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-sky-500"
+            [disabled]="paymentMaxRange === 0"
+            [ngClass]="
+              paymentActiveRange === '9M'
+                ? 'border-sky-400 bg-sky-50 text-sky-700 dark:border-sky-500 dark:bg-sky-900/30 dark:text-sky-200'
+                : 'border-slate-200 text-slate-600 hover:border-sky-400 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300'
+            "
+            (click)="setPaymentRange('9M')"
+          >
+            9M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-sky-500"
+            [disabled]="paymentMaxRange === 0"
+            [ngClass]="
+              paymentActiveRange === '1A'
+                ? 'border-sky-400 bg-sky-50 text-sky-700 dark:border-sky-500 dark:bg-sky-900/30 dark:text-sky-200'
+                : 'border-slate-200 text-slate-600 hover:border-sky-400 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300'
+            "
+            (click)="setPaymentRange('1A')"
+          >
+            1A
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-sky-500"
+            [disabled]="paymentMaxRange === 0"
+            [ngClass]="
+              paymentActiveRange === 'MAX'
+                ? 'border-sky-400 bg-sky-50 text-sky-700 dark:border-sky-500 dark:bg-sky-900/30 dark:text-sky-200'
+                : 'border-slate-200 text-slate-600 hover:border-sky-400 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300'
+            "
+            (click)="setPaymentRange('MAX')"
+          >
+            Max
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner dark:bg-slate-950/60"
+        *ngIf="paymentMaxRange > 0; else noPaymentData"
+      >
+        <plotly-plot
+          [data]="paymentGraph.data"
+          [layout]="paymentGraph.layout"
+        ></plotly-plot>
+      </div>
+      <ng-template #noPaymentData>
+        <div
+          class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-300"
+        >
+          Aucun paiement historique disponible pour le moment.
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</section>
