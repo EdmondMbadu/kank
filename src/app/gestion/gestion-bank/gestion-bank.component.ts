@@ -36,6 +36,7 @@ export class GestionBankComponent {
   tmpRateFranc: number;
   editingIndex: number | null = null;
   editingValue: string = '';
+  editingFrancValue: string = '';
   isSavingEntry = false;
 
   constructor(
@@ -180,11 +181,13 @@ export class GestionBankComponent {
     }
     this.editingIndex = index;
     this.editingValue = target.amount ?? '';
+    this.editingFrancValue = target.francAmount ?? '';
   }
 
   cancelEditing() {
     this.editingIndex = null;
     this.editingValue = '';
+    this.editingFrancValue = '';
   }
 
   async saveEditedAmount(index: number) {
@@ -196,22 +199,31 @@ export class GestionBankComponent {
       return;
     }
 
-    const trimmed = this.editingValue?.trim();
-    if (!trimmed) {
-      alert('Entrez un montant valide.');
+    const trimmedDollar = this.editingValue?.trim();
+    const trimmedFranc = this.editingFrancValue?.trim();
+
+    if (!trimmedDollar || !trimmedFranc) {
+      alert('Entrez des montants valides.');
       return;
     }
 
-    if (isNaN(Number(trimmed))) {
-      alert('Entrez un nombre valide.');
+    if (isNaN(Number(trimmedDollar)) || isNaN(Number(trimmedFranc))) {
+      alert('Entrez des nombres valides.');
       return;
     }
 
     this.isSavingEntry = true;
     try {
-      await this.data.updateBankDepositDollarEntry(entry.key, trimmed);
+      await this.data.updateBankDepositEntry(
+        entry.key,
+        trimmedDollar,
+        trimmedFranc
+      );
       if (this.managementInfo?.bankDepositDollars) {
-        this.managementInfo.bankDepositDollars[entry.key] = trimmed;
+        this.managementInfo.bankDepositDollars[entry.key] = trimmedDollar;
+      }
+      if (this.managementInfo?.bankDepositFrancs) {
+        this.managementInfo.bankDepositFrancs[entry.key] = trimmedFranc;
       }
       this.getCurrentServed();
       this.cancelEditing();

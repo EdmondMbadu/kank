@@ -1180,6 +1180,23 @@ export class DataService {
 
     return managementRef.set(data, { merge: true });
   }
+
+  updateBankDepositEntry(
+    dateKey: string,
+    amountDollars: string,
+    amountFrancs: string
+  ) {
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+
+    const data = {
+      bankDepositDollars: { [dateKey]: amountDollars },
+      bankDepositFrancs: { [dateKey]: amountFrancs },
+    };
+
+    return managementRef.set(data, { merge: true });
+  }
   updateManagementInfoForMoneyLoss(amount: string) {
     console.log('data from management', this.auth.managementInfo);
     const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
