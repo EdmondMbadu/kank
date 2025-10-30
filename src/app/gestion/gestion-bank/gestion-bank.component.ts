@@ -20,6 +20,7 @@ export class GestionBankComponent {
     key: string;
     displayDate: string;
     amount: string;
+    francAmount: string;
   }> = [];
   rateUsed: string = '';
   loss: string = '';
@@ -95,6 +96,7 @@ export class GestionBankComponent {
   }
   getCurrentServed() {
     const bankEntries = this.managementInfo?.bankDepositDollars || {};
+    const francEntries = this.managementInfo?.bankDepositFrancs || {};
     this.moneyBank = bankEntries;
 
     const sortedEntries = this.compute.sortArrayByDateDescendingOrder(
@@ -105,6 +107,7 @@ export class GestionBankComponent {
       key: date,
       displayDate: this.time.convertTimeFormat(date),
       amount,
+      francAmount: francEntries?.[date] ?? '0',
     }));
 
     this.moneyBankAmounts = this.moneyBankEntries.map((entry) => entry.amount);
