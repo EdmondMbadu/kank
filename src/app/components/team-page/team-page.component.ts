@@ -214,7 +214,8 @@ export class TeamPageComponent implements OnInit {
           return (
             emp.role === 'Manager' ||
             emp.role === 'Agent' ||
-            emp.role === 'Agent Marketing'
+            emp.role === 'Agent Marketing' ||
+            emp.role === 'Stagaire'
           );
         });
       }
@@ -556,7 +557,9 @@ export class TeamPageComponent implements OnInit {
           const swapResult = result as { toFirst: number; toSecond: number };
           this.closeTransferModal();
           alert(
-            `Échange terminé : ${swapResult.toSecond} client(s) vers ${targetName || 'B'} et ${swapResult.toFirst} client(s) vers ${sourceName || 'A'}.`
+            `Échange terminé : ${swapResult.toSecond} client(s) vers ${
+              targetName || 'B'
+            } et ${swapResult.toFirst} client(s) vers ${sourceName || 'A'}.`
           );
         } else {
           const affectedCount = result as number;
