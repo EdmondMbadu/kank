@@ -567,13 +567,13 @@ export class ComputationService {
         for (const [date, amount] of Object.entries(e.totalDailyPoints!)) {
           const [month, day, year] = date.split('-').map(Number);
           if (month === targetMonth && year === targetYear) {
-            total += parseInt(amount, 10);
+            total += parseFloat(amount); // Changed from parseInt to parseFloat to match histogram calculation
           }
         }
       }
     }
 
-    return total.toString();
+    return total.toFixed(2); // Changed from toString() to toFixed(2) for consistency with findTotalForMonthAllDailyPointsEmployees
   }
   getMonthNameFrench(monthNumber: number) {
     const monthNamesInFrench = [

@@ -874,20 +874,25 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       }
 
       Object.entries(dailyPoints).forEach(([rawDate, rawAchieved]) => {
-        const [month, , year] = rawDate.split('-');
+        // Parse date - format is "M-D-YYYY"
+        const dateParts = rawDate.split('-');
+        if (dateParts.length < 3) {
+          return;
+        }
+        const month = dateParts[0];
+        const year = dateParts[2];
         if (!month || !year) {
           return;
         }
 
+        // Use parseFloat to match the circle calculation (findTotalForMonth uses parseFloat)
         const achieved = this.sanitizeNumeric(rawAchieved);
         const total = this.sanitizeNumeric(totalPoints?.[rawDate]);
 
+        // Match circle calculation exactly: only include valid finite numbers, no fallbacks
+        // This matches how findTotalForMonth and findTotalForMonthAllTotalDailyPointsEmployees work
         const safeAchieved = Number.isFinite(achieved) ? achieved : 0;
-        const safeTotal = Number.isFinite(total) && total > 0
-          ? total
-          : safeAchieved > 0
-          ? safeAchieved
-          : 1;
+        const safeTotal = Number.isFinite(total) ? total : 0;
 
         const key = `${month}-${year}`;
         const previous = aggregates.get(key) ?? { achieved: 0, total: 0 };
