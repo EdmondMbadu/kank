@@ -15,10 +15,7 @@
     ></div>
   </div>
 
-  <div
-    [ngClass]="{ blurred: !isAuthorized && !auth.isAdmninistrator }"
-    class="relative"
-  >
+  <div [ngClass]="{ blurred: !isAuthorized && isEmployeeUi }" class="relative">
     <main class="py-10 lg:py-14">
       <div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
         <article class="mx-auto w-full max-w-5xl">
@@ -145,7 +142,7 @@
 
                     <div class="mt-4 flex flex-wrap gap-2 *:text-xs">
                       <button
-                        *ngIf="this.auth.isAdmninistrator"
+                        *ngIf="isAdminUi"
                         (click)="toggleCheckVisibility()"
                         type="button"
                         class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
@@ -163,7 +160,7 @@
                       </button>
 
                       <button
-                        *ngIf="this.auth.isAdmninistrator"
+                        *ngIf="isAdminUi"
                         (click)="togglePaymentCheckVisibility()"
                         type="button"
                         class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
@@ -181,7 +178,7 @@
                       </button>
 
                       <button
-                        *ngIf="this.auth.isAdmninistrator"
+                        *ngIf="isAdminUi"
                         (click)="toggleSetCode()"
                         type="button"
                         class="rounded-lg bg-rose-600 px-3 py-1.5 font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-300 dark:bg-rose-600 dark:hover:bg-rose-700 dark:focus:ring-rose-800 transition"
@@ -190,7 +187,7 @@
                       </button>
 
                       <button
-                        *ngIf="auth.isAdmninistrator && checkVisible === 'true'"
+                        *ngIf="isAdminUi && checkVisible === 'true'"
                         class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1 transition"
                         (click)="sendSMSCurrent('bonus')"
                       >
@@ -207,7 +204,7 @@
 
                       <button
                         *ngIf="
-                          auth.isAdmninistrator &&
+                          isAdminUi &&
                           paymentCheckVisible === 'true'
                         "
                         class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1 transition"
@@ -258,6 +255,39 @@
                 </select>
               </div>
             </div>
+            <!-- VIEW MODE TOGGLE (Admin only) -->
+            <div
+              *ngIf="auth.isAdmninistrator"
+              class="mt-6 flex justify-center"
+            >
+              <div
+                class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1 text-sm font-medium text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              >
+                <button
+                  type="button"
+                  class="rounded-full px-4 py-1.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                  [ngClass]="{
+                    'bg-indigo-600 text-white shadow': viewAsMode === 'admin',
+                    'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800': viewAsMode !== 'admin'
+                  }"
+                  (click)="setViewAsMode('admin')"
+                >
+                  Mode Admin
+                </button>
+                <button
+                  type="button"
+                  class="rounded-full px-4 py-1.5 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                  [ngClass]="{
+                    'bg-indigo-600 text-white shadow': viewAsMode === 'employee',
+                    'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800': viewAsMode !== 'employee'
+                  }"
+                  (click)="setViewAsMode('employee')"
+                >
+                  Mode Employé
+                </button>
+              </div>
+            </div>
+
             <!-- PERFORMANCE RING — replaces the <plotly-plot> container -->
             <div
               class="container mt-5 flex mx-auto flex-col md:flex-row md:justify-center"
@@ -497,7 +527,7 @@
 
             <div class="flex flex-wrap items-center gap-2">
               <button
-                *ngIf="this.auth.isAdmninistrator"
+                *ngIf="isAdminUi"
                 type="submit"
                 (click)="toggleMakePayment()"
                 class="mt-2 rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-700 dark:hover:bg-green-800 dark:focus:ring-green-900 transition"
@@ -1222,7 +1252,7 @@
                   <td class="px-6 py-4">{{ performancePercentageMonth }}%</td>
                 </tr>
               </tbody>
-              <tfoot *ngIf="this.auth.isAdmninistrator">
+              <tfoot *ngIf="isAdminUi">
                 <tr class="font-semibold text-slate-900 dark:text-white">
                   <th scope="row" class="px-6 py-3 text-base"></th>
                   <td class="py-4">
@@ -1660,7 +1690,7 @@
 
 <!-- Access-code prompt -->
 <div
-  *ngIf="!isAuthorized && !auth.isAdmninistrator && paymentCodeLoaded"
+  *ngIf="!isAuthorized && isEmployeeUi && paymentCodeLoaded"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 >
   <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-80">
@@ -2122,19 +2152,21 @@
   *ngIf="displayBonus"
   id="defaultModal"
   tabindex="-1"
-  class="w-full max-w-md max-h-full fixed inset-x-0 mx-auto top-10 z-50 p-4 flex pb-6"
+  class="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-4 sm:p-6"
+  role="dialog"
+  aria-modal="true"
 >
-  <div class="mt-6 grow sm:mt-8 lg:mt-0">
-    <div
-      class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-    >
+  <div
+    class="w-full max-w-2xl max-h-[90svh] overflow-y-auto overscroll-y-contain rounded-2xl border border-gray-100 bg-gray-50 shadow-xl dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+  >
+    <div class="space-y-4 p-6">
       <h2 class="font-bold">
         {{ employee.firstName }} {{ employee.lastName }} Bonus
         {{ time.monthFrenchNames[lastMonth - 1] }} {{ year }}
       </h2>
       <div class="space-y-2">
         <dl
-          *ngIf="bonusPercentage !== 0 || this.auth.isAdmninistrator"
+          *ngIf="bonusPercentage !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2144,7 +2176,7 @@
             $ {{ bonusAmount }}
           </dd>
         </dl>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2166,7 +2198,7 @@
         </div>
 
         <dl
-          *ngIf="bestTeamBonusAmount !== 0 || this.auth.isAdmninistrator"
+          *ngIf="bestTeamBonusAmount !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2176,7 +2208,7 @@
             ${{ bestTeamBonusAmount }}
           </dd>
         </dl>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2188,7 +2220,7 @@
           />
         </div>
         <dl
-          *ngIf="bestEmployeeBonusAmount !== 0 || this.auth.isAdmninistrator"
+          *ngIf="bestEmployeeBonusAmount !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2198,7 +2230,7 @@
             ${{ bestEmployeeBonusAmount }}
           </dd>
         </dl>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2210,7 +2242,7 @@
           />
         </div>
         <dl
-          *ngIf="bestManagerBonusAmount !== 0 || this.auth.isAdmninistrator"
+          *ngIf="bestManagerBonusAmount !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2220,7 +2252,7 @@
             ${{ bestManagerBonusAmount }}
           </dd>
         </dl>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2257,7 +2289,7 @@
           Confirmer
         </button>
         <button
-          *ngIf="this.auth.isAdmninistrator"
+          *ngIf="isAdminUi"
           (click)="updateEmployeeBonusInfo()"
           type="button"
           class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-blue-800"
@@ -2273,19 +2305,21 @@
   *ngIf="displayPayment"
   id="defaultModal"
   tabindex="-1"
-  class="w-full max-w-md max-h-full fixed inset-x-0 mx-auto top-10 z-50 p-4 flex pb-6"
+  class="fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center p-4 sm:p-6"
+  role="dialog"
+  aria-modal="true"
 >
-  <div class="mt-6 grow sm:mt-8 lg:mt-0">
-    <div
-      class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-    >
+  <div
+    class="w-full max-w-2xl max-h-[90svh] overflow-y-auto overscroll-y-contain rounded-2xl border border-gray-100 bg-gray-50 shadow-xl dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+  >
+    <div class="space-y-4 p-6">
       <h2 class="font-bold">
         {{ employee.firstName }} {{ employee.lastName }} Paiement
         {{ time.monthFrenchNames[lastMonth] }} {{ year }}
       </h2>
       <div class="space-y-2">
         <dl
-          *ngIf="paymentAmount !== 0 || this.auth.isAdmninistrator"
+          *ngIf="paymentAmount !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2296,7 +2330,7 @@
           </dd>
         </dl>
         <dl
-          *ngIf="paymentIncreaseYears !== 0 || this.auth.isAdmninistrator"
+          *ngIf="paymentIncreaseYears !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2308,7 +2342,7 @@
           </dd>
         </dl>
         <dl
-          *ngIf="paymentBankFee !== 0 || this.auth.isAdmninistrator"
+          *ngIf="paymentBankFee !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2319,7 +2353,7 @@
           </dd>
         </dl>
         <dl
-          *ngIf="paymentAbsent !== 0 || this.auth.isAdmninistrator"
+          *ngIf="paymentAbsent !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-red-500">Absent</dt>
@@ -2328,7 +2362,7 @@
           </dd>
         </dl>
         <dl
-          *ngIf="paymentNothing !== 0 || this.auth.isAdmninistrator"
+          *ngIf="paymentNothing !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-red-500">Néant</dt>
@@ -2337,7 +2371,7 @@
           </dd>
         </dl>
         <dl
-          *ngIf="paymentLate !== 0 || this.auth.isAdmninistrator"
+          *ngIf="paymentLate !== 0 || isAdminUi"
           class="flex items-center justify-between gap-4"
         >
           <dt class="text-base font-normal text-red-500">Retard</dt>
@@ -2346,7 +2380,7 @@
           </dd>
         </dl>
 
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2357,7 +2391,7 @@
             [(ngModel)]="paymentAmount"
           />
         </div>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2368,7 +2402,7 @@
             [(ngModel)]="paymentIncreaseYears"
           />
         </div>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2379,7 +2413,7 @@
             [(ngModel)]="paymentBankFee"
           />
         </div>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2390,7 +2424,7 @@
             [(ngModel)]="paymentAbsent"
           />
         </div>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2401,7 +2435,7 @@
             [(ngModel)]="paymentNothing"
           />
         </div>
-        <div *ngIf="this.auth.isAdmninistrator">
+        <div *ngIf="isAdminUi">
           <input
             type="text"
             name="lastName"
@@ -2438,7 +2472,7 @@
           Confirmer
         </button>
         <button
-          *ngIf="this.auth.isAdmninistrator"
+          *ngIf="isAdminUi"
           (click)="updateEmployeePaymentInfo()"
           type="button"
           class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-blue-800"
@@ -2507,7 +2541,7 @@
       class="space-y-4 rounded-lg border border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800"
     >
       <dl
-        *ngIf="this.auth.isAdmninistrator"
+        *ngIf="isAdminUi"
         class="flex items-center justify-between gap-4"
       >
         <dt class="text-base font-normal text-gray-500 dark:text-gray-400">
@@ -2515,7 +2549,7 @@
         </dt>
         <dd class="text-base font-medium text-green-500">{{ code }}</dd>
       </dl>
-      <div *ngIf="this.auth.isAdmninistrator">
+      <div *ngIf="isAdminUi">
         <input
           type="text"
           name="lastName"

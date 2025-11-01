@@ -77,6 +77,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   selectedState: AttendanceStateCode = '';
   statePickerMode: 'admin' | 'employee' = 'admin';
 
+  viewAsMode: 'admin' | 'employee' = this.auth.isAdmninistrator
+    ? 'admin'
+    : 'employee';
+
   showCollectionsEditor = false;
   editorDayKey = '';
   editorExpected = ''; // string so empty means "clear"
@@ -101,6 +105,21 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     },
   ];
   activePickerStates: PickerStateOption[] = this.pickerStates;
+
+  get isAdminUi(): boolean {
+    return this.auth.isAdmninistrator && this.viewAsMode === 'admin';
+  }
+
+  get isEmployeeUi(): boolean {
+    return !this.auth.isAdmninistrator || this.viewAsMode === 'employee';
+  }
+
+  setViewAsMode(mode: 'admin' | 'employee') {
+    if (!this.auth.isAdmninistrator) {
+      return;
+    }
+    this.viewAsMode = mode;
+  }
 
   // ── Commentaires individuels ───────────────────────
   individualReviews: Comment[] = [];
