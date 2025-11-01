@@ -46,6 +46,24 @@ type PickerStateOption = {
 
 type PerformanceRangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
 
+type PerformanceBarTrace = {
+  x: string[];
+  y: number[];
+  type: 'bar';
+  marker: {
+    color: string | string[];
+    line?: {
+      color: string | string[];
+      width?: number;
+    };
+  };
+};
+
+type PerformanceGraph = {
+  data: PerformanceBarTrace[];
+  layout: any;
+};
+
 @Component({
   selector: 'app-employee-page',
   templateUrl: './employee-page.component.html',
@@ -335,7 +353,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.employeesSub?.unsubscribe();
     this.individualReviewsSub?.unsubscribe();
   }
-  public graphPerformance = this.createEmptyPerformanceGraph();
+  public graphPerformance: PerformanceGraph = this.createEmptyPerformanceGraph();
   /* ─── Fetch on init ─────────────────────────────── */
   private loadAuditReceipts() {
     const limit = this.auth.isAdmin ? 50 : 2;
@@ -1003,9 +1021,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       Number.isFinite(value) ? Math.round(value * 100) / 100 : 0
     );
 
-    const color = selectedValues.length
+    const fallbackColor = selectedValues.length
       ? this.compute.findColor(selectedValues)
       : this.compute.colorPositive;
+
+    const barColors = this.performanceGraphValues.length
+      ? this.performanceGraphValues.map((value) =>
+          this.colorForPerf(Number.isFinite(value) ? value : 0)
+        )
+      : [fallbackColor];
 
     this.graphPerformance = {
       data: [
@@ -1013,7 +1037,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           x: this.performanceGraphLabels,
           y: this.performanceGraphValues,
           type: 'bar',
-          marker: { color },
+          marker: {
+            color: barColors,
+            line: { color: barColors, width: 1 },
+          },
         },
       ],
       layout: this.createPerformanceLayout(),
@@ -1107,7 +1134,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     };
   }
 
-  private createEmptyPerformanceGraph() {
+  private createEmptyPerformanceGraph(): PerformanceGraph {
     return {
       data: [
         {
