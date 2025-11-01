@@ -34,6 +34,8 @@ export class ComputationService {
   quarter4: number = 12;
   private R = 6371e3; // Earth's radius in meters
   today = this.time.todaysDateMonthDayYear();
+  private pdfMakePromise?: Promise<any>;
+  private assetBase64Cache = new Map<string, string>();
 
   // ADD this pair of methods inside DataService
   /** Live stream of rates from Firestore (safe: never throws). */
@@ -107,6 +109,58 @@ export class ComputationService {
     } catch {
       // swallow and keep defaults
     }
+  }
+
+  private resolveAssetUrl(path: string): string {
+    if (!path) {
+      return path;
+    }
+
+    if (/^https?:\/\//i.test(path)) {
+      return path;
+    }
+
+    const normalized = path
+      .replace(/\\/g, '/')
+      .replace(/^\/?/, '')
+      .replace(/^(\.\.\/)+/, '')
+      .replace(/^assets\//, 'assets/');
+
+    const baseUri =
+      (typeof document !== 'undefined' && document.baseURI) ||
+      (typeof window !== 'undefined' && window.location?.href) ||
+      '/';
+
+    try {
+      return new URL(normalized, baseUri).toString();
+    } catch {
+      return normalized.startsWith('/') ? normalized : `/${normalized}`;
+    }
+  }
+
+  private async ensurePdfMake(): Promise<any> {
+    if (!this.pdfMakePromise) {
+      this.pdfMakePromise = (async () => {
+        const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
+        const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+
+        const pdfMake = pdfMakeModule?.default || pdfMakeModule;
+        const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
+
+        pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+
+        if (!pdfMake.vfs['Roboto-Medium.ttf']) {
+          console.warn('Roboto-Medium.ttf not found in pdfMake.vfs');
+        }
+
+        return pdfMake;
+      })().catch((error) => {
+        this.pdfMakePromise = undefined;
+        throw error;
+      });
+    }
+
+    return this.pdfMakePromise;
   }
 
   convertCongoleseFrancToUsDollars(value: string) {
@@ -599,15 +653,47 @@ export class ComputationService {
     // Subtract 1 to convert to 0-indexed array
     return monthNamesInFrench[monthNumber - 1];
   }
-  async fetchImageAsBase64(url: string) {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+  async fetchImageAsBase64(path: string): Promise<string> {
+    const resolvedUrl = this.resolveAssetUrl(path);
+
+    if (this.assetBase64Cache.has(resolvedUrl)) {
+      return this.assetBase64Cache.get(resolvedUrl)!;
+    }
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch(resolvedUrl, {
+          cache: 'no-cache',
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `HTTP ${response.status} ${response.statusText}`.trim()
+          );
+        }
+
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+
+        this.assetBase64Cache.set(resolvedUrl, base64);
+        return base64;
+      } catch (err) {
+        lastError = err;
+        await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+      }
+    }
+
+    const reason =
+      lastError instanceof Error ? lastError.message : String(lastError || '');
+    throw new Error(
+      `Impossible de charger l'image (${resolvedUrl}). ${reason}`.trim()
+    );
   }
   async generateInvoice(employee: Employee, text = 'Paiement') {
     let invoiceNum = employee.payments
@@ -751,26 +837,14 @@ export class ComputationService {
           columnGap: 20,
         },
       };
-      // Dynamic imports with type assertions
-      const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
-      const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
+      const pdfMake = await this.ensurePdfMake();
+      const browser = this.getBrowserName();
+      const pdfDoc = pdfMake.createPdf(dd);
 
-      const pdfMake = pdfMakeModule?.default || pdfMakeModule;
-      const pdfFonts = pdfFontsModule?.default || pdfFontsModule;
-
-      // Set the virtual file system
-      pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
-
-      // Verify that 'Roboto-Medium.ttf' exists
-      if (!pdfMake.vfs['Roboto-Medium.ttf']) {
-        console.error('Roboto-Medium.ttf not found in pdfMake.vfs');
-      }
-
-      let browser = this.getBrowserName();
       if (browser === 'Safari') {
-        pdfMake.createPdf(dd).download();
+        pdfDoc.download();
       } else {
-        pdfMake.createPdf(dd).open();
+        pdfDoc.open();
       }
     } catch (error) {
       console.log('Error generating invoice', error);
@@ -1152,17 +1226,11 @@ export class ComputationService {
     };
 
     /* ── generate & return Blob ────────────────────────────────────────── */
-    const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
-    const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
-    const pdfMake = pdfMakeModule.default || pdfMakeModule;
-    const pdfFonts = pdfFontsModule.default || pdfFontsModule;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+    const pdfMake = await this.ensurePdfMake();
+    const pdfDoc = pdfMake.createPdf(dd as any);
 
     return new Promise<Blob>((resolve, reject) => {
-      pdfMake.createPdf(dd as any).getBlob(
-        (blob: Blob) => resolve(blob),
-        (err: any) => reject(err)
-      );
+      pdfDoc.getBlob((blob: Blob) => resolve(blob), (err: any) => reject(err));
     });
   }
   // async generatePaymentCheck(
@@ -1624,17 +1692,11 @@ export class ComputationService {
     };
 
     /* ---------- Generate -------------------------------------------------*/
-    const pdfMakeModule = (await import('pdfmake/build/pdfmake')) as any;
-    const pdfFontsModule = (await import('pdfmake/build/vfs_fonts')) as any;
-    const pdfMake = pdfMakeModule.default || pdfMakeModule;
-    const pdfFonts = pdfFontsModule.default || pdfFontsModule;
-    pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+    const pdfMake = await this.ensurePdfMake();
+    const pdfDoc = pdfMake.createPdf(dd);
 
     return new Promise<Blob>((resolve, reject) => {
-      pdfMake.createPdf(dd).getBlob(
-        (b: Blob) => resolve(b),
-        (e: any) => reject(e)
-      );
+      pdfDoc.getBlob((b: Blob) => resolve(b), (e: any) => reject(e));
     });
   }
 

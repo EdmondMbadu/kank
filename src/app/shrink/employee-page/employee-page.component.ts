@@ -1549,24 +1549,31 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     try {
       this.computeTotalBonusAmount(); // Recalculate total bonus after update
       await this.data.updateEmployeeBonusInfo(this.employee);
-
-      await this.data.toggleEmployeeCheckVisibility(this.employee);
-
-      // Generate the bonus check and get the Blob
-      const blob: any = await this.compute.generateBonusCheck(
+      const blob = await this.compute.generateBonusCheck(
         this.employee,
         'Bonus'
       );
 
-      // Upload the Blob to Firebase Storage
-      await this.uploadBonusCheck(blob, this.employee);
+      if (!blob) {
+        throw new Error(
+          "La génération du reçu de bonus a échoué. Merci d'essayer de nouveau."
+        );
+      }
 
-      alert('Bonus Signé avec Succès');
+      await this.uploadBonusCheck(blob, this.employee, 'bonus');
+
+      await this.data.toggleEmployeeCheckVisibility(this.employee);
+      this.checkVisible = this.checkVisible === 'true' ? 'false' : 'true';
+      this.employee.checkVisible = this.checkVisible;
+
+      alert('Bonus signé avec succès');
     } catch (err) {
-      alert(
-        "Une erreur s'est produite lors de la modification de l'employé. Essayez encore."
-      );
-      console.error(err);
+      console.error('Erreur lors de la signature du bonus', err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la signature du bonus. Réessayez.";
+      alert(message);
     } finally {
       this.toggleBonus();
       this.toggle('isLoading');
@@ -1603,22 +1610,32 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.toggle('isLoading');
     try {
       await this.data.updateEmployeePaymentInfo(this.employee);
-      await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
-      // this.employee.totalPayments = this.employee.paymentAmount;
-      this.togglePaymentCheckVisible();
-      // Generate the bonus check and get the Blob
-      const blob: any = await this.compute.generatePaymentCheck(
+      const blob = await this.compute.generatePaymentCheck(
         this.employee,
         'Paiement',
         this.totalPayments.toString()
       );
 
-      // Upload the Blob to Firebase Storage
+      if (!blob) {
+        throw new Error(
+          "La génération du reçu de paiement a échoué. Merci d'essayer de nouveau."
+        );
+      }
+
       await this.uploadBonusCheck(blob, this.employee, 'Paiement');
 
-      alert('Paiment Signé avec Succès');
+      await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
+      this.togglePaymentCheckVisible();
+      this.employee.paymentCheckVisible = this.paymentCheckVisible;
+
+      alert('Paiement signé avec succès');
     } catch (err) {
-      alert(err);
+      console.error('Erreur lors de la signature du paiement', err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la signature du paiement. Réessayez.";
+      alert(message);
     } finally {
       this.togglePayment();
       this.toggle('isLoading');
@@ -1647,43 +1664,68 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.toggleBonus();
     }
   }
-  async uploadBonusCheck(blob: Blob, employee: Employee, total = 'bonus') {
-    const timestamp = new Date().getTime();
+  async uploadBonusCheck(
+    blob: Blob,
+    employee: Employee,
+    total: 'bonus' | 'Paiement' = 'bonus'
+  ): Promise<string> {
+    if (!(blob instanceof Blob)) {
+      throw new Error('Le fichier généré est invalide.');
+    }
+
+    const timestamp = Date.now();
     const path = `invoice/${employee.firstName}-${employee.lastName}-${timestamp}.pdf`;
+    const previousPaths = [...(employee.paymentsPicturePath ?? [])];
+    const previousSalaryPaid = employee.salaryPaid;
+    let uploadedPath: string | null = null;
 
     try {
-      // Upload the PDF blob to Firebase Storage
       const uploadTask = await this.storage.upload(path, blob);
-
-      // Get the download URL of the uploaded PDF
+      uploadedPath = path;
       const url = await uploadTask.ref.getDownloadURL();
-      console.log('Invoice uploaded successfully. Download URL:', url);
 
-      // Initialize paymentsPicturePath if it's undefined
-      if (!this.employee.paymentsPicturePath) {
-        this.employee.paymentsPicturePath = [];
+      const updatedPaths = [...previousPaths, url];
+      employee.paymentsPicturePath = updatedPaths;
+      await this.data.updateEmployeePaymentPictureData(employee);
+
+      const amountNumber =
+        total === 'bonus' ? this.totalBonusAmount : this.totalPayments;
+
+      if (!Number.isFinite(amountNumber)) {
+        throw new Error("Montant de reçu invalide. Vérifiez les données de paiement.");
       }
 
-      this.employee.paymentsPicturePath.push(url);
-      console.log('the url of the bonus check is', url);
-      console.log(
-        'payemtnpicture path of the employee is',
-        this.employee.paymentsPicturePath
-      );
-      await this.data.updateEmployeePaymentPictureData(this.employee);
+      employee.salaryPaid = amountNumber.toString();
+      await this.data.addPaymentToEmployee(employee);
 
-      // I did not want to make a new function for this. so i just added a parameter to this function
-      if (total === 'bonus') {
-        this.employee.salaryPaid = this.totalBonusAmount.toString();
-      } else {
-        this.employee.salaryPaid = this.totalPayments.toString();
-      }
-      await this.data.addPaymentToEmployee(this.employee);
-
-      // Optionally, update the employee's record with the invoice URL
-      // await this.data.updateEmployeeBonusCheckUrl(employee, url);
+      return url;
     } catch (error) {
-      console.error('Error uploading invoice:', error);
+      employee.paymentsPicturePath = previousPaths;
+      employee.salaryPaid = previousSalaryPaid;
+
+      if (uploadedPath) {
+        try {
+          await firstValueFrom(this.storage.ref(uploadedPath).delete());
+        } catch {
+          // Ignore cleanup failure
+        }
+      }
+
+      try {
+        await this.data.updateEmployeePaymentPictureData(employee);
+      } catch {
+        // Ignore rollback failure
+      }
+
+      console.error('Échec lors du stockage du reçu signé', error);
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error(
+        "Échec de l'enregistrement du reçu. Veuillez réessayer dans un instant."
+      );
     }
   }
 
