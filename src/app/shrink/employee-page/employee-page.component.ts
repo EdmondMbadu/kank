@@ -989,9 +989,19 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   getAllPayments() {
     if (this.employee.payments !== undefined) {
-      let currentPayments = this.compute.sortArrayByDateDescendingOrder(
-        Object.entries(this.employee.payments!)
-      );
+      const paymentsArray = Object.entries(this.employee.payments!);
+
+      paymentsArray.sort((a, b) => {
+        const [rawA] = a;
+        const [rawB] = b;
+
+        const dateA = this.time.parseFlexibleDateTime(rawA);
+        const dateB = this.time.parseFlexibleDateTime(rawB);
+
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      const currentPayments = paymentsArray;
       this.paymentAmounts = currentPayments.map((entry) => entry[1]);
       this.paymentDates = currentPayments.map((entry) =>
         this.time.convertTimeFormat(entry[0])
@@ -1696,7 +1706,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       }
 
       employee.salaryPaid = amountNumber.toString();
-      await this.data.addPaymentToEmployee(employee);
+      const context = total === 'bonus' ? 'bonus' : 'paiement';
+      await this.data.addPaymentToEmployee(employee, context);
 
       return url;
     } catch (error) {

@@ -1472,14 +1472,23 @@ export class DataService {
     };
     return employeeRef.set(data, { merge: true });
   }
-  addPaymentToEmployee(employee: Employee) {
+  addPaymentToEmployee(employee: Employee, context: string = '') {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
     );
 
+    const baseKey = this.time.todaysDate();
+    const uniqueStamp = Date.now().toString();
+    const safeContext = (context || '').toLowerCase().replace(/[^a-z0-9]+/gi, '-');
+    const keyParts = [baseKey, uniqueStamp];
+    if (safeContext) {
+      keyParts.push(safeContext);
+    }
+    const paymentKey = keyParts.join('-');
+
     const data = {
       payments: {
-        [this.todayFull]: `${employee.salaryPaid}`,
+        [paymentKey]: `${employee.salaryPaid}`,
       },
     };
     return employeeRef.set(data, { merge: true });

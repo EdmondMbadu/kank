@@ -60,6 +60,30 @@ export class TimeService {
 
     return date;
   }
+  parseFlexibleDateTime(raw: string): Date {
+    // FAST path: try Date constructor directly
+    const direct = new Date(raw);
+    if (!Number.isNaN(direct.getTime())) {
+      return direct;
+    }
+
+    const parts = raw.split('-');
+    if (parts.length >= 3) {
+      const [month, day, year] = parts.slice(0, 3).map((p) => Number(p));
+      const hasTime = parts.length >= 6;
+      const hours = hasTime ? Number(parts[3]) : 0;
+      const minutes = hasTime ? Number(parts[4]) : 0;
+      const seconds = hasTime ? Number(parts[5]) : 0;
+
+      const date = new Date(year, month - 1, day, hours, minutes, seconds);
+      if (!Number.isNaN(date.getTime())) {
+        return date;
+      }
+    }
+
+    // LAST resort: rely on Date parsing (may still fail)
+    return new Date(raw.replace(/-/g, '/'));
+  }
   isSaturday(): boolean {
     return new Date().getDay() === 6;
   }
