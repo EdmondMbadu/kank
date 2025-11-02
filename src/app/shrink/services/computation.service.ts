@@ -257,7 +257,9 @@ export class ComputationService {
     const amountPaid = Number(client.amountPaid);
 
     let pay =
-      Number.isFinite(amountToPay) && Number.isFinite(paymentPeriod) && paymentPeriod > 0
+      Number.isFinite(amountToPay) &&
+      Number.isFinite(paymentPeriod) &&
+      paymentPeriod > 0
         ? amountToPay / paymentPeriod
         : 0;
 
@@ -270,7 +272,11 @@ export class ComputationService {
       pay = remaining;
     }
 
-    if (Number.isFinite(debtLeft) && debtLeft > 0 && (pay <= 0 || debtLeft < pay)) {
+    if (
+      Number.isFinite(debtLeft) &&
+      debtLeft > 0 &&
+      (pay <= 0 || debtLeft < pay)
+    ) {
       pay = debtLeft;
     }
 
@@ -287,7 +293,9 @@ export class ComputationService {
         const debtLeft = Number(client.debtLeft);
 
         let pay =
-          Number.isFinite(amountToPay) && Number.isFinite(paymentPeriod) && paymentPeriod > 0
+          Number.isFinite(amountToPay) &&
+          Number.isFinite(paymentPeriod) &&
+          paymentPeriod > 0
             ? amountToPay / paymentPeriod
             : 0;
 
@@ -300,7 +308,11 @@ export class ComputationService {
           pay = remaining;
         }
 
-        if (Number.isFinite(debtLeft) && debtLeft > 0 && (pay <= 0 || debtLeft < pay)) {
+        if (
+          Number.isFinite(debtLeft) &&
+          debtLeft > 0 &&
+          (pay <= 0 || debtLeft < pay)
+        ) {
           pay = debtLeft;
         }
 
@@ -685,7 +697,9 @@ export class ComputationService {
         return base64;
       } catch (err) {
         lastError = err;
-        await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+        await new Promise((resolve) =>
+          setTimeout(resolve, 150 * (attempt + 1))
+        );
       }
     }
 
@@ -1230,7 +1244,10 @@ export class ComputationService {
     const pdfDoc = pdfMake.createPdf(dd as any);
 
     return new Promise<Blob>((resolve, reject) => {
-      pdfDoc.getBlob((blob: Blob) => resolve(blob), (err: any) => reject(err));
+      pdfDoc.getBlob(
+        (blob: Blob) => resolve(blob),
+        (err: any) => reject(err)
+      );
     });
   }
   // async generatePaymentCheck(
@@ -1696,7 +1713,10 @@ export class ComputationService {
     const pdfDoc = pdfMake.createPdf(dd);
 
     return new Promise<Blob>((resolve, reject) => {
-      pdfDoc.getBlob((b: Blob) => resolve(b), (e: any) => reject(e));
+      pdfDoc.getBlob(
+        (b: Blob) => resolve(b),
+        (e: any) => reject(e)
+      );
     });
   }
 
@@ -2050,40 +2070,83 @@ export class ComputationService {
     });
   }
 
+  // getMaxLendAmount(creditScore: number): number {
+  //   if (!Number.isFinite(creditScore)) {
+  //     throw new Error('Credit score must be a finite number.');
+  //   }
+  //   if (creditScore > 100) {
+  //     throw new Error('Credit score must be ≤ 100.');
+  //   }
+
+  //   // Thresholds are inclusive (<=). 0 or less → 0 FC.
+  //   const scoreLimits = [
+  //     0, 19, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 84, 89, 94, 99, 100,
+  //   ];
+  //   const amounts = [
+  //     0, // <= 0%
+  //     50000, // 1–19%
+  //     100000, // 20–34%
+  //     150000, // 35–39%
+  //     200000, // 40–44%
+  //     300000, // 45–49%
+  //     400000, // 50–54%
+  //     500000, // 55–59%
+  //     600000, // 60–64%
+  //     700000, // 65–69%
+  //     1000000, // 70–74%
+  //     1100000, // 75–79%
+  //     1200000, // 80–84%
+  //     1300000, // 85–89%
+  //     1400000, // 90–94%
+  //     1500000, // 95–99%
+  //     2000000, // 100%
+  //   ];
+
+  //   const idx = scoreLimits.findIndex((limit) => creditScore <= limit);
+  //   return amounts[idx];
+  // }
+
   getMaxLendAmount(creditScore: number): number {
     if (!Number.isFinite(creditScore)) {
       throw new Error('Credit score must be a finite number.');
     }
-    if (creditScore > 100) {
-      throw new Error('Credit score must be ≤ 100.');
-    }
 
-    // Thresholds are inclusive (<=). 0 or less → 0 FC.
+    // Base scale up to score <= 100
     const scoreLimits = [
       0, 19, 34, 39, 44, 49, 54, 59, 64, 69, 74, 79, 84, 89, 94, 99, 100,
     ];
+
     const amounts = [
       0, // <= 0%
-      50000, // 1–19%
-      100000, // 20–34%
-      150000, // 35–39%
-      200000, // 40–44%
-      300000, // 45–49%
-      400000, // 50–54%
-      500000, // 55–59%
-      600000, // 60–64%
-      700000, // 65–69%
-      1000000, // 70–74%
-      1100000, // 75–79%
-      1200000, // 80–84%
-      1300000, // 85–89%
-      1400000, // 90–94%
-      1500000, // 95–99%
-      2000000, // 100%
+      50_000, // 1–19%
+      100_000, // 20–34%
+      150_000, // 35–39%
+      200_000, // 40–44%
+      300_000, // 45–49%
+      400_000, // 50–54%
+      500_000, // 55–59%
+      600_000, // 60–64%
+      700_000, // 65–69%
+      1_000_000, // 70–74%
+      1_100_000, // 75–79%
+      1_200_000, // 80–84%
+      1_300_000, // 85–89%
+      1_400_000, // 90–94%
+      1_500_000, // 95–99%
+      2_000_000, // ✅ now 100 → 2,000,000
     ];
 
-    const idx = scoreLimits.findIndex((limit) => creditScore <= limit);
-    return amounts[idx];
+    // If score ≤ 100 → use the table normally
+    if (creditScore <= 100) {
+      const idx = scoreLimits.findIndex((limit) => creditScore <= limit);
+      return amounts[idx];
+    }
+
+    // If score > 100 → dynamic increase
+    const extra = creditScore - 100;
+    const step = Math.floor(extra / 5);
+
+    return 2_000_000 + step * 100_000;
   }
 
   yearsSinceJoining(dateJoined: string): number {

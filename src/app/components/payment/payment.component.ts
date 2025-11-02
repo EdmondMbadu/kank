@@ -169,7 +169,12 @@ export class PaymentComponent {
   computeCreditScore() {
     let dateX = '';
     let creditScore = '';
-    if (this.client.debtLeft !== '0') {
+    // if the user still has some debt
+    if (Number(this.client.debtLeft) > 0) {
+      return this.client.creditScore;
+    }
+    // if the payment amount is 0, don't compute the credit score
+    if (Number(this.paymentAmount) === 0) {
       return this.client.creditScore;
     }
     if (Number(this.client.paymentPeriodRange) === 4) {
@@ -187,7 +192,8 @@ export class PaymentComponent {
 
       creditScore = (Number(this.client.creditScore) - 2 * elapsed).toString();
     }
-    creditScore = Math.min(Number(creditScore), 100).toString();
+    // no more max credit score
+    // creditScore = Math.min(Number(creditScore), 100).toString();
 
     return creditScore;
   }
