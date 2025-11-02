@@ -140,7 +140,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     },
     {
       key: 'proprete',
-      label: 'Tenue & Organisation du Poste / Matériel',
+      label: 'Respect des Procédures & Traçabilité (e.g commentaires, etc)',
       measure: 'Professionnalisme dans la présentation et l’ordre',
       criteria: 'Uniforme propre, bureau propre, cahiers/carnets bien tenus',
     },
@@ -148,7 +148,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       key: 'suiviClients',
       label: 'Suivi des Clients (Rappel & Visites)',
       measure: 'Engagement dans le suivi de portefeuille',
-      criteria: 'Appels réguliers, visites des absents, suivi des cas compliqués',
+      criteria:
+        'Appels réguliers, visites des absents, suivi des cas compliqués',
     },
     {
       key: 'relationClient',
@@ -158,7 +159,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     },
     {
       key: 'attitudeEquipe',
-      label: "Attitude & Esprit d’Équipe",
+      label: 'Attitude & Esprit d’Équipe',
       measure: 'Collaboration et contribution au bon climat interne',
       criteria: 'Respect des collègues, initiative, volonté d’aider',
     },
@@ -316,7 +317,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     '6M': 6,
     '9M': 9,
     '1A': 12,
-    'MAX': 0,
+    MAX: 0,
   };
   performanceMaxRange = 0;
   private performanceGraphLabels: string[] = [];
@@ -372,7 +373,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.employeesSub?.unsubscribe();
     this.individualReviewsSub?.unsubscribe();
   }
-  public graphPerformance: PerformanceGraph = this.createEmptyPerformanceGraph();
+  public graphPerformance: PerformanceGraph =
+    this.createEmptyPerformanceGraph();
   /* ─── Fetch on init ─────────────────────────────── */
   private loadAuditReceipts() {
     const limit = this.auth.isAdmin ? 50 : 2;
@@ -426,7 +428,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               : '';
             (normalized as any).__editing = false;
             (normalized as any).__draftComment = normalized.comment ?? '';
-            (normalized as any).__draftPerformance = normalized.performance ?? 0;
+            (normalized as any).__draftPerformance =
+              normalized.performance ?? 0;
             (normalized as any).__saving = false;
             return normalized;
           });
@@ -554,7 +557,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         console.error('Failed to update review visibility:', error);
         review.visible = previous;
         alert(
-          "Impossible de mettre à jour la visibilité du commentaire. Veuillez réessayer."
+          'Impossible de mettre à jour la visibilité du commentaire. Veuillez réessayer.'
         );
       });
   }
@@ -577,7 +580,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       .catch((error) => {
         console.error('Failed to delete review:', error);
         alert(
-          "Impossible de supprimer ce commentaire. Veuillez réessayer dans un instant."
+          'Impossible de supprimer ce commentaire. Veuillez réessayer dans un instant.'
         );
       });
   }
@@ -621,11 +624,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
 
     this.auth
-      .updateReview(
-        this.individualReviewDocId,
-        cleaned,
-        this.employee.uid
-      )
+      .updateReview(this.individualReviewDocId, cleaned, this.employee.uid)
       .then(() => {
         review.__editing = false;
         review.__saving = false;
@@ -740,136 +739,141 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
   async retrieveEmployees(): Promise<void> {
     this.employeesSub?.unsubscribe();
-    this.employeesSub = this.auth.getAllEmployees().subscribe(async (data: any) => {
-      if (!data) {
-        this.resetEmployeeState();
-        return;
-      }
+    this.employeesSub = this.auth
+      .getAllEmployees()
+      .subscribe(async (data: any) => {
+        if (!data) {
+          this.resetEmployeeState();
+          return;
+        }
 
-      this.employees = Array.isArray(data) ? data : Object.values(data);
-      const selectedIndex = Number(this.id);
-      let selectedEmployee: Employee | undefined =
-        Number.isFinite(selectedIndex) && selectedIndex >= 0
-          ? this.employees[selectedIndex]
-          : undefined;
+        this.employees = Array.isArray(data) ? data : Object.values(data);
+        const selectedIndex = Number(this.id);
+        let selectedEmployee: Employee | undefined =
+          Number.isFinite(selectedIndex) && selectedIndex >= 0
+            ? this.employees[selectedIndex]
+            : undefined;
 
-      if (!selectedEmployee && typeof this.id === 'string') {
-        selectedEmployee = this.employees.find((em) => em.uid === this.id);
-      }
+        if (!selectedEmployee && typeof this.id === 'string') {
+          selectedEmployee = this.employees.find((em) => em.uid === this.id);
+        }
 
-      if (!selectedEmployee) {
-        this.resetEmployeeState();
-        return;
-      }
+        if (!selectedEmployee) {
+          this.resetEmployeeState();
+          return;
+        }
 
-      this.employee = selectedEmployee;
-      this.loadIndividualReviews(this.employee.uid);
-      this.paymentCodeLoaded = true; // we now know employee.paymentCode
+        this.employee = selectedEmployee;
+        this.loadIndividualReviews(this.employee.uid);
+        this.paymentCodeLoaded = true; // we now know employee.paymentCode
 
-      // set location coordinates
-      if (this.auth.currentUser && this.auth.currentUser.locationCoordinates) {
-        this.locationCoordinate = this.auth.currentUser.locationCoordinates;
-        this.currentLat = Number(this.locationCoordinate.lattitude);
-        this.currentLng = Number(this.locationCoordinate.longitude);
-      }
-      this.loadAuditReceipts();
-      if (this.employee.dateJoined) {
-        this.yearsAtCompany = this.compute.yearsSinceJoining(
-          this.employee.dateJoined
+        // set location coordinates
+        if (
+          this.auth.currentUser &&
+          this.auth.currentUser.locationCoordinates
+        ) {
+          this.locationCoordinate = this.auth.currentUser.locationCoordinates;
+          this.currentLat = Number(this.locationCoordinate.lattitude);
+          this.currentLng = Number(this.locationCoordinate.longitude);
+        }
+        this.loadAuditReceipts();
+        if (this.employee.dateJoined) {
+          this.yearsAtCompany = this.compute.yearsSinceJoining(
+            this.employee.dateJoined
+          );
+        }
+
+        this.findNumberOfVacationDaysLeft();
+        this.getAllPayments();
+        this.setEmployeeBonusAmounts();
+        this.computeTotalBonusAmount();
+        this.preposition = this.time.findPrepositionStartWithVowelOrConsonant(
+          this.time.monthFrenchNames[this.givenMonth - 1]
         );
-      }
 
-      this.findNumberOfVacationDaysLeft();
-      this.getAllPayments();
-      this.setEmployeeBonusAmounts();
-      this.computeTotalBonusAmount();
-      this.preposition = this.time.findPrepositionStartWithVowelOrConsonant(
-        this.time.monthFrenchNames[this.givenMonth - 1]
-      );
+        this.maxRange = Object.keys(this.employee.dailyPoints!).length;
+        if (this.employee.role === 'Manager') {
+          let result = this.performance.findAverageAndTotalAllEmployee(
+            this.employees
+          );
+          this.employee.averagePoints = `${result[0]} / ${result[1]}`;
+          this.performancePercentageTotal = this.computePerformancePercentage(
+            result[0].toString(),
+            result[1].toString()
+          );
+          this.averageToday = this.performance.findAverageTotalToday(
+            this.employees
+          );
+          this.totalToday = this.performance.findTotalToday(this.employees);
 
-      this.maxRange = Object.keys(this.employee.dailyPoints!).length;
-      if (this.employee.role === 'Manager') {
-        let result = this.performance.findAverageAndTotalAllEmployee(
-          this.employees
-        );
-        this.employee.averagePoints = `${result[0]} / ${result[1]}`;
-        this.performancePercentageTotal = this.computePerformancePercentage(
-          result[0].toString(),
-          result[1].toString()
-        );
-        this.averageToday = this.performance.findAverageTotalToday(
-          this.employees
-        );
-        this.totalToday = this.performance.findTotalToday(this.employees);
+          this.averagePointsMonth =
+            this.compute.findTotalForMonthAllDailyPointsEmployees(
+              this.employees,
+              this.givenMonth.toString(),
+              this.givenYear.toString()
+            );
 
-        this.averagePointsMonth =
-          this.compute.findTotalForMonthAllDailyPointsEmployees(
-            this.employees,
+          this.totalPointsMonth =
+            this.compute.findTotalForMonthAllTotalDailyPointsEmployees(
+              this.employees,
+              this.givenMonth.toString(),
+              this.givenYear.toString()
+            );
+        } else {
+          let result = this.performance.findAverageAndTotal(this.employee);
+
+          this.employee.averagePoints = `${result[0]} / ${result[1]}`;
+          this.performancePercentageTotal = this.computePerformancePercentage(
+            result[0].toString(),
+            result[1].toString()
+          );
+
+          this.averageToday = this.employee!.dailyPoints![this.today];
+          this.totalToday = this.employee.totalDailyPoints![this.today];
+
+          this.averagePointsMonth = this.compute.findTotalForMonth(
+            this.employee.dailyPoints!,
             this.givenMonth.toString(),
             this.givenYear.toString()
           );
 
-        this.totalPointsMonth =
-          this.compute.findTotalForMonthAllTotalDailyPointsEmployees(
-            this.employees,
+          this.totalPointsMonth = this.compute.findTotalForMonth(
+            this.employee.totalDailyPoints!,
             this.givenMonth.toString(),
             this.givenYear.toString()
           );
-      } else {
-        let result = this.performance.findAverageAndTotal(this.employee);
-
-        this.employee.averagePoints = `${result[0]} / ${result[1]}`;
-        this.performancePercentageTotal = this.computePerformancePercentage(
-          result[0].toString(),
-          result[1].toString()
+        }
+        this.employee.performancePercantage = this.computePerformancePercentage(
+          this.averageToday,
+          this.totalToday
+        );
+        this.performancePercentageMonth = this.computePerformancePercentage(
+          this.averagePointsMonth,
+          this.totalPointsMonth
         );
 
-        this.averageToday = this.employee!.dailyPoints![this.today];
-        this.totalToday = this.employee.totalDailyPoints![this.today];
-
-        this.averagePointsMonth = this.compute.findTotalForMonth(
-          this.employee.dailyPoints!,
-          this.givenMonth.toString(),
-          this.givenYear.toString()
+        // this.computeThisMonthSalary();
+        if (
+          this.employee.attendance !== undefined &&
+          this.employee.attendance[this.today] !== undefined
+        ) {
+          // console.log('hello', this.employee.attendance[this.today]);
+          this.attendanceComplete = false;
+        }
+        // ⬇️  Load this month’s attachments first
+        await this.loadMonthAttendanceAttachments(
+          this.givenMonth,
+          this.givenYear
         );
 
-        this.totalPointsMonth = this.compute.findTotalForMonth(
-          this.employee.totalDailyPoints!,
-          this.givenMonth.toString(),
-          this.givenYear.toString()
+        this.generateAttendanceTable(this.givenMonth, this.givenYear);
+        await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
+        this.generateCollectionsTable(this.givenMonth, this.givenYear);
+
+        this.updatePerformanceGraphics(
+          this.rangeValueFromPerformanceKey(this.performanceActiveRange)
         );
-      }
-      this.employee.performancePercantage = this.computePerformancePercentage(
-        this.averageToday,
-        this.totalToday
-      );
-      this.performancePercentageMonth = this.computePerformancePercentage(
-        this.averagePointsMonth,
-        this.totalPointsMonth
-      );
-
-      // this.computeThisMonthSalary();
-      if (
-        this.employee.attendance !== undefined &&
-        this.employee.attendance[this.today] !== undefined
-      ) {
-        // console.log('hello', this.employee.attendance[this.today]);
-        this.attendanceComplete = false;
-      }
-      // ⬇️  Load this month’s attachments first
-      await this.loadMonthAttendanceAttachments(
-        this.givenMonth,
-        this.givenYear
-      );
-
-      this.generateAttendanceTable(this.givenMonth, this.givenYear);
-      await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
-      this.generateCollectionsTable(this.givenMonth, this.givenYear);
-
-      this.updatePerformanceGraphics(
-        this.rangeValueFromPerformanceKey(this.performanceActiveRange)
-      );
-    });
+      });
   }
 
   toggleBonusIfCodeCorrect() {
@@ -964,9 +968,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const labels = sortedEntries.map(([key]) => key);
     const values = sortedEntries.map(([_, aggregate]) => {
       const percentage =
-        aggregate.total > 0
-          ? (aggregate.achieved / aggregate.total) * 100
-          : 0;
+        aggregate.total > 0 ? (aggregate.achieved / aggregate.total) * 100 : 0;
       return percentage.toString();
     });
 
@@ -1119,7 +1121,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return [[], []];
     }
 
-    const targetRange = range > 0 ? Math.min(range, labels.length) : labels.length;
+    const targetRange =
+      range > 0 ? Math.min(range, labels.length) : labels.length;
     const startIndex = Math.max(labels.length - targetRange, 0);
 
     return [labels.slice(startIndex), values.slice(startIndex)];
@@ -1702,7 +1705,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         total === 'bonus' ? this.totalBonusAmount : this.totalPayments;
 
       if (!Number.isFinite(amountNumber)) {
-        throw new Error("Montant de reçu invalide. Vérifiez les données de paiement.");
+        throw new Error(
+          'Montant de reçu invalide. Vérifiez les données de paiement.'
+        );
       }
 
       employee.salaryPaid = amountNumber.toString();
@@ -2109,7 +2114,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   requestVacation() {
-    
     if (!this.time.isValidRequestDateForVacation(this.requestDate)) {
       return;
     }
@@ -2418,7 +2422,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.selectedState =
       mode === 'employee'
         ? 'V'
-        : ((curr as AttendanceStateCode | undefined) ?? '');
+        : (curr as AttendanceStateCode | undefined) ?? '';
     this.showStatePickerModal = true;
   }
 
@@ -2595,9 +2599,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     })[0];
   }
 
-  private labelToDateParts(label: string):
-    | { y: number; m: number; d: number }
-    | null {
+  private labelToDateParts(
+    label: string
+  ): { y: number; m: number; d: number } | null {
     if (!label) return null;
     const parts = label.split('-');
     if (parts.length < 3) return null;
@@ -3172,12 +3176,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         employeeId
       );
       this.employee.attendance = newAtt;
-      this.employee.vacationAcceptedNumberOfDays =
-        updatedAccepted.toString();
-      this.vacation = Math.max(
-        0,
-        this.TOTAL_VACATION_DAYS - updatedAccepted
-      );
+      this.employee.vacationAcceptedNumberOfDays = updatedAccepted.toString();
+      this.vacation = Math.max(0, this.TOTAL_VACATION_DAYS - updatedAccepted);
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (e) {
       alert('❌ Impossible de marquer cette journée comme vacances.');
