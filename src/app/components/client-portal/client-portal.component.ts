@@ -6,7 +6,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Client, Comment } from 'src/app/models/client';
+import { Client, Comment, ClientBonusEvent } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -82,6 +82,7 @@ export class ClientPortalComponent {
   copied?: string;
 
   @ViewChild('phoneHistory', { static: false }) phoneHistoryRef?: ElementRef;
+  @ViewChild('bonusHistoryCard', { static: false }) bonusHistoryRef?: ElementRef;
 
   loanAmount: string = '0';
   debtLeft: string = '0';
@@ -90,6 +91,11 @@ export class ClientPortalComponent {
   paymentPeriodRange: string = '0';
   amountPaid: string = '0';
   creditScore: number = 0;
+  showBonusModal = false;
+  bonusToAdd: string = '';
+  isBonusSubmitting = false;
+  isBonusTransferSubmitting = false;
+  showBonusHistory = false;
   isSilver: boolean = false;
   isGold: boolean = false;
   isPlatinum: boolean = false;
@@ -308,6 +314,7 @@ export class ClientPortalComponent {
     if (this.client.isPhoneCorrect) {
       this.isPhoneNumberCorrect = this.client.isPhoneCorrect;
     }
+    this.ensureBonusState();
     if ((this, this.client.agentVerifyingName)) {
       this.agentVerifyingName = this.client.agentVerifyingName;
     }
@@ -330,6 +337,20 @@ export class ClientPortalComponent {
     this.isPlatinum = score >= 100;
   }
 
+  private ensureBonusState(): void {
+    if (this.client.bonus === undefined || this.client.bonus === null) {
+      this.client.bonus = '0';
+    }
+    if (!this.client.bonusHistory) {
+      this.client.bonusHistory = {};
+    }
+  }
+
+  get bonusAmountValue(): number {
+    const value = Number(this.client?.bonus ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
   async setClientField(field: string, value: any, skip: boolean = false) {
     if (!this.compute.isNumber(value) && !skip) {
       alert('Enter a valid number');
@@ -348,6 +369,193 @@ export class ClientPortalComponent {
     }
   }
   isFullPictureVisible = false;
+
+  openBonusModal(): void {
+    this.ensureBonusState();
+    this.bonusToAdd = '';
+    this.showBonusModal = true;
+  }
+
+  closeBonusModal(): void {
+    if (this.isBonusSubmitting) {
+      return;
+    }
+    this.showBonusModal = false;
+  }
+
+  async submitBonus(): Promise<void> {
+    this.ensureBonusState();
+    if (!this.client?.uid) {
+      alert('Client introuvable.');
+      return;
+    }
+
+    const raw = (this.bonusToAdd ?? '').toString().trim();
+    const amount = Number(raw);
+    if (raw === '' || Number.isNaN(amount)) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+    if (amount === 0) {
+      alert('Le montant ne peut pas être zéro.');
+      return;
+    }
+
+    const current = Number(this.client.bonus ?? 0);
+    if (current + amount < 0) {
+      alert('Le bonus disponible est insuffisant pour cette réduction.');
+      return;
+    }
+
+    this.isBonusSubmitting = true;
+    try {
+      const updated = current + amount;
+      this.client.bonus = updated.toString();
+
+      const type = amount >= 0 ? 'credit' : 'adjustment';
+      const note =
+        amount >= 0
+          ? 'Ajout de bonus (administrateur)'
+          : 'Réduction de bonus (administrateur)';
+      this.recordBonusEvent(type, amount, note, this.client.bonus);
+
+      await Promise.all([
+        this.data.setClientField('bonus', this.client.bonus, this.client.uid!),
+        this.data.setClientField(
+          'bonusHistory',
+          this.client.bonusHistory,
+          this.client.uid!
+        ),
+      ]);
+
+      alert('Bonus mis à jour avec succès.');
+      this.showBonusModal = false;
+      this.bonusToAdd = '';
+    } catch (error) {
+      console.error("Erreur lors de l'ajustement du bonus", error);
+      alert("Impossible de mettre à jour le bonus. Réessayez.");
+    } finally {
+      this.isBonusSubmitting = false;
+    }
+  }
+
+  private recordBonusEvent(
+    type: 'credit' | 'transfer' | 'adjustment',
+    amount: number,
+    note: string | undefined,
+    balanceAfter: string
+  ): void {
+    this.ensureBonusState();
+    const createdAt = new Date().toISOString();
+    const event: ClientBonusEvent = {
+      amount: amount.toString(),
+      type,
+      createdAt,
+      balanceAfter,
+      ...(note ? { note } : {}),
+    };
+    this.client.bonusHistory![createdAt] = event;
+  }
+
+  async transferBonusToSavings(): Promise<void> {
+    this.ensureBonusState();
+    if (!this.client?.uid) {
+      alert('Client introuvable.');
+      return;
+    }
+
+    const bonusValue = this.bonusAmountValue;
+    if (bonusValue <= 0) {
+      alert("Aucun bonus disponible à transférer.");
+      return;
+    }
+
+    const confirmTransfer = confirm(
+      `Transférer ${bonusValue} FC de bonus vers l'épargne ?`
+    );
+    if (!confirmTransfer) {
+      return;
+    }
+
+    this.isBonusTransferSubmitting = true;
+    const bonusString = bonusValue.toString();
+
+    try {
+      const currentSavings = Number(this.client.savings ?? 0);
+      const newSavings = currentSavings + bonusValue;
+      this.client.savings = newSavings.toString();
+
+      const key = `${this.time.todaysDate()}-bonus`;
+      this.client.savingsPayments = {
+        ...(this.client.savingsPayments || {}),
+        [key]: bonusString,
+      };
+
+      const date = this.time.todaysDateMonthDayYear();
+      await this.data.clientDeposit(this.client, bonusString, date);
+
+      this.client.bonus = '0';
+      this.recordBonusEvent(
+        'transfer',
+        -bonusValue,
+        'Transfert vers épargne',
+        this.client.bonus
+      );
+
+      await Promise.all([
+        this.data.setClientField('bonus', this.client.bonus, this.client.uid!),
+        this.data.setClientField(
+          'bonusHistory',
+          this.client.bonusHistory,
+          this.client.uid!
+        ),
+      ]);
+
+      alert('Bonus transféré vers les épargnes.');
+    } catch (error) {
+      console.error('Erreur lors du transfert de bonus', error);
+      alert("Impossible de transférer le bonus. Réessayez.");
+    } finally {
+      this.isBonusTransferSubmitting = false;
+    }
+  }
+
+  get bonusHistoryList(): ClientBonusEvent[] {
+    this.ensureBonusState();
+    const history = this.client?.bonusHistory;
+    if (!history) {
+      return [];
+    }
+    return Object.values(history)
+      .filter((event) => !!event)
+      .sort((a, b) =>
+        (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+      );
+  }
+
+  bonusEventAmount(event: ClientBonusEvent): number {
+    const value = Number(event?.amount ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  bonusEventBalance(event: ClientBonusEvent): number {
+    const fallback = Number(this.client?.bonus ?? 0);
+    const value = Number(event?.balanceAfter ?? fallback);
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  bonusEventLabel(event: ClientBonusEvent): string {
+    switch (event?.type) {
+      case 'credit':
+        return 'Ajout de bonus';
+      case 'transfer':
+        return "Transfert vers l'épargne";
+      case 'adjustment':
+        return 'Réduction de bonus';
+      default:
+        return 'Bonus';
+    }
+  }
 
   /** Open / close the full-screen photo viewer */
   toggleFullPicture(): void {
@@ -1486,10 +1694,21 @@ export class ClientPortalComponent {
 
   @HostListener('document:click', ['$event'])
   onDocClick(ev: Event) {
-    if (!this.showPhoneHistory) return;
-    const host = this.phoneHistoryRef?.nativeElement as HTMLElement | undefined;
-    if (host && !host.contains(ev.target as Node))
-      this.showPhoneHistory = false;
+    const target = ev.target as Node;
+    if (this.showPhoneHistory) {
+      const phoneHost = this.phoneHistoryRef
+        ?.nativeElement as HTMLElement | undefined;
+      if (phoneHost && !phoneHost.contains(target)) {
+        this.showPhoneHistory = false;
+      }
+    }
+    if (this.showBonusHistory) {
+      const bonusHost = this.bonusHistoryRef
+        ?.nativeElement as HTMLElement | undefined;
+      if (bonusHost && !bonusHost.contains(target)) {
+        this.showBonusHistory = false;
+      }
+    }
   }
 
   async copy(p: string) {

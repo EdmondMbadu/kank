@@ -1,5 +1,13 @@
 import { Avatar, Employee } from './employee';
 
+export interface ClientBonusEvent {
+  amount: string;
+  type: 'credit' | 'transfer' | 'adjustment';
+  createdAt: string;
+  balanceAfter?: string;
+  note?: string;
+}
+
 export class Client {
   uid?: string;
   trackingId?: string;
@@ -67,6 +75,8 @@ export class Client {
   age?: string;
   locationName?: string;
   archivedAt?: string;
+  bonus?: string;
+  bonusHistory?: { [key: string]: ClientBonusEvent } = {};
 }
 
 export class Comment {
