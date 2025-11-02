@@ -122,40 +122,39 @@
 </div>
 
 <!-- Trophy badges -->
-<div class="mx-auto flex max-w-7xl flex-col items-center">
-  <div class="grid grid-cols-1 gap-6 px-4 pb-8 sm:grid-cols-2 md:grid-cols-3">
+<div class="mx-auto flex w-full max-w-7xl flex-col items-center px-4">
+  <div class="trophy-grid">
     <!-- SILVER -->
-    <div
-      *ngIf="isSilver"
-      class="relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 px-6 py-4 shadow-lg transition hover:scale-105"
-    >
-      <img src="../../../assets/img/winner.png" alt="Argent" class="h-10" />
-      <span class="mt-2 text-lg font-semibold text-gray-800">Argent</span>
-      <div
-        class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-white/70 blur-md"
-      ></div>
+    <div *ngIf="isSilver" class="trophy-card trophy-card--silver">
+      <img
+        src="../../../assets/img/winner.png"
+        alt="Argent"
+        class="trophy-card__icon"
+      />
+      <span class="trophy-card__label">Argent</span>
+      <p class="trophy-card__range">Score 70 – 89</p>
     </div>
 
     <!-- GOLD -->
-    <div
-      *ngIf="isGold"
-      class="relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 px-6 py-4 shadow-lg transition hover:scale-105"
-    >
-      <img src="../../../assets/img/winner.png" alt="Or" class="h-10" />
-      <span class="mt-2 text-lg font-semibold text-amber-900">Or</span>
-      <div
-        class="absolute -top-2 -left-2 h-6 w-6 rounded-full bg-white/60 blur-md"
-      ></div>
+    <div *ngIf="isGold" class="trophy-card trophy-card--gold">
+      <img
+        src="../../../assets/img/winner.png"
+        alt="Or"
+        class="trophy-card__icon"
+      />
+      <span class="trophy-card__label">Or</span>
+      <p class="trophy-card__range">Score 90 – 99</p>
     </div>
 
     <!-- PLATINUM -->
-    <div
-      *ngIf="isPlatinum"
-      class="relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-300 to-indigo-500 px-6 py-4 shadow-lg transition hover:scale-105"
-    >
-      <img src="../../../assets/img/winner.png" alt="Platine" class="h-10" />
-      <span class="mt-2 text-lg font-semibold text-indigo-900">Platine</span>
-      <div class="absolute inset-0 rounded-2xl bg-white/20 blur-sm"></div>
+    <div *ngIf="isPlatinum" class="trophy-card trophy-card--platinum">
+      <img
+        src="../../../assets/img/winner.png"
+        alt="Platine"
+        class="trophy-card__icon"
+      />
+      <span class="trophy-card__label">Platine</span>
+      <p class="trophy-card__range">Score 100+</p>
     </div>
   </div>
 </div>

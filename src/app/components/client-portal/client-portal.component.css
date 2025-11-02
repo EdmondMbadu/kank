@@ -1,0 +1,120 @@
+ .trophy-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding-bottom: 2rem;
+ }
+
+ .trophy-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 1.5rem;
+  padding: 1.75rem 1.5rem;
+  min-width: 15rem;
+  max-width: min(18rem, 90vw);
+  width: 100%;
+  box-shadow: 0 24px 45px -28px rgba(15, 23, 42, 0.45);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+ }
+
+ .trophy-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at 18% 20%,
+    rgba(255, 255, 255, 0.55),
+    transparent 60%
+  );
+  pointer-events: none;
+  opacity: 0.65;
+  mix-blend-mode: soft-light;
+  z-index: 0;
+ }
+
+ .trophy-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 32px 60px -32px rgba(15, 23, 42, 0.55);
+ }
+
+ .trophy-card__icon {
+  height: 3.3rem;
+  width: auto;
+  filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.2));
+  z-index: 1;
+ }
+
+ .trophy-card__label {
+  margin-top: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  z-index: 1;
+ }
+
+ .trophy-card__range {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  z-index: 1;
+ }
+
+ .trophy-card--silver {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0 55%, #d4d4d8);
+  color: #1f2937;
+ }
+
+ .trophy-card--silver .trophy-card__range {
+  color: rgba(17, 24, 39, 0.65);
+ }
+
+ .trophy-card--gold {
+  background: linear-gradient(135deg, #fef3c7, #f9d977 52%, #f59e0b);
+  color: #92400e;
+ }
+
+ .trophy-card--gold .trophy-card__range {
+  color: rgba(146, 64, 14, 0.7);
+ }
+
+ .trophy-card--platinum {
+  background: linear-gradient(135deg, #ede9fe, #c7d2fe 52%, #a5b4fc);
+  color: #3730a3;
+ }
+
+ .trophy-card--platinum .trophy-card__range {
+  color: rgba(55, 48, 163, 0.75);
+ }
+
+ @media (max-width: 640px) {
+  .trophy-card {
+    min-width: min(18rem, 100%);
+    max-width: min(20rem, 100%);
+    padding: 1.5rem 1.25rem;
+  }
+
+  .trophy-card__label {
+    font-size: 1.15rem;
+  }
+ }
+
+ @media (prefers-reduced-motion: reduce) {
+  .trophy-card {
+    transition: none;
+  }
+
+  .trophy-card:hover {
+    transform: none;
+  }
+ }
+

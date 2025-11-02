@@ -323,13 +323,11 @@ export class ClientPortalComponent {
   }
 
   determineTrophy() {
-    if (this.creditScore >= 100) {
-      this.isPlatinum = true;
-    } else if (this.creditScore >= 90) {
-      this.isGold = true;
-    } else if (this.creditScore >= 70) {
-      this.isSilver = true;
-    }
+    const score = Number.isFinite(this.creditScore) ? this.creditScore : 0;
+
+    this.isSilver = score >= 70 && score <= 89;
+    this.isGold = score >= 90 && score <= 99;
+    this.isPlatinum = score >= 100;
   }
 
   async setClientField(field: string, value: any, skip: boolean = false) {
