@@ -353,18 +353,36 @@ export class ComputationService {
     return result;
   }
 
+  private timestampFromDateKey(dateKey: string): number {
+    if (!dateKey) {
+      return 0;
+    }
+
+    const numericParts = dateKey.match(/\d+/g);
+    if (!numericParts || numericParts.length < 3) {
+      return 0;
+    }
+
+    const [year, month, day, hour = '0', minute = '0', second = '0'] =
+      numericParts;
+    const timestamp = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second)
+    ).getTime();
+
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
   sortArrayByDateDescendingOrder(array: [string, string][]) {
     // Sort the array by date in descending order
-    array.sort((a, b) => {
-      // Convert date strings to Date objects
-      const dateA = new Date(
-        a[0].replace(/(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/, '$1/$2/$3 $4:$5:$6')
-      );
-      const dateB = new Date(
-        b[0].replace(/(\d+)-(\d+)-(\d+)-(\d+)-(\d+)-(\d+)/, '$1/$2/$3 $4:$5:$6')
-      );
-      return dateB.getTime() - dateA.getTime(); // Sort in descending order
-    });
+    array.sort(
+      (a, b) =>
+        this.timestampFromDateKey(b[0]) - this.timestampFromDateKey(a[0])
+    );
 
     return array;
   }

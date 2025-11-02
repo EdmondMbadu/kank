@@ -50,9 +50,9 @@ export class SavingActivityComponent implements OnInit {
     });
   }
   formatPaymentDates() {
-    for (let p of this.paymentDates) {
-      this.formattedPaymentsDates.push(this.time.convertDateToDesiredFormat(p));
-    }
+    this.formattedPaymentsDates = this.paymentDates.map((dateKey) =>
+      this.time.convertDateToDesiredFormat(dateKey)
+    );
   }
   goToClient(ev: Event) {
     // ignore clicks that originated on the delete button
