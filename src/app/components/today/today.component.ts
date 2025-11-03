@@ -703,6 +703,10 @@ export class TodayComponent {
     this.updateOkChips();
   }
 
+  get isMoneyLocked(): boolean {
+    return !this.auth.isAdmin && !this.isPayUnlocked;
+  }
+
   /** Pour sécuriser l’affichage de la jauge et des classes */
   get clampedPerc(): number {
     const p = Number(this.perc || 0);
