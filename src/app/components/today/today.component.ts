@@ -401,13 +401,13 @@ export class TodayComponent {
     this.expectedReserveInDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.expectedReserve)
       .toString();
-    if (Number(this.expectedReserve) === 0) {
-      this.percentage = '0.00';
+    const expected = Number(this.expectedReserve);
+    const actual = Number(this.dailyPayment);
+
+    if (expected === 0) {
+      this.percentage = actual > 0 ? '100.00' : '0.00';
     } else {
-      this.percentage = (
-        (Number(this.dailyPayment) / Number(this.expectedReserve)) *
-        100
-      ).toFixed(2);
+      this.percentage = ((actual / expected) * 100).toFixed(2);
     }
     this.perc = Number(this.percentage);
   }
