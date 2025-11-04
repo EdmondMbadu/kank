@@ -332,9 +332,9 @@ export class ClientPortalComponent {
   determineTrophy() {
     const score = Number.isFinite(this.creditScore) ? this.creditScore : 0;
 
-    this.isSilver = score >= 70 && score <= 89;
-    this.isGold = score >= 90 && score <= 99;
-    this.isPlatinum = score >= 100;
+    this.isSilver = score >= 70 && score <= 99;
+    this.isGold = score >= 100;
+    this.isPlatinum = false;
   }
 
   private ensureBonusState(): void {
