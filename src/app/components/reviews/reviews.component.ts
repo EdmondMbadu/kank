@@ -72,7 +72,7 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     { key: 'proprete', label: 'La Foundation est propre' },
     {
       key: 'cahier',
-      label: 'Cahiers et carnets à jour et corrects',
+      label: 'Cahiers et carnets à jour, exacts, sans fraude ni détournement',
     },
     {
       key: 'suiviClients',
@@ -93,7 +93,8 @@ export class ReviewsComponent implements OnInit, OnDestroy {
     },
     {
       key: 'proprete',
-      label: 'Respect des Procédures & Traçabilité (e.g commentaires, etc)',
+      label:
+        'Respect des Procédures & Traçabilité (e.g commentaires, justificatifs, aucune fraude)',
       measure: 'Professionnalisme dans la présentation et l’ordre',
       criteria: 'Uniforme propre, bureau propre, cahiers/carnets bien tenus',
     },
