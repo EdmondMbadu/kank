@@ -122,6 +122,7 @@ export class HomeCentralComponent implements OnInit {
     '{{lastName}}',
     '{{LOCATION_NAME}}',
     '{{MAX_AMOUNT}}',
+    '{{CREDIT_SCORE}}',
   ];
 
   ngOnInit(): void {
@@ -1292,11 +1293,13 @@ Merci pour ta confiance !`;
     const fullName = `${c.firstName ?? ''} ${c.lastName ?? ''}`
       .trim()
       .replace(/\s+/g, ' ');
+    const creditScore = Number(c.creditScore) || 0;
     let out = msg
       .replace(/\{\{\s*FULL_NAME\s*\}\}/g, fullName)
       .replace(/\{\{\s*firstName\s*\}\}/g, c.firstName ?? '')
       .replace(/\{\{\s*lastName\s*\}\}/g, c.lastName ?? '')
-      .replace(/\{\{\s*LOCATION_NAME\s*\}\}/g, c.locationName ?? 'site');
+      .replace(/\{\{\s*LOCATION_NAME\s*\}\}/g, c.locationName ?? 'site')
+      .replace(/\{\{\s*CREDIT_SCORE\s*\}\}/g, creditScore.toString());
 
     if (/\{\{\s*MAX_AMOUNT\s*\}\}/.test(out)) {
       const max = this.maxAmountFor(c);
