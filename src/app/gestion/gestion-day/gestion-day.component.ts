@@ -274,8 +274,8 @@ export class GestionDayComponent implements OnInit {
               if (client.requestDate === targetDate) {
                 userTotal += Number(client.requestAmount);
               }
-              // NEW: today
-              if (client.requestDate === this.today) {
+              // NEW: selected date (today or selected date)
+              if (client.requestDate === this.requestDateCorrectFormat) {
                 userTotalToday += Number(client.requestAmount);
               }
             }
@@ -327,8 +327,8 @@ export class GestionDayComponent implements OnInit {
               if (card.requestDate === this.requestDateRigthFormat) {
                 userTotal += Number(card.requestAmount);
               }
-              // NEW: today
-              if (card.requestDate === this.today) {
+              // NEW: selected date (today or selected date)
+              if (card.requestDate === this.requestDateCorrectFormat) {
                 userTotalToday += Number(card.requestAmount);
               }
             }
@@ -358,10 +358,10 @@ export class GestionDayComponent implements OnInit {
             trackingId: user.uid!,
           });
           const todayKeys = Object.keys(user.reserve || {}).filter((key) =>
-            key.startsWith(this.today)
+            key.startsWith(this.requestDateCorrectFormat)
           );
           const paymentKeys = Object.keys(user.dailyReimbursement || {}).filter(
-            (key) => key === this.today
+            (key) => key === this.requestDateCorrectFormat
           );
 
           // 2) Sum up raw FC payments
@@ -575,8 +575,10 @@ export class GestionDayComponent implements OnInit {
         this.requestDateCorrectFormat
       )
       .toString();
+    // Get the previous day of the selected date
+    const previousDay = this.getPreviousDay(this.requestDateCorrectFormat);
     this.plannedToServeToday = this.compute
-      .findTotalForToday(this.managementInfo?.moneyGiven!, this.yesterday)
+      .findTotalForToday(this.managementInfo?.moneyGiven!, previousDay)
       .toString();
 
     this.plannedToServeTodayDollars = this.compute
@@ -677,6 +679,26 @@ export class GestionDayComponent implements OnInit {
     );
 
     this.initalizeInputs();
+    this.getAllClients();
+  }
+
+  /**
+   * Get the previous day for a given date in MM-DD-YYYY format
+   */
+  getPreviousDay(dateStr: string): string {
+    // Parse the date string into a Date object
+    const [month, day, year] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+
+    // Subtract one day from the date
+    date.setDate(date.getDate() - 1);
+
+    // Get the day, month, and year without leading zeros
+    const prevDay = date.getDate();
+    const prevMonth = date.getMonth() + 1;
+    const prevYear = date.getFullYear();
+
+    return `${prevMonth}-${prevDay}-${prevYear}`;
   }
   setGraphics() {
     let num = Number(this.percentage);
