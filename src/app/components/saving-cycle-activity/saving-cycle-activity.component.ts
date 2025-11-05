@@ -4,7 +4,6 @@ import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
-import { ComputationService } from 'src/app/shrink/services/computation.service';
 
 @Component({
   selector: 'app-saving-cycle-activity',
@@ -25,7 +24,6 @@ export class SavingCycleActivityComponent implements OnInit {
     private activatedRoute: ActivatedRoute,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService,
     private data: DataService
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
@@ -56,14 +54,51 @@ export class SavingCycleActivityComponent implements OnInit {
             (item: any) => item[1] !== 0 && item[1] !== '0'
           );
 
-          savingsPaymentsArray =
-            this.compute.sortArrayByDateDescendingOrder(savingsPaymentsArray);
+          // Sort by dateKey in descending order (newest first) with correct date parsing
+          savingsPaymentsArray.sort((a, b) => {
+            const timestampA = this.getTimestampFromDateKey(a[0]);
+            const timestampB = this.getTimestampFromDateKey(b[0]);
+            return timestampB - timestampA; // Descending order (newest first)
+          });
+
           // Extract the sorted payment values and dates into separate arrays
           this.payments = savingsPaymentsArray.map((entry) => entry[1]);
           this.paymentDates = savingsPaymentsArray.map((entry) => entry[0]);
           this.formatPaymentDates();
         });
     });
+  }
+
+  // Helper method to convert dateKey to timestamp for sorting
+  // dateKey format: M-D-YYYY-HH-mm-ss (month-day-year-hour-minute-second)
+  private getTimestampFromDateKey(dateKey: string): number {
+    if (!dateKey) {
+      return 0;
+    }
+
+    const parts = dateKey.split('-');
+    if (parts.length < 3) {
+      return 0;
+    }
+
+    // Format: month-day-year-hour-minute-second
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    const hour = parts.length > 3 ? parseInt(parts[3], 10) : 0;
+    const minute = parts.length > 4 ? parseInt(parts[4], 10) : 0;
+    const second = parts.length > 5 ? parseInt(parts[5], 10) : 0;
+
+    const timestamp = new Date(
+      year,
+      month - 1, // month is 0-indexed in Date constructor
+      day,
+      hour,
+      minute,
+      second
+    ).getTime();
+
+    return Number.isFinite(timestamp) ? timestamp : 0;
   }
 
   formatPaymentDates() {
