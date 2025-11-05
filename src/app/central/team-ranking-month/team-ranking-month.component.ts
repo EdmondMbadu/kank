@@ -51,7 +51,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
-  showMonthlyAmounts = true;
+  showMonthlyAmounts = false;
   showDailyAmounts = false;
   performanceEmployees: Employee[] = [];
 
@@ -102,6 +102,32 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   get hasMoreIdeas(): boolean {
     return !this.auth.isAdmin && this.ideaSubmissions.length > 2;
+  }
+
+  get totalDailyAmount(): number {
+    return this.paidEmployeesToday.reduce(
+      (sum, e: any) => sum + Number(e._dailyTotal || 0),
+      0
+    );
+  }
+
+  get totalDailyAmountUsd(): number {
+    const total = this.totalDailyAmount;
+    const usd = this.compute.convertCongoleseFrancToUsDollars(String(total));
+    return usd === '' ? 0 : usd;
+  }
+
+  get totalMonthlyAmount(): number {
+    return this.paidEmployeesMonth.reduce(
+      (sum, e: any) => sum + Number(e._monthTotal || 0),
+      0
+    );
+  }
+
+  get totalMonthlyAmountUsd(): number {
+    const total = this.totalMonthlyAmount;
+    const usd = this.compute.convertCongoleseFrancToUsDollars(String(total));
+    return usd === '' ? 0 : usd;
   }
 
   formatIdeaDate(idea: IdeaSubmission): string {
