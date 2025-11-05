@@ -358,20 +358,27 @@ export class ComputationService {
       return 0;
     }
 
-    const numericParts = dateKey.match(/\d+/g);
-    if (!numericParts || numericParts.length < 3) {
+    // dateKey format: M-D-YYYY-HH-mm-ss (month-day-year-hour-minute-second)
+    const parts = dateKey.split('-');
+    if (parts.length < 3) {
       return 0;
     }
 
-    const [year, month, day, hour = '0', minute = '0', second = '0'] =
-      numericParts;
+    // Format: month-day-year-hour-minute-second
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    const hour = parts.length > 3 ? parseInt(parts[3], 10) : 0;
+    const minute = parts.length > 4 ? parseInt(parts[4], 10) : 0;
+    const second = parts.length > 5 ? parseInt(parts[5], 10) : 0;
+
     const timestamp = new Date(
-      Number(year),
-      Number(month) - 1,
-      Number(day),
-      Number(hour),
-      Number(minute),
-      Number(second)
+      year,
+      month - 1, // month is 0-indexed in Date constructor
+      day,
+      hour,
+      minute,
+      second
     ).getTime();
 
     return Number.isFinite(timestamp) ? timestamp : 0;
