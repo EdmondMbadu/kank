@@ -76,12 +76,10 @@ export class GestionServedComponent {
       (this.managementInfo.moneyInHandsTracking as Record<string, string>) ||
       {};
 
-    // Sort by your existing util (descending, newest first)
-    const currentMoneyGiven = this.compute.sortArrayByDateDescendingOrder(
-      Object.entries(this.moneyGiven)
-    ) as Array<[string, string]>; // [dateKey, amountStr]
+    // Create records array from entries
+    const entries = Object.entries(this.moneyGiven) as Array<[string, string]>; // [dateKey, amountStr]
 
-    this.records = currentMoneyGiven.map(([dateKey, amountStr]) => {
+    this.records = entries.map(([dateKey, amountStr]) => {
       const leftStr = tracking?.[dateKey];
       return {
         dateKey,
@@ -90,11 +88,52 @@ export class GestionServedComponent {
         leftAfter: leftStr != null ? Number(leftStr) : null, // graceful if not present
       };
     });
+
+    // Sort records by dateKey in descending order (newest first)
+    this.records.sort((a, b) => {
+      const timestampA = this.getTimestampFromDateKey(a.dateKey);
+      const timestampB = this.getTimestampFromDateKey(b.dateKey);
+      return timestampB - timestampA; // Descending order (newest first)
+    });
+
     this.onQuery();
   }
   trackByDateKey(index: number, r: { dateKey: string }) {
     return r?.dateKey ?? index;
   }
+
+  // Helper method to convert dateKey to timestamp for sorting
+  // dateKey format: M-D-YYYY-HH-mm-ss (month-day-year-hour-minute-second)
+  private getTimestampFromDateKey(dateKey: string): number {
+    if (!dateKey) {
+      return 0;
+    }
+
+    const parts = dateKey.split('-');
+    if (parts.length < 3) {
+      return 0;
+    }
+
+    // Format: month-day-year-hour-minute-second
+    const month = parseInt(parts[0], 10);
+    const day = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    const hour = parts.length > 3 ? parseInt(parts[3], 10) : 0;
+    const minute = parts.length > 4 ? parseInt(parts[4], 10) : 0;
+    const second = parts.length > 5 ? parseInt(parts[5], 10) : 0;
+
+    const timestamp = new Date(
+      year,
+      month - 1, // month is 0-indexed in Date constructor
+      day,
+      hour,
+      minute,
+      second
+    ).getTime();
+
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
   // add these fields
   query: string = '';
   filtered: Array<{
@@ -123,5 +162,12 @@ export class GestionServedComponent {
         ('' + r.amount).includes(q) ||
         (r.leftAfter !== null && ('' + r.leftAfter).includes(q))
     );
+
+    // Ensure filtered array maintains descending order (newest first)
+    this.filtered.sort((a, b) => {
+      const timestampA = this.getTimestampFromDateKey(a.dateKey);
+      const timestampB = this.getTimestampFromDateKey(b.dateKey);
+      return timestampB - timestampA; // Descending order (newest first)
+    });
   }
 }
