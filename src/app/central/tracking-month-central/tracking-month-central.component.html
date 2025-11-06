@@ -680,7 +680,7 @@
           >
             Évolution de la réserve
           </h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400">
+          <p class="text-sm text-slate-500 dark:text-slate-200">
             Historique consolidé de la réserve mensuelle convertie en dollars.
           </p>
         </div>
@@ -754,7 +754,7 @@
       </div>
 
       <div
-        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner dark:bg-slate-950/60"
+        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner "
         *ngIf="reserveMaxRange > 0; else noReserveData"
       >
         <plotly-plot
@@ -783,7 +783,7 @@
           >
             Évolution des paiements
           </h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400">
+          <p class="text-sm text-slate-500 dark:text-slate-200">
             Historique consolidé des paiements mensuels convertis en dollars.
           </p>
         </div>
@@ -857,7 +857,7 @@
       </div>
 
       <div
-        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner dark:bg-slate-950/60"
+        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner "
         *ngIf="paymentMaxRange > 0; else noPaymentData"
       >
         <plotly-plot
