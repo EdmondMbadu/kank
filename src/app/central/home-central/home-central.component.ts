@@ -61,6 +61,7 @@ export class HomeCentralComponent implements OnInit {
   selectedPaymentDay: string | null = null;
   selectedPaymentDayTotal = 0;
   minCreditScore = 0;
+  maxCreditScore = 100;
   loanAmountFilterValue: number | null = null;
   loanAmountFilterMode: 'min' | 'exact' = 'min';
   debtStatusFilter: 'all' | 'withDebt' | 'withoutDebt' = 'all';
@@ -434,7 +435,7 @@ export class HomeCentralComponent implements OnInit {
     const count = this.filteredItems.length;
     const hasSearch = this.searchTerm.trim().length > 0;
     const baseTotal = this.allClients?.length ?? count;
-    const hasScoreFilter = Number(this.minCreditScore) > 0;
+    const hasScoreFilter = Number(this.minCreditScore) > 0 || (Number.isFinite(Number(this.maxCreditScore)) && Number(this.maxCreditScore) !== 100);
     const hasLoanFilter =
       this.loanAmountFilterValue !== null && this.loanAmountFilterValue > 0;
     const hasDebtFilter = this.debtStatusFilter !== 'all';
@@ -466,7 +467,15 @@ export class HomeCentralComponent implements OnInit {
     }
 
     if (hasScoreFilter) {
-      parts.push(`Score ≥ ${this.minCreditScore}`);
+      const max = Number(this.maxCreditScore);
+      const hasMax = Number.isFinite(max) && max !== 100;
+      if (this.minCreditScore > 0 && hasMax) {
+        parts.push(`Score ${this.minCreditScore}-${this.maxCreditScore}`);
+      } else if (this.minCreditScore > 0) {
+        parts.push(`Score ≥ ${this.minCreditScore}`);
+      } else if (hasMax) {
+        parts.push(`Score ≤ ${this.maxCreditScore}`);
+      }
     }
     if (hasLoanFilter && this.loanAmountFilterValue !== null) {
       const comparator = this.loanAmountFilterMode === 'exact' ? '=' : '≥';
@@ -537,7 +546,27 @@ export class HomeCentralComponent implements OnInit {
     if (!Number.isFinite(value)) {
       this.minCreditScore = 0;
     } else {
-      this.minCreditScore = Math.min(Math.max(Math.round(value), 0), 100);
+      const newMin = Math.max(Math.round(value), 0);
+      this.minCreditScore = Math.min(newMin, this.maxCreditScore);
+      // Ensure max is at least equal to min
+      if (this.maxCreditScore < this.minCreditScore) {
+        this.maxCreditScore = this.minCreditScore;
+      }
+    }
+    this.applyClientFilters();
+  }
+
+  onMaxCreditScoreChange(rawValue: number | string) {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) {
+      this.maxCreditScore = 100;
+    } else {
+      const newMax = Math.max(Math.round(value), this.minCreditScore);
+      this.maxCreditScore = newMax;
+      // Ensure min is at most equal to max
+      if (this.minCreditScore > this.maxCreditScore) {
+        this.minCreditScore = this.maxCreditScore;
+      }
     }
     this.applyClientFilters();
   }
@@ -596,10 +625,11 @@ export class HomeCentralComponent implements OnInit {
 
   private matchesCreditScore(client: Client): boolean {
     const min = Number(this.minCreditScore) || 0;
-    if (min <= 0) return true;
+    const max = Number(this.maxCreditScore);
     const score = Number(client.creditScore);
     if (!Number.isFinite(score)) return false;
-    return score >= min;
+    if (!Number.isFinite(max)) return score >= min; // If max is not set, only check min
+    return score >= min && score <= max;
   }
 
   private matchesLoanAmount(client: Client): boolean {
@@ -1322,5 +1352,9 @@ Merci pour ta confiance !`;
 
   trackByLoc(index: number, loc: string) {
     return loc;
+  }
+
+  get maxCreditScoreRange(): number {
+    return Math.max(this.maxCreditScore, 100);
   }
 }

@@ -341,7 +341,7 @@
                 <input
                   type="number"
                   min="0"
-                  max="100"
+                  [max]="maxCreditScore"
                   step="1"
                   [(ngModel)]="minCreditScore"
                   (ngModelChange)="onCreditScoreChange($event)"
@@ -350,7 +350,7 @@
                 <input
                   type="range"
                   min="0"
-                  max="100"
+                  [max]="maxCreditScore"
                   step="1"
                   [(ngModel)]="minCreditScore"
                   (ngModelChange)="onCreditScoreChange($event)"
@@ -359,7 +359,45 @@
                 <span
                   class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300"
                 >
-                  ≥ {{ minCreditScore }}
+                  {{ minCreditScore }}
+                </span>
+              </div>
+
+              <div
+                class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300"
+              >
+                <span class="font-semibold text-slate-600 dark:text-slate-200"
+                  >Score max.</span
+                >
+                <input
+                  type="number"
+                  [min]="minCreditScore"
+                  step="1"
+                  [(ngModel)]="maxCreditScore"
+                  (ngModelChange)="onMaxCreditScoreChange($event)"
+                  class="w-16 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+                <input
+                  type="range"
+                  [min]="minCreditScore"
+                  [max]="maxCreditScoreRange"
+                  step="1"
+                  [(ngModel)]="maxCreditScore"
+                  (ngModelChange)="onMaxCreditScoreChange($event)"
+                  class="w-28 flex-1 accent-emerald-500"
+                />
+                <span
+                  class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300"
+                >
+                  {{ maxCreditScore }}
+                </span>
+              </div>
+
+              <div class="text-center">
+                <span
+                  class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-300"
+                >
+                  {{ minCreditScore }} ≤ Score ≤ {{ maxCreditScore }}
                 </span>
               </div>
 
