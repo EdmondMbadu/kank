@@ -507,13 +507,27 @@
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Somme des paiements inscrits par employé
         </p>
+        
+        <!-- Date picker (admin only) -->
+        <div *ngIf="auth.isAdmin" class="mt-4 flex items-center justify-center gap-3">
+          <label class="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Sélectionner une date:
+          </label>
+          <input
+            type="date"
+            [(ngModel)]="selectedPaymentDate"
+            (ngModelChange)="onDailyPaymentDateChange()"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-emerald-500"
+            style="min-width: 160px;"
+          />
+        </div>
       </div>
 
       <div
         *ngIf="!loadingDaily && paidEmployeesToday.length === 0"
         class="text-center text-sm text-gray-500 mt-2"
       >
-        Aucun paiement enregistré aujourd’hui.
+        Aucun paiement enregistré pour cette date.
       </div>
 
       <!-- Podium 1 • 2 • 3 (winner a bit smaller; wider gaps on large screens) -->

@@ -47,6 +47,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
   loadingDaily = false;
   todayKin: string = this.time.todaysDateKinshasFormat();
   todayDayKey: string = this.time.todaysDateMonthDayYear(); // e.g. "9-15-2025"
+  
+  // Date picker for daily payments (visible to everyone)
+  selectedPaymentDate: string = this.time.getTodaysDateYearMonthDay(); // yyyy-MM-dd format for input
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
   loadingMonthly = false;
@@ -83,6 +86,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
   toggleDailyAmounts(): void {
     this.showDailyAmounts = !this.showDailyAmounts;
+  }
+
+  onDailyPaymentDateChange(): void {
+    // Convert yyyy-MM-dd to MM-DD-YYYY format
+    this.todayDayKey = this.time.convertDateToMonthDayYear(this.selectedPaymentDate);
+    // Update display format
+    this.todayKin = this.time.convertDateToDayMonthYear(this.todayDayKey);
+    // Reload daily totals for the selected date
+    if (this.rankingMode === 'dailyPayments') {
+      this.loadDailyTotalsForEmployees();
+    }
   }
 
   private listenToIdeaBox(): void {
