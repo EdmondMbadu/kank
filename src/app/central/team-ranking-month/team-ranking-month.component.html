@@ -223,7 +223,7 @@
     <div
       class="flex container mx-auto justify-center text-center space-x-8 mb-6"
     >
-      <div class="mb-6">
+      <div class="mb-1">
         <select
           id="month-filter"
           [(ngModel)]="givenMonth"
@@ -236,7 +236,7 @@
         </select>
       </div>
 
-      <div class="mb-6">
+      <div class="mb-2">
         <select
           id="year-filter"
           [(ngModel)]="givenYear"
@@ -248,9 +248,11 @@
           </option>
         </select>
       </div>
+    </div>
 
-      <!-- Date picker for daily payments (admin only) -->
-      <div *ngIf="auth.isAdmin" class="mb-6">
+    <!-- Date picker for daily payments (admin only) - Below month and year -->
+    <div *ngIf="auth.isAdmin" class="container mx-auto flex justify-center mb-6">
+      <div class="w-full max-w-xs">
         <input
           type="date"
           [(ngModel)]="selectedPaymentDate"
