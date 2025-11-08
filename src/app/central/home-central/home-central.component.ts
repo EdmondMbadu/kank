@@ -89,6 +89,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   loanAmountFilterMode: 'min' | 'exact' = 'min';
   debtStatusFilter: 'all' | 'withDebt' | 'withoutDebt' = 'all';
   quitteStatusFilter: 'all' | 'quitte' | 'active' = 'all';
+  starsFilter: 'all' | 'noStars' | 'withStars' | 'exact' = 'all';
+  starsFilterValue: number | null = null;
   filteredDebtTotal = 0;
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
@@ -548,7 +550,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       .filter((client) => this.matchesDebtStatus(client))
       .filter((client) => this.matchesQuitteStatus(client))
       .filter((client) => this.matchesMasterLocation(client))
-      .filter((client) => this.matchesPaymentDay(client));
+      .filter((client) => this.matchesPaymentDay(client))
+      .filter((client) => this.matchesStarsFilter(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
@@ -732,6 +735,78 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const clientDay = this.normalizePaymentDay(client.paymentDay);
     if (!clientDay) return false;
     return clientDay === this.selectedPaymentDay;
+  }
+
+  private matchesStarsFilter(client: Client): boolean {
+    const starsCount = this.getStarsCount(client);
+    
+    switch (this.starsFilter) {
+      case 'noStars':
+        return starsCount === 0;
+      case 'withStars':
+        return starsCount > 0;
+      case 'exact':
+        if (this.starsFilterValue === null) return true;
+        return starsCount === this.starsFilterValue;
+      default:
+        return true;
+    }
+  }
+
+  setStarsFilter(mode: 'all' | 'noStars' | 'withStars' | 'exact') {
+    if (this.starsFilter === mode) {
+      // If clicking the same mode, toggle to 'all' if it's not already
+      if (mode !== 'all') {
+        this.starsFilter = 'all';
+        this.starsFilterValue = null;
+        this.applyClientFilters();
+      }
+      return;
+    }
+    this.starsFilter = mode;
+    if (mode !== 'exact') {
+      this.starsFilterValue = null;
+    }
+    this.applyClientFilters();
+  }
+
+  isStarsFilter(mode: 'all' | 'noStars' | 'withStars' | 'exact') {
+    return this.starsFilter === mode;
+  }
+
+  starsFilterButtonClasses(mode: 'all' | 'noStars' | 'withStars' | 'exact') {
+    return {
+      'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+        this.isStarsFilter(mode),
+      'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+        !this.isStarsFilter(mode),
+    };
+  }
+
+  onStarsFilterValueChange(rawValue: number | string | null) {
+    if (rawValue === null || rawValue === '') {
+      this.starsFilterValue = null;
+      if (this.starsFilter === 'exact') {
+        this.starsFilter = 'all';
+      }
+      this.applyClientFilters();
+      return;
+    }
+
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      this.starsFilterValue = null;
+    } else {
+      this.starsFilterValue = Math.round(parsed);
+      this.starsFilter = 'exact';
+    }
+    this.applyClientFilters();
+  }
+
+  clearStarsFilter() {
+    this.starsFilter = 'all';
+    this.starsFilterValue = null;
+    this.applyClientFilters();
   }
 
   private normalizePaymentDay(day: string | undefined | null): string | null {
@@ -1317,6 +1392,11 @@ Merci pour ta confiance !`;
     if (digits.length === 10)
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
     return raw;
+  }
+  getStarsCount(client: Client | null | undefined): number {
+    if (!client || !client.stars) return 0;
+    const count = Number(client.stars);
+    return Number.isFinite(count) && count > 0 ? count : 0;
   }
   private hasDialablePhone(client: Client | null | undefined): boolean {
     if (!client || !client.phoneNumber) return false;
