@@ -91,11 +91,13 @@ export class ClientPortalComponent {
   paymentPeriodRange: string = '0';
   amountPaid: string = '0';
   creditScore: number = 0;
+  stars: number = 0;
   showBonusModal = false;
   bonusToAdd: string = '';
   isBonusSubmitting = false;
   isBonusTransferSubmitting = false;
   showBonusHistory = false;
+  showStarsExplanation = false;
   isSilver: boolean = false;
   isGold: boolean = false;
   isPlatinum: boolean = false;
@@ -324,6 +326,11 @@ export class ClientPortalComponent {
     if (this.client.numberOfPaymentsMade) {
       this.numberOfPaymentsMade = this.client.numberOfPaymentsMade;
     }
+    if (this.client.stars) {
+      this.stars = Number(this.client.stars);
+    } else {
+      this.stars = 0;
+    }
     if (this.client.dateJoined) {
       this.dateJoined = this.time.formatDateForDRC(this.client.dateJoined);
     }
@@ -366,6 +373,20 @@ export class ClientPortalComponent {
     } catch (err) {
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");
       return;
+    }
+  }
+
+  async adjustStars(change: number) {
+    const currentStars = Number(this.client.stars || 0);
+    const newStars = Math.max(0, currentStars + change); // Ensure stars can't go below 0
+    
+    try {
+      await this.data.setClientField('stars', newStars.toString(), this.client.uid!);
+      this.client.stars = newStars.toString();
+      this.stars = newStars;
+      alert(`Étoiles mises à jour: ${newStars}`);
+    } catch (err) {
+      alert("Une erreur s'est produite lors de la mise à jour des étoiles. Réessayez");
     }
   }
   isFullPictureVisible = false;

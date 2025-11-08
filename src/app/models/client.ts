@@ -77,6 +77,7 @@ export class Client {
   archivedAt?: string;
   bonus?: string;
   bonusHistory?: { [key: string]: ClientBonusEvent } = {};
+  stars?: string;
 }
 
 export class Comment {
