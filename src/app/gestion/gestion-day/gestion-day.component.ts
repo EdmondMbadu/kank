@@ -248,7 +248,10 @@ export class GestionDayComponent implements OnInit {
       .toString();
 
     let completedRequests = 0;
-    const targetDate = this.requestDateRigthFormat; // freeze the value
+    // Use effective date (skip Sunday if tomorrow is Sunday)
+    const targetDate = this.requestDateRigthFormat === this.tomorrow 
+      ? this.effectiveTomorrowDate 
+      : this.requestDateRigthFormat; // freeze the value
     this.allUsers.forEach((user) => {
       // For each user, fetch both clients and cards
       forkJoin({
@@ -324,7 +327,11 @@ export class GestionDayComponent implements OnInit {
               card.requestStatus !== undefined &&
               card.requestType === 'card'
             ) {
-              if (card.requestDate === this.requestDateRigthFormat) {
+              // Use effective date for cards too (skip Sunday if tomorrow is Sunday)
+              const cardTargetDate = this.requestDateRigthFormat === this.tomorrow 
+                ? this.effectiveTomorrowDate 
+                : this.requestDateRigthFormat;
+              if (card.requestDate === cardTargetDate) {
                 userTotal += Number(card.requestAmount);
               }
               // NEW: selected date (today or selected date)
@@ -508,11 +515,125 @@ export class GestionDayComponent implements OnInit {
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   requestDate: string = this.time.getTodaysDateYearMonthDay();
-  requestDateTomorrow: string = this.time.getTomorrowsDateYearMonthDay();
   requestDateCorrectFormat = this.today;
-  requestDateRigthFormat: string = this.tomorrow;
-  frenchDateTomorrow = this.time.convertDateToDayMonthYear(this.tomorrow);
+  requestDateRigthFormat: string = this.getEffectiveTomorrowDate();
+  frenchDateTomorrow = this.time.convertDateToDayMonthYear(this.requestDateRigthFormat);
+  
+  // Initialize date picker with effective tomorrow date (YYYY-MM-DD format)
+  get requestDateTomorrow(): string {
+    const effectiveDate = this.getEffectiveTomorrowDate();
+    const [month, day, year] = effectiveDate.split('-').map(Number);
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    return `${year}-${mm}-${dd}`;
+  }
+  
+  set requestDateTomorrow(value: string) {
+    // Store the value - the (change) event in HTML will call otherDate()
+    this._requestDateTomorrow = value;
+  }
+  
+  private _requestDateTomorrow: string = '';
   summaryContent: string[] = [];
+
+  get isDefaultTomorrowDate(): boolean {
+    // Check if the selected date matches the default effective tomorrow date
+    return this.requestDateRigthFormat === this.effectiveTomorrowDate;
+  }
+
+  get displayDateForRequests(): string {
+    // If using default tomorrow date, apply Sunday skip logic
+    if (this.isDefaultTomorrowDate) {
+      const [month, day, year] = this.tomorrow.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      
+      // If tomorrow is Sunday, skip to Monday
+      if (date.getDay() === 0) {
+        const mondayDate = new Date(date);
+        mondayDate.setDate(date.getDate() + 1);
+        const mondayMonth = mondayDate.getMonth() + 1;
+        const mondayDay = mondayDate.getDate();
+        const mondayYear = mondayDate.getFullYear();
+        const mondayDateStr = `${mondayMonth}-${mondayDay}-${mondayYear}`;
+        return this.time.convertDateToDayMonthYear(mondayDateStr);
+      }
+      
+      return this.frenchDateTomorrow;
+    }
+    
+    // For custom selected dates, use the selected date
+    return this.frenchDateTomorrow;
+  }
+
+  get dayNameForRequests(): string {
+    const dayNames = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+    
+    // If using default tomorrow date, apply Sunday skip logic
+    if (this.isDefaultTomorrowDate) {
+      const [month, day, year] = this.tomorrow.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      
+      // If tomorrow is Sunday, skip to Monday
+      if (date.getDay() === 0) {
+        return 'Lundi';
+      }
+      
+      return dayNames[date.getDay()];
+    }
+    
+    // For custom selected dates, get the day name from the selected date
+    const [month, day, year] = this.requestDateRigthFormat.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return dayNames[date.getDay()];
+  }
+
+  private getEffectiveTomorrowDate(): string {
+    // Returns the date to use for fetching tomorrow's data (skips Sunday)
+    const [month, day, year] = this.tomorrow.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    
+    // If tomorrow is Sunday, skip to Monday
+    if (date.getDay() === 0) {
+      const mondayDate = new Date(date);
+      mondayDate.setDate(date.getDate() + 1);
+      const mondayMonth = mondayDate.getMonth() + 1;
+      const mondayDay = mondayDate.getDate();
+      const mondayYear = mondayDate.getFullYear();
+      return `${mondayMonth}-${mondayDay}-${mondayYear}`;
+    }
+    
+    return this.tomorrow;
+  }
+
+  get effectiveTomorrowDate(): string {
+    return this.getEffectiveTomorrowDate();
+  }
+
+  get tomorrowLabel(): string {
+    // Only use "demain"/"lendemain" for default tomorrow date
+    if (!this.isDefaultTomorrowDate) {
+      return ''; // Empty string for custom dates
+    }
+    
+    // Check if today is Saturday (so we're skipping Sunday to Monday)
+    const [month, day, year] = this.today.split('-').map(Number);
+    const todayDate = new Date(year, month - 1, day);
+    
+    // If today is Saturday, use "lendemain", otherwise "demain"
+    if (todayDate.getDay() === 6) {
+      return 'lendemain';
+    }
+    
+    return 'demain';
+  }
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalLossAmountDollar: string = '';
   givenMonthTotalReserveAmount: string = '';
@@ -830,9 +951,21 @@ export class GestionDayComponent implements OnInit {
   }
 
   otherDate() {
-    this.requestDateRigthFormat = this.time.convertDateToMonthDayYear(
-      this.requestDateTomorrow
-    );
+    // Use the stored value or get from getter if not set yet
+    const dateValue = this._requestDateTomorrow || this.requestDateTomorrow;
+    const selectedDate = this.time.convertDateToMonthDayYear(dateValue);
+    
+    // Check if user selected the default effective tomorrow date
+    const effectiveTomorrow = this.getEffectiveTomorrowDate();
+    
+    if (selectedDate === effectiveTomorrow) {
+      // User selected the default date, use effective tomorrow
+      this.requestDateRigthFormat = effectiveTomorrow;
+    } else {
+      // User selected a custom date
+      this.requestDateRigthFormat = selectedDate;
+    }
+    
     this.frenchDateTomorrow = this.time.convertDateToDayMonthYear(
       this.requestDateRigthFormat
     );

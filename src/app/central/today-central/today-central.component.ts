@@ -89,6 +89,21 @@ export class TodayCentralComponent {
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   summaryContent: string[] = [];
+
+  get tomorrowDayName(): string {
+    const dayNames = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+    const [month, day, year] = this.tomorrow.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return dayNames[date.getDay()];
+  }
   initalizeInputs() {
     this.dailyLending = this.compute
       .findTodayTotalResultsGivenField(
