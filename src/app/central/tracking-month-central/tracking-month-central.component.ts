@@ -101,6 +101,13 @@ export class TrackingMonthCentralComponent {
   givenMonthTotalFeesAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
   givenMonthBudget: string = '';
+  
+  // Average Reserve and Payment properties
+  averageDailyReserve: number = 0;
+  averageDailyPayment: number = 0;
+  averageDailyReserveUsd: number = 0;
+  averageDailyPaymentUsd: number = 0;
+  workingDaysInMonth: number = 0;
   givenMonthTotalLoss: string = '';
   previousMonthTotalReserve: string = '';
   imagePaths: string[] = [
@@ -320,6 +327,9 @@ export class TrackingMonthCentralComponent {
 
     this.updateReserveGraphics(this.rangeValueFromKey(this.reserveActiveRange));
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
+    
+    // Calculate average daily Reserve and Payment
+    this.calculateAverageReserveAndPayment();
   }
 
   updateReserveTableData(): void {
@@ -721,5 +731,86 @@ export class TrackingMonthCentralComponent {
       this.toNum(s?.totalPaymentInDollars)
     );
     return Math.max(1, ...arr, 1);
+  }
+
+  /**
+   * Calculate the number of working days (excluding Sundays) for a given month
+   * @param month 1-12
+   * @param year e.g. 2025
+   * @param isCurrentMonth if true, only count days up to today
+   * @returns number of working days
+   */
+  private calculateWorkingDays(month: number, year: number, isCurrentMonth: boolean): number {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const currentDate = new Date();
+    const isCurrent = isCurrentMonth && 
+                      month === currentDate.getMonth() + 1 && 
+                      year === currentDate.getFullYear();
+    
+    const endDay = isCurrent ? currentDate.getDate() : daysInMonth;
+    let workingDays = 0;
+    
+    for (let day = 1; day <= endDay; day++) {
+      const date = new Date(year, month - 1, day);
+      const dayOfWeek = date.getDay();
+      // Sunday is 0, so exclude it
+      if (dayOfWeek !== 0) {
+        workingDays++;
+      }
+    }
+    
+    return workingDays;
+  }
+
+  /**
+   * Calculate average daily Reserve and Payment for the selected month
+   */
+  calculateAverageReserveAndPayment(): void {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      this.averageDailyReserve = 0;
+      this.averageDailyPayment = 0;
+      this.averageDailyReserveUsd = 0;
+      this.averageDailyPaymentUsd = 0;
+      this.workingDaysInMonth = 0;
+      return;
+    }
+
+    const totalReserve = Number(this.givenMonthTotalReserveAmount) || 0;
+    const totalPayment = Number(this.givenMonthTotalPaymentAmount) || 0;
+
+    // Check if this is the current month
+    const currentDate = new Date();
+    const isCurrentMonth = 
+      this.givenMonth === currentDate.getMonth() + 1 && 
+      this.givenYear === currentDate.getFullYear();
+
+    // Calculate working days
+    this.workingDaysInMonth = this.calculateWorkingDays(
+      this.givenMonth,
+      this.givenYear,
+      isCurrentMonth
+    );
+
+    // Calculate averages
+    if (this.workingDaysInMonth > 0) {
+      this.averageDailyReserve = totalReserve / this.workingDaysInMonth;
+      this.averageDailyPayment = totalPayment / this.workingDaysInMonth;
+      
+      // Convert to USD
+      const reserveUsd = this.compute.convertCongoleseFrancToUsDollars(
+        String(this.averageDailyReserve)
+      );
+      const paymentUsd = this.compute.convertCongoleseFrancToUsDollars(
+        String(this.averageDailyPayment)
+      );
+      
+      this.averageDailyReserveUsd = reserveUsd === '' ? 0 : Number(reserveUsd);
+      this.averageDailyPaymentUsd = paymentUsd === '' ? 0 : Number(paymentUsd);
+    } else {
+      this.averageDailyReserve = 0;
+      this.averageDailyPayment = 0;
+      this.averageDailyReserveUsd = 0;
+      this.averageDailyPaymentUsd = 0;
+    }
   }
 }

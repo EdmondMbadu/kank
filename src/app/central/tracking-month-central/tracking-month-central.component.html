@@ -87,6 +87,45 @@
             </select>
           </label>
         </div>
+        <!-- Average Reserve and Payment Display -->
+        <div class="mt-6 pt-6 border-t border-white/20">
+          <p class="text-[11px] uppercase tracking-[0.25em] text-white/60 mb-4">
+            Moyennes Quotidiennes
+          </p>
+          
+          <div class="grid grid-cols-2 gap-4 md:gap-6">
+            <!-- Average Reserve -->
+            <div>
+              <div class="mb-1 md:mb-2">
+                <span class="text-xs md:text-sm text-white/70">Réserve Moyenne</span>
+              </div>
+              <div class="text-xl md:text-2xl lg:text-3xl font-semibold text-white">
+                ${{ averageDailyReserveUsd | number : "1.0-0" }}
+              </div>
+              <div class="text-xs md:text-sm text-white/50 mt-1">
+                FC {{ averageDailyReserve | number : "1.0-0" }}
+              </div>
+            </div>
+
+            <!-- Average Payment -->
+            <div>
+              <div class="mb-1 md:mb-2">
+                <span class="text-xs md:text-sm text-white/70">Paiement Moyen</span>
+              </div>
+              <div class="text-xl md:text-2xl lg:text-3xl font-semibold text-white">
+                ${{ averageDailyPaymentUsd | number : "1.0-0" }}
+              </div>
+              <div class="text-xs md:text-sm text-white/50 mt-1">
+                FC {{ averageDailyPayment | number : "1.0-0" }}
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 text-[10px] text-white/50 text-center">
+            Basé sur {{ workingDaysInMonth }} jour{{ workingDaysInMonth > 1 ? 's' : '' }} ouvrable{{ workingDaysInMonth > 1 ? 's' : '' }}
+          </div>
+        </div>
+
         <div class="mt-6 space-y-2 text-[11px] text-white/60">
           <div class="flex items-center gap-2">
             <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
