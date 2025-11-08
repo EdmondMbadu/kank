@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { Client } from 'src/app/models/client';
@@ -10,6 +10,9 @@ import { DataService } from 'src/app/services/data.service';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { FormControl } from '@angular/forms';
 import { MessagingService } from 'src/app/services/messaging.service';
+import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/compat/firestore';
+import { Subscription } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 
 type BulkFailure = { client: Client; error: string };
 type BulkResult = {
@@ -20,12 +23,31 @@ type BulkResult = {
 };
 type SendResult = { ok: boolean; text: string };
 
+// Contact types
+type ContactDocument = {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  phoneNumber: string;
+  createdAt: number;
+  updatedAt?: number;
+  phoneDigits?: string;
+  ownerId?: string;
+  ownerName?: string;
+};
+
+type ContactEntry = ContactDocument & {
+  id: string;
+  docPath: string;
+  ownerKey: string;
+};
+
 @Component({
   selector: 'app-home-central',
   templateUrl: './home-central.component.html',
   styleUrls: ['./home-central.component.css'],
 })
-export class HomeCentralComponent implements OnInit {
+export class HomeCentralComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -33,7 +55,8 @@ export class HomeCentralComponent implements OnInit {
     public compute: ComputationService,
     private data: DataService,
     private fns: AngularFireFunctions,
-    public messaging: MessagingService
+    public messaging: MessagingService,
+    private afs: AngularFirestore
   ) {}
 
   isFetchingClients = false;
@@ -131,6 +154,13 @@ export class HomeCentralComponent implements OnInit {
       this.allUsers = data;
       if (this.allUsers.length > 1) this.getAllClients();
     });
+    
+    // Initialize contacts for admin
+    if (this.auth.isAdmin) {
+      this.auth.user$
+        .pipe(filter((user): user is User => Boolean(user)))
+        .subscribe((user) => this.initializeContactsCollection(user));
+    }
   }
 
   getAllClients() {
@@ -1356,5 +1386,391 @@ Merci pour ta confiance !`;
 
   get maxCreditScoreRange(): number {
     return Math.max(this.maxCreditScore, 100);
+  }
+
+  // ===== Contact list functionality =====
+  contacts: ContactEntry[] = [];
+  contactSearchTerm = '';
+  filteredContacts: ContactEntry[] = [];
+  contactAvailableLocations: { label: string; value: string }[] = [];
+  private contactSelectedOwnerKeys = new Set<string>();
+  private contactsCollection?: AngularFirestoreCollection<ContactDocument>;
+  private contactsSub?: Subscription;
+
+  // Contact SMS modal
+  contactSmsModal = {
+    open: false,
+    contact: null as ContactEntry | null,
+    message: '' as string,
+  };
+  contactSending = false;
+  contactSendResult: SendResult | null = null;
+
+  // Contact bulk SMS modal
+  contactBulkModal = {
+    open: false,
+    message: '' as string,
+    recipients: [] as ContactEntry[],
+    excludedNoPhone: 0,
+    result: null as BulkResult | null,
+  };
+  contactBulkSending = false;
+
+
+  ngOnDestroy(): void {
+    this.contactsSub?.unsubscribe();
+  }
+
+  private initializeContactsCollection(user: User): void {
+    this.contactsSub?.unsubscribe();
+
+    const collection$ = this.afs
+      .collectionGroup<ContactDocument>('prise_contact', (ref) =>
+        ref.orderBy('createdAt', 'desc')
+      )
+      .snapshotChanges();
+
+    this.contactsSub = collection$
+      .pipe(
+        map((snaps) =>
+          snaps.map((snap) => {
+            const data = snap.payload.doc.data();
+            const docPath = snap.payload.doc.ref.path;
+            const ownerId =
+              data.ownerId ?? this.extractOwnerIdFromPath(docPath) ?? undefined;
+            const ownerName = data.ownerName ?? 'Non attribué';
+            const ownerKey = this.buildOwnerKey(
+              ownerId,
+              ownerName,
+              docPath
+            );
+
+            const contact: ContactEntry = {
+              id: snap.payload.doc.id,
+              docPath,
+              firstName: data.firstName,
+              middleName: data.middleName ?? '',
+              lastName: data.lastName,
+              phoneNumber: data.phoneNumber,
+              createdAt: this.coerceToMillis(data.createdAt),
+              updatedAt: data.updatedAt
+                ? this.coerceToMillis(data.updatedAt)
+                : undefined,
+              phoneDigits: data.phoneDigits,
+              ownerId,
+              ownerName,
+              ownerKey,
+            };
+            return contact;
+          })
+        )
+      )
+      .subscribe((contacts) => {
+        this.contacts = contacts;
+        this.updateContactAvailableLocations();
+        this.applyContactFilters();
+      });
+  }
+
+  private extractOwnerIdFromPath(path: string): string | undefined {
+    const match = /^users\/([^/]+)\/prise_contact\/[^/]+$/.exec(path);
+    return match?.[1];
+  }
+
+  private buildOwnerKey(
+    ownerId: string | undefined,
+    ownerName: string | undefined,
+    docPath: string
+  ): string {
+    if (ownerId) return `id:${ownerId}`;
+    const label = ownerName?.trim();
+    if (label) return `name:${label.toLowerCase()}`;
+    return `doc:${docPath}`;
+  }
+
+  private coerceToMillis(value: any): number {
+    if (!value) return Date.now();
+    if (typeof value === 'number') return value;
+    if (value instanceof Date) return value.getTime();
+    if (typeof value.toDate === 'function') return value.toDate().getTime();
+    return Date.now();
+  }
+
+  private updateContactAvailableLocations(): void {
+    const map = new Map<string, string>();
+    this.contacts.forEach((contact) => {
+      const label = contact.ownerName || 'Non attribué';
+      if (!map.has(contact.ownerKey)) {
+        map.set(contact.ownerKey, label);
+      }
+    });
+
+    this.contactAvailableLocations = Array.from(map.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    const allowed = new Set(
+      this.contactAvailableLocations.map((option) => option.value)
+    );
+    Array.from(this.contactSelectedOwnerKeys).forEach((value) => {
+      if (!allowed.has(value)) this.contactSelectedOwnerKeys.delete(value);
+    });
+  }
+
+  onContactSearchTermChange(): void {
+    this.applyContactFilters();
+  }
+
+  toggleContactLocation(value: string): void {
+    if (this.contactSelectedOwnerKeys.has(value)) {
+      this.contactSelectedOwnerKeys.delete(value);
+    } else {
+      this.contactSelectedOwnerKeys.add(value);
+    }
+    this.applyContactFilters();
+  }
+
+  clearContactLocationFilters(): void {
+    this.contactSelectedOwnerKeys.clear();
+    this.applyContactFilters();
+  }
+
+  isContactLocationSelected(value: string): boolean {
+    return this.contactSelectedOwnerKeys.has(value);
+  }
+
+  get hasActiveContactLocationFilter(): boolean {
+    return this.contactSelectedOwnerKeys.size > 0;
+  }
+
+  private applyContactFilters(): void {
+    const search = this.contactSearchTerm.trim();
+    let base = this.contacts;
+
+    if (this.contactSelectedOwnerKeys.size > 0) {
+      base = base.filter((contact) =>
+        this.contactSelectedOwnerKeys.has(contact.ownerKey)
+      );
+    }
+
+    if (!search) {
+      this.filteredContacts = base;
+      if (this.contactBulkModal.open) this.updateContactBulkRecipients();
+      return;
+    }
+
+    const normalizedSearch = search.toLowerCase();
+    const digitSearch = normalizedSearch.replace(/\D/g, '');
+
+    this.filteredContacts = base.filter((contact) => {
+      const fullName = `${contact.firstName} ${contact.middleName ?? ''} ${contact.lastName}`
+        .toLowerCase();
+      const phoneDigits = (contact.phoneNumber ?? '').replace(/\D/g, '');
+      return (
+        (normalizedSearch.length > 0 && fullName.includes(normalizedSearch)) ||
+        (digitSearch.length > 0 && phoneDigits.includes(digitSearch))
+      );
+    });
+    
+    if (this.contactBulkModal.open) this.updateContactBulkRecipients();
+  }
+
+  get contactFilteredTotal(): number {
+    return this.filteredContacts.length;
+  }
+
+  async deleteContact(entry: ContactEntry): Promise<void> {
+    const confirmDelete = window.confirm(
+      `Supprimer ${entry.firstName} ${entry.lastName} de la liste ?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await this.afs.doc<ContactDocument>(entry.docPath).delete();
+    } catch (error) {
+      console.error('Failed to delete contact', error);
+      window.alert('Erreur lors de la suppression. Veuillez réessayer.');
+    }
+  }
+
+  // ===== Contact SMS functionality =====
+  openContactSmsModal(contact: ContactEntry) {
+    this.contactSendResult = null;
+    this.contactSmsModal.contact = contact;
+    this.contactSmsModal.message = this.buildDefaultContactTemplate(contact);
+    this.contactSmsModal.open = true;
+  }
+
+  closeContactSmsModal() {
+    this.contactSmsModal.open = false;
+    this.contactSmsModal.contact = null;
+    this.contactSmsModal.message = '';
+    this.contactSending = false;
+    this.contactSendResult = null;
+  }
+
+  applyDefaultContactTemplate() {
+    if (this.contactSmsModal.contact)
+      this.contactSmsModal.message = this.buildDefaultContactTemplate(
+        this.contactSmsModal.contact
+      );
+  }
+
+  private buildDefaultContactTemplate(contact: ContactEntry): string {
+    const loc = contact.ownerName || 'site';
+    return `Bonjour ${contact.firstName} ${contact.lastName},
+Nous serions ravis de vous accueillir chez Fondation Gervais ${loc}.
+Passez nous voir pour finaliser votre inscription.
+Merci pour votre confiance !`;
+  }
+
+  async sendSmsToContact() {
+    if (
+      !this.contactSmsModal.contact?.phoneNumber ||
+      !this.contactSmsModal.message.trim()
+    )
+      return;
+    this.contactSending = true;
+    this.contactSendResult = null;
+
+    try {
+      await this.messaging.sendCustomSMS(
+        this.contactSmsModal.contact.phoneNumber,
+        this.contactSmsModal.message,
+        {
+          reason: 'contact_prospect_invitation',
+          contactId: this.contactSmsModal.contact.id || null,
+          contactOwnerId: this.contactSmsModal.contact.ownerId || null,
+          contactName: `${this.contactSmsModal.contact.firstName} ${this.contactSmsModal.contact.lastName}`.trim(),
+          locationName: this.contactSmsModal.contact.ownerName || null,
+        }
+      );
+      this.contactSendResult = { ok: true, text: 'SMS envoyé avec succès.' };
+    } catch (e) {
+      console.error(e);
+      this.contactSendResult = {
+        ok: false,
+        text: "Échec de l'envoi du SMS.",
+      };
+    } finally {
+      this.contactSending = false;
+    }
+  }
+
+  // ===== Contact Bulk SMS functionality =====
+  openContactBulkModal() {
+    this.contactBulkModal.open = true;
+    this.contactBulkModal.result = null;
+    this.contactBulkModal.message = this.defaultContactBulkTemplate();
+    this.updateContactBulkRecipients();
+  }
+
+  closeContactBulkModal() {
+    this.contactBulkModal.open = false;
+    this.contactBulkModal.message = '';
+    this.contactBulkModal.recipients = [];
+    this.contactBulkModal.excludedNoPhone = 0;
+    this.contactBulkModal.result = null;
+    this.contactBulkSending = false;
+  }
+
+  private defaultContactBulkTemplate(): string {
+    return `Bonjour {{FULL_NAME}},
+Nous serions ravis de vous accueillir chez Fondation Gervais {{LOCATION}}.
+Passez nous voir pour finaliser votre inscription.
+Merci pour votre confiance !`;
+  }
+
+  updateContactBulkRecipients() {
+    const withPhones: ContactEntry[] = [];
+    let excluded = 0;
+
+    for (const contact of this.filteredContacts) {
+      if (this.hasDialableContactPhone(contact)) {
+        withPhones.push(contact);
+      } else {
+        excluded += 1;
+      }
+    }
+
+    this.contactBulkModal.recipients = withPhones;
+    this.contactBulkModal.excludedNoPhone = excluded;
+  }
+
+  private hasDialableContactPhone(contact: ContactEntry): boolean {
+    if (!contact || !contact.phoneNumber) return false;
+    const digits = ('' + contact.phoneNumber).replace(/\D/g, '');
+    return digits.length >= 10;
+  }
+
+  get contactBulkPreviewMessage(): string {
+    const first = this.contactBulkModal.recipients?.[0];
+    if (!first || !this.contactBulkModal.message?.trim()) return '';
+    return this.personalizeContactMessage(this.contactBulkModal.message, first);
+  }
+
+  private personalizeContactMessage(
+    msg: string,
+    contact: ContactEntry
+  ): string {
+    if (!msg) return '';
+    const fullName = `${contact.firstName} ${contact.lastName}`.trim();
+    const location = contact.ownerName || 'Fondation Gervais';
+    return msg
+      .replace(/{{FULL_NAME}}/g, fullName)
+      .replace(/{{firstName}}/g, contact.firstName || '')
+      .replace(/{{lastName}}/g, contact.lastName || '')
+      .replace(/{{LOCATION}}/g, location);
+  }
+
+  async sendContactBulkMessages(): Promise<void> {
+    if (
+      !this.contactBulkModal.message?.trim() ||
+      this.contactBulkModal.recipients.length === 0
+    )
+      return;
+
+    this.contactBulkSending = true;
+    const failures: BulkFailure[] = [];
+    let succeeded = 0;
+
+    for (const contact of this.contactBulkModal.recipients) {
+      try {
+        const text = this.personalizeContactMessage(
+          this.contactBulkModal.message,
+          contact
+        );
+        await this.messaging.sendCustomSMS(contact.phoneNumber, text, {
+          reason: 'contact_prospect_bulk_sms',
+          contactId: contact.id || null,
+          contactOwnerId: contact.ownerId ?? null,
+          contactName: `${contact.firstName} ${contact.lastName}`.trim(),
+          locationName: contact.ownerName || null,
+        });
+        succeeded += 1;
+      } catch (error: any) {
+        console.error('Contact bulk SMS error', error);
+        failures.push({
+          client: contact as any,
+          error: error?.message || "Échec d'envoi",
+        });
+      }
+    }
+
+    const total = this.contactBulkModal.recipients.length;
+    this.contactBulkModal.result = {
+      total,
+      succeeded,
+      failed: failures.length,
+      failures,
+    };
+
+    this.contactBulkSending = false;
+  }
+
+  get contactEligibleCount(): number {
+    return this.filteredContacts.filter((c) =>
+      this.hasDialableContactPhone(c)
+    ).length;
   }
 }

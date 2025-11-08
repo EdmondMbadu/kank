@@ -897,6 +897,235 @@
   </div>
 </section>
 
+<!-- ==== CONTACTS LIST SECTION (Admin only) ==== -->
+<section
+  *ngIf="auth.isAdmin"
+  class="container mx-auto px-6 pb-16"
+>
+  <div
+    class="relative mx-auto max-w-3xl rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_20px_45px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
+  >
+    <div
+      class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Contacts enregistrés
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Liste des prospects collectés par tous les sites.
+        </p>
+      </div>
+      <div class="relative w-full sm:max-w-xs">
+        <input
+          type="search"
+          [(ngModel)]="contactSearchTerm"
+          (ngModelChange)="onContactSearchTermChange()"
+          name="contactSearchTerm"
+          placeholder="Rechercher par nom ou téléphone"
+          class="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+      </div>
+    </div>
+
+    <div class="mt-5 space-y-4">
+      <div
+        class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div
+          *ngIf="contactAvailableLocations.length"
+          class="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+        >
+          <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+            Emplacements
+          </span>
+          <button
+            type="button"
+            (click)="clearContactLocationFilters()"
+            class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            [ngClass]="
+              hasActiveContactLocationFilter
+                ? 'border border-emerald-400 bg-white text-emerald-600 hover:bg-emerald-50 dark:bg-slate-800 dark:text-emerald-400'
+                : 'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600'
+            "
+          >
+            Tous
+          </button>
+          <button
+            type="button"
+            *ngFor="let location of contactAvailableLocations"
+            (click)="toggleContactLocation(location.value)"
+            class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            [ngClass]="
+              isContactLocationSelected(location.value)
+                ? 'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600'
+                : 'border border-emerald-200 bg-white text-emerald-600 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-400'
+            "
+          >
+            {{ location.label }}
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <div
+            class="rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-2 text-right text-sm font-medium text-emerald-700 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+          >
+            <span
+              class="block text-xs uppercase tracking-widest text-emerald-400"
+            >
+              Total affiché
+            </span>
+            <span class="text-lg font-semibold text-emerald-700">
+              {{ contactFilteredTotal }}
+            </span>
+          </div>
+          <button
+            type="button"
+            (click)="openContactBulkModal()"
+            class="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-300/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+          >
+            Envoyer SMS groupé
+          </button>
+        </div>
+      </div>
+
+      <ng-container *ngIf="filteredContacts.length; else emptyContactsState">
+        <div
+          class="overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700"
+        >
+          <div class="overflow-auto">
+            <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
+              <thead class="bg-slate-50/70 dark:bg-slate-800/70">
+                <tr
+                  class="text-left text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300"
+                >
+                  <th scope="col" class="px-4 py-3 sm:px-6">Nom complet</th>
+                  <th scope="col" class="px-4 py-3 sm:px-6">Téléphone</th>
+                  <th scope="col" class="px-4 py-3 sm:px-6">Emplacement</th>
+                  <th scope="col" class="px-4 py-3 sm:px-6">Ajouté le</th>
+                  <th scope="col" class="px-4 py-3 sm:px-6 text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
+                <tr
+                  *ngFor="let contact of filteredContacts"
+                  class="text-sm text-slate-600 dark:text-slate-300"
+                >
+                  <td class="px-4 py-4 sm:px-6">
+                    <div class="font-semibold text-slate-800 dark:text-slate-100">
+                      {{ contact.firstName }}
+                      <span class="font-normal">{{ contact.lastName }}</span>
+                      <span *ngIf="contact.middleName" class="font-normal">
+                        {{ contact.middleName }}
+                      </span>
+                    </div>
+                    <div
+                      *ngIf="contact.ownerName"
+                      class="mt-1 text-xs font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500"
+                    >
+                      Ajouté par {{ contact.ownerName }}
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 sm:px-6 text-slate-500 dark:text-slate-400">
+                    {{ contact.phoneNumber }}
+                  </td>
+                  <td class="px-4 py-4 sm:px-6 text-slate-500 dark:text-slate-400">
+                    <span
+                      class="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                    >
+                      {{ contact.ownerName || "Non attribué" }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-4 sm:px-6 text-slate-500 dark:text-slate-400">
+                    <div>
+                      {{ contact.createdAt | date : "dd MMM yyyy 'à' HH:mm" }}
+                    </div>
+                    <div
+                      *ngIf="
+                        contact.updatedAt &&
+                        contact.updatedAt !== contact.createdAt
+                      "
+                      class="text-xs text-slate-400 dark:text-slate-500"
+                    >
+                      Modifié le
+                      {{ contact.updatedAt | date : "dd MMM yyyy 'à' HH:mm" }}
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 sm:px-6">
+                    <div class="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
+                        (click)="openContactSmsModal(contact)"
+                        title="Envoyer un SMS à ce contact"
+                      >
+                        <svg
+                          class="h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path
+                            d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"
+                          />
+                        </svg>
+                        SMS
+                      </button>
+                      <button
+                        type="button"
+                        class="inline-flex items-center rounded-full bg-rose-500/10 px-4 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-500/20 dark:bg-rose-500/20 dark:text-rose-400"
+                        (click)="deleteContact(contact)"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyContactsState>
+        <div
+          class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-white to-slate-50/50 px-6 py-12 text-center dark:border-slate-700 dark:from-slate-900 dark:to-slate-800/50"
+        >
+          <ng-container *ngIf="contacts.length; else noContacts">
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10"
+            >
+              <span class="text-lg font-semibold text-amber-500">?</span>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
+              Aucun résultat pour cette recherche
+            </h3>
+            <p class="max-w-sm text-sm text-slate-500 dark:text-slate-400">
+              Ajustez vos critères pour retrouver un prospect par nom ou par
+              numéro.
+            </p>
+          </ng-container>
+          <ng-template #noContacts>
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10"
+            >
+              <span class="text-lg font-semibold text-emerald-500">+</span>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100">
+              Aucun contact enregistré
+            </h3>
+            <p class="max-w-sm text-sm text-slate-500 dark:text-slate-400">
+              Aucun prospect n'a encore été collecté par les sites.
+            </p>
+          </ng-template>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</section>
+
 <!-- ==== GENERAL BULK MODAL (master filters) ==== -->
 <div
   *ngIf="generalBulkModal.open"
@@ -1283,6 +1512,240 @@
           </li>
         </ul>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==== CONTACT SMS MODAL (single) ==== -->
+<div
+  *ngIf="contactSmsModal.open"
+  class="fixed inset-0 z-50 flex items-center justify-center"
+  aria-modal="true"
+  role="dialog"
+>
+  <div
+    class="absolute inset-0 bg-black/50"
+    (click)="closeContactSmsModal()"
+  ></div>
+  <div
+    class="relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl"
+  >
+    <div class="flex items-start justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        Envoyer un SMS à {{ contactSmsModal.contact?.firstName }}
+        {{ contactSmsModal.contact?.lastName }}
+      </h3>
+      <button
+        class="text-gray-500 hover:text-gray-700 dark:text-slate-300"
+        (click)="closeContactSmsModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+      📞 {{ formatDisplayPhone(contactSmsModal.contact?.phoneNumber) }} —
+      <span class="font-medium">{{ contactSmsModal.contact?.ownerName }}</span>
+    </p>
+
+    <div class="flex items-center gap-2 mb-2">
+      <button
+        class="text-xs rounded-full px-3 py-1 dark:text-white bg-gray-100 dark:bg-slate-700"
+        (click)="applyDefaultContactTemplate()"
+      >
+        Insérer le message générique
+      </button>
+      <span class="text-xs text-gray-500">Éditable ci-dessous</span>
+    </div>
+
+    <textarea
+      [(ngModel)]="contactSmsModal.message"
+      rows="6"
+      class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 p-3"
+      placeholder="Saisir ou coller le message…"
+    ></textarea>
+
+    <div
+      class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400"
+    >
+      <span>{{ contactSmsModal.message.length || 0 }} caractères</span>
+      <span>~ {{ estimatedSegments(contactSmsModal.message) }} SMS segment(s)</span>
+    </div>
+
+    <div class="mt-4 flex items-center justify-end gap-2">
+      <button
+        class="px-4 py-2 rounded-lg border dark:text-white hover:bg-slate-300 hover:dark:bg-slate-500"
+        (click)="closeContactSmsModal()"
+      >
+        Annuler
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg bg-emerald-600 text-white disabled:opacity-60"
+        [disabled]="contactSending || !contactSmsModal.message.trim()"
+        (click)="sendSmsToContact()"
+      >
+        {{ contactSending ? "Envoi…" : "Envoyer" }}
+      </button>
+    </div>
+
+    <p
+      *ngIf="contactSendResult"
+      class="mt-3 text-sm"
+      [class.text-emerald-600]="contactSendResult.ok"
+      [class.text-rose-600]="!contactSendResult.ok"
+    >
+      {{ contactSendResult.text }}
+    </p>
+  </div>
+</div>
+
+<!-- ==== CONTACT BULK SMS MODAL ==== -->
+<div
+  *ngIf="contactBulkModal.open"
+  class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4"
+  aria-modal="true"
+  role="dialog"
+>
+  <div
+    class="absolute inset-0 bg-black/50"
+    (click)="closeContactBulkModal()"
+  ></div>
+
+  <div
+    class="relative z-10 w-full max-w-3xl rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl max-h-screen overflow-y-auto"
+  >
+    <div class="flex items-start justify-between">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Envoi groupé aux prospects
+        </h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ contactBulkModal.recipients.length }}
+          {{
+            contactBulkModal.recipients.length > 1
+              ? "contacts recevront"
+              : "contact recevra"
+          }}
+          le message sélectionné.
+        </p>
+        <p
+          *ngIf="contactBulkModal.excludedNoPhone"
+          class="mt-1 text-xs font-semibold text-amber-600"
+        >
+          {{ contactBulkModal.excludedNoPhone }} prospect(s) sans numéro valide
+          sont exclus automatiquement.
+        </p>
+      </div>
+      <button
+        class="text-gray-500 hover:text-gray-700 dark:text-slate-300"
+        (click)="closeContactBulkModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="mt-5 space-y-3">
+      <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+        Message
+        <textarea
+          rows="6"
+          [(ngModel)]="contactBulkModal.message"
+          name="contactBulkMessage"
+          class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        ></textarea>
+      </label>
+      <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        <span>Variables disponibles :</span>
+        <span
+          class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-1 font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800"
+          ngNonBindable
+        >
+          {{FULL_NAME}}
+        </span>
+        <span
+          class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-1 font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800"
+          ngNonBindable
+        >
+          {{firstName}}
+        </span>
+        <span
+          class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-1 font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800"
+          ngNonBindable
+        >
+          {{lastName}}
+        </span>
+        <span
+          class="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-1 font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800"
+          ngNonBindable
+        >
+          {{LOCATION}}
+        </span>
+      </div>
+    </div>
+
+    <div
+      *ngIf="contactBulkPreviewMessage"
+      class="mt-5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+    >
+      <span
+        class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-400"
+        >Aperçu</span
+      >
+      <p class="whitespace-pre-line">
+        {{ contactBulkPreviewMessage }}
+      </p>
+    </div>
+
+    <div
+      class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end"
+    >
+      <button
+        type="button"
+        (click)="closeContactBulkModal()"
+        class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+      >
+        Fermer
+      </button>
+      <button
+        type="button"
+        (click)="sendContactBulkMessages()"
+        [disabled]="
+          contactBulkSending ||
+          !contactBulkModal.message.trim() ||
+          contactBulkModal.recipients.length === 0
+        "
+        class="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-300/40 transition hover:-translate-y-0.5 hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+      >
+        <span *ngIf="contactBulkSending" class="animate-pulse">Envoi…</span>
+        <span *ngIf="!contactBulkSending">
+          Envoyer maintenant ({{ contactBulkModal.recipients.length }})
+        </span>
+      </button>
+    </div>
+
+    <div
+      *ngIf="contactBulkModal.result"
+      class="mt-5 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
+    >
+      <div class="font-semibold">
+        {{ contactBulkModal.result.succeeded }} /
+        {{ contactBulkModal.result.total }} envois réussis
+      </div>
+      <div *ngIf="contactBulkModal.result.failed" class="text-xs text-rose-500">
+        {{ contactBulkModal.result.failed }} échec(s)
+      </div>
+      <ul
+        *ngIf="contactBulkModal.result.failed && contactBulkModal.result.failures"
+        class="space-y-2 text-xs text-rose-600"
+      >
+        <li
+          *ngFor="let failure of contactBulkModal.result.failures"
+          class="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 dark:border-rose-800 dark:bg-rose-900/20"
+        >
+          {{ failure.client.firstName }} {{ failure.client.lastName }} —
+          {{ failure.error }}
+        </li>
+      </ul>
     </div>
   </div>
 </div>
