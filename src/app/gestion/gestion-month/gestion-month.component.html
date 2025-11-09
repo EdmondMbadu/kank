@@ -174,56 +174,258 @@
   <div
     class="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
   >
-    <div
-      class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
-    >
-      <div>
-        <h2
-          class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
-        >
-          Réserve totale par mois
-        </h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
-          Montants convertis en dollars américains pour le suivi de la réserve.
-        </p>
+    <div class="space-y-6">
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div>
+          <h2
+            class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+          >
+            Réserve totale par mois
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Montants convertis en dollars américains pour le suivi de la réserve.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            (click)="updateReserveGraphics(compute.quarter1)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            3M
+          </button>
+          <button
+            (click)="updateReserveGraphics(compute.quarter2)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            6M
+          </button>
+          <button
+            (click)="updateReserveGraphics(compute.quarter3)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            9M
+          </button>
+          <button
+            (click)="updateReserveGraphics(compute.quarter4)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            1A
+          </button>
+          <button
+            (click)="updateReserveGraphics(maxRange)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            Max
+          </button>
+        </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <button
-          (click)="updateReserveGraphics(compute.quarter1)"
-          type="button"
-          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
-        >
-          3M
-        </button>
-        <button
-          (click)="updateReserveGraphics(compute.quarter2)"
-          type="button"
-          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
-        >
-          6M
-        </button>
-        <button
-          (click)="updateReserveGraphics(compute.quarter3)"
-          type="button"
-          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
-        >
-          9M
-        </button>
-        <button
-          (click)="updateReserveGraphics(compute.quarter4)"
-          type="button"
-          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
-        >
-          1A
-        </button>
-        <button
-          (click)="updateReserveGraphics(maxRange)"
-          type="button"
-          class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
-        >
-          Max
-        </button>
+      <!-- Forecast Model Selector - Compact -->
+      <div
+        class="rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm dark:border-slate-700 dark:from-slate-800 dark:to-slate-900"
+      >
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <!-- Model Selector - Compact -->
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                Modèle de prévision
+              </label>
+              <button
+                type="button"
+                (click)="showModelInfo = !showModelInfo"
+                class="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors flex items-center gap-1"
+              >
+                <span>ℹ️ Info</span>
+                <svg
+                  class="h-3 w-3 transition-transform"
+                  [class.rotate-180]="showModelInfo"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Collapsible Model Info -->
+            <div
+              *ngIf="showModelInfo"
+              class="mb-3 rounded-lg border border-slate-200 bg-slate-50/50 p-4 text-xs dark:border-slate-700 dark:bg-slate-800/50"
+            >
+              <div class="space-y-4">
+                <!-- Model 1 -->
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-3 last:border-0 last:pb-0">
+                  <div class="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                    Modèle 1: Taux de croissance roulant (Monthly baseline)
+                  </div>
+                  <div class="text-slate-600 dark:text-slate-400 space-y-1.5">
+                    <p>
+                      Calcule la croissance moyenne des 3 derniers mois complets et l'applique au mois actuel.
+                    </p>
+                    <div class="bg-white dark:bg-slate-900/50 rounded p-2 font-mono text-[10px] border border-slate-200 dark:border-slate-700">
+                      <div class="mb-1">Pour les 3 derniers mois complets:</div>
+                      <div>g_i = Y[i] / Y[i-1] (facteur de croissance)</div>
+                      <div class="mt-1">ḡ = moyenne(g_i)</div>
+                      <div class="mt-1 font-semibold">F1 = Y[dernier_mois] × ḡ</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Model 2 -->
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-3 last:border-0 last:pb-0">
+                  <div class="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                    Modèle 2: Régression de tendance + saisonnalité
+                  </div>
+                  <div class="text-slate-600 dark:text-slate-400 space-y-1.5">
+                    <p>
+                      Utilise une régression linéaire sur les mois complets avec ajustement saisonnier si ≥12 mois de données disponibles.
+                    </p>
+                    <div class="bg-white dark:bg-slate-900/50 rounded p-2 font-mono text-[10px] border border-slate-200 dark:border-slate-700">
+                      <div class="mb-1">Régression linéaire:</div>
+                      <div>Y[m] = β₀ + β₁×t + ε</div>
+                      <div class="mt-1">β₁ = (n×Σ(t×y) - Σt×Σy) / (n×Σt² - (Σt)²)</div>
+                      <div>β₀ = (Σy - β₁×Σt) / n</div>
+                      <div class="mt-1">Ajustement saisonnier (si ≥12 mois):</div>
+                      <div>ajustement = moyenne(même_mois_années_précédentes) - moyenne_générale</div>
+                      <div class="mt-1 font-semibold">F2 = β₀ + β₁×t_actuel + ajustement_saisonnier</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Model 3 -->
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-3 last:border-0 last:pb-0">
+                  <div class="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                    Modèle 3: Taux d'exécution quotidien (Nowcasting)
+                  </div>
+                  <div class="text-slate-600 dark:text-slate-400 space-y-1.5">
+                    <p>
+                      Extrapole à partir de la moyenne quotidienne du mois actuel (hors dimanches) jusqu'à la fin du mois.
+                    </p>
+                    <div class="bg-white dark:bg-slate-900/50 rounded p-2 font-mono text-[10px] border border-slate-200 dark:border-slate-700">
+                      <div class="mb-1">Données du mois actuel:</div>
+                      <div>S_so_far = somme des montants enregistrés jusqu'à aujourd'hui</div>
+                      <div>n_worked_so_far = nombre de jours ouvrés (hors dimanches) jusqu'à aujourd'hui</div>
+                      <div>n_workdays_total = total jours ouvrés du mois (hors dimanches)</div>
+                      <div class="mt-1">daily_avg = S_so_far / n_worked_so_far</div>
+                      <div>n_remaining = n_workdays_total - n_worked_so_far</div>
+                      <div class="mt-1 font-semibold">F3 = S_so_far + daily_avg × n_remaining</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Model 4 -->
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-3 last:border-0 last:pb-0">
+                  <div class="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                    Modèle 4: Taux d'exécution avec croissance
+                  </div>
+                  <div class="text-slate-600 dark:text-slate-400 space-y-1.5">
+                    <p>
+                      Similaire au Modèle 3 mais ajusté par le taux de croissance récent calculé sur les 3 derniers mois complets.
+                    </p>
+                    <div class="bg-white dark:bg-slate-900/50 rounded p-2 font-mono text-[10px] border border-slate-200 dark:border-slate-700">
+                      <div class="mb-1">Calcul de la croissance (3 derniers mois):</div>
+                      <div>ḡ = moyenne(Y[i] / Y[i-1])</div>
+                      <div class="mt-1">Moyenne quotidienne ajustée:</div>
+                      <div>daily_avg = (S_so_far / n_worked_so_far) × ḡ</div>
+                      <div class="mt-1 font-semibold">F4 = S_so_far + daily_avg × n_remaining</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Combined Model -->
+                <div>
+                  <div class="font-semibold text-slate-800 dark:text-slate-200 mb-1.5">
+                    Modèle Combiné: Moyenne pondérée
+                  </div>
+                  <div class="text-slate-600 dark:text-slate-400 space-y-1.5">
+                    <p>
+                      Combine les 4 modèles avec des poids pour une prévision plus robuste et équilibrée.
+                    </p>
+                    <div class="bg-white dark:bg-slate-900/50 rounded p-2 font-mono text-[10px] border border-slate-200 dark:border-slate-700">
+                      <div class="mb-1">Poids:</div>
+                      <div>w₁ = 0.2 (Modèle 1), w₂ = 0.2 (Modèle 2)</div>
+                      <div>w₃ = 0.3 (Modèle 3), w₄ = 0.3 (Modèle 4)</div>
+                      <div class="mt-1 font-semibold">F_final = 0.2×F1 + 0.2×F2 + 0.3×F3 + 0.3×F4</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <label
+                *ngFor="let model of forecastModels"
+                [for]="'model-' + model.id"
+                class="group relative flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-1.5 text-xs transition-all"
+                [ngClass]="{
+                  'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300': selectedForecastModel === model.id,
+                  'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-slate-600': selectedForecastModel !== model.id
+                }"
+                [title]="model.description"
+              >
+                <input
+                  [id]="'model-' + model.id"
+                  type="radio"
+                  name="forecastModel"
+                  [value]="model.id"
+                  [(ngModel)]="selectedForecastModel"
+                  (change)="onForecastModelChange()"
+                  class="h-3 w-3 cursor-pointer border-slate-300 text-emerald-600 focus:ring-1 focus:ring-emerald-500 dark:border-slate-600"
+                />
+                <span class="font-medium">{{ model.name }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Forecast Value Display -->
+          <div
+            *ngIf="currentForecast && selectedForecastModel !== 'none'"
+            class="flex-shrink-0 rounded-xl border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4 dark:from-emerald-900/30 dark:to-emerald-800/20"
+          >
+            <div class="text-center">
+              <div class="flex items-center justify-center gap-2 mb-1">
+                <svg
+                  class="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+                <span class="text-xs font-medium text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">
+                  Prévision {{ formatMonthYear(currentForecast.date) }}
+                </span>
+              </div>
+              <div class="space-y-1">
+                <div class="text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                  ${{ currentForecast.valueInDollars | number : "1.0-0" }}
+                </div>
+                <div class="text-xs text-emerald-700 dark:text-emerald-300">
+                  FC {{ currentForecast.value | number : "1.0-0" }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
