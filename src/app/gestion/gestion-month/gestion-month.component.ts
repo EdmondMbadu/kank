@@ -58,6 +58,9 @@ export class GestionMonthComponent {
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
+  // Forecast target month/year (defaults to current month)
+  forecastTargetMonth: number = this.currentMonth;
+  forecastTargetYear: number = this.currentDate.getFullYear();
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
   givenYear = this.year;
@@ -260,8 +263,9 @@ export class GestionMonthComponent {
     // Add forecast if a model is selected
     if (this.selectedForecastModel !== 'none' && this.managementInfo?.reserve) {
       const forecast = this.calculateForecast(this.selectedForecastModel);
-      if (forecast && forecast.date && forecast.value !== null && forecast.value > 0) {
-        const forecastDate = forecast.date;
+      if (forecast && forecast.value !== null && forecast.value > 0) {
+        // Always use the target month/year for the forecast date
+        const forecastDate = `${this.forecastTargetMonth.toString().padStart(2, '0')}-${this.forecastTargetYear}`;
         const forecastValue = this.compute.convertCongoleseFrancToUsDollars(forecast.value.toString());
         
         // Check if forecast date is already in historical data
@@ -272,23 +276,26 @@ export class GestionMonthComponent {
         let connectFromDate = '';
         let connectFromValue = 0;
         
-        if (isForecastNew) {
-          // Forecast is for a future month, connect from last historical point
-          if (this.recentReserveDates.length > 0 && this.recentReserveAmounts.length > 0) {
-            connectFromDate = this.recentReserveDates[this.recentReserveDates.length - 1];
-            connectFromValue = this.recentReserveAmounts[this.recentReserveAmounts.length - 1];
+        // Find the month that comes right before the forecast target month
+        const targetDate = new Date(this.forecastTargetYear, this.forecastTargetMonth - 1, 1);
+        
+        // Find the last historical point that is before the target month
+        for (let i = this.recentReserveDates.length - 1; i >= 0; i--) {
+          const histDate = this.recentReserveDates[i];
+          const [histMonth, histYear] = histDate.split('-').map(Number);
+          const histDateObj = new Date(histYear, histMonth - 1, 1);
+          
+          if (histDateObj < targetDate) {
+            connectFromDate = histDate;
+            connectFromValue = this.recentReserveAmounts[i];
+            break;
           }
-        } else {
-          // Forecast is for current month (which is in historical data)
-          // Connect from the previous month
-          if (forecastIndex > 0) {
-            connectFromDate = this.recentReserveDates[forecastIndex - 1];
-            connectFromValue = this.recentReserveAmounts[forecastIndex - 1];
-          } else if (this.recentReserveDates.length > 1) {
-            // If current month is first in list, use the one before it
-            connectFromDate = this.recentReserveDates[0];
-            connectFromValue = this.recentReserveAmounts[0];
-          }
+        }
+        
+        // Fallback: if no previous month found, use the last historical point
+        if (!connectFromDate && this.recentReserveDates.length > 0) {
+          connectFromDate = this.recentReserveDates[this.recentReserveDates.length - 1];
+          connectFromValue = this.recentReserveAmounts[this.recentReserveAmounts.length - 1];
         }
         
         // Add connecting line from historical point to forecast
@@ -441,13 +448,13 @@ export class GestionMonthComponent {
     return sorted;
   }
 
-  // Model 1: Rolling Growth Rate - Forecast for CURRENT month
+  // Model 1: Rolling Growth Rate - Forecast for TARGET month
   forecastModel1(): { date: string; value: number } | null {
     const monthlyData = this.getMonthlyTotals();
     if (monthlyData.length < 2) return null;
 
-    const currentMonth = this.currentMonth;
-    const currentYear = this.currentDate.getFullYear();
+    const targetMonth = this.forecastTargetMonth;
+    const targetYear = this.forecastTargetYear;
     
     // Normalize month format for comparison (handle both "1-2024" and "01-2024")
     const normalizeMonthYear = (monthYear: string): string => {
@@ -455,12 +462,17 @@ export class GestionMonthComponent {
       return `${parseInt(month)}-${year}`;
     };
     
-    const currentMonthKeyNormalized = `${currentMonth}-${currentYear}`;
+    const targetMonthKeyNormalized = `${targetMonth}-${targetYear}`;
 
-    // Filter out the current month from monthly data (only use complete months)
-    const completeMonths = monthlyData.filter(
-      (m) => normalizeMonthYear(m.monthYear) !== currentMonthKeyNormalized
-    );
+    // Filter out the target month from monthly data (only use complete months before target)
+    const completeMonths = monthlyData.filter((m) => {
+      const normalized = normalizeMonthYear(m.monthYear);
+      const [mMonth, mYear] = normalized.split('-').map(Number);
+      // Only include months that are before the target month
+      if (mYear < targetYear) return true;
+      if (mYear === targetYear && mMonth < targetMonth) return true;
+      return false;
+    });
 
     if (completeMonths.length < 2) return null;
 
@@ -494,21 +506,21 @@ export class GestionMonthComponent {
     const forecastValue = lastCompleteMonth.value * avgGrowth;
 
     // Return in the format expected by the graph (MM-YYYY)
-    const currentMonthKey = `${currentMonth.toString().padStart(2, '0')}-${currentYear}`;
+    const targetMonthKey = `${targetMonth.toString().padStart(2, '0')}-${targetYear}`;
 
     return {
-      date: currentMonthKey,
+      date: targetMonthKey,
       value: forecastValue,
     };
   }
 
-  // Model 2: Trend + Seasonality Regression - Forecast for CURRENT month
+  // Model 2: Trend + Seasonality Regression - Forecast for TARGET month
   forecastModel2(): { date: string; value: number } | null {
     const monthlyData = this.getMonthlyTotals();
     if (monthlyData.length < 3) return null;
 
-    const currentMonth = this.currentMonth;
-    const currentYear = this.currentDate.getFullYear();
+    const targetMonth = this.forecastTargetMonth;
+    const targetYear = this.forecastTargetYear;
     
     // Normalize month format for comparison (handle both "1-2024" and "01-2024")
     const normalizeMonthYear = (monthYear: string): string => {
@@ -516,12 +528,17 @@ export class GestionMonthComponent {
       return `${parseInt(month)}-${year}`;
     };
     
-    const currentMonthKeyNormalized = `${currentMonth}-${currentYear}`;
+    const targetMonthKeyNormalized = `${targetMonth}-${targetYear}`;
 
-    // Filter out the current month from monthly data (only use complete months)
-    const completeMonths = monthlyData.filter(
-      (m) => normalizeMonthYear(m.monthYear) !== currentMonthKeyNormalized
-    );
+    // Filter out the target month from monthly data (only use complete months before target)
+    const completeMonths = monthlyData.filter((m) => {
+      const normalized = normalizeMonthYear(m.monthYear);
+      const [mMonth, mYear] = normalized.split('-').map(Number);
+      // Only include months that are before the target month
+      if (mYear < targetYear) return true;
+      if (mYear === targetYear && mMonth < targetMonth) return true;
+      return false;
+    });
 
     if (completeMonths.length < 3) return null;
 
@@ -549,7 +566,7 @@ export class GestionMonthComponent {
     // Seasonality adjustment (if we have enough data)
     let seasonalityAdjustment = 0;
     if (hasSeasonality) {
-      const monthOfYear = currentMonth; // Use current month for seasonality
+      const monthOfYear = targetMonth; // Use target month for seasonality
       const sameMonthValues = completeMonths
         .filter((d) => {
           const [month] = d.monthYear.split('-');
@@ -563,15 +580,15 @@ export class GestionMonthComponent {
       }
     }
 
-    // Forecast for current month (next position after last complete month)
+    // Forecast for target month (next position after last complete month)
     const nextT = n + 1;
     const forecastValue = beta0 + beta1 * nextT + seasonalityAdjustment;
 
-    // Return current month's date
-    const currentMonthKey = `${currentMonth.toString().padStart(2, '0')}-${currentYear}`;
+    // Return target month's date
+    const targetMonthKey = `${targetMonth.toString().padStart(2, '0')}-${targetYear}`;
 
     return {
-      date: currentMonthKey,
+      date: targetMonthKey,
       value: Math.max(0, forecastValue), // Ensure non-negative
     };
   }
@@ -579,12 +596,29 @@ export class GestionMonthComponent {
   // Model 3: Daily Run-Rate Extrapolation (excluding Sundays)
   forecastModel3(): { date: string; value: number } | null {
     const reserve = this.managementInfo?.reserve || {};
-    const currentMonth = this.currentMonth;
-    const currentYear = this.currentDate.getFullYear();
+    const targetMonth = this.forecastTargetMonth;
+    const targetYear = this.forecastTargetYear;
 
-    // Get all days in current month
-    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-    const today = this.currentDate.getDate();
+    // Get all days in target month
+    const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
+    
+    // Determine "today" - if target month is in the past, use last day of that month
+    // If target month is current month, use actual today
+    // If target month is future, return null (can't forecast future with current data)
+    const targetDateStart = new Date(targetYear, targetMonth - 1, 1);
+    const currentDateObj = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), this.currentDate.getDate());
+    
+    let today: number;
+    if (targetDateStart > currentDateObj) {
+      // Future month - can't forecast with current data
+      return null;
+    } else if (targetDateStart.getMonth() === currentDateObj.getMonth() && targetDateStart.getFullYear() === currentDateObj.getFullYear()) {
+      // Current month - use actual today
+      today = this.currentDate.getDate();
+    } else {
+      // Past month - use last day of that month
+      today = daysInMonth;
+    }
 
     // Calculate workdays (excluding Sundays) and sum data
     let workdaysSoFar = 0;
@@ -602,7 +636,7 @@ export class GestionMonthComponent {
     };
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth - 1, day);
+      const date = new Date(targetYear, targetMonth - 1, day);
       const isSunday = date.getDay() === 0;
 
       if (!isSunday) {
@@ -611,7 +645,7 @@ export class GestionMonthComponent {
           // Find all reserve entries that match this date (handle keys with/without timestamps)
           let dayValue = 0;
           for (const [key, value] of Object.entries(reserve)) {
-            if (matchesDate(key, currentMonth, day, currentYear)) {
+            if (matchesDate(key, targetMonth, day, targetYear)) {
               dayValue += parseFloat(value || '0');
             }
           }
@@ -634,7 +668,7 @@ export class GestionMonthComponent {
         const forecastValue = sumSoFar + avgDaily * remainingWorkdays;
         
         return {
-          date: `${currentMonth.toString().padStart(2, '0')}-${currentYear}`,
+          date: `${targetMonth.toString().padStart(2, '0')}-${targetYear}`,
           value: forecastValue,
         };
       }
@@ -647,22 +681,8 @@ export class GestionMonthComponent {
     const remainingWorkdays = workdaysTotal - workdaysSoFar;
     const forecastValue = sumSoFar + dailyAvg * remainingWorkdays;
 
-    // Debug logging (remove after fixing)
-    console.log('Model 3 Debug:', {
-      currentMonth,
-      currentYear,
-      today,
-      daysInMonth,
-      workdaysTotal,
-      workdaysSoFar,
-      sumSoFar,
-      dailyAvg,
-      remainingWorkdays,
-      forecastValue,
-    });
-
     return {
-      date: `${currentMonth.toString().padStart(2, '0')}-${currentYear}`,
+      date: `${targetMonth.toString().padStart(2, '0')}-${targetYear}`,
       value: forecastValue,
     };
   }
@@ -672,12 +692,29 @@ export class GestionMonthComponent {
   // that treats the reserve as a single "location" with growth trend
   forecastModel4(): { date: string; value: number } | null {
     const reserve = this.managementInfo?.reserve || {};
-    const currentMonth = this.currentMonth;
-    const currentYear = this.currentDate.getFullYear();
+    const targetMonth = this.forecastTargetMonth;
+    const targetYear = this.forecastTargetYear;
 
-    // Get current month data
-    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-    const today = this.currentDate.getDate();
+    // Get target month data
+    const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
+    
+    // Determine "today" - if target month is in the past, use last day of that month
+    // If target month is current month, use actual today
+    // If target month is future, return null (can't forecast future with current data)
+    const targetDateStart = new Date(targetYear, targetMonth - 1, 1);
+    const currentDateObj = new Date(this.currentDate.getFullYear(), this.currentDate.getMonth(), this.currentDate.getDate());
+    
+    let today: number;
+    if (targetDateStart > currentDateObj) {
+      // Future month - can't forecast with current data
+      return null;
+    } else if (targetDateStart.getMonth() === currentDateObj.getMonth() && targetDateStart.getFullYear() === currentDateObj.getFullYear()) {
+      // Current month - use actual today
+      today = this.currentDate.getDate();
+    } else {
+      // Past month - use last day of that month
+      today = daysInMonth;
+    }
 
     // Helper to check if a date key matches a specific day
     const matchesDate = (key: string, month: number, day: number, year: number): boolean => {
@@ -694,7 +731,7 @@ export class GestionMonthComponent {
     let sumSoFar = 0;
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentYear, currentMonth - 1, day);
+      const date = new Date(targetYear, targetMonth - 1, day);
       const isSunday = date.getDay() === 0;
 
       if (!isSunday) {
@@ -703,7 +740,7 @@ export class GestionMonthComponent {
           // Find all reserve entries that match this date (handle keys with/without timestamps)
           let dayValue = 0;
           for (const [key, value] of Object.entries(reserve)) {
-            if (matchesDate(key, currentMonth, day, currentYear)) {
+            if (matchesDate(key, targetMonth, day, targetYear)) {
               dayValue += parseFloat(value || '0');
             }
           }
@@ -717,18 +754,33 @@ export class GestionMonthComponent {
     if (workdaysSoFar === 0 && today > 1) {
       // Fallback: use average from previous months
       const monthlyData = this.getMonthlyTotals();
-      if (monthlyData.length > 0) {
-        const avgMonthly = monthlyData.reduce((sum, m) => sum + m.value, 0) / monthlyData.length;
+      const normalizeMonthYear = (monthYear: string): string => {
+        const [month, year] = monthYear.split('-');
+        return `${parseInt(month)}-${year}`;
+      };
+      const targetMonthKeyNormalized = `${targetMonth}-${targetYear}`;
+      
+      // Only use months before target
+      const completeMonths = monthlyData.filter((m) => {
+        const normalized = normalizeMonthYear(m.monthYear);
+        const [mMonth, mYear] = normalized.split('-').map(Number);
+        if (mYear < targetYear) return true;
+        if (mYear === targetYear && mMonth < targetMonth) return true;
+        return false;
+      });
+      
+      if (completeMonths.length > 0) {
+        const avgMonthly = completeMonths.reduce((sum, m) => sum + m.value, 0) / completeMonths.length;
         const avgDaily = avgMonthly / 26; // Approximate workdays per month
         
         // Calculate growth rate from previous months
         let growthRate = 1.0;
-        if (monthlyData.length >= 2) {
-          const k = Math.min(3, monthlyData.length - 1);
+        if (completeMonths.length >= 2) {
+          const k = Math.min(3, completeMonths.length - 1);
           const recentGrowth: number[] = [];
-          for (let i = monthlyData.length - k; i < monthlyData.length; i++) {
-            if (i > 0 && monthlyData[i - 1].value > 0) {
-              recentGrowth.push(monthlyData[i].value / monthlyData[i - 1].value);
+          for (let i = completeMonths.length - k; i < completeMonths.length; i++) {
+            if (i > 0 && completeMonths[i - 1].value > 0) {
+              recentGrowth.push(completeMonths[i].value / completeMonths[i - 1].value);
             }
           }
           if (recentGrowth.length > 0) {
@@ -740,7 +792,7 @@ export class GestionMonthComponent {
         const forecastValue = sumSoFar + (avgDaily * growthRate) * remainingWorkdays;
         
         return {
-          date: `${currentMonth.toString().padStart(2, '0')}-${currentYear}`,
+          date: `${targetMonth.toString().padStart(2, '0')}-${targetYear}`,
           value: forecastValue,
         };
       }
@@ -749,15 +801,27 @@ export class GestionMonthComponent {
 
     if (workdaysSoFar === 0) return null;
 
-    // Calculate growth rate from previous months
+    // Calculate growth rate from previous months (before target month)
     const monthlyData = this.getMonthlyTotals();
+    const normalizeMonthYear = (monthYear: string): string => {
+      const [month, year] = monthYear.split('-');
+      return `${parseInt(month)}-${year}`;
+    };
+    const completeMonths = monthlyData.filter((m) => {
+      const normalized = normalizeMonthYear(m.monthYear);
+      const [mMonth, mYear] = normalized.split('-').map(Number);
+      if (mYear < targetYear) return true;
+      if (mYear === targetYear && mMonth < targetMonth) return true;
+      return false;
+    });
+    
     let growthRate = 1.0;
-    if (monthlyData.length >= 2) {
-      const k = Math.min(3, monthlyData.length - 1);
+    if (completeMonths.length >= 2) {
+      const k = Math.min(3, completeMonths.length - 1);
       const recentGrowth: number[] = [];
-      for (let i = monthlyData.length - k; i < monthlyData.length; i++) {
-        if (i > 0 && monthlyData[i - 1].value > 0) {
-          recentGrowth.push(monthlyData[i].value / monthlyData[i - 1].value);
+      for (let i = completeMonths.length - k; i < completeMonths.length; i++) {
+        if (i > 0 && completeMonths[i - 1].value > 0) {
+          recentGrowth.push(completeMonths[i].value / completeMonths[i - 1].value);
         }
       }
       if (recentGrowth.length > 0) {
@@ -770,7 +834,7 @@ export class GestionMonthComponent {
     const forecastValue = sumSoFar + dailyAvg * remainingWorkdays;
 
     return {
-      date: `${currentMonth.toString().padStart(2, '0')}-${currentYear}`,
+      date: `${targetMonth.toString().padStart(2, '0')}-${targetYear}`,
       value: forecastValue,
     };
   }
@@ -814,9 +878,10 @@ export class GestionMonthComponent {
         if (totalWeight === 0) return null;
 
         const combinedValue = weightedSum / totalWeight;
-        const date = forecasts[0].date; // Use first available date
+        // Always use the target month/year for the date, not the first available forecast date
+        const targetMonthKey = `${this.forecastTargetMonth.toString().padStart(2, '0')}-${this.forecastTargetYear}`;
 
-        return { date, value: combinedValue };
+        return { date: targetMonthKey, value: combinedValue };
       default:
         return null;
     }
@@ -828,10 +893,12 @@ export class GestionMonthComponent {
     if (this.selectedForecastModel !== 'none') {
       const forecast = this.calculateForecast(this.selectedForecastModel);
       if (forecast && forecast.value !== null && forecast.value > 0) {
+        // Ensure the forecast date matches the target month/year
+        const expectedDate = `${this.forecastTargetMonth.toString().padStart(2, '0')}-${this.forecastTargetYear}`;
         const dollarsStr = this.compute.convertCongoleseFrancToUsDollars(forecast.value.toString());
         const dollarsValue = typeof dollarsStr === 'string' ? parseFloat(dollarsStr) || 0 : dollarsStr;
         this.currentForecast = {
-          date: forecast.date,
+          date: expectedDate, // Always use the target month/year, not the forecast date
           value: forecast.value,
           valueInDollars: dollarsValue,
         };
@@ -842,6 +909,16 @@ export class GestionMonthComponent {
       this.currentForecast = null;
     }
     this.updateReserveGraphics(this.graphicsRange);
+  }
+
+  // Method to handle forecast target month/year change
+  onForecastTargetChange() {
+    // Recalculate forecast if a model is selected
+    if (this.selectedForecastModel !== 'none') {
+      this.onForecastModelChange();
+    } else {
+      this.updateReserveGraphics(this.graphicsRange);
+    }
   }
 
   // Helper method to format month-year for display
