@@ -127,11 +127,15 @@ export class TrackingMonthCentralComponent {
     firstName: string;
     totalReserve: number;
     totalReserveInDollars: string;
+    averageReserve: number;
+    averageReserveUsd: number;
   }[] = [];
   sortedPaymentMonth: {
     firstName: string;
     totalPayment: number;
     totalPaymentInDollars: string;
+    averagePayment: number;
+    averagePaymentUsd: number;
   }[] = [];
   sortedReservePreviousMonth: {
     firstName: string;
@@ -343,7 +347,7 @@ export class TrackingMonthCentralComponent {
       return;
     }
 
-    this.sortedReserveMonth =
+    const reserveMonthRaw =
       this.compute.findTotalGivenMonthForAllUsersSortedDescending(
         this.allUsers,
         'reserve',
@@ -358,6 +362,36 @@ export class TrackingMonthCentralComponent {
         this.reserveComparisonMonth,
         this.reserveComparisonYear
       );
+
+    // Calculate working days for average calculation
+    const currentDate = new Date();
+    const isCurrentMonth = 
+      this.reserveCurrentMonth === currentDate.getMonth() + 1 && 
+      this.reserveCurrentYear === currentDate.getFullYear();
+    const workingDays = this.calculateWorkingDays(
+      this.reserveCurrentMonth,
+      this.reserveCurrentYear,
+      isCurrentMonth
+    );
+
+    // Add averages to sortedReserveMonth
+    this.sortedReserveMonth = reserveMonthRaw.map((x: any) => {
+      const totalReserve = x.totalReserve;
+      // Calculate average for this location
+      const averageReserve = workingDays > 0 ? totalReserve / workingDays : 0;
+      const averageReserveUsdStr = this.compute.convertCongoleseFrancToUsDollars(
+        String(averageReserve)
+      );
+      const averageReserveUsd = averageReserveUsdStr === '' ? 0 : Number(averageReserveUsdStr);
+
+      return {
+        firstName: x.firstName,
+        totalReserve: totalReserve,
+        totalReserveInDollars: x.totalReserveInDollars,
+        averageReserve,
+        averageReserveUsd,
+      };
+    });
 
     this.sortedGrowthRateMonth = this.sortedReserveMonth.map((current) => {
       const previous = this.sortedReservePreviousMonth.find(
@@ -436,11 +470,34 @@ export class TrackingMonthCentralComponent {
         this.paymentComparisonYear
       );
 
-    this.sortedPaymentMonth = paymentCurrentRaw.map((x: any) => ({
-      firstName: x.firstName,
-      totalPayment: x.totalReserve,
-      totalPaymentInDollars: x.totalReserveInDollars,
-    }));
+    // Calculate working days for average calculation
+    const currentDate = new Date();
+    const isCurrentPaymentMonth = 
+      this.paymentCurrentMonth === currentDate.getMonth() + 1 && 
+      this.paymentCurrentYear === currentDate.getFullYear();
+    const paymentWorkingDays = this.calculateWorkingDays(
+      this.paymentCurrentMonth,
+      this.paymentCurrentYear,
+      isCurrentPaymentMonth
+    );
+
+    this.sortedPaymentMonth = paymentCurrentRaw.map((x: any) => {
+      const totalPayment = x.totalReserve;
+      // Calculate average for this location
+      const averagePayment = paymentWorkingDays > 0 ? totalPayment / paymentWorkingDays : 0;
+      const averagePaymentUsdStr = this.compute.convertCongoleseFrancToUsDollars(
+        String(averagePayment)
+      );
+      const averagePaymentUsd = averagePaymentUsdStr === '' ? 0 : Number(averagePaymentUsdStr);
+
+      return {
+        firstName: x.firstName,
+        totalPayment: totalPayment,
+        totalPaymentInDollars: x.totalReserveInDollars,
+        averagePayment,
+        averagePaymentUsd,
+      };
+    });
 
     this.sortedPaymentPreviousMonth = paymentPrevRaw.map((x: any) => ({
       firstName: x.firstName,

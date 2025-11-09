@@ -304,18 +304,18 @@
             class="w-full sm:min-w-0 min-w-[640px] table-auto text-sm font-normal tabular-nums"
           >
             <thead
-              class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              class="bg-slate-50 text-sm uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             >
               <tr>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-left">Rang</th>
-                <th class="px-2 py-2 sm:px-2 sm:py-3 text-left">Équipe</th>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-right">
-                  Réserve (FC)
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-left whitespace-nowrap">Rang</th>
+                <th class="px-3 py-3 sm:px-4 sm:py-4 text-left whitespace-nowrap">Équipe</th>
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
+                  Réserve
                 </th>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-right">
-                  Réserve ($)
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
+                  Moyenne/jour
                 </th>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
                   Δ Croissance
                 </th>
               </tr>
@@ -326,9 +326,9 @@
                 *ngFor="let s of sortedReserveMonth; let i = index"
                 class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
               >
-                <td class="px-3 py-2 sm:px-4 sm:py-3">
+                <td class="px-4 py-3 sm:px-5 sm:py-4">
                   <span
-                    class="inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-sm sm:text-base font-semibold ring-1 ring-inset"
+                    class="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-base sm:text-lg font-semibold ring-1 ring-inset"
                     [ngClass]="{
                       'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
                         i === 0,
@@ -343,12 +343,12 @@
                   </span>
                 </td>
 
-                <td class="px-2 py-2 sm:py-3">
+                <td class="px-3 py-3 sm:px-4 sm:py-4">
                   <div class="font-medium text-slate-900 dark:text-slate-100">
                     {{ s.firstName }}
                   </div>
                   <div
-                    class="mt-1 h-1.5 sm:h-2 w-28 sm:w-40 rounded-full bg-slate-200 dark:bg-slate-700"
+                    class="mt-1 h-1.5 sm:h-2 w-32 sm:w-44 rounded-full bg-slate-200 dark:bg-slate-700"
                     aria-hidden="true"
                   >
                     <div
@@ -364,30 +364,32 @@
                 </td>
 
                 <td
-                  class="px-3 py-2 sm:px-4 sm:py-3 text-right whitespace-nowrap"
+                  class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap"
                 >
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{ toNum(s?.totalReserve) | number : "1.0-0" }} FC
-                  </span>
-                </td>
-
-                <td
-                  class="px-3 py-2 sm:px-4 sm:py-3 text-right whitespace-nowrap"
-                >
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{ toNum(s?.totalReserveInDollars) | number : "1.0-0" }} $
-                  </span>
-                  <span
-                    class="ml-2 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400"
-                  >
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(s?.totalReserveInDollars) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(s?.totalReserve) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {{
                       percentOf(toNum(s?.totalReserveInDollars), maxReserveUSD)
                         | number : "1.0-0"
                     }}%
-                  </span>
+                  </div>
                 </td>
 
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(s?.averageReserveUsd) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(s?.averageReserve) | number : "1.0-0" }}
+                  </div>
+                </td>
+
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right">
                   <span
                     class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] sm:text-xs font-semibold"
                     [ngClass]="nonNegColor(sortedGrowthRateMonth[i].growthRate)"
@@ -413,21 +415,28 @@
             </tbody>
 
             <tfoot
-              class="bg-slate-50 text-sm dark:bg-slate-800 dark:text-slate-100"
+              class="bg-slate-50 text-base dark:bg-slate-800 dark:text-slate-100"
             >
               <tr>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 font-semibold">Total</td>
-                <td class="px-2 py-2 sm:py-3"></td>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
-                  {{ toNum(reserveCurrentTotalAmount) | number : "1.0-0" }} FC
+                <td class="px-4 py-3 sm:px-5 sm:py-4 font-semibold">Total</td>
+                <td class="px-3 py-3 sm:px-4 sm:py-4"></td>
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right font-semibold whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(reserveCurrentTotalAmountDollars) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(reserveCurrentTotalAmount) | number : "1.0-0" }}
+                  </div>
                 </td>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
-                  {{
-                    toNum(reserveCurrentTotalAmountDollars) | number : "1.0-0"
-                  }}
-                  $
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right font-semibold whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ averageDailyReserveUsd | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ averageDailyReserve | number : "1.0-0" }}
+                  </div>
                 </td>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-bold">
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right font-bold">
                   <!-- {{ toNum(reserveGrowthRateTotal) | number : "1.0-0" }} % -->
                   <span
                     class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] sm:text-xs font-bold"
@@ -555,18 +564,18 @@
             class="w-full sm:min-w-0 min-w-[640px] table-auto text-sm font-normal tabular-nums"
           >
             <thead
-              class="bg-slate-50 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+              class="bg-slate-50 text-sm uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
             >
               <tr>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-left">Rang</th>
-                <th class="px-2 py-2 sm:px-2 sm:py-3 text-left">Équipe</th>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-right">
-                  Paiement (FC)
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-left whitespace-nowrap">Rang</th>
+                <th class="px-3 py-3 sm:px-4 sm:py-4 text-left whitespace-nowrap">Équipe</th>
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
+                  Paiement
                 </th>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-right">
-                  Paiement ($)
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
+                  Moyenne/jour
                 </th>
-                <th class="px-3 py-2 sm:px-4 sm:py-3 text-right">
+                <th class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
                   Δ Croissance
                 </th>
               </tr>
@@ -577,9 +586,9 @@
                 *ngFor="let s of sortedPaymentMonth; let i = index"
                 class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
               >
-                <td class="px-3 py-2 sm:px-4 sm:py-3">
+                <td class="px-4 py-3 sm:px-5 sm:py-4">
                   <span
-                    class="inline-flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-sm sm:text-base font-semibold ring-1 ring-inset"
+                    class="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-base sm:text-lg font-semibold ring-1 ring-inset"
                     [ngClass]="{
                       'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
                         i === 0,
@@ -594,12 +603,12 @@
                   </span>
                 </td>
 
-                <td class="px-2 py-2 sm:py-3">
+                <td class="px-3 py-3 sm:px-4 sm:py-4">
                   <div class="font-medium text-slate-900 dark:text-slate-100">
                     {{ s.firstName }}
                   </div>
                   <div
-                    class="mt-1 h-1.5 sm:h-2 w-28 sm:w-40 rounded-full bg-slate-200 dark:bg-slate-700"
+                    class="mt-1 h-1.5 sm:h-2 w-32 sm:w-44 rounded-full bg-slate-200 dark:bg-slate-700"
                     aria-hidden="true"
                   >
                     <div
@@ -615,30 +624,32 @@
                 </td>
 
                 <td
-                  class="px-3 py-2 sm:px-4 sm:py-3 text-right whitespace-nowrap"
+                  class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap"
                 >
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{ toNum(s?.totalPayment) | number : "1.0-0" }} FC
-                  </span>
-                </td>
-
-                <td
-                  class="px-3 py-2 sm:px-4 sm:py-3 text-right whitespace-nowrap"
-                >
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{ toNum(s?.totalPaymentInDollars) | number : "1.0-0" }} $
-                  </span>
-                  <span
-                    class="ml-2 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400"
-                  >
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(s?.totalPaymentInDollars) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(s?.totalPayment) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {{
                       percentOf(toNum(s?.totalPaymentInDollars), maxPaymentUSD)
                         | number : "1.0-0"
                     }}%
-                  </span>
+                  </div>
                 </td>
 
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-bold">
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(s?.averagePaymentUsd) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(s?.averagePayment) | number : "1.0-0" }}
+                  </div>
+                </td>
+
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right font-bold">
                   <span
                     class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] sm:text-xs font-semibold"
                     [ngClass]="
@@ -666,21 +677,28 @@
             </tbody>
 
             <tfoot
-              class="bg-slate-50 text-sm dark:bg-slate-800 dark:text-slate-100"
+              class="bg-slate-50 text-base dark:bg-slate-800 dark:text-slate-100"
             >
               <tr>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 font-semibold">Total</td>
-                <td class="px-2 py-2 sm:py-3"></td>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
-                  {{ toNum(paymentCurrentTotalAmount) | number : "1.0-0" }} FC
+                <td class="px-4 py-3 sm:px-5 sm:py-4 font-semibold">Total</td>
+                <td class="px-3 py-3 sm:px-4 sm:py-4"></td>
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right font-semibold whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(paymentCurrentTotalAmountDollars) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(paymentCurrentTotalAmount) | number : "1.0-0" }}
+                  </div>
                 </td>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
-                  {{
-                    toNum(paymentCurrentTotalAmountDollars) | number : "1.0-0"
-                  }}
-                  $
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right font-semibold whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ averageDailyPaymentUsd | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ averageDailyPayment | number : "1.0-0" }}
+                  </div>
                 </td>
-                <td class="px-3 py-2 sm:px-4 sm:py-3 text-right font-semibold">
+                <td class="px-4 py-3 sm:px-5 sm:py-4 text-right font-bold">
                   <!-- {{ toNum(paymentGrowthRateTotal) | number : "1.0-0" }} % -->
                   <span
                     class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] sm:text-xs font-bold"
