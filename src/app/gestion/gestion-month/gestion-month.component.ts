@@ -61,6 +61,8 @@ export class GestionMonthComponent {
   // Forecast target month/year (defaults to current month)
   forecastTargetMonth: number = this.currentMonth;
   forecastTargetYear: number = this.currentDate.getFullYear();
+  // Number of months back to use for forecast calculations (default 3)
+  monthsBackForForecast: number = 3;
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
   givenYear = this.year;
@@ -476,8 +478,8 @@ export class GestionMonthComponent {
 
     if (completeMonths.length < 2) return null;
 
-    // Use last 3 complete months to calculate average growth
-    const k = Math.min(3, completeMonths.length - 1);
+    // Use last N complete months to calculate average growth (N = monthsBackForForecast)
+    const k = Math.min(this.monthsBackForForecast, completeMonths.length - 1);
     const growthFactors: number[] = [];
 
     // Calculate growth rates from the last k complete months
@@ -776,7 +778,7 @@ export class GestionMonthComponent {
         // Calculate growth rate from previous months
         let growthRate = 1.0;
         if (completeMonths.length >= 2) {
-          const k = Math.min(3, completeMonths.length - 1);
+          const k = Math.min(this.monthsBackForForecast, completeMonths.length - 1);
           const recentGrowth: number[] = [];
           for (let i = completeMonths.length - k; i < completeMonths.length; i++) {
             if (i > 0 && completeMonths[i - 1].value > 0) {
@@ -817,7 +819,7 @@ export class GestionMonthComponent {
     
     let growthRate = 1.0;
     if (completeMonths.length >= 2) {
-      const k = Math.min(3, completeMonths.length - 1);
+      const k = Math.min(this.monthsBackForForecast, completeMonths.length - 1);
       const recentGrowth: number[] = [];
       for (let i = completeMonths.length - k; i < completeMonths.length; i++) {
         if (i > 0 && completeMonths[i - 1].value > 0) {
@@ -918,6 +920,23 @@ export class GestionMonthComponent {
       this.onForecastModelChange();
     } else {
       this.updateReserveGraphics(this.graphicsRange);
+    }
+  }
+
+  // Method to handle months back change
+  onMonthsBackChange() {
+    // Ensure value is a number and between 1 and 12
+    this.monthsBackForForecast = Number(this.monthsBackForForecast);
+    if (isNaN(this.monthsBackForForecast) || this.monthsBackForForecast < 1) {
+      this.monthsBackForForecast = 1;
+    }
+    if (this.monthsBackForForecast > 12) {
+      this.monthsBackForForecast = 12;
+    }
+    
+    // Recalculate forecast if a model is selected
+    if (this.selectedForecastModel !== 'none') {
+      this.onForecastModelChange();
     }
   }
 
