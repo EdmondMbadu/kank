@@ -905,26 +905,42 @@
       <button
         *ngIf="!isPayUnlocked && !auth.isAdmin"
         (click)="openCodeModal()"
-        class="group relative flex flex-col items-center justify-center rounded-2xl bg-gray-100 p-6 shadow transition hover:-translate-y-1 hover:shadow-lg dark:bg-slate-700/50 w-full"
+        class="group relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-5 shadow-md ring-1 ring-inset ring-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-gray-300/60 dark:from-slate-800/60 dark:to-slate-700/50 dark:ring-slate-600/50 dark:hover:ring-slate-500/60 w-full"
       >
-        <img
-          [src]="imagePaths[1]"
-          class="mx-auto mb-4 h-16 w-16 object-contain opacity-40 filter group-hover:opacity-50 dark:invert dark:brightness-75"
-        />
+        <!-- Blurred/disabled image -->
+        <div class="mb-3 transition-all duration-300 group-hover:scale-105">
+          <img
+            [src]="imagePaths[1]"
+            class="mx-auto h-16 w-16 object-contain opacity-30 blur-[2px] filter transition-all duration-300 group-hover:opacity-40 dark:invert dark:brightness-50"
+          />
+        </div>
 
-        <h5 class="mb-2 text-center text-xl font-semibold text-gray-500">
+        <!-- Title with smooth styling -->
+        <h5 class="mb-1.5 text-center text-xl font-semibold text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
           {{ summary[1] }}
         </h5>
 
-        <p class="text-center text-lg font-bold text-gray-400">•••</p>
-        <p class="text-center text-base font-semibold text-gray-400">•••</p>
+        <!-- Placeholder values with subtle styling -->
+        <div class="mb-2 space-y-0.5">
+          <p class="text-center text-lg font-bold text-gray-300 dark:text-gray-600">•••</p>
+          <p class="text-center text-base font-semibold text-gray-300 dark:text-gray-600">•••</p>
+        </div>
 
-        <!-- centred padlock for visual cue -->
-        <span
-          class="absolute top-3 right-3 text-xl text-gray-600 group-hover:text-gray-800 dark:text-gray-200"
+        <!-- Centred padlock with enhanced styling -->
+        <div
+          class="flex items-center justify-center rounded-full bg-white/80 p-2 shadow-lg ring-2 ring-gray-200/50 transition-all duration-300 group-hover:scale-110 group-hover:bg-white group-hover:shadow-xl group-hover:ring-gray-300/70 dark:bg-slate-600/80 dark:ring-slate-500/50 dark:group-hover:bg-slate-500/80 dark:group-hover:ring-slate-400/70"
         >
-          🔒
-        </span>
+          <span
+            class="text-2xl text-gray-400 transition-all duration-300 group-hover:text-gray-600 group-hover:scale-110 dark:text-gray-400 dark:group-hover:text-gray-200"
+          >
+            🔒
+          </span>
+        </div>
+
+        <!-- Subtle unlock hint -->
+        <p class="mt-1.5 text-[10px] font-medium text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
+          Cliquez pour déverrouiller
+        </p>
       </button>
     </ng-container>
     <!-- ------------------------------------------------------------ -->
@@ -932,32 +948,109 @@
     <!-- All other tiles -------------------------------------------- -->
     <ng-container *ngFor="let s of summary; let i = index">
       <ng-container *ngIf="i !== 1">
-        <a
-          routerLink="{{ linkPaths[i] }}"
-          class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
-        >
-          <img
-            [src]="imagePaths[i]"
-            class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
-          />
+        <!-- Tile #7 : « Retrait Épargne Du Jour » (locked for non-admin) -->
+        <ng-container *ngIf="i === 7">
+          <!-- unlocked : normal link -->
+          <a
+            *ngIf="isSavingUnlocked || auth.isAdmin"
+            routerLink="{{ linkPaths[7] }}"
+            class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+          >
+            <img
+              [src]="imagePaths[7]"
+              class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
+            />
 
-          <h5
-            class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
-          >
-            {{ s }}
-          </h5>
+            <h5
+              class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
+            >
+              {{ summary[7] }}
+            </h5>
 
-          <p
-            class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+            <p
+              class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+            >
+              FC&nbsp;{{ summaryContent[7] | number : "1.0-0" }}
+            </p>
+            <p
+              class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
+            >
+              $&nbsp;{{ valuesConvertedToDollars[7] | number : "1.0-0" }}
+            </p>
+          </a>
+
+          <!-- locked : whole card is a button -->
+          <button
+            *ngIf="!isSavingUnlocked && !auth.isAdmin"
+            (click)="openCodeModal()"
+            class="group relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-5 shadow-md ring-1 ring-inset ring-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-gray-300/60 dark:from-slate-800/60 dark:to-slate-700/50 dark:ring-slate-600/50 dark:hover:ring-slate-500/60 w-full"
           >
-            FC&nbsp;{{ summaryContent[i] | number : "1.0-0" }}
-          </p>
-          <p
-            class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
+            <!-- Blurred/disabled image -->
+            <div class="mb-3 transition-all duration-300 group-hover:scale-105">
+              <img
+                [src]="imagePaths[7]"
+                class="mx-auto h-16 w-16 object-contain opacity-30 blur-[2px] filter transition-all duration-300 group-hover:opacity-40 dark:invert dark:brightness-50"
+              />
+            </div>
+
+            <!-- Title with smooth styling -->
+            <h5 class="mb-1.5 text-center text-xl font-semibold text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
+              {{ summary[7] }}
+            </h5>
+
+            <!-- Placeholder values with subtle styling -->
+            <div class="mb-2 space-y-0.5">
+              <p class="text-center text-lg font-bold text-gray-300 dark:text-gray-600">•••</p>
+              <p class="text-center text-base font-semibold text-gray-300 dark:text-gray-600">•••</p>
+            </div>
+
+            <!-- Centred padlock with enhanced styling -->
+            <div
+              class="flex items-center justify-center rounded-full bg-white/80 p-2 shadow-lg ring-2 ring-gray-200/50 transition-all duration-300 group-hover:scale-110 group-hover:bg-white group-hover:shadow-xl group-hover:ring-gray-300/70 dark:bg-slate-600/80 dark:ring-slate-500/50 dark:group-hover:bg-slate-500/80 dark:group-hover:ring-slate-400/70"
+            >
+              <span
+                class="text-2xl text-gray-400 transition-all duration-300 group-hover:text-gray-600 group-hover:scale-110 dark:text-gray-400 dark:group-hover:text-gray-200"
+              >
+                🔒
+              </span>
+            </div>
+
+            <!-- Subtle unlock hint -->
+            <p class="mt-1.5 text-[10px] font-medium text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
+              Cliquez pour déverrouiller
+            </p>
+          </button>
+        </ng-container>
+
+        <!-- All other tiles (normal unlocked cards) -->
+        <ng-container *ngIf="i !== 7">
+          <a
+            routerLink="{{ linkPaths[i] }}"
+            class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
           >
-            $&nbsp;{{ valuesConvertedToDollars[i] | number : "1.0-0" }}
-          </p>
-        </a>
+            <img
+              [src]="imagePaths[i]"
+              class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
+            />
+
+            <h5
+              class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
+            >
+              {{ s }}
+            </h5>
+
+            <p
+              class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+            >
+              FC&nbsp;{{ summaryContent[i] | number : "1.0-0" }}
+            </p>
+            <p
+              class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
+            >
+              $&nbsp;{{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+            </p>
+          </a>
+        </ng-container>
       </ng-container>
     </ng-container>
     <!-- ------------------------------------------------------------ -->

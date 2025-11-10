@@ -187,6 +187,7 @@ export class TodayComponent {
     .filter((c: any) => !!c);
 
   isPayUnlocked = false; // everyone starts locked
+  isSavingUnlocked = false; // everyone starts locked
   showCodeModal = false; // controls the modal visibility
   payCodeInput = new FormControl('');
   payErrMsg = '';
@@ -202,6 +203,7 @@ export class TodayComponent {
     const entered = this.payCodeInput.value?.trim() || '';
     if (this.codesStored.includes(entered)) {
       this.isPayUnlocked = true;
+      this.isSavingUnlocked = true;
       this.closeCodeModal();
       this.payErrMsg = '';
     } else {
