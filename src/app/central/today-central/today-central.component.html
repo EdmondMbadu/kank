@@ -486,8 +486,7 @@
               <tr>
                 <th class="px-3 py-2 text-left">Rang</th>
                 <th class="px-2 py-2 text-left">Équipe</th>
-                <th class="px-3 py-2 text-right">Demandé (FC)</th>
-                <th class="px-3 py-2 text-right">Demandé ($)</th>
+                <th class="px-3 py-2 text-right">Demandé</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -534,36 +533,34 @@
                   </div>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{
-                      toNum(
-                        val(
-                          s,
-                          'totalRequested',
-                          'totalReserve',
-                          'amount',
-                          'value'
-                        )
-                      ) | number : "1.0-0"
-                    }}
-                    FC
-                  </span>
-                </td>
-                <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{
-                      toNum(
-                        val(
-                          s,
-                          'totalRequestedInDollars',
-                          'totalReserveInDollars',
-                          'amountUsd',
-                          'valueUsd'
-                        )
-                      ) | number : "1.0-0"
-                    }}
-                    $
-                  </span>
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ 
+                        toNum(
+                          val(
+                            s,
+                            'totalRequestedInDollars',
+                            'totalReserveInDollars',
+                            'amountUsd',
+                            'valueUsd'
+                          )
+                        ) | number : "1.0-0"
+                      }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ 
+                        toNum(
+                          val(
+                            s,
+                            'totalRequested',
+                            'totalReserve',
+                            'amount',
+                            'value'
+                          )
+                        ) | number : "1.0-0"
+                      }} FC
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -573,11 +570,15 @@
               <tr>
                 <td class="px-3 py-2 font-semibold">Total</td>
                 <td class="px-2 py-2"></td>
-                <td class="px-3 py-2 text-right font-semibold">
-                  {{ toNum(dailyRequest) | number : "1.0-0" }} FC
-                </td>
-                <td class="px-3 py-2 text-right font-semibold">
-                  {{ toNum(dailyRequestDollars) | number : "1.0-0" }} $
+                <td class="px-3 py-2 text-right">
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ toNum(dailyRequestDollars) | number : "1.0-0" }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ toNum(dailyRequest) | number : "1.0-0" }} FC
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tfoot>
@@ -589,7 +590,7 @@
 </section>
 
 <!-- Monthly Graphs Section -->
-<section class="container mx-auto px-6 pb-16">
+<section *ngIf="auth.isAdmin" class="container mx-auto px-6 pb-16">
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Monthly Reserve Graph -->
     <div

@@ -598,9 +598,9 @@
         class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
       >
         <tr>
-          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-          <th scope="col" class="py-3 px-6">Attendu</th>
-          <th scope="col" class="px-6 py-3">Donnée</th>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4 rounded-s-lg">Équipe</th>
+          <th scope="col" class="py-3 md:py-4 px-4 md:px-8">Attendu</th>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Donnée</th>
           <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">
             Paiement donné
           </th>
@@ -619,12 +619,12 @@
         >
           <th
             scope="row"
-            class="px-4 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap"
+            class="px-4 md:px-8 py-4 md:py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap"
           >
             {{ i + 1 }}.&nbsp;{{ s.firstName }}
           </th>
 
-          <td class="px-4 py-4 text-right">
+          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
@@ -635,7 +635,7 @@
             </div>
           </td>
 
-          <td class="px-4 py-4 text-right">
+          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{ +s.actualInDollar! || 0 | number : "1.0-0" }}
@@ -731,10 +731,10 @@
 
       <tfoot>
         <tr class="font-semibold">
-          <th scope="row" class="px-4 py-3 text-base">
+          <th scope="row" class="px-4 md:px-8 py-3 md:py-4 text-base">
             Total ({{ percentage }} %)
           </th>
-          <td class="px-4 py-3 text-right">
+          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{ +overallTotalReserveInDollars || 0 | number : "1.0-0" }}
@@ -744,7 +744,7 @@
               </span>
             </div>
           </td>
-          <td class="px-4 py-3 text-right">
+          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
             <div class="flex flex-col items-end">
               <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 ${{
@@ -788,6 +788,7 @@
 </div>
 
 <div
+  *ngIf="auth.isAdmin"
   class="container lg:block flex mx-auto shadow-xl flex-col md:justify-center md:flex-row"
 >
   <!-- COMBINED CHART -->
