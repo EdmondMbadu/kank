@@ -488,13 +488,25 @@ export class TodayCentralComponent {
     const firstOfMonthReserve = values[0] || 0;
     const todayReserve = values[values.length - 1] || 0;
 
-    // Determine color: red if first > today, green if first < today
-    const lineColor = firstOfMonthReserve > todayReserve ? '#ef4444' : '#10b981';
+    // Determine color: red if first > today (decreased), green if first < today (increased)
+    // Stock market style: green for gains, red for losses
+    const isPositive = todayReserve >= firstOfMonthReserve;
+    const lineColor = isPositive ? '#26a69a' : '#ef5350'; // Teal green or red
+    const fillGradient = isPositive 
+      ? ['rgba(38, 166, 154, 0.1)', 'rgba(38, 166, 154, 0)'] // Green gradient
+      : ['rgba(239, 83, 80, 0.1)', 'rgba(239, 83, 80, 0)']; // Red gradient
 
     // Build title with location name if selected
     const titleText = this.selectedLocation
-      ? `Réserve Totale - ${this.selectedLocation} - Ce Mois`
+      ? `${this.selectedLocation} - Réserve Mensuelle`
       : 'Réserve Totale - Ce Mois';
+
+    // Calculate percentage change
+    const change = todayReserve - firstOfMonthReserve;
+    const changePercent = firstOfMonthReserve > 0 
+      ? ((change / firstOfMonthReserve) * 100).toFixed(2)
+      : '0.00';
+    const changeSign = change >= 0 ? '+' : '';
 
     this.monthlyReserveGraph = {
       data: [
@@ -505,34 +517,100 @@ export class TodayCentralComponent {
           mode: 'lines',
           line: {
             color: lineColor,
-            width: 2,
+            width: 2.5,
+            shape: 'spline', // Smooth curves like stock charts
           },
           fill: 'tozeroy',
-          fillcolor: lineColor + '20', // Add transparency
+          fillcolor: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorstops: [
+              { offset: 0, color: fillGradient[0] },
+              { offset: 1, color: fillGradient[1] }
+            ]
+          },
+          hovertemplate: 
+            '<b>Jour %{x}</b><br>' +
+            'Réserve: <b>$%{y:,.2f}</b><extra></extra>',
         },
       ],
       layout: {
         title: {
           text: titleText,
-          font: { size: 18, color: '#0f172a' },
+          font: { 
+            size: 20, 
+            color: '#1a1a1a',
+            family: 'system-ui, -apple-system, sans-serif'
+          },
+          x: 0.02,
+          y: 0.95,
+          xanchor: 'left',
+          yanchor: 'top',
         },
+        annotations: [
+          {
+            xref: 'paper',
+            yref: 'paper',
+            x: 0.02,
+            y: 0.85,
+            xanchor: 'left',
+            yanchor: 'top',
+            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${todayReserve.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+            showarrow: false,
+            align: 'left',
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            bordercolor: 'transparent',
+            borderpad: 8,
+          }
+        ],
         xaxis: {
-          title: 'Jour du mois',
           showgrid: true,
-          gridcolor: 'rgba(148, 163, 184, 0.2)',
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
         },
         yaxis: {
-          title: 'Réserve ($)',
           showgrid: true,
-          gridcolor: 'rgba(148, 163, 184, 0.2)',
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          side: 'right',
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          tickformat: '$,.0f',
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
         },
-        height: 400,
-        margin: { t: 50, r: 20, l: 60, b: 50 },
-        plot_bgcolor: 'rgba(255,255,255,0)',
-        paper_bgcolor: 'rgba(255,255,255,0)',
+        height: 450,
+        margin: { t: 100, r: 20, l: 20, b: 40 },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
         hovermode: 'x unified',
+        showlegend: false,
+        autosize: true,
       },
-      config: { responsive: true, displayModeBar: false },
+      config: { 
+        responsive: true, 
+        displayModeBar: false,
+        staticPlot: false,
+      },
     };
   }
 
