@@ -330,7 +330,12 @@
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
                 *ngFor="let s of sortedPaymentToday; let i = index"
-                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+                (click)="onPaymentLocationClick(s.firstName)"
+                [class]="
+                  selectedPaymentLocation === s.firstName
+                    ? 'cursor-pointer bg-emerald-100 dark:bg-emerald-900/40'
+                    : 'cursor-pointer odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60'
+                "
               >
                 <td class="px-3 py-2">
                   <span
@@ -666,6 +671,117 @@
       class="flex h-96 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
     >
       Aucune donnée disponible pour le graphique mensuel.
+    </div>
+  </div>
+</section>
+
+<!-- Monthly Payment Graph Section -->
+<section class="container mx-auto px-6 pb-16">
+  <div
+    class="rounded-2xl border border-slate-200/70 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+  >
+    <div class="mb-4">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            Graphique de Paiement
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Évolution des paiements
+            <span *ngIf="selectedPaymentLocation" class="font-medium text-emerald-600 dark:text-emerald-400">
+              · Filtre: {{ selectedPaymentLocation }}
+            </span>
+          </p>
+        </div>
+        <button
+          *ngIf="selectedPaymentLocation"
+          (click)="onPaymentLocationClick(selectedPaymentLocation)"
+          class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+        >
+          Afficher tout
+        </button>
+      </div>
+      
+      <!-- Time Range Filters -->
+      <div class="flex flex-wrap gap-2">
+        <button
+          (click)="onPaymentTimeRangeChange('1D')"
+          [class]="
+            selectedPaymentTimeRange === '1D'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1D
+        </button>
+        <button
+          (click)="onPaymentTimeRangeChange('1W')"
+          [class]="
+            selectedPaymentTimeRange === '1W'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1W
+        </button>
+        <button
+          (click)="onPaymentTimeRangeChange('1M')"
+          [class]="
+            selectedPaymentTimeRange === '1M'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1M
+        </button>
+        <button
+          (click)="onPaymentTimeRangeChange('6M')"
+          [class]="
+            selectedPaymentTimeRange === '6M'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          6M
+        </button>
+        <button
+          (click)="onPaymentTimeRangeChange('1Y')"
+          [class]="
+            selectedPaymentTimeRange === '1Y'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1Y
+        </button>
+        <button
+          (click)="onPaymentTimeRangeChange('MAX')"
+          [class]="
+            selectedPaymentTimeRange === 'MAX'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          MAX
+        </button>
+      </div>
+    </div>
+    <div 
+      *ngIf="monthlyPaymentGraph.data.length > 0"
+      class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+    >
+      <plotly-plot
+        [data]="monthlyPaymentGraph.data"
+        [layout]="monthlyPaymentGraph.layout"
+        [config]="monthlyPaymentGraph.config"
+        class="w-full"
+      ></plotly-plot>
+    </div>
+    <div
+      *ngIf="monthlyPaymentGraph.data.length === 0"
+      class="flex h-96 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
+    >
+      Aucune donnée disponible pour le graphique de paiement.
     </div>
   </div>
 </section>

@@ -130,6 +130,8 @@ export class TodayCentralComponent {
     
     // Update monthly reserve graph
     this.updateMonthlyReserveGraph();
+    // Update monthly payment graph
+    this.updateMonthlyPaymentGraph();
     let tomorrow = this.findNextDay(this.requestDateCorrectFormat);
 
     this.dailyRequest = this.compute
@@ -396,11 +398,20 @@ export class TodayCentralComponent {
     config: { responsive: true, displayModeBar: false },
   };
 
+  // Monthly payment graph
+  monthlyPaymentGraph: { data: any[]; layout: any; config?: any } = {
+    data: [],
+    layout: {},
+    config: { responsive: true, displayModeBar: false },
+  };
+
   // Selected location for filtering graph
   selectedLocation: string | null = null;
+  selectedPaymentLocation: string | null = null;
   
   // Time range filter for graph
   selectedTimeRange: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX' = '1M';
+  selectedPaymentTimeRange: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX' = '1M';
 
   onLocationClick(locationName: string) {
     // Toggle selection: if clicking the same location, deselect it
@@ -412,9 +423,24 @@ export class TodayCentralComponent {
     this.updateMonthlyReserveGraph();
   }
 
+  onPaymentLocationClick(locationName: string) {
+    // Toggle selection: if clicking the same location, deselect it
+    if (this.selectedPaymentLocation === locationName) {
+      this.selectedPaymentLocation = null;
+    } else {
+      this.selectedPaymentLocation = locationName;
+    }
+    this.updateMonthlyPaymentGraph();
+  }
+
   onTimeRangeChange(range: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX') {
     this.selectedTimeRange = range;
     this.updateMonthlyReserveGraph();
+  }
+
+  onPaymentTimeRangeChange(range: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX') {
+    this.selectedPaymentTimeRange = range;
+    this.updateMonthlyPaymentGraph();
   }
 
   private updateMonthlyReserveGraph() {
@@ -736,6 +762,301 @@ export class TodayCentralComponent {
     };
   }
 
+  private updateMonthlyPaymentGraph() {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      this.monthlyPaymentGraph = this.createEmptyPaymentGraph();
+      return;
+    }
+
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    const today = currentDate.getDate();
+
+    // Calculate date range based on selected filter
+    let startDate: Date;
+    const endDate = new Date(currentYear, currentMonth - 1, today);
+    
+    switch (this.selectedPaymentTimeRange) {
+      case '1D':
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 1);
+        break;
+      case '1W':
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 6);
+        break;
+      case '1M':
+        startDate = new Date(currentYear, currentMonth - 1, 1);
+        break;
+      case '6M':
+        startDate = new Date(currentYear, currentMonth - 1, 1);
+        startDate.setMonth(startDate.getMonth() - 5);
+        break;
+      case '1Y':
+        startDate = new Date(currentYear, currentMonth - 1, 1);
+        startDate.setMonth(startDate.getMonth() - 11);
+        break;
+      case 'MAX':
+        let earliestDate: Date | null = null;
+        this.allUsers.forEach((user) => {
+          if (user.dailyReimbursement) {
+            Object.keys(user.dailyReimbursement).forEach((dateStr) => {
+              const normalizedDate = dateStr.split('-').slice(0, 3).join('-');
+              const [month, day, year] = normalizedDate.split('-').map(Number);
+              const date = new Date(year, month - 1, day);
+              if (!earliestDate || date < earliestDate) {
+                earliestDate = date;
+              }
+            });
+          }
+        });
+        startDate = earliestDate || new Date(currentYear, currentMonth - 1, 1);
+        break;
+      default:
+        startDate = new Date(currentYear, currentMonth - 1, 1);
+    }
+
+    // Generate date range
+    const labels: string[] = [];
+    const values: number[] = [];
+    const dateArray: Date[] = [];
+
+    // Filter users by selected location if any
+    const usersToProcess = this.selectedPaymentLocation
+      ? this.allUsers.filter((user) => user.firstName === this.selectedPaymentLocation)
+      : this.allUsers;
+
+    // Generate dates based on range
+    if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W') {
+      const todayDate = new Date(currentYear, currentMonth - 1, today);
+      const actualEndDate = endDate > todayDate ? todayDate : endDate;
+      for (let d = new Date(startDate); d <= actualEndDate; d.setDate(d.getDate() + 1)) {
+        dateArray.push(new Date(d));
+      }
+    } else if (this.selectedPaymentTimeRange === '1M') {
+      for (let day = 1; day <= today; day++) {
+        dateArray.push(new Date(currentYear, currentMonth - 1, day));
+      }
+    } else {
+      const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const endMonth = new Date(currentYear, currentMonth - 1, 1);
+      for (let d = new Date(startMonth); d <= endMonth; d.setMonth(d.getMonth() + 1)) {
+        dateArray.push(new Date(d));
+      }
+    }
+
+    // Calculate payment for each date in range (in dollars)
+    dateArray.forEach((date) => {
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const year = date.getFullYear();
+      
+      let payment: string = '0';
+      
+      if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W' || this.selectedPaymentTimeRange === '1M') {
+        const dateStr = `${month}-${day}-${year}`;
+        
+        if (this.selectedPaymentLocation) {
+          const user = usersToProcess[0];
+          if (user && user.dailyReimbursement) {
+            let dayPayment = 0;
+            Object.entries(user.dailyReimbursement).forEach(([dateKey, amount]) => {
+              const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+              if (normalizedDate === dateStr) {
+                const numericAmount = amount.split(':')[0];
+                dayPayment += parseInt(numericAmount, 10);
+              }
+            });
+            payment = dayPayment.toString();
+          }
+        } else {
+          payment = this.compute.findTodayTotalResultsGivenField(
+            this.allUsers,
+            'dailyReimbursement',
+            dateStr
+          );
+        }
+      } else {
+        const isCurrentMonth = month === currentMonth && year === currentYear;
+        const daysInMonth = isCurrentMonth ? today : new Date(year, month, 0).getDate();
+        let monthPayment = 0;
+        
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateStr = `${month}-${d}-${year}`;
+          let dayPayment: string = '0';
+          
+          if (this.selectedPaymentLocation) {
+            const user = usersToProcess[0];
+            if (user && user.dailyReimbursement) {
+              let dayPaymentNum = 0;
+              Object.entries(user.dailyReimbursement).forEach(([dateKey, amount]) => {
+                const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+                if (normalizedDate === dateStr) {
+                  const numericAmount = amount.split(':')[0];
+                  dayPaymentNum += parseInt(numericAmount, 10);
+                }
+              });
+              dayPayment = dayPaymentNum.toString();
+            }
+          } else {
+            dayPayment = this.compute.findTodayTotalResultsGivenField(
+              this.allUsers,
+              'dailyReimbursement',
+              dateStr
+            );
+          }
+          monthPayment += this.toNum(dayPayment);
+        }
+        payment = monthPayment.toString();
+      }
+      
+      const paymentNum = this.toNum(payment);
+      const paymentInDollars = this.toNum(
+        this.compute.convertCongoleseFrancToUsDollars(paymentNum.toString())
+      );
+      values.push(paymentInDollars);
+      
+      if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W' || this.selectedPaymentTimeRange === '1M') {
+        labels.push(day.toString());
+      } else {
+        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        labels.push(`${monthNames[month - 1]} ${year}`);
+      }
+    });
+
+    const firstPayment = values[0] || 0;
+    const lastPayment = values[values.length - 1] || 0;
+
+    const isPositive = lastPayment >= firstPayment;
+    const lineColor = isPositive ? '#26a69a' : '#ef5350';
+    const fillGradient = isPositive 
+      ? ['rgba(38, 166, 154, 0.1)', 'rgba(38, 166, 154, 0)']
+      : ['rgba(239, 83, 80, 0.1)', 'rgba(239, 83, 80, 0)'];
+
+    const locationPrefix = this.selectedPaymentLocation ? `${this.selectedPaymentLocation} - ` : '';
+    const rangeLabels: { [key: string]: string } = {
+      '1D': '1 Jour',
+      '1W': '1 Semaine',
+      '1M': '1 Mois',
+      '6M': '6 Mois',
+      '1Y': '1 An',
+      'MAX': 'Maximum'
+    };
+    const titleText = `${locationPrefix}Paiement - ${rangeLabels[this.selectedPaymentTimeRange]}`;
+
+    const change = lastPayment - firstPayment;
+    const changePercent = firstPayment > 0 
+      ? ((change / firstPayment) * 100).toFixed(2)
+      : '0.00';
+    const changeSign = change >= 0 ? '+' : '';
+
+    this.monthlyPaymentGraph = {
+      data: [
+        {
+          x: labels,
+          y: values,
+          type: 'scatter',
+          mode: 'lines',
+          line: {
+            color: lineColor,
+            width: 2.5,
+            shape: 'spline',
+          },
+          fill: 'tozeroy',
+          fillcolor: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorstops: [
+              { offset: 0, color: fillGradient[0] },
+              { offset: 1, color: fillGradient[1] }
+            ]
+          },
+          hovertemplate: 
+            '<b>Jour %{x}</b><br>' +
+            'Paiement: <b>$%{y:,.2f}</b><extra></extra>',
+        },
+      ],
+      layout: {
+        title: {
+          text: titleText,
+          font: { 
+            size: 20, 
+            color: '#1a1a1a',
+            family: 'system-ui, -apple-system, sans-serif'
+          },
+          x: 0.02,
+          y: 0.95,
+          xanchor: 'left',
+          yanchor: 'top',
+        },
+        annotations: [
+          {
+            xref: 'paper',
+            yref: 'paper',
+            x: 0.02,
+            y: 0.85,
+            xanchor: 'left',
+            yanchor: 'top',
+            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+            showarrow: false,
+            align: 'left',
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            bordercolor: 'transparent',
+            borderpad: 8,
+          }
+        ],
+        xaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        yaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          side: 'right',
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          tickformat: '$,.0f',
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        height: 450,
+        margin: { t: 100, r: 20, l: 20, b: 40 },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        hovermode: 'x unified',
+        showlegend: false,
+        autosize: true,
+      },
+      config: { 
+        responsive: true, 
+        displayModeBar: false,
+        staticPlot: false,
+      },
+    };
+  }
+
   private createEmptyGraph(title?: string) {
     return {
       data: [],
@@ -746,6 +1067,25 @@ export class TodayCentralComponent {
         },
         xaxis: { title: 'Jour du mois' },
         yaxis: { title: 'Réserve ($)' },
+        height: 400,
+        margin: { t: 50, r: 20, l: 60, b: 50 },
+        plot_bgcolor: 'rgba(255,255,255,0)',
+        paper_bgcolor: 'rgba(255,255,255,0)',
+      },
+      config: { responsive: true, displayModeBar: false },
+    };
+  }
+
+  private createEmptyPaymentGraph(title?: string) {
+    return {
+      data: [],
+      layout: {
+        title: {
+          text: title || 'Paiement Total - Ce Mois',
+          font: { size: 18, color: '#0f172a' },
+        },
+        xaxis: { title: 'Jour du mois' },
+        yaxis: { title: 'Paiement ($)' },
         height: 400,
         margin: { t: 50, r: 20, l: 60, b: 50 },
         plot_bgcolor: 'rgba(255,255,255,0)',
