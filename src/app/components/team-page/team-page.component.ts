@@ -656,4 +656,52 @@ export class TeamPageComponent implements OnInit {
         alert("Impossible de retirer les doublons pour l'instant. Réessayez.");
       });
   }
+
+  /**
+   * Delete an employee completely from the system.
+   * Only available to admins.
+   */
+  async deleteEmployee(employee: Employee, index: number): Promise<void> {
+    if (!this.auth.isAdmin) {
+      return;
+    }
+
+    const employeeName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Cet employé';
+    const clientCount = employee.currentClients?.length || employee.clients?.length || 0;
+    
+    let confirmMessage = `Êtes-vous sûr de vouloir supprimer définitivement ${employeeName} ?\n\n`;
+    if (clientCount > 0) {
+      confirmMessage += `⚠️ ATTENTION : Cet employé a ${clientCount} client(s) assigné(s).\n`;
+      confirmMessage += `Les clients ne seront pas supprimés, mais leur agent assigné sera retiré.\n\n`;
+    }
+    confirmMessage += `Cette action est irréversible.`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const userId = this.auth.currentUser?.uid;
+      if (!userId || !employee.uid) {
+        alert("Impossible d'identifier l'employé ou l'utilisateur.");
+        return;
+      }
+
+      await this.auth.deleteEmployee(userId, employee.uid);
+      
+      // Remove from local array
+      this.employees.splice(index, 1);
+      this.displayEditEmployees = new Array(this.employees.length).fill(false);
+      
+      alert(`${employeeName} a été supprimé avec succès.`);
+      
+      // Refresh the list
+      this.retreiveClients();
+    } catch (error: any) {
+      console.error('Error deleting employee:', error);
+      alert(
+        `Une erreur s'est produite lors de la suppression de l'employé. ${error?.message || ''}`
+      );
+    }
+  }
 }

@@ -581,6 +581,18 @@ export class AuthService {
   }
 
   /**
+   * Delete an employee completely from Firestore.
+   * @param userId - The user ID (location) that owns the employee
+   * @param employeeId - The employee ID to delete
+   */
+  deleteEmployee(userId: string, employeeId: string): Promise<void> {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${userId}/employees/${employeeId}`
+    );
+    return employeeRef.delete();
+  }
+
+  /**
    * Copy an employee from one location (user) to another location.
    * Excludes the clients array as clients are location-specific.
    * @param sourceUserId - The user ID of the source location
