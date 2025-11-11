@@ -580,6 +580,81 @@ export class AuthService {
     return employeeRef.set(data, { merge: true });
   }
 
+  /**
+   * Copy an employee from one location (user) to another location.
+   * Excludes the clients array as clients are location-specific.
+   * @param sourceUserId - The user ID of the source location
+   * @param sourceEmployeeId - The employee ID to copy
+   * @param targetUserId - The user ID of the target location
+   */
+  async copyEmployeeToLocation(
+    sourceUserId: string,
+    sourceEmployeeId: string,
+    targetUserId: string
+  ): Promise<void> {
+    // Get the source employee
+    const sourceEmployeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${sourceUserId}/employees/${sourceEmployeeId}`
+    );
+    const sourceEmployeeDoc = await firstValueFrom(
+      sourceEmployeeRef.valueChanges()
+    );
+
+    if (!sourceEmployeeDoc) {
+      throw new Error('Employee not found');
+    }
+
+    // Create a copy excluding clients and UI-only fields
+    const {
+      clients,
+      currentClients,
+      clientsFinishedPaying,
+      _attachmentFile,
+      _attachmentPreview,
+      _attachmentType,
+      _attachmentSize,
+      _attachmentError,
+      _uploading,
+      _attachmentTakenAt,
+      _attachmentDeviceInfo,
+      _attachmentUA,
+      _attachmentSoftId,
+      _attachmentHash,
+      _dailyTotal,
+      tempUser,
+      tempLocationHolder,
+      ...employeeData
+    } = sourceEmployeeDoc as any;
+
+    // Generate new UID for the copied employee
+    const newUid = this.afs.createId().toString();
+
+    // Create the new employee at the target location
+    const targetEmployeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${targetUserId}/employees/${newUid}`
+    );
+
+    // Set the employee data with a new UID and reset location-specific fields
+    const copiedData: any = {
+      ...employeeData,
+      uid: newUid,
+      clients: [], // Always start with empty clients array
+      currentClients: [],
+      clientsFinishedPaying: 0,
+      dailyPoints: employeeData.dailyPoints || {},
+      totalDailyPoints: employeeData.totalDailyPoints || {},
+      dailyStatus: employeeData.dailyStatus || {},
+      attendance: employeeData.attendance || {},
+      paymentsPicturePath: employeeData.paymentsPicturePath || [],
+      // Reset performance-related fields to start fresh
+      averagePoints: employeeData.averagePoints || '0',
+      totalPoints: employeeData.totalPoints || '0',
+      currentTotalPoints: 0,
+    };
+
+    return targetEmployeeRef.set(copiedData, { merge: true });
+  }
+
   deleteClient(client: Client) {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.currentUser.uid}/clients/${client.uid}`

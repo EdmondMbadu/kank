@@ -214,6 +214,23 @@ export class ReviewsComponent implements OnInit, OnDestroy {
   submissionTargetLabel = '';
   submissionContext: 'team' | 'individual' | null = null;
 
+  // Employee copy feature state
+  showEmployeeCopySection = false;
+  allEmployeesForCopy: Array<{
+    employee: Employee;
+    sourceUserId: string;
+    sourceUserLabel: string;
+  }> = [];
+  selectedSourceEmployee: {
+    employee: Employee;
+    sourceUserId: string;
+    sourceUserLabel: string;
+  } | null = null;
+  selectedTargetLocationUserId: string | null = null;
+  employeeCopyInProgress = false;
+  employeeCopySuccess = false;
+  employeeCopyError = '';
+
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -2201,7 +2218,168 @@ export class ReviewsComponent implements OnInit, OnDestroy {
       .updateReview(this.reviewId, cleanReviews) // ⬅️ create once in AuthService
       .catch((err) => {
         console.error('Update failed:', err);
-        alert('Impossible d’enregistrer le commentaire.');
+        alert("Impossible d'enregistrer le commentaire.");
       });
+  }
+
+  /** ---------- Employee Copy Feature ---------- */
+  toggleEmployeeCopySection(): void {
+    this.showEmployeeCopySection = !this.showEmployeeCopySection;
+    if (this.showEmployeeCopySection && this.allEmployeesForCopy.length === 0) {
+      this.loadAllEmployeesForCopy();
+    }
+  }
+
+  private loadAllEmployeesForCopy(): void {
+    this.allEmployeesForCopy = [];
+    if (!this.allUsers?.length) {
+      return;
+    }
+
+    let completedRequests = 0;
+    const totalRequests = this.allUsers.length;
+
+    this.allUsers.forEach((user) => {
+      const sub = this.auth.getAllEmployeesGivenUser(user).subscribe(
+        (employees) => {
+          const employeeList: Employee[] = Array.isArray(employees)
+            ? (employees as Employee[])
+            : [];
+
+          employeeList.forEach((employee) => {
+            if (!employee?.uid) {
+              return;
+            }
+
+            // Only include active employees
+            const normalizedStatus = (employee.status || '')
+              .toString()
+              .trim()
+              .toLowerCase();
+            if (normalizedStatus !== 'travaille') {
+              return;
+            }
+
+            const userLabel =
+              user.firstName || user.lastName || user.email || 'Unknown';
+
+            this.allEmployeesForCopy.push({
+              employee,
+              sourceUserId: user.uid!,
+              sourceUserLabel: userLabel,
+            });
+          });
+
+          // Sort by employee name
+          this.allEmployeesForCopy.sort((a, b) => {
+            const nameA = `${(a.employee.firstName || '').trim()} ${(
+              a.employee.lastName || ''
+            ).trim()}`
+              .trim()
+              .toLowerCase();
+            const nameB = `${(b.employee.firstName || '').trim()} ${(
+              b.employee.lastName || ''
+            ).trim()}`
+              .trim()
+              .toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+
+          completedRequests++;
+          if (completedRequests === totalRequests) {
+            sub.unsubscribe();
+          }
+        },
+        (err) => {
+          console.error('Error loading employees for copy:', err);
+          completedRequests++;
+          if (completedRequests === totalRequests) {
+            sub.unsubscribe();
+          }
+        }
+      );
+    });
+  }
+
+  getEmployeeCopyDisplayLabel(item: {
+    employee: Employee;
+    sourceUserId: string;
+    sourceUserLabel: string;
+  }): string {
+    const name = [
+      item.employee.firstName,
+      item.employee.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    return name
+      ? `${name} – ${item.sourceUserLabel}`
+      : `${item.sourceUserLabel} (${item.employee.uid})`;
+  }
+
+  async copyEmployeeToLocation(): Promise<void> {
+    if (!this.selectedSourceEmployee) {
+      alert('Veuillez sélectionner un employé à copier.');
+      return;
+    }
+
+    if (!this.selectedTargetLocationUserId) {
+      alert('Veuillez sélectionner une localisation de destination.');
+      return;
+    }
+
+    if (
+      this.selectedSourceEmployee.sourceUserId ===
+      this.selectedTargetLocationUserId
+    ) {
+      alert(
+        "L'employé est déjà dans cette localisation. Veuillez sélectionner une autre localisation."
+      );
+      return;
+    }
+
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir copier cet employé vers la nouvelle localisation ?\n\nLes clients ne seront pas copiés (spécifiques à la localisation).`
+      )
+    ) {
+      return;
+    }
+
+    this.employeeCopyInProgress = true;
+    this.employeeCopySuccess = false;
+    this.employeeCopyError = '';
+
+    try {
+      await this.auth.copyEmployeeToLocation(
+        this.selectedSourceEmployee.sourceUserId,
+        this.selectedSourceEmployee.employee.uid!,
+        this.selectedTargetLocationUserId
+      );
+
+      this.employeeCopySuccess = true;
+      this.employeeCopyError = '';
+
+      // Reset selections
+      this.selectedSourceEmployee = null;
+      this.selectedTargetLocationUserId = null;
+
+      // Reload employees list
+      this.allEmployeesForCopy = [];
+      this.loadAllEmployeesForCopy();
+
+      setTimeout(() => {
+        this.employeeCopySuccess = false;
+      }, 5000);
+    } catch (error: any) {
+      console.error('Error copying employee:', error);
+      this.employeeCopyError =
+        error?.message ||
+        "Une erreur s'est produite lors de la copie de l'employé.";
+      this.employeeCopySuccess = false;
+    } finally {
+      this.employeeCopyInProgress = false;
+    }
   }
 }
