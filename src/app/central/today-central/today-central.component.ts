@@ -396,6 +396,19 @@ export class TodayCentralComponent {
     config: { responsive: true, displayModeBar: false },
   };
 
+  // Selected location for filtering graph
+  selectedLocation: string | null = null;
+
+  onLocationClick(locationName: string) {
+    // Toggle selection: if clicking the same location, deselect it
+    if (this.selectedLocation === locationName) {
+      this.selectedLocation = null;
+    } else {
+      this.selectedLocation = locationName;
+    }
+    this.updateMonthlyReserveGraph();
+  }
+
   private updateMonthlyReserveGraph() {
     if (!this.allUsers || this.allUsers.length === 0) {
       this.monthlyReserveGraph = this.createEmptyGraph();
@@ -427,14 +440,41 @@ export class TodayCentralComponent {
     const labels: string[] = [];
     const values: number[] = [];
 
+    // Filter users by selected location if any
+    const usersToProcess = this.selectedLocation
+      ? this.allUsers.filter((user) => user.firstName === this.selectedLocation)
+      : this.allUsers;
+
     // Calculate reserve for each day of the month up to today (in dollars)
     for (let day = 1; day <= today; day++) {
       const dateStr = `${currentMonth}-${day}-${currentYear}`;
-      const reserve = this.compute.findTodayTotalResultsGivenField(
-        this.allUsers,
-        'reserve',
-        dateStr
-      );
+      let reserve: string;
+      
+      if (this.selectedLocation) {
+        // Get reserve for specific location
+        const user = usersToProcess[0]; // Should only be one user
+        if (user && user.reserve) {
+          let dayReserve = 0;
+          Object.entries(user.reserve).forEach(([date, amount]) => {
+            const normalizedDate = date.split('-').slice(0, 3).join('-');
+            if (normalizedDate === dateStr) {
+              const numericAmount = amount.split(':')[0];
+              dayReserve += parseInt(numericAmount, 10);
+            }
+          });
+          reserve = dayReserve.toString();
+        } else {
+          reserve = '0';
+        }
+      } else {
+        // Get total reserve for all users
+        reserve = this.compute.findTodayTotalResultsGivenField(
+          this.allUsers,
+          'reserve',
+          dateStr
+        );
+      }
+      
       const reserveNum = this.toNum(reserve);
       // Convert to dollars
       const reserveInDollars = this.toNum(
@@ -450,6 +490,11 @@ export class TodayCentralComponent {
 
     // Determine color: red if first > today, green if first < today
     const lineColor = firstOfMonthReserve > todayReserve ? '#ef4444' : '#10b981';
+
+    // Build title with location name if selected
+    const titleText = this.selectedLocation
+      ? `Réserve Totale - ${this.selectedLocation} - Ce Mois`
+      : 'Réserve Totale - Ce Mois';
 
     this.monthlyReserveGraph = {
       data: [
@@ -468,7 +513,7 @@ export class TodayCentralComponent {
       ],
       layout: {
         title: {
-          text: 'Réserve Totale - Ce Mois',
+          text: titleText,
           font: { size: 18, color: '#0f172a' },
         },
         xaxis: {
@@ -491,12 +536,12 @@ export class TodayCentralComponent {
     };
   }
 
-  private createEmptyGraph() {
+  private createEmptyGraph(title?: string) {
     return {
       data: [],
       layout: {
         title: {
-          text: 'Réserve Totale - Ce Mois',
+          text: title || 'Réserve Totale - Ce Mois',
           font: { size: 18, color: '#0f172a' },
         },
         xaxis: { title: 'Jour du mois' },

@@ -199,7 +199,12 @@
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
                 *ngFor="let s of sortedReserveToday; let i = index"
-                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+                (click)="onLocationClick(s.firstName)"
+                [class]="
+                  selectedLocation === s.firstName
+                    ? 'cursor-pointer bg-emerald-100 dark:bg-emerald-900/40'
+                    : 'cursor-pointer odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60'
+                "
               >
                 <td class="px-3 py-2">
                   <span
@@ -559,13 +564,25 @@
   <div
     class="rounded-2xl border border-slate-200/70 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
   >
-    <div class="mb-4">
-      <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-        Graphique de Réserve Mensuelle
-      </h2>
-      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-        Évolution de la réserve totale pour le mois en cours
-      </p>
+    <div class="mb-4 flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          Graphique de Réserve Mensuelle
+        </h2>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Évolution de la réserve totale pour le mois en cours
+          <span *ngIf="selectedLocation" class="font-medium text-emerald-600 dark:text-emerald-400">
+            · Filtre: {{ selectedLocation }}
+          </span>
+        </p>
+      </div>
+      <button
+        *ngIf="selectedLocation"
+        (click)="onLocationClick(selectedLocation)"
+        class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+      >
+        Afficher tout
+      </button>
     </div>
     <div *ngIf="monthlyReserveGraph.data.length > 0">
       <plotly-plot
