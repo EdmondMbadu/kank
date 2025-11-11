@@ -65,6 +65,10 @@ export class Employee {
   arrivalHour?: string;
   arrivalMinute?: string;
 
+  // Trophy fields - arrays to support multiple trophies
+  bestTeamTrophies?: Trophy[];
+  bestEmployeeTrophies?: Trophy[];
+
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;
   _attachmentPreview?: string | null;
@@ -113,3 +117,8 @@ export type AttendanceAttachment = {
   uploadedAt: number; // ISO string
   uploaderId: string;
 };
+
+export interface Trophy {
+  month: string;
+  year: string;
+}

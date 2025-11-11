@@ -5,7 +5,7 @@ import {
 } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import { Client } from 'src/app/models/client';
-import { Employee } from 'src/app/models/employee';
+import { Employee, Trophy } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
@@ -28,6 +28,11 @@ export class TeamPageComponent implements OnInit {
     private compute: ComputationService
   ) {}
   displayEditEmployees: boolean[] = [];
+
+  // ===== Trophy Modal state =====
+  trophyModalVisible = false;
+  trophyModalType: 'team' | 'employee' | null = null;
+  trophyModalEmployee: Employee | null = null;
 
   // ===== Transfer state =====
   transferModalVisible = false;
@@ -167,6 +172,8 @@ export class TeamPageComponent implements OnInit {
     // console.log('common elements', commonElements);
 
     for (let i = 0; this.employees && i < this.employees.length; i++) {
+      // Migrate old single trophy fields to new array format
+      this.migrateTrophyData(this.employees[i]);
       // console.log(' here I am employee ', this.employees[i]);
       this.employees[i].trackingId = `${i}`;
       this.employees[i].age = this.time
@@ -655,6 +662,157 @@ export class TeamPageComponent implements OnInit {
         console.error('Duplicate cleanup error:', err);
         alert("Impossible de retirer les doublons pour l'instant. Réessayez.");
       });
+  }
+
+  /**
+   * Check if employee has best team trophies
+   */
+  hasBestTeamTrophy(employee: Employee): boolean {
+    return !!(employee.bestTeamTrophies && employee.bestTeamTrophies.length > 0);
+  }
+
+  /**
+   * Check if employee has best employee trophies
+   */
+  hasBestEmployeeTrophy(employee: Employee): boolean {
+    return !!(employee.bestEmployeeTrophies && employee.bestEmployeeTrophies.length > 0);
+  }
+
+  /**
+   * Get formatted trophy date string
+   */
+  getTrophyDate(trophy: Trophy): string {
+    if (!trophy || !trophy.month || !trophy.year) return '';
+    const monthNames = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+    const monthIndex = parseInt(trophy.month, 10) - 1;
+    const monthName = monthIndex >= 0 && monthIndex < 12 ? monthNames[monthIndex] : trophy.month;
+    return `${monthName} ${trophy.year}`;
+  }
+
+  /**
+   * Get all team trophies for an employee
+   */
+  getTeamTrophies(employee: Employee): Trophy[] {
+    return employee.bestTeamTrophies || [];
+  }
+
+  /**
+   * Get all employee trophies for an employee
+   */
+  getEmployeeTrophies(employee: Employee): Trophy[] {
+    return employee.bestEmployeeTrophies || [];
+  }
+
+  /**
+   * Add a new team trophy
+   */
+  addTeamTrophy(index: number, month: string, year: string): void {
+    if (!this.employees[index].bestTeamTrophies) {
+      this.employees[index].bestTeamTrophies = [];
+    }
+    this.employees[index].bestTeamTrophies!.push({ month, year });
+  }
+
+  /**
+   * Add a new employee trophy
+   */
+  addEmployeeTrophy(index: number, month: string, year: string): void {
+    if (!this.employees[index].bestEmployeeTrophies) {
+      this.employees[index].bestEmployeeTrophies = [];
+    }
+    this.employees[index].bestEmployeeTrophies!.push({ month, year });
+  }
+
+  /**
+   * Remove a team trophy
+   */
+  removeTeamTrophy(index: number, trophyIndex: number): void {
+    if (this.employees[index].bestTeamTrophies) {
+      this.employees[index].bestTeamTrophies!.splice(trophyIndex, 1);
+    }
+  }
+
+  /**
+   * Remove an employee trophy
+   */
+  removeEmployeeTrophy(index: number, trophyIndex: number): void {
+    if (this.employees[index].bestEmployeeTrophies) {
+      this.employees[index].bestEmployeeTrophies!.splice(trophyIndex, 1);
+    }
+  }
+
+  /**
+   * Open trophy modal
+   */
+  openTrophyModal(employee: Employee, type: 'team' | 'employee'): void {
+    this.trophyModalEmployee = employee;
+    this.trophyModalType = type;
+    this.trophyModalVisible = true;
+  }
+
+  /**
+   * Close trophy modal
+   */
+  closeTrophyModal(): void {
+    this.trophyModalVisible = false;
+    this.trophyModalEmployee = null;
+    this.trophyModalType = null;
+  }
+
+  /**
+   * Get trophies for modal display
+   */
+  getModalTrophies(): Trophy[] {
+    if (!this.trophyModalEmployee || !this.trophyModalType) return [];
+    return this.trophyModalType === 'team' 
+      ? (this.trophyModalEmployee.bestTeamTrophies || [])
+      : (this.trophyModalEmployee.bestEmployeeTrophies || []);
+  }
+
+  /**
+   * Get modal title
+   */
+  getModalTitle(): string {
+    if (!this.trophyModalType) return '';
+    return this.trophyModalType === 'team' ? 'Trophées Meilleure Équipe' : 'Trophées Meilleur Employé';
+  }
+
+  /**
+   * Migrate old single trophy fields to new array format
+   */
+  private migrateTrophyData(employee: Employee): void {
+    // Migrate best team trophy
+    if (!employee.bestTeamTrophies || employee.bestTeamTrophies.length === 0) {
+      employee.bestTeamTrophies = [];
+      // Check for old format fields
+      if ((employee as any).bestTeamTrophyMonth && (employee as any).bestTeamTrophyYear) {
+        employee.bestTeamTrophies.push({
+          month: (employee as any).bestTeamTrophyMonth,
+          year: (employee as any).bestTeamTrophyYear
+        });
+        // Clear old fields (they'll be removed on next save)
+        delete (employee as any).bestTeamTrophyMonth;
+        delete (employee as any).bestTeamTrophyYear;
+      }
+    }
+
+    // Migrate best employee trophy
+    if (!employee.bestEmployeeTrophies || employee.bestEmployeeTrophies.length === 0) {
+      employee.bestEmployeeTrophies = [];
+      // Check for old format fields
+      if ((employee as any).bestEmployeeTrophyMonth && (employee as any).bestEmployeeTrophyYear) {
+        employee.bestEmployeeTrophies.push({
+          month: (employee as any).bestEmployeeTrophyMonth,
+          year: (employee as any).bestEmployeeTrophyYear
+        });
+        // Clear old fields (they'll be removed on next save)
+        delete (employee as any).bestEmployeeTrophyMonth;
+        delete (employee as any).bestEmployeeTrophyYear;
+      }
+    }
   }
 
   /**

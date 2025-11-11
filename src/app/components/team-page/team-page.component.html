@@ -108,6 +108,49 @@
             }"
             >{{ em.status }}</span
           >
+
+          <!-- Compact Trophy badges on profile picture - Clickable -->
+          <div class="absolute top-2 left-2 flex gap-1.5">
+            <!-- Best Team Trophy - Clickable -->
+            <button
+              *ngIf="hasBestTeamTrophy(em)"
+              type="button"
+              (click)="openTrophyModal(em, 'team'); $event.stopPropagation()"
+              class="flex items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-700 p-1.5 shadow-md ring-1 ring-white/60 backdrop-blur-sm hover:scale-110 transition-transform cursor-pointer"
+              [title]="'Meilleure Équipe (' + getTeamTrophies(em).length + ')'"
+            >
+              <!-- Trophy Cup Icon -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.65 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.65 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>
+              </svg>
+              <span *ngIf="getTeamTrophies(em).length > 1" class="ml-0.5 text-[10px] font-bold text-white">{{ getTeamTrophies(em).length }}</span>
+            </button>
+
+            <!-- Best Employee Trophy - Clickable -->
+            <button
+              *ngIf="hasBestEmployeeTrophy(em)"
+              type="button"
+              (click)="openTrophyModal(em, 'employee'); $event.stopPropagation()"
+              class="flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 p-1.5 shadow-md ring-1 ring-white/60 backdrop-blur-sm hover:scale-110 transition-transform cursor-pointer"
+              [title]="'Meilleur Employé (' + getEmployeeTrophies(em).length + ')'"
+            >
+              <!-- Star Icon -->
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <span *ngIf="getEmployeeTrophies(em).length > 1" class="ml-0.5 text-[10px] font-bold text-white">{{ getEmployeeTrophies(em).length }}</span>
+            </button>
+          </div>
         </div>
 
         <!-- info -->
@@ -149,6 +192,8 @@
           >
             Arrival Minute: {{ em.arrivalMinute }}
           </p>
+
+
           <!-- docs links -->
           <div class="mt-3 flex flex-wrap gap-3" *ngIf="auth.isAdmin">
             <a
@@ -445,6 +490,145 @@
                 class="mt-1 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
               />
             </label>
+          </div>
+
+          <!-- Trophy Section - Multiple Trophies -->
+          <div class="mt-6 rounded-xl border-2 border-amber-200 bg-amber-50/50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+            <h3 class="mb-4 text-base font-semibold text-gray-900 dark:text-white">
+              🏆 Trophées
+            </h3>
+            
+            <!-- Best Team Trophies -->
+            <div class="mb-4 rounded-lg border border-amber-300 bg-white/80 p-3 dark:border-amber-700 dark:bg-gray-800/80">
+              <div class="mb-3 flex items-center justify-between">
+                <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  Trophées Meilleure Équipe
+                </h4>
+                <button
+                  type="button"
+                  (click)="addTeamTrophy(i, '', '')"
+                  class="rounded-full bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700"
+                >
+                  + Ajouter
+                </button>
+              </div>
+              
+              <!-- Existing Team Trophies -->
+              <div class="space-y-2" *ngIf="(employees[i].bestTeamTrophies?.length ?? 0) > 0">
+                <div
+                  *ngFor="let trophy of employees[i].bestTeamTrophies!; let trophyIdx = index"
+                  class="flex items-center gap-2 rounded-lg bg-amber-50 p-2 dark:bg-gray-700/50"
+                >
+                  <div class="flex-1 grid gap-2 grid-cols-1 sm:grid-cols-2">
+                    <select
+                      [(ngModel)]="trophy.month"
+                      class="rounded-lg border border-gray-300 p-1.5 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value=""></option>
+                      <option value="01">Janvier</option>
+                      <option value="02">Février</option>
+                      <option value="03">Mars</option>
+                      <option value="04">Avril</option>
+                      <option value="05">Mai</option>
+                      <option value="06">Juin</option>
+                      <option value="07">Juillet</option>
+                      <option value="08">Août</option>
+                      <option value="09">Septembre</option>
+                      <option value="10">Octobre</option>
+                      <option value="11">Novembre</option>
+                      <option value="12">Décembre</option>
+                    </select>
+                    <input
+                      [(ngModel)]="trophy.year"
+                      type="number"
+                      min="2000"
+                      max="2100"
+                      placeholder="Année"
+                      class="rounded-lg border border-gray-300 p-1.5 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    (click)="removeTeamTrophy(i, trophyIdx)"
+                    class="rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
+                    title="Supprimer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p *ngIf="!employees[i].bestTeamTrophies || employees[i].bestTeamTrophies?.length === 0" class="text-xs text-gray-500 dark:text-gray-400">
+                Aucun trophée
+              </p>
+            </div>
+
+            <!-- Best Employee Trophies -->
+            <div class="rounded-lg border border-amber-300 bg-white/80 p-3 dark:border-amber-700 dark:bg-gray-800/80">
+              <div class="mb-3 flex items-center justify-between">
+                <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  Trophées Meilleur Employé
+                </h4>
+                <button
+                  type="button"
+                  (click)="addEmployeeTrophy(i, '', '')"
+                  class="rounded-full bg-yellow-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-yellow-700"
+                >
+                  + Ajouter
+                </button>
+              </div>
+              
+              <!-- Existing Employee Trophies -->
+              <div class="space-y-2" *ngIf="(employees[i].bestEmployeeTrophies?.length ?? 0) > 0">
+                <div
+                  *ngFor="let trophy of employees[i].bestEmployeeTrophies!; let trophyIdx = index"
+                  class="flex items-center gap-2 rounded-lg bg-yellow-50 p-2 dark:bg-gray-700/50"
+                >
+                  <div class="flex-1 grid gap-2 grid-cols-1 sm:grid-cols-2">
+                    <select
+                      [(ngModel)]="trophy.month"
+                      class="rounded-lg border border-gray-300 p-1.5 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value=""></option>
+                      <option value="01">Janvier</option>
+                      <option value="02">Février</option>
+                      <option value="03">Mars</option>
+                      <option value="04">Avril</option>
+                      <option value="05">Mai</option>
+                      <option value="06">Juin</option>
+                      <option value="07">Juillet</option>
+                      <option value="08">Août</option>
+                      <option value="09">Septembre</option>
+                      <option value="10">Octobre</option>
+                      <option value="11">Novembre</option>
+                      <option value="12">Décembre</option>
+                    </select>
+                    <input
+                      [(ngModel)]="trophy.year"
+                      type="number"
+                      min="2000"
+                      max="2100"
+                      placeholder="Année"
+                      class="rounded-lg border border-gray-300 p-1.5 text-xs bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    (click)="removeEmployeeTrophy(i, trophyIdx)"
+                    class="rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
+                    title="Supprimer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p *ngIf="!employees[i].bestEmployeeTrophies || employees[i].bestEmployeeTrophies?.length === 0" class="text-xs text-gray-500 dark:text-gray-400">
+                Aucun trophée
+              </p>
+            </div>
           </div>
 
           <!-- attach docs: compact + wrapping buttons -->
@@ -974,6 +1158,126 @@
         </svg>
         Retirer les doublons
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- === TROPHY MODAL === -->
+<div
+  *ngIf="trophyModalVisible"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+  (click)="closeTrophyModal()"
+>
+  <div
+    class="w-full max-w-md rounded-3xl bg-white shadow-2xl dark:bg-gray-800 max-h-[85vh] flex flex-col overflow-hidden"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-6 py-4 dark:border-gray-700 dark:from-amber-900/20 dark:to-yellow-900/20">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-full"
+          [ngClass]="{
+            'bg-gradient-to-br from-amber-500 to-amber-700': trophyModalType === 'team',
+            'bg-gradient-to-br from-yellow-400 to-yellow-600': trophyModalType === 'employee'
+          }"
+        >
+          <svg
+            *ngIf="trophyModalType === 'team'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-white"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.65 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.65 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>
+          </svg>
+          <svg
+            *ngIf="trophyModalType === 'employee'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-white"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+            {{ getModalTitle() }}
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{ trophyModalEmployee?.firstName }} {{ trophyModalEmployee?.lastName }}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="closeTrophyModal()"
+        class="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+        aria-label="Fermer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="flex-1 overflow-y-auto px-6 py-4 [-webkit-overflow-scrolling:touch]">
+      <div class="space-y-3">
+        <div
+          *ngFor="let trophy of getModalTrophies(); let idx = index"
+          class="flex items-center gap-4 rounded-xl border-2 p-4 transition hover:shadow-md"
+          [ngClass]="{
+            'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20': trophyModalType === 'team',
+            'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20': trophyModalType === 'employee'
+          }"
+        >
+          <div
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl font-bold"
+            [ngClass]="{
+              'bg-gradient-to-br from-amber-500 to-amber-700 text-white': trophyModalType === 'team',
+              'bg-gradient-to-br from-yellow-400 to-yellow-600 text-white': trophyModalType === 'employee'
+            }"
+          >
+            {{ idx + 1 }}
+          </div>
+          <div class="flex-1">
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ getTrophyDate(trophy) }}
+            </p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              {{ trophyModalType === 'team' ? 'Meilleure Équipe' : 'Meilleur Employé' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        *ngIf="getModalTrophies().length === 0"
+        class="flex flex-col items-center justify-center py-12 text-center"
+      >
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-8 w-8 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+        </div>
+        <p class="text-gray-500 dark:text-gray-400">Aucun trophée</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="border-t border-gray-200 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/50">
+      <p class="text-center text-xs text-gray-500 dark:text-gray-400">
+        Total: {{ getModalTrophies().length }} trophée(s)
+      </p>
     </div>
   </div>
 </div>

@@ -682,7 +682,7 @@ export class DataService {
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
     );
 
-    const data = {
+    const data: any = {
       firstName: employee.firstName,
       lastName: employee.lastName,
       middleName: employee.middleName,
@@ -696,6 +696,23 @@ export class DataService {
       arrivalHour: employee.arrivalHour,
       arrivalMinute: employee.arrivalMinute,
     };
+
+    // Handle trophy arrays - filter out empty trophies and include only valid ones
+    if (employee.bestTeamTrophies && Array.isArray(employee.bestTeamTrophies)) {
+      data.bestTeamTrophies = employee.bestTeamTrophies.filter(
+        (trophy) => trophy.month && trophy.month.trim() !== '' && trophy.year && trophy.year.toString().trim() !== ''
+      );
+    } else {
+      data.bestTeamTrophies = [];
+    }
+    
+    if (employee.bestEmployeeTrophies && Array.isArray(employee.bestEmployeeTrophies)) {
+      data.bestEmployeeTrophies = employee.bestEmployeeTrophies.filter(
+        (trophy) => trophy.month && trophy.month.trim() !== '' && trophy.year && trophy.year.toString().trim() !== ''
+      );
+    } else {
+      data.bestEmployeeTrophies = [];
+    }
 
     return employeeRef.set(data, { merge: true });
   }
