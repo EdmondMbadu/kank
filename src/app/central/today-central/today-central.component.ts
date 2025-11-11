@@ -398,6 +398,9 @@ export class TodayCentralComponent {
 
   // Selected location for filtering graph
   selectedLocation: string | null = null;
+  
+  // Time range filter for graph
+  selectedTimeRange: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX' = '1M';
 
   onLocationClick(locationName: string) {
     // Toggle selection: if clicking the same location, deselect it
@@ -406,6 +409,11 @@ export class TodayCentralComponent {
     } else {
       this.selectedLocation = locationName;
     }
+    this.updateMonthlyReserveGraph();
+  }
+
+  onTimeRangeChange(range: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX') {
+    this.selectedTimeRange = range;
     this.updateMonthlyReserveGraph();
   }
 
@@ -420,59 +428,158 @@ export class TodayCentralComponent {
     const currentYear = currentDate.getFullYear();
     const today = currentDate.getDate();
 
-    // Only show graph for current month
-    const [selectedMonth, selectedDay, selectedYear] = this.requestDateCorrectFormat
-      .split('-')
-      .map(Number);
-    const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay);
+    // Calculate date range based on selected filter
+    let startDate: Date;
+    const endDate = new Date(currentYear, currentMonth - 1, today);
     
-    if (
-      selectedDate.getMonth() !== currentDate.getMonth() ||
-      selectedDate.getFullYear() !== currentDate.getFullYear()
-    ) {
-      // Not current month, show empty graph
-      this.monthlyReserveGraph = this.createEmptyGraph();
-      return;
+    switch (this.selectedTimeRange) {
+      case '1D':
+        // Compare with yesterday
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 1);
+        break;
+      case '1W':
+        // Last 6 days (including today = 7 days total)
+        startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 6);
+        break;
+      case '1M':
+        // Current month
+        startDate = new Date(currentYear, currentMonth - 1, 1);
+        break;
+      case '6M':
+        // Last 6 months
+        startDate = new Date(currentYear, currentMonth - 1, 1);
+        startDate.setMonth(startDate.getMonth() - 5);
+        break;
+      case '1Y':
+        // Last 12 months
+        startDate = new Date(currentYear, currentMonth - 1, 1);
+        startDate.setMonth(startDate.getMonth() - 11);
+        break;
+      case 'MAX':
+        // Get earliest date from all users' reserve data
+        let earliestDate: Date | null = null;
+        this.allUsers.forEach((user) => {
+          if (user.reserve) {
+            Object.keys(user.reserve).forEach((dateStr) => {
+              const normalizedDate = dateStr.split('-').slice(0, 3).join('-');
+              const [month, day, year] = normalizedDate.split('-').map(Number);
+              const date = new Date(year, month - 1, day);
+              if (!earliestDate || date < earliestDate) {
+                earliestDate = date;
+              }
+            });
+          }
+        });
+        startDate = earliestDate || new Date(currentYear, currentMonth - 1, 1);
+        break;
+      default:
+        startDate = new Date(currentYear, currentMonth - 1, 1);
     }
 
-    // Get all days of the current month up to today
-    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    // Generate date range
     const labels: string[] = [];
     const values: number[] = [];
+    const dateArray: Date[] = [];
 
     // Filter users by selected location if any
     const usersToProcess = this.selectedLocation
       ? this.allUsers.filter((user) => user.firstName === this.selectedLocation)
       : this.allUsers;
 
-    // Calculate reserve for each day of the month up to today (in dollars)
-    for (let day = 1; day <= today; day++) {
-      const dateStr = `${currentMonth}-${day}-${currentYear}`;
-      let reserve: string;
+    // Generate dates based on range
+    if (this.selectedTimeRange === '1D' || this.selectedTimeRange === '1W') {
+      // Daily data - only include dates up to today
+      const todayDate = new Date(currentYear, currentMonth - 1, today);
+      const actualEndDate = endDate > todayDate ? todayDate : endDate;
+      for (let d = new Date(startDate); d <= actualEndDate; d.setDate(d.getDate() + 1)) {
+        dateArray.push(new Date(d));
+      }
+    } else if (this.selectedTimeRange === '1M') {
+      // Daily data for current month
+      for (let day = 1; day <= today; day++) {
+        dateArray.push(new Date(currentYear, currentMonth - 1, day));
+      }
+    } else {
+      // Monthly data for 6M, 1Y, MAX
+      // Start from the first day of the start month
+      const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      // Only include up to current month
+      const endMonth = new Date(currentYear, currentMonth - 1, 1);
       
-      if (this.selectedLocation) {
-        // Get reserve for specific location
-        const user = usersToProcess[0]; // Should only be one user
-        if (user && user.reserve) {
-          let dayReserve = 0;
-          Object.entries(user.reserve).forEach(([date, amount]) => {
-            const normalizedDate = date.split('-').slice(0, 3).join('-');
-            if (normalizedDate === dateStr) {
-              const numericAmount = amount.split(':')[0];
-              dayReserve += parseInt(numericAmount, 10);
-            }
-          });
-          reserve = dayReserve.toString();
+      for (let d = new Date(startMonth); d <= endMonth; d.setMonth(d.getMonth() + 1)) {
+        dateArray.push(new Date(d));
+      }
+    }
+
+    // Calculate reserve for each date in range (in dollars)
+    dateArray.forEach((date) => {
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const year = date.getFullYear();
+      
+      let reserve: string = '0';
+      
+      if (this.selectedTimeRange === '1D' || this.selectedTimeRange === '1W' || this.selectedTimeRange === '1M') {
+        // Daily data
+        const dateStr = `${month}-${day}-${year}`;
+        
+        if (this.selectedLocation) {
+          // Get reserve for specific location
+          const user = usersToProcess[0];
+          if (user && user.reserve) {
+            let dayReserve = 0;
+            Object.entries(user.reserve).forEach(([dateKey, amount]) => {
+              const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+              if (normalizedDate === dateStr) {
+                const numericAmount = amount.split(':')[0];
+                dayReserve += parseInt(numericAmount, 10);
+              }
+            });
+            reserve = dayReserve.toString();
+          }
         } else {
-          reserve = '0';
+          // Get total reserve for all users
+          reserve = this.compute.findTodayTotalResultsGivenField(
+            this.allUsers,
+            'reserve',
+            dateStr
+          );
         }
       } else {
-        // Get total reserve for all users
-        reserve = this.compute.findTodayTotalResultsGivenField(
-          this.allUsers,
-          'reserve',
-          dateStr
-        );
+        // Monthly data - sum all days in the month (up to today if current month)
+        const isCurrentMonth = month === currentMonth && year === currentYear;
+        const daysInMonth = isCurrentMonth ? today : new Date(year, month, 0).getDate();
+        let monthReserve = 0;
+        
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateStr = `${month}-${d}-${year}`;
+          let dayReserve: string = '0';
+          
+          if (this.selectedLocation) {
+            const user = usersToProcess[0];
+            if (user && user.reserve) {
+              let dayReserveNum = 0;
+              Object.entries(user.reserve).forEach(([dateKey, amount]) => {
+                const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+                if (normalizedDate === dateStr) {
+                  const numericAmount = amount.split(':')[0];
+                  dayReserveNum += parseInt(numericAmount, 10);
+                }
+              });
+              dayReserve = dayReserveNum.toString();
+            }
+          } else {
+            dayReserve = this.compute.findTodayTotalResultsGivenField(
+              this.allUsers,
+              'reserve',
+              dateStr
+            );
+          }
+          monthReserve += this.toNum(dayReserve);
+        }
+        reserve = monthReserve.toString();
       }
       
       const reserveNum = this.toNum(reserve);
@@ -481,30 +588,45 @@ export class TodayCentralComponent {
         this.compute.convertCongoleseFrancToUsDollars(reserveNum.toString())
       );
       values.push(reserveInDollars);
-      labels.push(day.toString());
-    }
+      
+      // Format label based on range
+      if (this.selectedTimeRange === '1D' || this.selectedTimeRange === '1W' || this.selectedTimeRange === '1M') {
+        labels.push(day.toString());
+      } else {
+        // Monthly labels
+        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        labels.push(`${monthNames[month - 1]} ${year}`);
+      }
+    });
 
-    // Get first of month reserve and today's reserve (in dollars)
-    const firstOfMonthReserve = values[0] || 0;
-    const todayReserve = values[values.length - 1] || 0;
+    // Get first and last reserve values (in dollars)
+    const firstReserve = values[0] || 0;
+    const lastReserve = values[values.length - 1] || 0;
 
-    // Determine color: red if first > today (decreased), green if first < today (increased)
+    // Determine color: red if first > last (decreased), green if first < last (increased)
     // Stock market style: green for gains, red for losses
-    const isPositive = todayReserve >= firstOfMonthReserve;
+    const isPositive = lastReserve >= firstReserve;
     const lineColor = isPositive ? '#26a69a' : '#ef5350'; // Teal green or red
     const fillGradient = isPositive 
       ? ['rgba(38, 166, 154, 0.1)', 'rgba(38, 166, 154, 0)'] // Green gradient
       : ['rgba(239, 83, 80, 0.1)', 'rgba(239, 83, 80, 0)']; // Red gradient
 
     // Build title with location name if selected
-    const titleText = this.selectedLocation
-      ? `${this.selectedLocation} - Réserve Mensuelle`
-      : 'Réserve Totale - Ce Mois';
+    const locationPrefix = this.selectedLocation ? `${this.selectedLocation} - ` : '';
+    const rangeLabels: { [key: string]: string } = {
+      '1D': '1 Jour',
+      '1W': '1 Semaine',
+      '1M': '1 Mois',
+      '6M': '6 Mois',
+      '1Y': '1 An',
+      'MAX': 'Maximum'
+    };
+    const titleText = `${locationPrefix}Réserve - ${rangeLabels[this.selectedTimeRange]}`;
 
     // Calculate percentage change
-    const change = todayReserve - firstOfMonthReserve;
-    const changePercent = firstOfMonthReserve > 0 
-      ? ((change / firstOfMonthReserve) * 100).toFixed(2)
+    const change = lastReserve - firstReserve;
+    const changePercent = firstReserve > 0 
+      ? ((change / firstReserve) * 100).toFixed(2)
       : '0.00';
     const changeSign = change >= 0 ? '+' : '';
 
@@ -558,7 +680,7 @@ export class TodayCentralComponent {
             y: 0.85,
             xanchor: 'left',
             yanchor: 'top',
-            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${todayReserve.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastReserve.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
             showarrow: false,
             align: 'left',
             bgcolor: 'rgba(255, 255, 255, 0.8)',

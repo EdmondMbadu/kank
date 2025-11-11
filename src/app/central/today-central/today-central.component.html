@@ -564,25 +564,91 @@
   <div
     class="rounded-2xl border border-slate-200/70 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
   >
-    <div class="mb-4 flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-          Graphique de Réserve Mensuelle
-        </h2>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Évolution de la réserve totale pour le mois en cours
-          <span *ngIf="selectedLocation" class="font-medium text-emerald-600 dark:text-emerald-400">
-            · Filtre: {{ selectedLocation }}
-          </span>
-        </p>
+    <div class="mb-4">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            Graphique de Réserve
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Évolution de la réserve
+            <span *ngIf="selectedLocation" class="font-medium text-emerald-600 dark:text-emerald-400">
+              · Filtre: {{ selectedLocation }}
+            </span>
+          </p>
+        </div>
+        <button
+          *ngIf="selectedLocation"
+          (click)="onLocationClick(selectedLocation)"
+          class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+        >
+          Afficher tout
+        </button>
       </div>
-      <button
-        *ngIf="selectedLocation"
-        (click)="onLocationClick(selectedLocation)"
-        class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-      >
-        Afficher tout
-      </button>
+      
+      <!-- Time Range Filters -->
+      <div class="flex flex-wrap gap-2">
+        <button
+          (click)="onTimeRangeChange('1D')"
+          [class]="
+            selectedTimeRange === '1D'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1D
+        </button>
+        <button
+          (click)="onTimeRangeChange('1W')"
+          [class]="
+            selectedTimeRange === '1W'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1W
+        </button>
+        <button
+          (click)="onTimeRangeChange('1M')"
+          [class]="
+            selectedTimeRange === '1M'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1M
+        </button>
+        <button
+          (click)="onTimeRangeChange('6M')"
+          [class]="
+            selectedTimeRange === '6M'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          6M
+        </button>
+        <button
+          (click)="onTimeRangeChange('1Y')"
+          [class]="
+            selectedTimeRange === '1Y'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          1Y
+        </button>
+        <button
+          (click)="onTimeRangeChange('MAX')"
+          [class]="
+            selectedTimeRange === 'MAX'
+              ? 'rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition dark:bg-slate-100 dark:text-slate-900'
+              : 'rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+          "
+        >
+          MAX
+        </button>
+      </div>
     </div>
     <div 
       *ngIf="monthlyReserveGraph.data.length > 0"
