@@ -7,7 +7,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Employee } from 'src/app/models/employee';
+import { Employee, Trophy } from 'src/app/models/employee';
 import { Comment } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -249,6 +249,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   displayAttendance: boolean = false;
   attendance: string = '';
   attendanceMode: 'today' | 'yesterday' = 'today';
+
+  // ===== Trophy Modal state =====
+  trophyModalVisible = false;
+  trophyModalType: 'team' | 'employee' | null = null;
   attendanceTargetDate: Date = new Date();
   // today = this.time.todaysDateMonthDayYear();
 
@@ -3476,4 +3480,80 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   // 36 ticks from -90° baseline every 10% (i.e., 0..100 step 10 -> 11 ticks)
   ticks: number[] = Array.from({ length: 11 }, (_, i) => i * 36); // 360° * 10% = 36°
+
+  /**
+   * Check if employee has best team trophies
+   */
+  hasBestTeamTrophy(): boolean {
+    return !!(this.employee.bestTeamTrophies && this.employee.bestTeamTrophies.length > 0);
+  }
+
+  /**
+   * Check if employee has best employee trophies
+   */
+  hasBestEmployeeTrophy(): boolean {
+    return !!(this.employee.bestEmployeeTrophies && this.employee.bestEmployeeTrophies.length > 0);
+  }
+
+  /**
+   * Get formatted trophy date string
+   */
+  getTrophyDate(trophy: Trophy): string {
+    if (!trophy || !trophy.month || !trophy.year) return '';
+    const monthNames = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+    const monthIndex = parseInt(trophy.month, 10) - 1;
+    const monthName = monthIndex >= 0 && monthIndex < 12 ? monthNames[monthIndex] : trophy.month;
+    return `${monthName} ${trophy.year}`;
+  }
+
+  /**
+   * Get all team trophies for an employee
+   */
+  getTeamTrophies(): Trophy[] {
+    return this.employee.bestTeamTrophies || [];
+  }
+
+  /**
+   * Get all employee trophies for an employee
+   */
+  getEmployeeTrophies(): Trophy[] {
+    return this.employee.bestEmployeeTrophies || [];
+  }
+
+  /**
+   * Open trophy modal
+   */
+  openTrophyModal(type: 'team' | 'employee'): void {
+    this.trophyModalType = type;
+    this.trophyModalVisible = true;
+  }
+
+  /**
+   * Close trophy modal
+   */
+  closeTrophyModal(): void {
+    this.trophyModalVisible = false;
+    this.trophyModalType = null;
+  }
+
+  /**
+   * Get trophies for modal display
+   */
+  getModalTrophies(): Trophy[] {
+    if (!this.trophyModalType) return [];
+    return this.trophyModalType === 'team' 
+      ? (this.employee.bestTeamTrophies || [])
+      : (this.employee.bestEmployeeTrophies || []);
+  }
+
+  /**
+   * Get modal title
+   */
+  getModalTitle(): string {
+    if (!this.trophyModalType) return '';
+    return this.trophyModalType === 'team' ? 'Trophées Meilleure Équipe' : 'Trophées Meilleur Employé';
+  }
 }
