@@ -227,15 +227,26 @@ export class ClientPortalCardComponent {
   }
 
   namesOverlap(card: Card, credit: Client): boolean {
-    const cardNames = [card.firstName, card.middleName, card.lastName]
-      .filter(Boolean)
-      .map((name) => name!.toLowerCase());
+    // Normalize names: trim whitespace, convert to lowercase, filter out empty strings
+    const normalizeName = (name: string | undefined | null): string => {
+      return (name || '').trim().toLowerCase();
+    };
 
-    const creditNames = [credit.firstName, credit.middleName, credit.lastName]
-      .filter(Boolean)
-      .map((name) => name!.toLowerCase());
+    const cardNames = [
+      normalizeName(card.firstName),
+      normalizeName(card.middleName),
+      normalizeName(card.lastName),
+    ].filter((name) => name.length > 0);
 
-    return cardNames.some((name) => creditNames.includes(name));
+    const creditNames = [
+      normalizeName(credit.firstName),
+      normalizeName(credit.middleName),
+      normalizeName(credit.lastName),
+    ].filter((name) => name.length > 0);
+
+    // Check if any card name matches any credit name (case-insensitive, trimmed)
+    // Only one name needs to match for the transfer to be allowed
+    return cardNames.some((cardName) => creditNames.includes(cardName));
   }
 
   /* --------- the actual transfer action -------- */
