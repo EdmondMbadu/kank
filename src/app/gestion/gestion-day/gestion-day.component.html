@@ -398,8 +398,7 @@
       >
         <tr>
           <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-          <th scope="col" class="py-3 px-6">Restant (FC)</th>
-          <th scope="col" class="px-6 py-3">Restant ($)</th>
+          <th scope="col" class="py-3 px-6 text-right">Restant</th>
         </tr>
       </thead>
 
@@ -414,9 +413,15 @@
           >
             {{ i + 1 }}.&nbsp;{{ s.firstName }}
           </th>
-          <td class="px-6 py-4">{{ +s.total || 0 | number : "1.0-0" }} FC</td>
-          <td class="px-6 py-4">
-            {{ +s.totalInDollar || 0 | number : "1.0-0" }} $
+          <td class="px-6 py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.total || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -426,11 +431,15 @@
           <th scope="row" class="px-6 py-3 text-base">
             Total restant à servir
           </th>
-          <td class="px-6 py-3">
-            {{ +overallTotalToday || 0 | number : "1.0-0" }} FC
-          </td>
-          <td class="px-6 py-3">
-            {{ +overallTotalTodayInDollars || 0 | number : "1.0-0" }} $
+          <td class="px-6 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +overallTotalTodayInDollars || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +overallTotalToday || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
         </tr>
 
@@ -438,9 +447,15 @@
           <th scope="row" class="px-6 py-3 text-base">
             Entrée du jour (reçue)
           </th>
-          <td class="px-6 py-3">{{ +input || 0 | number : "1.0-0" }} FC</td>
-          <td class="px-6 py-3">
-            {{ +inputDOllars || 0 | number : "1.0-0" }} $
+          <td class="px-6 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +inputDOllars || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +input || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
         </tr>
 
@@ -456,34 +471,36 @@
           }"
         >
           <th scope="row" class="px-6 py-3 text-base">
-            À servir aujourd’hui (prévu)
+            À servir aujourd'hui (prévu)
           </th>
-          <td class="px-6 py-3">
-            {{ +plannedToServeToday || 0 | number : "1.0-0" }} FC
-            <span
-              *ngIf="+input !== +plannedToServeToday"
-              class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"
-            >
-              Δ
-              {{
-                (+input || 0) - (+plannedToServeToday || 0) | number : "1.0-0"
-              }}
-              FC
-            </span>
-          </td>
-          <td class="px-6 py-3">
-            {{ +plannedToServeTodayDollars || 0 | number : "1.0-0" }} $
-            <span
-              *ngIf="+inputDOllars !== +plannedToServeTodayDollars"
-              class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"
-            >
-              Δ
-              {{
-                (+inputDOllars || 0) - (+plannedToServeTodayDollars || 0)
-                  | number : "1.0-0"
-              }}
-              $
-            </span>
+          <td class="px-6 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +plannedToServeTodayDollars || 0 | number : "1.0-0" }}
+                <span
+                  *ngIf="+inputDOllars !== +plannedToServeTodayDollars"
+                  class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"
+                >
+                  Δ
+                  {{
+                    (+inputDOllars || 0) - (+plannedToServeTodayDollars || 0)
+                      | number : "1.0-0"
+                  }}$
+                </span>
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +plannedToServeToday || 0 | number : "1.0-0" }} FC
+                <span
+                  *ngIf="+input !== +plannedToServeToday"
+                  class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"
+                >
+                  Δ
+                  {{
+                    (+input || 0) - (+plannedToServeToday || 0) | number : "1.0-0"
+                  }}FC
+                </span>
+              </span>
+            </div>
           </td>
         </tr>
       </tfoot>
@@ -520,8 +537,7 @@
       >
         <tr>
           <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-          <th scope="col" class="py-3 px-6">Demande (FC)</th>
-          <th scope="col" class="px-6 py-3">Demande ($)</th>
+          <th scope="col" class="py-3 px-6 text-right">Demande</th>
         </tr>
       </thead>
       <tbody>
@@ -535,20 +551,30 @@
           >
             {{ i + 1 }}.&nbsp;{{ s.firstName }}
           </th>
-          <td class="px-6 py-4">{{ +s.total || 0 | number : "1.0-0" }} FC</td>
-          <td class="px-6 py-4">
-            {{ +s.totalInDollar || 0 | number : "1.0-0" }} $
+          <td class="px-6 py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.total || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
         </tr>
       </tbody>
       <tfoot>
         <tr class="font-semibold">
           <th scope="row" class="px-6 py-3 text-base">Total</th>
-          <td class="px-6 py-3">
-            {{ +overallTotal || 0 | number : "1.0-0" }} FC
-          </td>
-          <td class="px-6 py-3">
-            {{ +overallTotalInDollars || 0 | number : "1.0-0" }} $
+          <td class="px-6 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +overallTotalInDollars || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +overallTotal || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
         </tr>
       </tfoot>
@@ -598,24 +624,48 @@
             {{ i + 1 }}.&nbsp;{{ s.firstName }}
           </th>
 
-          <td class="px-4 py-4">
-            {{ +s.total || 0 | number : "1.0-0" }} FC →
-            {{ +s.totalInDollar || 0 | number : "1.0-0" }} $
+          <td class="px-4 py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.total || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
 
-          <td class="px-4 py-4">
-            {{ +s.actual! || 0 | number : "1.0-0" }} FC →
-            {{ +s.actualInDollar! || 0 | number : "1.0-0" }} $
+          <td class="px-4 py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.actualInDollar! || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.actual! || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
 
-          <td *ngIf="auth.isAdmin" class="px-4 py-4">
-            {{ +s.payment! || 0 | number : "1.0-0" }} FC →
-            {{ +s.paymentDollar! || 0 | number : "1.0-0" }} $
+          <td *ngIf="auth.isAdmin" class="px-4 py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.paymentDollar! || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.payment! || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
 
-          <td *ngIf="auth.isAdmin" class="px-4 py-4">
-            {{ +s.moneyInHands || 0 | number : "1.0-0" }} FC →
-            {{ +s.moneyInHandsDollar || 0 | number : "1.0-0" }} $
+          <td *ngIf="auth.isAdmin" class="px-4 py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.moneyInHandsDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.moneyInHands || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
 
           <!-- Tiny progress bar (no Math.*) -->
@@ -684,29 +734,51 @@
           <th scope="row" class="px-4 py-3 text-base">
             Total ({{ percentage }} %)
           </th>
-          <td class="px-4 py-3">
-            {{ +overallTotalReserve || 0 | number : "1.0-0" }} FC →
-            {{ +overallTotalReserveInDollars || 0 | number : "1.0-0" }} $
+          <td class="px-4 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +overallTotalReserveInDollars || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +overallTotalReserve || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
-          <td class="px-4 py-3">
-            {{ +dailyReserve || 0 | number : "1.0-0" }} FC →
-            {{
-              compute.convertCongoleseFrancToUsDollars(dailyReserve)
-                | number : "1.0-0"
-            }}
-            $
+          <td class="px-4 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{
+                  compute.convertCongoleseFrancToUsDollars(dailyReserve)
+                    | number : "1.0-0"
+                }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +dailyReserve || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
-          <td *ngIf="auth.isAdmin" class="px-4 py-3">
-            {{ +paymentTotal || 0 | number : "1.0-0" }} FC →
-            {{
-              compute.convertCongoleseFrancToUsDollars(paymentTotal.toString())
-                | number : "1.0-0"
-            }}
-            $
+          <td *ngIf="auth.isAdmin" class="px-4 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{
+                  compute.convertCongoleseFrancToUsDollars(paymentTotal.toString())
+                    | number : "1.0-0"
+                }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +paymentTotal || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
-          <td *ngIf="auth.isAdmin" class="px-4 py-3">
-            {{ +overallMoneyInHands || 0 | number : "1.0-0" }} FC →
-            {{ +overallMoneyInHandsDollar || 0 | number : "1.0-0" }} $
+          <td *ngIf="auth.isAdmin" class="px-4 py-3 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +overallMoneyInHandsDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +overallMoneyInHands || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
           </td>
           <td *ngIf="auth.isAdmin"></td>
         </tr>

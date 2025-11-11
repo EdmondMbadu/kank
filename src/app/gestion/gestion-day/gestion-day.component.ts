@@ -118,14 +118,14 @@ export class GestionDayComponent implements OnInit {
   clientsRequestSavings: Client[] = [];
   clientsRequestCard: Card[] = [];
   cards: Card[] = [];
-  public graph = {
+  public graph: any = {
     data: [{}],
     layout: {
       title: 'Reserve Journalier en $',
       barmode: 'stack',
     },
   };
-  public graphServe = {
+  public graphServe: any = {
     data: [{}],
     layout: {
       title: 'Argent A Servir Journalier en $',
@@ -133,7 +133,7 @@ export class GestionDayComponent implements OnInit {
     },
   };
 
-  public graphCombined = {
+  public graphCombined: any = {
     data: [{}],
     layout: {
       title: 'Argent A Servir Journalier en $',
@@ -853,25 +853,139 @@ export class GestionDayComponent implements OnInit {
     let sorted = this.sortKeysAndValuesReserve(time);
     this.recentReserveDates = sorted[0];
     this.recentReserveAmounts = this.compute.convertToDollarsArray(sorted[1]);
-    const color1 = this.compute.findColor(sorted[1]);
+    
+    if (this.recentReserveAmounts.length < 2) {
+      this.graph = this.createEmptyStockGraph('Reserve en $');
+      return;
+    }
+
+    const firstValue = this.recentReserveAmounts[0] || 0;
+    const lastValue = this.recentReserveAmounts[this.recentReserveAmounts.length - 1] || 0;
+    const isPositive = lastValue >= firstValue;
+    const lineColor = isPositive ? '#26a69a' : '#ef5350';
+    const fillGradient = isPositive 
+      ? ['rgba(38, 166, 154, 0.1)', 'rgba(38, 166, 154, 0)']
+      : ['rgba(239, 83, 80, 0.1)', 'rgba(239, 83, 80, 0)'];
+
+    const change = lastValue - firstValue;
+    const changePercent = firstValue > 0 
+      ? ((change / firstValue) * 100).toFixed(2)
+      : '0.00';
+    const changeSign = change >= 0 ? '+' : '';
+
+    // Format dates for display - include year if spanning multiple years
+    const firstDate = this.recentReserveDates[0] ? this.recentReserveDates[0].split('-').map(Number) : null;
+    const lastDate = this.recentReserveDates[this.recentReserveDates.length - 1] ? this.recentReserveDates[this.recentReserveDates.length - 1].split('-').map(Number) : null;
+    const spansMultipleYears = firstDate && lastDate && firstDate[2] !== lastDate[2];
+    
+    const formattedDates = this.recentReserveDates.map((dateStr) => {
+      const [month, day, year] = dateStr.split('-').map(Number);
+      if (spansMultipleYears) {
+        return `${day}/${month}/${year}`;
+      }
+      return `${day}/${month}`;
+    });
+
     this.graph = {
       data: [
         {
-          x: this.recentReserveDates,
+          x: formattedDates,
           y: this.recentReserveAmounts,
           type: 'scatter',
           mode: 'lines',
-          marker: { color: 'rgb(0,76,153)' },
           line: {
-            color: color1,
+            color: lineColor,
+            width: 2.5,
             shape: 'spline',
-            // width: 1200,
           },
+          fill: 'tozeroy',
+          fillcolor: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorstops: [
+              { offset: 0, color: fillGradient[0] },
+              { offset: 1, color: fillGradient[1] }
+            ]
+          },
+          hovertemplate: '<b>%{x}</b><br>Réserve: <b>$%{y:,.2f}</b><extra></extra>',
         },
       ],
       layout: {
-        title: 'Reserve en $',
-        barmode: 'stack',
+        title: {
+          text: 'Reserve en $',
+          font: { 
+            size: 20, 
+            color: '#1a1a1a',
+            family: 'system-ui, -apple-system, sans-serif'
+          },
+          x: 0.02,
+          y: 0.95,
+          xanchor: 'left',
+          yanchor: 'top',
+        },
+        annotations: [
+          {
+            xref: 'paper',
+            yref: 'paper',
+            x: 0.02,
+            y: 0.85,
+            xanchor: 'left',
+            yanchor: 'top',
+            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+            showarrow: false,
+            align: 'left',
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            bordercolor: 'transparent',
+            borderpad: 8,
+          }
+        ],
+        xaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        yaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          side: 'right',
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          tickformat: '$,.0f',
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        height: 450,
+        margin: { t: 100, r: 20, l: 20, b: 40 },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        hovermode: 'x unified',
+        showlegend: false,
+        autosize: true,
+      },
+      config: { 
+        responsive: true, 
+        displayModeBar: false,
+        staticPlot: false,
       },
     };
   }
@@ -880,25 +994,139 @@ export class GestionDayComponent implements OnInit {
     let sorted = this.sortKeysAndValuesServe(time);
     this.recentServeDates = sorted[0];
     this.recentServeAmounts = this.compute.convertToDollarsArray(sorted[1]);
-    const color1 = this.compute.findColor(sorted[1]);
+    
+    if (this.recentServeAmounts.length < 2) {
+      this.graphServe = this.createEmptyStockGraph('Argent A Servir en $');
+      return;
+    }
+
+    const firstValue = this.recentServeAmounts[0] || 0;
+    const lastValue = this.recentServeAmounts[this.recentServeAmounts.length - 1] || 0;
+    const isPositive = lastValue >= firstValue;
+    const lineColor = isPositive ? '#26a69a' : '#ef5350';
+    const fillGradient = isPositive 
+      ? ['rgba(38, 166, 154, 0.1)', 'rgba(38, 166, 154, 0)']
+      : ['rgba(239, 83, 80, 0.1)', 'rgba(239, 83, 80, 0)'];
+
+    const change = lastValue - firstValue;
+    const changePercent = firstValue > 0 
+      ? ((change / firstValue) * 100).toFixed(2)
+      : '0.00';
+    const changeSign = change >= 0 ? '+' : '';
+
+    // Format dates for display - include year if spanning multiple years
+    const firstDate = this.recentServeDates[0] ? this.recentServeDates[0].split('-').map(Number) : null;
+    const lastDate = this.recentServeDates[this.recentServeDates.length - 1] ? this.recentServeDates[this.recentServeDates.length - 1].split('-').map(Number) : null;
+    const spansMultipleYears = firstDate && lastDate && firstDate[2] !== lastDate[2];
+    
+    const formattedDates = this.recentServeDates.map((dateStr) => {
+      const [month, day, year] = dateStr.split('-').map(Number);
+      if (spansMultipleYears) {
+        return `${day}/${month}/${year}`;
+      }
+      return `${day}/${month}`;
+    });
+
     this.graphServe = {
       data: [
         {
-          x: this.recentServeDates,
+          x: formattedDates,
           y: this.recentServeAmounts,
           type: 'scatter',
           mode: 'lines',
-          marker: { color: 'rgb(0,76,153)' },
           line: {
-            color: color1,
+            color: lineColor,
+            width: 2.5,
             shape: 'spline',
-            // width: 1200,
           },
+          fill: 'tozeroy',
+          fillcolor: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorstops: [
+              { offset: 0, color: fillGradient[0] },
+              { offset: 1, color: fillGradient[1] }
+            ]
+          },
+          hovertemplate: '<b>%{x}</b><br>À servir: <b>$%{y:,.2f}</b><extra></extra>',
         },
       ],
       layout: {
-        title: 'Argent A Servir en $',
-        barmode: 'stack',
+        title: {
+          text: 'Argent A Servir en $',
+          font: { 
+            size: 20, 
+            color: '#1a1a1a',
+            family: 'system-ui, -apple-system, sans-serif'
+          },
+          x: 0.02,
+          y: 0.95,
+          xanchor: 'left',
+          yanchor: 'top',
+        },
+        annotations: [
+          {
+            xref: 'paper',
+            yref: 'paper',
+            x: 0.02,
+            y: 0.85,
+            xanchor: 'left',
+            yanchor: 'top',
+            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+            showarrow: false,
+            align: 'left',
+            bgcolor: 'rgba(255, 255, 255, 0.8)',
+            bordercolor: 'transparent',
+            borderpad: 8,
+          }
+        ],
+        xaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        yaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          side: 'right',
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          tickformat: '$,.0f',
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        height: 450,
+        margin: { t: 100, r: 20, l: 20, b: 40 },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        hovermode: 'x unified',
+        showlegend: false,
+        autosize: true,
+      },
+      config: { 
+        responsive: true, 
+        displayModeBar: false,
+        staticPlot: false,
       },
     };
   }
@@ -917,9 +1145,15 @@ export class GestionDayComponent implements OnInit {
       }
     }
 
-    // Sorting and slicing
+    // Properly parse and sort dates (MM-DD-YYYY format)
     const sortedKeys = Object.keys(aggregatedData)
-      .sort((a, b) => +new Date(a) - +new Date(b))
+      .sort((a, b) => {
+        const [monthA, dayA, yearA] = a.split('-').map(Number);
+        const [monthB, dayB, yearB] = b.split('-').map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        return dateA.getTime() - dateB.getTime();
+      })
       .slice(-time);
     const values = sortedKeys.map((key) => aggregatedData[key].toString());
 
@@ -941,9 +1175,15 @@ export class GestionDayComponent implements OnInit {
       }
     }
 
-    // Sorting and slicing
+    // Properly parse and sort dates (MM-DD-YYYY format)
     const sortedKeys = Object.keys(aggregatedData)
-      .sort((a, b) => +new Date(a) - +new Date(b))
+      .sort((a, b) => {
+        const [monthA, dayA, yearA] = a.split('-').map(Number);
+        const [monthB, dayB, yearB] = b.split('-').map(Number);
+        const dateA = new Date(yearA, monthA - 1, dayA);
+        const dateB = new Date(yearB, monthB - 1, dayB);
+        return dateA.getTime() - dateB.getTime();
+      })
       .slice(-time);
     const values = sortedKeys.map((key) => aggregatedData[key].toString());
 
@@ -974,7 +1214,6 @@ export class GestionDayComponent implements OnInit {
 
   updateCombinedGraphics(time: number) {
     // Get Reserve data
-
     let [reserveDates, reserveVals] = this.sortKeysAndValuesReserve(time);
     let [serveDates, serveVals] = this.sortKeysAndValuesServe(time);
 
@@ -987,37 +1226,187 @@ export class GestionDayComponent implements OnInit {
     // Do the same for the Serve side:
     serveDates = serveDates.filter((d) => reserveSet.has(d));
     let sortedReserve = this.sortKeysAndValuesReserve(time);
-    // let reserveDates = sortedReserve[0];
     let reserveAmounts = this.compute.convertToDollarsArray(sortedReserve[1]);
 
     let sortedServe = this.sortKeysAndValuesServe(time);
-    // let serveDates = sortedServe[0];
-
     let serveAmounts = this.compute.convertToDollarsArray(sortedServe[1]);
+
+    if (reserveAmounts.length < 2 || serveAmounts.length < 2) {
+      this.graphCombined = this.createEmptyStockGraph('Reserve & Argent A Servir (en $)');
+      return;
+    }
+
+    // Format dates for display - include year if spanning multiple years
+    const allDates = [...reserveDates, ...serveDates];
+    const firstDate = allDates.length > 0 ? allDates[0].split('-').map(Number) : null;
+    const lastDate = allDates.length > 0 ? allDates[allDates.length - 1].split('-').map(Number) : null;
+    const spansMultipleYears = firstDate && lastDate && firstDate[2] !== lastDate[2];
+    
+    const formatDate = (dateStr: string) => {
+      const [month, day, year] = dateStr.split('-').map(Number);
+      if (spansMultipleYears) {
+        return `${day}/${month}/${year}`;
+      }
+      return `${day}/${month}`;
+    };
+
+    const formattedReserveDates = reserveDates.map(formatDate);
+    const formattedServeDates = serveDates.map(formatDate);
+
+    // Determine colors based on trends
+    const reserveFirst = reserveAmounts[0] || 0;
+    const reserveLast = reserveAmounts[reserveAmounts.length - 1] || 0;
+    const reserveIsPositive = reserveLast >= reserveFirst;
+    const reserveColor = reserveIsPositive ? '#26a69a' : '#ef5350';
+
+    const serveFirst = serveAmounts[0] || 0;
+    const serveLast = serveAmounts[serveAmounts.length - 1] || 0;
+    const serveIsPositive = serveLast >= serveFirst;
+    const serveColor = serveIsPositive ? '#3b82f6' : '#f59e0b';
 
     // Create two traces
     this.graphCombined = {
       data: [
         {
-          x: reserveDates,
+          x: formattedReserveDates,
           y: reserveAmounts,
           type: 'scatter',
-          mode: 'lines+markers',
+          mode: 'lines',
           name: 'Reserve Par Jour',
+          line: {
+            color: reserveColor,
+            width: 2.5,
+            shape: 'spline',
+          },
+          fill: 'tozeroy',
+          fillcolor: reserveColor + '15',
+          hovertemplate: '<b>%{x}</b><br>Réserve: <b>$%{y:,.2f}</b><extra></extra>',
         },
         {
-          x: serveDates,
+          x: formattedServeDates,
           y: serveAmounts,
           type: 'scatter',
-          mode: 'lines+markers',
+          mode: 'lines',
           name: 'Argent A Servir',
+          line: {
+            color: serveColor,
+            width: 2.5,
+            shape: 'spline',
+          },
+          fill: 'tozeroy',
+          fillcolor: serveColor + '15',
+          hovertemplate: '<b>%{x}</b><br>À servir: <b>$%{y:,.2f}</b><extra></extra>',
         },
       ],
       layout: {
-        title: 'Reserve & Argent A Servir (en $)',
-        barmode: 'stack',
-        // xaxis: { title: 'Date' },
-        // yaxis: { title: 'Montant ($)' }
+        title: {
+          text: 'Reserve & Argent A Servir (en $)',
+          font: { 
+            size: 20, 
+            color: '#1a1a1a',
+            family: 'system-ui, -apple-system, sans-serif'
+          },
+          x: 0.02,
+          y: 0.95,
+          xanchor: 'left',
+          yanchor: 'top',
+        },
+        xaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        yaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          side: 'right',
+          tickfont: {
+            size: 11,
+            color: '#666'
+          },
+          tickformat: '$,.0f',
+          title: {
+            text: '',
+            font: { size: 12, color: '#666' }
+          },
+        },
+        height: 450,
+        margin: { t: 100, r: 20, l: 20, b: 40 },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        hovermode: 'x unified',
+        showlegend: true,
+        legend: {
+          x: 0.02,
+          y: 0.85,
+          xanchor: 'left',
+          yanchor: 'top',
+          bgcolor: 'rgba(255, 255, 255, 0.8)',
+          bordercolor: 'transparent',
+        },
+        autosize: true,
+      },
+      config: { 
+        responsive: true, 
+        displayModeBar: false,
+        staticPlot: false,
+      },
+    };
+  }
+
+  private createEmptyStockGraph(title: string) {
+    return {
+      data: [],
+      layout: {
+        title: {
+          text: title,
+          font: { 
+            size: 20, 
+            color: '#1a1a1a',
+            family: 'system-ui, -apple-system, sans-serif'
+          },
+        },
+        xaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+        },
+        yaxis: {
+          showgrid: true,
+          gridcolor: 'rgba(0, 0, 0, 0.05)',
+          gridwidth: 1,
+          showline: false,
+          zeroline: false,
+          side: 'right',
+          tickformat: '$,.0f',
+        },
+        height: 450,
+        margin: { t: 100, r: 20, l: 20, b: 40 },
+        plot_bgcolor: '#ffffff',
+        paper_bgcolor: '#ffffff',
+        hovermode: 'x unified',
+        showlegend: false,
+        autosize: true,
+      },
+      config: { 
+        responsive: true, 
+        displayModeBar: false,
+        staticPlot: false,
       },
     };
   }
