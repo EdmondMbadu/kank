@@ -132,6 +132,8 @@ export class TodayCentralComponent {
     this.updateMonthlyReserveGraph();
     // Update monthly payment graph
     this.updateMonthlyPaymentGraph();
+    // Update mini graphs
+    this.updateMiniGraphs();
     let tomorrow = this.findNextDay(this.requestDateCorrectFormat);
 
     this.dailyRequest = this.compute
@@ -412,6 +414,10 @@ export class TodayCentralComponent {
   // Time range filter for graph
   selectedTimeRange: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX' = '1M';
   selectedPaymentTimeRange: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX' = '1M';
+
+  // Mini graph cache
+  miniReserveGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
+  miniPaymentGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
 
   onLocationClick(locationName: string) {
     // Toggle selection: if clicking the same location, deselect it
@@ -1092,6 +1098,173 @@ export class TodayCentralComponent {
         paper_bgcolor: 'rgba(255,255,255,0)',
       },
       config: { responsive: true, displayModeBar: false },
+    };
+  }
+
+  private updateMiniGraphs() {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      this.miniReserveGraphs.clear();
+      this.miniPaymentGraphs.clear();
+      return;
+    }
+
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    const today = currentDate.getDate();
+
+    // Clear existing graphs
+    this.miniReserveGraphs.clear();
+    this.miniPaymentGraphs.clear();
+
+    // Generate mini graphs for each user
+    this.allUsers.forEach((user) => {
+      if (!user.firstName) return;
+
+      // Reserve mini graph
+      if (user.reserve) {
+        const reserveGraph = this.createMiniGraph(user, 'reserve', currentMonth, currentYear, today);
+        if (reserveGraph) {
+          this.miniReserveGraphs.set(user.firstName, reserveGraph);
+        }
+      }
+
+      // Payment mini graph
+      if (user.dailyReimbursement) {
+        const paymentGraph = this.createMiniGraph(user, 'dailyReimbursement', currentMonth, currentYear, today);
+        if (paymentGraph) {
+          this.miniPaymentGraphs.set(user.firstName, paymentGraph);
+        }
+      }
+    });
+  }
+
+  private createMiniGraph(
+    user: User,
+    field: 'reserve' | 'dailyReimbursement',
+    currentMonth: number,
+    currentYear: number,
+    today: number
+  ): { data: any[]; layout: any; config?: any } | null {
+    const data = user[field];
+    if (!data) return null;
+
+    const values: number[] = [];
+
+    // Get last 3 days of data for better visualization
+    for (let i = 2; i >= 0; i--) {
+      const date = new Date(currentYear, currentMonth - 1, today - i);
+      // Allow cross-month boundaries for better data
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      const dateStr = `${month}-${day}-${year}`;
+
+      let dayValue = 0;
+      try {
+        Object.entries(data).forEach(([dateKey, amount]) => {
+          const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+          if (normalizedDate === dateStr) {
+            const numericAmount = String(amount).split(':')[0];
+            dayValue += parseInt(numericAmount, 10) || 0;
+          }
+        });
+      } catch (e) {
+        // Skip if error
+        dayValue = 0;
+      }
+
+      const valueInDollars = this.toNum(
+        this.compute.convertCongoleseFrancToUsDollars(dayValue.toString())
+      );
+      values.push(valueInDollars);
+    }
+
+    if (values.length < 2) {
+      return this.createEmptyMiniGraph();
+    }
+
+    // Determine color based on trend (compare first to last)
+    const firstValue = values[0] || 0;
+    const lastValue = values[values.length - 1] || 0;
+    const isPositive = lastValue >= firstValue;
+    const lineColor = isPositive ? '#26a69a' : '#ef5350';
+
+    // Normalize values to fit nicely in the small space (0-100 scale)
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const range = maxVal - minVal || 1; // Avoid division by zero
+    const normalizedValues = values.map(v => ((v - minVal) / range) * 100);
+
+    return {
+      data: [
+        {
+          x: [0, 1, 2],
+          y: normalizedValues,
+          type: 'scatter',
+          mode: 'lines',
+          line: {
+            color: lineColor,
+            width: 2.5,
+            shape: 'spline',
+          },
+          fill: 'tozeroy',
+          fillcolor: lineColor + '15',
+          hovertemplate: '<b>$%{customdata:,.2f}</b><extra></extra>',
+          customdata: values, // Store original values for hover
+        },
+      ],
+      layout: {
+        height: 40,
+        width: 100,
+        margin: { t: 2, r: 2, l: 2, b: 2 },
+        xaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+          range: [-0.1, 2.1],
+        },
+        yaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+          range: [0, 100],
+        },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        showlegend: false,
+      },
+      config: { 
+        responsive: false, 
+        displayModeBar: false,
+        staticPlot: true,
+      },
+    };
+  }
+
+  getMiniReserveGraph(locationName: string): { data: any[]; layout: any; config?: any } {
+    return this.miniReserveGraphs.get(locationName) || this.createEmptyMiniGraph();
+  }
+
+  getMiniPaymentGraph(locationName: string): { data: any[]; layout: any; config?: any } {
+    return this.miniPaymentGraphs.get(locationName) || this.createEmptyMiniGraph();
+  }
+
+  private createEmptyMiniGraph() {
+    return {
+      data: [],
+      layout: {
+        height: 40,
+        width: 100,
+        margin: { t: 0, r: 0, l: 0, b: 0 },
+        xaxis: { showgrid: false, showticklabels: false, zeroline: false, showline: false },
+        yaxis: { showgrid: false, showticklabels: false, zeroline: false, showline: false },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+      },
+      config: { responsive: false, displayModeBar: false, staticPlot: true },
     };
   }
 }

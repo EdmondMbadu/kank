@@ -192,8 +192,8 @@
               <tr>
                 <th class="px-3 py-2 text-left">Rang</th>
                 <th class="px-2 py-2 text-left">Équipe</th>
-                <th class="px-3 py-2 text-right">Réserve (FC)</th>
-                <th class="px-3 py-2 text-right">Réserve ($)</th>
+                <th class="px-3 py-2 text-center">Graphique</th>
+                <th class="px-3 py-2 text-right">Réserve</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -244,29 +244,36 @@
                     ></div>
                   </div>
                 </td>
-                <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{
-                      toNum(val(s, "totalReserve", "amount", "value"))
-                        | number : "1.0-0"
-                    }}
-                    FC
-                  </span>
+                <td class="px-3 py-2">
+                  <div class="flex h-10 w-24 items-center justify-center">
+                    <plotly-plot
+                      [data]="getMiniReserveGraph(s.firstName).data"
+                      [layout]="getMiniReserveGraph(s.firstName).layout"
+                      [config]="getMiniReserveGraph(s.firstName).config"
+                    ></plotly-plot>
+                  </div>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{
-                      toNum(
-                        val(
-                          s,
-                          "totalReserveInDollars",
-                          "amountUsd",
-                          "valueUsd"
-                        )
-                      ) | number : "1.0-0"
-                    }}
-                    $
-                  </span>
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ 
+                        toNum(
+                          val(
+                            s,
+                            "totalReserveInDollars",
+                            "amountUsd",
+                            "valueUsd"
+                          )
+                        ) | number : "1.0-0"
+                      }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ 
+                        toNum(val(s, "totalReserve", "amount", "value"))
+                          | number : "1.0-0"
+                      }} FC
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -276,11 +283,16 @@
               <tr>
                 <td class="px-3 py-2 font-semibold">Total</td>
                 <td class="px-2 py-2"></td>
-                <td class="px-3 py-2 text-right font-semibold">
-                  {{ toNum(dailyReserve) | number : "1.0-0" }} FC
-                </td>
-                <td class="px-3 py-2 text-right font-semibold">
-                  {{ toNum(dailyReserveDollars) | number : "1.0-0" }} $
+                <td class="px-3 py-2"></td>
+                <td class="px-3 py-2 text-right">
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ toNum(dailyReserveDollars) | number : "1.0-0" }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ toNum(dailyReserve) | number : "1.0-0" }} FC
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tfoot>
@@ -323,8 +335,8 @@
               <tr>
                 <th class="px-3 py-2 text-left">Rang</th>
                 <th class="px-2 py-2 text-left">Équipe</th>
-                <th class="px-3 py-2 text-right">Paiement (FC)</th>
-                <th class="px-3 py-2 text-right">Paiement ($)</th>
+                <th class="px-3 py-2 text-center">Graphique</th>
+                <th class="px-3 py-2 text-right">Paiement</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -375,37 +387,44 @@
                     ></div>
                   </div>
                 </td>
-                <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{
-                      toNum(
-                        val(
-                          s,
-                          'totalPayment',
-                          'amount',
-                          'value',
-                          'totalReserve'
-                        )
-                      ) | number : "1.0-0"
-                    }}
-                    FC
-                  </span>
+                <td class="px-3 py-2">
+                  <div class="flex h-10 w-24 items-center justify-center">
+                    <plotly-plot
+                      [data]="getMiniPaymentGraph(s.firstName).data"
+                      [layout]="getMiniPaymentGraph(s.firstName).layout"
+                      [config]="getMiniPaymentGraph(s.firstName).config"
+                    ></plotly-plot>
+                  </div>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <span class="font-medium text-slate-900 dark:text-slate-100">
-                    {{
-                      toNum(
-                        val(
-                          s,
-                          'totalPaymentInDollars',
-                          'amountUsd',
-                          'valueUsd',
-                          'totalReserveInDollars'
-                        )
-                      ) | number : "1.0-0"
-                    }}
-                    $
-                  </span>
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ 
+                        toNum(
+                          val(
+                            s,
+                            'totalPaymentInDollars',
+                            'amountUsd',
+                            'valueUsd',
+                            'totalReserveInDollars'
+                          )
+                        ) | number : "1.0-0"
+                      }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ 
+                        toNum(
+                          val(
+                            s,
+                            'totalPayment',
+                            'amount',
+                            'value',
+                            'totalReserve'
+                          )
+                        ) | number : "1.0-0"
+                      }} FC
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -415,11 +434,16 @@
               <tr>
                 <td class="px-3 py-2 font-semibold">Total</td>
                 <td class="px-2 py-2"></td>
-                <td class="px-3 py-2 text-right font-semibold">
-                  {{ toNum(dailyPayment) | number : "1.0-0" }} FC
-                </td>
-                <td class="px-3 py-2 text-right font-semibold">
-                  {{ toNum(dailyPaymentDollars) | number : "1.0-0" }} $
+                <td class="px-3 py-2"></td>
+                <td class="px-3 py-2 text-right">
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ toNum(dailyPaymentDollars) | number : "1.0-0" }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ toNum(dailyPayment) | number : "1.0-0" }} FC
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tfoot>
