@@ -127,6 +127,9 @@ export class TodayCentralComponent {
         this.requestDateCorrectFormat
       )
       .toString();
+    
+    // Update monthly reserve graph
+    this.updateMonthlyReserveGraph();
     let tomorrow = this.findNextDay(this.requestDateCorrectFormat);
 
     this.dailyRequest = this.compute
@@ -302,6 +305,7 @@ export class TodayCentralComponent {
     );
 
     this.initalizeInputs();
+    // Graph will be updated in initalizeInputs via updateMonthlyReserveGraph
   }
   findNextDay(dateStr: string) {
     // Parse the date string into a Date object
@@ -383,5 +387,126 @@ export class TodayCentralComponent {
       )
     );
     return Math.max(1, ...vals, 1);
+  }
+
+  // Monthly reserve graph
+  monthlyReserveGraph: { data: any[]; layout: any; config?: any } = {
+    data: [],
+    layout: {},
+    config: { responsive: true, displayModeBar: false },
+  };
+
+  private updateMonthlyReserveGraph() {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      this.monthlyReserveGraph = this.createEmptyGraph();
+      return;
+    }
+
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    const today = currentDate.getDate();
+
+    // Only show graph for current month
+    const [selectedMonth, selectedDay, selectedYear] = this.requestDateCorrectFormat
+      .split('-')
+      .map(Number);
+    const selectedDate = new Date(selectedYear, selectedMonth - 1, selectedDay);
+    
+    if (
+      selectedDate.getMonth() !== currentDate.getMonth() ||
+      selectedDate.getFullYear() !== currentDate.getFullYear()
+    ) {
+      // Not current month, show empty graph
+      this.monthlyReserveGraph = this.createEmptyGraph();
+      return;
+    }
+
+    // Get all days of the current month up to today
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const labels: string[] = [];
+    const values: number[] = [];
+
+    // Calculate reserve for each day of the month up to today (in dollars)
+    for (let day = 1; day <= today; day++) {
+      const dateStr = `${currentMonth}-${day}-${currentYear}`;
+      const reserve = this.compute.findTodayTotalResultsGivenField(
+        this.allUsers,
+        'reserve',
+        dateStr
+      );
+      const reserveNum = this.toNum(reserve);
+      // Convert to dollars
+      const reserveInDollars = this.toNum(
+        this.compute.convertCongoleseFrancToUsDollars(reserveNum.toString())
+      );
+      values.push(reserveInDollars);
+      labels.push(day.toString());
+    }
+
+    // Get first of month reserve and today's reserve (in dollars)
+    const firstOfMonthReserve = values[0] || 0;
+    const todayReserve = values[values.length - 1] || 0;
+
+    // Determine color: red if first > today, green if first < today
+    const lineColor = firstOfMonthReserve > todayReserve ? '#ef4444' : '#10b981';
+
+    this.monthlyReserveGraph = {
+      data: [
+        {
+          x: labels,
+          y: values,
+          type: 'scatter',
+          mode: 'lines',
+          line: {
+            color: lineColor,
+            width: 2,
+          },
+          fill: 'tozeroy',
+          fillcolor: lineColor + '20', // Add transparency
+        },
+      ],
+      layout: {
+        title: {
+          text: 'Réserve Totale - Ce Mois',
+          font: { size: 18, color: '#0f172a' },
+        },
+        xaxis: {
+          title: 'Jour du mois',
+          showgrid: true,
+          gridcolor: 'rgba(148, 163, 184, 0.2)',
+        },
+        yaxis: {
+          title: 'Réserve ($)',
+          showgrid: true,
+          gridcolor: 'rgba(148, 163, 184, 0.2)',
+        },
+        height: 400,
+        margin: { t: 50, r: 20, l: 60, b: 50 },
+        plot_bgcolor: 'rgba(255,255,255,0)',
+        paper_bgcolor: 'rgba(255,255,255,0)',
+        hovermode: 'x unified',
+      },
+      config: { responsive: true, displayModeBar: false },
+    };
+  }
+
+  private createEmptyGraph() {
+    return {
+      data: [],
+      layout: {
+        title: {
+          text: 'Réserve Totale - Ce Mois',
+          font: { size: 18, color: '#0f172a' },
+        },
+        xaxis: { title: 'Jour du mois' },
+        yaxis: { title: 'Réserve ($)' },
+        height: 400,
+        margin: { t: 50, r: 20, l: 60, b: 50 },
+        plot_bgcolor: 'rgba(255,255,255,0)',
+        paper_bgcolor: 'rgba(255,255,255,0)',
+      },
+      config: { responsive: true, displayModeBar: false },
+    };
   }
 }

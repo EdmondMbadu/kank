@@ -553,3 +553,32 @@
     </div>
   </div>
 </section>
+
+<!-- Monthly Reserve Graph Section -->
+<section class="container mx-auto px-6 pb-16">
+  <div
+    class="rounded-2xl border border-slate-200/70 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+  >
+    <div class="mb-4">
+      <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+        Graphique de Réserve Mensuelle
+      </h2>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        Évolution de la réserve totale pour le mois en cours
+      </p>
+    </div>
+    <div *ngIf="monthlyReserveGraph.data.length > 0">
+      <plotly-plot
+        [data]="monthlyReserveGraph.data"
+        [layout]="monthlyReserveGraph.layout"
+        [config]="monthlyReserveGraph.config"
+      ></plotly-plot>
+    </div>
+    <div
+      *ngIf="monthlyReserveGraph.data.length === 0"
+      class="flex h-96 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
+    >
+      Aucune donnée disponible pour le graphique mensuel.
+    </div>
+  </div>
+</section>
