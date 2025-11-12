@@ -667,6 +667,56 @@ export class AuthService {
     return targetEmployeeRef.set(copiedData, { merge: true });
   }
 
+  /**
+   * Copy a client from one location (user) to another location.
+   * Excludes the agent field as it should be reassigned at the new location.
+   * @param sourceUserId - The user ID of the source location
+   * @param sourceClientId - The client ID to copy
+   * @param targetUserId - The user ID of the target location
+   */
+  async copyClientToLocation(
+    sourceUserId: string,
+    sourceClientId: string,
+    targetUserId: string
+  ): Promise<void> {
+    // Get the source client
+    const sourceClientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${sourceUserId}/clients/${sourceClientId}`
+    );
+    const sourceClientDoc = await firstValueFrom(
+      sourceClientRef.valueChanges()
+    );
+
+    if (!sourceClientDoc) {
+      throw new Error('Client not found');
+    }
+
+    // Create a copy excluding agent and UI-only fields
+    const {
+      agent,
+      employee,
+      locationName,
+      ...clientData
+    } = sourceClientDoc as any;
+
+    // Generate new UID for the copied client
+    const newUid = this.afs.createId().toString();
+
+    // Create the new client at the target location
+    const targetClientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${targetUserId}/clients/${newUid}`
+    );
+
+    // Set the client data with a new UID, excluding agent
+    const copiedData: any = {
+      ...clientData,
+      uid: newUid,
+      // agent is excluded - will need to be assigned at the new location
+    };
+
+    return targetClientRef.set(copiedData, { merge: true });
+  }
+
   deleteClient(client: Client) {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.currentUser.uid}/clients/${client.uid}`

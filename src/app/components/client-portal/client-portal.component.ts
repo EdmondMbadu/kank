@@ -8,6 +8,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { Client, Comment, ClientBonusEvent } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
+import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
@@ -1757,5 +1758,93 @@ export class ClientPortalComponent {
     }
     // Fallback: group by 3s from the end
     return d.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  /** ---------- Client Transfer Feature ---------- */
+  showClientTransferSection = false;
+  allUsers: User[] = [];
+  selectedTargetLocationUserId: string | null = null;
+  clientTransferInProgress = false;
+  clientTransferSuccess = false;
+  clientTransferError = '';
+  currentLocationUserId: string = '';
+
+  toggleClientTransferSection(): void {
+    this.showClientTransferSection = !this.showClientTransferSection;
+    if (this.showClientTransferSection && this.allUsers.length === 0) {
+      this.loadAllUsers();
+    }
+    // Get current location user ID
+    if (this.auth.currentUser?.uid) {
+      this.currentLocationUserId = this.auth.currentUser.uid;
+    }
+  }
+
+  private loadAllUsers(): void {
+    this.auth.getAllUsersInfo().subscribe((users: User[]) => {
+      const list = users ?? [];
+      this.allUsers = list.slice().sort((a: User, b: User) => {
+        const nameA = (a.firstName || a.lastName || a.email || '').toLowerCase();
+        const nameB = (b.firstName || b.lastName || b.email || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    });
+  }
+
+  async copyClientToLocation(): Promise<void> {
+    if (!this.client?.uid) {
+      alert('Client introuvable.');
+      return;
+    }
+
+    if (!this.selectedTargetLocationUserId) {
+      alert('Veuillez sélectionner une localisation de destination.');
+      return;
+    }
+
+    if (this.currentLocationUserId === this.selectedTargetLocationUserId) {
+      alert(
+        "Le client est déjà dans cette localisation. Veuillez sélectionner une autre localisation."
+      );
+      return;
+    }
+
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir transférer ce client (${this.client.firstName} ${this.client.lastName}) vers la nouvelle localisation ?\n\nL'agent associé ne sera pas transféré et devra être réassigné à la nouvelle localisation.`
+      )
+    ) {
+      return;
+    }
+
+    this.clientTransferInProgress = true;
+    this.clientTransferSuccess = false;
+    this.clientTransferError = '';
+
+    try {
+      await this.auth.copyClientToLocation(
+        this.currentLocationUserId,
+        this.client.uid,
+        this.selectedTargetLocationUserId
+      );
+
+      this.clientTransferSuccess = true;
+      this.clientTransferError = '';
+
+      // Reset selection
+      this.selectedTargetLocationUserId = null;
+
+      setTimeout(() => {
+        this.clientTransferSuccess = false;
+      }, 5000);
+    } catch (error: any) {
+      console.error('Error transferring client:', error);
+      this.clientTransferError =
+        error?.message ||
+        "Une erreur s'est produite lors du transfert du client.";
+      this.clientTransferSuccess = false;
+    } finally {
+      this.clientTransferInProgress = false;
+    }
   }
 }
