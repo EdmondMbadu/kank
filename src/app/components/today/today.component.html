@@ -477,11 +477,16 @@
         </div>
 
         <span
-          class="inline-flex items-center rounded-full px-3 py-1 text-[12px] sm:text-sm font-bold ring-1 ring-inset bg-white text-slate-900 shadow-sm"
+          class="inline-flex items-center rounded-full px-3 py-1 text-[12px] sm:text-sm font-bold ring-1 ring-inset bg-white text-slate-900 shadow-sm cursor-pointer"
           [style.borderColor]="compute.getGradientColor(clampedPerc)"
           aria-label="Statut du jour"
+          (click)="!canShowPercentage && openCodeModal()"
+          [title]="!canShowPercentage ? 'Cliquez pour déverrouiller le pourcentage' : ''"
         >
-          {{ percentage }} %
+          <ng-container *ngIf="canShowPercentage; else hiddenPercentage">
+            {{ percentage }} %
+          </ng-container>
+          <ng-template #hiddenPercentage>•••</ng-template>
         </span>
       </div>
 
@@ -526,7 +531,18 @@
           ></div>
         </div>
         <div class="mt-2 text-xs opacity-95">
-          Objectif du jour atteint à <strong>{{ percentage }} %</strong>.
+          <ng-container *ngIf="canShowPercentage; else hiddenPercentageText">
+            Objectif du jour atteint à <strong>{{ percentage }} %</strong>.
+          </ng-container>
+          <ng-template #hiddenPercentageText>
+            Objectif du jour atteint à <strong>•••</strong>.
+            <button
+              (click)="openCodeModal()"
+              class="ml-2 text-xs underline hover:no-underline"
+            >
+              Déverrouiller
+            </button>
+          </ng-template>
         </div>
       </div>
     </div>
@@ -554,7 +570,10 @@
           Performance Paiement du Jour
         </h2>
         <p class="mt-2 text-3xl font-extrabold text-green-900">
-          {{ percentage }}%
+          <ng-container *ngIf="canShowPercentage; else hiddenPerfPercentage">
+            {{ percentage }}%
+          </ng-container>
+          <ng-template #hiddenPerfPercentage>•••</ng-template>
         </p>
       </div>
     </ng-container>
@@ -565,7 +584,10 @@
           Performance Paiement du Jour
         </h2>
         <p class="mt-2 text-3xl font-extrabold text-red-900">
-          {{ percentage }}%
+          <ng-container *ngIf="canShowPercentage; else hiddenPerfPercentage2">
+            {{ percentage }}%
+          </ng-container>
+          <ng-template #hiddenPerfPercentage2>•••</ng-template>
         </p>
       </div>
     </ng-container>

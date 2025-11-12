@@ -188,6 +188,7 @@ export class TodayComponent {
 
   isPayUnlocked = false; // everyone starts locked
   isSavingUnlocked = false; // everyone starts locked
+  isPercentageUnlocked = false; // percentage display starts locked for non-admin
   showCodeModal = false; // controls the modal visibility
   payCodeInput = new FormControl('');
   payErrMsg = '';
@@ -204,6 +205,7 @@ export class TodayComponent {
     if (this.codesStored.includes(entered)) {
       this.isPayUnlocked = true;
       this.isSavingUnlocked = true;
+      this.isPercentageUnlocked = true; // also unlock percentage display
       this.closeCodeModal();
       this.payErrMsg = '';
     } else {
@@ -707,6 +709,10 @@ export class TodayComponent {
 
   get isMoneyLocked(): boolean {
     return !this.auth.isAdmin && !this.isPayUnlocked;
+  }
+
+  get canShowPercentage(): boolean {
+    return this.auth.isAdmin || this.isPercentageUnlocked;
   }
 
   /** Pour sécuriser l’affichage de la jauge et des classes */
