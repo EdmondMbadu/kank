@@ -684,6 +684,8 @@ exports.scheduledSendReminders = functions.pubsub
             phoneNumber,
             debtLeft,
             savings,
+            debtCycleEndDate,
+            requestNotTosend,
           } = client;
 
           // Calculate minPayment with your logic
@@ -704,14 +706,72 @@ exports.scheduledSendReminders = functions.pubsub
             continue;
           }
 
+          // Check if client is late (debtCycleEndDate is before today)
+          let isLate = false;
+          if (debtCycleEndDate) {
+            try {
+              // Parse debtCycleEndDate (format: M-D-YYYY or MM-DD-YYYY)
+              const parts = debtCycleEndDate.split("-");
+              if (parts.length === 3) {
+                const month = Number(parts[0]);
+                const day = Number(parts[1]);
+                const year = Number(parts[2]);
+
+                // Validate parsed values
+                if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+                  const debtEndDate = new Date(year, month - 1, day);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  debtEndDate.setHours(0, 0, 0, 0);
+
+                  // If debt end date is before today, client is late
+                  if (debtEndDate < today) {
+                    isLate = true;
+                    console.log(`Client ${firstName} ${lastName} is LATE. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
+                  } else {
+                    console.log(`Client ${firstName} ${lastName} is NOT late. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
+                  }
+                } else {
+                  console.log(`Invalid date format for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
+                }
+              } else {
+                console.log(`Invalid date format (wrong number of parts) for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
+              }
+            } catch (error) {
+              console.error(`Error parsing debtCycleEndDate for client ${firstName} ${lastName}: ${debtCycleEndDate}`, error);
+            }
+          } else {
+            console.log(`No debtCycleEndDate for client ${firstName} ${lastName}`);
+          }
+
+          // Filter out clients who requested not to send, UNLESS they are late
+          // If client is not late and has requestNotTosend === 'true', skip them
+          // IMPORTANT: If client is late, ALWAYS send message regardless of requestNotTosend
+          if (!isLate && requestNotTosend === "true") {
+            console.log(`Skipping client ${firstName} ${lastName} - requested not to send and NOT late (deadline: ${debtCycleEndDate || "N/A"})`);
+            continue;
+          }
+
+          // Log if sending to a late client who requested not to send
+          if (isLate && requestNotTosend === "true") {
+            console.log(`Sending to LATE client ${firstName} ${lastName} despite requestNotTosend=true (deadline passed: ${debtCycleEndDate})`);
+          }
+
           // Construct your reminder message
-          const message = `Bonjour ${firstName || "Valued"} ${
+          let message = `Bonjour ${firstName || "Valued"} ${
             lastName || "Client"
           },\n` +
           `Ozali programmer lelo pona kofuta ${minPay} FC. ` +
           `Otikali na niongo ya ${debtLeft} FC. ` +
-          `Epargnes na yo ezali: ${savings}FC.\n` +
-          `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993.`+
+          `Epargnes na yo ezali: ${savings}FC.\n`;
+
+          // Add late payment message if client is late
+          // (This will be sent even if requestNotTosend is true)
+          if (isLate) {
+            message += `Ozali na retard makasi Mpenza. Kende Kofuta niongo.\n`;
+          }
+
+          message += `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993.`+
           `Merci pona confiance na FONDATION GERVAIS.`;
 
           try {
@@ -738,6 +798,212 @@ exports.scheduledSendReminders = functions.pubsub
         throw error; // Let Firebase log it as a function error
       }
     });
+
+/*
+ * SCHEDULED FUNCTION (TESTING):
+ * Runs daily at 18:30 (6:30 PM) America/Los_Angeles Time (Las Vegas)
+ * Fetches all users with mode="testing", collects clients,
+ * filters them, calculates minPayment, and sends SMS reminders
+ *
+ * COMMENTED OUT - Can be uncommented when needed for testing
+ */
+/*
+exports.scheduledSendRemindersTesting = functions.pubsub
+    .schedule("25 19 * * *")
+    .timeZone("America/Los_Angeles")
+    .onRun(async (context) => {
+      console.log("===> Starting scheduledSendRemindersTesting at 6:30 PM Las Vegas time...");
+
+      try {
+      // 1. Identify today's weekday => "Monday", "Tuesday", etc.
+        const theDay = new Date().toLocaleString("en-US", {weekday: "long"});
+        console.log("===> Today is:", theDay);
+
+        // 2. Fetch all users with mode="testing"
+        const usersSnapshot = await admin
+            .firestore()
+            .collection("users")
+            .where("mode", "==", "testing")
+            .get();
+
+        if (usersSnapshot.empty) {
+          console.log("No users found with mode='testing'. Exiting...");
+          return null;
+        }
+
+        // 3. For each user, get sub-collection "clients"
+        const allClients = [];
+        for (const userDoc of usersSnapshot.docs) {
+          const userId = userDoc.id;
+
+          const clientSnapshot = await admin
+              .firestore()
+              .collection("users")
+              .doc(userId)
+              .collection("clients")
+              .get();
+
+          if (!clientSnapshot.empty) {
+            clientSnapshot.forEach((cDoc) => {
+            // Add doc data to allClients array
+              allClients.push({
+                ...cDoc.data(),
+                docId: cDoc.id,
+                userId,
+              });
+            });
+          }
+        }
+
+        if (allClients.length === 0) {
+          console.log("No clients found across all testing users. Exiting...");
+          return null;
+        }
+
+        // 4. Filter to only those with debts
+        const clientsWithDebts = findClientsWithDebtsIncludingThoseWhoLeft(allClients);
+
+        // 5. Filter by paymentDay, isPhoneCorrect, and didClientStartThisWeek
+        const clientsToRemind = clientsWithDebts.filter((client) => {
+          return (
+            client.paymentDay === theDay &&
+          client.isPhoneCorrect !== "false" &&
+          didClientStartThisWeek(client)
+          );
+        });
+
+        if (clientsToRemind.length === 0) {
+          console.log("No clients need reminders today after filtering. Exiting...");
+          return null;
+        }
+
+        // 6. Send SMS to each valid client
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const client of clientsToRemind) {
+          const {
+            firstName,
+            lastName,
+            phoneNumber,
+            debtLeft,
+            savings,
+            debtCycleEndDate,
+            requestNotTosend,
+          } = client;
+
+          // Calculate minPayment with your logic
+          //   amountToPay / paymentPeriodRange
+          //   or leftover debt if smaller
+          const minPay = minimumPayment(client);
+
+          // Format phone
+          if (!phoneNumber) {
+            console.log("Skipping client with no phone number:", client);
+            failCount++;
+            continue;
+          }
+          const formattedNumber = makeValidE164(phoneNumber);
+          if (!formattedNumber) {
+            console.log(`Skipping invalid phone number: ${phoneNumber}`);
+            failCount++;
+            continue;
+          }
+
+          // Check if client is late (debtCycleEndDate is before today)
+          let isLate = false;
+          if (debtCycleEndDate) {
+            try {
+              // Parse debtCycleEndDate (format: M-D-YYYY or MM-DD-YYYY)
+              const parts = debtCycleEndDate.split("-");
+              if (parts.length === 3) {
+                const month = Number(parts[0]);
+                const day = Number(parts[1]);
+                const year = Number(parts[2]);
+
+                // Validate parsed values
+                if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+                  const debtEndDate = new Date(year, month - 1, day);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  debtEndDate.setHours(0, 0, 0, 0);
+
+                  // If debt end date is before today, client is late
+                  if (debtEndDate < today) {
+                    isLate = true;
+                    console.log(`Client ${firstName} ${lastName} is LATE. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
+                  } else {
+                    console.log(`Client ${firstName} ${lastName} is NOT late. debtCycleEndDate: ${debtCycleEndDate}, parsed: ${debtEndDate.toISOString()}, today: ${today.toISOString()}`);
+                  }
+                } else {
+                  console.log(`Invalid date format for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
+                }
+              } else {
+                console.log(`Invalid date format (wrong number of parts) for client ${firstName} ${lastName}: ${debtCycleEndDate}`);
+              }
+            } catch (error) {
+              console.error(`Error parsing debtCycleEndDate for client ${firstName} ${lastName}: ${debtCycleEndDate}`, error);
+            }
+          } else {
+            console.log(`No debtCycleEndDate for client ${firstName} ${lastName}`);
+          }
+
+          // Filter out clients who requested not to send, UNLESS they are late
+          // If client is not late and has requestNotTosend === 'true', skip them
+          // IMPORTANT: If client is late, ALWAYS send message regardless of requestNotTosend
+          if (!isLate && requestNotTosend === "true") {
+            console.log(`Skipping client ${firstName} ${lastName} - requested not to send and NOT late (deadline: ${debtCycleEndDate || "N/A"})`);
+            continue;
+          }
+
+          // Log if sending to a late client who requested not to send
+          if (isLate && requestNotTosend === "true") {
+            console.log(`Sending to LATE client ${firstName} ${lastName} despite requestNotTosend=true (deadline passed: ${debtCycleEndDate})`);
+          }
+
+          // Construct your reminder message
+          let message = `Bonjour ${firstName || "Valued"} ${
+            lastName || "Client"
+          },\n` +
+          `Ozali programmer lelo pona kofuta ${minPay} FC. ` +
+          `Otikali na niongo ya ${debtLeft} FC. ` +
+          `Epargnes na yo ezali: ${savings}FC.\n`;
+
+          // Add late payment message if client is late
+          // (This will be sent even if requestNotTosend is true)
+          if (isLate) {
+            message += `Ozali na retard makasi Mpenza. Kende Kofuta niongo.\n`;
+          }
+
+          message += `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993.`+
+          `Merci pona confiance na FONDATION GERVAIS.`;
+
+          try {
+          // Send SMS via Africa's Talking
+            const response = await sms.send({
+              to: [formattedNumber],
+              message,
+            });
+            // console.log(`SMS sent to ${formattedNumber} =>`, message);
+            console.log(`SMS sent to ${formattedNumber} =>`, response);
+            successCount++;
+          } catch (error) {
+            console.error(`Error sending SMS to ${formattedNumber}:`, error);
+            failCount++;
+          }
+        }
+
+        console.log(
+            `===> Reminders done. Success: ${successCount}, Failed: ${failCount}`,
+        );
+        return null;
+      } catch (error) {
+        console.error("Error in scheduledSendRemindersTesting:", error);
+        throw error; // Let Firebase log it as a function error
+      }
+    });
+*/
+// END OF COMMENTED TESTING FUNCTION
 
 
 /**

@@ -78,6 +78,7 @@ export class Client {
   bonus?: string;
   bonusHistory?: { [key: string]: ClientBonusEvent } = {};
   stars?: string;
+  requestNotTosend?: string;
 }
 
 export class Comment {

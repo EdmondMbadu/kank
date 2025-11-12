@@ -83,7 +83,8 @@ export class ClientPortalComponent {
   copied?: string;
 
   @ViewChild('phoneHistory', { static: false }) phoneHistoryRef?: ElementRef;
-  @ViewChild('bonusHistoryCard', { static: false }) bonusHistoryRef?: ElementRef;
+  @ViewChild('bonusHistoryCard', { static: false })
+  bonusHistoryRef?: ElementRef;
 
   loanAmount: string = '0';
   debtLeft: string = '0';
@@ -104,6 +105,7 @@ export class ClientPortalComponent {
   isGold: boolean = false;
   isPlatinum: boolean = false;
   isPhoneNumberCorrect: string = '';
+  requestNotTosend: string = '';
   age: number | null = null; // ← nouveau
   birthDateDisplay = '';
   dateJoined: string = '';
@@ -318,6 +320,11 @@ export class ClientPortalComponent {
     if (this.client.isPhoneCorrect) {
       this.isPhoneNumberCorrect = this.client.isPhoneCorrect;
     }
+    if (this.client.requestNotTosend) {
+      this.requestNotTosend = this.client.requestNotTosend;
+    } else {
+      this.requestNotTosend = '';
+    }
     this.ensureBonusState();
     if ((this, this.client.agentVerifyingName)) {
       this.agentVerifyingName = this.client.agentVerifyingName;
@@ -378,17 +385,28 @@ export class ClientPortalComponent {
     }
   }
 
+  onRequestNotToSendChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    this.requestNotTosend = target.checked ? 'true' : '';
+  }
+
   async adjustStars(change: number) {
     const currentStars = Number(this.client.stars || 0);
     const newStars = Math.max(0, currentStars + change); // Ensure stars can't go below 0
-    
+
     try {
-      await this.data.setClientField('stars', newStars.toString(), this.client.uid!);
+      await this.data.setClientField(
+        'stars',
+        newStars.toString(),
+        this.client.uid!
+      );
       this.client.stars = newStars.toString();
       this.stars = newStars;
       alert(`Étoiles mises à jour: ${newStars}`);
     } catch (err) {
-      alert("Une erreur s'est produite lors de la mise à jour des étoiles. Réessayez");
+      alert(
+        "Une erreur s'est produite lors de la mise à jour des étoiles. Réessayez"
+      );
     }
   }
   isFullPictureVisible = false;
@@ -456,7 +474,7 @@ export class ClientPortalComponent {
       this.bonusToAdd = '';
     } catch (error) {
       console.error("Erreur lors de l'ajustement du bonus", error);
-      alert("Impossible de mettre à jour le bonus. Réessayez.");
+      alert('Impossible de mettre à jour le bonus. Réessayez.');
     } finally {
       this.isBonusSubmitting = false;
     }
@@ -489,7 +507,7 @@ export class ClientPortalComponent {
 
     const bonusValue = this.bonusAmountValue;
     if (bonusValue <= 0) {
-      alert("Aucun bonus disponible à transférer.");
+      alert('Aucun bonus disponible à transférer.');
       return;
     }
 
@@ -537,7 +555,7 @@ export class ClientPortalComponent {
       alert('Bonus transféré vers les épargnes.');
     } catch (error) {
       console.error('Erreur lors du transfert de bonus', error);
-      alert("Impossible de transférer le bonus. Réessayez.");
+      alert('Impossible de transférer le bonus. Réessayez.');
     } finally {
       this.isBonusTransferSubmitting = false;
     }
@@ -551,9 +569,7 @@ export class ClientPortalComponent {
     }
     return Object.values(history)
       .filter((event) => !!event)
-      .sort((a, b) =>
-        (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
-      );
+      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
   }
 
   bonusEventAmount(event: ClientBonusEvent): number {
@@ -1719,15 +1735,17 @@ export class ClientPortalComponent {
   onDocClick(ev: Event) {
     const target = ev.target as Node;
     if (this.showPhoneHistory) {
-      const phoneHost = this.phoneHistoryRef
-        ?.nativeElement as HTMLElement | undefined;
+      const phoneHost = this.phoneHistoryRef?.nativeElement as
+        | HTMLElement
+        | undefined;
       if (phoneHost && !phoneHost.contains(target)) {
         this.showPhoneHistory = false;
       }
     }
     if (this.showBonusHistory) {
-      const bonusHost = this.bonusHistoryRef
-        ?.nativeElement as HTMLElement | undefined;
+      const bonusHost = this.bonusHistoryRef?.nativeElement as
+        | HTMLElement
+        | undefined;
       if (bonusHost && !bonusHost.contains(target)) {
         this.showBonusHistory = false;
       }
@@ -1785,8 +1803,18 @@ export class ClientPortalComponent {
     this.auth.getAllUsersInfo().subscribe((users: User[]) => {
       const list = users ?? [];
       this.allUsers = list.slice().sort((a: User, b: User) => {
-        const nameA = (a.firstName || a.lastName || a.email || '').toLowerCase();
-        const nameB = (b.firstName || b.lastName || b.email || '').toLowerCase();
+        const nameA = (
+          a.firstName ||
+          a.lastName ||
+          a.email ||
+          ''
+        ).toLowerCase();
+        const nameB = (
+          b.firstName ||
+          b.lastName ||
+          b.email ||
+          ''
+        ).toLowerCase();
         return nameA.localeCompare(nameB);
       });
     });
@@ -1805,7 +1833,7 @@ export class ClientPortalComponent {
 
     if (this.currentLocationUserId === this.selectedTargetLocationUserId) {
       alert(
-        "Le client est déjà dans cette localisation. Veuillez sélectionner une autre localisation."
+        'Le client est déjà dans cette localisation. Veuillez sélectionner une autre localisation.'
       );
       return;
     }
