@@ -653,62 +653,17 @@
     <!-- Previous Cycles -->
     <div
       *ngIf="clientCycles.length > 0"
-      class="col-span-full rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 px-6 py-6 border border-slate-200 dark:border-slate-700"
+      class="col-span-full rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden"
     >
-      <div class="flex items-center gap-2 mb-4">
-        <svg
-          class="w-5 h-5 text-slate-600 dark:text-slate-300"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <dt class="text-lg font-semibold text-slate-900 dark:text-white">
-          Cycles Précédents
-        </dt>
-      </div>
-      <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
-        Consultez les cycles de dette précédents de ce client
-      </p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <a
-          *ngFor="let c of clientCycles"
-          [routerLink]="['/client-cycle', client.uid + '-' + c.cycleId]"
-          class="group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer"
-        >
-          <div
-            class="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:bg-emerald-500 dark:group-hover:bg-emerald-600 transition-colors"
-          >
-            <svg
-              class="w-5 h-5 text-emerald-600 dark:text-emerald-300 group-hover:text-white transition-colors"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-base font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-              Cycle {{ c.debtCycle }}
-            </p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Cliquez pour voir les détails
-            </p>
-          </div>
+      <!-- Header - Clickable to toggle -->
+      <button
+        type="button"
+        (click)="showPreviousCycles = !showPreviousCycles"
+        class="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      >
+        <div class="flex items-center gap-3">
           <svg
-            class="w-5 h-5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0"
+            class="w-5 h-5 text-slate-600 dark:text-slate-300"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
@@ -717,10 +672,88 @@
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
-              d="M9 5l7 7-7 7"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-        </a>
+          <dt class="text-lg font-semibold text-slate-900 dark:text-white">
+            Cycles Précédents
+          </dt>
+          <span
+            class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+          >
+            {{ clientCycles.length }}
+          </span>
+        </div>
+        <svg
+          class="w-5 h-5 text-slate-600 dark:text-slate-300 transition-transform duration-200"
+          [ngClass]="showPreviousCycles ? 'rotate-180' : ''"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      <!-- Collapsible Content -->
+      <div
+        *ngIf="showPreviousCycles"
+        class="px-6 pb-6 border-t border-slate-200 dark:border-slate-700"
+      >
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4 mt-4">
+          Consultez les cycles de dette précédents de ce client
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <a
+            *ngFor="let c of clientCycles"
+            [routerLink]="['/client-cycle', client.uid + '-' + c.cycleId]"
+            class="group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer"
+          >
+            <div
+              class="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:bg-emerald-500 dark:group-hover:bg-emerald-600 transition-colors"
+            >
+              <svg
+                class="w-5 h-5 text-emerald-600 dark:text-emerald-300 group-hover:text-white transition-colors"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-base font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                Cycle {{ c.debtCycle }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Cliquez pour voir les détails
+              </p>
+            </div>
+            <svg
+              class="w-5 h-5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </a>
+        </div>
       </div>
     </div>
 

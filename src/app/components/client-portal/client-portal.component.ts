@@ -99,6 +99,7 @@ export class ClientPortalComponent {
   isBonusTransferSubmitting = false;
   showBonusHistory = false;
   showStarsExplanation = false;
+  showPreviousCycles = false;
   isSilver: boolean = false;
   isGold: boolean = false;
   isPlatinum: boolean = false;
