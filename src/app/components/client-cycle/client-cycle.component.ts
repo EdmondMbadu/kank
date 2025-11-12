@@ -45,6 +45,7 @@ export class ClientCycleComponent {
   id: any = '';
   clientId: any = '';
   cycleId: any = '';
+  clientIndex: number | null = null;
   paymentDate = '';
   debtStart = '';
   debtEnd = '';
@@ -61,6 +62,18 @@ export class ClientCycleComponent {
     const [ci, cy] = this.id.split('-');
     this.clientId = ci;
     this.cycleId = cy;
+    this.findClientIndex();
+  }
+
+  findClientIndex(): void {
+    this.auth.getAllClients().subscribe((clients: any) => {
+      if (Array.isArray(clients)) {
+        const index = clients.findIndex((c: Client) => c.uid === this.clientId);
+        if (index !== -1) {
+          this.clientIndex = index;
+        }
+      }
+    });
   }
   ngOnInit(): void {
     this.retrieveClientCycle();
