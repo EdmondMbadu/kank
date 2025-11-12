@@ -546,6 +546,9 @@ export class TodayCentralComponent {
     }
 
     // Calculate reserve for each date in range (in dollars)
+    // Store data temporarily to filter out zero values
+    const tempData: { label: string; value: number }[] = [];
+    
     dateArray.forEach((date) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
@@ -619,16 +622,26 @@ export class TodayCentralComponent {
       const reserveInDollars = this.toNum(
         this.compute.convertCongoleseFrancToUsDollars(reserveNum.toString())
       );
-      values.push(reserveInDollars);
       
-      // Format label based on range
-      if (this.selectedTimeRange === '1D' || this.selectedTimeRange === '1W' || this.selectedTimeRange === '1M') {
-        labels.push(day.toString());
-      } else {
-        // Monthly labels
-        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-        labels.push(`${monthNames[month - 1]} ${year}`);
+      // Only add non-zero values
+      if (reserveInDollars > 0) {
+        // Format label based on range
+        let label: string;
+        if (this.selectedTimeRange === '1D' || this.selectedTimeRange === '1W' || this.selectedTimeRange === '1M') {
+          label = day.toString();
+        } else {
+          // Monthly labels
+          const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+          label = `${monthNames[month - 1]} ${year}`;
+        }
+        tempData.push({ label, value: reserveInDollars });
       }
+    });
+    
+    // Extract filtered labels and values
+    tempData.forEach((item) => {
+      labels.push(item.label);
+      values.push(item.value);
     });
 
     // Get first and last reserve values (in dollars)
@@ -853,6 +866,9 @@ export class TodayCentralComponent {
     }
 
     // Calculate payment for each date in range (in dollars)
+    // Store data temporarily to filter out zero values
+    const tempData: { label: string; value: number }[] = [];
+    
     dateArray.forEach((date) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
@@ -921,14 +937,25 @@ export class TodayCentralComponent {
       const paymentInDollars = this.toNum(
         this.compute.convertCongoleseFrancToUsDollars(paymentNum.toString())
       );
-      values.push(paymentInDollars);
       
-      if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W' || this.selectedPaymentTimeRange === '1M') {
-        labels.push(day.toString());
-      } else {
-        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-        labels.push(`${monthNames[month - 1]} ${year}`);
+      // Only add non-zero values
+      if (paymentInDollars > 0) {
+        // Format label based on range
+        let label: string;
+        if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W' || this.selectedPaymentTimeRange === '1M') {
+          label = day.toString();
+        } else {
+          const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+          label = `${monthNames[month - 1]} ${year}`;
+        }
+        tempData.push({ label, value: paymentInDollars });
       }
+    });
+    
+    // Extract filtered labels and values
+    tempData.forEach((item) => {
+      labels.push(item.label);
+      values.push(item.value);
     });
 
     const firstPayment = values[0] || 0;
@@ -1151,8 +1178,9 @@ export class TodayCentralComponent {
 
     const values: number[] = [];
 
-    // Get last 3 days of data for better visualization
-    for (let i = 2; i >= 0; i--) {
+    // Get last 4 days of data for better curve visualization
+    // Only include non-zero values
+    for (let i = 3; i >= 0; i--) {
       const date = new Date(currentYear, currentMonth - 1, today - i);
       // Allow cross-month boundaries for better data
       const day = date.getDate();
@@ -1177,7 +1205,11 @@ export class TodayCentralComponent {
       const valueInDollars = this.toNum(
         this.compute.convertCongoleseFrancToUsDollars(dayValue.toString())
       );
-      values.push(valueInDollars);
+      
+      // Only add non-zero values
+      if (valueInDollars > 0) {
+        values.push(valueInDollars);
+      }
     }
 
     if (values.length < 2) {
@@ -1196,10 +1228,13 @@ export class TodayCentralComponent {
     const range = maxVal - minVal || 1; // Avoid division by zero
     const normalizedValues = values.map(v => ((v - minVal) / range) * 100);
 
+    // Create sequential x-axis indices for non-zero values
+    const xIndices = values.map((_, index) => index);
+
     return {
       data: [
         {
-          x: [0, 1, 2],
+          x: xIndices,
           y: normalizedValues,
           type: 'scatter',
           mode: 'lines',
@@ -1223,7 +1258,7 @@ export class TodayCentralComponent {
           showticklabels: false,
           zeroline: false,
           showline: false,
-          range: [-0.1, 2.1],
+          range: xIndices.length > 0 ? [xIndices[0] - 0.1, xIndices[xIndices.length - 1] + 0.1] : [-0.1, 2.1],
         },
         yaxis: {
           showgrid: false,
