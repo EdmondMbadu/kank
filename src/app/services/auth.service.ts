@@ -581,14 +581,107 @@ export class AuthService {
   }
 
   /**
+   * Helper method to add a payment code to a user's teamCode.
+   * Only adds if the code doesn't already exist (avoids duplicates).
+   * @param userId - The user ID whose teamCode to update
+   * @param code - The payment code to add
+   */
+  private async addCodeToTeamCode(
+    userId: string,
+    code: string
+  ): Promise<void> {
+    if (!code || !code.trim()) {
+      return; // No code to add
+    }
+
+    const trimmedCode = code.trim();
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${userId}`
+    );
+    const userDoc = await firstValueFrom(userRef.valueChanges());
+
+    if (!userDoc) {
+      console.warn(`User ${userId} not found, cannot update teamCode`);
+      return;
+    }
+
+    const currentTeamCode = userDoc.teamCode || '';
+    const codes = currentTeamCode
+      .split('-')
+      .map((c) => c.trim())
+      .filter((c) => !!c);
+
+    // Check if code already exists (case-sensitive)
+    if (codes.includes(trimmedCode)) {
+      return; // Already exists, no need to add
+    }
+
+    // Add the new code
+    codes.push(trimmedCode);
+    const newTeamCode = codes.join('-');
+
+    await userRef.set({ teamCode: newTeamCode }, { merge: true });
+  }
+
+  /**
+   * Helper method to remove a payment code from a user's teamCode.
+   * @param userId - The user ID whose teamCode to update
+   * @param code - The payment code to remove
+   */
+  private async removeCodeFromTeamCode(
+    userId: string,
+    code: string
+  ): Promise<void> {
+    if (!code || !code.trim()) {
+      return; // No code to remove
+    }
+
+    const trimmedCode = code.trim();
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${userId}`
+    );
+    const userDoc = await firstValueFrom(userRef.valueChanges());
+
+    if (!userDoc) {
+      console.warn(`User ${userId} not found, cannot update teamCode`);
+      return;
+    }
+
+    const currentTeamCode = userDoc.teamCode || '';
+    const codes = currentTeamCode
+      .split('-')
+      .map((c) => c.trim())
+      .filter((c) => !!c);
+
+    // Remove the code (case-sensitive)
+    const filteredCodes = codes.filter((c) => c !== trimmedCode);
+
+    // Only update if something changed
+    if (filteredCodes.length !== codes.length) {
+      const newTeamCode = filteredCodes.join('-');
+      await userRef.set({ teamCode: newTeamCode }, { merge: true });
+    }
+  }
+
+  /**
    * Delete an employee completely from Firestore.
+   * Also removes their paymentCode from the location's teamCode if it exists.
    * @param userId - The user ID (location) that owns the employee
    * @param employeeId - The employee ID to delete
    */
-  deleteEmployee(userId: string, employeeId: string): Promise<void> {
+  async deleteEmployee(userId: string, employeeId: string): Promise<void> {
+    // Get the employee's paymentCode before deleting
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${userId}/employees/${employeeId}`
     );
+    const employeeDoc = await firstValueFrom(employeeRef.valueChanges());
+
+    // Remove paymentCode from teamCode if it exists
+    if (employeeDoc?.paymentCode) {
+      await this.removeCodeFromTeamCode(userId, employeeDoc.paymentCode);
+    }
+
+    // Delete the employee
     return employeeRef.delete();
   }
 
@@ -664,7 +757,14 @@ export class AuthService {
       currentTotalPoints: 0,
     };
 
-    return targetEmployeeRef.set(copiedData, { merge: true });
+    // Save the copied employee
+    await targetEmployeeRef.set(copiedData, { merge: true });
+
+    // Add paymentCode to target location's teamCode if it exists
+    // Note: We don't remove it from source location's teamCode
+    if (sourceEmployeeDoc.paymentCode) {
+      await this.addCodeToTeamCode(targetUserId, sourceEmployeeDoc.paymentCode);
+    }
   }
 
   /**
