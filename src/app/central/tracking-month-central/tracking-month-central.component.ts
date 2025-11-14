@@ -182,6 +182,10 @@ export class TrackingMonthCentralComponent {
   miniReserveGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
   miniPaymentGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
 
+  // Selected location for filtering graphs
+  selectedReserveLocation: string | null = null;
+  selectedPaymentLocation: string | null = null;
+
   setPreviousMonth() {
     if (this.givenMonth === 1) {
       // January
@@ -580,8 +584,38 @@ export class TrackingMonthCentralComponent {
     this.updatePaymentGraphics(this.rangeValueFromKey(key));
   }
 
+  onReserveLocationClick(locationName: string): void {
+    // If empty string, reset to all locations
+    if (locationName === '') {
+      this.selectedReserveLocation = null;
+    } else {
+      // Toggle selection: if clicking the same location, deselect it (show all)
+      if (this.selectedReserveLocation === locationName) {
+        this.selectedReserveLocation = null;
+      } else {
+        this.selectedReserveLocation = locationName;
+      }
+    }
+    this.updateReserveGraphics(this.rangeValueFromKey(this.reserveActiveRange));
+  }
+
+  onPaymentLocationClick(locationName: string): void {
+    // If empty string, reset to all locations
+    if (locationName === '') {
+      this.selectedPaymentLocation = null;
+    } else {
+      // Toggle selection: if clicking the same location, deselect it (show all)
+      if (this.selectedPaymentLocation === locationName) {
+        this.selectedPaymentLocation = null;
+      } else {
+        this.selectedPaymentLocation = locationName;
+      }
+    }
+    this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
+  }
+
   updateReserveGraphics(range: number): void {
-    const [labels, values] = this.aggregateMonthlyField('reserve');
+    const [labels, values] = this.aggregateMonthlyField('reserve', this.selectedReserveLocation);
     this.reserveMaxRange = labels.length;
 
     const [selectedLabels, selectedValues] = this.sliceForRange(
@@ -601,6 +635,10 @@ export class TrackingMonthCentralComponent {
       ? this.compute.findColor(selectedValues)
       : this.compute.colorPositive;
 
+    // Build title with location name if selected
+    const locationPrefix = this.selectedReserveLocation ? `${this.selectedReserveLocation} - ` : '';
+    const titleText = `${locationPrefix}Réserve en $`;
+
     this.reserveGraph = {
       data: [
         {
@@ -612,12 +650,12 @@ export class TrackingMonthCentralComponent {
           line: { color: 'rgb(34, 139, 34)' },
         },
       ],
-      layout: this.createGraphLayout('Réserve en $'),
+      layout: this.createGraphLayout(titleText),
     };
   }
 
   updatePaymentGraphics(range: number): void {
-    const [labels, values] = this.aggregateMonthlyField('dailyReimbursement');
+    const [labels, values] = this.aggregateMonthlyField('dailyReimbursement', this.selectedPaymentLocation);
     this.paymentMaxRange = labels.length;
 
     const [selectedLabels, selectedValues] = this.sliceForRange(
@@ -637,6 +675,10 @@ export class TrackingMonthCentralComponent {
       ? this.compute.findColor(selectedValues)
       : '#0ea5e9';
 
+    // Build title with location name if selected
+    const locationPrefix = this.selectedPaymentLocation ? `${this.selectedPaymentLocation} - ` : '';
+    const titleText = `${locationPrefix}Paiement en $`;
+
     this.paymentGraph = {
       data: [
         {
@@ -648,18 +690,23 @@ export class TrackingMonthCentralComponent {
           line: { color: 'rgb(14, 165, 233)' },
         },
       ],
-      layout: this.createGraphLayout('Paiement en $'),
+      layout: this.createGraphLayout(titleText),
     };
   }
 
-  private aggregateMonthlyField(field: UserDailyField): [string[], string[]] {
+  private aggregateMonthlyField(field: UserDailyField, selectedLocation: string | null = null): [string[], string[]] {
     if (!this.allUsers || this.allUsers.length === 0) {
       return [[], []];
     }
 
     const aggregated = new Map<string, number>();
 
-    for (const user of this.allUsers) {
+    // Filter users by selected location if any
+    const usersToProcess = selectedLocation
+      ? this.allUsers.filter((user) => user.firstName === selectedLocation)
+      : this.allUsers;
+
+    for (const user of usersToProcess) {
       const dailyData = user[field];
       if (!dailyData) continue;
 

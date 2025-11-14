@@ -325,7 +325,12 @@
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
                 *ngFor="let s of sortedReserveMonth; let i = index"
-                class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+                (click)="onReserveLocationClick(s.firstName)"
+                [class]="
+                  selectedReserveLocation === s.firstName
+                    ? 'cursor-pointer bg-emerald-100 dark:bg-emerald-900/40'
+                    : 'cursor-pointer odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60'
+                "
               >
                 <td class="px-3 py-2">
                   <span
@@ -433,7 +438,7 @@
                 <td class="px-2 py-2"></td>
                 <td class="px-3 py-2"></td>
                 <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">
-                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                  <div class="text-base font-semibold text-slate-900 dark:text-slate-100">
                     ${{ toNum(reserveCurrentTotalAmountDollars) | number : "1.0-0" }}
                   </div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
@@ -441,7 +446,7 @@
                   </div>
                 </td>
                 <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">
-                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                  <div class="text-base font-semibold text-slate-900 dark:text-slate-100">
                     ${{ averageDailyReserveUsd | number : "1.0-0" }}
                   </div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
@@ -597,7 +602,12 @@
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
                 *ngFor="let s of sortedPaymentMonth; let i = index"
-                class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+                (click)="onPaymentLocationClick(s.firstName)"
+                [class]="
+                  selectedPaymentLocation === s.firstName
+                    ? 'cursor-pointer bg-emerald-100 dark:bg-emerald-900/40'
+                    : 'cursor-pointer odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60'
+                "
               >
                 <td class="px-3 py-2">
                   <span
@@ -707,7 +717,7 @@
                 <td class="px-2 py-2"></td>
                 <td class="px-3 py-2"></td>
                 <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">
-                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                  <div class="text-base font-semibold text-slate-900 dark:text-slate-100">
                     ${{ toNum(paymentCurrentTotalAmountDollars) | number : "1.0-0" }}
                   </div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
@@ -715,7 +725,7 @@
                   </div>
                 </td>
                 <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">
-                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                  <div class="text-base font-semibold text-slate-900 dark:text-slate-100">
                     ${{ averageDailyPaymentUsd | number : "1.0-0" }}
                   </div>
                   <div class="text-xs text-slate-500 dark:text-slate-400">
@@ -766,6 +776,19 @@
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="rounded-full border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [ngClass]="
+              !selectedReserveLocation
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="onReserveLocationClick('')"
+            title="Afficher toutes les locations"
+          >
+            Tous
+          </button>
           <button
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
@@ -869,6 +892,19 @@
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="rounded-full border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-sky-500"
+            [ngClass]="
+              !selectedPaymentLocation
+                ? 'border-sky-400 bg-sky-50 text-sky-700 dark:border-sky-500 dark:bg-sky-900/30 dark:text-sky-200'
+                : 'border-slate-200 text-slate-600 hover:border-sky-400 hover:text-sky-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-sky-500 dark:hover:text-sky-300'
+            "
+            (click)="onPaymentLocationClick('')"
+            title="Afficher toutes les locations"
+          >
+            Tous
+          </button>
           <button
             type="button"
             class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-sky-400 dark:focus:ring-sky-500"
