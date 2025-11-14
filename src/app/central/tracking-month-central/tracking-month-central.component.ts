@@ -178,6 +178,10 @@ export class TrackingMonthCentralComponent {
     growthRate: string;
   }[] = [];
 
+  // Mini graph cache for table sparklines
+  miniReserveGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
+  miniPaymentGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
+
   setPreviousMonth() {
     if (this.givenMonth === 1) {
       // January
@@ -334,6 +338,9 @@ export class TrackingMonthCentralComponent {
     
     // Calculate average daily Reserve and Payment
     this.calculateAverageReserveAndPayment();
+    
+    // Update mini graphs for tables
+    this.updateMiniGraphs();
   }
 
   updateReserveTableData(): void {
@@ -344,6 +351,7 @@ export class TrackingMonthCentralComponent {
       this.reserveCurrentTotalAmount = '0';
       this.reserveCurrentTotalAmountDollars = '0';
       this.reserveGrowthRateTotal = '0';
+      this.updateMiniGraphs();
       return;
     }
 
@@ -441,6 +449,9 @@ export class TrackingMonthCentralComponent {
         : currTotalNum > 0
         ? '100'
         : '0';
+    
+    // Update mini graphs after table data is updated
+    this.updateMiniGraphs();
   }
 
   updatePaymentTableData(): void {
@@ -451,6 +462,7 @@ export class TrackingMonthCentralComponent {
       this.paymentCurrentTotalAmount = '0';
       this.paymentCurrentTotalAmountDollars = '0';
       this.paymentGrowthRateTotal = '0';
+      this.updateMiniGraphs();
       return;
     }
 
@@ -553,6 +565,9 @@ export class TrackingMonthCentralComponent {
         : currTotal > 0
         ? '100'
         : '0';
+    
+    // Update mini graphs after table data is updated
+    this.updateMiniGraphs();
   }
 
   setReserveRange(key: RangeKey): void {
@@ -869,5 +884,231 @@ export class TrackingMonthCentralComponent {
       this.averageDailyReserveUsd = 0;
       this.averageDailyPaymentUsd = 0;
     }
+  }
+
+  /**
+   * Update mini graphs for all users in the tables
+   * Shows last 3-4 months of data as sparklines
+   */
+  private updateMiniGraphs(): void {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      this.miniReserveGraphs.clear();
+      this.miniPaymentGraphs.clear();
+      return;
+    }
+
+    // Clear existing graphs
+    this.miniReserveGraphs.clear();
+    this.miniPaymentGraphs.clear();
+
+    // Generate mini graphs for each user in the sorted tables
+    this.sortedReserveMonth.forEach((item) => {
+      const user = this.allUsers.find((u) => u.firstName === item.firstName);
+      if (user && user.firstName) {
+        const reserveGraph = this.createMiniMonthlyGraph(
+          user,
+          'reserve',
+          this.reserveCurrentMonth,
+          this.reserveCurrentYear
+        );
+        if (reserveGraph) {
+          this.miniReserveGraphs.set(user.firstName, reserveGraph);
+        }
+      }
+    });
+
+    this.sortedPaymentMonth.forEach((item) => {
+      const user = this.allUsers.find((u) => u.firstName === item.firstName);
+      if (user && user.firstName) {
+        const paymentGraph = this.createMiniMonthlyGraph(
+          user,
+          'dailyReimbursement',
+          this.paymentCurrentMonth,
+          this.paymentCurrentYear
+        );
+        if (paymentGraph) {
+          this.miniPaymentGraphs.set(user.firstName, paymentGraph);
+        }
+      }
+    });
+  }
+
+  /**
+   * Create a mini monthly graph for a specific user and field
+   * Shows last 3-4 months of monthly totals
+   */
+  private createMiniMonthlyGraph(
+    user: User,
+    field: 'reserve' | 'dailyReimbursement',
+    currentMonth: number,
+    currentYear: number
+  ): { data: any[]; layout: any; config?: any } | null {
+    const data = user[field];
+    if (!data) return null;
+
+    const values: number[] = [];
+    const labels: string[] = [];
+
+    // Get last 4 months of data (including current month)
+    for (let i = 3; i >= 0; i--) {
+      const date = new Date(currentYear, currentMonth - 1 - i, 1);
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+
+      // Calculate total for this month
+      let monthTotal = 0;
+      const daysInMonth = new Date(year, month, 0).getDate();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${month}-${day}-${year}`;
+        let dayValue = 0;
+
+        try {
+          Object.entries(data).forEach(([dateKey, amount]) => {
+            const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+            if (normalizedDate === dateStr) {
+              const numericAmount = String(amount).split(':')[0];
+              dayValue += parseInt(numericAmount, 10) || 0;
+            }
+          });
+        } catch (e) {
+          // Skip if error
+          dayValue = 0;
+        }
+
+        monthTotal += dayValue;
+      }
+
+      // Convert to dollars
+      const valueInDollars = this.toNum(
+        this.compute.convertCongoleseFrancToUsDollars(monthTotal.toString())
+      );
+
+      // Only add non-zero values
+      if (valueInDollars > 0 || i === 0) {
+        // Always include current month even if zero
+        values.push(valueInDollars);
+        // Use abbreviated month name
+        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        labels.push(`${monthNames[month - 1]}`);
+      }
+    }
+
+    if (values.length < 2) {
+      return this.createEmptyMiniGraph();
+    }
+
+    // Determine color based on trend (compare first to last)
+    const firstValue = values[0] || 0;
+    const lastValue = values[values.length - 1] || 0;
+    const isPositive = lastValue >= firstValue;
+    const lineColor = isPositive ? '#26a69a' : '#ef5350';
+
+    // Normalize values to fit nicely in the small space (0-100 scale)
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const range = maxVal - minVal || 1; // Avoid division by zero
+    const normalizedValues = values.map((v) => ((v - minVal) / range) * 100);
+
+    // Create sequential x-axis indices
+    const xIndices = values.map((_, index) => index);
+
+    return {
+      data: [
+        {
+          x: xIndices,
+          y: normalizedValues,
+          type: 'scatter',
+          mode: 'lines',
+          line: {
+            color: lineColor,
+            width: 2.5,
+            shape: 'spline',
+          },
+          fill: 'tozeroy',
+          fillcolor: lineColor + '15',
+          hovertemplate: '<b>%{text}</b><br>$%{customdata:,.2f}<extra></extra>',
+          text: labels,
+          customdata: values, // Store original values for hover
+        },
+      ],
+      layout: {
+        height: 40,
+        width: 100,
+        margin: { t: 2, r: 2, l: 2, b: 2 },
+        xaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+          range:
+            xIndices.length > 0
+              ? [xIndices[0] - 0.1, xIndices[xIndices.length - 1] + 0.1]
+              : [-0.1, 2.1],
+        },
+        yaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+          range: [0, 100],
+        },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        showlegend: false,
+      },
+      config: {
+        responsive: false,
+        displayModeBar: false,
+        staticPlot: true,
+      },
+    };
+  }
+
+  /**
+   * Get mini reserve graph for a location
+   */
+  getMiniReserveGraph(locationName: string): { data: any[]; layout: any; config?: any } {
+    return this.miniReserveGraphs.get(locationName) || this.createEmptyMiniGraph();
+  }
+
+  /**
+   * Get mini payment graph for a location
+   */
+  getMiniPaymentGraph(locationName: string): { data: any[]; layout: any; config?: any } {
+    return this.miniPaymentGraphs.get(locationName) || this.createEmptyMiniGraph();
+  }
+
+  /**
+   * Create an empty mini graph placeholder
+   */
+  private createEmptyMiniGraph() {
+    return {
+      data: [],
+      layout: {
+        height: 40,
+        width: 100,
+        margin: { t: 0, r: 0, l: 0, b: 0 },
+        xaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+        },
+        yaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+        },
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+      },
+      config: {
+        responsive: false,
+        displayModeBar: false,
+        staticPlot: true,
+      },
+    };
   }
 }
