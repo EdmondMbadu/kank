@@ -691,11 +691,13 @@ export class AuthService {
    * @param sourceUserId - The user ID of the source location
    * @param sourceEmployeeId - The employee ID to copy
    * @param targetUserId - The user ID of the target location
+   * @param isRotation - Whether this is a rotation (temporary) or affectation (permanent)
    */
   async copyEmployeeToLocation(
     sourceUserId: string,
     sourceEmployeeId: string,
-    targetUserId: string
+    targetUserId: string,
+    isRotation: boolean = false
   ): Promise<void> {
     // Get the source employee
     const sourceEmployeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
@@ -755,6 +757,9 @@ export class AuthService {
       averagePoints: employeeData.averagePoints || '0',
       totalPoints: employeeData.totalPoints || '0',
       currentTotalPoints: 0,
+      // Set rotation fields
+      isRotation: isRotation,
+      rotationSourceLocationId: isRotation ? sourceUserId : undefined,
     };
 
     // Save the copied employee
@@ -765,6 +770,29 @@ export class AuthService {
     if (sourceEmployeeDoc.paymentCode) {
       await this.addCodeToTeamCode(targetUserId, sourceEmployeeDoc.paymentCode);
     }
+  }
+
+  /**
+   * Convert a rotation employee to definitive (affectation).
+   * Removes the rotation flag and source location reference.
+   * @param userId - The user ID (location) that owns the employee
+   * @param employeeId - The employee ID to convert
+   */
+  async convertRotationToDefinitive(
+    userId: string,
+    employeeId: string
+  ): Promise<void> {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${userId}/employees/${employeeId}`
+    );
+
+    await employeeRef.set(
+      {
+        isRotation: false,
+        rotationSourceLocationId: undefined,
+      },
+      { merge: true }
+    );
   }
 
   /**

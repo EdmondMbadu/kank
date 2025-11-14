@@ -93,6 +93,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     sourceUserLabel: string;
   } | null = null;
   selectedTargetLocationUserId: string | null = null;
+  transferType: 'rotation' | 'affectation' | null = null;
   employeeCopyInProgress = false;
   employeeCopySuccess = false;
   employeeCopyError = '';
@@ -1374,9 +1375,21 @@ export class TeamRankingMonthComponent implements OnDestroy {
       return;
     }
 
+    if (!this.transferType) {
+      alert('Veuillez sélectionner le type de transfert (Rotation ou Affectation).');
+      return;
+    }
+
+    const transferTypeLabel =
+      this.transferType === 'rotation' ? 'Rotation' : 'Affectation';
+    const transferTypeDescription =
+      this.transferType === 'rotation'
+        ? 'temporaire (rotation)'
+        : 'définitive (affectation)';
+
     if (
       !confirm(
-        `Êtes-vous sûr de vouloir copier cet employé vers la nouvelle localisation ?\n\nLes clients ne seront pas copiés (spécifiques à la localisation).`
+        `Êtes-vous sûr de vouloir transférer cet employé vers la nouvelle localisation ?\n\nType: ${transferTypeLabel} (${transferTypeDescription})\n\nLes clients ne seront pas copiés (spécifiques à la localisation).`
       )
     ) {
       return;
@@ -1390,7 +1403,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
       await this.auth.copyEmployeeToLocation(
         this.selectedSourceEmployee.sourceUserId,
         this.selectedSourceEmployee.employee.uid!,
-        this.selectedTargetLocationUserId
+        this.selectedTargetLocationUserId,
+        this.transferType === 'rotation'
       );
 
       this.employeeCopySuccess = true;
@@ -1399,6 +1413,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       // Reset selections
       this.selectedSourceEmployee = null;
       this.selectedTargetLocationUserId = null;
+      this.transferType = null;
 
       // Reload employees list
       this.allEmployeesForCopy = [];
@@ -1415,6 +1430,41 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.employeeCopySuccess = false;
     } finally {
       this.employeeCopyInProgress = false;
+    }
+  }
+
+  /**
+   * Convert a rotation employee to definitive (affectation)
+   */
+  async convertRotationToDefinitive(employee: Employee): Promise<void> {
+    if (!employee.uid || !employee.tempUser?.uid) {
+      alert("Impossible de convertir cet employé. Informations manquantes.");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Convertir ${employee.firstName} ${employee.lastName} de rotation en affectation définitive ?\n\nL'employé sera traité comme un employé permanent de cette localisation.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await this.auth.convertRotationToDefinitive(
+        employee.tempUser.uid,
+        employee.uid
+      );
+
+      // Reload employees to reflect the change
+      this.getAllEmployees();
+
+      alert('Employé converti en affectation définitive avec succès.');
+    } catch (error: any) {
+      console.error('Error converting rotation to definitive:', error);
+      alert(
+        "Une erreur s'est produite lors de la conversion. Veuillez réessayer."
+      );
     }
   }
 }
