@@ -1787,6 +1787,8 @@ export class ClientPortalComponent {
   clientTransferSuccess = false;
   clientTransferError = '';
   currentLocationUserId: string = '';
+  transferActionInProgress = false;
+  transferActionType: 'accept' | 'reject' | null = null;
 
   toggleClientTransferSection(): void {
     this.showClientTransferSection = !this.showClientTransferSection;
@@ -1874,6 +1876,98 @@ export class ClientPortalComponent {
       this.clientTransferSuccess = false;
     } finally {
       this.clientTransferInProgress = false;
+    }
+  }
+
+  async acceptTransfer(): Promise<void> {
+    if (!this.client?.uid) {
+      alert('Client introuvable.');
+      return;
+    }
+
+    if (this.client.transferStatus !== 'pending') {
+      alert("Ce client n'a pas de transfert en attente.");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir accepter le transfert de ce client (${this.client.firstName} ${this.client.lastName}) ?`
+      )
+    ) {
+      return;
+    }
+
+    this.transferActionInProgress = true;
+    this.transferActionType = 'accept';
+
+    try {
+      // Update the client to mark transfer as accepted
+      await this.data.setClientField(
+        'transferStatus',
+        'accepted',
+        this.client.uid
+      );
+
+      // Update local client object
+      this.client.transferStatus = 'accepted';
+
+      alert('Transfert accepté avec succès !');
+    } catch (error: any) {
+      console.error('Error accepting transfer:', error);
+      alert(
+        "Une erreur s'est produite lors de l'acceptation du transfert. Réessayez."
+      );
+    } finally {
+      this.transferActionInProgress = false;
+      this.transferActionType = null;
+    }
+  }
+
+  async rejectTransfer(): Promise<void> {
+    if (!this.client?.uid) {
+      alert('Client introuvable.');
+      return;
+    }
+
+    if (this.client.transferStatus !== 'pending') {
+      alert("Ce client n'a pas de transfert en attente.");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir rejeter le transfert de ce client (${this.client.firstName} ${this.client.lastName}) ?\n\nLe client sera supprimé de cette localisation.`
+      )
+    ) {
+      return;
+    }
+
+    this.transferActionInProgress = true;
+    this.transferActionType = 'reject';
+
+    try {
+      // Delete the client from this location (same as delete function)
+      await this.auth.deleteClient(this.client);
+
+      // Also update user info for deleted client
+      await this.auth.UpdateUserInfoForDeletedClient(this.client);
+
+      // Remove client from agent list if agent exists
+      if (this.agent && this.agent.uid) {
+        this.removeClientFromAgentList();
+      }
+
+      alert('Transfert rejeté. Le client a été supprimé de cette localisation.');
+      this.router.navigate(['/client-info/']);
+    } catch (error: any) {
+      console.error('Error rejecting transfer:', error);
+      alert(
+        "Une erreur s'est produite lors du rejet du transfert. Réessayez."
+      );
+    } finally {
+      this.transferActionInProgress = false;
+      this.transferActionType = null;
     }
   }
 }

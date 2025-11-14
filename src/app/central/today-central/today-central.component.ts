@@ -127,7 +127,7 @@ export class TodayCentralComponent {
         this.requestDateCorrectFormat
       )
       .toString();
-    
+
     // Update monthly reserve graph
     this.updateMonthlyReserveGraph();
     // Update monthly payment graph
@@ -410,14 +410,16 @@ export class TodayCentralComponent {
   // Selected location for filtering graph
   selectedLocation: string | null = null;
   selectedPaymentLocation: string | null = null;
-  
+
   // Time range filter for graph
   selectedTimeRange: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX' = '1M';
   selectedPaymentTimeRange: '1D' | '1W' | '1M' | '6M' | '1Y' | 'MAX' = '1M';
 
   // Mini graph cache
-  miniReserveGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
-  miniPaymentGraphs: Map<string, { data: any[]; layout: any; config?: any }> = new Map();
+  miniReserveGraphs: Map<string, { data: any[]; layout: any; config?: any }> =
+    new Map();
+  miniPaymentGraphs: Map<string, { data: any[]; layout: any; config?: any }> =
+    new Map();
 
   onLocationClick(locationName: string) {
     // Toggle selection: if clicking the same location, deselect it
@@ -463,7 +465,7 @@ export class TodayCentralComponent {
     // Calculate date range based on selected filter
     let startDate: Date;
     const endDate = new Date(currentYear, currentMonth - 1, today);
-    
+
     switch (this.selectedTimeRange) {
       case '1D':
         // Compare with yesterday
@@ -525,7 +527,11 @@ export class TodayCentralComponent {
       // Daily data - only include dates up to today
       const todayDate = new Date(currentYear, currentMonth - 1, today);
       const actualEndDate = endDate > todayDate ? todayDate : endDate;
-      for (let d = new Date(startDate); d <= actualEndDate; d.setDate(d.getDate() + 1)) {
+      for (
+        let d = new Date(startDate);
+        d <= actualEndDate;
+        d.setDate(d.getDate() + 1)
+      ) {
         dateArray.push(new Date(d));
       }
     } else if (this.selectedTimeRange === '1M') {
@@ -536,11 +542,19 @@ export class TodayCentralComponent {
     } else {
       // Monthly data for 6M, 1Y, MAX
       // Start from the first day of the start month
-      const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const startMonth = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        1
+      );
       // Only include up to current month
       const endMonth = new Date(currentYear, currentMonth - 1, 1);
-      
-      for (let d = new Date(startMonth); d <= endMonth; d.setMonth(d.getMonth() + 1)) {
+
+      for (
+        let d = new Date(startMonth);
+        d <= endMonth;
+        d.setMonth(d.getMonth() + 1)
+      ) {
         dateArray.push(new Date(d));
       }
     }
@@ -548,18 +562,22 @@ export class TodayCentralComponent {
     // Calculate reserve for each date in range (in dollars)
     // Store data temporarily to filter out zero values
     const tempData: { label: string; value: number }[] = [];
-    
+
     dateArray.forEach((date) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       const year = date.getFullYear();
-      
+
       let reserve: string = '0';
-      
-      if (this.selectedTimeRange === '1D' || this.selectedTimeRange === '1W' || this.selectedTimeRange === '1M') {
+
+      if (
+        this.selectedTimeRange === '1D' ||
+        this.selectedTimeRange === '1W' ||
+        this.selectedTimeRange === '1M'
+      ) {
         // Daily data
         const dateStr = `${month}-${day}-${year}`;
-        
+
         if (this.selectedLocation) {
           // Get reserve for specific location
           const user = usersToProcess[0];
@@ -585,13 +603,15 @@ export class TodayCentralComponent {
       } else {
         // Monthly data - sum all days in the month (up to today if current month)
         const isCurrentMonth = month === currentMonth && year === currentYear;
-        const daysInMonth = isCurrentMonth ? today : new Date(year, month, 0).getDate();
+        const daysInMonth = isCurrentMonth
+          ? today
+          : new Date(year, month, 0).getDate();
         let monthReserve = 0;
-        
+
         for (let d = 1; d <= daysInMonth; d++) {
           const dateStr = `${month}-${d}-${year}`;
           let dayReserve: string = '0';
-          
+
           if (this.selectedLocation) {
             const user = usersToProcess[0];
             if (user && user.reserve) {
@@ -616,28 +636,45 @@ export class TodayCentralComponent {
         }
         reserve = monthReserve.toString();
       }
-      
+
       const reserveNum = this.toNum(reserve);
       // Convert to dollars
       const reserveInDollars = this.toNum(
         this.compute.convertCongoleseFrancToUsDollars(reserveNum.toString())
       );
-      
+
       // Only add non-zero values
       if (reserveInDollars > 0) {
         // Format label based on range
         let label: string;
-        if (this.selectedTimeRange === '1D' || this.selectedTimeRange === '1W' || this.selectedTimeRange === '1M') {
+        if (
+          this.selectedTimeRange === '1D' ||
+          this.selectedTimeRange === '1W' ||
+          this.selectedTimeRange === '1M'
+        ) {
           label = day.toString();
         } else {
           // Monthly labels
-          const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+          const monthNames = [
+            'Jan',
+            'Fév',
+            'Mar',
+            'Avr',
+            'Mai',
+            'Jun',
+            'Jul',
+            'Aoû',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Déc',
+          ];
           label = `${monthNames[month - 1]} ${year}`;
         }
         tempData.push({ label, value: reserveInDollars });
       }
     });
-    
+
     // Extract filtered labels and values
     tempData.forEach((item) => {
       labels.push(item.label);
@@ -652,27 +689,30 @@ export class TodayCentralComponent {
     // Stock market style: green for gains, red for losses
     const isPositive = lastReserve >= firstReserve;
     const lineColor = isPositive ? '#26a69a' : '#ef5350'; // Teal green or red
-    const fillGradient = isPositive 
+    const fillGradient = isPositive
       ? ['rgba(38, 166, 154, 0.1)', 'rgba(38, 166, 154, 0)'] // Green gradient
       : ['rgba(239, 83, 80, 0.1)', 'rgba(239, 83, 80, 0)']; // Red gradient
 
     // Build title with location name if selected
-    const locationPrefix = this.selectedLocation ? `${this.selectedLocation} - ` : '';
+    const locationPrefix = this.selectedLocation
+      ? `${this.selectedLocation} - `
+      : '';
     const rangeLabels: { [key: string]: string } = {
       '1D': '1 Jour',
       '1W': '1 Semaine',
       '1M': '1 Mois',
       '6M': '6 Mois',
       '1Y': '1 An',
-      'MAX': 'Maximum'
+      MAX: 'Maximum',
     };
-    const titleText = `${locationPrefix}Réserve - ${rangeLabels[this.selectedTimeRange]}`;
+    const titleText = `${locationPrefix}Réserve - ${
+      rangeLabels[this.selectedTimeRange]
+    }`;
 
     // Calculate percentage change
     const change = lastReserve - firstReserve;
-    const changePercent = firstReserve > 0 
-      ? ((change / firstReserve) * 100).toFixed(2)
-      : '0.00';
+    const changePercent =
+      firstReserve > 0 ? ((change / firstReserve) * 100).toFixed(2) : '0.00';
     const changeSign = change >= 0 ? '+' : '';
 
     this.monthlyReserveGraph = {
@@ -696,10 +736,10 @@ export class TodayCentralComponent {
             y2: 1,
             colorstops: [
               { offset: 0, color: fillGradient[0] },
-              { offset: 1, color: fillGradient[1] }
-            ]
+              { offset: 1, color: fillGradient[1] },
+            ],
           },
-          hovertemplate: 
+          hovertemplate:
             '<b>Jour %{x}</b><br>' +
             'Réserve: <b>$%{y:,.2f}</b><extra></extra>',
         },
@@ -707,10 +747,10 @@ export class TodayCentralComponent {
       layout: {
         title: {
           text: titleText,
-          font: { 
-            size: 20, 
+          font: {
+            size: 20,
             color: '#1a1a1a',
-            family: 'system-ui, -apple-system, sans-serif'
+            family: 'system-ui, -apple-system, sans-serif',
           },
           x: 0.02,
           y: 0.95,
@@ -725,13 +765,19 @@ export class TodayCentralComponent {
             y: 0.85,
             xanchor: 'left',
             yanchor: 'top',
-            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastReserve.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastReserve.toLocaleString(
+              'en-US',
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            )}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString(
+              'en-US',
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            )} (${changeSign}${changePercent}%)</span>`,
             showarrow: false,
             align: 'left',
             bgcolor: 'rgba(255, 255, 255, 0.8)',
             bordercolor: 'transparent',
             borderpad: 8,
-          }
+          },
         ],
         xaxis: {
           showgrid: true,
@@ -741,11 +787,11 @@ export class TodayCentralComponent {
           zeroline: false,
           tickfont: {
             size: 11,
-            color: '#666'
+            color: '#666',
           },
           title: {
             text: '',
-            font: { size: 12, color: '#666' }
+            font: { size: 12, color: '#666' },
           },
         },
         yaxis: {
@@ -757,12 +803,12 @@ export class TodayCentralComponent {
           side: 'right',
           tickfont: {
             size: 11,
-            color: '#666'
+            color: '#666',
           },
           tickformat: '$,.0f',
           title: {
             text: '',
-            font: { size: 12, color: '#666' }
+            font: { size: 12, color: '#666' },
           },
         },
         height: 450,
@@ -773,8 +819,8 @@ export class TodayCentralComponent {
         showlegend: false,
         autosize: true,
       },
-      config: { 
-        responsive: true, 
+      config: {
+        responsive: true,
         displayModeBar: false,
         staticPlot: false,
       },
@@ -795,7 +841,7 @@ export class TodayCentralComponent {
     // Calculate date range based on selected filter
     let startDate: Date;
     const endDate = new Date(currentYear, currentMonth - 1, today);
-    
+
     switch (this.selectedPaymentTimeRange) {
       case '1D':
         startDate = new Date(endDate);
@@ -843,14 +889,23 @@ export class TodayCentralComponent {
 
     // Filter users by selected location if any
     const usersToProcess = this.selectedPaymentLocation
-      ? this.allUsers.filter((user) => user.firstName === this.selectedPaymentLocation)
+      ? this.allUsers.filter(
+          (user) => user.firstName === this.selectedPaymentLocation
+        )
       : this.allUsers;
 
     // Generate dates based on range
-    if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W') {
+    if (
+      this.selectedPaymentTimeRange === '1D' ||
+      this.selectedPaymentTimeRange === '1W'
+    ) {
       const todayDate = new Date(currentYear, currentMonth - 1, today);
       const actualEndDate = endDate > todayDate ? todayDate : endDate;
-      for (let d = new Date(startDate); d <= actualEndDate; d.setDate(d.getDate() + 1)) {
+      for (
+        let d = new Date(startDate);
+        d <= actualEndDate;
+        d.setDate(d.getDate() + 1)
+      ) {
         dateArray.push(new Date(d));
       }
     } else if (this.selectedPaymentTimeRange === '1M') {
@@ -858,9 +913,17 @@ export class TodayCentralComponent {
         dateArray.push(new Date(currentYear, currentMonth - 1, day));
       }
     } else {
-      const startMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const startMonth = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        1
+      );
       const endMonth = new Date(currentYear, currentMonth - 1, 1);
-      for (let d = new Date(startMonth); d <= endMonth; d.setMonth(d.getMonth() + 1)) {
+      for (
+        let d = new Date(startMonth);
+        d <= endMonth;
+        d.setMonth(d.getMonth() + 1)
+      ) {
         dateArray.push(new Date(d));
       }
     }
@@ -868,28 +931,34 @@ export class TodayCentralComponent {
     // Calculate payment for each date in range (in dollars)
     // Store data temporarily to filter out zero values
     const tempData: { label: string; value: number }[] = [];
-    
+
     dateArray.forEach((date) => {
       const month = date.getMonth() + 1;
       const day = date.getDate();
       const year = date.getFullYear();
-      
+
       let payment: string = '0';
-      
-      if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W' || this.selectedPaymentTimeRange === '1M') {
+
+      if (
+        this.selectedPaymentTimeRange === '1D' ||
+        this.selectedPaymentTimeRange === '1W' ||
+        this.selectedPaymentTimeRange === '1M'
+      ) {
         const dateStr = `${month}-${day}-${year}`;
-        
+
         if (this.selectedPaymentLocation) {
           const user = usersToProcess[0];
           if (user && user.dailyReimbursement) {
             let dayPayment = 0;
-            Object.entries(user.dailyReimbursement).forEach(([dateKey, amount]) => {
-              const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
-              if (normalizedDate === dateStr) {
-                const numericAmount = amount.split(':')[0];
-                dayPayment += parseInt(numericAmount, 10);
+            Object.entries(user.dailyReimbursement).forEach(
+              ([dateKey, amount]) => {
+                const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+                if (normalizedDate === dateStr) {
+                  const numericAmount = amount.split(':')[0];
+                  dayPayment += parseInt(numericAmount, 10);
+                }
               }
-            });
+            );
             payment = dayPayment.toString();
           }
         } else {
@@ -901,24 +970,31 @@ export class TodayCentralComponent {
         }
       } else {
         const isCurrentMonth = month === currentMonth && year === currentYear;
-        const daysInMonth = isCurrentMonth ? today : new Date(year, month, 0).getDate();
+        const daysInMonth = isCurrentMonth
+          ? today
+          : new Date(year, month, 0).getDate();
         let monthPayment = 0;
-        
+
         for (let d = 1; d <= daysInMonth; d++) {
           const dateStr = `${month}-${d}-${year}`;
           let dayPayment: string = '0';
-          
+
           if (this.selectedPaymentLocation) {
             const user = usersToProcess[0];
             if (user && user.dailyReimbursement) {
               let dayPaymentNum = 0;
-              Object.entries(user.dailyReimbursement).forEach(([dateKey, amount]) => {
-                const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
-                if (normalizedDate === dateStr) {
-                  const numericAmount = amount.split(':')[0];
-                  dayPaymentNum += parseInt(numericAmount, 10);
+              Object.entries(user.dailyReimbursement).forEach(
+                ([dateKey, amount]) => {
+                  const normalizedDate = dateKey
+                    .split('-')
+                    .slice(0, 3)
+                    .join('-');
+                  if (normalizedDate === dateStr) {
+                    const numericAmount = amount.split(':')[0];
+                    dayPaymentNum += parseInt(numericAmount, 10);
+                  }
                 }
-              });
+              );
               dayPayment = dayPaymentNum.toString();
             }
           } else {
@@ -932,26 +1008,43 @@ export class TodayCentralComponent {
         }
         payment = monthPayment.toString();
       }
-      
+
       const paymentNum = this.toNum(payment);
       const paymentInDollars = this.toNum(
         this.compute.convertCongoleseFrancToUsDollars(paymentNum.toString())
       );
-      
+
       // Only add non-zero values
       if (paymentInDollars > 0) {
         // Format label based on range
         let label: string;
-        if (this.selectedPaymentTimeRange === '1D' || this.selectedPaymentTimeRange === '1W' || this.selectedPaymentTimeRange === '1M') {
+        if (
+          this.selectedPaymentTimeRange === '1D' ||
+          this.selectedPaymentTimeRange === '1W' ||
+          this.selectedPaymentTimeRange === '1M'
+        ) {
           label = day.toString();
         } else {
-          const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+          const monthNames = [
+            'Jan',
+            'Fév',
+            'Mar',
+            'Avr',
+            'Mai',
+            'Jun',
+            'Jul',
+            'Aoû',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Déc',
+          ];
           label = `${monthNames[month - 1]} ${year}`;
         }
         tempData.push({ label, value: paymentInDollars });
       }
     });
-    
+
     // Extract filtered labels and values
     tempData.forEach((item) => {
       labels.push(item.label);
@@ -963,25 +1056,28 @@ export class TodayCentralComponent {
 
     const isPositive = lastPayment >= firstPayment;
     const lineColor = isPositive ? '#26a69a' : '#ef5350';
-    const fillGradient = isPositive 
+    const fillGradient = isPositive
       ? ['rgba(38, 166, 154, 0.1)', 'rgba(38, 166, 154, 0)']
       : ['rgba(239, 83, 80, 0.1)', 'rgba(239, 83, 80, 0)'];
 
-    const locationPrefix = this.selectedPaymentLocation ? `${this.selectedPaymentLocation} - ` : '';
+    const locationPrefix = this.selectedPaymentLocation
+      ? `${this.selectedPaymentLocation} - `
+      : '';
     const rangeLabels: { [key: string]: string } = {
       '1D': '1 Jour',
       '1W': '1 Semaine',
       '1M': '1 Mois',
       '6M': '6 Mois',
       '1Y': '1 An',
-      'MAX': 'Maximum'
+      MAX: 'Maximum',
     };
-    const titleText = `${locationPrefix}Paiement - ${rangeLabels[this.selectedPaymentTimeRange]}`;
+    const titleText = `${locationPrefix}Paiement - ${
+      rangeLabels[this.selectedPaymentTimeRange]
+    }`;
 
     const change = lastPayment - firstPayment;
-    const changePercent = firstPayment > 0 
-      ? ((change / firstPayment) * 100).toFixed(2)
-      : '0.00';
+    const changePercent =
+      firstPayment > 0 ? ((change / firstPayment) * 100).toFixed(2) : '0.00';
     const changeSign = change >= 0 ? '+' : '';
 
     this.monthlyPaymentGraph = {
@@ -1005,10 +1101,10 @@ export class TodayCentralComponent {
             y2: 1,
             colorstops: [
               { offset: 0, color: fillGradient[0] },
-              { offset: 1, color: fillGradient[1] }
-            ]
+              { offset: 1, color: fillGradient[1] },
+            ],
           },
-          hovertemplate: 
+          hovertemplate:
             '<b>Jour %{x}</b><br>' +
             'Paiement: <b>$%{y:,.2f}</b><extra></extra>',
         },
@@ -1016,10 +1112,10 @@ export class TodayCentralComponent {
       layout: {
         title: {
           text: titleText,
-          font: { 
-            size: 20, 
+          font: {
+            size: 20,
             color: '#1a1a1a',
-            family: 'system-ui, -apple-system, sans-serif'
+            family: 'system-ui, -apple-system, sans-serif',
           },
           x: 0.02,
           y: 0.95,
@@ -1034,13 +1130,19 @@ export class TodayCentralComponent {
             y: 0.85,
             xanchor: 'left',
             yanchor: 'top',
-            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastPayment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastPayment.toLocaleString(
+              'en-US',
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            )}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString(
+              'en-US',
+              { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+            )} (${changeSign}${changePercent}%)</span>`,
             showarrow: false,
             align: 'left',
             bgcolor: 'rgba(255, 255, 255, 0.8)',
             bordercolor: 'transparent',
             borderpad: 8,
-          }
+          },
         ],
         xaxis: {
           showgrid: true,
@@ -1050,11 +1152,11 @@ export class TodayCentralComponent {
           zeroline: false,
           tickfont: {
             size: 11,
-            color: '#666'
+            color: '#666',
           },
           title: {
             text: '',
-            font: { size: 12, color: '#666' }
+            font: { size: 12, color: '#666' },
           },
         },
         yaxis: {
@@ -1066,12 +1168,12 @@ export class TodayCentralComponent {
           side: 'right',
           tickfont: {
             size: 11,
-            color: '#666'
+            color: '#666',
           },
           tickformat: '$,.0f',
           title: {
             text: '',
-            font: { size: 12, color: '#666' }
+            font: { size: 12, color: '#666' },
           },
         },
         height: 450,
@@ -1082,8 +1184,8 @@ export class TodayCentralComponent {
         showlegend: false,
         autosize: true,
       },
-      config: { 
-        responsive: true, 
+      config: {
+        responsive: true,
         displayModeBar: false,
         staticPlot: false,
       },
@@ -1150,7 +1252,13 @@ export class TodayCentralComponent {
 
       // Reserve mini graph
       if (user.reserve) {
-        const reserveGraph = this.createMiniGraph(user, 'reserve', currentMonth, currentYear, today);
+        const reserveGraph = this.createMiniGraph(
+          user,
+          'reserve',
+          currentMonth,
+          currentYear,
+          today
+        );
         if (reserveGraph) {
           this.miniReserveGraphs.set(user.firstName, reserveGraph);
         }
@@ -1158,7 +1266,13 @@ export class TodayCentralComponent {
 
       // Payment mini graph
       if (user.dailyReimbursement) {
-        const paymentGraph = this.createMiniGraph(user, 'dailyReimbursement', currentMonth, currentYear, today);
+        const paymentGraph = this.createMiniGraph(
+          user,
+          'dailyReimbursement',
+          currentMonth,
+          currentYear,
+          today
+        );
         if (paymentGraph) {
           this.miniPaymentGraphs.set(user.firstName, paymentGraph);
         }
@@ -1205,7 +1319,7 @@ export class TodayCentralComponent {
       const valueInDollars = this.toNum(
         this.compute.convertCongoleseFrancToUsDollars(dayValue.toString())
       );
-      
+
       // Only add non-zero values
       if (valueInDollars > 0) {
         values.push(valueInDollars);
@@ -1226,7 +1340,7 @@ export class TodayCentralComponent {
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
     const range = maxVal - minVal || 1; // Avoid division by zero
-    const normalizedValues = values.map(v => ((v - minVal) / range) * 100);
+    const normalizedValues = values.map((v) => ((v - minVal) / range) * 100);
 
     // Create sequential x-axis indices for non-zero values
     const xIndices = values.map((_, index) => index);
@@ -1258,7 +1372,10 @@ export class TodayCentralComponent {
           showticklabels: false,
           zeroline: false,
           showline: false,
-          range: xIndices.length > 0 ? [xIndices[0] - 0.1, xIndices[xIndices.length - 1] + 0.1] : [-0.1, 2.1],
+          range:
+            xIndices.length > 0
+              ? [xIndices[0] - 0.1, xIndices[xIndices.length - 1] + 0.1]
+              : [-0.1, 2.1],
         },
         yaxis: {
           showgrid: false,
@@ -1271,20 +1388,32 @@ export class TodayCentralComponent {
         paper_bgcolor: 'rgba(0,0,0,0)',
         showlegend: false,
       },
-      config: { 
-        responsive: false, 
+      config: {
+        responsive: false,
         displayModeBar: false,
         staticPlot: true,
       },
     };
   }
 
-  getMiniReserveGraph(locationName: string): { data: any[]; layout: any; config?: any } {
-    return this.miniReserveGraphs.get(locationName) || this.createEmptyMiniGraph();
+  getMiniReserveGraph(locationName: string): {
+    data: any[];
+    layout: any;
+    config?: any;
+  } {
+    return (
+      this.miniReserveGraphs.get(locationName) || this.createEmptyMiniGraph()
+    );
   }
 
-  getMiniPaymentGraph(locationName: string): { data: any[]; layout: any; config?: any } {
-    return this.miniPaymentGraphs.get(locationName) || this.createEmptyMiniGraph();
+  getMiniPaymentGraph(locationName: string): {
+    data: any[];
+    layout: any;
+    config?: any;
+  } {
+    return (
+      this.miniPaymentGraphs.get(locationName) || this.createEmptyMiniGraph()
+    );
   }
 
   private createEmptyMiniGraph() {
@@ -1294,8 +1423,18 @@ export class TodayCentralComponent {
         height: 40,
         width: 100,
         margin: { t: 0, r: 0, l: 0, b: 0 },
-        xaxis: { showgrid: false, showticklabels: false, zeroline: false, showline: false },
-        yaxis: { showgrid: false, showticklabels: false, zeroline: false, showline: false },
+        xaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+        },
+        yaxis: {
+          showgrid: false,
+          showticklabels: false,
+          zeroline: false,
+          showline: false,
+        },
         plot_bgcolor: 'rgba(0,0,0,0)',
         paper_bgcolor: 'rgba(0,0,0,0)',
       },

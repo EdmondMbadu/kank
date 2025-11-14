@@ -34,6 +34,131 @@
   ></span>
 </header>
 
+<!-- Transfer Acceptance/Rejection Banner -->
+<div
+  *ngIf="client?.transferStatus === 'pending'"
+  class="mx-auto mt-6 max-w-7xl px-4"
+>
+  <div
+    class="rounded-lg border-2 border-amber-500 bg-amber-50 p-6 shadow-lg dark:border-amber-400 dark:bg-amber-900/20"
+  >
+    <div class="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+      <div class="flex items-center gap-3">
+        <svg
+          class="h-6 w-6 text-amber-600 dark:text-amber-400"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+        <div>
+          <h3
+            class="text-lg font-semibold text-amber-900 dark:text-amber-100"
+          >
+            Transfert de client en attente
+          </h3>
+          <p class="text-sm text-amber-700 dark:text-amber-300">
+            Ce client a été transféré vers cette localisation. Veuillez accepter
+            ou rejeter le transfert.
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          (click)="acceptTransfer()"
+          [disabled]="transferActionInProgress"
+          class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 text-sm font-medium text-white shadow transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg
+            *ngIf="transferActionInProgress && transferActionType === 'accept'"
+            class="h-4 w-4 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <svg
+            *ngIf="!(transferActionInProgress && transferActionType === 'accept')"
+            class="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          Accepter le transfer du client
+        </button>
+        <button
+          type="button"
+          (click)="rejectTransfer()"
+          [disabled]="transferActionInProgress"
+          class="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-6 py-3 text-sm font-medium text-white shadow transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg
+            *ngIf="transferActionInProgress && transferActionType === 'reject'"
+            class="h-4 w-4 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <svg
+            *ngIf="!(transferActionInProgress && transferActionType === 'reject')"
+            class="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          Rejeter le transfer du client
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="mx-auto flex max-w-7xl flex-col items-center justify-center py-8">
   <!-- If no picture yet -->
   <div *ngIf="!client?.profilePicture" class="flex flex-col items-center">

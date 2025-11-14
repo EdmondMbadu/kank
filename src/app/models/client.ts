@@ -79,6 +79,7 @@ export class Client {
   bonusHistory?: { [key: string]: ClientBonusEvent } = {};
   stars?: string;
   requestNotTosend?: string;
+  transferStatus?: 'pending' | 'accepted';
 }
 
 export class Comment {

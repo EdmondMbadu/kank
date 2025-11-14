@@ -708,9 +708,11 @@ export class AuthService {
     );
 
     // Set the client data with a new UID, excluding agent
+    // Mark as pending transfer so the destination location can accept/reject
     const copiedData: any = {
       ...clientData,
       uid: newUid,
+      transferStatus: 'pending',
       // agent is excluded - will need to be assigned at the new location
     };
 
