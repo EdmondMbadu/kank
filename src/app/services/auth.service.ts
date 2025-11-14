@@ -15,6 +15,8 @@ import { User } from '../models/user';
 import { Client, Comment } from '../models/client';
 import { IdeaSubmission } from '../models/idea';
 import { Timestamp } from 'firebase/firestore';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/firestore';
 import { TimeService } from './time.service';
 import { ComputationService } from '../shrink/services/computation.service';
 import { Employee } from '../models/employee';
@@ -782,17 +784,53 @@ export class AuthService {
     userId: string,
     employeeId: string
   ): Promise<void> {
-    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
-      `users/${userId}/employees/${employeeId}`
-    );
+    try {
+      console.log('AuthService: Converting rotation to definitive', {
+        userId,
+        employeeId,
+        path: `users/${userId}/employees/${employeeId}`
+      });
 
-    await employeeRef.set(
-      {
-        isRotation: false,
-        rotationSourceLocationId: undefined,
-      },
-      { merge: true }
-    );
+      const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+        `users/${userId}/employees/${employeeId}`
+      );
+
+      // Check if document exists first
+      const docSnapshot = await firstValueFrom(employeeRef.get());
+      if (!docSnapshot?.exists) {
+        throw new Error(`Employee document does not exist at users/${userId}/employees/${employeeId}`);
+      }
+
+      const currentData = docSnapshot.data();
+      console.log('AuthService: Document exists, current data:', currentData);
+      console.log('AuthService: Current isRotation value:', currentData?.isRotation);
+      console.log('AuthService: Current rotationSourceLocationId:', currentData?.rotationSourceLocationId);
+
+      // Use set() with merge: true (consistent with other methods in this service)
+      // This is the standard pattern used throughout this codebase
+      await employeeRef.set(
+        {
+          isRotation: false,
+        },
+        { merge: true }
+      );
+
+      console.log('AuthService: Successfully updated using set() with merge');
+
+      console.log('AuthService: Successfully converted rotation to definitive');
+    } catch (error: any) {
+      console.error('AuthService: Error in convertRotationToDefinitive', {
+        error,
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack,
+        userId,
+        employeeId,
+        errorName: error?.name,
+        errorString: String(error)
+      });
+      throw error; // Re-throw to let the component handle it
+    }
   }
 
   /**

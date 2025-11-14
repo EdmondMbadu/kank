@@ -867,7 +867,8 @@ export class TeamPageComponent implements OnInit {
    * Convert a rotation employee to definitive (affectation)
    */
   async convertRotationToDefinitive(employee: Employee): Promise<void> {
-    if (!employee.uid || !employee.tempUser?.uid) {
+    const currentUserId = this.auth.currentUser?.uid;
+    if (!employee.uid || !currentUserId) {
       alert("Impossible de convertir cet employé. Informations manquantes.");
       return;
     }
@@ -881,8 +882,16 @@ export class TeamPageComponent implements OnInit {
     }
 
     try {
+      console.log('Converting rotation employee to definitive:', {
+        employeeId: employee.uid,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        currentUserId: currentUserId,
+        isRotation: employee.isRotation,
+        rotationSourceLocationId: employee.rotationSourceLocationId
+      });
+
       await this.auth.convertRotationToDefinitive(
-        employee.tempUser.uid,
+        currentUserId,
         employee.uid
       );
 
@@ -891,7 +900,17 @@ export class TeamPageComponent implements OnInit {
 
       alert('Employé converti en affectation définitive avec succès.');
     } catch (error: any) {
-      console.error('Error converting rotation to definitive:', error);
+      console.error('=== Error converting rotation to definitive ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error code:', error?.code);
+      console.error('Error stack:', error?.stack);
+      console.error('Parameters used:', {
+        userId: currentUserId,
+        employeeId: employee.uid,
+        employeeName: `${employee.firstName} ${employee.lastName}`
+      });
+      console.error('================================================');
       alert(
         "Une erreur s'est produite lors de la conversion. Veuillez réessayer."
       );
