@@ -862,4 +862,39 @@ export class TeamPageComponent implements OnInit {
       );
     }
   }
+
+  /**
+   * Convert a rotation employee to definitive (affectation)
+   */
+  async convertRotationToDefinitive(employee: Employee): Promise<void> {
+    if (!employee.uid || !employee.tempUser?.uid) {
+      alert("Impossible de convertir cet employé. Informations manquantes.");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Convertir ${employee.firstName} ${employee.lastName} de rotation en affectation définitive ?\n\nL'employé sera traité comme un employé permanent de cette localisation.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await this.auth.convertRotationToDefinitive(
+        employee.tempUser.uid,
+        employee.uid
+      );
+
+      // Reload employees to reflect the change
+      this.retrieveEmployees();
+
+      alert('Employé converti en affectation définitive avec succès.');
+    } catch (error: any) {
+      console.error('Error converting rotation to definitive:', error);
+      alert(
+        "Une erreur s'est produite lors de la conversion. Veuillez réessayer."
+      );
+    }
+  }
 }
