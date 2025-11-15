@@ -1351,13 +1351,18 @@ exports.scheduledSendAgentFollowups = functions.pubsub
             }
           }
 
-          // Index managers by location
+          // Index managers by location (only working managers)
           const managersByLoc = new Map(); // loc -> Employee[]
+          const workingManagersByLoc = new Map(); // loc -> boolean (has working manager)
           for (const e of employees) {
             if (roleOf(e) === "manager") {
               const loc = empLocation(e, defaultLocation);
               if (!managersByLoc.has(loc)) managersByLoc.set(loc, []);
               managersByLoc.get(loc).push(e);
+              // Track if there's at least one working manager at this location
+              if (isWorkingEmployee(e)) {
+                workingManagersByLoc.set(loc, true);
+              }
             }
           }
 
@@ -1381,13 +1386,27 @@ exports.scheduledSendAgentFollowups = functions.pubsub
             const isMgr = roleOf(e) === "manager";
             const myLoc = empLocation(e, defaultLocation);
 
-            // Managers get aggregated load for their location
+            // Get aggregated load for this location
             const agg = aggregatedByLoc.get(myLoc) || {current: [], away: []};
-            const mergedCurrent = isMgr ? [...base.current, ...agg.current] : base.current;
+            
+            // Managers always get aggregated load for their location
+            // If no working manager exists at this location, working agents also get aggregated load
+            const hasWorkingManager = workingManagersByLoc.get(myLoc) === true;
+            const shouldGetAggregated = isMgr || (!hasWorkingManager && agg.current.length > 0);
+            
+            const mergedCurrent = shouldGetAggregated ? [...base.current, ...agg.current] : base.current;
 
             // Defensive filter
             const effCurrent = mergedCurrent.filter((c) => !isLeftQuitte(c));
             const linesCurrent = effCurrent.map((c) => `• ${formatClientLine(c)}`);
+
+            // Build message with appropriate note about aggregated clients
+            const hasAggregatedClients = shouldGetAggregated && agg.current.length > 0;
+            const aggregatedNote = hasAggregatedClients 
+              ? (isMgr 
+                  ? "⚠️ Inclus : clients des agents non actifs de votre site."
+                  : "⚠️ Inclus : clients des agents non actifs (manager absent).")
+              : "";
 
             const message =
             (!linesCurrent.length) ?
@@ -1395,7 +1414,7 @@ exports.scheduledSendAgentFollowups = functions.pubsub
               [
                 `Bonjour ${e.firstName || ""} ${e.lastName || ""}, voici les suivis du ${frenchDate} :`,
                 ...(linesCurrent.length ? ["", `En cours (${linesCurrent.length}) :`, ...linesCurrent] : []),
-                ...(isMgr && (agg.current.length) ? ["", "⚠️ Inclus : clients des agents non actifs de votre site."] : []),
+                ...(hasAggregatedClients ? ["", aggregatedNote] : []),
                 "",
                 "Merci pour la confiance à la FONDATION GERVAIS.",
               ].join("\n");
@@ -1407,12 +1426,23 @@ exports.scheduledSendAgentFollowups = functions.pubsub
             );
           }
 
-          // If there is aggregated load for a given location but no manager at that location
+          // Log if there is aggregated load for a given location but no working manager or agent at that location
           for (const [loc, agg] of aggregatedByLoc.entries()) {
             const hasAgg = (agg.current.length || agg.away.length);
-            const mgrs = managersByLoc.get(loc) || [];
-            if (hasAgg && mgrs.length === 0) {
-              console.log(`No manager found at location "${loc}" for user ${userId}; aggregated clients not routed for this site.`);
+            const hasWorkingMgr = workingManagersByLoc.get(loc) === true;
+            if (hasAgg && !hasWorkingMgr) {
+              // Check if there are any working agents at this location
+              let hasWorkingAgent = false;
+              for (const e of employees) {
+                const empRole = roleOf(e);
+                if (isAllowedRecipient(e) && isWorkingEmployee(e) && empRole !== "manager" && empLocation(e, defaultLocation) === loc) {
+                  hasWorkingAgent = true;
+                  break;
+                }
+              }
+              if (!hasWorkingAgent) {
+                console.log(`No working manager or agent found at location "${loc}" for user ${userId}; aggregated clients not routed for this site.`);
+              }
             }
           }
 
