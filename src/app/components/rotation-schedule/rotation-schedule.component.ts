@@ -205,7 +205,7 @@ mot de passe: ${loc.password ?? '—'}`;
     selected: new Set<string>(), // selected employee UIDs to add
   };
 
-  /* 2️⃣ react when @Input locations changes */
+  /* 2️⃣ react when @Input locations or employees changes */
   ngOnChanges(changes: SimpleChanges) {
     if ('locations' in changes) {
       const list = changes['locations'].currentValue as string[] | undefined;
@@ -214,6 +214,10 @@ mot de passe: ${loc.password ?? '—'}`;
         this.refresh();
         this.loadAllLocationsCurrentMonth();
       }
+    }
+    if ('employees' in changes) {
+      // Reload schedules when employees list changes to pick up new employees
+      this.loadAllLocationsCurrentMonth();
     }
   }
   // ───────────────────────────────────────────────
@@ -490,10 +494,22 @@ mot de passe: ${loc.password ?? '—'}`;
   filteredEmployees() {
     const low = this.search.toLowerCase();
     return this.employees.filter(
-      (e) =>
-        !low ||
-        e.firstName!.toLowerCase().includes(low) ||
-        e.lastName!.toLowerCase().includes(low)
+      (e) => {
+        // Show working employees and transferred employees - no other filtering
+        const status = (e.status || '').toLowerCase().trim();
+        const isWorking = status === 'travaille';
+        const isTransferred = status === 'transféré' || status === 'transfere';
+        
+        // Include if: working OR transferred
+        const shouldInclude = isWorking || isTransferred;
+        
+        if (!shouldInclude) return false;
+        
+        // Then filter by search text if provided
+        return !low ||
+          e.firstName!.toLowerCase().includes(low) ||
+          e.lastName!.toLowerCase().includes(low);
+      }
     );
   }
 
@@ -591,8 +607,11 @@ mot de passe: ${loc.password ?? '—'}`;
                 : [];
               uids.forEach((uid: string) => {
                 const emp = this.employees.find((e) => e.uid === uid);
-                if (emp)
+                if (emp) {
+                  // Include all employees that are in the schedule - no filtering
+                  // If they're assigned to rotation days, they should be shown
                   this.allSchedules.push({ iso, location: loc, employee: emp });
+                }
               });
             }
           );
@@ -647,6 +666,8 @@ mot de passe: ${loc.password ?? '—'}`;
     for (const a of this.allSchedules) {
       const d = this.isoToLocal(a.iso);
       if (d >= start && d <= end) {
+        // If they're in allSchedules, they're on the rotation schedule - show them
+        // No filtering by status - just show everyone who's assigned to rotation days
         const key = `${a.employee.uid}|${a.location}`;
         let rec = bucket.get(key);
         if (!rec) {

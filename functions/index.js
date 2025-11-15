@@ -1388,12 +1388,12 @@ exports.scheduledSendAgentFollowups = functions.pubsub
 
             // Get aggregated load for this location
             const agg = aggregatedByLoc.get(myLoc) || {current: [], away: []};
-            
+
             // Managers always get aggregated load for their location
             // If no working manager exists at this location, working agents also get aggregated load
             const hasWorkingManager = workingManagersByLoc.get(myLoc) === true;
             const shouldGetAggregated = isMgr || (!hasWorkingManager && agg.current.length > 0);
-            
+
             const mergedCurrent = shouldGetAggregated ? [...base.current, ...agg.current] : base.current;
 
             // Defensive filter
@@ -1402,11 +1402,11 @@ exports.scheduledSendAgentFollowups = functions.pubsub
 
             // Build message with appropriate note about aggregated clients
             const hasAggregatedClients = shouldGetAggregated && agg.current.length > 0;
-            const aggregatedNote = hasAggregatedClients 
-              ? (isMgr 
-                  ? "⚠️ Inclus : clients des agents non actifs de votre site."
-                  : "⚠️ Inclus : clients des agents non actifs (manager absent).")
-              : "";
+            const aggregatedNote = hasAggregatedClients ?
+              (isMgr ?
+                  "⚠️ Inclus : clients des agents non actifs de votre site." :
+                  "⚠️ Inclus : clients des agents non actifs (manager absent).") :
+              "";
 
             const message =
             (!linesCurrent.length) ?

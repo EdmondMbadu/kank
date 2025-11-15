@@ -418,9 +418,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
     // Convert the Map values back to an array
     this.allEmployees = Array.from(uniqueEmployees.values());
 
-    // Filter employees who are currently "Travaille" (working)
+    // Filter employees who are currently "Travaille" (working) or "Transféré" (transferred)
+    // Include both working and transferred employees for rotation schedule
     this.allEmployees = this.allEmployees.filter((data) => {
-      return data.status === 'Travaille';
+      const status = (data.status || '').toLowerCase().trim();
+      return status === 'travaille' || status === 'transféré' || status === 'transfere';
     });
 
     this.sortEmployeesByPerformance();
