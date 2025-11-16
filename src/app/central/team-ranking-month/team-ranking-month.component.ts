@@ -99,6 +99,28 @@ export class TeamRankingMonthComponent implements OnDestroy {
   employeeCopyError = '';
   private employeeCopySubs: Subscription[] = [];
 
+  // Employee merge feature state
+  showEmployeeMergeSection = false;
+  allEmployeesForMerge: Array<{
+    employee: Employee;
+    sourceUserId: string;
+    sourceUserLabel: string;
+  }> = [];
+  selectedEmployeeA: {
+    employee: Employee;
+    sourceUserId: string;
+    sourceUserLabel: string;
+  } | null = null;
+  selectedEmployeeB: {
+    employee: Employee;
+    sourceUserId: string;
+    sourceUserLabel: string;
+  } | null = null;
+  employeeMergeInProgress = false;
+  employeeMergeSuccess = false;
+  employeeMergeError = '';
+  private employeeMergeSubs: Subscription[] = [];
+
   // single toggle function
   toggle(section: 'payroll' | 'bonus' | 'loyer') {
     this.collapse[section] = !this.collapse[section];
@@ -242,6 +264,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.ideaSub?.unsubscribe();
     this.employeeCopySubs.forEach((sub) => sub.unsubscribe());
     this.employeeCopySubs = [];
+    this.employeeMergeSubs.forEach((sub) => sub.unsubscribe());
+    this.employeeMergeSubs = [];
   }
   // --- Performance ring geometry ---
   size = 220; // svg canvas
@@ -1432,6 +1456,184 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.employeeCopySuccess = false;
     } finally {
       this.employeeCopyInProgress = false;
+    }
+  }
+
+  /** ---------- Employee Merge Feature ---------- */
+  toggleEmployeeMergeSection(): void {
+    this.showEmployeeMergeSection = !this.showEmployeeMergeSection;
+    if (this.showEmployeeMergeSection && this.allEmployeesForMerge.length === 0) {
+      this.loadAllEmployeesForMerge();
+    }
+  }
+
+  private loadAllEmployeesForMerge(): void {
+    this.allEmployeesForMerge = [];
+    if (!this.allUsers?.length) {
+      return;
+    }
+
+    let completedRequests = 0;
+    const totalRequests = this.allUsers.length;
+
+    this.allUsers.forEach((user) => {
+      const sub = this.auth.getAllEmployeesGivenUser(user).subscribe(
+        (employees) => {
+          const employeeList: Employee[] = Array.isArray(employees)
+            ? (employees as Employee[])
+            : [];
+
+          employeeList.forEach((employee) => {
+            if (!employee?.uid) {
+              return;
+            }
+
+            // Include ALL employees (working and non-working) for merge
+            const userLabel =
+              user.firstName || user.lastName || user.email || 'Unknown';
+
+            this.allEmployeesForMerge.push({
+              employee,
+              sourceUserId: user.uid!,
+              sourceUserLabel: userLabel,
+            });
+          });
+
+          // Sort by employee name
+          this.allEmployeesForMerge.sort((a, b) => {
+            const nameA = `${(a.employee.firstName || '').trim()} ${(
+              a.employee.lastName || ''
+            ).trim()}`
+              .trim()
+              .toLowerCase();
+            const nameB = `${(b.employee.firstName || '').trim()} ${(
+              b.employee.lastName || ''
+            ).trim()}`
+              .trim()
+              .toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+
+          completedRequests++;
+          if (completedRequests === totalRequests) {
+            sub.unsubscribe();
+          }
+        },
+        (err) => {
+          console.error('Error loading employees for merge:', err);
+          completedRequests++;
+          if (completedRequests === totalRequests) {
+            sub.unsubscribe();
+          }
+        }
+      );
+      this.employeeMergeSubs.push(sub);
+    });
+  }
+
+  getEmployeeMergeDisplayLabel(item: {
+    employee: Employee;
+    sourceUserId: string;
+    sourceUserLabel: string;
+  }): string {
+    const name = [
+      item.employee.firstName,
+      item.employee.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    
+    const status = (item.employee.status || '')
+      .toString()
+      .trim()
+      .toLowerCase();
+    const statusLabel = status === 'travaille' ? '✓' : `[${status}]`;
+    
+    return name
+      ? `${name} ${statusLabel} – ${item.sourceUserLabel}`
+      : `${item.sourceUserLabel} (${item.employee.uid}) ${statusLabel}`;
+  }
+
+  async mergeEmployees(): Promise<void> {
+    if (!this.selectedEmployeeA) {
+      alert('Veuillez sélectionner l\'employé A (cible).');
+      return;
+    }
+
+    if (!this.selectedEmployeeB) {
+      alert('Veuillez sélectionner l\'employé B (source).');
+      return;
+    }
+
+    if (this.selectedEmployeeA === this.selectedEmployeeB) {
+      alert('Vous ne pouvez pas fusionner un employé avec lui-même.');
+      return;
+    }
+
+    const employeeAName = [
+      this.selectedEmployeeA.employee.firstName,
+      this.selectedEmployeeA.employee.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim() || `Employé ${this.selectedEmployeeA.employee.uid}`;
+
+    const employeeBName = [
+      this.selectedEmployeeB.employee.firstName,
+      this.selectedEmployeeB.employee.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim() || `Employé ${this.selectedEmployeeB.employee.uid}`;
+
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir fusionner les informations de l'employé B dans l'employé A ?\n\n` +
+        `Employé A (cible): ${employeeAName}\n` +
+        `Employé B (source): ${employeeBName}\n\n` +
+        `Les informations de l'employé B seront fusionnées dans l'employé A.\n` +
+        `Les clients ne seront pas fusionnés.\n` +
+        `L'employé B sera conservé dans le système.`
+      )
+    ) {
+      return;
+    }
+
+    this.employeeMergeInProgress = true;
+    this.employeeMergeSuccess = false;
+    this.employeeMergeError = '';
+
+    try {
+      await this.auth.mergeEmployeeData(
+        this.selectedEmployeeA.sourceUserId,
+        this.selectedEmployeeA.employee.uid!,
+        this.selectedEmployeeB.sourceUserId,
+        this.selectedEmployeeB.employee.uid!
+      );
+
+      this.employeeMergeSuccess = true;
+      this.employeeMergeError = '';
+
+      // Reset selections
+      this.selectedEmployeeA = null;
+      this.selectedEmployeeB = null;
+
+      // Reload employees list
+      this.allEmployeesForMerge = [];
+      this.loadAllEmployeesForMerge();
+
+      setTimeout(() => {
+        this.employeeMergeSuccess = false;
+      }, 5000);
+    } catch (error: any) {
+      console.error('Error merging employees:', error);
+      this.employeeMergeError =
+        error?.message ||
+        "Une erreur s'est produite lors de la fusion des employés.";
+      this.employeeMergeSuccess = false;
+    } finally {
+      this.employeeMergeInProgress = false;
     }
   }
 

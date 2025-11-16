@@ -2169,6 +2169,252 @@
           </div>
         </div>
       </div>
+
+      <!-- Merge Employee Feature -->
+      <div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+              Fusionner des employés
+            </h3>
+            <button
+              type="button"
+              (click)="toggleEmployeeMergeSection()"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
+                />
+              </svg>
+              {{
+                showEmployeeMergeSection ? "Masquer" : "Afficher"
+              }}
+            </button>
+          </div>
+          <p class="text-sm text-slate-500 dark:text-slate-300">
+            Fusionner les informations d'un employé (B) dans un autre employé (A).
+            Les clients ne seront pas fusionnés (spécifiques à chaque employé).
+          </p>
+        </div>
+
+        <div *ngIf="showEmployeeMergeSection" class="space-y-6">
+          <!-- Success Message -->
+          <div
+            *ngIf="employeeMergeSuccess"
+            class="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-start gap-3"
+          >
+            <svg
+              class="w-5 h-5 text-emerald-600 dark:text-emerald-300 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <div>
+              <p class="font-semibold text-emerald-900 dark:text-emerald-200">
+                Employés fusionnés avec succès !
+              </p>
+              <p class="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
+                Les informations de l'employé B ont été fusionnées dans l'employé A.
+                Les clients n'ont pas été fusionnés.
+              </p>
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <div
+            *ngIf="employeeMergeError"
+            class="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3"
+          >
+            <svg
+              class="w-5 h-5 text-rose-600 dark:text-rose-300 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <p class="font-semibold text-rose-900 dark:text-rose-200">
+                Erreur lors de la fusion
+              </p>
+              <p class="text-sm text-rose-700 dark:text-rose-300 mt-1">
+                {{ employeeMergeError }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Employee A Selection (Target) -->
+            <div>
+              <label
+                class="block mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
+              >
+                Employé A (cible - recevra les informations)
+              </label>
+              <select
+                [(ngModel)]="selectedEmployeeA"
+                [disabled]="employeeMergeInProgress"
+                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option [ngValue]="null">
+                  -- Sélectionnez l'employé A --
+                </option>
+                <option
+                  *ngFor="let item of allEmployeesForMerge"
+                  [ngValue]="item"
+                >
+                  {{ getEmployeeMergeDisplayLabel(item) }}
+                </option>
+              </select>
+              <p
+                *ngIf="allEmployeesForMerge.length === 0"
+                class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+              >
+                Chargement des employés...
+              </p>
+            </div>
+
+            <!-- Employee B Selection (Source) -->
+            <div>
+              <label
+                class="block mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
+              >
+                Employé B (source - informations à fusionner)
+              </label>
+              <select
+                [(ngModel)]="selectedEmployeeB"
+                [disabled]="employeeMergeInProgress"
+                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option [ngValue]="null">
+                  -- Sélectionnez l'employé B --
+                </option>
+                <option
+                  *ngFor="let item of allEmployeesForMerge"
+                  [ngValue]="item"
+                >
+                  {{ getEmployeeMergeDisplayLabel(item) }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Info Box -->
+          <div
+            class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+          >
+            <div class="flex items-start gap-3">
+              <svg
+                class="w-5 h-5 text-blue-600 dark:text-blue-300 flex-shrink-0 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div class="text-sm text-blue-800 dark:text-blue-200">
+                <p class="font-semibold mb-1">Note importante :</p>
+                <ul class="list-disc list-inside space-y-1 ml-2">
+                  <li>
+                    Toutes les informations de l'employé B seront fusionnées dans
+                    l'employé A (nom, téléphone, points, paiements, etc.)
+                  </li>
+                  <li>
+                    Les clients ne seront <strong>pas</strong> fusionnés car ils
+                    sont spécifiques à chaque employé
+                  </li>
+                  <li>
+                    L'employé A conservera son identifiant unique (UID)
+                  </li>
+                  <li>
+                    L'employé B sera conservé dans le système (non supprimé)
+                  </li>
+                  <li>
+                    En cas de conflit, les valeurs de l'employé A seront
+                    conservées pour les champs simples
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div class="flex justify-end">
+            <button
+              type="button"
+              (click)="mergeEmployees()"
+              [disabled]="
+                !selectedEmployeeA ||
+                !selectedEmployeeB ||
+                selectedEmployeeA === selectedEmployeeB ||
+                employeeMergeInProgress
+              "
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow transition focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg
+                *ngIf="employeeMergeInProgress"
+                class="w-5 h-5 animate-spin"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <svg
+                *ngIf="!employeeMergeInProgress"
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
+                />
+              </svg>
+              {{
+                employeeMergeInProgress
+                  ? "Fusion en cours..."
+                  : "Fusionner les employés"
+              }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>

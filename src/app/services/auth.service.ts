@@ -775,6 +775,181 @@ export class AuthService {
   }
 
   /**
+   * Merge employee B's data into employee A.
+   * All information from B will be merged into A, except clients.
+   * Employee B is kept in the system (not deleted).
+   * @param employeeAUserId - The user ID (location) that owns employee A
+   * @param employeeAId - The employee A ID (target - will receive merged data)
+   * @param employeeBUserId - The user ID (location) that owns employee B
+   * @param employeeBId - The employee B ID (source - data to merge)
+   */
+  async mergeEmployeeData(
+    employeeAUserId: string,
+    employeeAId: string,
+    employeeBUserId: string,
+    employeeBId: string
+  ): Promise<void> {
+    // Get both employees
+    const employeeARef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${employeeAUserId}/employees/${employeeAId}`
+    );
+    const employeeBRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${employeeBUserId}/employees/${employeeBId}`
+    );
+
+    const [employeeASnap, employeeBSnap] = await Promise.all([
+      firstValueFrom(employeeARef.get()),
+      firstValueFrom(employeeBRef.get()),
+    ]);
+
+    if (!employeeASnap?.exists) {
+      throw new Error('Employee A not found');
+    }
+    if (!employeeBSnap?.exists) {
+      throw new Error('Employee B not found');
+    }
+
+    const employeeAData: any = employeeASnap.data() || {};
+    const employeeBData: any = employeeBSnap.data() || {};
+
+    // Fields to exclude from merge (clients and UI-only fields)
+    const excludeFields = [
+      'uid', // Keep Employee A's UID
+      'clients',
+      'currentClients',
+      'clientsFinishedPaying',
+      '_attachmentFile',
+      '_attachmentPreview',
+      '_attachmentType',
+      '_attachmentSize',
+      '_attachmentError',
+      '_uploading',
+      '_attachmentTakenAt',
+      '_attachmentDeviceInfo',
+      '_attachmentUA',
+      '_attachmentSoftId',
+      '_attachmentHash',
+      '_dailyTotal',
+      '_dailyCount',
+      'tempUser',
+      'tempLocationHolder',
+    ];
+
+    // Helper to merge objects (like dailyPoints, attendance, etc.)
+    const mergeObjects = (objA: any, objB: any): any => {
+      if (!objA && !objB) return {};
+      if (!objA) return objB || {};
+      if (!objB) return objA || {};
+      
+      const merged = { ...objA };
+      // Add all keys from B, but prefer A's values if both exist
+      Object.keys(objB).forEach((key) => {
+        if (!(key in merged)) {
+          merged[key] = objB[key];
+        }
+      });
+      return merged;
+    };
+
+    // Helper to merge arrays (like paymentsPicturePath, receipts, etc.)
+    const mergeArrays = (arrA: any[], arrB: any[]): any[] => {
+      if (!arrA && !arrB) return [];
+      if (!arrA) return arrB || [];
+      if (!arrB) return arrA || [];
+      
+      const combined = [...(arrA || [])];
+      const setA = new Set(arrA || []);
+      (arrB || []).forEach((item) => {
+        if (!setA.has(item)) {
+          combined.push(item);
+        }
+      });
+      return combined;
+    };
+
+    // Helper to merge trophy arrays
+    const mergeTrophyArrays = (arrA: any[], arrB: any[]): any[] => {
+      if (!arrA && !arrB) return [];
+      if (!arrA) return arrB || [];
+      if (!arrB) return arrA || [];
+      
+      const combined = [...(arrA || [])];
+      const seen = new Set(
+        (arrA || []).map((t: any) => `${t.month}-${t.year}`)
+      );
+      (arrB || []).forEach((trophy: any) => {
+        const key = `${trophy.month}-${trophy.year}`;
+        if (!seen.has(key)) {
+          combined.push(trophy);
+          seen.add(key);
+        }
+      });
+      return combined;
+    };
+
+    // Start with Employee A's data
+    const mergedData: any = { ...employeeAData };
+
+    // Merge each field from Employee B
+    Object.keys(employeeBData).forEach((key) => {
+      if (excludeFields.includes(key)) {
+        return; // Skip excluded fields
+      }
+
+      const valueB = employeeBData[key];
+      const valueA = employeeAData[key];
+
+      // Skip if B's value is null/undefined/empty
+      if (valueB === null || valueB === undefined || valueB === '') {
+        return;
+      }
+
+      // Handle object merges (dailyPoints, totalDailyPoints, dailyStatus, attendance, attendanceAttachments, payments)
+      if (
+        key === 'dailyPoints' ||
+        key === 'totalDailyPoints' ||
+        key === 'dailyStatus' ||
+        key === 'attendance' ||
+        key === 'attendanceAttachments' ||
+        key === 'payments'
+      ) {
+        mergedData[key] = mergeObjects(valueA, valueB);
+        return;
+      }
+
+      // Handle array merges
+      if (key === 'paymentsPicturePath' || key === 'receipts') {
+        mergedData[key] = mergeArrays(valueA, valueB);
+        return;
+      }
+
+      // Handle trophy arrays
+      if (key === 'bestTeamTrophies' || key === 'bestEmployeeTrophies') {
+        mergedData[key] = mergeTrophyArrays(valueA, valueB);
+        return;
+      }
+
+      // For simple fields, prefer Employee A's value if it exists, otherwise use B's
+      if (valueA === null || valueA === undefined || valueA === '') {
+        mergedData[key] = valueB;
+      }
+      // Otherwise keep Employee A's value (already in mergedData)
+    });
+
+    // Handle paymentCode: if A doesn't have one but B does, add B's to A's location teamCode
+    if (!employeeAData.paymentCode && employeeBData.paymentCode) {
+      await this.addCodeToTeamCode(
+        employeeAUserId,
+        employeeBData.paymentCode
+      );
+      mergedData.paymentCode = employeeBData.paymentCode;
+    }
+
+    // Update Employee A with merged data
+    await employeeARef.set(mergedData, { merge: true });
+  }
+
+  /**
    * Convert a rotation employee to definitive (affectation).
    * Removes the rotation flag and source location reference.
    * @param userId - The user ID (location) that owns the employee
