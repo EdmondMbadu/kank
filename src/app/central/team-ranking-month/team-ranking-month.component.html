@@ -1841,20 +1841,39 @@
     <!-- Expandable Header -->
     <div
       (click)="toggleEmployeeManagementSection()"
-      class="px-6 pt-6 pb-4 cursor-pointer select-none hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors rounded-t-2xl"
+      class="px-6 pt-6 pb-4 cursor-pointer select-none hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-all duration-200 rounded-t-2xl"
     >
       <div class="flex items-center justify-between">
-        <div class="space-y-1 flex-1">
-          <h2 class="text-xl font-semibold text-slate-900 dark:text-white">
-            Employee Management
-          </h2>
-          <p class="text-sm text-slate-500 dark:text-slate-300">
-            Gérer les employés et leurs transferts entre localisations
-          </p>
+        <div class="flex items-center gap-4 flex-1">
+          <div
+            class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg"
+          >
+            <svg
+              class="w-7 h-7 text-white"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </div>
+          <div class="space-y-1 flex-1">
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+              Gestion des Employés
+            </h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              Transférer et fusionner des employés entre localisations
+            </p>
+          </div>
         </div>
         <div class="ml-4">
           <svg
-            class="w-6 h-6 text-slate-600 dark:text-slate-400 transition-transform duration-200"
+            class="w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-transform duration-200"
             [class.rotate-180]="showEmployeeManagementSection"
             fill="none"
             stroke="currentColor"
@@ -1873,19 +1892,44 @@
 
     <div *ngIf="showEmployeeManagementSection" class="px-6 pb-6 space-y-8">
       <!-- Transfer Employee Feature -->
-      <div class="border-t border-slate-200 dark:border-slate-700 pt-6">
-        <div class="mb-4">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
-              Transférer un employé
-            </h3>
+      <div class="border-t border-emerald-200 dark:border-emerald-800 pt-8">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 shadow-md"
+              >
+                <svg
+                  class="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                  Transférer un employé
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Copier un employé vers une autre localisation
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               (click)="toggleEmployeeCopySection()"
-              class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition"
+              class="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-sm font-medium transition-all duration-200 hover:shadow-md"
             >
               <svg
-                class="w-4 h-4"
+                class="w-4 h-4 transition-transform duration-200"
+                [class.rotate-180]="showEmployeeCopySection"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
@@ -1894,42 +1938,43 @@
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  d="M19 9l-7 7-7-7"
                 />
               </svg>
-              {{
-                showEmployeeCopySection ? "Masquer" : "Afficher"
-              }}
+              {{ showEmployeeCopySection ? "Masquer" : "Afficher" }}
             </button>
           </div>
-          <p class="text-sm text-slate-500 dark:text-slate-300">
-            Transférer un employé d'une localisation à une autre. Les clients
-            ne seront pas copiés (spécifiques à la localisation).
-          </p>
         </div>
 
-        <div *ngIf="showEmployeeCopySection" class="space-y-6">
+        <div
+          *ngIf="showEmployeeCopySection"
+          class="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300"
+        >
           <!-- Success Message -->
           <div
             *ngIf="employeeCopySuccess"
-            class="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-start gap-3"
+            class="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-2 border-emerald-200 dark:border-emerald-800 flex items-start gap-3 shadow-lg"
           >
-            <svg
-              class="w-5 h-5 text-emerald-600 dark:text-emerald-300 flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 flex-shrink-0"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <div>
-              <p class="font-semibold text-emerald-900 dark:text-emerald-200">
-                Employé copié avec succès !
+              <svg
+                class="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-bold text-emerald-900 dark:text-emerald-100 text-base">
+                Transfert réussi !
               </p>
               <p class="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
                 L'employé a été copié vers la nouvelle localisation. Les clients
@@ -1941,152 +1986,13 @@
           <!-- Error Message -->
           <div
             *ngIf="employeeCopyError"
-            class="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3"
+            class="p-4 rounded-xl bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-900/30 dark:to-red-900/30 border-2 border-rose-200 dark:border-rose-800 flex items-start gap-3 shadow-lg"
           >
-            <svg
-              class="w-5 h-5 text-rose-600 dark:text-rose-300 flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div>
-              <p class="font-semibold text-rose-900 dark:text-rose-200">
-                Erreur lors de la copie
-              </p>
-              <p class="text-sm text-rose-700 dark:text-rose-300 mt-1">
-                {{ employeeCopyError }}
-              </p>
-            </div>
-          </div>
-
-          <!-- Form -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Source Employee Selection -->
-            <div>
-              <label
-                class="block mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
-              >
-                Employé à copier
-              </label>
-              <select
-                [(ngModel)]="selectedSourceEmployee"
-                [disabled]="employeeCopyInProgress"
-                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option [ngValue]="null">
-                  -- Sélectionnez un employé --
-                </option>
-                <option
-                  *ngFor="let item of allEmployeesForCopy"
-                  [ngValue]="item"
-                >
-                  {{ getEmployeeCopyDisplayLabel(item) }}
-                </option>
-              </select>
-              <p
-                *ngIf="allEmployeesForCopy.length === 0"
-                class="mt-2 text-xs text-gray-500 dark:text-gray-400"
-              >
-                Chargement des employés...
-              </p>
-            </div>
-
-            <!-- Target Location Selection -->
-            <div>
-              <label
-                class="block mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
-              >
-                Localisation de destination
-              </label>
-              <select
-                [(ngModel)]="selectedTargetLocationUserId"
-                [disabled]="employeeCopyInProgress"
-                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option [ngValue]="null">
-                  -- Sélectionnez une localisation --
-                </option>
-                <option *ngFor="let user of allUsers" [ngValue]="user.uid">
-                  {{ user.firstName || user.lastName || user.email }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Transfer Type Selection -->
-          <div>
             <div
-              class="block mb-3 text-sm font-semibold text-gray-800 dark:text-gray-200"
+              class="flex items-center justify-center w-8 h-8 rounded-full bg-rose-500 flex-shrink-0"
             >
-              Type de transfert
-            </div>
-            <div class="flex gap-4">
-              <label
-                class="flex items-center gap-2 cursor-pointer p-3 rounded-lg border-2 transition-colors"
-                [ngClass]="{
-                  'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20': transferType === 'affectation',
-                  'border-gray-300 dark:border-gray-600': transferType !== 'affectation'
-                }"
-              >
-                <input
-                  type="radio"
-                  name="transferType"
-                  [value]="'affectation'"
-                  [(ngModel)]="transferType"
-                  [disabled]="employeeCopyInProgress"
-                  class="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
-                />
-                <div>
-                  <div class="font-medium text-gray-900 dark:text-white">
-                    Affectation
-                  </div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">
-                    Transfert définitif
-                  </div>
-                </div>
-              </label>
-
-              <label
-                class="flex items-center gap-2 cursor-pointer p-3 rounded-lg border-2 transition-colors"
-                [ngClass]="{
-                  'border-blue-500 bg-blue-50 dark:bg-blue-900/20': transferType === 'rotation',
-                  'border-gray-300 dark:border-gray-600': transferType !== 'rotation'
-                }"
-              >
-                <input
-                  type="radio"
-                  name="transferType"
-                  [value]="'rotation'"
-                  [(ngModel)]="transferType"
-                  [disabled]="employeeCopyInProgress"
-                  class="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                />
-                <div>
-                  <div class="font-medium text-gray-900 dark:text-white">
-                    Rotation
-                  </div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">
-                    Transfert temporaire
-                  </div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <!-- Info Box -->
-          <div
-            class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
-          >
-            <div class="flex items-start gap-3">
               <svg
-                class="w-5 h-5 text-blue-600 dark:text-blue-300 flex-shrink-0 mt-0.5"
+                class="w-5 h-5 text-white"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
@@ -2095,49 +2001,345 @@
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
-              <div class="text-sm text-blue-800 dark:text-blue-200">
-                <p class="font-semibold mb-1">Note importante :</p>
-                <ul class="list-disc list-inside space-y-1 ml-2">
-                  <li>
-                    Toutes les informations de l'employé seront copiées (nom,
-                    téléphone, rôle, etc.)
-                  </li>
-                  <li>
-                    Les clients ne seront <strong>pas</strong> copiés car ils
-                    sont spécifiques à chaque localisation
-                  </li>
-                  <li>
-                    L'employé original reste dans sa localisation d'origine
-                  </li>
-                  <li>
-                    Un nouvel identifiant unique sera généré pour l'employé copié
-                  </li>
-                </ul>
+            </div>
+            <div class="flex-1">
+              <p class="font-bold text-rose-900 dark:text-rose-100 text-base">
+                Erreur lors du transfert
+              </p>
+              <p class="text-sm text-rose-700 dark:text-rose-300 mt-1">
+                {{ employeeCopyError }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Form Card -->
+          <div
+            class="p-6 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Source Employee Selection -->
+              <div>
+                <label
+                  class="block mb-3 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400"
+                >
+                  <span class="flex items-center gap-2">
+                    <svg
+                      class="w-4 h-4 text-emerald-500"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                    Employé à copier
+                  </span>
+                </label>
+                <div
+                  class="relative rounded-lg border-2 border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-800 shadow-md transition-all duration-200"
+                  [class.border-emerald-500]="selectedSourceEmployee"
+                  [class.shadow-lg]="selectedSourceEmployee"
+                >
+                  <select
+                    [(ngModel)]="selectedSourceEmployee"
+                    [disabled]="employeeCopyInProgress"
+                    class="w-full p-4 pr-10 rounded-lg border-0 bg-transparent text-slate-900 dark:text-white font-medium focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                  >
+                    <option [ngValue]="null" class="text-slate-500">
+                      Sélectionner un employé
+                    </option>
+                    <option
+                      *ngFor="let item of allEmployeesForCopy"
+                      [ngValue]="item"
+                      class="text-slate-900 dark:text-white"
+                    >
+                      {{ getEmployeeCopyDisplayLabel(item) }}
+                    </option>
+                  </select>
+                  <div
+                    class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  >
+                    <svg
+                      class="w-5 h-5 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <p
+                  *ngIf="allEmployeesForCopy.length === 0"
+                  class="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2"
+                >
+                  <svg
+                    class="w-4 h-4 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Chargement des employés...
+                </p>
+              </div>
+
+              <!-- Target Location Selection -->
+              <div>
+                <label
+                  class="block mb-3 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400"
+                >
+                  <span class="flex items-center gap-2">
+                    <svg
+                      class="w-4 h-4 text-emerald-500"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    Localisation de destination
+                  </span>
+                </label>
+                <div
+                  class="relative rounded-lg border-2 border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-800 shadow-md transition-all duration-200"
+                  [class.border-emerald-500]="selectedTargetLocationUserId"
+                  [class.shadow-lg]="selectedTargetLocationUserId"
+                >
+                  <select
+                    [(ngModel)]="selectedTargetLocationUserId"
+                    [disabled]="employeeCopyInProgress"
+                    class="w-full p-4 pr-10 rounded-lg border-0 bg-transparent text-slate-900 dark:text-white font-medium focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                  >
+                    <option [ngValue]="null" class="text-slate-500">
+                      Sélectionner une localisation
+                    </option>
+                    <option
+                      *ngFor="let user of allUsers"
+                      [ngValue]="user.uid"
+                      class="text-slate-900 dark:text-white"
+                    >
+                      {{ user.firstName || user.lastName || user.email }}
+                    </option>
+                  </select>
+                  <div
+                    class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  >
+                    <svg
+                      class="w-5 h-5 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Transfer Type Selection -->
+            <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+              <div
+                class="block mb-4 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400"
+              >
+                Type de transfert
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label
+                  class="flex items-center gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all duration-200 hover:shadow-md"
+                  [ngClass]="{
+                    'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-md': transferType === 'affectation',
+                    'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800': transferType !== 'affectation'
+                  }"
+                >
+                  <input
+                    type="radio"
+                    name="transferType"
+                    [value]="'affectation'"
+                    [(ngModel)]="transferType"
+                    [disabled]="employeeCopyInProgress"
+                    class="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <div class="flex-1">
+                    <div class="font-bold text-slate-900 dark:text-white">
+                      Affectation
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Transfert définitif
+                    </div>
+                  </div>
+                  <svg
+                    class="w-5 h-5 text-emerald-500"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </label>
+
+                <label
+                  class="flex items-center gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all duration-200 hover:shadow-md"
+                  [ngClass]="{
+                    'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-md': transferType === 'rotation',
+                    'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800': transferType !== 'rotation'
+                  }"
+                >
+                  <input
+                    type="radio"
+                    name="transferType"
+                    [value]="'rotation'"
+                    [(ngModel)]="transferType"
+                    [disabled]="employeeCopyInProgress"
+                    class="w-5 h-5 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <div class="flex-1">
+                    <div class="font-bold text-slate-900 dark:text-white">
+                      Rotation
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Transfert temporaire
+                    </div>
+                  </div>
+                  <svg
+                    class="w-5 h-5 text-emerald-500"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info Box -->
+          <div
+            class="p-5 rounded-xl bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-800 shadow-md"
+          >
+            <div class="flex items-start gap-4">
+              <div
+                class="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500 flex-shrink-0 shadow-md"
+              >
+                <svg
+                  class="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="font-bold text-emerald-900 dark:text-emerald-100 mb-3 text-base">
+                  Comment fonctionne le transfert ?
+                </h4>
+                <div class="space-y-2 text-sm text-emerald-800 dark:text-emerald-200">
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>Toutes les informations</strong> de l'employé seront
+                      copiées (nom, téléphone, rôle, historique, etc.)
+                    </p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>Les clients ne seront pas copiés</strong> car ils
+                      sont spécifiques à chaque localisation
+                    </p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>L'employé original</strong> reste dans sa
+                      localisation d'origine
+                    </p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>Un nouvel UID</strong> sera généré pour l'employé
+                      copié
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Action Button -->
-          <div class="flex justify-end">
+          <div class="flex justify-end pt-2">
             <button
               type="button"
               (click)="copyEmployeeToLocation()"
               [disabled]="
                 !selectedSourceEmployee ||
                 !selectedTargetLocationUserId ||
+                !transferType ||
                 employeeCopyInProgress
               "
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow transition focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 text-white font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-300 focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl overflow-hidden"
             >
+              <div
+                class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"
+              ></div>
               <svg
                 *ngIf="employeeCopyInProgress"
-                class="w-5 h-5 animate-spin"
+                class="w-6 h-6 animate-spin relative z-10"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="2.5"
                 viewBox="0 0 24 24"
               >
                 <path
@@ -2148,10 +2350,10 @@
               </svg>
               <svg
                 *ngIf="!employeeCopyInProgress"
-                class="w-5 h-5"
+                class="w-6 h-6 relative z-10"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="2.5"
                 viewBox="0 0 24 24"
               >
                 <path
@@ -2160,30 +2362,57 @@
                   d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                 />
               </svg>
-              {{
-                employeeCopyInProgress
-                  ? "Copie en cours..."
-                  : "Copier l'employé"
-              }}
+              <span class="relative z-10">
+                {{
+                  employeeCopyInProgress
+                    ? "Transfert en cours..."
+                    : "Transférer l'employé"
+                }}
+              </span>
             </button>
           </div>
         </div>
       </div>
 
       <!-- Merge Employee Feature -->
-      <div class="border-t border-slate-200 dark:border-slate-700 pt-6">
-        <div class="mb-4">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
-              Fusionner des employés
-            </h3>
+      <div class="border-t border-emerald-200 dark:border-emerald-800 pt-8">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 shadow-md"
+              >
+                <svg
+                  class="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                  Fusionner des employés
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Consolider les informations d'employés dupliqués
+                </p>
+              </div>
+            </div>
             <button
               type="button"
               (click)="toggleEmployeeMergeSection()"
-              class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition"
+              class="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-sm font-medium transition-all duration-200 hover:shadow-md"
             >
               <svg
-                class="w-4 h-4"
+                class="w-4 h-4 transition-transform duration-200"
+                [class.rotate-180]="showEmployeeMergeSection"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
@@ -2192,46 +2421,47 @@
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
+                  d="M19 9l-7 7-7-7"
                 />
               </svg>
-              {{
-                showEmployeeMergeSection ? "Masquer" : "Afficher"
-              }}
+              {{ showEmployeeMergeSection ? "Masquer" : "Afficher" }}
             </button>
           </div>
-          <p class="text-sm text-slate-500 dark:text-slate-300">
-            Fusionner les informations d'un employé (B) dans un autre employé (A).
-            Les clients ne seront pas fusionnés (spécifiques à chaque employé).
-          </p>
         </div>
 
-        <div *ngIf="showEmployeeMergeSection" class="space-y-6">
+        <div
+          *ngIf="showEmployeeMergeSection"
+          class="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300"
+        >
           <!-- Success Message -->
           <div
             *ngIf="employeeMergeSuccess"
-            class="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-start gap-3"
+            class="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/30 dark:to-green-900/30 border-2 border-emerald-200 dark:border-emerald-800 flex items-start gap-3 shadow-lg"
           >
-            <svg
-              class="w-5 h-5 text-emerald-600 dark:text-emerald-300 flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 flex-shrink-0"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <div>
-              <p class="font-semibold text-emerald-900 dark:text-emerald-200">
-                Employés fusionnés avec succès !
+              <svg
+                class="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-bold text-emerald-900 dark:text-emerald-100 text-base">
+                Fusion réussie !
               </p>
               <p class="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
-                Les informations de l'employé B ont été fusionnées dans l'employé A.
-                Les clients n'ont pas été fusionnés.
+                Les informations ont été fusionnées avec succès. L'employé B est
+                conservé dans le système.
               </p>
             </div>
           </div>
@@ -2239,23 +2469,27 @@
           <!-- Error Message -->
           <div
             *ngIf="employeeMergeError"
-            class="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 flex items-start gap-3"
+            class="p-4 rounded-xl bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-900/30 dark:to-red-900/30 border-2 border-rose-200 dark:border-rose-800 flex items-start gap-3 shadow-lg"
           >
-            <svg
-              class="w-5 h-5 text-rose-600 dark:text-rose-300 flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
+            <div
+              class="flex items-center justify-center w-8 h-8 rounded-full bg-rose-500 flex-shrink-0"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div>
-              <p class="font-semibold text-rose-900 dark:text-rose-200">
+              <svg
+                class="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-bold text-rose-900 dark:text-rose-100 text-base">
                 Erreur lors de la fusion
               </p>
               <p class="text-sm text-rose-700 dark:text-rose-300 mt-1">
@@ -2264,123 +2498,210 @@
             </div>
           </div>
 
-          <!-- Form -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Employee A Selection (Target) -->
-            <div>
-              <label
-                class="block mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
-              >
-                Employé A (cible - recevra les informations)
-              </label>
-              <select
-                [(ngModel)]="selectedEmployeeA"
-                [disabled]="employeeMergeInProgress"
-                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option [ngValue]="null">
-                  -- Sélectionnez l'employé A --
-                </option>
-                <option
-                  *ngFor="let item of allEmployeesForMerge"
-                  [ngValue]="item"
-                >
-                  {{ getEmployeeMergeDisplayLabel(item) }}
-                </option>
-              </select>
-              <p
-                *ngIf="allEmployeesForMerge.length === 0"
-                class="mt-2 text-xs text-gray-500 dark:text-gray-400"
-              >
-                Chargement des employés...
-              </p>
-            </div>
-
-            <!-- Employee B Selection (Source) -->
-            <div>
-              <label
-                class="block mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200"
-              >
-                Employé B (source - informations à fusionner)
-              </label>
-              <select
-                [(ngModel)]="selectedEmployeeB"
-                [disabled]="employeeMergeInProgress"
-                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option [ngValue]="null">
-                  -- Sélectionnez l'employé B --
-                </option>
-                <option
-                  *ngFor="let item of allEmployeesForMerge"
-                  [ngValue]="item"
-                >
-                  {{ getEmployeeMergeDisplayLabel(item) }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Info Box -->
+          <!-- Visual Flow Card -->
           <div
-            class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+            class="relative p-6 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg"
           >
-            <div class="flex items-start gap-3">
-              <svg
-                class="w-5 h-5 text-blue-600 dark:text-blue-300 flex-shrink-0 mt-0.5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <div class="text-sm text-blue-800 dark:text-blue-200">
-                <p class="font-semibold mb-1">Note importante :</p>
-                <ul class="list-disc list-inside space-y-1 ml-2">
-                  <li>
-                    Toutes les informations de l'employé B seront fusionnées dans
-                    l'employé A (nom, téléphone, points, paiements, etc.)
-                  </li>
-                  <li>
-                    Les clients ne seront <strong>pas</strong> fusionnés car ils
-                    sont spécifiques à chaque employé
-                  </li>
-                  <li>
-                    L'employé A conservera son identifiant unique (UID)
-                  </li>
-                  <li>
-                    L'employé B sera conservé dans le système (non supprimé)
-                  </li>
-                  <li>
-                    En cas de conflit, les valeurs de l'employé A seront
-                    conservées pour les champs simples
-                  </li>
-                </ul>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+              <!-- Employee B (Source) -->
+              <div class="lg:col-span-1">
+                <label
+                  class="block mb-3 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400"
+                >
+                  <span class="flex items-center gap-2">
+                    <svg
+                      class="w-4 h-4 text-emerald-500"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    </svg>
+                    Source (B)
+                  </span>
+                </label>
+                <div
+                  class="relative rounded-lg border-2 border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-800 shadow-md transition-all duration-200"
+                  [class.border-emerald-500]="selectedEmployeeB"
+                  [class.shadow-lg]="selectedEmployeeB"
+                >
+                  <select
+                    [(ngModel)]="selectedEmployeeB"
+                    [disabled]="employeeMergeInProgress"
+                    class="w-full p-4 pr-10 rounded-lg border-0 bg-transparent text-slate-900 dark:text-white font-medium focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                  >
+                    <option [ngValue]="null" class="text-slate-500">
+                      Sélectionner l'employé B
+                    </option>
+                    <option
+                      *ngFor="let item of allEmployeesForMerge"
+                      [ngValue]="item"
+                      class="text-slate-900 dark:text-white"
+                    >
+                      {{ getEmployeeMergeDisplayLabel(item) }}
+                    </option>
+                  </select>
+                  <div
+                    class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  >
+                    <svg
+                      class="w-5 h-5 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div
+                  *ngIf="selectedEmployeeB"
+                  class="mt-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+                >
+                  <p
+                    class="text-xs font-medium text-emerald-900 dark:text-emerald-200"
+                  >
+                    {{ getEmployeeMergeDisplayLabel(selectedEmployeeB) }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Arrow -->
+              <div class="lg:col-span-1 flex justify-center items-center py-4">
+                <div
+                  class="flex flex-col items-center gap-2 text-slate-400 dark:text-slate-500"
+                >
+                  <div
+                    class="hidden lg:flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 shadow-lg"
+                  >
+                    <svg
+                      class="w-6 h-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </div>
+                  <div
+                    class="lg:hidden flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 shadow-lg rotate-90"
+                  >
+                    <svg
+                      class="w-5 h-5 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    Fusionner vers
+                  </p>
+                </div>
+              </div>
+
+              <!-- Employee A (Target) -->
+              <div class="lg:col-span-1">
+                <label
+                  class="block mb-3 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400"
+                >
+                  <span class="flex items-center gap-2">
+                    <svg
+                      class="w-4 h-4 text-emerald-500"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    Cible (A)
+                  </span>
+                </label>
+                <div
+                  class="relative rounded-lg border-2 border-emerald-300 dark:border-emerald-600 bg-white dark:bg-slate-800 shadow-md transition-all duration-200"
+                  [class.border-emerald-500]="selectedEmployeeA"
+                  [class.shadow-lg]="selectedEmployeeA"
+                >
+                  <select
+                    [(ngModel)]="selectedEmployeeA"
+                    [disabled]="employeeMergeInProgress"
+                    class="w-full p-4 pr-10 rounded-lg border-0 bg-transparent text-slate-900 dark:text-white font-medium focus:ring-0 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                  >
+                    <option [ngValue]="null" class="text-slate-500">
+                      Sélectionner l'employé A
+                    </option>
+                    <option
+                      *ngFor="let item of allEmployeesForMerge"
+                      [ngValue]="item"
+                      class="text-slate-900 dark:text-white"
+                    >
+                      {{ getEmployeeMergeDisplayLabel(item) }}
+                    </option>
+                  </select>
+                  <div
+                    class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  >
+                    <svg
+                      class="w-5 h-5 text-slate-400"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div
+                  *ngIf="selectedEmployeeA"
+                  class="mt-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+                >
+                  <p
+                    class="text-xs font-medium text-emerald-900 dark:text-emerald-200"
+                  >
+                    {{ getEmployeeMergeDisplayLabel(selectedEmployeeA) }}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Action Button -->
-          <div class="flex justify-end">
-            <button
-              type="button"
-              (click)="mergeEmployees()"
-              [disabled]="
-                !selectedEmployeeA ||
-                !selectedEmployeeB ||
-                selectedEmployeeA === selectedEmployeeB ||
-                employeeMergeInProgress
-              "
-              class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow transition focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed"
+            <!-- Loading State -->
+            <div
+              *ngIf="allEmployeesForMerge.length === 0"
+              class="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400"
             >
               <svg
-                *ngIf="employeeMergeInProgress"
-                class="w-5 h-5 animate-spin"
+                class="w-4 h-4 animate-spin"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
@@ -2392,12 +2713,106 @@
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
+              <span>Chargement des employés...</span>
+            </div>
+          </div>
+
+          <!-- Info Box -->
+          <div
+            class="p-5 rounded-xl bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-teal-900/20 border-2 border-emerald-200 dark:border-emerald-800 shadow-md"
+          >
+            <div class="flex items-start gap-4">
+              <div
+                class="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500 flex-shrink-0 shadow-md"
+              >
+                <svg
+                  class="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h4 class="font-bold text-emerald-900 dark:text-emerald-100 mb-3 text-base">
+                  Comment fonctionne la fusion ?
+                </h4>
+                <div class="space-y-2 text-sm text-emerald-800 dark:text-emerald-200">
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>Toutes les données</strong> de l'employé B (points,
+                      paiements, historique, etc.) sont fusionnées dans l'employé A
+                    </p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>Les clients ne sont pas fusionnés</strong> car ils
+                      restent liés à leur employé d'origine
+                    </p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>L'employé A conserve son UID</strong> et toutes ses
+                      données existantes
+                    </p>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-emerald-500 font-bold mt-0.5">→</span>
+                    <p>
+                      <strong>L'employé B est conservé</strong> dans le système
+                      (non supprimé) pour référence
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Button -->
+          <div class="flex justify-end pt-2">
+            <button
+              type="button"
+              (click)="mergeEmployees()"
+              [disabled]="
+                !selectedEmployeeA ||
+                !selectedEmployeeB ||
+                selectedEmployeeA === selectedEmployeeB ||
+                employeeMergeInProgress
+              "
+              class="group relative inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 text-white font-bold text-base shadow-xl hover:shadow-2xl transition-all duration-300 focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-xl overflow-hidden"
+            >
+              <div
+                class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"
+              ></div>
               <svg
-                *ngIf="!employeeMergeInProgress"
-                class="w-5 h-5"
+                *ngIf="employeeMergeInProgress"
+                class="w-6 h-6 animate-spin relative z-10"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <svg
+                *ngIf="!employeeMergeInProgress"
+                class="w-6 h-6 relative z-10"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
                 viewBox="0 0 24 24"
               >
                 <path
@@ -2406,11 +2821,13 @@
                   d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"
                 />
               </svg>
-              {{
-                employeeMergeInProgress
-                  ? "Fusion en cours..."
-                  : "Fusionner les employés"
-              }}
+              <span class="relative z-10">
+                {{
+                  employeeMergeInProgress
+                    ? "Fusion en cours..."
+                    : "Fusionner les employés"
+                }}
+              </span>
             </button>
           </div>
         </div>
