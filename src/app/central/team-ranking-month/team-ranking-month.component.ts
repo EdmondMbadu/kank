@@ -1473,6 +1473,16 @@ export class TeamRankingMonthComponent implements OnDestroy {
       return;
     }
 
+    // Use a Map to track employees by UID to avoid duplicates
+    const employeeMap = new Map<
+      string,
+      {
+        employee: Employee;
+        sourceUserId: string;
+        sourceUserLabel: string;
+      }
+    >();
+
     let completedRequests = 0;
     const totalRequests = this.allUsers.length;
 
@@ -1488,31 +1498,36 @@ export class TeamRankingMonthComponent implements OnDestroy {
               return;
             }
 
-            // Include ALL employees (working and non-working) for merge
-            const userLabel =
-              user.firstName || user.lastName || user.email || 'Unknown';
+            // Only add if we haven't seen this UID before
+            // If we have, keep the existing one (first occurrence wins)
+            if (!employeeMap.has(employee.uid)) {
+              const userLabel =
+                user.firstName || user.lastName || user.email || 'Unknown';
 
-            this.allEmployeesForMerge.push({
-              employee,
-              sourceUserId: user.uid!,
-              sourceUserLabel: userLabel,
-            });
+              employeeMap.set(employee.uid, {
+                employee,
+                sourceUserId: user.uid!,
+                sourceUserLabel: userLabel,
+              });
+            }
           });
 
-          // Sort by employee name
-          this.allEmployeesForMerge.sort((a, b) => {
-            const nameA = `${(a.employee.firstName || '').trim()} ${(
-              a.employee.lastName || ''
-            ).trim()}`
-              .trim()
-              .toLowerCase();
-            const nameB = `${(b.employee.firstName || '').trim()} ${(
-              b.employee.lastName || ''
-            ).trim()}`
-              .trim()
-              .toLowerCase();
-            return nameA.localeCompare(nameB);
-          });
+          // Convert map to array and sort by employee name
+          this.allEmployeesForMerge = Array.from(employeeMap.values()).sort(
+            (a, b) => {
+              const nameA = `${(a.employee.firstName || '').trim()} ${(
+                a.employee.lastName || ''
+              ).trim()}`
+                .trim()
+                .toLowerCase();
+              const nameB = `${(b.employee.firstName || '').trim()} ${(
+                b.employee.lastName || ''
+              ).trim()}`
+                .trim()
+                .toLowerCase();
+              return nameA.localeCompare(nameB);
+            }
+          );
 
           completedRequests++;
           if (completedRequests === totalRequests) {
