@@ -83,6 +83,21 @@ export class DataService {
     this.updateUserInfoForClientRequestSavingsWithdrawal(client, amount);
     return clientRef.set(data, { merge: true });
   }
+  /**
+   * Returns true if the employee is currently working ("Travaille").
+   * Handles common variants and typos.
+   */
+  private isWorkingEmployee(employee: any): boolean {
+    if (!employee) return false;
+    const raw =
+      employee.status ?? employee.workStatus ?? employee.employmentStatus ?? '';
+    const val = String(raw).trim().toLowerCase();
+    // Accept common variants / typos
+    return ['travaille', 'tavaille', 'en travail', 'working', 'work'].includes(
+      val
+    );
+  }
+
   clientPayment(
     client: Client,
     savings: string,
@@ -106,7 +121,7 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
   // data.service.ts
-  clientPaymentAndStats(
+  async clientPaymentAndStats(
     client: Client,
     savings: string,
     dayKey: string, // e.g. "2025-09-09" (you can pass the same value as `date`)
@@ -115,31 +130,91 @@ export class DataService {
     const ownerUid = this.auth.currentUser.uid;
     const amount = Number(payment || 0);
     const savingsNum = Number(savings || 0);
-    const agentUid: string | null =
+    const assignedAgentUid: string | null =
       (client as any)?.employee?.uid || (client as any)?.agent || null;
 
     const db = this.afs.firestore;
 
-    // Refs
+    // Get all employee IDs before transaction (lightweight - just IDs)
+    const employeesCollectionRef = this.afs.collection(
+      `users/${ownerUid}/employees`
+    );
+    const allEmployeesSnapshot = await employeesCollectionRef.ref.get();
+    const allEmployeeIds: string[] = allEmployeesSnapshot.docs.map(
+      (doc) => doc.id
+    );
+
+    // Refs (these don't depend on agentUid, so we can create them upfront)
     const clientRef = this.afs.doc(
       `users/${ownerUid}/clients/${client.uid}`
     ).ref;
     const ownerDailyRef = this.afs.doc(
       `users/${ownerUid}/stats/dailyReimbursement`
     ).ref;
-    const empDayTotalsRef = agentUid
-      ? this.afs.doc(
-          `users/${ownerUid}/employees/${agentUid}/dayTotals/${dayKey}`
-        ).ref
-      : null;
-    const empLedgerRef = agentUid
-      ? this.afs
-          .collection(`users/${ownerUid}/employees/${agentUid}/payments`)
-          .doc().ref
-      : null;
 
     // 1) Run the transaction (reads first, then writes — only numbers/strings)
     const txPromise = db.runTransaction(async (tx) => {
+      // ===== DETERMINE THE CORRECT AGENT UID =====
+      let finalAgentUid: string | null = assignedAgentUid;
+
+      // If there's an assigned agent, check if they're working
+      if (assignedAgentUid) {
+        const assignedEmpRef = this.afs.doc(
+          `users/${ownerUid}/employees/${assignedAgentUid}`
+        ).ref;
+        const assignedEmpSnap = await tx.get(assignedEmpRef);
+
+        if (assignedEmpSnap.exists) {
+          const assignedEmp = assignedEmpSnap.data();
+          if (this.isWorkingEmployee(assignedEmp)) {
+            // Assigned employee is working, use them
+            finalAgentUid = assignedAgentUid;
+          } else {
+            // Assigned employee is NOT working, find another working employee
+            let foundWorkingEmployee: string | null = null;
+
+            // Read other employee documents one by one until we find a working one
+            for (const empId of allEmployeeIds) {
+              // Skip the assigned agent (we already know they're not working)
+              if (empId === assignedAgentUid) continue;
+
+              const empRef = this.afs.doc(
+                `users/${ownerUid}/employees/${empId}`
+              ).ref;
+              const empSnap = await tx.get(empRef);
+
+              if (empSnap.exists) {
+                const empData = empSnap.data();
+                if (this.isWorkingEmployee(empData)) {
+                  foundWorkingEmployee = empId;
+                  break; // Found first working employee that's not the assigned one
+                }
+              }
+            }
+
+            // Use the found working employee, or fall back to assigned agent if none found
+            finalAgentUid = foundWorkingEmployee || assignedAgentUid;
+          }
+        }
+      } else {
+        // No assigned agent, find the first working employee
+        for (const empId of allEmployeeIds) {
+          const empRef = this.afs.doc(
+            `users/${ownerUid}/employees/${empId}`
+          ).ref;
+          const empSnap = await tx.get(empRef);
+
+          if (empSnap.exists) {
+            const empData = empSnap.data();
+            if (this.isWorkingEmployee(empData)) {
+              finalAgentUid = empId;
+              break; // Found first working employee
+            }
+          }
+        }
+        // If no working employee found, finalAgentUid remains null
+      }
+
       // ===== READS =====
       const ownerSnap = await tx.get(ownerDailyRef);
       const prevOwnerVal = ownerSnap.exists ? ownerSnap.get(dayKey) : 0;
@@ -150,7 +225,18 @@ export class DataService {
 
       let prevTotal = 0;
       let prevCount = 0;
-      if (empDayTotalsRef) {
+      let empDayTotalsRef = null;
+      let empLedgerRef = null;
+
+      // Create employee refs based on the determined finalAgentUid
+      if (finalAgentUid) {
+        empDayTotalsRef = this.afs.doc(
+          `users/${ownerUid}/employees/${finalAgentUid}/dayTotals/${dayKey}`
+        ).ref;
+        empLedgerRef = this.afs
+          .collection(`users/${ownerUid}/employees/${finalAgentUid}/payments`)
+          .doc().ref;
+
         const daySnap = await tx.get(empDayTotalsRef);
         if (daySnap.exists) {
           const d: any = daySnap.data();
@@ -546,9 +632,7 @@ export class DataService {
     for (const ids of this.chunk(assignToFirst, 450)) {
       const batch = this.afs.firestore.batch();
       ids.forEach((clientId) => {
-        const cRef = this.afs.doc(
-          `users/${tenantUid}/clients/${clientId}`
-        ).ref;
+        const cRef = this.afs.doc(`users/${tenantUid}/clients/${clientId}`).ref;
         batch.update(cRef, { agent: firstEmployeeId });
       });
       await batch.commit();
@@ -557,9 +641,7 @@ export class DataService {
     for (const ids of this.chunk(assignToSecond, 450)) {
       const batch = this.afs.firestore.batch();
       ids.forEach((clientId) => {
-        const cRef = this.afs.doc(
-          `users/${tenantUid}/clients/${clientId}`
-        ).ref;
+        const cRef = this.afs.doc(`users/${tenantUid}/clients/${clientId}`).ref;
         batch.update(cRef, { agent: secondEmployeeId });
       });
       await batch.commit();
@@ -700,15 +782,26 @@ export class DataService {
     // Handle trophy arrays - filter out empty trophies and include only valid ones
     if (employee.bestTeamTrophies && Array.isArray(employee.bestTeamTrophies)) {
       data.bestTeamTrophies = employee.bestTeamTrophies.filter(
-        (trophy) => trophy.month && trophy.month.trim() !== '' && trophy.year && trophy.year.toString().trim() !== ''
+        (trophy) =>
+          trophy.month &&
+          trophy.month.trim() !== '' &&
+          trophy.year &&
+          trophy.year.toString().trim() !== ''
       );
     } else {
       data.bestTeamTrophies = [];
     }
-    
-    if (employee.bestEmployeeTrophies && Array.isArray(employee.bestEmployeeTrophies)) {
+
+    if (
+      employee.bestEmployeeTrophies &&
+      Array.isArray(employee.bestEmployeeTrophies)
+    ) {
       data.bestEmployeeTrophies = employee.bestEmployeeTrophies.filter(
-        (trophy) => trophy.month && trophy.month.trim() !== '' && trophy.year && trophy.year.toString().trim() !== ''
+        (trophy) =>
+          trophy.month &&
+          trophy.month.trim() !== '' &&
+          trophy.year &&
+          trophy.year.toString().trim() !== ''
       );
     } else {
       data.bestEmployeeTrophies = [];
@@ -1496,7 +1589,9 @@ export class DataService {
 
     const baseKey = this.time.todaysDate();
     const uniqueStamp = Date.now().toString();
-    const safeContext = (context || '').toLowerCase().replace(/[^a-z0-9]+/gi, '-');
+    const safeContext = (context || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gi, '-');
     const keyParts = [baseKey, uniqueStamp];
     if (safeContext) {
       keyParts.push(safeContext);
