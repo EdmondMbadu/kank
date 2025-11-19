@@ -837,15 +837,27 @@ export class AuthService {
 
     // Helper to merge objects (like dailyPoints, attendance, etc.)
     const mergeObjects = (objA: any, objB: any): any => {
-      if (!objA && !objB) return {};
-      if (!objA) return objB || {};
-      if (!objB) return objA || {};
-      
-      const merged = { ...objA };
-      // Add all keys from B, but prefer A's values if both exist
+      if (!objA && !objB) {
+        return {};
+      }
+      if (!objB) {
+        return objA || {};
+      }
+
+      const merged = { ...(objA || {}) };
       Object.keys(objB).forEach((key) => {
-        if (!(key in merged)) {
-          merged[key] = objB[key];
+        const valueB = objB[key];
+        const hasValue =
+          valueB !== undefined &&
+          valueB !== null &&
+          (typeof valueB !== 'string' || valueB.trim() !== '');
+
+        if (hasValue) {
+          // Always prefer B's data for overlapping keys (day/month level)
+          merged[key] = valueB;
+        } else if (!(key in merged)) {
+          // Preserve explicit empty markers from B only if A lacked the key
+          merged[key] = valueB;
         }
       });
       return merged;
@@ -947,6 +959,55 @@ export class AuthService {
 
     // Update Employee A with merged data
     await employeeARef.set(mergedData, { merge: true });
+
+    // Also merge granular payment day totals (subcollection) so B's days override A's
+    await this.mergeEmployeeDayTotals(
+      employeeAUserId,
+      employeeAId,
+      employeeBUserId,
+      employeeBId
+    );
+  }
+
+  /**
+   * Copy dayTotals subcollection documents from Employee B into Employee A.
+   * Any day present in B fully overwrites the same day in A. Days missing in B remain untouched.
+   */
+  private async mergeEmployeeDayTotals(
+    targetUserId: string,
+    targetEmployeeId: string,
+    sourceUserId: string,
+    sourceEmployeeId: string
+  ): Promise<void> {
+    const sourceRef = this.afs
+      .collection(
+        `users/${sourceUserId}/employees/${sourceEmployeeId}/dayTotals`
+      )
+      .ref;
+    const snapshot = await sourceRef.get();
+
+    if (snapshot.empty) {
+      return;
+    }
+
+    const docs = snapshot.docs;
+    const chunkSize = 400; // leave headroom under Firestore's 500 ops per batch
+
+    for (let i = 0; i < docs.length; i += chunkSize) {
+      const batch = this.afs.firestore.batch();
+      const slice = docs.slice(i, i + chunkSize);
+
+      slice.forEach((doc) => {
+        const targetDocRef = this.afs
+          .doc(
+            `users/${targetUserId}/employees/${targetEmployeeId}/dayTotals/${doc.id}`
+          )
+          .ref;
+        batch.set(targetDocRef, doc.data());
+      });
+
+      await batch.commit();
+    }
   }
 
   /**
