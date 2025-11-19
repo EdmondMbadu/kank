@@ -1755,10 +1755,11 @@ Merci pour votre confiance !`;
   }
 
   private defaultContactBulkTemplate(): string {
-    return `Bonjour {{FULL_NAME}},
-Nous serions ravis de vous accueillir chez Fondation Gervais {{LOCATION}}.
-Passez nous voir pour finaliser votre inscription.
-Merci pour votre confiance !`;
+    return `Mbote {{FULL_NAME}},
+To sololaki nayo pono kotombola mombongo na yo. 
+Soki olingi kobanda kozua crédit ya liboso, okoki kozua {{MAX_AMOUNT}} FC. 
+Kende na FONDATION GERVAIS location {{LOCATION_NAME}}.
+Merci pona confiance na FONDATION GERVAIS.`;
   }
 
   updateContactBulkRecipients() {
@@ -1796,11 +1797,16 @@ Merci pour votre confiance !`;
     if (!msg) return '';
     const fullName = `${contact.firstName} ${contact.lastName}`.trim();
     const location = contact.ownerName || 'Fondation Gervais';
-    return msg
+    const maxAmountForNewComers = 400000; // 400,000 FC for new contacts
+    let out = msg
       .replace(/{{FULL_NAME}}/g, fullName)
       .replace(/{{firstName}}/g, contact.firstName || '')
       .replace(/{{lastName}}/g, contact.lastName || '')
-      .replace(/{{LOCATION}}/g, location);
+      .replace(/{{LOCATION}}/g, location)
+      .replace(/{{LOCATION_NAME}}/g, location)
+      .replace(/\{\{\s*MAX_AMOUNT\s*\}\}/g, this.formatFc(maxAmountForNewComers));
+    
+    return out;
   }
 
   async sendContactBulkMessages(): Promise<void> {
