@@ -591,6 +591,45 @@
 
 <!-- Monthly Graphs Section -->
 <section *ngIf="auth.isAdmin" class="container mx-auto px-6 pb-16">
+  <div
+    class="mb-6 flex flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60 md:flex-row md:items-center md:justify-between"
+  >
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+        Mois affiché (uniquement en 1M)
+      </p>
+      <p class="text-sm text-slate-600 dark:text-slate-400">
+        Choisissez un mois et une année à comparer automatiquement avec le mois en cours.
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <input
+        type="month"
+        class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:disabled:bg-slate-800/70"
+        [ngModel]="monthPickerValue"
+        (ngModelChange)="onMonthPickerChange($event)"
+        [max]="monthPickerMax"
+        [disabled]="!isMonthPickerEnabled"
+      />
+      <button
+        type="button"
+        class="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+        (click)="resetMonthPicker()"
+        [disabled]="!isMonthPickerEnabled"
+      >
+        Mois actuel
+      </button>
+      <span
+        class="text-xs font-medium"
+        [ngClass]="{
+          'text-emerald-600 dark:text-emerald-300': isMonthPickerEnabled,
+          'text-slate-400 dark:text-slate-500': !isMonthPickerEnabled
+        }"
+      >
+        {{ isMonthPickerEnabled ? 'Sélection active' : 'Activez 1M pour utiliser le sélecteur' }}
+      </span>
+    </div>
+  </div>
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <!-- Monthly Reserve Graph -->
     <div
