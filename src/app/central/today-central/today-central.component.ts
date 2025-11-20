@@ -441,16 +441,6 @@ export class TodayCentralComponent {
     return total;
   }
 
-  private padSeries(
-    series: (number | null)[],
-    targetLength: number
-  ): (number | null)[] {
-    if (series.length >= targetLength) {
-      return series.slice(0, targetLength);
-    }
-    return [...series, ...Array(targetLength - series.length).fill(null)];
-  }
-
   private getFirstDefinedValue(series: (number | null)[]): number {
     for (const value of series) {
       if (value !== null && value !== undefined) {
@@ -1377,12 +1367,12 @@ export class TodayCentralComponent {
       locationUser
     );
 
-    const maxDays = Math.max(selectedMonthDays, currentMonthDays);
-    const xLabels = Array.from({ length: maxDays }, (_, i) =>
+    const selectedX = Array.from({ length: selectedSeries.length }, (_, i) =>
       (i + 1).toString()
     );
-    const paddedSelected = this.padSeries(selectedSeries, maxDays);
-    const paddedCurrent = this.padSeries(currentSeries, maxDays);
+    const currentX = Array.from({ length: currentSeries.length }, (_, i) =>
+      (i + 1).toString()
+    );
     const showComparison = !this.isSameMonthYear(
       selectedMonth,
       selectedYear,
@@ -1390,8 +1380,8 @@ export class TodayCentralComponent {
       options.currentYear
     );
 
-    const firstValue = this.getFirstDefinedValue(paddedSelected);
-    const lastValue = this.getLastDefinedValue(paddedSelected);
+    const firstValue = this.getFirstDefinedValue(selectedSeries);
+    const lastValue = this.getLastDefinedValue(selectedSeries);
     const change = lastValue - firstValue;
     const changePercent =
       firstValue > 0 ? ((change / firstValue) * 100).toFixed(2) : '0.00';
@@ -1407,8 +1397,8 @@ export class TodayCentralComponent {
 
     const traces: any[] = [
       {
-        x: xLabels,
-        y: paddedSelected,
+        x: selectedX,
+        y: selectedSeries,
         name: `Sélection: ${selectedLabel}`,
         type: 'scatter',
         mode: 'lines',
@@ -1417,6 +1407,7 @@ export class TodayCentralComponent {
           width: 2.5,
           shape: 'spline',
         },
+        connectgaps: true,
         fill: 'tozeroy',
         fillcolor: {
           type: 'linear',
@@ -1436,8 +1427,8 @@ export class TodayCentralComponent {
 
     if (showComparison) {
       traces.push({
-        x: xLabels,
-        y: paddedCurrent,
+        x: currentX,
+        y: currentSeries,
         name: `Mois actuel: ${currentLabel}`,
         type: 'scatter',
         mode: 'lines',
@@ -1447,6 +1438,7 @@ export class TodayCentralComponent {
           shape: 'spline',
           dash: 'dot',
         },
+        connectgaps: true,
         hovertemplate:
           `<b>Jour %{x}</b><br>${options.title}: <b>$%{y:,.2f}</b><extra>${currentLabel}</extra>`,
       });
