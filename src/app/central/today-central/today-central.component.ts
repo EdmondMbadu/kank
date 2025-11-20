@@ -414,7 +414,7 @@ export class TodayCentralComponent {
       const usdValue = this.toNum(
         this.compute.convertCongoleseFrancToUsDollars(amountCdf.toString())
       );
-      series[day - 1] = usdValue;
+      series[day - 1] = usdValue > 0 ? usdValue : null;
     }
     return series;
   }
