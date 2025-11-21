@@ -22,7 +22,7 @@
   </button>
 </div>
 <!-- Toggle: Locations directory -->
-<div *ngIf="auth.isAdmin" class="mb-3 flex items-center justify-end">
+<div *ngIf="auth.isAdmin" class="mb-3 flex items-center justify-end gap-2">
   <button
     (click)="showLocations = !showLocations"
     class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm font-medium
@@ -39,6 +39,24 @@
             clip-rule="evenodd"/>
     </svg>
     <span>{{ showLocations ? 'Masquer' : 'Afficher' }} les sites + mot de passe</span>
+  </button>
+  
+  <!-- Copy all locations as table button -->
+  <button
+    (click)="copyAllLocationsTable()"
+    class="inline-flex items-center gap-2 rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700
+           hover:bg-indigo-100 active:scale-[.98] transition shadow-sm"
+    title="Copier tous les sites sous forme de tableau"
+    [disabled]="copiedTable"
+  >
+    <svg *ngIf="!copiedTable" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
+      <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 100-2h-2v2z" />
+    </svg>
+    <svg *ngIf="copiedTable" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.415 0L3.296 9.462a1 1 0 111.414-1.415l3.035 3.035 6.543-6.543a1 1 0 011.416 0z" clip-rule="evenodd"/>
+    </svg>
+    <span>{{ copiedTable ? 'Tableau copié !' : 'Copier tableau' }}</span>
   </button>
 </div>
 

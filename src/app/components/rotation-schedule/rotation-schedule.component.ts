@@ -57,6 +57,7 @@ export class RotationScheduleComponent implements OnInit, OnChanges {
     password: {},
     summary: {},
   };
+  copiedTable = false;
   passModal = {
     visible: false,
     weekId: '',
@@ -1210,5 +1211,64 @@ mot de passe: ${loc.password ?? '—'}`;
   closePass() {
     this.passModal.visible = false;
     this.cdr.markForCheck();
+  }
+
+  // Generate and copy a beautiful table with all locations
+  async copyAllLocationsTable() {
+    if (!this.locationsPasswords.length) {
+      this.liveMsg = 'Aucun site disponible';
+      setTimeout(() => (this.liveMsg = ''), 2000);
+      return;
+    }
+
+    const link = 'https://kank-4bbbc.web.app/';
+    
+    // Create a beautiful table format
+    const tableLines: string[] = [];
+    
+    // Calculate column widths dynamically
+    const maxNameLen = Math.max(8, ...this.locationsPasswords.map(l => (l.name || '—').length));
+    const maxEmailLen = Math.max(5, ...this.locationsPasswords.map(l => (l.email || '—').length));
+    const maxPwLen = Math.max(8, ...this.locationsPasswords.map(l => (l.password || '—').length));
+    const linkLen = link.length;
+    
+    const nameWidth = Math.max(maxNameLen, 8);
+    const emailWidth = Math.max(maxEmailLen, 5);
+    const pwWidth = Math.max(maxPwLen, 8);
+    const totalWidth = nameWidth + linkLen + emailWidth + pwWidth + 15; // +15 for borders and separators
+    
+    // Header
+    tableLines.push('┌' + '─'.repeat(totalWidth - 2) + '┐');
+    tableLines.push('│' + ' LISTE DES SITES - ACCÈS COMPLETS '.padEnd(totalWidth - 2, ' ') + '│');
+    tableLines.push('├' + '─'.repeat(nameWidth + 2) + '┬' + '─'.repeat(linkLen + 2) + '┬' + '─'.repeat(emailWidth + 2) + '┬' + '─'.repeat(pwWidth + 2) + '┤');
+    tableLines.push('│ ' + 'Location'.padEnd(nameWidth) + ' │ ' + 'Lien'.padEnd(linkLen) + ' │ ' + 'Email'.padEnd(emailWidth) + ' │ ' + 'Password'.padEnd(pwWidth) + ' │');
+    tableLines.push('├' + '─'.repeat(nameWidth + 2) + '┼' + '─'.repeat(linkLen + 2) + '┼' + '─'.repeat(emailWidth + 2) + '┼' + '─'.repeat(pwWidth + 2) + '┤');
+    
+    // Data rows
+    this.locationsPasswords.forEach((loc) => {
+      const name = (loc.name || '—').padEnd(nameWidth);
+      const email = (loc.email || '—').padEnd(emailWidth);
+      const password = (loc.password || '—').padEnd(pwWidth);
+      
+      tableLines.push(`│ ${name} │ ${link.padEnd(linkLen)} │ ${email} │ ${password} │`);
+    });
+    
+    // Footer
+    tableLines.push('└' + '─'.repeat(nameWidth + 2) + '┴' + '─'.repeat(linkLen + 2) + '┴' + '─'.repeat(emailWidth + 2) + '┴' + '─'.repeat(pwWidth + 2) + '┘');
+    
+    const tableText = tableLines.join('\n');
+    
+    try {
+      await navigator.clipboard.writeText(tableText);
+      this.copiedTable = true;
+      this.liveMsg = `Tableau de ${this.locationsPasswords.length} site(s) copié !`;
+      setTimeout(() => {
+        this.copiedTable = false;
+        this.liveMsg = '';
+      }, 2000);
+    } catch (err) {
+      this.liveMsg = 'Erreur lors de la copie';
+      setTimeout(() => (this.liveMsg = ''), 2000);
+    }
   }
 }
