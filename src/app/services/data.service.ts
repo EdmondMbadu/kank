@@ -507,19 +507,23 @@ export class DataService {
     ).ref;
 
     const [srcSnap, dstSnap] = await Promise.all([srcRef.get(), dstRef.get()]);
-    if (!srcSnap.exists) throw new Error('Source employee not found');
+    const srcExists = srcSnap.exists;
     if (!dstSnap.exists) throw new Error('Target employee not found');
 
-    const srcData = srcSnap.data() || {};
+    const srcData = srcExists ? srcSnap.data() || {} : {};
     const dstData = dstSnap.data() || {};
 
     // Prefer stored 'clients'; fall back to 'currentClients' if necessary
-    const rawSrc: string[] = (srcData.clients ??
-      srcData.currentClients ??
-      []) as string[];
+    const rawSrc: string[] = srcExists
+      ? ((srcData.clients ?? srcData.currentClients ?? []) as string[])
+      : await this.getClientIdsForAgent(tenantUid, sourceEmployeeId);
     const rawDst: string[] = (dstData.clients ??
       dstData.currentClients ??
       []) as string[];
+
+    if (!rawSrc.length) {
+      return 0;
+    }
 
     // De-duplicate both sides first
     const srcUnique = Array.from(new Set(rawSrc));
@@ -540,7 +544,9 @@ export class DataService {
 
     // 1) Update A (clear) and B (union) atomically
     await this.afs.firestore.runTransaction(async (tx) => {
-      tx.update(srcRef, { clients: remainingSrc });
+      if (srcExists) {
+        tx.update(srcRef, { clients: remainingSrc });
+      }
       tx.update(dstRef, { clients: newDst });
     });
 
@@ -563,6 +569,20 @@ export class DataService {
 
     // Return the number of clients we attempted to move (selected)
     return selectedIds.length;
+  }
+
+  private async getClientIdsForAgent(
+    tenantUid: string,
+    agentId: string
+  ): Promise<string[]> {
+    if (!agentId) {
+      return [];
+    }
+    const snapshot = await this.afs.firestore
+      .collection(`users/${tenantUid}/clients`)
+      .where('agent', '==', agentId)
+      .get();
+    return snapshot.docs.map((doc) => doc.id);
   }
 
   /**

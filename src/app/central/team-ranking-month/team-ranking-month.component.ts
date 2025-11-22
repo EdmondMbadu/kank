@@ -125,6 +125,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   toggle(section: 'payroll' | 'bonus' | 'loyer') {
     this.collapse[section] = !this.collapse[section];
   }
+  /** Small helper so all logs share same prefix */
+  private logDebug(message: string, extra?: any): void {
+    if (extra !== undefined) {
+      console.log('[TeamRankingMonth]', message, extra);
+    } else {
+      console.log('[TeamRankingMonth]', message);
+    }
+  }
 
   toggleIdeaPanel(): void {
     this.ideaPanelOpen = !this.ideaPanelOpen;
@@ -254,9 +262,25 @@ export class TeamRankingMonthComponent implements OnDestroy {
   ngOnInit(): void {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
+      this.logDebug('Locations fetched', {
+        count: this.allUsers?.length ?? 0,
+        ids: this.allUsers?.map((u) => u.uid) ?? [],
+      });
+      if (!this.allUsers?.length) {
+        this.logDebug(
+          'No locations returned from Firestore; the ranking page will stay empty until data arrives.'
+        );
+      }
       // this is really weird. maybe some apsect of angular. but it works for now
-      if (this.allUsers.length > 1) this.getAllEmployees();
+      if (this.allUsers.length > 0) {
+        this.getAllEmployees();
+      } else {
+        this.logDebug(
+          'Still waiting for at least one location before fetching employees.'
+        );
+      }
     });
+    this.logDebug('Initializing idea listener');
     this.listenToIdeaBox();
   }
 
@@ -293,6 +317,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   // use your existing gradient color logic to tint chips/accents
 
   allEmployees: Employee[] = [];
+  performanceFallbackActive = false;
+  performanceFallbackReason = '';
   public graphMonthPerformance = {
     data: [
       {
@@ -320,9 +346,46 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
 
+    const owners =
+      Array.isArray(this.allUsers) && this.allUsers.length > 0
+        ? this.allUsers.filter((u) => !!u?.uid)
+        : this.auth.currentUser
+        ? [this.auth.currentUser as User]
+        : [];
+
+    if (
+      Array.isArray(this.allUsers) &&
+      this.allUsers.length > 0 &&
+      owners.length < this.allUsers.length
+    ) {
+      this.logDebug('Certaines localisations ont été ignorées (UID manquant).', {
+        totalLocations: this.allUsers.length,
+        validLocations: owners.length,
+      });
+    }
+
+    if (!owners.length) {
+      this.logDebug(
+        'Cannot fetch employees because no locations or fallback user are available yet.'
+      );
+      this.isFetchingClients = false;
+      return;
+    }
+
+    if (!this.allUsers?.length) {
+      this.logDebug(
+        'No additional locations returned; falling back to current user only.'
+      );
+    }
+
+    this.logDebug('Starting employee aggregation', {
+      locationCount: owners.length,
+    });
+
     let tempEmployees: Employee[] = [];
     this.allEmployees = [];
     let completedRequests = 0;
+    const ownerCount = owners.length;
 
     // reset
     this.total = '0';
@@ -331,7 +394,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.totalBonus = '0';
 
     // 1) sum loyer
-    (this.allUsers ?? []).forEach((user) => {
+    owners.forEach((user) => {
       if (user?.housePayment) {
         this.totalHouse = (
           Number(this.totalHouse) + Number(user.housePayment)
@@ -340,60 +403,36 @@ export class TeamRankingMonthComponent implements OnDestroy {
     });
 
     // 2) fetch employees and sum salaries/bonus
-    (this.allUsers ?? []).forEach((user) => {
+    owners.forEach((user) => {
       this.currentClients = [];
       this.currentEmployees = [];
+      this.logDebug('Requesting employees for location', {
+        ownerUid: user?.uid,
+        locationName: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
+      });
 
       this.auth.getAllEmployeesGivenUser(user).subscribe((employees) => {
-        tempEmployees = tempEmployees.concat(employees);
-        this.currentEmployees = employees;
-
-        this.currentEmployees.forEach((em: any) => {
-          this.computePerformances(employees, em);
-
-          // NOTE: do NOT accumulate `totalSalary` here. We defer computing
-          // the salary total until we've deduped and filtered employees
-          // (see `filterAndInitializeEmployees`) so the UI total only
-          // reflects the employees actually displayed.
-
-          if (em?.totalBonusThisMonth) {
-            this.totalBonus = (
-              Number(this.totalBonus) + Number(em.totalBonusThisMonth)
-            ).toString();
+        if (!Array.isArray(employees) || !employees.length) {
+          this.logDebug('No employees returned for location', {
+            ownerUid: user?.uid,
+          });
+          completedRequests++;
+          if (completedRequests === ownerCount) {
+            this.afterEmployeesAggregated(tempEmployees);
           }
-
-          // attach location + UI flags
-          em.tempUser = user;
-          em.tempLocationHolder = user.firstName;
-          em.showAttendance = false;
+          return;
+        }
+        const employeeList: Employee[] = Array.isArray(employees)
+          ? (employees as Employee[])
+          : [];
+        this.logDebug('Employees received for location', {
+          ownerUid: user?.uid,
+          count: employeeList.length,
         });
-
+        this.mergeOwnerEmployees(user, employeeList, tempEmployees);
         completedRequests++;
-        if (completedRequests === this.allUsers.length) {
-          this.allEmployeesAll = tempEmployees;
-          this.filterAndInitializeEmployees(tempEmployees, this.currentClients);
-          this.isFetchingClients = false;
-
-          if (this.rankingMode === 'dailyPayments')
-            this.loadDailyTotalsForEmployees();
-          else if (this.rankingMode === 'monthlyPayments')
-            this.loadMonthlyTotalsForEmployees();
-          else this.sortEmployeesByPerformance();
-
-          this.setGraphics();
-
-          // 3) compute Actual totals. Compute `totalSalary` from the
-          // deduped/filtered `allEmployees` array so it matches the
-          // employees that are actually displayed in the payroll table.
-          this.totalSalary = this.allEmployees
-            .map((e: any) => Number(e.paymentAmount || 0))
-            .reduce((s: number, v: number) => s + v, 0)
-            .toString();
-
-          // Global total = salaries + house payments
-          this.total = (
-            Number(this.totalSalary) + Number(this.totalHouse)
-          ).toString();
+        if (completedRequests === ownerCount) {
+          this.afterEmployeesAggregated(tempEmployees);
         }
       });
     });
@@ -402,6 +441,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
     allEmployees: Employee[],
     currentClients: Client[]
   ) {
+    this.logDebug('filterAndInitializeEmployees()', {
+      incoming: allEmployees?.length ?? 0,
+    });
     // Use a Map or Set to ensure uniqueness. Here, a Map is used to easily
     // track employees by their uid.
     const uniqueEmployees = new Map<string, Employee>();
@@ -419,6 +461,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
       const targetMonth = now.getMonth() + 1; // 1–12
       const targetYear = now.getFullYear(); // e.g. 2025
       const payments = employee.payments || {}; // might be undefined
+      if (!employee.uid) {
+        this.logDebug('Employee without uid skipped during filtering', {
+          name: `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim(),
+        });
+        return;
+      }
 
       employee.paidThisMonth = Object.keys(payments).some((key) => {
         // split "M-D-YYYY-HH-mm-ss" into ["M","D","YYYY"]
@@ -440,13 +488,21 @@ export class TeamRankingMonthComponent implements OnDestroy {
     });
 
     // Convert the Map values back to an array
-    this.allEmployees = Array.from(uniqueEmployees.values());
+    this.allEmployees = Array.from(uniqueEmployees.values()).filter(
+      (emp) => !!emp?.uid
+    );
+    this.logDebug('Unique employees after dedupe', {
+      uniqueCount: this.allEmployees.length,
+    });
 
     // Filter employees who are currently "Travaille" (working) or "Transféré" (transferred)
     // Include both working and transferred employees for rotation schedule
     this.allEmployees = this.allEmployees.filter((data) => {
       const status = (data.status || '').toLowerCase().trim();
       return status === 'travaille' || status === 'transféré' || status === 'transfere';
+    });
+    this.logDebug('Employees after status filter', {
+      activeCount: this.allEmployees.length,
     });
 
     this.sortEmployeesByPerformance();
@@ -457,12 +513,20 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.allLocations = Array.from(
       new Set(this.allEmployees!.map((e) => e.tempLocationHolder))
     );
+    if (!this.allEmployees.length) {
+      this.logDebug(
+        'No employees left after filtering; the ranking list will be empty for now.'
+      );
+    }
   }
 
   // Add this method to calculate the average performance percentage
   calculateAveragePerformancePercentage() {
     if (!this.allEmployees || this.allEmployees.length === 0) {
       this.averagePerformancePercentage = '0';
+      this.logDebug(
+        'Average performance reset to 0 because there are no employees.'
+      );
       return;
     }
 
@@ -475,6 +539,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
     // If no valid employees, set average to 0
     if (validEmployees.length === 0) {
       this.averagePerformancePercentage = '0';
+       this.logDebug(
+        'Average performance reset to 0 because no employees have a positive percentage.'
+      );
       return;
     }
 
@@ -489,6 +556,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.averagePerformancePercentage = this.compute
       .roundNumber(average)
       .toString();
+    this.logDebug('Average performance recalculated', {
+      employeeCount: validEmployees.length,
+      value: this.averagePerformancePercentage,
+    });
   }
 
   getBackgroundColor(value: string): string {
@@ -807,6 +878,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   // team-ranking-month.component.ts (add these methods inside the class)
   setRankingMode(mode: 'performance' | 'dailyPayments' | 'monthlyPayments') {
     if (this.rankingMode === mode) return;
+    this.logDebug('Switching ranking mode', { from: this.rankingMode, to: mode });
     this.rankingMode = mode;
 
     if (mode === 'dailyPayments') {
@@ -819,7 +891,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private async loadDailyTotalsForEmployees() {
-    if (!this.allEmployees?.length) return; // visible list = actives
+    if (!this.allEmployees?.length) {
+      this.logDebug(
+        'loadDailyTotalsForEmployees() skipped because no active employees are available.'
+      );
+      return; // visible list = actives
+    }
+    this.logDebug('loadDailyTotalsForEmployees() triggered', {
+      activeCount: this.allEmployees.length,
+      allKnownCount: this.allEmployeesAll?.length ?? 0,
+      dayKey: this.todayDayKey,
+    });
     this.loadingDaily = true;
 
     try {
@@ -850,6 +932,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
           });
         })
       );
+      this.logDebug('Daily totals fetched', {
+        employees: totalsById.size,
+      });
 
       // 2) Seed adjusted map with each ACTIVE employee’s own totals
       const adjusted = new Map<string, { total: number; count: number }>();
@@ -908,6 +993,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.paidEmployeesToday = this.allEmployees.filter(
         (e: any) => Number(e._dailyTotal || 0) > 0
       );
+      this.logDebug('Daily totals computed', {
+        paidCount: this.paidEmployeesToday.length,
+      });
+    } catch (error) {
+      console.error('Failed to load daily totals', error);
+      this.paidEmployeesToday = [];
     } finally {
       this.loadingDaily = false;
     }
@@ -937,6 +1028,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (!Array.isArray(this.allEmployees)) {
       this.performanceEmployees = [];
       this.excludedEmployees = [];
+      this.performanceFallbackActive = false;
+      this.performanceFallbackReason = '';
       return;
     }
 
@@ -950,6 +1043,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
     const valid: any[] = [];
     const excluded: any[] = [];
+    this.performanceFallbackActive = false;
+    this.performanceFallbackReason = '';
 
     for (const employee of this.allEmployees) {
       const v = parseFloat(employee.performancePercentageMonth ?? '0');
@@ -962,8 +1057,40 @@ export class TeamRankingMonthComponent implements OnDestroy {
     // If admin enabled the toggle, merge excluded back into the displayed list
     if (this.auth?.isAdmin && this.showExcludedForAdmin) {
       this.performanceEmployees = [...valid, ...excluded];
+      if (!valid.length && excluded.length) {
+        this.performanceFallbackActive = true;
+        this.performanceFallbackReason =
+          'Tous les employés ont 0% ou des données manquantes — affichage complet forcé (admin).';
+        this.logDebug('Performance fallback (admin toggle)', {
+          excludedCount: excluded.length,
+        });
+      }
     } else {
-      this.performanceEmployees = valid;
+      if (valid.length) {
+        this.performanceEmployees = valid;
+      } else if (excluded.length) {
+        this.performanceEmployees = excluded;
+        this.performanceFallbackActive = true;
+        this.performanceFallbackReason =
+          "Aucun pourcentage n'a pu être calculé pour ce mois. Tous les employés sont affichés avec des valeurs brutes.";
+        this.logDebug('Performance fallback triggered', {
+          reason: 'No valid percentages',
+          excludedCount: excluded.length,
+        });
+      } else {
+        this.performanceEmployees = [];
+      }
+    }
+
+    if (!this.performanceEmployees.length) {
+      this.logDebug(
+        "Aucun employé disponible après tri — vérifier les permissions ou l'état des données."
+      );
+    } else {
+      this.logDebug('Performance list ready', {
+        displayed: this.performanceEmployees.length,
+        fallback: this.performanceFallbackActive,
+      });
     }
   }
 
@@ -1099,7 +1226,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private async loadMonthlyTotalsForEmployees() {
-    if (!this.allEmployees?.length) return;
+    if (!this.allEmployees?.length) {
+      this.logDebug(
+        'loadMonthlyTotalsForEmployees() skipped because no active employees are available.'
+      );
+      return;
+    }
+    this.logDebug('loadMonthlyTotalsForEmployees() triggered', {
+      activeCount: this.allEmployees.length,
+      allKnownCount: this.allEmployeesAll?.length ?? 0,
+      month: this.givenMonth,
+      year: this.givenYear,
+    });
     this.loadingMonthly = true;
 
     try {
@@ -1138,6 +1276,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
           });
         })
       );
+      this.logDebug('Monthly totals fetched', {
+        employees: monthTotalsById.size,
+        daysCount: monthKeys.length,
+      });
 
       // 2) seed active employees with their own totals
       const adjusted = new Map<string, { total: number; count: number }>();
@@ -1195,6 +1337,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.paidEmployeesMonth = this.allEmployees.filter(
         (e: any) => Number(e._monthTotal || 0) > 0
       );
+      this.logDebug('Monthly totals computed', {
+        paidCount: this.paidEmployeesMonth.length,
+      });
+    } catch (error) {
+      console.error('Failed to load monthly totals', error);
+      this.paidEmployeesMonth = [];
     } finally {
       this.loadingMonthly = false;
     }
@@ -1650,6 +1798,73 @@ export class TeamRankingMonthComponent implements OnDestroy {
     } finally {
       this.employeeMergeInProgress = false;
     }
+  }
+
+  private mergeOwnerEmployees(
+    owner: User,
+    employees: Employee[],
+    accumulator: Employee[]
+  ): void {
+    employees.forEach((em: any) => {
+      if (!em?.uid) {
+        this.logDebug('Discarded employee without uid', {
+          ownerUid: owner?.uid,
+          name: `${em?.firstName ?? ''} ${em?.lastName ?? ''}`.trim(),
+        });
+        return;
+      }
+
+      try {
+        this.computePerformances(employees, em);
+      } catch (err) {
+        console.error('computePerformances failed for employee', {
+          uid: em?.uid,
+          ownerUid: owner?.uid,
+          error: err,
+        });
+        em.performancePercentageMonth = '0';
+      }
+
+      if (em?.totalBonusThisMonth) {
+        this.totalBonus = (
+          Number(this.totalBonus) + Number(em.totalBonusThisMonth)
+        ).toString();
+      }
+
+      em.tempUser = owner;
+      em.tempLocationHolder = owner.firstName;
+      em.showAttendance = false;
+      accumulator.push(em);
+    });
+  }
+
+  private afterEmployeesAggregated(allEmployees: Employee[]): void {
+    this.allEmployeesAll = allEmployees;
+    this.filterAndInitializeEmployees(allEmployees, this.currentClients);
+    this.logDebug('Finished aggregating employees', {
+      totalRaw: allEmployees.length,
+      totalDisplay: this.allEmployees.length,
+    });
+    this.isFetchingClients = false;
+
+    if (this.rankingMode === 'dailyPayments') {
+      this.loadDailyTotalsForEmployees();
+    } else if (this.rankingMode === 'monthlyPayments') {
+      this.loadMonthlyTotalsForEmployees();
+    } else {
+      this.sortEmployeesByPerformance();
+    }
+
+    this.setGraphics();
+
+    const salarySum = this.allEmployees.reduce(
+      (sum: number, e: any) => sum + Number(e?.paymentAmount || 0),
+      0
+    );
+    this.totalSalary = salarySum.toString();
+
+    const totalHouseValue = Number(this.totalHouse || 0);
+    this.total = (salarySum + totalHouseValue).toString();
   }
 
 }

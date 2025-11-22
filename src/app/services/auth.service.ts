@@ -95,7 +95,7 @@ export class AuthService {
         if (user) {
           return this.afs
             .collection(`users/${user.uid}/employees/`)
-            .valueChanges();
+            .valueChanges({ idField: 'uid' });
         } else {
           return of(null);
         }
@@ -194,7 +194,7 @@ export class AuthService {
         if (myuser) {
           return this.afs
             .collection(`users/${myuser.uid}/employees/`)
-            .valueChanges();
+            .valueChanges({ idField: 'uid' });
         } else {
           return of(null);
         }

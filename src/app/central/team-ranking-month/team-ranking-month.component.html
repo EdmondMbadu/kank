@@ -355,6 +355,19 @@
           Inclure les employés exclus (NaN ou ≤ 0)
         </label>
       </div>
+      <div
+        *ngIf="performanceFallbackActive"
+        class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      >
+        {{ performanceFallbackReason }}
+      </div>
+      <div
+        *ngIf="!performanceFallbackActive && performanceEmployees.length === 0"
+        class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600"
+      >
+        Aucun employé ne correspond aux critères actuels. Vérifiez les statuts ou les
+        permissions ou changez de mode de classement.
+      </div>
 
       <div
         *ngFor="let em of performanceEmployees; let i = index"
