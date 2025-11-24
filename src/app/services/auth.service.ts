@@ -84,7 +84,9 @@ export class AuthService {
     this.cardsRefs = this.fireauth.authState.pipe(
       switchMap((user) => {
         if (user) {
-          return this.afs.collection(`users/${user.uid}/cards/`).valueChanges();
+          return this.afs
+            .collection(`users/${user.uid}/cards/`)
+            .valueChanges({ idField: 'uid' });
         } else {
           return of(null);
         }

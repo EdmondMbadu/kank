@@ -415,7 +415,7 @@
           Réinitialiser
         </button>
         <button type="submit"
-                [disabled]="editForm.invalid || saving"
+                [disabled]="saving"
                 class="rounded px-4 py-2 text-sm font-medium text-white bg-indigo-600 disabled:opacity-60">
           {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
         </button>

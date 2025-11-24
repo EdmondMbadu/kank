@@ -13,6 +13,7 @@ import {
   FormControl,
   FormGroup,
   Validators,
+  ValidatorFn,
 } from '@angular/forms';
 import {
   debounceTime,
@@ -69,11 +70,12 @@ export class ClientPortalCardComponent {
   }
 
   private initEmptyForm() {
+    const names = this.deriveNameParts(this.clientCard);
     this.editForm = this.fb.group({
-      firstName: ['', [Validators.required]],
-      middleName: [''], // Post-nom
-      lastName: [''], // Nom
-      phoneNumber: ['', [Validators.minLength(7)]],
+      firstName: [names.firstName, [Validators.required]],
+      middleName: [names.middleName], // Post-nom
+      lastName: [names.lastName], // Nom
+      phoneNumber: ['', [this.optionalMinLength(7)]],
       businessAddress: [''],
       homeAddress: [''],
       profession: [''],
@@ -300,14 +302,15 @@ export class ClientPortalCardComponent {
 
   // Build the form once we have clientCard loaded
   private initEditForm() {
+    const names = this.deriveNameParts(this.clientCard);
     this.editForm = this.fb.group({
-      firstName: [this.clientCard.firstName ?? '', [Validators.required]],
-      lastName: [this.clientCard.lastName ?? ''],
-      middleName: [this.clientCard.middleName ?? ''],
+      firstName: [names.firstName, [Validators.required]],
+      lastName: [names.lastName],
+      middleName: [names.middleName],
 
       phoneNumber: [
         this.clientCard.phoneNumber ?? '',
-        [Validators.minLength(7)],
+        [this.optionalMinLength(7)],
       ],
 
       businessAddress: [this.clientCard.businessAddress ?? ''],
@@ -335,10 +338,11 @@ export class ClientPortalCardComponent {
 
   /** Map model -> form raw values (used by reset button) */
   toFormValues(c: Card) {
+    const names = this.deriveNameParts(c);
     return {
-      firstName: c.firstName ?? '',
-      lastName: c.lastName ?? '',
-      middleName: c.middleName ?? '',
+      firstName: names.firstName,
+      lastName: names.lastName,
+      middleName: names.middleName,
       phoneNumber: c.phoneNumber ?? '',
       businessAddress: c.businessAddress ?? '',
       homeAddress: c.homeAddress ?? '',
@@ -352,9 +356,46 @@ export class ClientPortalCardComponent {
     };
   }
 
+  private deriveNameParts(card: Card | null | undefined): {
+    firstName: string;
+    middleName: string;
+    lastName: string;
+  } {
+    const sanitize = (value?: string | null) => (value ?? '').trim();
+    const base = {
+      firstName: sanitize(card?.firstName),
+      middleName: sanitize(card?.middleName),
+      lastName: sanitize(card?.lastName),
+    };
+
+    if (base.firstName || base.middleName || base.lastName) {
+      return base;
+    }
+
+    const composite = sanitize(card?.name);
+    if (!composite) {
+      return base;
+    }
+
+    const parts = composite.split(/\s+/).filter(Boolean);
+    if (!parts.length) {
+      return base;
+    }
+
+    const firstName = parts.shift() ?? '';
+    const lastName = parts.length ? parts.pop() ?? '' : '';
+    const middleName = parts.length ? parts.join(' ') : '';
+
+    return {
+      firstName,
+      middleName,
+      lastName,
+    };
+  }
+
   /** Save edits (admin) — excludes the payments map */
   async saveCardEdits() {
-    if (!this.auth.isAdmin || this.editForm.invalid) return;
+    if (!this.auth.isAdmin) return;
 
     this.saving = true;
     this.saveMsg = '';
@@ -362,7 +403,9 @@ export class ClientPortalCardComponent {
 
     try {
       const docId = (this.clientCard as any)?.uid;
+      const ownerUid = this.auth.currentUser?.uid;
       if (!docId) throw new Error('clientCard.uid manquant');
+      if (!ownerUid) throw new Error("Impossible d'identifier le propriétaire de la carte");
 
       // Prepare payload (keep payments untouched; coerce numerics back to strings if your schema uses strings)
       const v = this.editForm.value;
@@ -387,12 +430,14 @@ export class ClientPortalCardComponent {
         // payments:  // ← intentionally omitted
       };
 
-      const path = `users/${this.auth.currentUser.uid}/cards/${docId}`;
-      await this.afs.doc(path).update(updatePayload);
+      const path = `users/${ownerUid}/cards/${docId}`;
+      console.log('[ClientPortalCard] Saving card', { path, updatePayload });
+      await this.afs.doc(path).set(updatePayload, { merge: true });
 
       // Update local model (so UI above reflects instantly)
       Object.assign(this.clientCard, updatePayload);
       this.computeAmountToGiveClient();
+      this.editForm.patchValue(this.toFormValues(this.clientCard));
 
       this.saveOk = true;
       this.saveMsg = 'Modifications enregistrées ✅';
@@ -414,5 +459,22 @@ export class ClientPortalCardComponent {
     this.saveOk = true;
     this.saveMsg = 'Données rechargées.';
     setTimeout(() => (this.saveMsg = ''), 2000);
+  }
+
+  private optionalMinLength(length: number): ValidatorFn {
+    return (control) => {
+      const value = (control.value ?? '').toString().trim();
+      if (!value.length) {
+        return null;
+      }
+      return value.length >= length
+        ? null
+        : {
+            minlength: {
+              requiredLength: length,
+              actualLength: value.length,
+            },
+          };
+    };
   }
 }
