@@ -78,7 +78,7 @@ export class NewCardComponent implements OnInit {
       );
       console.log('Informations utilisateur cartes mises à jour avec succès');
       this.resetFields();
-      this.router.navigate(['client-info-card']);
+      this.router.navigate(['client-info-card/current']);
     } catch (err) {
       alert(
         "Quelque chose s'est mal passé. Impossible d'ajouter un nouveau client de carte. Essayez encore"

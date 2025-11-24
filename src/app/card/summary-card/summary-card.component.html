@@ -1,22 +1,25 @@
 <app-navbar
   [email]="auth.currentUser.email"
   [firstName]="auth.currentUser.firstName"
-  [path]="'home'">
+  [path]="'home'"
+>
 </app-navbar>
 
 <!-- ╭─ Page header ───────────────────────────────────────────────────────╮ -->
 <section class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-10 space-y-6">
-  <div class="flex flex-col lg:flex-row items-center justify-center gap-6 text-center">
-    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight
-               text-gray-900 dark:text-white">
+  <div
+    class="flex flex-col lg:flex-row items-center justify-center gap-6 text-center"
+  >
+    <h1
+      class="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white"
+    >
       Tableau&nbsp;Info&nbsp;Carte
     </h1>
 
     <button
-      routerLink="/client-info-card"
-      class="inline-flex items-center gap-2 rounded-full
-             bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow
-             hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+      routerLink="/client-info-card/current"
+      class="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+    >
       Info Clients&nbsp;Carte
     </button>
   </div>
@@ -25,36 +28,42 @@
 
 <!-- ╭─ Summary cards ───────────────────────────────────────────────────────╮ -->
 <section class="mx-auto mt-12 max-w-7xl px-4 sm:px-6 lg:px-8">
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+  <div
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+  >
     <a
       *ngFor="let s of summary; let i = index"
       routerLink="{{ linkPath[i] }}"
-      class="group block rounded-2xl bg-white dark:bg-slate-800
-             ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm
-             hover:-translate-y-1 hover:shadow-lg
-             hover:ring-green-400 dark:hover:ring-green-500 transition">
+      class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+    >
+      <img
+        [src]="imagePaths[i]"
+        class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
+      />
 
-      <img [src]="imagePaths[i]"
-           class="mx-auto mb-4 h-16 w-16 object-contain
-                  filter dark:invert dark:brightness-125" />
-
-      <h5 class="mb-2 text-center text-xl font-semibold
-                 text-gray-900 dark:text-gray-50
-                 group-hover:text-green-700 dark:group-hover:text-green-400">
+      <h5
+        class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
+      >
         {{ s }}
       </h5>
 
       <!-- Amounts only for i > 1 -->
       <ng-container *ngIf="i > 2; else countOnly">
-        <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
-          FC&nbsp;{{ summaryContent[i] | number:'1.0-0' }}
+        <p
+          class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+        >
+          FC&nbsp;{{ summaryContent[i] | number : "1.0-0" }}
         </p>
-        <p class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300">
-          $&nbsp;{{ valuesConvertedToDollars[i] | number:'1.0-0' }}
+        <p
+          class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
+        >
+          $&nbsp;{{ valuesConvertedToDollars[i] | number : "1.0-0" }}
         </p>
       </ng-container>
       <ng-template #countOnly>
-        <p class="text-center text-lg font-bold text-green-700 dark:text-green-400">
+        <p
+          class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+        >
           {{ summaryContent[i] }}
         </p>
       </ng-template>
