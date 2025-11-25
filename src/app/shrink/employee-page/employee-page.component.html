@@ -1627,7 +1627,7 @@
           </h5>
         </div>
 
-        <div class="flex items-center">
+        <div class="flex items-center" *ngIf="!auth.isAdmin">
           <label for="simple-search" class="sr-only">Chercher</label>
           <div class="relative w-48 sm:w-56">
             <div
@@ -1665,7 +1665,7 @@
         </div>
       </div>
 
-      <div *ngIf="code?.trim() === paymentCode" class="p-4">
+      <div *ngIf="code?.trim() === paymentCode || auth.isAdmin" class="p-4">
         <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
           <li
             class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
