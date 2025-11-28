@@ -78,7 +78,8 @@ export class AuthService {
         } else {
           return of(null);
         }
-      })
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
 
     this.cardsRefs = this.fireauth.authState.pipe(
@@ -90,7 +91,8 @@ export class AuthService {
         } else {
           return of(null);
         }
-      })
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
     this.employeesRef$ = this.fireauth.authState.pipe(
       switchMap((user) => {
@@ -101,7 +103,8 @@ export class AuthService {
         } else {
           return of(null);
         }
-      })
+      }),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
 
     // this.managementRef$ = this.fireauth.authState.pipe(

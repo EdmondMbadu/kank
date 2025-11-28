@@ -28,7 +28,8 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/manifest.webmanifest"
             ],
             "styles": [
               "src/styles.css"
@@ -37,13 +38,15 @@
           },
           "configurations": {
             "production": {
-             "optimization": true,
+              "serviceWorker": true,
+              "ngswConfigPath": "ngsw-config.json",
+              "optimization": true,
               "aot": true,
               "buildOptimizer": true,
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
+                  "maximumWarning": "520kb",
                   "maximumError": "10mb"
                 },
                 {

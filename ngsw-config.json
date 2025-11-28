@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon.ico",
+          "/*.html",
+          "/*.css",
+          "/*.js"
+        ]
+      }
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/assets/**",
+          "/*.(png|jpg|jpeg|webp|svg)"
+        ]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "firebase-apis",
+      "urls": [
+        "https://firestore.googleapis.com/**",
+        "https://firebasestorage.googleapis.com/**",
+        "https://identitytoolkit.googleapis.com/**",
+        "https://securetoken.googleapis.com/**"
+      ],
+      "cacheConfig": {
+        "maxSize": 100,
+        "maxAge": "6h",
+        "strategy": "freshness",
+        "timeout": "10s"
+      }
+    }
+  ]
+}

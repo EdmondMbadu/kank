@@ -186,7 +186,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    AngularFirestoreModule,
+    AngularFirestoreModule.enablePersistence({ synchronizeTabs: true }),
     AngularFireAuthModule,
     AngularFireStorageModule,
     AngularFireFunctionsModule,

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Card } from 'src/app/models/card';
 import { AuthService } from 'src/app/services/auth.service';
@@ -10,6 +10,7 @@ import { TimeService } from 'src/app/services/time.service';
   selector: 'app-new-card',
   templateUrl: './new-card.component.html',
   styleUrls: ['./new-card.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NewCardComponent implements OnInit {
   constructor(
