@@ -797,6 +797,7 @@ export class DataService {
       vacationAcceptedNumberOfDays: employee.vacationAcceptedNumberOfDays,
       arrivalHour: employee.arrivalHour,
       arrivalMinute: employee.arrivalMinute,
+      originLocation: employee.originLocation || '',
     };
 
     // Handle trophy arrays - filter out empty trophies and include only valid ones

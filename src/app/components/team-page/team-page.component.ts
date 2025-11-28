@@ -83,6 +83,7 @@ export class TeamPageComponent implements OnInit {
   displayEditEmployee: boolean = false;
   agentClientMap: any = {};
   vacation: number = 0;
+  originLocation: string = '';
 
   toggleAddNewEmployee() {
     this.displayAddNewEmployee = !this.displayAddNewEmployee;
@@ -668,14 +669,18 @@ export class TeamPageComponent implements OnInit {
    * Check if employee has best team trophies
    */
   hasBestTeamTrophy(employee: Employee): boolean {
-    return !!(employee.bestTeamTrophies && employee.bestTeamTrophies.length > 0);
+    return !!(
+      employee.bestTeamTrophies && employee.bestTeamTrophies.length > 0
+    );
   }
 
   /**
    * Check if employee has best employee trophies
    */
   hasBestEmployeeTrophy(employee: Employee): boolean {
-    return !!(employee.bestEmployeeTrophies && employee.bestEmployeeTrophies.length > 0);
+    return !!(
+      employee.bestEmployeeTrophies && employee.bestEmployeeTrophies.length > 0
+    );
   }
 
   /**
@@ -684,11 +689,24 @@ export class TeamPageComponent implements OnInit {
   getTrophyDate(trophy: Trophy): string {
     if (!trophy || !trophy.month || !trophy.year) return '';
     const monthNames = [
-      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
     ];
     const monthIndex = parseInt(trophy.month, 10) - 1;
-    const monthName = monthIndex >= 0 && monthIndex < 12 ? monthNames[monthIndex] : trophy.month;
+    const monthName =
+      monthIndex >= 0 && monthIndex < 12
+        ? monthNames[monthIndex]
+        : trophy.month;
     return `${monthName} ${trophy.year}`;
   }
 
@@ -767,9 +785,9 @@ export class TeamPageComponent implements OnInit {
    */
   getModalTrophies(): Trophy[] {
     if (!this.trophyModalEmployee || !this.trophyModalType) return [];
-    return this.trophyModalType === 'team' 
-      ? (this.trophyModalEmployee.bestTeamTrophies || [])
-      : (this.trophyModalEmployee.bestEmployeeTrophies || []);
+    return this.trophyModalType === 'team'
+      ? this.trophyModalEmployee.bestTeamTrophies || []
+      : this.trophyModalEmployee.bestEmployeeTrophies || [];
   }
 
   /**
@@ -777,7 +795,9 @@ export class TeamPageComponent implements OnInit {
    */
   getModalTitle(): string {
     if (!this.trophyModalType) return '';
-    return this.trophyModalType === 'team' ? 'Trophées Meilleure Équipe' : 'Trophées Meilleur Employé';
+    return this.trophyModalType === 'team'
+      ? 'Trophées Meilleure Équipe'
+      : 'Trophées Meilleur Employé';
   }
 
   /**
@@ -788,10 +808,13 @@ export class TeamPageComponent implements OnInit {
     if (!employee.bestTeamTrophies || employee.bestTeamTrophies.length === 0) {
       employee.bestTeamTrophies = [];
       // Check for old format fields
-      if ((employee as any).bestTeamTrophyMonth && (employee as any).bestTeamTrophyYear) {
+      if (
+        (employee as any).bestTeamTrophyMonth &&
+        (employee as any).bestTeamTrophyYear
+      ) {
         employee.bestTeamTrophies.push({
           month: (employee as any).bestTeamTrophyMonth,
-          year: (employee as any).bestTeamTrophyYear
+          year: (employee as any).bestTeamTrophyYear,
         });
         // Clear old fields (they'll be removed on next save)
         delete (employee as any).bestTeamTrophyMonth;
@@ -800,13 +823,19 @@ export class TeamPageComponent implements OnInit {
     }
 
     // Migrate best employee trophy
-    if (!employee.bestEmployeeTrophies || employee.bestEmployeeTrophies.length === 0) {
+    if (
+      !employee.bestEmployeeTrophies ||
+      employee.bestEmployeeTrophies.length === 0
+    ) {
       employee.bestEmployeeTrophies = [];
       // Check for old format fields
-      if ((employee as any).bestEmployeeTrophyMonth && (employee as any).bestEmployeeTrophyYear) {
+      if (
+        (employee as any).bestEmployeeTrophyMonth &&
+        (employee as any).bestEmployeeTrophyYear
+      ) {
         employee.bestEmployeeTrophies.push({
           month: (employee as any).bestEmployeeTrophyMonth,
-          year: (employee as any).bestEmployeeTrophyYear
+          year: (employee as any).bestEmployeeTrophyYear,
         });
         // Clear old fields (they'll be removed on next save)
         delete (employee as any).bestEmployeeTrophyMonth;
@@ -824,9 +853,12 @@ export class TeamPageComponent implements OnInit {
       return;
     }
 
-    const employeeName = `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Cet employé';
-    const clientCount = employee.currentClients?.length || employee.clients?.length || 0;
-    
+    const employeeName =
+      `${employee.firstName || ''} ${employee.lastName || ''}`.trim() ||
+      'Cet employé';
+    const clientCount =
+      employee.currentClients?.length || employee.clients?.length || 0;
+
     let confirmMessage = `Êtes-vous sûr de vouloir supprimer définitivement ${employeeName} ?\n\n`;
     if (clientCount > 0) {
       confirmMessage += `⚠️ ATTENTION : Cet employé a ${clientCount} client(s) assigné(s).\n`;
@@ -846,19 +878,21 @@ export class TeamPageComponent implements OnInit {
       }
 
       await this.auth.deleteEmployee(userId, employee.uid);
-      
+
       // Remove from local array
       this.employees.splice(index, 1);
       this.displayEditEmployees = new Array(this.employees.length).fill(false);
-      
+
       alert(`${employeeName} a été supprimé avec succès.`);
-      
+
       // Refresh the list
       this.retreiveClients();
     } catch (error: any) {
       console.error('Error deleting employee:', error);
       alert(
-        `Une erreur s'est produite lors de la suppression de l'employé. ${error?.message || ''}`
+        `Une erreur s'est produite lors de la suppression de l'employé. ${
+          error?.message || ''
+        }`
       );
     }
   }
@@ -869,7 +903,7 @@ export class TeamPageComponent implements OnInit {
   async convertRotationToDefinitive(employee: Employee): Promise<void> {
     const currentUserId = this.auth.currentUser?.uid;
     if (!employee.uid || !currentUserId) {
-      alert("Impossible de convertir cet employé. Informations manquantes.");
+      alert('Impossible de convertir cet employé. Informations manquantes.');
       return;
     }
 
@@ -887,13 +921,10 @@ export class TeamPageComponent implements OnInit {
         employeeName: `${employee.firstName} ${employee.lastName}`,
         currentUserId: currentUserId,
         isRotation: employee.isRotation,
-        rotationSourceLocationId: employee.rotationSourceLocationId
+        rotationSourceLocationId: employee.rotationSourceLocationId,
       });
 
-      await this.auth.convertRotationToDefinitive(
-        currentUserId,
-        employee.uid
-      );
+      await this.auth.convertRotationToDefinitive(currentUserId, employee.uid);
 
       // Reload employees to reflect the change
       this.retrieveEmployees();
@@ -908,7 +939,7 @@ export class TeamPageComponent implements OnInit {
       console.error('Parameters used:', {
         userId: currentUserId,
         employeeId: employee.uid,
-        employeeName: `${employee.firstName} ${employee.lastName}`
+        employeeName: `${employee.firstName} ${employee.lastName}`,
       });
       console.error('================================================');
       alert(

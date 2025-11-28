@@ -87,6 +87,8 @@ export class Employee {
   // 🆕 Daily payments ranking (transient)
   _dailyTotal?: number;
   _dailyCount?: number;
+
+  originLocation?: string;
 }
 export class Avatar {
   path?: string;
