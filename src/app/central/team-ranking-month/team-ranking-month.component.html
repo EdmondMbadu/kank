@@ -498,8 +498,17 @@
               </div>
 
               <div class="text-xs text-gray-500 mt-0.5 truncate">
-                Rôle: {{ em.role || "Employé" }} • Lieu:
-                {{ em.tempLocationHolder }}
+                Rôle: {{ em.role || "Employé" }}
+                <span *ngIf="em.originLocation && em.tempLocationHolder">
+                  · {{ em.originLocation }} en rotation à
+                  {{ em.tempLocationHolder }}
+                </span>
+                <span *ngIf="em.originLocation && !em.tempLocationHolder">
+                  · {{ em.originLocation }} en rotation
+                </span>
+                <span *ngIf="!em.originLocation && em.tempLocationHolder">
+                  · {{ em.tempLocationHolder }}
+                </span>
                 <span *ngIf="em.phoneNumber"> • {{ em.phoneNumber }}</span>
               </div>
             </div>
@@ -734,7 +743,17 @@
                 </span>
               </div>
               <div class="text-[11px] text-gray-500 truncate">
-                {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
+                {{ em.role || "Employé" }}
+                <span *ngIf="em.originLocation && em.tempLocationHolder">
+                  · {{ em.originLocation }} en rotation à
+                  {{ em.tempLocationHolder }}
+                </span>
+                <span *ngIf="em.originLocation && !em.tempLocationHolder">
+                  · {{ em.originLocation }} en rotation
+                </span>
+                <span *ngIf="!em.originLocation && em.tempLocationHolder">
+                  · {{ em.tempLocationHolder }}
+                </span>
               </div>
             </div>
           </div>
@@ -829,7 +848,17 @@
                   </span>
                 </div>
                 <div class="text-xs text-gray-500 truncate">
-                  {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
+                  {{ em.role || "Employé" }}
+                  <span *ngIf="em.originLocation && em.tempLocationHolder">
+                    · {{ em.originLocation }} en rotation à
+                    {{ em.tempLocationHolder }}
+                  </span>
+                  <span *ngIf="em.originLocation && !em.tempLocationHolder">
+                    · {{ em.originLocation }} en rotation
+                  </span>
+                  <span *ngIf="!em.originLocation && em.tempLocationHolder">
+                    · {{ em.tempLocationHolder }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1029,9 +1058,19 @@
                   Rotation
                 </span>
               </div>
-              <div class="text-[11px] text-gray-500 truncate">
-                {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
-              </div>
+                <div class="text-[11px] text-gray-500 truncate">
+                  {{ em.role || "Employé" }}
+                  <span *ngIf="em.originLocation && em.tempLocationHolder">
+                    · {{ em.originLocation }} en rotation à
+                    {{ em.tempLocationHolder }}
+                  </span>
+                  <span *ngIf="em.originLocation && !em.tempLocationHolder">
+                    · {{ em.originLocation }} en rotation
+                  </span>
+                  <span *ngIf="!em.originLocation && em.tempLocationHolder">
+                    · {{ em.tempLocationHolder }}
+                  </span>
+                </div>
             </div>
           </div>
 
@@ -1141,7 +1180,17 @@
                   </span>
                 </div>
                 <div class="text-xs text-gray-500 truncate">
-                  {{ em.role || "Employé" }} · {{ em.tempLocationHolder }}
+                  {{ em.role || "Employé" }}
+                  <span *ngIf="em.originLocation && em.tempLocationHolder">
+                    · {{ em.originLocation }} en rotation à
+                    {{ em.tempLocationHolder }}
+                  </span>
+                  <span *ngIf="em.originLocation && !em.tempLocationHolder">
+                    · {{ em.originLocation }} en rotation
+                  </span>
+                  <span *ngIf="!em.originLocation && em.tempLocationHolder">
+                    · {{ em.tempLocationHolder }}
+                  </span>
                 </div>
               </div>
             </div>

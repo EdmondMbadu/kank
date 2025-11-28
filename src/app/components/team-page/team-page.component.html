@@ -241,10 +241,18 @@
           </div>
 
           <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Role : <strong>{{ em.role }}</strong>
-          </p>
-          <p class="mt-1 text-sm text-gray-500 dark:text-white" *ngIf="em.originLocation">
-            Origine : <strong>{{ em.originLocation }}</strong>
+            Role :
+            <strong>{{ em.role }}</strong>
+            <span *ngIf="em.originLocation && em.tempLocationHolder">
+              · {{ em.originLocation }} en rotation à
+              {{ em.tempLocationHolder }}
+            </span>
+            <span *ngIf="em.originLocation && !em.tempLocationHolder">
+              · {{ em.originLocation }} en rotation
+            </span>
+            <span *ngIf="!em.originLocation && em.tempLocationHolder">
+              · {{ em.tempLocationHolder }}
+            </span>
           </p>
           <p class="mt-1 text-sm text-gray-500 dark:text-white">
             # Clients suivi : {{ em.currentClients?.length }}
