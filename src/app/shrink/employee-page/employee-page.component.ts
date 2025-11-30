@@ -238,6 +238,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   auditSearch = '';
   auditNewAmount: number | null = null;
   private auditSel = '';
+  showAllAuditReceipts = false; // For admin to expand and see all receipts
+  showAllPayments = false; // For admin to expand and see all payments
   @ViewChild('auditFileInput') auditFileInput!: ElementRef<HTMLInputElement>;
 
   requestDate: string = '';
@@ -381,6 +383,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.createEmptyPerformanceGraph();
   /* ─── Fetch on init ─────────────────────────────── */
   private loadAuditReceipts() {
+    // Always load 50 for admin (they can expand to see all), 2 for non-admin
     const limit = this.auth.isAdmin ? 50 : 2;
     this.afs
       .collection(`users/${this.employee.uid}/auditReceipts`, (ref) =>
@@ -1013,6 +1016,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.time.convertTimeFormat(entry[0])
       );
     }
+  }
+
+  /* ─── helper to get filtered payments for display ─────────────────────── */
+  getFilteredPayments() {
+    const limit = (!this.auth.isAdmin || !this.showAllPayments) ? 2 : this.paymentAmounts.length;
+    return Array.from({ length: Math.min(limit, this.paymentAmounts.length) }, (_, i) => i);
   }
   togglePaymentCheckVisible() {
     this.paymentCheckVisible =
@@ -2306,7 +2315,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         !this.auditSearch ||
         r.frenchDate.toLowerCase().includes(this.auditSearch.toLowerCase())
     );
-    return this.auth.isAdmin ? list : list.slice(0, 2);
+    // Non-admin always sees only 2
+    if (!this.auth.isAdmin) {
+      return list.slice(0, 2);
+    }
+    // Admin sees 2 initially, all if expanded
+    return this.showAllAuditReceipts ? list : list.slice(0, 2);
   }
 
   /* ─── upload new receipt ───────────────────────── */

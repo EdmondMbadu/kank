@@ -1596,6 +1596,26 @@
           </li>
         </ul>
 
+        <!-- See more button for admin -->
+        <div *ngIf="auth.isAdmin && auditReceipts.length > 2 && !showAllAuditReceipts" class="mt-4 flex justify-center">
+          <button
+            (click)="showAllAuditReceipts = true"
+            class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          >
+            Voir plus
+          </button>
+        </div>
+
+        <!-- See less button for admin -->
+        <div *ngIf="auth.isAdmin && auditReceipts.length > 2 && showAllAuditReceipts" class="mt-4 flex justify-center">
+          <button
+            (click)="showAllAuditReceipts = false"
+            class="px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+          >
+            Voir moins
+          </button>
+        </div>
+
         <input
           type="file"
           #auditFileInput
@@ -1669,7 +1689,7 @@
         <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
           <li
             class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
-            *ngFor="let p of paymentAmounts; let i = index"
+            *ngFor="let i of getFilteredPayments()"
           >
             <div class="flex items-center gap-4 px-1">
               <div
@@ -1766,6 +1786,26 @@
             </div>
           </li>
         </ul>
+
+        <!-- See more button for admin -->
+        <div *ngIf="auth.isAdmin && paymentAmounts.length > 2 && !showAllPayments" class="mt-4 flex justify-center">
+          <button
+            (click)="showAllPayments = true"
+            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Voir plus
+          </button>
+        </div>
+
+        <!-- See less button for admin -->
+        <div *ngIf="auth.isAdmin && paymentAmounts.length > 2 && showAllPayments" class="mt-4 flex justify-center">
+          <button
+            (click)="showAllPayments = false"
+            class="px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+          >
+            Voir moins
+          </button>
+        </div>
       </div>
 
       <input
