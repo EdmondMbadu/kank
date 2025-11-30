@@ -766,7 +766,8 @@ export class AuthService {
       currentTotalPoints: 0,
       // Set rotation fields
       isRotation: isRotation,
-      rotationSourceLocationId: isRotation ? sourceUserId : undefined,
+      // Only include rotationSourceLocationId for rotations (not for affectations)
+      ...(isRotation && { rotationSourceLocationId: sourceUserId }),
     };
 
     // Save the copied employee

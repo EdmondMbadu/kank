@@ -1160,7 +1160,7 @@
             class="w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white
                    hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed
                    transition-colors"
-            [disabled]="sendingMessage || !objModal.phoneNumber?.trim()"
+            [disabled]="sendingMessage || !objModal.phoneNumber.trim()"
             (click)="sendMessage()">
             {{ sendingMessage ? 'Envoi en cours…' : 'Envoyer le message' }}
           </button>
