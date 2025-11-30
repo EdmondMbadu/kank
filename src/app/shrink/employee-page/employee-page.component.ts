@@ -1020,7 +1020,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   /* ─── helper to get filtered payments for display ─────────────────────── */
   getFilteredPayments() {
-    const limit = (!this.auth.isAdmin || !this.showAllPayments) ? 2 : this.paymentAmounts.length;
+    // All users (admin and non-admin) see 2 initially, all if expanded
+    const limit = !this.showAllPayments ? 2 : this.paymentAmounts.length;
     return Array.from({ length: Math.min(limit, this.paymentAmounts.length) }, (_, i) => i);
   }
   togglePaymentCheckVisible() {

@@ -1787,8 +1787,8 @@
           </li>
         </ul>
 
-        <!-- See more button for admin -->
-        <div *ngIf="auth.isAdmin && paymentAmounts.length > 2 && !showAllPayments" class="mt-4 flex justify-center">
+        <!-- See more button for all users -->
+        <div *ngIf="paymentAmounts.length > 2 && !showAllPayments" class="mt-4 flex justify-center">
           <button
             (click)="showAllPayments = true"
             class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -1797,8 +1797,8 @@
           </button>
         </div>
 
-        <!-- See less button for admin -->
-        <div *ngIf="auth.isAdmin && paymentAmounts.length > 2 && showAllPayments" class="mt-4 flex justify-center">
+        <!-- See less button for all users -->
+        <div *ngIf="paymentAmounts.length > 2 && showAllPayments" class="mt-4 flex justify-center">
           <button
             (click)="showAllPayments = false"
             class="px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
