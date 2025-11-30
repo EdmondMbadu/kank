@@ -14,6 +14,7 @@ import { Employee } from 'src/app/models/employee';
 import { LocationCred } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { PerformanceService } from 'src/app/services/performance.service';
+import { MessagingService } from 'src/app/services/messaging.service';
 
 type TFEntry = { loc: string; employees: string[] }; // keep UIDs
 type TFCell = { iso: string; entries?: TFEntry[] };
@@ -123,6 +124,7 @@ mot de passe: ${loc.password ?? '—'}`;
     bullets: [] as string[],
     textarea: '',
     cred: null as LocationCred | null, // 👈 add
+    phoneNumber: '', // 👈 phone number for SMS (prefilled but editable)
   };
 
   savingObj = false;
@@ -226,7 +228,8 @@ mot de passe: ${loc.password ?? '—'}`;
     private rs: PerformanceService,
     public auth: AuthService,
     private zone: NgZone, // ① add
-    private cdr: ChangeDetectorRef // ② add
+    private cdr: ChangeDetectorRef, // ② add
+    private messaging: MessagingService
   ) {} // or your renamed service
 
   private chooseDefaultLocation(list: string[]): string {
@@ -1011,6 +1014,7 @@ mot de passe: ${loc.password ?? '—'}`;
       bullets: [...bullets],
       textarea: bullets.join('\n'),
       cred: this.findCredByLocation(location), // 👈 add
+      phoneNumber: employee?.phoneNumber || '', // 👈 prefilled phone number
     };
     this.cdr.markForCheck();
   }
@@ -1052,6 +1056,73 @@ mot de passe: ${loc.password ?? '—'}`;
       this.closeObjectives();
     } finally {
       this.savingObj = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  // Build message with Apercu, email, password, and link
+  buildMessageContent(): string {
+    const employee = this.objModal.employee;
+    const cred = this.objModal.cred;
+    const location = this.objModal.location;
+    const bullets = this.previewBullets(this.objModal.textarea);
+    
+    let message = `🎯 Objectifs — ${employee?.firstName || ''} ${employee?.lastName || ''}\n`;
+    message += `Semaine ${this.objModal.weekId} — Lieu : ${location}\n\n`;
+    
+    // Add credentials section
+    message += `Rotation : ${cred?.name || location}\n`;
+    message += `============\n`;
+    message += `Lien: https://kank-4bbbc.web.app/\n\n`;
+    message += `Email: ${cred?.email || '—'}\n`;
+    message += `Mot de passe: ${cred?.password || '—'}\n\n`;
+    
+    // Add Apercu (objectives)
+    if (bullets.length > 0) {
+      message += `Aperçu:\n`;
+      bullets.forEach(bullet => {
+        message += `• ${bullet}\n`;
+      });
+    } else {
+      message += `Aperçu: — Aucun point —\n`;
+    }
+    
+    return message;
+  }
+
+  sendingMessage = false;
+  messageError = '';
+
+  async sendMessage() {
+    if (!this.objModal.visible || !this.objModal.employee) return;
+    
+    const phoneNumber = (this.objModal.phoneNumber || '').trim();
+    if (!phoneNumber) {
+      this.messageError = 'Le numéro de téléphone est requis';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.sendingMessage = true;
+    this.messageError = '';
+    this.cdr.markForCheck();
+
+    try {
+      const message = this.buildMessageContent();
+      await this.messaging.sendCustomSMS(phoneNumber, message, {
+        type: 'rotation_objectives',
+        employeeId: this.objModal.employee.uid,
+        weekId: this.objModal.weekId,
+        location: this.objModal.location,
+      });
+      
+      this.liveMsg = `Message envoyé à ${phoneNumber}`;
+      setTimeout(() => (this.liveMsg = ''), 3000);
+    } catch (err: any) {
+      this.messageError = err?.message || 'Erreur lors de l\'envoi du message';
+      console.error('Error sending SMS:', err);
+    } finally {
+      this.sendingMessage = false;
       this.cdr.markForCheck();
     }
   }
