@@ -1060,38 +1060,25 @@ mot de passe: ${loc.password ?? '—'}`;
     }
   }
 
-  // Build message with Apercu, email, password, and link
+  // Build message with only Apercu (objectives)
   buildMessageContent(): string {
-    const employee = this.objModal.employee;
-    const cred = this.objModal.cred;
-    const location = this.objModal.location;
     const bullets = this.previewBullets(this.objModal.textarea);
     
-    let message = `🎯 Objectifs — ${employee?.firstName || ''} ${employee?.lastName || ''}\n`;
-    message += `Semaine ${this.objModal.weekId} — Lieu : ${location}\n\n`;
-    
-    // Add credentials section
-    message += `Rotation : ${cred?.name || location}\n`;
-    message += `============\n`;
-    message += `Lien: https://kank-4bbbc.web.app/\n\n`;
-    message += `Email: ${cred?.email || '—'}\n`;
-    message += `Mot de passe: ${cred?.password || '—'}\n\n`;
-    
-    // Add Apercu (objectives)
+    // Only include the Apercu (objectives)
     if (bullets.length > 0) {
-      message += `Aperçu:\n`;
+      let message = '';
       bullets.forEach(bullet => {
         message += `• ${bullet}\n`;
       });
+      return message.trim();
     } else {
-      message += `Aperçu: — Aucun point —\n`;
+      return '— Aucun point —';
     }
-    
-    return message;
   }
 
   sendingMessage = false;
   messageError = '';
+  messageSuccess = '';
 
   async sendMessage() {
     if (!this.objModal.visible || !this.objModal.employee) return;
@@ -1099,12 +1086,14 @@ mot de passe: ${loc.password ?? '—'}`;
     const phoneNumber = (this.objModal.phoneNumber || '').trim();
     if (!phoneNumber) {
       this.messageError = 'Le numéro de téléphone est requis';
+      this.messageSuccess = '';
       this.cdr.markForCheck();
       return;
     }
 
     this.sendingMessage = true;
     this.messageError = '';
+    this.messageSuccess = '';
     this.cdr.markForCheck();
 
     try {
@@ -1116,10 +1105,16 @@ mot de passe: ${loc.password ?? '—'}`;
         location: this.objModal.location,
       });
       
-      this.liveMsg = `Message envoyé à ${phoneNumber}`;
-      setTimeout(() => (this.liveMsg = ''), 3000);
+      this.messageSuccess = `✓ Message envoyé avec succès à ${phoneNumber}`;
+      this.messageError = '';
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        this.messageSuccess = '';
+        this.cdr.markForCheck();
+      }, 5000);
     } catch (err: any) {
-      this.messageError = err?.message || 'Erreur lors de l\'envoi du message';
+      this.messageError = `✗ Erreur: ${err?.message || 'Erreur lors de l\'envoi du message'}`;
+      this.messageSuccess = '';
       console.error('Error sending SMS:', err);
     } finally {
       this.sendingMessage = false;
