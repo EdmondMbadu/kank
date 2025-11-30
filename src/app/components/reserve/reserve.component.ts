@@ -26,6 +26,7 @@ export class ReserveComponent {
   tooltipMessage: string = '';
   tooltipColor: string = ''; // 'tooltip-red' or 'tooltip-green', etc.
   dailyPercentage: number = 0; // Will store (daily sum / expected) * 100
+  isLoading: boolean = false; // Loading state to prevent double submissions
 
   constructor(
     public auth: AuthService,
@@ -47,6 +48,11 @@ export class ReserveComponent {
    * Called when user clicks the "Ajouter" button to add a reserve amount.
    */
   async addToReserve() {
+    // Prevent double submission
+    if (this.isLoading) {
+      return;
+    }
+
     if (this.reserveAmount === '') {
       alert('Remplissez toutes les données!');
       return;
@@ -59,8 +65,11 @@ export class ReserveComponent {
       );
       if (!conf) return;
 
+      // Set loading state
+      this.isLoading = true;
+
       try {
-        // 1. Update the user’s reserve info
+        // 1. Update the user's reserve info
         const userInfo = await this.data.updateUserInfoForAddToReserve(
           this.reserveAmount
         );
@@ -79,18 +88,25 @@ export class ReserveComponent {
 
         // this.getCurrentUserReserve();
         this.showDailyReserveTooltip();
+        // Reset loading state since operation is complete
+        this.isLoading = false;
 
         // If you still want to navigate away, do so after the tooltip has shown:
         // setTimeout(() => {
         //   this.router.navigate(['/home']);
         // }, 6000);
 
-        // Or navigate immediately if that’s your desired flow:
+        // Or navigate immediately if that's your desired flow:
         // this.router.navigate(['/home']);
       } catch (err: any) {
         alert("Une erreur s'est produite lors de l'initialization, Réessayez");
         console.log('error occurred while entering reserve amount', err);
+        this.isLoading = false; // Reset loading state on error
         return;
+      } finally {
+        // Reset loading state after completion (success or error)
+        // Note: We don't reset it here on success because the tooltip will handle navigation
+        // But we reset it in the catch block for errors
       }
     }
   }

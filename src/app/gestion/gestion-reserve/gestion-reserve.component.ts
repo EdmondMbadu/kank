@@ -18,6 +18,7 @@ export class GestionReserveComponent {
   reserveDates: string[] = [];
   currentUser: any = {};
   managementInfo?: Management = {};
+  isLoading: boolean = false; // Loading state to prevent double submissions
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -32,6 +33,11 @@ export class GestionReserveComponent {
   }
 
   async addToReserve() {
+    // Prevent double submission
+    if (this.isLoading) {
+      return;
+    }
+
     if (this.reserveAmount === '') {
       alert('Fill all fields!');
       return;
@@ -45,6 +51,10 @@ export class GestionReserveComponent {
       if (!conf) {
         return;
       }
+
+      // Set loading state
+      this.isLoading = true;
+
       try {
         const updateManagement =
           await this.data.updateManagementInfoForAddToReserve(
@@ -54,6 +64,7 @@ export class GestionReserveComponent {
       } catch (err: any) {
         alert("Une erreur s'est produite lors de l'initialization, Réessayez");
         console.log('error ocorred while entering reserve amount', err);
+        this.isLoading = false; // Reset loading state on error
         return;
       }
     }
