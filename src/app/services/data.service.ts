@@ -1246,6 +1246,104 @@ export class DataService {
     return managementRef.set(data, { merge: true });
   }
 
+  /**
+   * Atomically updates both the user's reserve and management reserve in a single transaction.
+   * Ensures that either both updates succeed or neither does - preventing partial updates
+   * due to network issues.
+   *
+   * @param amount - The amount in Congolese Francs to add to reserve
+   * @param includeManagement - Whether to also update the management document (false for testing mode)
+   */
+  async atomicAddToReserve(
+    amount: string,
+    includeManagement: boolean
+  ): Promise<void> {
+    const db = this.afs.firestore;
+    const amountNum = Number(amount);
+    const dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const dateKey = this.time.todaysDate();
+
+    // Document references
+    const userRef = this.afs.doc(`users/${this.auth.currentUser.uid}`).ref;
+    const managementRef = includeManagement
+      ? this.afs.doc(`management/${this.auth.managementInfo.id}`).ref
+      : null;
+
+    return db.runTransaction(async (tx) => {
+      // ===== READS =====
+      const userSnap = await tx.get(userRef);
+      const userData = userSnap.data() as User;
+
+      let managementData: Management | null = null;
+      if (managementRef) {
+        const managementSnap = await tx.get(managementRef);
+        managementData = managementSnap.data() as Management;
+      }
+
+      // ===== COMPUTE NEW VALUES =====
+      // User values
+      const newReserveAmount = (
+        Number(userData.reserveAmount || 0) + amountNum
+      ).toString();
+      const newReserveAmountDollar = (
+        Number(userData.reserveAmountDollar || 0) + Number(dollar)
+      ).toString();
+      const newUserMoneyInHands = (
+        Number(userData.moneyInHands || 0) - amountNum
+      ).toString();
+
+      // Merge reserve map entries
+      const existingReserve = userData.reserve || {};
+      const existingReserveKey = existingReserve[dateKey];
+      const newReserveValue = existingReserveKey
+        ? (Number(existingReserveKey) + amountNum).toString()
+        : amount;
+
+      const existingReserveDollar = userData.reserveinDollar || {};
+      const existingDollarKey = existingReserveDollar[dateKey];
+      const newDollarValue = existingDollarKey
+        ? (Number(existingDollarKey) + Number(dollar)).toString()
+        : dollar.toString();
+
+      // ===== WRITES =====
+      // Update user document
+      tx.set(
+        userRef,
+        {
+          reserveAmount: newReserveAmount,
+          reserveAmountDollar: newReserveAmountDollar,
+          moneyInHands: newUserMoneyInHands,
+          reserve: { [dateKey]: newReserveValue },
+          reserveinDollar: { [dateKey]: newDollarValue },
+        },
+        { merge: true }
+      );
+
+      // Update management document (if applicable)
+      if (managementRef && managementData) {
+        const newManagementMoneyInHands = (
+          Number(managementData.moneyInHands || 0) + amountNum
+        ).toString();
+
+        // Merge management reserve map entries
+        const existingMgmtReserve = managementData.reserve || {};
+        const existingMgmtReserveKey = existingMgmtReserve[dateKey];
+        const newMgmtReserveValue = existingMgmtReserveKey
+          ? (Number(existingMgmtReserveKey) + amountNum).toString()
+          : amount;
+
+        tx.set(
+          managementRef,
+          {
+            moneyInHands: newManagementMoneyInHands,
+            reserve: { [dateKey]: newMgmtReserveValue },
+          },
+          { merge: true }
+        );
+      }
+    });
+  }
+
   updateManagementInfoForAddToInvestment(amount: string) {
     const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
       `management/${this.auth.managementInfo.id}`

@@ -69,35 +69,20 @@ export class ReserveComponent {
       this.isLoading = true;
 
       try {
-        // 1. Update the user's reserve info
-        const userInfo = await this.data.updateUserInfoForAddToReserve(
-          this.reserveAmount
-        );
+        // Atomically update both user and management reserve info
+        // This ensures both succeed or neither does - preventing partial updates
+        const includeManagement = this.auth.currentUser.mode !== 'testing';
+        const addedAmount = this.reserveAmount; // Store before clearing
+        await this.data.atomicAddToReserve(addedAmount, includeManagement);
 
-        // 2. Update management info (unless in testing mode)
-        if (this.auth.currentUser.mode !== 'testing') {
-          await this.data.updateManagementInfoForAddToReserve(
-            this.reserveAmount
-          );
-        }
-
-        // 3. Because user$.subscribe will fire again after data changes,
-        //    you can let that trigger the tooltip. OR fetch updated user info
-        //    immediately. One simple approach is to call getCurrentUserReserve()
-        //    again, then show the tooltip:
-
-        // this.getCurrentUserReserve();
-        this.showDailyReserveTooltip();
         // Reset loading state since operation is complete
         this.isLoading = false;
 
-        // If you still want to navigate away, do so after the tooltip has shown:
-        // setTimeout(() => {
-        //   this.router.navigate(['/home']);
-        // }, 6000);
+        // Clear the input
+        this.reserveAmount = '';
 
-        // Or navigate immediately if that's your desired flow:
-        // this.router.navigate(['/home']);
+        // Show success tooltip immediately (gives Firebase time to sync before navigation)
+        this.showSuccessTooltip(addedAmount);
       } catch (err: any) {
         alert("Une erreur s'est produite lors de l'initialization, Réessayez");
         console.log('error occurred while entering reserve amount', err);
@@ -154,6 +139,57 @@ export class ReserveComponent {
     console.log('this.expectedReserve', this.expectedReserve);
   }
   /**
+   * Shows a success tooltip after adding to reserve.
+   * Always displays (regardless of expected value) to give Firebase time to sync.
+   * Includes percentage if we can calculate it.
+   */
+  showSuccessTooltip(addedAmount: string) {
+    const dailySum = this.calculateTodaySum() + Number(addedAmount); // Include the just-added amount
+    const expected = parseFloat(this.expectedReserve) || 0;
+
+    let mainMessage = '';
+    let percentageText = '';
+
+    if (expected > 0) {
+      this.dailyPercentage = (dailySum / expected) * 100;
+      percentageText = `Vous avez atteint ${this.dailyPercentage.toFixed(
+        0
+      )}% de l'objectif pour aujourd'hui. `;
+
+      if (this.dailyPercentage < 10) {
+        mainMessage = "C'est très faible. Redoublez d'efforts !";
+      } else if (this.dailyPercentage < 20) {
+        mainMessage = 'Un début, continuez pour augmenter le score !';
+      } else if (this.dailyPercentage < 40) {
+        mainMessage = 'Pas mal. Poursuivez vos efforts !';
+      } else if (this.dailyPercentage < 50) {
+        mainMessage = 'Presque à mi-chemin, courage !';
+      } else if (this.dailyPercentage < 70) {
+        mainMessage = 'Bien joué, continuez comme ça !';
+      } else {
+        mainMessage = 'Excellent travail, continuez comme ça !';
+      }
+
+      this.tooltipColor =
+        this.dailyPercentage < 50 ? 'tooltip-red' : 'tooltip-green';
+    } else {
+      // No expected value, just show success message
+      mainMessage = 'Montant ajouté avec succès !';
+      this.tooltipColor = 'tooltip-green';
+      this.dailyPercentage = 0;
+    }
+
+    this.tooltipMessage = `${addedAmount} FC ajouté à la réserve. ${percentageText}${mainMessage}`;
+    this.showTooltip = true;
+
+    // Wait 5 seconds to give Firebase time to sync, then navigate
+    setTimeout(() => {
+      this.showTooltip = false;
+      this.router.navigate(['/today']);
+    }, 5000);
+  }
+
+  /**
    * Sum today's reserve entries and compute daily percentage vs. expectedReserve.
    * Then set a custom French message, color, etc., and show a popup for 6s.
    */
@@ -163,7 +199,7 @@ export class ReserveComponent {
     const dailySum = this.calculateTodaySum();
     const expected = parseFloat(this.expectedReserve) || 0;
     if (expected === 0) {
-      // Possibly set some tooltip message like “0 expected for today”
+      // Possibly set some tooltip message like "0 expected for today"
       // or skip the tooltip but still navigate:
       this.router.navigate(['/today']);
       return;
@@ -175,7 +211,7 @@ export class ReserveComponent {
     //    We also embed the dailyPercentage with one decimal or no decimal.
     let mainMessage = '';
     if (this.dailyPercentage < 10) {
-      mainMessage = 'C’est très faible. Redoublez d’efforts !';
+      mainMessage = "C'est très faible. Redoublez d'efforts !";
     } else if (this.dailyPercentage < 20) {
       mainMessage = 'Un début, continuez pour augmenter le score !';
     } else if (this.dailyPercentage < 40) {
@@ -192,7 +228,7 @@ export class ReserveComponent {
     // e.g.: "Vous avez atteint 25% de l'objectif pour aujourd'hui..."
     this.tooltipMessage = `Vous avez atteint ${this.dailyPercentage.toFixed(
       0
-    )}% de l’objectif pour aujourd’hui. ${mainMessage}`;
+    )}% de l'objectif pour aujourd'hui. ${mainMessage}`;
 
     // 3) Color code (just picking a class name)
     this.tooltipColor =
