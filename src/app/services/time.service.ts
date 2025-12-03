@@ -335,6 +335,27 @@ export class TimeService {
     // Format the new date as a string
     return `${newMonth}-${newDay}-${newYear}`;
   }
+  getDateInFiveWeeksPlus(inputDate: string) {
+    // Parse the input date
+    let input = inputDate.split('-');
+    let month = parseInt(input[0], 10) - 1; // Months are zero-indexed in JavaScript
+    let day = parseInt(input[1], 10);
+    let year = parseInt(input[2], 10);
+
+    // Create a Date object
+    const date = new Date(year, month, day);
+
+    // Add 35 days to the date
+    date.setDate(date.getDate() + 35);
+
+    // Get the new date components
+    const newYear = date.getFullYear();
+    const newMonth = date.getMonth() + 1; // Convert back to one-indexed
+    const newDay = date.getDate();
+
+    // Format the new date as a string
+    return `${newMonth}-${newDay}-${newYear}`;
+  }
   getDateInNineWeeks(inputDate: string) {
     // Parse the input date
     let input = inputDate.split('-');
@@ -347,6 +368,27 @@ export class TimeService {
 
     // Add 35 days to the date
     date.setDate(date.getDate() + 56);
+
+    // Get the new date components
+    const newYear = date.getFullYear();
+    const newMonth = date.getMonth() + 1; // Convert back to one-indexed
+    const newDay = date.getDate();
+
+    // Format the new date as a string
+    return `${newMonth}-${newDay}-${newYear}`;
+  }
+  getDateInNineWeeksPlus(inputDate: string) {
+    // Parse the input date
+    let input = inputDate.split('-');
+    let month = parseInt(input[0], 10) - 1; // Months are zero-indexed in JavaScript
+    let day = parseInt(input[1], 10);
+    let year = parseInt(input[2], 10);
+
+    // Create a Date object
+    const date = new Date(year, month, day);
+
+    // Add 35 days to the date
+    date.setDate(date.getDate() + 63);
 
     // Get the new date components
     const newYear = date.getFullYear();

@@ -178,9 +178,9 @@ export class PaymentComponent {
       return this.client.creditScore;
     }
     if (Number(this.client.paymentPeriodRange) === 4) {
-      dateX = this.time.getDateInFiveWeeks(this.client.debtCycleStartDate!);
+      dateX = this.time.getDateInFiveWeeksPlus(this.client.debtCycleStartDate!);
     } else if (Number(this.client.paymentPeriodRange) === 8) {
-      dateX = this.time.getDateInNineWeeks(this.client.debtCycleStartDate!);
+      dateX = this.time.getDateInNineWeeksPlus(this.client.debtCycleStartDate!);
     }
     let today = this.time.todaysDateMonthDayYear();
     // +5 for finishing the payment anytime early or on the date
