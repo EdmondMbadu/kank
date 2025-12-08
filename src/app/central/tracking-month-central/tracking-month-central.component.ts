@@ -66,7 +66,7 @@ export class TrackingMonthCentralComponent {
     'Budget Emprunts Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
-  rankingMode: 'month' | 'year' = 'month';
+  rankingMode: 'month' | 'year' | 'all' = 'month';
   rankingYear: number = this.year;
   rankingComparisonYear: number = this.year - 1;
 
@@ -350,7 +350,7 @@ export class TrackingMonthCentralComponent {
     this.updateMiniGraphs();
   }
 
-  onRankingModeChange(mode: 'month' | 'year'): void {
+  onRankingModeChange(mode: 'month' | 'year' | 'all'): void {
     this.rankingMode = mode;
     this.rankingYear = this.givenYear;
     this.rankingComparisonYear = this.rankingYear - 1;
@@ -387,7 +387,13 @@ export class TrackingMonthCentralComponent {
     }
 
     const isYearMode = this.rankingMode === 'year';
-    const reserveMonthRaw = isYearMode
+    const isAllMode = this.rankingMode === 'all';
+    const reserveMonthRaw = isAllMode
+      ? this.compute.findTotalAllTimeForAllUsersSortedDescending(
+          this.allUsers,
+          'reserve'
+        )
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
           this.allUsers,
           'reserve',
@@ -400,7 +406,13 @@ export class TrackingMonthCentralComponent {
           this.reserveCurrentYear
         );
 
-    this.sortedReservePreviousMonth = isYearMode
+    this.sortedReservePreviousMonth = isAllMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'reserve',
+          this.rankingComparisonYear
+        )
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
           this.allUsers,
           'reserve',
@@ -415,7 +427,9 @@ export class TrackingMonthCentralComponent {
 
     // Calculate working days for average calculation
     const currentDate = new Date();
-    const workingDays = isYearMode
+    const workingDays = isAllMode
+      ? this.calculateWorkingDaysAllTime()
+      : isYearMode
       ? this.calculateWorkingDaysForYear(
           this.rankingYear,
           this.isCurrentYear(this.rankingYear)
@@ -466,7 +480,12 @@ export class TrackingMonthCentralComponent {
       };
     });
 
-    const reserveCurrentTotal = isYearMode
+    const reserveCurrentTotal = isAllMode
+      ? this.compute.findTotalAllTimeForAllUsers(
+          this.allUsers,
+          'reserve'
+        ) ?? 0
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsers(
           this.allUsers,
           'reserve',
@@ -478,7 +497,13 @@ export class TrackingMonthCentralComponent {
           this.reserveCurrentMonth,
           this.reserveCurrentYear
         ) ?? 0;
-    const reserveComparisonTotal = isYearMode
+    const reserveComparisonTotal = isAllMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'reserve',
+          this.rankingComparisonYear
+        ) ?? 0
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsers(
           this.allUsers,
           'reserve',
@@ -522,7 +547,13 @@ export class TrackingMonthCentralComponent {
     }
 
     const isYearMode = this.rankingMode === 'year';
-    const paymentCurrentRaw = isYearMode
+    const isAllMode = this.rankingMode === 'all';
+    const paymentCurrentRaw = isAllMode
+      ? this.compute.findTotalAllTimeForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyReimbursement'
+        )
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
           this.allUsers,
           'dailyReimbursement',
@@ -535,7 +566,13 @@ export class TrackingMonthCentralComponent {
           this.paymentCurrentYear
         );
 
-    const paymentPrevRaw = isYearMode
+    const paymentPrevRaw = isAllMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyReimbursement',
+          this.rankingComparisonYear
+        )
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
           this.allUsers,
           'dailyReimbursement',
@@ -550,7 +587,9 @@ export class TrackingMonthCentralComponent {
 
     // Calculate working days for average calculation
     const currentDate = new Date();
-    const paymentWorkingDays = isYearMode
+    const paymentWorkingDays = isAllMode
+      ? this.calculateWorkingDaysAllTime()
+      : isYearMode
       ? this.calculateWorkingDaysForYear(
           this.rankingYear,
           this.isCurrentYear(this.rankingYear)
@@ -606,7 +645,12 @@ export class TrackingMonthCentralComponent {
       };
     });
 
-    const paymentCurrentTotal = isYearMode
+    const paymentCurrentTotal = isAllMode
+      ? this.compute.findTotalAllTimeForAllUsers(
+          this.allUsers,
+          'dailyReimbursement'
+        ) ?? 0
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsers(
           this.allUsers,
           'dailyReimbursement',
@@ -618,7 +662,13 @@ export class TrackingMonthCentralComponent {
           this.paymentCurrentMonth,
           this.paymentCurrentYear
         ) ?? 0;
-    const paymentComparisonTotal = isYearMode
+    const paymentComparisonTotal = isAllMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'dailyReimbursement',
+          this.rankingComparisonYear
+        ) ?? 0
+      : isYearMode
       ? this.compute.findTotalGivenYearForAllUsers(
           this.allUsers,
           'dailyReimbursement',
@@ -986,6 +1036,22 @@ export class TrackingMonthCentralComponent {
     }
 
     return totalWorkingDays;
+  }
+
+  /**
+   * Calculate working days across all available yearsList up to current year.
+   */
+  private calculateWorkingDaysAllTime(): number {
+    const currentYear = new Date().getFullYear();
+    const minYear = this.yearsList.length ? Math.min(...this.yearsList) : currentYear;
+    let total = 0;
+    for (let year = minYear; year <= currentYear; year++) {
+      total += this.calculateWorkingDaysForYear(
+        year,
+        this.isCurrentYear(year)
+      );
+    }
+    return total;
   }
 
   /**

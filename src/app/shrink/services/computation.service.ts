@@ -650,6 +650,71 @@ export class ComputationService {
   }
 
   /**
+   * Aggregate totals across all available data (all time) and sort descending.
+   */
+  findTotalAllTimeForAllUsersSortedDescending(
+    users: User[],
+    field: UserDailyField
+  ): {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] {
+    const results: {
+      firstName: string;
+      totalReserve: number;
+      totalReserveInDollars: string;
+    }[] = [];
+
+    users.forEach((user) => {
+      let userTotal = 0;
+      const dailyData = user[field];
+      if (dailyData) {
+        for (const [, amount] of Object.entries(dailyData)) {
+          userTotal += parseInt(String(amount), 10);
+        }
+      }
+      if (userTotal > 0) {
+        const userTotalInDollars = this.convertCongoleseFrancToUsDollars(
+          userTotal.toString()
+        ).toString();
+        results.push({
+          firstName: user.firstName!,
+          totalReserve: userTotal,
+          totalReserveInDollars: userTotalInDollars,
+        });
+      }
+    });
+
+    results.sort(
+      (a, b) =>
+        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
+    );
+    return results;
+  }
+
+  /**
+   * Aggregate totals across all available data (all time).
+   */
+  findTotalAllTimeForAllUsers(
+    users: User[],
+    field: UserDailyField
+  ): string {
+    let total = 0;
+
+    users.forEach((user) => {
+      const dailyData = user[field];
+      if (dailyData) {
+        for (const [, amount] of Object.entries(dailyData)) {
+          total += parseInt(String(amount), 10);
+        }
+      }
+    });
+
+    return total.toString();
+  }
+
+  /**
    * Aggregate totals for a whole year per user and sort descending.
    */
   findTotalGivenYearForAllUsersSortedDescending(

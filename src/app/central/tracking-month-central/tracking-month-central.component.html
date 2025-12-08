@@ -234,6 +234,18 @@
         >
           Année
         </button>
+        <button
+          type="button"
+          class="rounded-full px-3 py-1.5 transition"
+          [ngClass]="
+            rankingMode === 'all'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200'
+              : 'text-slate-600 hover:text-emerald-600 dark:text-slate-200'
+          "
+          (click)="onRankingModeChange('all')"
+        >
+          Tout le temps
+        </button>
       </div>
 
       <div *ngIf="rankingMode === 'year'" class="flex flex-wrap items-center gap-2 text-sm">
@@ -262,6 +274,21 @@
           </select>
         </label>
       </div>
+
+      <div *ngIf="rankingMode === 'all'" class="flex flex-wrap items-center gap-2 text-sm">
+        <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/70 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+          <span class="text-slate-700 dark:text-slate-200">Comparé à (année)</span>
+          <select
+            [(ngModel)]="rankingComparisonYear"
+            (ngModelChange)="onRankingComparisonYearChange($event)"
+            class="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          >
+            <option *ngFor="let year of time.yearsList" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </label>
+      </div>
     </div>
   </div>
 </section>
@@ -275,7 +302,14 @@
     >
       <div class="mb-4">
         <h2 class="text-xl font-semibold tracking-tight dark:text-slate-100">
-          Classement {{ rankingMode === 'year' ? "de l'année" : 'Du Mois' }}
+          Classement
+          {{
+            rankingMode === 'year'
+              ? "de l'année"
+              : rankingMode === 'all'
+              ? 'Tout le temps'
+              : 'Du Mois'
+          }}
           <span
             class="ml-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
           >
@@ -284,7 +318,7 @@
               {{ reserveCurrentYear }})
             </ng-container>
             <ng-template #reserveYearLabel>
-              ({{ rankingYear }})
+              ({{ rankingMode === 'all' ? 'Depuis le début' : rankingYear }})
             </ng-template>
           </span>
         </h2>
@@ -598,7 +632,14 @@
     >
       <div class="mb-4">
         <h2 class="text-xl font-semibold tracking-tight dark:text-slate-100">
-          Classement Paiement {{ rankingMode === 'year' ? "de l'année" : 'Du Mois' }}
+          Classement Paiement
+          {{
+            rankingMode === 'year'
+              ? "de l'année"
+              : rankingMode === 'all'
+              ? 'Tout le temps'
+              : 'Du Mois'
+          }}
           <span
             class="ml-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
           >
@@ -607,7 +648,7 @@
               {{ paymentCurrentYear }})
             </ng-container>
             <ng-template #paymentYearLabel>
-              ({{ rankingYear }})
+              ({{ rankingMode === 'all' ? 'Depuis le début' : rankingYear }})
             </ng-template>
           </span>
         </h2>
