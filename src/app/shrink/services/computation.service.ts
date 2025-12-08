@@ -573,6 +573,34 @@ export class ComputationService {
     return total.toString();
   }
 
+  /**
+   * Aggregate a user's daily field for a whole year across every month.
+   * Keeps the string return type to align with existing monthly helpers.
+   */
+  findTotalGivenYearForAllUsers(
+    users: User[],
+    field: UserDailyField,
+    givenYear: number
+  ): string {
+    let total = 0;
+
+    users.forEach((user) => {
+      const dailyData = user[field];
+      if (!dailyData) {
+        return;
+      }
+
+      for (const [date, amount] of Object.entries(dailyData)) {
+        const [, , year] = date.split('-').map(Number); // Extract year only
+        if (year === givenYear) {
+          total += parseInt(String(amount), 10);
+        }
+      }
+    });
+
+    return total.toString();
+  }
+
   findTotalGivenMonthForAllUsersSortedDescending(
     users: User[],
     field: UserDailyField,
@@ -614,6 +642,54 @@ export class ComputationService {
     });
 
     // Sort by reserve amount in dollars in descending order
+    results.sort(
+      (a, b) =>
+        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
+    );
+    return results;
+  }
+
+  /**
+   * Aggregate totals for a whole year per user and sort descending.
+   */
+  findTotalGivenYearForAllUsersSortedDescending(
+    users: User[],
+    field: UserDailyField,
+    givenYear: number
+  ): {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] {
+    const results: {
+      firstName: string;
+      totalReserve: number;
+      totalReserveInDollars: string;
+    }[] = [];
+
+    users.forEach((user) => {
+      let userTotal = 0;
+      const dailyData = user[field];
+      if (dailyData) {
+        for (const [date, amount] of Object.entries(dailyData)) {
+          const [, , year] = date.split('-').map(Number); // Extract year
+          if (year === givenYear) {
+            userTotal += parseInt(String(amount), 10);
+          }
+        }
+      }
+      if (userTotal > 0) {
+        const userTotalInDollars = this.convertCongoleseFrancToUsDollars(
+          userTotal.toString()
+        ).toString();
+        results.push({
+          firstName: user.firstName!,
+          totalReserve: userTotal,
+          totalReserveInDollars: userTotalInDollars,
+        });
+      }
+    });
+
     results.sort(
       (a, b) =>
         parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)

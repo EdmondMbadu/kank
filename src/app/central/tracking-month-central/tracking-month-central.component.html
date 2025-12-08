@@ -196,6 +196,76 @@
   </ng-template>
 </section>
 
+<section class="container mx-auto px-6 pb-6">
+  <div
+    class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60 md:flex-row md:items-center md:justify-between"
+  >
+    <div>
+      <p class="text-xs uppercase tracking-[0.35em] text-slate-500 dark:text-slate-300/80">
+        Vue du classement
+      </p>
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        Sélectionnez une période pour les classements
+      </h2>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="flex rounded-full border border-slate-200 bg-white/80 p-1 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <button
+          type="button"
+          class="rounded-full px-3 py-1.5 transition"
+          [ngClass]="
+            rankingMode === 'month'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200'
+              : 'text-slate-600 hover:text-emerald-600 dark:text-slate-200'
+          "
+          (click)="onRankingModeChange('month')"
+        >
+          Mois
+        </button>
+        <button
+          type="button"
+          class="rounded-full px-3 py-1.5 transition"
+          [ngClass]="
+            rankingMode === 'year'
+              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-200'
+              : 'text-slate-600 hover:text-emerald-600 dark:text-slate-200'
+          "
+          (click)="onRankingModeChange('year')"
+        >
+          Année
+        </button>
+      </div>
+
+      <div *ngIf="rankingMode === 'year'" class="flex flex-wrap items-center gap-2 text-sm">
+        <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/70 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+          <span class="text-slate-700 dark:text-slate-200">Année analysée</span>
+          <select
+            [(ngModel)]="rankingYear"
+            (ngModelChange)="onRankingYearChange($event)"
+            class="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          >
+            <option *ngFor="let year of time.yearsList" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </label>
+        <label class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/70 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+          <span class="text-slate-700 dark:text-slate-200">Comparé à</span>
+          <select
+            [(ngModel)]="rankingComparisonYear"
+            (ngModelChange)="onRankingComparisonYearChange($event)"
+            class="rounded-md border border-slate-200 bg-white px-2 py-1 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+          >
+            <option *ngFor="let year of time.yearsList" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+</section>
+
 <div class="container mx-auto px-4 py-6">
   <!-- one-per-row, no forced side-by-side -->
   <div class="grid grid-cols-1 2xl:grid-cols-2 gap-8">
@@ -205,12 +275,17 @@
     >
       <div class="mb-4">
         <h2 class="text-xl font-semibold tracking-tight dark:text-slate-100">
-          Classement Du Mois
+          Classement {{ rankingMode === 'year' ? "de l'année" : 'Du Mois' }}
           <span
             class="ml-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
           >
-            ({{ time.monthFrenchNames[reserveCurrentMonth - 1] }}
-            {{ reserveCurrentYear }})
+            <ng-container *ngIf="rankingMode === 'month'; else reserveYearLabel">
+              ({{ time.monthFrenchNames[reserveCurrentMonth - 1] }}
+              {{ reserveCurrentYear }})
+            </ng-container>
+            <ng-template #reserveYearLabel>
+              ({{ rankingYear }})
+            </ng-template>
           </span>
         </h2>
 
@@ -238,61 +313,101 @@
           </div>
         </div>
 
-        <div
-          class="mt-3 flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-300"
-        >
+        <ng-container *ngIf="rankingMode === 'month'; else reserveYearSelectors">
           <div
-            class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            class="mt-3 flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-300"
           >
-            <span class="font-semibold text-slate-600 dark:text-slate-200"
-              >Mois analysé</span
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
             >
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="reserveCurrentMonth"
-              (ngModelChange)="updateReserveTableData()"
-            >
-              <option *ngFor="let month of monthsList" [ngValue]="month">
-                {{ time.monthFrenchNames[month - 1] }}
-              </option>
-            </select>
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="reserveCurrentYear"
-              (ngModelChange)="updateReserveTableData()"
-            >
-              <option *ngFor="let year of time.yearsList" [ngValue]="year">
-                {{ year }}
-              </option>
-            </select>
-          </div>
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Mois analysé</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="reserveCurrentMonth"
+                (ngModelChange)="updateReserveTableData()"
+              >
+                <option *ngFor="let month of monthsList" [ngValue]="month">
+                  {{ time.monthFrenchNames[month - 1] }}
+                </option>
+              </select>
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="reserveCurrentYear"
+                (ngModelChange)="updateReserveTableData()"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
 
-          <div
-            class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
-          >
-            <span class="font-semibold text-slate-600 dark:text-slate-200"
-              >Comparé à</span
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
             >
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="reserveComparisonMonth"
-              (ngModelChange)="updateReserveTableData()"
-            >
-              <option *ngFor="let month of monthsList" [ngValue]="month">
-                {{ time.monthFrenchNames[month - 1] }}
-              </option>
-            </select>
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="reserveComparisonYear"
-              (ngModelChange)="updateReserveTableData()"
-            >
-              <option *ngFor="let year of time.yearsList" [ngValue]="year">
-                {{ year }}
-              </option>
-            </select>
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Comparé à</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="reserveComparisonMonth"
+                (ngModelChange)="updateReserveTableData()"
+              >
+                <option *ngFor="let month of monthsList" [ngValue]="month">
+                  {{ time.monthFrenchNames[month - 1] }}
+                </option>
+              </select>
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="reserveComparisonYear"
+                (ngModelChange)="updateReserveTableData()"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
           </div>
-        </div>
+        </ng-container>
+        <ng-template #reserveYearSelectors>
+          <div
+            class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300"
+          >
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Année analysée</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="rankingYear"
+                (ngModelChange)="onRankingYearChange($event)"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Comparé à</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="rankingComparisonYear"
+                (ngModelChange)="onRankingComparisonYearChange($event)"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </ng-template>
       </div>
 
       <!-- no overflow container: show full table -->
@@ -483,12 +598,17 @@
     >
       <div class="mb-4">
         <h2 class="text-xl font-semibold tracking-tight dark:text-slate-100">
-          Classement Paiement Du Mois
+          Classement Paiement {{ rankingMode === 'year' ? "de l'année" : 'Du Mois' }}
           <span
             class="ml-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
           >
-            ({{ time.monthFrenchNames[paymentCurrentMonth - 1] }}
-            {{ paymentCurrentYear }})
+            <ng-container *ngIf="rankingMode === 'month'; else paymentYearLabel">
+              ({{ time.monthFrenchNames[paymentCurrentMonth - 1] }}
+              {{ paymentCurrentYear }})
+            </ng-container>
+            <ng-template #paymentYearLabel>
+              ({{ rankingYear }})
+            </ng-template>
           </span>
         </h2>
 
@@ -517,61 +637,101 @@
             Barre = % du meilleur $
           </div>
         </div>
-        <div
-          class="mt-3 flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-300"
-        >
+        <ng-container *ngIf="rankingMode === 'month'; else paymentYearSelectors">
           <div
-            class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            class="mt-3 flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-300"
           >
-            <span class="font-semibold text-slate-600 dark:text-slate-200"
-              >Mois analysé</span
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
             >
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="paymentCurrentMonth"
-              (ngModelChange)="updatePaymentTableData()"
-            >
-              <option *ngFor="let month of monthsList" [ngValue]="month">
-                {{ time.monthFrenchNames[month - 1] }}
-              </option>
-            </select>
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="paymentCurrentYear"
-              (ngModelChange)="updatePaymentTableData()"
-            >
-              <option *ngFor="let year of time.yearsList" [ngValue]="year">
-                {{ year }}
-              </option>
-            </select>
-          </div>
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Mois analysé</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="paymentCurrentMonth"
+                (ngModelChange)="updatePaymentTableData()"
+              >
+                <option *ngFor="let month of monthsList" [ngValue]="month">
+                  {{ time.monthFrenchNames[month - 1] }}
+                </option>
+              </select>
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="paymentCurrentYear"
+                (ngModelChange)="updatePaymentTableData()"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
 
-          <div
-            class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
-          >
-            <span class="font-semibold text-slate-600 dark:text-slate-200"
-              >Comparé à</span
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
             >
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="paymentComparisonMonth"
-              (ngModelChange)="updatePaymentTableData()"
-            >
-              <option *ngFor="let month of monthsList" [ngValue]="month">
-                {{ time.monthFrenchNames[month - 1] }}
-              </option>
-            </select>
-            <select
-              class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              [(ngModel)]="paymentComparisonYear"
-              (ngModelChange)="updatePaymentTableData()"
-            >
-              <option *ngFor="let year of time.yearsList" [ngValue]="year">
-                {{ year }}
-              </option>
-            </select>
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Comparé à</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="paymentComparisonMonth"
+                (ngModelChange)="updatePaymentTableData()"
+              >
+                <option *ngFor="let month of monthsList" [ngValue]="month">
+                  {{ time.monthFrenchNames[month - 1] }}
+                </option>
+              </select>
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="paymentComparisonYear"
+                (ngModelChange)="updatePaymentTableData()"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
           </div>
-        </div>
+        </ng-container>
+        <ng-template #paymentYearSelectors>
+          <div
+            class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300"
+          >
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Année analysée</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="rankingYear"
+                (ngModelChange)="onRankingYearChange($event)"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Comparé à</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="rankingComparisonYear"
+                (ngModelChange)="onRankingComparisonYearChange($event)"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </ng-template>
       </div>
       <div class="rounded-xl ring-1 ring-slate-200 dark:ring-slate-700">
         <div

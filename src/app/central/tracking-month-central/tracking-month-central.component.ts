@@ -66,6 +66,9 @@ export class TrackingMonthCentralComponent {
     'Budget Emprunts Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
+  rankingMode: 'month' | 'year' = 'month';
+  rankingYear: number = this.year;
+  rankingComparisonYear: number = this.year - 1;
 
   private readonly rangeKeyMap: Record<RangeKey, number> = {
     '3M': 3,
@@ -347,6 +350,30 @@ export class TrackingMonthCentralComponent {
     this.updateMiniGraphs();
   }
 
+  onRankingModeChange(mode: 'month' | 'year'): void {
+    this.rankingMode = mode;
+    this.rankingYear = this.givenYear;
+    this.rankingComparisonYear = this.rankingYear - 1;
+    this.updateReserveTableData();
+    this.updatePaymentTableData();
+  }
+
+  onRankingYearChange(year: number): void {
+    this.rankingYear = year;
+    this.rankingComparisonYear = Math.max(
+      this.yearsList[0],
+      (this.rankingYear || this.year) - 1
+    );
+    this.updateReserveTableData();
+    this.updatePaymentTableData();
+  }
+
+  onRankingComparisonYearChange(year: number): void {
+    this.rankingComparisonYear = year;
+    this.updateReserveTableData();
+    this.updatePaymentTableData();
+  }
+
   updateReserveTableData(): void {
     if (!this.allUsers || this.allUsers.length === 0) {
       this.sortedReserveMonth = [];
@@ -359,32 +386,46 @@ export class TrackingMonthCentralComponent {
       return;
     }
 
-    const reserveMonthRaw =
-      this.compute.findTotalGivenMonthForAllUsersSortedDescending(
-        this.allUsers,
-        'reserve',
-        this.reserveCurrentMonth,
-        this.reserveCurrentYear
-      );
+    const isYearMode = this.rankingMode === 'year';
+    const reserveMonthRaw = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'reserve',
+          this.rankingYear
+        )
+      : this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+          this.allUsers,
+          'reserve',
+          this.reserveCurrentMonth,
+          this.reserveCurrentYear
+        );
 
-    this.sortedReservePreviousMonth =
-      this.compute.findTotalGivenMonthForAllUsersSortedDescending(
-        this.allUsers,
-        'reserve',
-        this.reserveComparisonMonth,
-        this.reserveComparisonYear
-      );
+    this.sortedReservePreviousMonth = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'reserve',
+          this.rankingComparisonYear
+        )
+      : this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+          this.allUsers,
+          'reserve',
+          this.reserveComparisonMonth,
+          this.reserveComparisonYear
+        );
 
     // Calculate working days for average calculation
     const currentDate = new Date();
-    const isCurrentMonth = 
-      this.reserveCurrentMonth === currentDate.getMonth() + 1 && 
-      this.reserveCurrentYear === currentDate.getFullYear();
-    const workingDays = this.calculateWorkingDays(
-      this.reserveCurrentMonth,
-      this.reserveCurrentYear,
-      isCurrentMonth
-    );
+    const workingDays = isYearMode
+      ? this.calculateWorkingDaysForYear(
+          this.rankingYear,
+          this.isCurrentYear(this.rankingYear)
+        )
+      : this.calculateWorkingDays(
+          this.reserveCurrentMonth,
+          this.reserveCurrentYear,
+          this.reserveCurrentMonth === currentDate.getMonth() + 1 &&
+            this.reserveCurrentYear === currentDate.getFullYear()
+        );
 
     // Add averages to sortedReserveMonth
     this.sortedReserveMonth = reserveMonthRaw.map((x: any) => {
@@ -425,20 +466,30 @@ export class TrackingMonthCentralComponent {
       };
     });
 
-    const reserveCurrentTotal =
-      this.compute.findTotalGivenMonthForAllUsers(
-        this.allUsers,
-        'reserve',
-        this.reserveCurrentMonth,
-        this.reserveCurrentYear
-      ) ?? 0;
-    const reserveComparisonTotal =
-      this.compute.findTotalGivenMonthForAllUsers(
-        this.allUsers,
-        'reserve',
-        this.reserveComparisonMonth,
-        this.reserveComparisonYear
-      ) ?? 0;
+    const reserveCurrentTotal = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'reserve',
+          this.rankingYear
+        ) ?? 0
+      : this.compute.findTotalGivenMonthForAllUsers(
+          this.allUsers,
+          'reserve',
+          this.reserveCurrentMonth,
+          this.reserveCurrentYear
+        ) ?? 0;
+    const reserveComparisonTotal = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'reserve',
+          this.rankingComparisonYear
+        ) ?? 0
+      : this.compute.findTotalGivenMonthForAllUsers(
+          this.allUsers,
+          'reserve',
+          this.reserveComparisonMonth,
+          this.reserveComparisonYear
+        ) ?? 0;
 
     this.reserveCurrentTotalAmount = `${reserveCurrentTotal}`;
     this.reserveCurrentTotalAmountDollars = `${this.compute.convertCongoleseFrancToUsDollars(
@@ -470,32 +521,46 @@ export class TrackingMonthCentralComponent {
       return;
     }
 
-    const paymentCurrentRaw =
-      this.compute.findTotalGivenMonthForAllUsersSortedDescending(
-        this.allUsers,
-        'dailyReimbursement',
-        this.paymentCurrentMonth,
-        this.paymentCurrentYear
-      );
+    const isYearMode = this.rankingMode === 'year';
+    const paymentCurrentRaw = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyReimbursement',
+          this.rankingYear
+        )
+      : this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyReimbursement',
+          this.paymentCurrentMonth,
+          this.paymentCurrentYear
+        );
 
-    const paymentPrevRaw =
-      this.compute.findTotalGivenMonthForAllUsersSortedDescending(
-        this.allUsers,
-        'dailyReimbursement',
-        this.paymentComparisonMonth,
-        this.paymentComparisonYear
-      );
+    const paymentPrevRaw = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyReimbursement',
+          this.rankingComparisonYear
+        )
+      : this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyReimbursement',
+          this.paymentComparisonMonth,
+          this.paymentComparisonYear
+        );
 
     // Calculate working days for average calculation
     const currentDate = new Date();
-    const isCurrentPaymentMonth = 
-      this.paymentCurrentMonth === currentDate.getMonth() + 1 && 
-      this.paymentCurrentYear === currentDate.getFullYear();
-    const paymentWorkingDays = this.calculateWorkingDays(
-      this.paymentCurrentMonth,
-      this.paymentCurrentYear,
-      isCurrentPaymentMonth
-    );
+    const paymentWorkingDays = isYearMode
+      ? this.calculateWorkingDaysForYear(
+          this.rankingYear,
+          this.isCurrentYear(this.rankingYear)
+        )
+      : this.calculateWorkingDays(
+          this.paymentCurrentMonth,
+          this.paymentCurrentYear,
+          this.paymentCurrentMonth === currentDate.getMonth() + 1 &&
+            this.paymentCurrentYear === currentDate.getFullYear()
+        );
 
     this.sortedPaymentMonth = paymentCurrentRaw.map((x: any) => {
       const totalPayment = x.totalReserve;
@@ -541,20 +606,30 @@ export class TrackingMonthCentralComponent {
       };
     });
 
-    const paymentCurrentTotal =
-      this.compute.findTotalGivenMonthForAllUsers(
-        this.allUsers,
-        'dailyReimbursement',
-        this.paymentCurrentMonth,
-        this.paymentCurrentYear
-      ) ?? 0;
-    const paymentComparisonTotal =
-      this.compute.findTotalGivenMonthForAllUsers(
-        this.allUsers,
-        'dailyReimbursement',
-        this.paymentComparisonMonth,
-        this.paymentComparisonYear
-      ) ?? 0;
+    const paymentCurrentTotal = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'dailyReimbursement',
+          this.rankingYear
+        ) ?? 0
+      : this.compute.findTotalGivenMonthForAllUsers(
+          this.allUsers,
+          'dailyReimbursement',
+          this.paymentCurrentMonth,
+          this.paymentCurrentYear
+        ) ?? 0;
+    const paymentComparisonTotal = isYearMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'dailyReimbursement',
+          this.rankingComparisonYear
+        ) ?? 0
+      : this.compute.findTotalGivenMonthForAllUsers(
+          this.allUsers,
+          'dailyReimbursement',
+          this.paymentComparisonMonth,
+          this.paymentComparisonYear
+        ) ?? 0;
 
     this.paymentCurrentTotalAmount = `${paymentCurrentTotal}`;
     this.paymentCurrentTotalAmountDollars = `${this.compute.convertCongoleseFrancToUsDollars(
@@ -879,6 +954,38 @@ export class TrackingMonthCentralComponent {
     }
     
     return workingDays;
+  }
+
+  private isCurrentYear(year: number): boolean {
+    const currentDate = new Date();
+    return year === currentDate.getFullYear();
+  }
+
+  /**
+   * Calculate working days (excl. Sundays) for a full year.
+   * If current year, only count up to the current month/day.
+   */
+  private calculateWorkingDaysForYear(
+    year: number,
+    isCurrentYear: boolean
+  ): number {
+    const currentDate = new Date();
+    const endMonth = isCurrentYear ? currentDate.getMonth() + 1 : 12;
+    let totalWorkingDays = 0;
+
+    for (let month = 1; month <= endMonth; month++) {
+      const isCurrentMonth =
+        isCurrentYear &&
+        month === endMonth &&
+        year === currentDate.getFullYear();
+      totalWorkingDays += this.calculateWorkingDays(
+        month,
+        year,
+        isCurrentMonth
+      );
+    }
+
+    return totalWorkingDays;
   }
 
   /**
