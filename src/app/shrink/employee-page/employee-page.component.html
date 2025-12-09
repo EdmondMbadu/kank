@@ -2706,18 +2706,32 @@
 
       <div class="space-y-6 font-serif text-slate-800 dark:text-slate-200">
         <div *ngFor="let section of contractView?.sections" class="space-y-2">
-          <p class="text-base font-semibold text-slate-900 dark:text-white">
+          <p
+            class="text-base font-semibold text-slate-900 dark:text-white"
+            [ngClass]="{
+              'text-red-600 dark:text-red-300 font-bold':
+                section.title === 'Motifs de Licenciement'
+            }"
+          >
             {{ section.title }}
           </p>
           <p
             *ngFor="let paragraph of section.paragraphs"
             class="text-sm leading-6"
+            [ngClass]="{
+              'text-red-600 dark:text-red-300 font-semibold':
+                section.title === 'Motifs de Licenciement'
+            }"
           >
             {{ paragraph }}
           </p>
           <ul
             *ngIf="section.bullets?.length"
             class="list-disc pl-5 text-sm leading-6 space-y-1"
+            [ngClass]="{
+              'text-red-600 dark:text-red-300 font-semibold':
+                section.title === 'Motifs de Licenciement'
+            }"
           >
             <li *ngFor="let item of section.bullets">{{ item }}</li>
           </ul>
