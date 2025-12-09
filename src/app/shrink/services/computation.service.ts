@@ -1962,20 +1962,25 @@ export class ComputationService {
     );
 
     contract.sections.forEach((section) => {
+      const isMotif = section.title === 'Motifs de Licenciement';
+      const titleStyle = isMotif ? 'sectionTitleMotif' : 'sectionTitle';
+      const paragraphStyle = isMotif ? 'paragraphMotif' : 'paragraph';
+      const listStyle = isMotif ? 'paragraphMotif' : 'paragraph';
+
       content.push({
         text: section.title,
-        style: 'sectionTitle',
+        style: titleStyle,
         margin: [0, 12, 0, 6],
       });
 
       (section.paragraphs || []).forEach((p) =>
-        content.push({ text: p, style: 'paragraph', margin: [0, 0, 0, 6] })
+        content.push({ text: p, style: paragraphStyle, margin: [0, 0, 0, 6] })
       );
 
       if (section.bullets?.length) {
         content.push({
           ul: section.bullets,
-          style: 'paragraph',
+          style: listStyle,
           margin: [0, 0, 0, 10],
         });
       }
@@ -2041,9 +2046,20 @@ export class ComputationService {
         subject: { fontSize: 12, color: '#1f2937' },
         paragraph: { fontSize: 11, lineHeight: 1.35, color: '#111827' },
         sectionTitle: { fontSize: 13, bold: true, color: '#0f172a' },
+        sectionTitleMotif: {
+          fontSize: 13,
+          bold: true,
+          color: '#b91c1c',
+        },
         signatureLabel: { bold: true, fontSize: 12, margin: [0, 0, 0, 6] },
         signatureName: { bold: true, fontSize: 12 },
         signatureDate: { italics: true, fontSize: 10, color: '#4b5563' },
+        paragraphMotif: {
+          fontSize: 11,
+          lineHeight: 1.35,
+          color: '#b91c1c',
+          bold: true,
+        },
       },
       defaultStyle: { fontSize: 10 },
     };
