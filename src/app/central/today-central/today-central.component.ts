@@ -328,7 +328,7 @@ export class TodayCentralComponent {
       const winnerLines = await this.buildWinnerMembersLines(winner?.firstName);
       const dateLabel = this.buildPaymentCopyDateLabel();
 
-      const lines: string[] = [dateLabel, '', '==============='];
+      const lines: string[] = [dateLabel, '==============='];
 
       this.sortedPaymentToday.forEach((team, index) => {
         const rankLabel = index + 1;
