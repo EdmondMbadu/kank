@@ -50,6 +50,11 @@ export class Employee {
   paymentCode?: string;
   tempLocationHolder?: string;
   contract?: string;
+  contractSignVisible?: string;
+  contractSignedAt?: string;
+  contractSignedBy?: string;
+  contractYear?: string;
+  contractRole?: string;
   isRotation?: boolean; // Indicates if employee is in rotation (temporary transfer)
   rotationSourceLocationId?: string; // Original location ID for rotation employees
   vacationRequestNumberOfDays?: string;

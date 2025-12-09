@@ -958,6 +958,49 @@ export class DataService {
 
     return employeeRef.set(data, { merge: true });
   }
+  toggleEmployeeContractSignVisibility(employee: Employee) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    const newVisibility =
+      employee.contractSignVisible === 'true' ? 'false' : 'true';
+
+    return employeeRef.set(
+      {
+        contractSignVisible: newVisibility,
+      },
+      { merge: true }
+    );
+  }
+
+  updateEmployeeContractDocument(
+    employee: Employee,
+    payload: {
+      contract: string;
+      signedAt: string;
+      signedBy: string;
+      contractYear: string;
+      contractRole?: string;
+      contractSignVisible?: string;
+    }
+  ) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/employees/${employee.uid}`
+    );
+
+    const data = {
+      contract: payload.contract,
+      contractSignedAt: payload.signedAt,
+      contractSignedBy: payload.signedBy,
+      contractYear: payload.contractYear,
+      contractRole: payload.contractRole ?? employee.role,
+      contractSignVisible:
+        payload.contractSignVisible ?? employee.contractSignVisible ?? 'false',
+    };
+
+    return employeeRef.set(data, { merge: true });
+  }
   async updateEmployeeBonusCheckUrl(employee: Employee, url: string) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`

@@ -64,6 +64,24 @@ type PerformanceGraph = {
   layout: any;
 };
 
+type ContractSection = {
+  title: string;
+  bullets?: string[];
+  paragraphs?: string[];
+};
+
+type ContractViewModel = {
+  title: string;
+  subject: string;
+  intro: string[];
+  sections: ContractSection[];
+  closing: string[];
+  signedDate: string;
+  signedDateShort: string;
+  roleLabel: 'Manager' | 'Agent Marketing';
+  effectiveDate?: string;
+};
+
 @Component({
   selector: 'app-employee-page',
   templateUrl: './employee-page.component.html',
@@ -278,6 +296,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   displayPayment: boolean = false;
   displayCode: boolean = false;
   displaySetCode: boolean = false;
+  displayContract: boolean = false;
+  contractView?: ContractViewModel;
+  contractSignVisible: string = 'false';
+  contractSignedAt: string = '';
+  contractSignedDateOnly: string = '';
+  contractSignatureName: string = '';
   code: string = '';
 
   attendanceComplete: boolean = true;
@@ -287,6 +311,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   lastMonth: number = this.currentMonth - 1;
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
+  contractYear: number = this.year;
   givenYear = this.year;
   monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   day = this.currentDate.getDate();
@@ -662,6 +687,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   toggleSetCode() {
     this.displaySetCode = !this.displaySetCode;
   }
+  private buildEmployeeName(target: Employee = this.employee): string {
+    return [
+      target?.firstName ?? '',
+      target?.middleName ?? '',
+      target?.lastName ?? '',
+    ]
+      .map((p) => p.toString().trim())
+      .filter((p) => p)
+      .join(' ')
+      .trim();
+  }
 
   setEmployeeBonusAmounts() {
     this.bonusPercentage = this.employee.bonusPercentage
@@ -712,6 +748,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.totalPayments = this.employee.totalPayments
       ? parseFloat(this.employee.totalPayments)
       : 0;
+    this.contractSignVisible = this.employee.contractSignVisible
+      ? this.employee.contractSignVisible
+      : 'false';
+    this.contractSignedAt = this.employee.contractSignedAt
+      ? this.employee.contractSignedAt
+      : '';
+    this.contractSignatureName =
+      this.employee.contractSignedBy ?? this.buildEmployeeName(this.employee);
+    this.contractYear = this.employee.contractYear
+      ? Number.parseInt(this.employee.contractYear, 10) || this.year
+      : this.year;
   }
 
   computeTotalBonusAmount() {
@@ -1666,6 +1713,273 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     } finally {
       this.togglePayment();
       this.toggle('isLoading');
+    }
+  }
+
+  private normalizeContractRole(): 'Manager' | 'Agent Marketing' {
+    return this.employee.role === 'Manager' ? 'Manager' : 'Agent Marketing';
+  }
+
+  private buildSignedDateTime(): { full: string; dateOnly: string } {
+    const now = new Date();
+    const day = now.getDate();
+    const monthIndex = now.getMonth();
+    const year = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const full = `${day} ${this.time.monthFrenchNames[monthIndex]} ${year} ${hh}:${mm}:${ss}`;
+    return { full, dateOnly: `${day} ${this.time.monthFrenchNames[monthIndex]} ${year}` };
+  }
+
+  private buildContractView(
+    signedDate = this.contractSignedAt || this.buildSignedDateTime().full,
+    signedDateShort = this.contractSignedDateOnly || signedDate.replace(/\s+\d{2}:\d{2}:\d{2}$/, '')
+  ): ContractViewModel {
+    const role = this.normalizeContractRole();
+    const name = this.contractSignatureName || this.buildEmployeeName();
+    const effectiveYear =
+      Number.isFinite(this.contractYear) && this.contractYear
+        ? this.contractYear
+        : this.year;
+    const effectiveDate = `Ce contrat est valable pour une durée d’un (1) an à compter du 1er janvier ${effectiveYear} renouvelable chaque année.`;
+
+    if (role === 'Manager') {
+      return {
+        title: 'Lettre D’Offre',
+        subject:
+          'Objet : Bienvenue à la Fondation Gervais - Votre rôle en tant que Manager',
+        intro: [
+          `Chère ${name},`,
+          'Félicitations pour votre nomination en tant que Manager à la Fondation Gervais. Vous trouverez ci-dessous une description de vos responsabilités, de vos droits et des conditions de votre emploi.',
+        ],
+        effectiveDate,
+        sections: [
+          {
+            title: 'Votre Rôle',
+            bullets: [
+              'Garantir que les clients comprennent et respectent les accords, notamment les paiements à temps et l’utilisation des crédits.',
+              'Connaître vos clients et identifier ceux que vous devez visiter chaque jour.',
+              'Encadrer les agents de marketing, les informer des priorités et surveiller leurs performances et les vôtres.',
+              'Organiser des réunions quotidiennes pour vérifier l’état de l’équipe (santé, objectifs, etc.).',
+              'Assurer la mise à jour des données en temps réel et résoudre tout problème signalé.',
+              'Maintenir la discipline dans le bureau et veiller à la propreté de l’espace.',
+            ],
+          },
+          {
+            title: 'Vos Paiements et Primes',
+            bullets: [
+              'Base mensuelle : 110$',
+              'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
+              'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
+              'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',
+            ],
+          },
+          {
+            title: 'Motifs de Licenciement',
+            bullets: [
+              "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
+              'Si vos performances sont inférieures à 50% pendant 3 mois consécutifs, vous serez notifié.',
+              'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
+            ],
+          },
+          {
+            title: 'Vos Droits',
+            bullets: [
+              'Une semaine (7 jours) de congé annuel (coordonné avec l’équipe).',
+              'Paiement transparent et primes de performance.',
+              'Accès aux équipements nécessaires pour superviser les opérations.',
+            ],
+          },
+        ],
+        closing: [
+          'Ce document peut être mis à jour selon les besoins de la Fondation. Toute modification vous sera communiquée en temps opportun.',
+          "Nous sommes convaincus que votre leadership renforcera l’impact de la Fondation Gervais et contribuera à son succès.",
+          'Cordialement,',
+        ],
+        signedDate,
+        signedDateShort,
+        roleLabel: role,
+      };
+    }
+
+    return {
+      title: 'Lettre D’Offre',
+      subject:
+        "Objet : Bienvenue à la Fondation Gervais - Votre rôle en tant qu'Agent de Marketing",
+      intro: [
+        `Chère ${name},`,
+        'Nous sommes ravis de vous accueillir à la Fondation Gervais en tant qu’Agent de Marketing. Vous trouverez ci-dessous une description de vos responsabilités, de vos droits et des conditions de votre emploi.',
+      ],
+      effectiveDate,
+      sections: [
+        {
+          title: 'Votre Rôle',
+          bullets: [
+            'Respecter les clients et éviter tout conflit, quelles que soient les circonstances.',
+            'Connaître vos clients et identifier ceux que vous devez visiter chaque jour.',
+            'Mettre à jour les données de paiement des clients en temps réel.',
+            'Informer votre responsable de tout problème rencontré.',
+            'Escalader tout problème non résolu avec votre manager à la hiérarchie.',
+            'Maintenir la propreté et l’organisation de l’environnement de travail.',
+          ],
+        },
+        {
+          title: 'Vos Paiements et Primes',
+          bullets: [
+            'Base mensuelle : 90$',
+            'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
+            'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
+            'Les paiements sont effectués dans un compte bancaire (RAWBANK) le 1er de chaque mois, les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',
+          ],
+        },
+        {
+          title: 'Motifs de Licenciement',
+          bullets: [
+            "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
+            'Si vos performances sont inférieures à 50% pendant 5 mois consécutifs, vous serez licencié. Vous pourrez postuler à nouveau après 3 mois.',
+            'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
+          ],
+        },
+        {
+          title: 'Vos Droits',
+          bullets: [
+            'Une semaine de congé annuel (coordonné avec l’équipe).',
+            'Paiement transparent et primes de performance.',
+            'Accès aux équipements nécessaires pour accomplir vos tâches.',
+          ],
+        },
+      ],
+      closing: [
+        'Ce document peut être mis à jour selon les besoins de la Fondation. Toute modification vous sera communiquée en temps opportun.',
+        'Nous avons hâte de voir l’impact positif que vous apporterez à la Fondation Gervais.',
+        'Cordialement,',
+      ],
+      signedDate,
+      signedDateShort,
+      roleLabel: role,
+    };
+  }
+
+  openContractModal() {
+    const signedDate = this.buildSignedDateTime();
+    this.contractView = this.buildContractView(signedDate.full, signedDate.dateOnly);
+    this.displayContract = true;
+  }
+
+  closeContractModal() {
+    this.displayContract = false;
+  }
+
+  async toggleContractSignVisibility() {
+    try {
+      await this.data.toggleEmployeeContractSignVisibility(this.employee);
+      this.contractSignVisible =
+        this.contractSignVisible === 'true' ? 'false' : 'true';
+      this.employee.contractSignVisible = this.contractSignVisible;
+    } catch (error) {
+      console.error('Error toggling contract signature visibility:', error);
+      alert(
+        "Une erreur s'est produite lors du basculement de la signature du contrat."
+      );
+    }
+  }
+
+  async signContract() {
+    if (!this.employee?.uid) {
+      alert("Employé introuvable, impossible de générer le contrat.");
+      return;
+    }
+    this.contractYear = this.year;
+    if (!this.contractSignatureName) {
+      this.contractSignatureName = this.buildEmployeeName();
+    }
+    const signedDate = this.buildSignedDateTime();
+    this.contractView = this.buildContractView(signedDate.full, signedDate.dateOnly);
+    this.toggle('isLoading');
+
+    try {
+      const blob = await this.compute.generateContractDocument(
+        this.employee,
+        this.contractView
+      );
+
+      const url = await this.uploadContractDocument(
+        blob,
+        this.employee,
+        signedDate.full,
+        this.contractView.roleLabel
+      );
+
+      this.contractSignedAt = signedDate.full;
+      this.contractSignedDateOnly = signedDate.dateOnly;
+      this.employee.contractSignedAt = signedDate.full;
+      this.employee.contractSignedBy = this.contractSignatureName;
+      this.employee.contractYear = this.contractYear.toString();
+      this.contractSignVisible = 'false';
+      this.employee.contractSignVisible = 'false';
+      this.employee.contract = url;
+
+      alert('Contrat signé avec succès');
+    } catch (err) {
+      console.error('Erreur lors de la signature du contrat', err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Une erreur s'est produite lors de la signature du contrat. Réessayez.";
+      alert(message);
+    } finally {
+      this.toggle('isLoading');
+      this.displayContract = false;
+    }
+  }
+
+  private async uploadContractDocument(
+    blob: Blob,
+    employee: Employee,
+    signedDate: string,
+    roleLabel: 'Manager' | 'Agent Marketing'
+  ): Promise<string> {
+    if (!(blob instanceof Blob)) {
+      throw new Error('Le contrat généré est invalide.');
+    }
+
+    const baseName = this.buildEmployeeName(employee) || 'employe';
+    const safeName = baseName.replace(/[^a-z0-9\-]+/gi, '_').toLowerCase();
+    const path = `contracts/${safeName}-${Date.now()}.pdf`;
+    let uploadedPath: string | null = null;
+
+    try {
+      const uploadTask = await this.storage.upload(path, blob);
+      uploadedPath = path;
+      const url = await uploadTask.ref.getDownloadURL();
+
+      await this.data.updateEmployeeContractDocument(employee, {
+        contract: url,
+        signedAt: signedDate,
+        signedBy: this.contractSignatureName || baseName,
+        contractYear: this.contractYear.toString(),
+        contractRole: roleLabel,
+        contractSignVisible: 'false',
+      });
+
+      return url;
+    } catch (error) {
+      if (uploadedPath) {
+        try {
+          await firstValueFrom(this.storage.ref(uploadedPath).delete());
+        } catch {
+          // ignore cleanup failure
+        }
+      }
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error(
+        "Échec lors de l'enregistrement du contrat. Veuillez réessayer."
+      );
     }
   }
   async updateEmployeeBonusInfo() {

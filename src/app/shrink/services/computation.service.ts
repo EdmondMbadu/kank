@@ -1886,6 +1886,179 @@ export class ComputationService {
     });
   }
 
+  async generateContractDocument(
+    employee: Employee,
+    contract: {
+      title: string;
+      subject: string;
+      intro: string[];
+      sections: { title: string; bullets?: string[]; paragraphs?: string[] }[];
+      closing: string[];
+      signedDate: string;
+      roleLabel: string;
+      effectiveDate?: string;
+    }
+  ): Promise<Blob> {
+    const logo = await this.fetchImageAsBase64(
+      '../../../assets/img/gervais.png'
+    );
+
+    const fullName = `${employee.firstName ?? ''} ${
+      employee.middleName ?? ''
+    } ${employee.lastName ?? ''}`.replace(/\s+/g, ' ');
+
+    const content: any[] = [
+      {
+        columns: [
+          [
+            { text: 'FONDATION GERVAIS', style: 'brand' },
+            {
+              text: '9 Av. Nations-Unies\nMon‑Ngafula, Kinshasa (RDC)',
+              style: 'tiny',
+            },
+            { text: 'Téléphone : +243 825 333 567', style: 'tiny' },
+          ],
+          { image: logo, width: 80, alignment: 'right', style: 'logo' },
+        ],
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: 0,
+            y1: 0,
+            x2: 515 - 80,
+            y2: 0,
+            lineWidth: 1.5,
+            lineColor: '#263238',
+          },
+        ],
+        margin: [0, 5, 0, 15],
+      },
+      {
+        text: contract.title,
+        style: 'docTitle',
+        alignment: 'center',
+        margin: [0, 0, 0, 4],
+      },
+      {
+        text: contract.subject,
+        style: 'subject',
+        alignment: 'center',
+        margin: [0, 0, 0, 12],
+      },
+    ];
+
+    if (contract.effectiveDate) {
+      content.push({
+        text: contract.effectiveDate,
+        style: 'paragraph',
+        margin: [0, 0, 0, 10],
+      });
+    }
+
+    contract.intro.forEach((p) =>
+      content.push({ text: p, style: 'paragraph', margin: [0, 0, 0, 8] })
+    );
+
+    contract.sections.forEach((section) => {
+      content.push({
+        text: section.title,
+        style: 'sectionTitle',
+        margin: [0, 12, 0, 6],
+      });
+
+      (section.paragraphs || []).forEach((p) =>
+        content.push({ text: p, style: 'paragraph', margin: [0, 0, 0, 6] })
+      );
+
+      if (section.bullets?.length) {
+        content.push({
+          ul: section.bullets,
+          style: 'paragraph',
+          margin: [0, 0, 0, 10],
+        });
+      }
+    });
+
+    contract.closing.forEach((p) =>
+      content.push({ text: p, style: 'paragraph', margin: [0, 0, 0, 6] })
+    );
+
+    content.push({
+      margin: [0, 18, 0, 0],
+      table: {
+        widths: ['*', '*'],
+        body: [
+          [
+            { text: 'Signature', style: 'signatureLabel' },
+            {
+              text: 'Validation Fondation',
+              style: 'signatureLabel',
+              alignment: 'right',
+            },
+          ],
+          [
+            {
+              stack: [
+                { text: fullName, style: 'signatureName' },
+                {
+                  text: `Signé le ${contract.signedDate}`,
+                  style: 'signatureDate',
+                },
+              ],
+            },
+            {
+              stack: [
+                { text: 'Georgine Kuta', style: 'signatureName', alignment: 'right' },
+                {
+                  text: 'Fondatrice',
+                  style: 'signatureDate',
+                  alignment: 'right',
+                },
+                {
+                  text: contract.signedDate,
+                  style: 'signatureDate',
+                  alignment: 'right',
+                },
+              ],
+            },
+          ],
+        ],
+      },
+      layout: 'noBorders',
+    });
+
+    const dd: any = {
+      pageSize: 'A4',
+      pageMargins: [40, 55, 40, 55],
+      content,
+      styles: {
+        brand: { fontSize: 14, bold: true, color: '#263238' },
+        tiny: { fontSize: 8, color: '#546E7A' },
+        logo: { margin: [0, 0, 0, 0] },
+        docTitle: { fontSize: 18, bold: true, color: '#111827' },
+        subject: { fontSize: 12, color: '#1f2937' },
+        paragraph: { fontSize: 11, lineHeight: 1.35, color: '#111827' },
+        sectionTitle: { fontSize: 13, bold: true, color: '#0f172a' },
+        signatureLabel: { bold: true, fontSize: 12, margin: [0, 0, 0, 6] },
+        signatureName: { bold: true, fontSize: 12 },
+        signatureDate: { italics: true, fontSize: 10, color: '#4b5563' },
+      },
+      defaultStyle: { fontSize: 10 },
+    };
+
+    const pdfMake = await this.ensurePdfMake();
+    const pdfDoc = pdfMake.createPdf(dd);
+
+    return new Promise<Blob>((resolve, reject) => {
+      pdfDoc.getBlob(
+        (b: Blob) => resolve(b),
+        (e: any) => reject(e)
+      );
+    });
+  }
+
   getBrowserName() {
     const userAgent = navigator.userAgent;
 

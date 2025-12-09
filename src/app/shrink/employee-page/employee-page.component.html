@@ -181,6 +181,12 @@
                         </svg>
                         Contrat-{{ year }}
                       </a>
+                      <div
+                        *ngIf="contractSignedAt"
+                        class="mt-1 text-xs text-slate-600 dark:text-slate-300"
+                      >
+                        Signé le {{ contractSignedAt }}
+                      </div>
                     </div>
 
                     <div class="mt-4 flex flex-wrap gap-2 *:text-xs">
@@ -262,6 +268,30 @@
                           <path d="M6 20h12v-2H6v2z" />
                         </svg>
                         SMS Paiement ▶︎ {{ employee.firstName }}
+                      </button>
+                      <button
+                        *ngIf="isAdminUi"
+                        (click)="openContractModal()"
+                        type="button"
+                        class="rounded-lg bg-slate-700 px-3 py-1.5 font-medium text-white hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 dark:bg-slate-700 dark:hover:bg-slate-800 dark:focus:ring-slate-800 transition"
+                      >
+                        Voir / Éditer Contrat
+                      </button>
+                      <button
+                        *ngIf="isAdminUi"
+                        (click)="toggleContractSignVisibility()"
+                        type="button"
+                        class="rounded-lg bg-purple-600 px-3 py-1.5 font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800 transition"
+                      >
+                        Basculer Signature Contrat
+                      </button>
+                      <button
+                        *ngIf="contractSignVisible === 'true'"
+                        (click)="openContractModal()"
+                        type="button"
+                        class="rounded-lg bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-700 dark:hover:bg-emerald-800 dark:focus:ring-emerald-900 transition"
+                      >
+                        Signer Contrat
                       </button>
                     </div>
                   </div>
@@ -2608,6 +2638,160 @@
           class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 focus:outline-none dark:focus:ring-blue-800"
         >
           Mis A Jour
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="displayContract"
+  class="fixed inset-0 z-50 bg-black/60 flex items-start sm:items-center justify-center p-4 sm:p-6"
+  role="dialog"
+  aria-modal="true"
+>
+  <div
+    class="w-full max-w-4xl max-h-[92svh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+  >
+    <div class="p-6 sm:p-8 space-y-6">
+      <div class="flex items-start justify-between gap-4">
+        <div class="space-y-1 text-sm">
+          <p class="font-semibold text-slate-700 dark:text-slate-100">
+            Fondation Gervais
+          </p>
+          <p class="text-slate-500 dark:text-slate-300">
+            9 Av. Nations-Unies – Mon-Ngafula, Kinshasa (RDC)
+          </p>
+          <p class="text-slate-500 dark:text-slate-300">
+            Téléphone : +243 825 333 567
+          </p>
+        </div>
+        <div class="flex items-start gap-3">
+          <img
+            src="../../../assets/img/gervais.png"
+            alt="Logo Fondation Gervais"
+            class="h-12 w-12 object-contain"
+          />
+          <button
+            type="button"
+            (click)="closeContractModal()"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            aria-label="Fermer"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center space-y-2">
+        <h2 class="text-xl font-semibold">
+          {{ contractView?.title }}
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          {{ contractView?.subject }}
+        </p>
+        <p
+          *ngIf="contractView?.effectiveDate"
+          class="text-xs text-slate-500 dark:text-slate-400"
+        >
+          {{ contractView?.effectiveDate }}
+        </p>
+      </div>
+
+      <div
+        class="space-y-3 text-sm leading-6 text-slate-800 dark:text-slate-200 font-serif"
+      >
+        <p *ngFor="let intro of contractView?.intro">{{ intro }}</p>
+      </div>
+
+      <div class="space-y-6 font-serif text-slate-800 dark:text-slate-200">
+        <div *ngFor="let section of contractView?.sections" class="space-y-2">
+          <p class="text-base font-semibold text-slate-900 dark:text-white">
+            {{ section.title }}
+          </p>
+          <p
+            *ngFor="let paragraph of section.paragraphs"
+            class="text-sm leading-6"
+          >
+            {{ paragraph }}
+          </p>
+          <ul
+            *ngIf="section.bullets?.length"
+            class="list-disc pl-5 text-sm leading-6 space-y-1"
+          >
+            <li *ngFor="let item of section.bullets">{{ item }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <div
+        class="space-y-2 text-sm leading-6 text-slate-800 dark:text-slate-200 font-serif"
+      >
+        <p *ngFor="let closing of contractView?.closing">{{ closing }}</p>
+      </div>
+
+      <div
+        class="mt-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-t border-slate-200 dark:border-slate-700 pt-4"
+      >
+        <div>
+          <p class="text-sm font-bold text-slate-900 dark:text-white">
+            Signature
+          </p>
+          <p class="text-base font-semibold text-slate-900 dark:text-white">
+            {{
+              contractSignatureName ||
+                (employee.firstName || '') +
+                  ' ' +
+                  (employee.middleName || '') +
+                  ' ' +
+                  (employee.lastName || '')
+            }}
+          </p>
+          <p class="text-xs text-slate-600 dark:text-slate-300">
+            Signé le
+            {{
+              (contractSignedAt || contractView?.signedDate) &&
+                (contractSignedAt || contractView?.signedDate)
+            }}
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="text-base font-semibold text-slate-900 dark:text-white">
+            Georgine Kuta
+          </p>
+          <p class="text-xs text-slate-600 dark:text-slate-300">
+            Fondatrice
+          </p>
+          <p class="text-xs text-slate-600 dark:text-slate-300">
+            {{
+              (contractSignedDateOnly || contractView?.signedDateShort) &&
+                (contractSignedDateOnly || contractView?.signedDateShort)
+            }}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <button
+          type="button"
+          (click)="closeContractModal()"
+          class="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
+        >
+          Fermer
+        </button>
+        <button
+          *ngIf="contractSignVisible === 'true'"
+          type="button"
+          (click)="signContract()"
+          class="px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-900"
+        >
+          Signer le contrat
         </button>
       </div>
     </div>
