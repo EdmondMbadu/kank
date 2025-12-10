@@ -78,7 +78,7 @@ type ContractViewModel = {
   closing: string[];
   signedDate: string;
   signedDateShort: string;
-  roleLabel: 'Manager' | 'Agent Marketing';
+  roleLabel: 'Manager' | 'Agent Marketing' | 'Manager Regionale' | 'Auditrice';
   effectiveDate?: string;
 };
 
@@ -1716,8 +1716,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private normalizeContractRole(): 'Manager' | 'Agent Marketing' {
-    return this.employee.role === 'Manager' ? 'Manager' : 'Agent Marketing';
+  private normalizeContractRole():
+    | 'Manager'
+    | 'Agent Marketing'
+    | 'Manager Regionale'
+    | 'Auditrice' {
+    const role = (this.employee.role || '').toLowerCase();
+    if (role.includes('region')) return 'Manager Regionale';
+    if (role.includes('auditr')) return 'Auditrice';
+    if (role.includes('manager')) return 'Manager';
+    return 'Agent Marketing';
   }
 
   private buildSignedDateTime(): { full: string; dateOnly: string } {
@@ -1803,6 +1811,123 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       };
     }
 
+    if (role === 'Manager Regionale') {
+      return {
+        title: 'Lettre D’Offre',
+        subject:
+          'Objet : Bienvenue à la Fondation Gervais - Votre rôle en tant que Manager Régionale',
+        intro: [
+          `Chère ${name},`,
+          'Nous sommes heureux de vous accueillir à la Fondation Gervais en tant que Manager Régionale. Vous trouverez ci-dessous les détails concernant vos responsabilités, vos droits et vos obligations dans ce rôle essentiel.',
+        ],
+        effectiveDate,
+        sections: [
+          {
+            title: 'Votre Rôle',
+            bullets: [
+              'Ouvrir et établir de nouveaux emplacements.',
+              'Recruter et former de nouveaux employés à la mission et à la vision de la Fondation.',
+              'Faciliter la distribution des fonds aux différents emplacements.',
+              "Résoudre immédiatement tout problème qui survient et, en cas d'incapacité, l'escalader auprès de l’hiérarchie.",
+            ],
+          },
+          {
+            title: 'Vos Paiements et Primes',
+            bullets: [
+              'Base mensuelle : 150$',
+              'Primes de performance Distribution(%) par rapport au minimum de perte accru : 30$ (si la perte est de moins de 2%).',
+              'Les paiements sont effectués dans un compte bancaire (RAWBANK) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de base de 10$ chaque année que vous demeurez dans la fondation.',
+              "D'autres primes seront accordées en fonction de l'efficacité de votre travail dans l'accomplissement de tâches spécifiques, à la discrétion du conseil d'administration.",
+            ],
+          },
+          {
+            title: 'Motifs de Licenciement',
+            bullets: [
+              "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
+              "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing.",
+              "Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.",
+            ],
+          },
+          {
+            title: 'Vos Droits',
+            bullets: [
+              'Une semaine de congé annuel, coordonnée avec l’équipe pour assurer une continuité des opérations.',
+              'Paiement transparent avec primes basées sur vos performances et contributions.',
+              'Accès aux outils et informations nécessaires pour effectuer vos audits efficacement.',
+            ],
+          },
+        ],
+        closing: [
+          'Nous avons hâte de bénéficier de votre expertise et de voir comment vos observations contribueront à l’amélioration de nos processus et à la réussite de notre mission.',
+          'Cordialement,',
+        ],
+        signedDate,
+        signedDateShort,
+        roleLabel: role,
+      };
+    }
+
+    if (role === 'Auditrice') {
+      return {
+        title: 'Lettre D’Offre',
+        subject:
+          "Objet : Bienvenue à la Fondation Gervais - Votre rôle en tant qu'Auditrice",
+        intro: [
+          `Chère ${name},`,
+          "Nous sommes heureux de vous accueillir à la Fondation Gervais en tant qu'auditrice. Vous trouverez ci-dessous les détails concernant vos responsabilités, vos droits et vos obligations dans ce rôle essentiel.",
+        ],
+        effectiveDate,
+        sections: [
+          {
+            title: 'Votre Rôle',
+            bullets: [
+              'Identifier tous les types de problèmes au sein des opérations et des équipes et informer immédiatement la hiérarchie.',
+              'Appeler et vérifier les clients lors de l’enregistrement.',
+              'Observer et analyser la manière dont le travail est réalisé.',
+              'Inspecter une équipe pendant une semaine et acquérir une bonne connaissance de la plupart des clients de cette équipe.',
+              'Comparer les informations entre le système et les carnets de notes pour s’assurer de leur concordance.',
+              'Faciliter la distribution des fonds aux différents emplacements.',
+              'Recruter de nouveaux candidats et autres selon les besoins.',
+            ],
+          },
+          {
+            title: 'Vos Paiements et Primes',
+            bullets: [
+              'Base mensuelle : 110$',
+              'Primes de performance Distribution(%) par rapport au minimum de perte accru : 30$ (si la perte est de moins de 2%).',
+              'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de base de 10$ chaque année que vous demeurez dans la fondation.',
+              "D'autres primes seront accordées en fonction de l'efficacité de votre travail dans l'accomplissement de tâches spécifiques, à la discrétion du conseil d'administration.",
+            ],
+          },
+          {
+            title: 'Motifs de Licenciement',
+            bullets: [
+              "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
+              "Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.",
+              "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
+              "Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.",
+            ],
+          },
+          {
+            title: 'Vos Droits',
+            bullets: [
+              'Une semaine de congé annuel (7 jours), coordonnée avec l’équipe pour assurer une continuité des opérations.',
+              'Paiement transparent avec primes basées sur vos performances et contributions.',
+              'Accès aux outils et informations nécessaires pour effectuer vos audits efficacement.',
+            ],
+          },
+        ],
+        closing: [
+          'Ce document peut être mis à jour selon les besoins de la Fondation. Toute modification vous sera communiquée en temps opportun.',
+          'Nous avons hâte de bénéficier de votre expertise et de voir comment vos observations contribueront à l’amélioration de nos processus et à la réussite de notre mission.',
+          'Cordialement,',
+        ],
+        signedDate,
+        signedDateShort,
+        roleLabel: role,
+      };
+    }
+
     return {
       title: 'Lettre D’Offre',
       subject:
@@ -1820,7 +1945,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             'Connaître vos clients et identifier ceux que vous devez visiter chaque jour.',
             'Mettre à jour les données de paiement des clients en temps réel.',
             'Informer votre responsable de tout problème rencontré.',
-            'Escalader tout problème non résolu avec votre manager à la hiérarchie.',
+            'Escalater tout problème non résolu avec votre manager à la hiérarchie.',
             'Maintenir la propreté et l’organisation de l’environnement de travail.',
           ],
         },
@@ -1938,7 +2063,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     blob: Blob,
     employee: Employee,
     signedDate: string,
-    roleLabel: 'Manager' | 'Agent Marketing'
+    roleLabel: 'Manager' | 'Agent Marketing' | 'Manager Regionale' | 'Auditrice'
   ): Promise<string> {
     if (!(blob instanceof Blob)) {
       throw new Error('Le contrat généré est invalide.');
