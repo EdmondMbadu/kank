@@ -699,6 +699,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       .trim();
   }
 
+  private theftRules(): string[] {
+    return [
+      "Cas de Vol — Demander plus d'argent que ce qui est requis au client : Exemple : faire payer des frais d’adhésion ou d’épargne supérieurs aux montants officiels.",
+      'Cas de Vol — Donner moins d’argent au client que ce qui est déclaré : Le montant donné au client doit toujours correspondre à ce qui est inscrit dans le système.',
+      "Cas de Vol — Garder l'argent du client plus d'une journée : Aucun prétexte (oubli, système, budget à venir) ne justifie de garder l'argent du client. Il doit être entré dans le système le jour même.",
+      'Cas de Vol — Créer de faux clients avec de fausses identités : Numéros de téléphone ou photos inventés = vol. Tolérance zéro.',
+      "Cas de Vol — Prêter de l'argent à un membre de la famille ou un ami : Tout prêt doit respecter les règles sans conflit d’intérêt personnel.",
+      'Cas de Vol — Prétendre être présent sur le lieu de travail alors que vous êtes absent : Se faire passer pour actif alors qu’on est en déplacement ou ailleurs est considéré comme une tentative de fraude.',
+      '🚨 Toute violation de ces règles est considérée comme un vol et peut entraîner des sanctions disciplinaires, des poursuites judiciaires et une peine de prison.',
+    ];
+  }
+
   setEmployeeBonusAmounts() {
     this.bonusPercentage = this.employee.bonusPercentage
       ? parseFloat(this.employee.bonusPercentage)
@@ -1789,6 +1801,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
               'Si vos performances sont inférieures à 50% pendant 3 mois consécutifs, vous serez notifié.',
               'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
+              ...this.theftRules(),
             ],
           },
           {
@@ -1847,6 +1860,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               "Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.",
               "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
               "Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.",
+              ...this.theftRules(),
             ],
           },
           {
@@ -1907,6 +1921,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               "Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.",
               "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
               "Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.",
+              ...this.theftRules(),
             ],
           },
           {
@@ -1965,6 +1980,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
             'Si vos performances sont inférieures à 50% pendant 5 mois consécutifs, vous serez licencié. Vous pourrez postuler à nouveau après 3 mois.',
             'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
+            ...this.theftRules(),
           ],
         },
         {
