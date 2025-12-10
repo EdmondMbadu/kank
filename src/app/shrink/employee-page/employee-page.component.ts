@@ -1844,7 +1844,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             title: 'Motifs de Licenciement',
             bullets: [
               "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
-              "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing.",
+              "Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.",
+              "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
               "Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.",
             ],
           },
