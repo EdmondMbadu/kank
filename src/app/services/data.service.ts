@@ -983,6 +983,7 @@ export class DataService {
       contractYear: string;
       contractRole?: string;
       contractSignVisible?: string;
+      contractSignatureImage?: string | null;
     }
   ) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
@@ -997,6 +998,8 @@ export class DataService {
       contractRole: payload.contractRole ?? employee.role,
       contractSignVisible:
         payload.contractSignVisible ?? employee.contractSignVisible ?? 'false',
+      contractSignatureImage:
+        payload.contractSignatureImage ?? employee.contractSignatureImage ?? null,
     };
 
     return employeeRef.set(data, { merge: true });

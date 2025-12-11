@@ -1897,6 +1897,7 @@ export class ComputationService {
       signedDate: string;
       roleLabel: string;
       effectiveDate?: string;
+      signatureDataUrl?: string;
     }
   ): Promise<Blob> {
     const logo = await this.fetchImageAsBase64(
@@ -2006,12 +2007,22 @@ export class ComputationService {
           [
             {
               stack: [
-                { text: fullName, style: 'signatureName' },
+                contract.signatureDataUrl
+                  ? {
+                      image: contract.signatureDataUrl,
+                      width: 160,
+                      alignment: 'left',
+                      margin: [0, 0, 0, 4],
+                    }
+                  : { text: fullName, style: 'signatureName' },
                 {
                   text: `Signé le ${contract.signedDate}`,
                   style: 'signatureDate',
                 },
-              ],
+                contract.signatureDataUrl
+                  ? { text: fullName, style: 'signatureName', margin: [0, 4, 0, 0] }
+                  : {},
+              ].filter(Boolean),
             },
             {
               stack: [

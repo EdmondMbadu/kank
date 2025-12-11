@@ -80,6 +80,7 @@ type ContractViewModel = {
   signedDateShort: string;
   roleLabel: 'Manager' | 'Agent Marketing' | 'Manager Regionale' | 'Auditrice';
   effectiveDate?: string;
+  signatureDataUrl?: string;
 };
 
 @Component({
@@ -298,10 +299,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   displaySetCode: boolean = false;
   displayContract: boolean = false;
   contractView?: ContractViewModel;
+  @ViewChild('signaturePad') signaturePad!: ElementRef<HTMLCanvasElement>;
+  isDrawingSignature = false;
+  signatureDataUrl: string = '';
+  private signatureContext?: CanvasRenderingContext2D | null;
   contractSignVisible: string = 'false';
   contractSignedAt: string = '';
   contractSignedDateOnly: string = '';
   contractSignatureName: string = '';
+  contractSignatureImage: string | null = null;
   code: string = '';
 
   attendanceComplete: boolean = true;
@@ -1821,6 +1827,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         signedDate,
         signedDateShort,
         roleLabel: role,
+        signatureDataUrl: this.signatureDataUrl || undefined,
       };
     }
 
@@ -1879,6 +1886,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         signedDate,
         signedDateShort,
         roleLabel: role,
+        signatureDataUrl: this.signatureDataUrl || undefined,
       };
     }
 
@@ -1941,6 +1949,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         signedDate,
         signedDateShort,
         roleLabel: role,
+        signatureDataUrl: this.signatureDataUrl || undefined,
       };
     }
 
@@ -2000,12 +2009,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       signedDate,
       signedDateShort,
       roleLabel: role,
+      signatureDataUrl: this.signatureDataUrl || undefined,
     };
   }
 
   openContractModal() {
     const signedDate = this.buildSignedDateTime();
     this.contractView = this.buildContractView(signedDate.full, signedDate.dateOnly);
+    this.initSignaturePad();
+    this.clearSignaturePad();
     this.displayContract = true;
   }
 
@@ -2038,6 +2050,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
     const signedDate = this.buildSignedDateTime();
     this.contractView = this.buildContractView(signedDate.full, signedDate.dateOnly);
+    if (this.signatureDataUrl) {
+      this.contractView.signatureDataUrl = this.signatureDataUrl;
+    }
     this.toggle('isLoading');
 
     try {
@@ -2076,6 +2091,63 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private signatureCoords(event: PointerEvent): { x: number; y: number } {
+    const rect = this.signaturePad.nativeElement.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    return { x, y };
+  }
+
+  private initSignaturePad() {
+    if (!this.signaturePad) return;
+    this.signatureContext = this.signaturePad.nativeElement.getContext('2d');
+    if (!this.signatureContext) return;
+    this.signatureContext.strokeStyle = '#111827';
+    this.signatureContext.lineWidth = 2;
+    this.signatureContext.lineJoin = 'round';
+    this.signatureContext.lineCap = 'round';
+  }
+
+  onSignatureStart(event: PointerEvent) {
+    if (!this.signaturePad) return;
+    if (!this.signatureContext) {
+      this.initSignaturePad();
+    }
+    if (!this.signatureContext) return;
+    this.isDrawingSignature = true;
+    const { x, y } = this.signatureCoords(event);
+    this.signatureContext.beginPath();
+    this.signatureContext.moveTo(x, y);
+  }
+
+  onSignatureMove(event: PointerEvent) {
+    if (!this.isDrawingSignature || !this.signatureContext) return;
+    const { x, y } = this.signatureCoords(event);
+    this.signatureContext.lineTo(x, y);
+    this.signatureContext.stroke();
+  }
+
+  onSignatureEnd() {
+    if (!this.signaturePad) return;
+    if (this.isDrawingSignature && this.signatureContext) {
+      this.signatureContext.closePath();
+      const dataUrl = this.signaturePad.nativeElement.toDataURL('image/png');
+      this.signatureDataUrl = dataUrl;
+      this.contractSignatureImage = dataUrl;
+    }
+    this.isDrawingSignature = false;
+  }
+
+  clearSignaturePad() {
+    if (!this.signaturePad) return;
+    const canvas = this.signaturePad.nativeElement;
+    const ctx = this.signatureContext || canvas.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    this.signatureDataUrl = '';
+    this.contractSignatureImage = null;
+  }
   private async uploadContractDocument(
     blob: Blob,
     employee: Employee,
@@ -2103,6 +2175,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         contractYear: this.contractYear.toString(),
         contractRole: roleLabel,
         contractSignVisible: 'false',
+        contractSignatureImage: this.signatureDataUrl || null,
       });
 
       return url;
