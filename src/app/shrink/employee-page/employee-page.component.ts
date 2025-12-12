@@ -1087,7 +1087,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   getFilteredPayments() {
     // All users (admin and non-admin) see 2 initially, all if expanded
     const limit = !this.showAllPayments ? 2 : this.paymentAmounts.length;
-    return Array.from({ length: Math.min(limit, this.paymentAmounts.length) }, (_, i) => i);
+    return Array.from(
+      { length: Math.min(limit, this.paymentAmounts.length) },
+      (_, i) => i
+    );
   }
   togglePaymentCheckVisible() {
     this.paymentCheckVisible =
@@ -1541,13 +1544,36 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   private resolveAttendanceTargetDate(mode: 'today' | 'yesterday'): Date {
     const now = new Date();
-    const kinNow = this.kinDate(now);
+    // Get current date parts in Kinshasa timezone
+    const kinPartsNow = this.kinParts(now);
+
     if (mode === 'yesterday') {
-      const kinYesterday = new Date(kinNow.getTime());
-      kinYesterday.setDate(kinYesterday.getDate() - 1);
-      return kinYesterday;
+      // Calculate yesterday's date parts in Kinshasa timezone
+      let y = kinPartsNow.y;
+      let m = kinPartsNow.m;
+      let d = kinPartsNow.d - 1;
+
+      // Handle day rollover
+      if (d < 1) {
+        m -= 1;
+        if (m < 1) {
+          m = 12;
+          y -= 1;
+        }
+        // Get the last day of the previous month
+        d = new Date(y, m, 0).getDate();
+      }
+
+      // Create a Date object at noon UTC for the target day
+      // This ensures that when converted to any timezone, it will still be the correct day
+      // Kinshasa is UTC+1, so noon UTC = 1pm Kinshasa, safely in the middle of the day
+      return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
     }
-    return kinNow;
+
+    // For today, create a date at noon UTC for today in Kinshasa timezone
+    return new Date(
+      Date.UTC(kinPartsNow.y, kinPartsNow.m - 1, kinPartsNow.d, 12, 0, 0)
+    );
   }
 
   private dateToMonthDayYear(d: Date): string {
@@ -1755,12 +1781,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const mm = String(now.getMinutes()).padStart(2, '0');
     const ss = String(now.getSeconds()).padStart(2, '0');
     const full = `${day} ${this.time.monthFrenchNames[monthIndex]} ${year} ${hh}:${mm}:${ss}`;
-    return { full, dateOnly: `${day} ${this.time.monthFrenchNames[monthIndex]} ${year}` };
+    return {
+      full,
+      dateOnly: `${day} ${this.time.monthFrenchNames[monthIndex]} ${year}`,
+    };
   }
 
   private buildContractView(
     signedDate = this.contractSignedAt || this.buildSignedDateTime().full,
-    signedDateShort = this.contractSignedDateOnly || signedDate.replace(/\s+\d{2}:\d{2}:\d{2}$/, '')
+    signedDateShort = this.contractSignedDateOnly ||
+      signedDate.replace(/\s+\d{2}:\d{2}:\d{2}$/, '')
   ): ContractViewModel {
     const role = this.normalizeContractRole();
     const name = this.contractSignatureName || this.buildEmployeeName();
@@ -1821,7 +1851,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         ],
         closing: [
           'Ce document peut être mis à jour selon les besoins de la Fondation. Toute modification vous sera communiquée en temps opportun.',
-          "Nous sommes convaincus que votre leadership renforcera l’impact de la Fondation Gervais et contribuera à son succès.",
+          'Nous sommes convaincus que votre leadership renforcera l’impact de la Fondation Gervais et contribuera à son succès.',
           'Cordialement,',
         ],
         signedDate,
@@ -1864,9 +1894,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             title: 'Motifs de Licenciement',
             bullets: [
               "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
-              "Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.",
+              'Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.',
               "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
-              "Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.",
+              'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
               ...this.theftRules(),
             ],
           },
@@ -1926,9 +1956,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             title: 'Motifs de Licenciement',
             bullets: [
               "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
-              "Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.",
+              'Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.',
               "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
-              "Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.",
+              'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
               ...this.theftRules(),
             ],
           },
@@ -2015,7 +2045,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   openContractModal() {
     const signedDate = this.buildSignedDateTime();
-    this.contractView = this.buildContractView(signedDate.full, signedDate.dateOnly);
+    this.contractView = this.buildContractView(
+      signedDate.full,
+      signedDate.dateOnly
+    );
     this.initSignaturePad();
     this.clearSignaturePad();
     this.displayContract = true;
@@ -2041,7 +2074,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   async signContract() {
     if (!this.employee?.uid) {
-      alert("Employé introuvable, impossible de générer le contrat.");
+      alert('Employé introuvable, impossible de générer le contrat.');
       return;
     }
     this.contractYear = this.year;
@@ -2049,7 +2082,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.contractSignatureName = this.buildEmployeeName();
     }
     const signedDate = this.buildSignedDateTime();
-    this.contractView = this.buildContractView(signedDate.full, signedDate.dateOnly);
+    this.contractView = this.buildContractView(
+      signedDate.full,
+      signedDate.dateOnly
+    );
     if (this.signatureDataUrl) {
       this.contractView.signatureDataUrl = this.signatureDataUrl;
     }
@@ -4029,14 +4065,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
    * Check if employee has best team trophies
    */
   hasBestTeamTrophy(): boolean {
-    return !!(this.employee.bestTeamTrophies && this.employee.bestTeamTrophies.length > 0);
+    return !!(
+      this.employee.bestTeamTrophies &&
+      this.employee.bestTeamTrophies.length > 0
+    );
   }
 
   /**
    * Check if employee has best employee trophies
    */
   hasBestEmployeeTrophy(): boolean {
-    return !!(this.employee.bestEmployeeTrophies && this.employee.bestEmployeeTrophies.length > 0);
+    return !!(
+      this.employee.bestEmployeeTrophies &&
+      this.employee.bestEmployeeTrophies.length > 0
+    );
   }
 
   /**
@@ -4045,11 +4087,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   getTrophyDate(trophy: Trophy): string {
     if (!trophy || !trophy.month || !trophy.year) return '';
     const monthNames = [
-      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
     ];
     const monthIndex = parseInt(trophy.month, 10) - 1;
-    const monthName = monthIndex >= 0 && monthIndex < 12 ? monthNames[monthIndex] : trophy.month;
+    const monthName =
+      monthIndex >= 0 && monthIndex < 12
+        ? monthNames[monthIndex]
+        : trophy.month;
     return `${monthName} ${trophy.year}`;
   }
 
@@ -4088,9 +4143,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
    */
   getModalTrophies(): Trophy[] {
     if (!this.trophyModalType) return [];
-    return this.trophyModalType === 'team' 
-      ? (this.employee.bestTeamTrophies || [])
-      : (this.employee.bestEmployeeTrophies || []);
+    return this.trophyModalType === 'team'
+      ? this.employee.bestTeamTrophies || []
+      : this.employee.bestEmployeeTrophies || [];
   }
 
   /**
@@ -4098,6 +4153,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
    */
   getModalTitle(): string {
     if (!this.trophyModalType) return '';
-    return this.trophyModalType === 'team' ? 'Trophées Meilleure Équipe' : 'Trophées Meilleur Employé';
+    return this.trophyModalType === 'team'
+      ? 'Trophées Meilleure Équipe'
+      : 'Trophées Meilleur Employé';
   }
 }
