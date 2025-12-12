@@ -1278,6 +1278,26 @@
             </div>
           </li>
         </ul>
+
+        <!-- See more button for admin -->
+        <div *ngIf="auth.isAdmin && receipts.length > 2 && !showAllReceipts" class="mt-4 flex justify-center">
+          <button
+            (click)="showAllReceipts = true"
+            class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          >
+            Voir plus
+          </button>
+        </div>
+
+        <!-- See less button for admin -->
+        <div *ngIf="auth.isAdmin && receipts.length > 2 && showAllReceipts" class="mt-4 flex justify-center">
+          <button
+            (click)="showAllReceipts = false"
+            class="px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+          >
+            Voir moins
+          </button>
+        </div>
       </ng-container>
 
       <!-- empty state -->

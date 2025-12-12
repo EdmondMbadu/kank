@@ -85,6 +85,7 @@ export class TodayComponent {
   clientsWithDebts: Client[] = [];
   receipts: Receipt[] = [];
   selectedTs = 0; //  ←  add this line
+  showAllReceipts = false; // For admin to expand and see all receipts
 
   percentage: string = '0';
   perc: number = 0;
@@ -468,7 +469,12 @@ export class TodayComponent {
         r.frenchDate.toLowerCase().includes(this.searchText.toLowerCase())
     );
 
-    return this.auth.isAdmin ? list : list.slice(0, 2);
+    // Non-admin always sees only 2
+    if (!this.auth.isAdmin) {
+      return list.slice(0, 2);
+    }
+    // Admin sees 2 initially, all if expanded
+    return this.showAllReceipts ? list : list.slice(0, 2);
   }
 
   // ⑤  when admin clicks “Changer”
