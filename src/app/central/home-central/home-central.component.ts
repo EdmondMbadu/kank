@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
@@ -13,8 +13,6 @@ import { MessagingService } from 'src/app/services/messaging.service';
 import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/compat/firestore';
 import { Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/firestore';
 
 type BulkFailure = { client: Client; error: string };
 type BulkResult = {
@@ -2081,14 +2079,20 @@ Merci pona confiance na FONDATION GERVAIS.`;
       .replace(/\s+/g, ' ');
 
     try {
-      await this.afs.collection('bulk_message_logs').add({
-        type: context,
-        sentAt: firebase.firestore.FieldValue.serverTimestamp(),
-        sentAtMs: Date.now(),
-        sentBy: sentBy || user.email || undefined,
-        sentById: user.uid ?? null,
-        ...payload,
-      });
+      const callable = this.fns.httpsCallable('recordBulkMessageLog');
+      await firstValueFrom(
+        callable({
+          type: context,
+          total: payload.total,
+          succeeded: payload.succeeded,
+          failed: payload.failed,
+          locationTotals: payload.locationTotals,
+          template: payload.template,
+          messagePreview: payload.messagePreview ?? null,
+          sentBy: sentBy || user.email || undefined,
+          sentById: user.uid ?? null,
+        })
+      );
     } catch (error) {
       console.error('Bulk log write failed', error);
     }

@@ -102,6 +102,71 @@ exports.sendCustomSMS = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Callable: record a summary entry for a bulk or custom messaging action.
+ */
+exports.recordBulkMessageLog = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to record logs."
+    );
+  }
+
+  const {
+    type = "custom",
+    total,
+    succeeded,
+    failed,
+    locationTotals = {},
+    template = "",
+    messagePreview = "",
+    sentBy,
+    sentById,
+  } = data || {};
+
+  if (
+    typeof total !== "number" ||
+    typeof succeeded !== "number" ||
+    typeof failed !== "number"
+  ) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "total, succeeded and failed must be numbers."
+    );
+  }
+
+  const sanitizedTotals = {};
+  if (locationTotals && typeof locationTotals === "object") {
+    Object.entries(locationTotals).forEach(([rawName, rawCount]) => {
+      const label =
+        (rawName && String(rawName).trim()) || "Sans localisation";
+      const count = Number(rawCount) || 0;
+      if (count > 0) sanitizedTotals[label] = count;
+    });
+  }
+
+  const now = Date.now();
+  const authInfo = context.auth;
+  const authToken = (authInfo && authInfo.token) || {};
+
+  await db.collection("bulk_message_logs").add({
+    type,
+    total,
+    succeeded,
+    failed,
+    locationTotals: sanitizedTotals,
+    template,
+    messagePreview,
+    sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    sentAtMs: now,
+    sentBy: sentBy || authToken.name || authToken.email || null,
+    sentById: sentById || authInfo.uid || null,
+  });
+
+  return {ok: true};
+});
+
+/**
  * Helper function to format a date string to DD/MM/YYYY
  */
 function formatDate(dateInput) {
