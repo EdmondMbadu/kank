@@ -1616,6 +1616,164 @@
   </div>
 </div>
 
+<!-- ==== BULK MESSAGE LOG ==== -->
+<section class="container mx-auto px-6 py-12">
+  <div
+    class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
+  >
+    <div
+      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <p class="text-xs uppercase tracking-[0.35em] text-emerald-500">
+          Historique
+        </p>
+        <h2 class="text-2xl font-semibold text-slate-900 dark:text-white">
+          Journaux des messages groupés
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Chaque envoi groupé depuis cette page est enregistré automatiquement
+          avec le détail par site.
+        </p>
+      </div>
+      <button
+        *ngIf="hasMoreBulkLogs"
+        type="button"
+        (click)="toggleBulkLogExpansion()"
+        class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+      >
+        {{ showAllBulkLogs ? "Voir moins" : "Voir tout l'historique" }}
+      </button>
+    </div>
+
+    <div
+      *ngIf="bulkLogsLoading"
+      class="mt-6 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 px-5 py-4 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
+    >
+      Chargement des journaux…
+    </div>
+
+    <div
+      *ngIf="bulkLogsError"
+      class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-600 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-200"
+    >
+      {{ bulkLogsError }}
+    </div>
+
+    <div
+      *ngIf="!bulkLogsLoading && !bulkLogsError && !bulkLogs.length"
+      class="mt-6 rounded-2xl border border-slate-200 px-5 py-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-300"
+    >
+      Aucun envoi groupé enregistré pour l'instant.
+    </div>
+
+    <div class="mt-6 space-y-5" *ngIf="visibleBulkLogs.length">
+      <article
+        *ngFor="let log of visibleBulkLogs; trackBy: trackBulkLog"
+        class="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm transition hover:border-emerald-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800/80"
+      >
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+              {{ log.typeLabel }}
+            </p>
+            <p
+              class="mt-1 text-lg font-semibold text-slate-900 dark:text-white"
+            >
+              Messages envoyés le
+              {{ log.sentAtDate | date : "EEEE d MMM yyyy HH:mm:ss" }}
+            </p>
+          </div>
+          <div class="text-left md:text-right">
+            <p class="text-xs uppercase tracking-[0.3em] text-slate-400">
+              Total envoyés
+            </p>
+            <p
+              class="text-3xl font-semibold text-emerald-600 dark:text-emerald-300"
+            >
+              {{ log.total | number : "1.0-0" }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 grid gap-4 sm:grid-cols-3">
+          <div
+            class="rounded-xl bg-emerald-50/60 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-900/10 dark:text-emerald-300"
+          >
+            <p class="text-xs uppercase tracking-[0.25em] text-emerald-400">
+              Réussis
+            </p>
+            <p class="mt-1 text-2xl font-semibold">
+              {{ log.succeeded | number : "1.0-0" }}
+            </p>
+          </div>
+          <div
+            class="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900/50 dark:text-slate-200"
+          >
+            <p class="text-xs uppercase tracking-[0.25em] text-slate-400">
+              Échecs
+            </p>
+            <p class="mt-1 text-2xl font-semibold">
+              {{ log.failed | number : "1.0-0" }}
+            </p>
+          </div>
+          <div
+            class="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900/50 dark:text-slate-200"
+          >
+            <p class="text-xs uppercase tracking-[0.25em] text-slate-400">
+              Auteur
+            </p>
+            <p class="mt-1 text-base font-medium">
+              {{ log.sentBy || "—" }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+            Répartition par site
+          </p>
+          <ul
+            class="mt-2 flex flex-wrap gap-2 text-sm text-slate-600 dark:text-slate-300"
+            *ngIf="log.locationEntries.length; else noLocationData"
+          >
+            <li
+              *ngFor="let entry of log.locationEntries"
+              class="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 dark:border-slate-600 dark:bg-slate-800"
+            >
+              <span class="font-semibold text-slate-800 dark:text-white">
+                {{ entry.name }}
+              </span>
+              <span class="text-xs uppercase tracking-widest text-slate-400">
+                {{ entry.count }}
+              </span>
+            </li>
+          </ul>
+          <ng-template #noLocationData>
+            <p class="mt-2 text-sm text-slate-400">
+              Pas de site renseigné pour cet envoi.
+            </p>
+          </ng-template>
+        </div>
+
+        <div
+          *ngIf="log.messagePreview"
+          class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300"
+        >
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+            Aperçu du message
+          </p>
+          <p class="mt-1 whitespace-pre-line">
+            {{ log.messagePreview }}
+          </p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
 <!-- ==== CONTACT SMS MODAL (single) ==== -->
 <div
   *ngIf="contactSmsModal.open"

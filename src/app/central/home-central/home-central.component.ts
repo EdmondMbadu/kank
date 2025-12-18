@@ -13,6 +13,8 @@ import { MessagingService } from 'src/app/services/messaging.service';
 import { AngularFirestore, AngularFirestoreCollection } from '@angular/fire/compat/firestore';
 import { Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/firestore';
 
 type BulkFailure = { client: Client; error: string };
 type BulkResult = {
@@ -40,6 +42,34 @@ type ContactEntry = ContactDocument & {
   id: string;
   docPath: string;
   ownerKey: string;
+};
+
+type BulkLogContext =
+  | 'finished_clients'
+  | 'general_filters'
+  | 'prospect_contacts'
+  | 'contacts'
+  | 'custom';
+
+type BulkMessageLogDocument = {
+  type?: BulkLogContext;
+  sentAt?: any;
+  sentAtMs?: number;
+  total: number;
+  succeeded: number;
+  failed: number;
+  locationTotals?: Record<string, number>;
+  template?: string;
+  messagePreview?: string;
+  sentBy?: string;
+  sentById?: string | null;
+};
+
+type BulkMessageLog = BulkMessageLogDocument & {
+  id: string;
+  sentAtDate: Date;
+  locationEntries: { name: string; count: number }[];
+  typeLabel: string;
 };
 
 @Component({
@@ -163,6 +193,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         .pipe(filter((user): user is User => Boolean(user)))
         .subscribe((user) => this.initializeContactsCollection(user));
     }
+
+    this.listenToBulkLogs();
   }
 
   getAllClients() {
@@ -1275,8 +1307,9 @@ Merci pona confiance na FONDATION GERVAIS`;
 
     const failures: BulkFailure[] = [];
     let succeeded = 0;
+    const recipients = [...this.bulkModal.recipients];
 
-    for (const c of this.bulkModal.recipients) {
+    for (const c of recipients) {
       try {
         const text = this.personalizeMessage(this.bulkModal.message, c);
         await this.messaging.sendCustomSMS(c.phoneNumber!, text, {
@@ -1301,6 +1334,19 @@ Merci pona confiance na FONDATION GERVAIS`;
       failures,
     };
     this.bulkSending = false;
+
+    const locationTotals = this.aggregateLocations(
+      recipients,
+      (client) => client.locationName
+    );
+    await this.logBulkMessage('finished_clients', {
+      total,
+      succeeded,
+      failed: failures.length,
+      locationTotals,
+      template: this.bulkModal.message,
+      messagePreview: this.previewPersonalized(),
+    });
   }
 
   // ===== general custom bulk (master list) =====
@@ -1351,8 +1397,9 @@ Merci pour ta confiance !`;
     this.generalBulkSending = true;
     const failures: BulkFailure[] = [];
     let succeeded = 0;
+    const recipients = [...this.generalBulkModal.recipients];
 
-    for (const c of this.generalBulkModal.recipients) {
+    for (const c of recipients) {
       try {
         const text = this.personalizeMessage(this.generalBulkModal.message, c);
         await this.messaging.sendCustomSMS(c.phoneNumber!, text, {
@@ -1376,6 +1423,19 @@ Merci pour ta confiance !`;
       failures,
     };
     this.generalBulkSending = false;
+
+    const locationTotals = this.aggregateLocations(
+      recipients,
+      (client) => client.locationName
+    );
+    await this.logBulkMessage('general_filters', {
+      total,
+      succeeded,
+      failed: failures.length,
+      locationTotals,
+      template: this.generalBulkModal.message,
+      messagePreview: this.generalPreviewPersonalized(),
+    });
   }
 
   // ===== helpers =====
@@ -1496,9 +1556,17 @@ Merci pour ta confiance !`;
   };
   contactBulkSending = false;
 
+  bulkLogs: BulkMessageLog[] = [];
+  bulkLogsLoading = false;
+  bulkLogsError: string | null = null;
+  showAllBulkLogs = false;
+
+  private bulkLogsSub?: Subscription;
+
 
   ngOnDestroy(): void {
     this.contactsSub?.unsubscribe();
+    this.bulkLogsSub?.unsubscribe();
   }
 
   private initializeContactsCollection(user: User): void {
@@ -1819,8 +1887,9 @@ Merci pona confiance na FONDATION GERVAIS.`;
     this.contactBulkSending = true;
     const failures: BulkFailure[] = [];
     let succeeded = 0;
+    const recipients = [...this.contactBulkModal.recipients];
 
-    for (const contact of this.contactBulkModal.recipients) {
+    for (const contact of recipients) {
       try {
         const text = this.personalizeContactMessage(
           this.contactBulkModal.message,
@@ -1852,11 +1921,176 @@ Merci pona confiance na FONDATION GERVAIS.`;
     };
 
     this.contactBulkSending = false;
+
+    const locationTotals = this.aggregateLocations(
+      recipients,
+      (contact) => contact.ownerName
+    );
+    await this.logBulkMessage('prospect_contacts', {
+      total,
+      succeeded,
+      failed: failures.length,
+      locationTotals,
+      template: this.contactBulkModal.message,
+      messagePreview: this.contactBulkPreviewMessage,
+    });
   }
 
   get contactEligibleCount(): number {
     return this.filteredContacts.filter((c) =>
       this.hasDialableContactPhone(c)
     ).length;
+  }
+
+  get visibleBulkLogs(): BulkMessageLog[] {
+    if (this.showAllBulkLogs) {
+      return this.bulkLogs;
+    }
+    return this.bulkLogs.slice(0, 2);
+  }
+
+  get hasMoreBulkLogs(): boolean {
+    return this.bulkLogs.length > 2;
+  }
+
+  toggleBulkLogExpansion(): void {
+    if (!this.hasMoreBulkLogs) return;
+    this.showAllBulkLogs = !this.showAllBulkLogs;
+  }
+
+  trackBulkLog(index: number, log: BulkMessageLog): string {
+    return log.id;
+  }
+
+  private listenToBulkLogs(): void {
+    this.bulkLogsLoading = true;
+    this.bulkLogsError = null;
+    this.bulkLogsSub?.unsubscribe();
+
+    this.bulkLogsSub = this.afs
+      .collection<BulkMessageLogDocument>('bulk_message_logs', (ref) =>
+        ref.orderBy('sentAtMs', 'desc').limit(30)
+      )
+      .snapshotChanges()
+      .subscribe({
+        next: (snaps) => {
+          this.bulkLogs = snaps.map((snap) =>
+            this.transformBulkLogDocument(
+              snap.payload.doc.id,
+              snap.payload.doc.data()
+            )
+          );
+          this.bulkLogsLoading = false;
+        },
+        error: (error) => {
+          console.error('Bulk log listener error', error);
+          this.bulkLogsError = "Impossible de charger l'historique.";
+          this.bulkLogsLoading = false;
+        },
+      });
+  }
+
+  private transformBulkLogDocument(
+    id: string,
+    data: BulkMessageLogDocument | undefined
+  ): BulkMessageLog {
+    const safe: BulkMessageLogDocument = data ?? {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+    const sentAtDate = new Date(this.coerceBulkLogTimestamp(safe));
+
+    return {
+      ...safe,
+      id,
+      sentAtDate,
+      locationEntries: this.buildLocationEntries(safe.locationTotals),
+      typeLabel: this.getLogTypeLabel(safe.type),
+    };
+  }
+
+  private coerceBulkLogTimestamp(data: BulkMessageLogDocument): number {
+    if (typeof data.sentAtMs === 'number') {
+      return data.sentAtMs;
+    }
+    if (data.sentAt && typeof data.sentAt.toDate === 'function') {
+      return data.sentAt.toDate().getTime();
+    }
+    return Date.now();
+  }
+
+  private buildLocationEntries(
+    totals?: Record<string, number>
+  ): { name: string; count: number }[] {
+    if (!totals) return [];
+    return Object.entries(totals)
+      .map(([name, count]) => ({
+        name,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }
+
+  private getLogTypeLabel(type?: BulkLogContext): string {
+    switch (type) {
+      case 'finished_clients':
+        return 'Clients terminés';
+      case 'general_filters':
+        return 'Filtre personnalisé';
+      case 'prospect_contacts':
+        return 'Prospects';
+      case 'contacts':
+        return 'Contacts';
+      case 'custom':
+        return 'Personnalisé';
+      default:
+        return 'Envoi groupé';
+    }
+  }
+
+  private aggregateLocations<T>(
+    items: T[],
+    pick: (item: T) => string | null | undefined
+  ): Record<string, number> {
+    const totals: Record<string, number> = {};
+    const fallback = 'Sans localisation';
+
+    for (const entry of items) {
+      const key = pick(entry)?.trim() || fallback;
+      totals[key] = (totals[key] || 0) + 1;
+    }
+
+    return totals;
+  }
+
+  private async logBulkMessage(
+    context: BulkLogContext,
+    payload: {
+      total: number;
+      succeeded: number;
+      failed: number;
+      locationTotals: Record<string, number>;
+      template: string;
+      messagePreview?: string;
+    }
+  ): Promise<void> {
+    const user = this.auth.currentUser || {};
+    const sentBy = `${user.firstName ?? ''} ${user.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    try {
+      await this.afs.collection('bulk_message_logs').add({
+        type: context,
+        sentAt: firebase.firestore.FieldValue.serverTimestamp(),
+        sentAtMs: Date.now(),
+        sentBy: sentBy || user.email || undefined,
+        sentById: user.uid ?? null,
+        ...payload,
+      });
+    } catch (error) {
+      console.error('Bulk log write failed', error);
+    }
   }
 }
