@@ -15,8 +15,11 @@ if (
   window?.addEventListener('load', () => {
     navigator.serviceWorker
       .register('ngsw-worker.js')
-      .catch((err) =>
-        console.error('Service worker registration failed', err)
-      );
+      .catch((err) => {
+        // Only log error if it's not a 404 (file not found in dev)
+        if (err?.message && !err.message.includes('404')) {
+          console.error('Service worker registration failed', err);
+        }
+      });
   });
 }

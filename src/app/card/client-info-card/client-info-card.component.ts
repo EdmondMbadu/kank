@@ -22,14 +22,14 @@ export class ClientInfoCardComponent implements OnInit {
     private router: Router,
     public auth: AuthService,
     private route: ActivatedRoute
-  ) {
-    this.retrieveClientsCard();
-  }
+  ) {}
   debts: string[] = [];
   ngOnInit(): void {
     /* ── 1. Read the flag put in the route definition ── */
     this.filterMode =
       (this.route.snapshot.data['filter'] as FilterMode) || 'all';
+    // Retrieve clients after reading route data so filter is applied correctly
+    this.retrieveClientsCard();
     this.searchControl.valueChanges
       .pipe(
         debounceTime(300),
@@ -58,10 +58,23 @@ export class ClientInfoCardComponent implements OnInit {
     }
   }
   search(value: string) {
+    // Get the cycle-filtered base first
+    let baseItems: Card[];
+    switch (this.filterMode) {
+      case 'current':
+        baseItems = this.cards!.filter((c) => !c.clientCardStatus!);
+        break;
+      case 'finished':
+        baseItems = this.cards!.filter((c) => !!c.clientCardStatus);
+        break;
+      default:
+        baseItems = [...this.cards!];
+    }
+
     if (value) {
       const lowerCaseValue = value.toLowerCase();
       return of(
-        this.cards!.filter(
+        baseItems.filter(
           (client) =>
             client.firstName?.toLowerCase().includes(lowerCaseValue) ||
             client.lastName?.toLowerCase().includes(lowerCaseValue) ||
@@ -70,7 +83,7 @@ export class ClientInfoCardComponent implements OnInit {
         )
       );
     } else {
-      return of(this.cards);
+      return of(baseItems);
     }
   }
   /* ---------- cycle filter ------------ */
