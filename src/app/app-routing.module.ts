@@ -13,7 +13,7 @@ const routes: Routes = [
     path: '',
     loadChildren: () =>
       import('./protected/protected.module').then((m) => m.ProtectedModule),
-    data: { preload: true, preloadDelay: 5000, preloadOnAuth: true },
+    data: { preload: true, preloadDelay: 5000 },
   },
   { path: '**', redirectTo: '' },
 ];

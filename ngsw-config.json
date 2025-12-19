@@ -40,7 +40,7 @@
         "maxSize": 100,
         "maxAge": "6h",
         "strategy": "freshness",
-        "timeout": "3s"
+        "timeout": "10s"
       }
     }
   ]
