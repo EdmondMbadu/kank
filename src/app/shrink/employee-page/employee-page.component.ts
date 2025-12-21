@@ -1798,7 +1798,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       Number.isFinite(this.contractYear) && this.contractYear
         ? this.contractYear
         : this.year;
-    const effectiveDate = `Ce contrat est valable pour une durée d’un (1) an à compter du 1er janvier ${effectiveYear} renouvelable chaque année.`;
+    const effectiveDate = `Ce contrat est valable pour une durée d'un (1) an à compter du 1er janvier ${effectiveYear} renouvelable chaque année.`;
+    // Get base salary from employee paymentAmount, fallback to role defaults if not set
+    const baseSalary = this.employee?.paymentAmount 
+      ? `${parseFloat(this.employee.paymentAmount)}$`
+      : role === 'Manager Regionale' ? '150$' 
+        : role === 'Auditrice' ? '110$'
+          : role === 'Manager' ? '110$'
+            : '90$'; // Agent Marketing default
 
     if (role === 'Manager') {
       return {
@@ -1826,7 +1833,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           {
             title: 'Vos Paiements et Primes',
             bullets: [
-              'Base mensuelle : 110$',
+              `Base mensuelle : ${baseSalary}`,
               'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
               'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
               'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',
@@ -1885,7 +1892,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           {
             title: 'Vos Paiements et Primes',
             bullets: [
-              'Base mensuelle : 150$',
+              `Base mensuelle : ${baseSalary}`,
               'Primes de performance Distribution(%) par rapport au minimum de perte accru : 30$ (si la perte est de moins de 2%).',
               'Les paiements sont effectués dans un compte bancaire (RAWBANK) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de base de 10$ chaque année que vous demeurez dans la fondation.',
               "D'autres primes seront accordées en fonction de l'efficacité de votre travail dans l'accomplissement de tâches spécifiques, à la discrétion du conseil d'administration.",
@@ -1911,7 +1918,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           },
         ],
         closing: [
-          'Nous avons hâte de bénéficier de votre expertise et de voir comment vos observations contribueront à l’amélioration de nos processus et à la réussite de notre mission.',
+          'Nous avons hâte de bénéficier de votre expertise et de voir comment vos observations contribueront à l\'amélioration de nos processus et à la réussite de notre mission.',
           'Cordialement,',
         ],
         signedDate,
@@ -1947,7 +1954,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           {
             title: 'Vos Paiements et Primes',
             bullets: [
-              'Base mensuelle : 110$',
+              `Base mensuelle : ${baseSalary}`,
               'Primes de performance Distribution(%) par rapport au minimum de perte accru : 30$ (si la perte est de moins de 2%).',
               'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de base de 10$ chaque année que vous demeurez dans la fondation.',
               "D'autres primes seront accordées en fonction de l'efficacité de votre travail dans l'accomplissement de tâches spécifiques, à la discrétion du conseil d'administration.",
@@ -1974,7 +1981,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         ],
         closing: [
           'Ce document peut être mis à jour selon les besoins de la Fondation. Toute modification vous sera communiquée en temps opportun.',
-          'Nous avons hâte de bénéficier de votre expertise et de voir comment vos observations contribueront à l’amélioration de nos processus et à la réussite de notre mission.',
+          'Nous avons hâte de bénéficier de votre expertise et de voir comment vos observations contribueront à l\'amélioration de nos processus et à la réussite de notre mission.',
           'Cordialement,',
         ],
         signedDate,
@@ -2009,7 +2016,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         {
           title: 'Vos Paiements et Primes',
           bullets: [
-            'Base mensuelle : 90$',
+            `Base mensuelle : ${baseSalary}`,
             'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
             'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
             'Les paiements sont effectués dans un compte bancaire (RAWBANK) le 1er de chaque mois, les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',
