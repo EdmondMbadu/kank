@@ -102,6 +102,7 @@ type ScheduledBulkMessage = ScheduledBulkMessageDocument & {
   scheduledForDate: Date;
   typeLabel: string;
   statusLabel: string;
+  locationEntries: { name: string; count: number }[];
 };
 
 @Component({
@@ -2230,6 +2231,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
       scheduledForDate,
       typeLabel: this.getLogTypeLabel(safe.type),
       statusLabel: this.getScheduleStatusLabel(safe.status),
+      locationEntries: this.buildLocationEntries(safe.locationTotals),
     };
   }
 

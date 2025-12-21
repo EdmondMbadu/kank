@@ -1780,6 +1780,33 @@
             Annuler l'envoi
           </button>
         </div>
+
+        <div class="mt-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+            Répartition par site
+          </p>
+          <ul
+            class="mt-2 flex flex-wrap gap-2 text-sm text-slate-600 dark:text-slate-300"
+            *ngIf="schedule.locationEntries?.length; else noScheduleLocationData"
+          >
+            <li
+              *ngFor="let entry of schedule.locationEntries"
+              class="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-slate-50 px-3 py-1.5 dark:border-slate-600 dark:bg-slate-800"
+            >
+              <span class="font-semibold text-slate-800 dark:text-white">
+                {{ entry.name }}
+              </span>
+              <span class="text-xs uppercase tracking-widest text-slate-400">
+                {{ entry.count }}
+              </span>
+            </li>
+          </ul>
+          <ng-template #noScheduleLocationData>
+            <p class="mt-2 text-sm text-slate-400">
+              Pas de site renseigné pour cette programmation.
+            </p>
+          </ng-template>
+        </div>
       </article>
     </div>
   </div>

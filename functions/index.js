@@ -346,24 +346,36 @@ exports.cancelScheduledBulkMessage = functions.https.onCall(async (data, context
   }
 
   const ref = db.collection("scheduled_bulk_messages").doc(scheduleId);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists) {
-      throw new functions.https.HttpsError("not-found", "Schedule not found.");
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new functions.https.HttpsError("not-found", "Schedule not found.");
+  }
+  const current = snap.data() || {};
+  if (current.status !== "scheduled") {
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        "Only scheduled messages can be canceled.",
+    );
+  }
+
+  const recipientsSnap = await ref.collection("recipients").get();
+  const batches = [];
+  let batch = db.batch();
+  let ops = 0;
+
+  recipientsSnap.docs.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+    ops += 1;
+    if (ops === 450) {
+      batches.push(batch.commit());
+      batch = db.batch();
+      ops = 0;
     }
-    const current = snap.data() || {};
-    if (current.status !== "scheduled") {
-      throw new functions.https.HttpsError(
-          "failed-precondition",
-          "Only scheduled messages can be canceled.",
-      );
-    }
-    tx.update(ref, {
-      status: "canceled",
-      canceledAt: admin.firestore.FieldValue.serverTimestamp(),
-      canceledAtMs: Date.now(),
-    });
   });
+
+  if (ops > 0) batches.push(batch.commit());
+  await Promise.all(batches);
+  await ref.delete();
 
   return {ok: true};
 });
