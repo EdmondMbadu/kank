@@ -99,6 +99,6 @@ export class GestionExpenseComponent {
   }
 
   hasMoreExpenses(): boolean {
-    return this.currentExpenses.length > 2;
+    return this.currentExpenses.length > 3;
   }
 }
