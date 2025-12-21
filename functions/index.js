@@ -381,6 +381,48 @@ exports.cancelScheduledBulkMessage = functions.https.onCall(async (data, context
 });
 
 /**
+ * Callable: delete a scheduled bulk message record (including recipients).
+ */
+exports.deleteScheduledBulkMessage = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to delete scheduling.",
+    );
+  }
+
+  const {scheduleId} = data || {};
+  if (!scheduleId) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "scheduleId is required.",
+    );
+  }
+
+  const ref = db.collection("scheduled_bulk_messages").doc(scheduleId);
+  const recipientsSnap = await ref.collection("recipients").get();
+  const batches = [];
+  let batch = db.batch();
+  let ops = 0;
+
+  recipientsSnap.docs.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+    ops += 1;
+    if (ops === 450) {
+      batches.push(batch.commit());
+      batch = db.batch();
+      ops = 0;
+    }
+  });
+
+  if (ops > 0) batches.push(batch.commit());
+  await Promise.all(batches);
+  await ref.delete();
+
+  return {ok: true};
+});
+
+/**
  * Scheduled: deliver due bulk messages and write logs.
  */
 exports.processScheduledBulkMessages = functions.pubsub

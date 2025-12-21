@@ -2268,6 +2268,21 @@ Merci pona confiance na FONDATION GERVAIS.`;
     }
   }
 
+  async deleteScheduledBulkMessage(schedule: ScheduledBulkMessage): Promise<void> {
+    const confirmDelete = window.confirm(
+      'Supprimer définitivement cette programmation ?'
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const callable = this.fns.httpsCallable('deleteScheduledBulkMessage');
+      await firstValueFrom(callable({ scheduleId: schedule.id }));
+    } catch (error) {
+      console.error('Delete scheduled bulk failed', error);
+      window.alert('Impossible de supprimer pour le moment.');
+    }
+  }
+
   private formatDateTimeForTimeZone(date: Date, timeZone: string): string {
     const formatter = new Intl.DateTimeFormat('en-CA', {
       timeZone,
