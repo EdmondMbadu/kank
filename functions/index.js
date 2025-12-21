@@ -24,6 +24,8 @@ const africastalking = AfricasTalking({
 // Get the SMS service
 const sms = africastalking.SMS;
 
+const KINSHASA_TIME_ZONE = "Africa/Kinshasa";
+
 /**
  * Formats a phone number to E.164 standard based on its origin.
  * - If the number starts with '0', it's treated as a DRC number.
@@ -61,6 +63,64 @@ function makeValidE164(number) {
   return null;
 }
 
+function parseLocalDateTimeInput(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  const [datePart, timePart] = trimmed.split("T");
+  if (!datePart || !timePart) return null;
+
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+  const values = [year, month, day, hour, minute];
+  if (values.some((v) => !Number.isFinite(v))) return null;
+
+  return {year, month, day, hour, minute};
+}
+
+function getTimeZoneOffsetMs(timeZone, date) {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = dtf.formatToParts(date);
+  const vals = {};
+  for (const part of parts) {
+    if (part.type !== "literal") vals[part.type] = part.value;
+  }
+
+  const asUtc = Date.UTC(
+      Number(vals.year),
+      Number(vals.month) - 1,
+      Number(vals.day),
+      Number(vals.hour),
+      Number(vals.minute),
+      Number(vals.second),
+  );
+  return asUtc - date.getTime();
+}
+
+function zonedTimeToUtcMs(localDateTime, timeZone) {
+  const parts = parseLocalDateTimeInput(localDateTime);
+  if (!parts) return null;
+
+  const utcDate = new Date(Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      0,
+  ));
+
+  const offsetMs = getTimeZoneOffsetMs(timeZone, utcDate);
+  return utcDate.getTime() - offsetMs;
+}
 
 /**
  * Callable: send a custom SMS to a single client.
@@ -108,7 +168,7 @@ exports.recordBulkMessageLog = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
         "unauthenticated",
-        "Authentication is required to record logs."
+        "Authentication is required to record logs.",
     );
   }
 
@@ -131,7 +191,7 @@ exports.recordBulkMessageLog = functions.https.onCall(async (data, context) => {
   ) {
     throw new functions.https.HttpsError(
         "invalid-argument",
-        "total, succeeded and failed must be numbers."
+        "total, succeeded and failed must be numbers.",
     );
   }
 
@@ -165,6 +225,224 @@ exports.recordBulkMessageLog = functions.https.onCall(async (data, context) => {
 
   return {ok: true};
 });
+
+/**
+ * Callable: schedule a bulk SMS send with a Kinshasa local time.
+ */
+exports.scheduleBulkMessage = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to schedule messages.",
+    );
+  }
+
+  const {
+    type = "custom",
+    template = "",
+    messagePreview = "",
+    locationTotals = {},
+    scheduledForLocal,
+    timeZone = KINSHASA_TIME_ZONE,
+    recipients = [],
+    sentBy,
+    sentById,
+  } = data || {};
+
+  if (!scheduledForLocal) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "scheduledForLocal is required.",
+    );
+  }
+
+  if (!Array.isArray(recipients) || recipients.length === 0) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "recipients must be a non-empty array.",
+    );
+  }
+
+  const scheduledForMs = zonedTimeToUtcMs(scheduledForLocal, timeZone);
+  if (!Number.isFinite(scheduledForMs)) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid scheduled date/time.",
+    );
+  }
+
+  const sanitizedTotals = {};
+  if (locationTotals && typeof locationTotals === "object") {
+    Object.entries(locationTotals).forEach(([rawName, rawCount]) => {
+      const label =
+        (rawName && String(rawName).trim()) || "Sans localisation";
+      const count = Number(rawCount) || 0;
+      if (count > 0) sanitizedTotals[label] = count;
+    });
+  }
+
+  const now = Date.now();
+  const docRef = db.collection("scheduled_bulk_messages").doc();
+  const authInfo = context.auth;
+  const authToken = (authInfo && authInfo.token) || {};
+
+  await docRef.set({
+    status: "scheduled",
+    type,
+    template,
+    messagePreview,
+    locationTotals: sanitizedTotals,
+    scheduledForLocal,
+    scheduledForMs,
+    timeZone,
+    total: recipients.length,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAtMs: now,
+    createdBy: sentBy || authToken.name || authToken.email || null,
+    createdById: sentById || authInfo.uid || null,
+  });
+
+  const batches = [];
+  let batch = db.batch();
+  let ops = 0;
+
+  recipients.forEach((recipient) => {
+    const ref = docRef.collection("recipients").doc();
+    batch.set(ref, {
+      phoneNumber: recipient.phoneNumber || null,
+      message: recipient.message || "",
+    });
+    ops += 1;
+    if (ops === 450) {
+      batches.push(batch.commit());
+      batch = db.batch();
+      ops = 0;
+    }
+  });
+
+  if (ops > 0) batches.push(batch.commit());
+  await Promise.all(batches);
+
+  return {ok: true, id: docRef.id};
+});
+
+/**
+ * Callable: cancel a scheduled bulk message.
+ */
+exports.cancelScheduledBulkMessage = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to cancel scheduling.",
+    );
+  }
+
+  const {scheduleId} = data || {};
+  if (!scheduleId) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "scheduleId is required.",
+    );
+  }
+
+  const ref = db.collection("scheduled_bulk_messages").doc(scheduleId);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) {
+      throw new functions.https.HttpsError("not-found", "Schedule not found.");
+    }
+    const current = snap.data() || {};
+    if (current.status !== "scheduled") {
+      throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Only scheduled messages can be canceled.",
+      );
+    }
+    tx.update(ref, {
+      status: "canceled",
+      canceledAt: admin.firestore.FieldValue.serverTimestamp(),
+      canceledAtMs: Date.now(),
+    });
+  });
+
+  return {ok: true};
+});
+
+/**
+ * Scheduled: deliver due bulk messages and write logs.
+ */
+exports.processScheduledBulkMessages = functions.pubsub
+    .schedule("every 1 minutes")
+    .onRun(async () => {
+      const now = Date.now();
+      const dueSnap = await db
+          .collection("scheduled_bulk_messages")
+          .where("status", "==", "scheduled")
+          .where("scheduledForMs", "<=", now)
+          .orderBy("scheduledForMs", "asc")
+          .limit(3)
+          .get();
+
+      for (const doc of dueSnap.docs) {
+        const ref = doc.ref;
+        let claimed = false;
+        await db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref);
+          const current = snap.data() || {};
+          if (current.status !== "scheduled") return;
+          tx.update(ref, {
+            status: "processing",
+            processingAt: admin.firestore.FieldValue.serverTimestamp(),
+            processingAtMs: Date.now(),
+          });
+          claimed = true;
+        });
+        if (!claimed) continue;
+
+        const data = doc.data() || {};
+        const recipientsSnap = await ref.collection("recipients").get();
+        let succeeded = 0;
+        let failed = 0;
+
+        for (const recipient of recipientsSnap.docs) {
+          const {phoneNumber, message} = recipient.data() || {};
+          const to = makeValidE164(phoneNumber);
+          if (!to || !message) {
+            failed += 1;
+            continue;
+          }
+          try {
+            await sms.send({to: [to], message});
+            succeeded += 1;
+          } catch (err) {
+            console.error("Scheduled SMS send failed:", err);
+            failed += 1;
+          }
+        }
+
+        await ref.update({
+          status: "sent",
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          sentAtMs: Date.now(),
+          succeeded,
+          failed,
+        });
+
+        await db.collection("bulk_message_logs").add({
+          type: data.type || "custom",
+          total: data.total || recipientsSnap.size,
+          succeeded,
+          failed,
+          locationTotals: data.locationTotals || {},
+          template: data.template || "",
+          messagePreview: data.messagePreview || "",
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          sentAtMs: Date.now(),
+          sentBy: data.createdBy || null,
+          sentById: data.createdById || null,
+        });
+      }
+    });
 
 /**
  * Helper function to format a date string to DD/MM/YYYY

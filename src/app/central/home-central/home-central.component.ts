@@ -70,6 +70,40 @@ type BulkMessageLog = BulkMessageLogDocument & {
   typeLabel: string;
 };
 
+type ScheduledBulkStatus =
+  | 'scheduled'
+  | 'processing'
+  | 'sent'
+  | 'canceled'
+  | 'failed';
+
+type ScheduledBulkMessageDocument = {
+  status: ScheduledBulkStatus;
+  type?: BulkLogContext;
+  scheduledForMs: number;
+  scheduledForLocal: string;
+  timeZone?: string;
+  total: number;
+  template?: string;
+  messagePreview?: string;
+  locationTotals?: Record<string, number>;
+  createdAt?: any;
+  createdAtMs?: number;
+  createdBy?: string;
+  createdById?: string | null;
+  canceledAtMs?: number;
+  sentAtMs?: number;
+  succeeded?: number;
+  failed?: number;
+};
+
+type ScheduledBulkMessage = ScheduledBulkMessageDocument & {
+  id: string;
+  scheduledForDate: Date;
+  typeLabel: string;
+  statusLabel: string;
+};
+
 @Component({
   selector: 'app-home-central',
   templateUrl: './home-central.component.html',
@@ -158,8 +192,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     recipients: [] as Client[],
     excludedNoPhone: 0,
     result: null as BulkResult | null,
+    scheduleAt: '' as string,
   };
   bulkSending = false;
+  bulkScheduling = false;
+  bulkScheduleResult: SendResult | null = null;
 
   generalBulkModal = {
     open: false,
@@ -167,8 +204,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     recipients: [] as Client[],
     excludedNoPhone: 0,
     result: null as BulkResult | null,
+    scheduleAt: '' as string,
   };
   generalBulkSending = false;
+  generalBulkScheduling = false;
+  generalBulkScheduleResult: SendResult | null = null;
 
   placeholderTokens = [
     '{{FULL_NAME}}',
@@ -193,6 +233,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     }
 
     this.listenToBulkLogs();
+    this.listenToScheduledBulkMessages();
   }
 
   getAllClients() {
@@ -1259,6 +1300,8 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.bulkModal.open = true;
     this.bulkModal.result = null;
     this.bulkModal.minScore = this.fdMinScore;
+    this.bulkModal.scheduleAt = '';
+    this.bulkScheduleResult = null;
     this.applyDefaultBulkTemplate();
     this.updateBulkRecipients();
   }
@@ -1267,7 +1310,10 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.bulkModal.message = '';
     this.bulkModal.recipients = [];
     this.bulkModal.result = null;
+    this.bulkModal.scheduleAt = '';
+    this.bulkScheduleResult = null;
     this.bulkSending = false;
+    this.bulkScheduling = false;
   }
   applyDefaultBulkTemplate() {
     this.bulkModal.message = `Mbote {{FULL_NAME}},
@@ -1347,6 +1393,49 @@ Merci pona confiance na FONDATION GERVAIS`;
     });
   }
 
+  async scheduleBulkSms() {
+    if (
+      !this.bulkModal.message?.trim() ||
+      this.bulkModal.recipients.length === 0 ||
+      !this.bulkModal.scheduleAt?.trim()
+    )
+      return;
+
+    this.bulkScheduling = true;
+    this.bulkScheduleResult = null;
+
+    try {
+      const recipients = this.bulkModal.recipients.map((c) => ({
+        phoneNumber: c.phoneNumber!,
+        message: this.personalizeMessage(this.bulkModal.message, c),
+      }));
+      const locationTotals = this.aggregateLocations(
+        this.bulkModal.recipients,
+        (client) => client.locationName
+      );
+      await this.createScheduledBulkMessage({
+        type: 'finished_clients',
+        scheduledForLocal: this.bulkModal.scheduleAt,
+        recipients,
+        template: this.bulkModal.message,
+        messagePreview: this.previewPersonalized(),
+        locationTotals,
+      });
+      this.bulkScheduleResult = {
+        ok: true,
+        text: 'Envoi groupé programmé.',
+      };
+    } catch (error) {
+      console.error('Schedule bulk SMS failed', error);
+      this.bulkScheduleResult = {
+        ok: false,
+        text: 'Échec de la programmation.',
+      };
+    } finally {
+      this.bulkScheduling = false;
+    }
+  }
+
   // ===== general custom bulk (master list) =====
   get generalEligibleCount(): number {
     return this.filteredItems.filter((c) => this.hasDialablePhone(c)).length;
@@ -1355,6 +1444,8 @@ Merci pona confiance na FONDATION GERVAIS`;
   openGeneralBulkModal() {
     this.generalBulkModal.open = true;
     this.generalBulkModal.result = null;
+    this.generalBulkModal.scheduleAt = '';
+    this.generalBulkScheduleResult = null;
     this.applyGeneralDefaultTemplate();
     this.updateGeneralBulkRecipients();
   }
@@ -1365,6 +1456,9 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.generalBulkModal.recipients = [];
     this.generalBulkModal.result = null;
     this.generalBulkSending = false;
+    this.generalBulkModal.scheduleAt = '';
+    this.generalBulkScheduleResult = null;
+    this.generalBulkScheduling = false;
   }
 
   applyGeneralDefaultTemplate() {
@@ -1434,6 +1528,49 @@ Merci pour ta confiance !`;
       template: this.generalBulkModal.message,
       messagePreview: this.generalPreviewPersonalized(),
     });
+  }
+
+  async scheduleGeneralBulkSms() {
+    if (
+      !this.generalBulkModal.message?.trim() ||
+      this.generalBulkModal.recipients.length === 0 ||
+      !this.generalBulkModal.scheduleAt?.trim()
+    )
+      return;
+
+    this.generalBulkScheduling = true;
+    this.generalBulkScheduleResult = null;
+
+    try {
+      const recipients = this.generalBulkModal.recipients.map((c) => ({
+        phoneNumber: c.phoneNumber!,
+        message: this.personalizeMessage(this.generalBulkModal.message, c),
+      }));
+      const locationTotals = this.aggregateLocations(
+        this.generalBulkModal.recipients,
+        (client) => client.locationName
+      );
+      await this.createScheduledBulkMessage({
+        type: 'general_filters',
+        scheduledForLocal: this.generalBulkModal.scheduleAt,
+        recipients,
+        template: this.generalBulkModal.message,
+        messagePreview: this.generalPreviewPersonalized(),
+        locationTotals,
+      });
+      this.generalBulkScheduleResult = {
+        ok: true,
+        text: 'Envoi groupé programmé.',
+      };
+    } catch (error) {
+      console.error('Schedule general bulk SMS failed', error);
+      this.generalBulkScheduleResult = {
+        ok: false,
+        text: 'Échec de la programmation.',
+      };
+    } finally {
+      this.generalBulkScheduling = false;
+    }
   }
 
   // ===== helpers =====
@@ -1551,8 +1688,11 @@ Merci pour ta confiance !`;
     recipients: [] as ContactEntry[],
     excludedNoPhone: 0,
     result: null as BulkResult | null,
+    scheduleAt: '' as string,
   };
   contactBulkSending = false;
+  contactBulkScheduling = false;
+  contactBulkScheduleResult: SendResult | null = null;
 
   bulkLogs: BulkMessageLog[] = [];
   bulkLogsLoading = false;
@@ -1560,11 +1700,16 @@ Merci pour ta confiance !`;
   showAllBulkLogs = false;
 
   private bulkLogsSub?: Subscription;
+  scheduledBulkMessages: ScheduledBulkMessage[] = [];
+  scheduledBulkLoading = false;
+  scheduledBulkError: string | null = null;
+  private scheduledBulkSub?: Subscription;
 
 
   ngOnDestroy(): void {
     this.contactsSub?.unsubscribe();
     this.bulkLogsSub?.unsubscribe();
+    this.scheduledBulkSub?.unsubscribe();
   }
 
   private initializeContactsCollection(user: User): void {
@@ -1807,6 +1952,8 @@ Merci pour votre confiance !`;
   openContactBulkModal() {
     this.contactBulkModal.open = true;
     this.contactBulkModal.result = null;
+    this.contactBulkModal.scheduleAt = '';
+    this.contactBulkScheduleResult = null;
     this.contactBulkModal.message = this.defaultContactBulkTemplate();
     this.updateContactBulkRecipients();
   }
@@ -1818,6 +1965,9 @@ Merci pour votre confiance !`;
     this.contactBulkModal.excludedNoPhone = 0;
     this.contactBulkModal.result = null;
     this.contactBulkSending = false;
+    this.contactBulkModal.scheduleAt = '';
+    this.contactBulkScheduleResult = null;
+    this.contactBulkScheduling = false;
   }
 
   private defaultContactBulkTemplate(): string {
@@ -1934,6 +2084,52 @@ Merci pona confiance na FONDATION GERVAIS.`;
     });
   }
 
+  async scheduleContactBulkMessages(): Promise<void> {
+    if (
+      !this.contactBulkModal.message?.trim() ||
+      this.contactBulkModal.recipients.length === 0 ||
+      !this.contactBulkModal.scheduleAt?.trim()
+    )
+      return;
+
+    this.contactBulkScheduling = true;
+    this.contactBulkScheduleResult = null;
+
+    try {
+      const recipients = this.contactBulkModal.recipients.map((contact) => ({
+        phoneNumber: contact.phoneNumber,
+        message: this.personalizeContactMessage(
+          this.contactBulkModal.message,
+          contact
+        ),
+      }));
+      const locationTotals = this.aggregateLocations(
+        this.contactBulkModal.recipients,
+        (contact) => contact.ownerName
+      );
+      await this.createScheduledBulkMessage({
+        type: 'prospect_contacts',
+        scheduledForLocal: this.contactBulkModal.scheduleAt,
+        recipients,
+        template: this.contactBulkModal.message,
+        messagePreview: this.contactBulkPreviewMessage,
+        locationTotals,
+      });
+      this.contactBulkScheduleResult = {
+        ok: true,
+        text: 'Envoi groupé programmé.',
+      };
+    } catch (error) {
+      console.error('Schedule contact bulk SMS failed', error);
+      this.contactBulkScheduleResult = {
+        ok: false,
+        text: 'Échec de la programmation.',
+      };
+    } finally {
+      this.contactBulkScheduling = false;
+    }
+  }
+
   get contactEligibleCount(): number {
     return this.filteredContacts.filter((c) =>
       this.hasDialableContactPhone(c)
@@ -1986,6 +2182,144 @@ Merci pona confiance na FONDATION GERVAIS.`;
           this.bulkLogsLoading = false;
         },
       });
+  }
+
+  private listenToScheduledBulkMessages(): void {
+    this.scheduledBulkLoading = true;
+    this.scheduledBulkError = null;
+    this.scheduledBulkSub?.unsubscribe();
+
+    this.scheduledBulkSub = this.afs
+      .collection<ScheduledBulkMessageDocument>('scheduled_bulk_messages', (ref) =>
+        ref.orderBy('scheduledForMs', 'desc').limit(30)
+      )
+      .snapshotChanges()
+      .subscribe({
+        next: (snaps) => {
+          this.scheduledBulkMessages = snaps.map((snap) =>
+            this.transformScheduledBulkDocument(
+              snap.payload.doc.id,
+              snap.payload.doc.data()
+            )
+          );
+          this.scheduledBulkLoading = false;
+        },
+        error: (error) => {
+          console.error('Scheduled bulk listener error', error);
+          this.scheduledBulkError = 'Impossible de charger les programmations.';
+          this.scheduledBulkLoading = false;
+        },
+      });
+  }
+
+  private transformScheduledBulkDocument(
+    id: string,
+    data: ScheduledBulkMessageDocument | undefined
+  ): ScheduledBulkMessage {
+    const safe: ScheduledBulkMessageDocument = data ?? {
+      status: 'scheduled',
+      scheduledForMs: Date.now(),
+      scheduledForLocal: '',
+      total: 0,
+    };
+    const scheduledForDate = new Date(safe.scheduledForMs || Date.now());
+
+    return {
+      ...safe,
+      id,
+      scheduledForDate,
+      typeLabel: this.getLogTypeLabel(safe.type),
+      statusLabel: this.getScheduleStatusLabel(safe.status),
+    };
+  }
+
+  private getScheduleStatusLabel(status: ScheduledBulkStatus): string {
+    switch (status) {
+      case 'scheduled':
+        return 'Programmé';
+      case 'processing':
+        return 'Envoi en cours';
+      case 'sent':
+        return 'Envoyé';
+      case 'canceled':
+        return 'Annulé';
+      case 'failed':
+        return 'Échec';
+      default:
+        return 'Programmé';
+    }
+  }
+
+  async cancelScheduledBulkMessage(schedule: ScheduledBulkMessage): Promise<void> {
+    if (schedule.status !== 'scheduled') return;
+    const confirmCancel = window.confirm(
+      'Annuler cet envoi groupé programmé ?'
+    );
+    if (!confirmCancel) return;
+
+    try {
+      const callable = this.fns.httpsCallable('cancelScheduledBulkMessage');
+      await firstValueFrom(callable({ scheduleId: schedule.id }));
+    } catch (error) {
+      console.error('Cancel scheduled bulk failed', error);
+      window.alert("Impossible d'annuler pour le moment.");
+    }
+  }
+
+  private formatDateTimeForTimeZone(date: Date, timeZone: string): string {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(date);
+    const values: Record<string, string> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') values[part.type] = part.value;
+    }
+    return `${values['year']}-${values['month']}-${values['day']}T${values['hour']}:${values['minute']}`;
+  }
+
+  get kinshasaNowLocal(): string {
+    return this.formatDateTimeForTimeZone(new Date(), 'Africa/Kinshasa');
+  }
+
+  formatScheduleLocalLabel(value?: string): string {
+    if (!value) return '—';
+    return value.replace('T', ' ');
+  }
+
+  private async createScheduledBulkMessage(payload: {
+    type: BulkLogContext;
+    scheduledForLocal: string;
+    recipients: { phoneNumber: string; message: string }[];
+    template: string;
+    messagePreview?: string;
+    locationTotals: Record<string, number>;
+  }): Promise<void> {
+    const user = this.auth.currentUser || {};
+    const sentBy = `${user.firstName ?? ''} ${user.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    const callable = this.fns.httpsCallable('scheduleBulkMessage');
+    await firstValueFrom(
+      callable({
+        type: payload.type,
+        template: payload.template,
+        messagePreview: payload.messagePreview ?? null,
+        locationTotals: payload.locationTotals,
+        scheduledForLocal: payload.scheduledForLocal,
+        timeZone: 'Africa/Kinshasa',
+        recipients: payload.recipients,
+        sentBy: sentBy || user.email || undefined,
+        sentById: user.uid ?? null,
+      })
+    );
   }
 
   private transformBulkLogDocument(
