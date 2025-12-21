@@ -1814,12 +1814,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           {
             title: 'Votre Rôle',
             bullets: [
-              'Garantir que les clients comprennent et respectent les accords, notamment les paiements à temps et l’utilisation des crédits.',
+              'Garantir que les clients comprennent et respectent les accords, notamment les paiements à temps et l\'utilisation des crédits.',
               'Connaître vos clients et identifier ceux que vous devez visiter chaque jour.',
               'Encadrer les agents de marketing, les informer des priorités et surveiller leurs performances et les vôtres.',
-              'Organiser des réunions quotidiennes pour vérifier l’état de l’équipe (santé, objectifs, etc.).',
+              'Organiser des réunions quotidiennes pour vérifier l\'état de l\'équipe (santé, objectifs, etc.).',
               'Assurer la mise à jour des données en temps réel et résoudre tout problème signalé.',
-              'Maintenir la discipline dans le bureau et veiller à la propreté de l’espace.',
+              'Maintenir la discipline dans le bureau et veiller à la propreté de l\'espace.',
+              'Mettre les commentaires claires chaque jour pour les clients qui n\'ont pas payer ce jour là.',
             ],
           },
           {
@@ -1837,13 +1838,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
               'Si vos performances sont inférieures à 50% pendant 3 mois consécutifs, vous serez notifié.',
               'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
-              ...this.theftRules(),
+              'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
             ],
           },
           {
             title: 'Vos Droits',
             bullets: [
-              'Une semaine (7 jours) de congé annuel (coordonné avec l’équipe).',
+              'Chaque employé a droit à sept (7) jours de congé par année civile. Les jours de congé non utilisés sont cumulables d\'une année à l\'autre, dans la limite maximale de trente (30) jours. Au-delà de ce plafond, aucun jour supplémentaire ne peut être accumulé.',
               'Paiement transparent et primes de performance.',
               'Accès aux équipements nécessaires pour superviser les opérations.',
             ],
@@ -1897,13 +1898,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               'Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.',
               "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
               'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
-              ...this.theftRules(),
+              'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
             ],
           },
           {
             title: 'Vos Droits',
             bullets: [
-              'Une semaine de congé annuel, coordonnée avec l’équipe pour assurer une continuité des opérations.',
+              'Chaque employé a droit à sept (7) jours de congé par année civile. Les jours de congé non utilisés sont cumulables d\'une année à l\'autre, dans la limite maximale de trente (30) jours. Au-delà de ce plafond, aucun jour supplémentaire ne peut être accumulé.',
               'Paiement transparent avec primes basées sur vos performances et contributions.',
               'Accès aux outils et informations nécessaires pour effectuer vos audits efficacement.',
             ],
@@ -1935,7 +1936,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             title: 'Votre Rôle',
             bullets: [
               'Identifier tous les types de problèmes au sein des opérations et des équipes et informer immédiatement la hiérarchie.',
-              'Appeler et vérifier les clients lors de l’enregistrement.',
+              'Appeler et vérifier les clients lors de l\'enregistrement.',
               'Observer et analyser la manière dont le travail est réalisé.',
               'Inspecter une équipe pendant une semaine et acquérir une bonne connaissance de la plupart des clients de cette équipe.',
               'Comparer les informations entre le système et les carnets de notes pour s’assurer de leur concordance.',
@@ -1959,13 +1960,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               'Si vous êtes pris en train de falsifier les renseignements ou de ne pas vérifier les clients et prétendre que vous avez contacté les clients, vous serez licencié immédiatement.',
               "Si vous recevez de l'argent ou un pot-de-vin du manager ou de l'agent de marketing pour leur donner des faveurs.",
               'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
-              ...this.theftRules(),
+              'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
             ],
           },
           {
             title: 'Vos Droits',
             bullets: [
-              'Une semaine de congé annuel (7 jours), coordonnée avec l’équipe pour assurer une continuité des opérations.',
+              'Chaque employé a droit à sept (7) jours de congé par année civile. Les jours de congé non utilisés sont cumulables d\'une année à l\'autre, dans la limite maximale de trente (30) jours. Au-delà de ce plafond, aucun jour supplémentaire ne peut être accumulé.',
               'Paiement transparent avec primes basées sur vos performances et contributions.',
               'Accès aux outils et informations nécessaires pour effectuer vos audits efficacement.',
             ],
@@ -2001,7 +2002,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             'Mettre à jour les données de paiement des clients en temps réel.',
             'Informer votre responsable de tout problème rencontré.',
             'Escalater tout problème non résolu avec votre manager à la hiérarchie.',
-            'Maintenir la propreté et l’organisation de l’environnement de travail.',
+            'Maintenir la propreté et l\'organisation de l\'environnement de travail.',
+            'Mettre les commentaires claires chaque jour pour les clients qui n\'ont pas payer ce jour là.',
           ],
         },
         {
@@ -2019,13 +2021,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
             'Si vos performances sont inférieures à 50% pendant 5 mois consécutifs, vous serez licencié. Vous pourrez postuler à nouveau après 3 mois.',
             'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
-            ...this.theftRules(),
+            'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
           ],
         },
         {
           title: 'Vos Droits',
           bullets: [
-            'Une semaine de congé annuel (coordonné avec l’équipe).',
+            'Chaque employé a droit à sept (7) jours de congé par année civile. Les jours de congé non utilisés sont cumulables d\'une année à l\'autre, dans la limite maximale de trente (30) jours. Au-delà de ce plafond, aucun jour supplémentaire ne peut être accumulé.',
             'Paiement transparent et primes de performance.',
             'Accès aux équipements nécessaires pour accomplir vos tâches.',
           ],
