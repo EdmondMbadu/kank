@@ -23,6 +23,7 @@ export class GestionExpenseComponent {
   managementInfo?: Management = {};
 
   showPlanned = false; // controls collapse
+  showAllExpenses = false; // controls expense list expansion
   budgetCurrent: [string, string][] = [];
   budgetAmounts: string[] = [];
   budgetReasons: string[] = [];
@@ -95,5 +96,9 @@ export class GestionExpenseComponent {
     this.budgetDates = this.budgetCurrent.map((entry) =>
       this.time.convertTimeFormat(entry[0])
     );
+  }
+
+  hasMoreExpenses(): boolean {
+    return this.currentExpenses.length > 2;
   }
 }
