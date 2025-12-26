@@ -500,7 +500,7 @@ export class GestionDayComponent implements OnInit {
               (acc, row) => {
                 const total = row.totalReasons ?? 0;
                 const missing = row.missingReasons ?? 0;
-                if (total > 0) {
+                if (missing > 0) {
                   acc.total += total;
                   acc.missing += missing;
                 }
