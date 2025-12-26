@@ -66,6 +66,8 @@ export class TodayComponent {
   ngOnInit() {
     this.initalizeInputs();
     this.detailOpen = new Date().getHours() >= 16; // 4pm works better
+    this.weekPickerStartDate = this.requestDate;
+    this.updateWeekPickerTotals();
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
 
@@ -98,6 +100,12 @@ export class TodayComponent {
   weeklyProgressPercent: number = 0;
   weeklyTargetReached: boolean = false;
   weeklyRangeLabel: string = '';
+  weekPickerStartDate: string = '';
+  weekPickerRangeLabel: string = '';
+  weekPickerStartLabel: string = '';
+  weekPickerEndLabel: string = '';
+  weekPickerTotalN: number = 0;
+  weekPickerTotalDollars: string = '0';
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -338,6 +346,7 @@ export class TodayComponent {
     this.weeklyRangeLabel = this.computeWeeklyRangeLabel(
       this.requestDateCorrectFormat
     );
+    this.updateWeekPickerTotals();
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.notPaidAmountTodayN.toString()
@@ -385,6 +394,19 @@ export class TodayComponent {
   private computeWeeklyRangeLabel(dateKey: string): string {
     const { start, end } = this.getWeekBounds(dateKey);
     return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
+  }
+
+  updateWeekPickerTotals() {
+    const baseIsoDate = this.weekPickerStartDate || this.requestDate;
+    const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
+    const { start, end } = this.getWeekBounds(dateKey);
+    this.weekPickerStartLabel = this.formatWeekDate(start);
+    this.weekPickerEndLabel = this.formatWeekDate(end);
+    this.weekPickerRangeLabel = `${this.weekPickerStartLabel} - ${this.weekPickerEndLabel}`;
+    this.weekPickerTotalN = this.computeWeeklyPaymentTotal(dateKey);
+    this.weekPickerTotalDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.weekPickerTotalN.toString())
+      .toString();
   }
 
   private getWeekBounds(dateKey: string): { start: Date; end: Date } {
