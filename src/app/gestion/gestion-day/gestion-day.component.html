@@ -609,7 +609,7 @@
           </th>
           <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">Avancement</th>
           <th *ngIf="auth.isAdmin" class="px-6 py-3 text-red-600">Manquants</th>
-          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
+          <th *ngIf="auth.isAdmin" scope="col" class="px-4 md:px-8 py-3 md:py-4">
             Crédits & Transports
           </th>
         </tr>
@@ -730,7 +730,7 @@
             </ng-template>
           </td>
 
-          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+          <td *ngIf="auth.isAdmin" class="px-4 md:px-8 py-4 md:py-5 text-right">
             <span
               *ngIf="+(s.transportAmount ?? 0) > 0; else noTransport"
               class="text-emerald-600 font-semibold"
@@ -796,7 +796,7 @@
             </div>
           </td>
           <td *ngIf="auth.isAdmin"></td>
-          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+          <td *ngIf="auth.isAdmin" class="px-4 md:px-8 py-3 md:py-4 text-right">
             <span
               *ngIf="+overallTransportAmount > 0; else noTransportTotal"
               class="text-emerald-600 font-semibold"
