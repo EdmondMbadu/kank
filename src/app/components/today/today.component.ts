@@ -94,6 +94,10 @@ export class TodayComponent {
   dailyPaymentDollars: string = '0';
   weeklyPaymentTotalN: number = 0;
   weeklyPaymentTotalDollars: string = '0';
+  weeklyTargetFc: number = 600000;
+  weeklyProgressPercent: number = 0;
+  weeklyTargetReached: boolean = false;
+  weeklyRangeLabel: string = '';
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -323,6 +327,17 @@ export class TodayComponent {
     this.weeklyPaymentTotalDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.weeklyPaymentTotalN.toString())
       .toString();
+    this.weeklyTargetReached = this.weeklyPaymentTotalN >= this.weeklyTargetFc;
+    this.weeklyProgressPercent =
+      this.weeklyTargetFc === 0
+        ? 0
+        : Math.min(
+            100,
+            (this.weeklyPaymentTotalN / this.weeklyTargetFc) * 100
+          );
+    this.weeklyRangeLabel = this.computeWeeklyRangeLabel(
+      this.requestDateCorrectFormat
+    );
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.notPaidAmountTodayN.toString()
@@ -350,16 +365,7 @@ export class TodayComponent {
   }
 
   private computeWeeklyPaymentTotal(dateKey: string): number {
-    const dateObj = this.time.toDate(dateKey);
-    const dayIndex = dateObj.getDay();
-    const daysSinceMonday = (dayIndex + 6) % 7;
-    const start = new Date(dateObj);
-    start.setDate(dateObj.getDate() - daysSinceMonday);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(dateObj);
-    end.setHours(0, 0, 0, 0);
-
+    const { start, end } = this.getWeekBounds(dateKey);
     const payments = this.auth.currentUser?.dailyReimbursement || {};
     let total = 0;
     const cursor = new Date(start);
@@ -374,6 +380,55 @@ export class TodayComponent {
     }
 
     return total;
+  }
+
+  private computeWeeklyRangeLabel(dateKey: string): string {
+    const { start, end } = this.getWeekBounds(dateKey);
+    return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
+  }
+
+  private getWeekBounds(dateKey: string): { start: Date; end: Date } {
+    const dateObj = this.time.toDate(dateKey);
+    const dayIndex = dateObj.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(dateObj);
+    start.setDate(dateObj.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+  }
+
+  private formatWeekDate(date: Date): string {
+    const days = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+    const months = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+    const dayName = days[date.getDay()];
+    const monthName = months[date.getMonth()];
+    return `${dayName} ${date.getDate()} ${monthName} ${date.getFullYear()}`;
   }
 
   private formatDateKey(date: Date): string {
