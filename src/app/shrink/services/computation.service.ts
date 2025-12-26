@@ -1924,6 +1924,21 @@ export class ComputationService {
     });
   }
 
+  private formatContractBullet(bullet: string): string | { text: any; style: string } {
+    const match = bullet.match(/base mensuelle\s*:\s*(.+)$/i);
+    if (!match) {
+      return bullet;
+    }
+    const amount = match[1].trim();
+    return {
+      text: [
+        { text: 'Base mensuelle : ', bold: true, fontSize: 12 },
+        { text: amount, bold: true, fontSize: 12, color: '#0f172a' },
+      ],
+      style: 'baseSalaryBullet',
+    };
+  }
+
   async generateContractDocument(
     employee: Employee,
     contract: {
@@ -2017,8 +2032,11 @@ export class ComputationService {
       );
 
       if (section.bullets?.length) {
+        const listItems = section.bullets.map((bullet) =>
+          this.formatContractBullet(bullet)
+        );
         content.push({
-          ul: section.bullets,
+          ul: listItems,
           style: listStyle,
           margin: [0, 0, 0, 10],
         });
@@ -2103,6 +2121,7 @@ export class ComputationService {
         signatureLabel: { bold: true, fontSize: 12, margin: [0, 0, 0, 6] },
         signatureName: { bold: true, fontSize: 12 },
         signatureDate: { italics: true, fontSize: 10, color: '#4b5563' },
+        baseSalaryBullet: { fontSize: 12, bold: true, color: '#0f172a' },
         paragraphMotif: {
           fontSize: 11,
           lineHeight: 1.35,

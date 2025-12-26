@@ -93,6 +93,7 @@ type ContractViewModel = {
   styleUrls: ['./employee-page.component.css'],
 })
 export class EmployeePageComponent implements OnInit, OnDestroy {
+  private readonly baseSalaryLabel = 'Base mensuelle';
   // ── Attendance state picker (admin) ─────────────────────────────
   showStatePickerModal = false;
   public statePickerKey = ''; // key we will edit (e.g. "8-23-2025" or "8-23-2025-09-15-02")
@@ -2233,6 +2234,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       roleLabel: role,
       signatureDataUrl: this.signatureDataUrl || undefined,
     };
+  }
+
+  isBaseSalaryBullet(text: string): boolean {
+    return text.trim().toLowerCase().startsWith(this.baseSalaryLabel.toLowerCase());
+  }
+
+  getBaseSalaryAmount(text: string): string {
+    const match = text.match(/base mensuelle\s*:\s*(.+)$/i);
+    if (!match) return '';
+    return match[1].trim();
   }
 
   openContractModal() {

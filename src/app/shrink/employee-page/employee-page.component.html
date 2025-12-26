@@ -2817,7 +2817,17 @@
                 section.title === 'Motifs de Licenciement'
             }"
           >
-            <li *ngFor="let item of section.bullets">{{ item }}</li>
+            <li *ngFor="let item of section.bullets">
+              <ng-container *ngIf="isBaseSalaryBullet(item); else normalBullet">
+                <span class="text-base font-semibold">Base mensuelle :</span>
+                <span
+                  class="ml-1 text-base font-bold text-slate-900 dark:text-white"
+                >
+                  {{ getBaseSalaryAmount(item) }}
+                </span>
+              </ng-container>
+              <ng-template #normalBullet>{{ item }}</ng-template>
+            </li>
           </ul>
         </div>
       </div>
