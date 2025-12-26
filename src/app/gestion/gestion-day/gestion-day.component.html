@@ -795,7 +795,43 @@
               </span>
             </div>
           </td>
-          <td *ngIf="auth.isAdmin"></td>
+          <td *ngIf="auth.isAdmin" class="px-4 py-3">
+            <ng-container *ngIf="+overallTotalReserve > 0; else noTotalBase">
+              <div class="w-32">
+                <div
+                  class="relative w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
+                >
+                  <div
+                    class="absolute left-0 top-0 h-2 rounded-full bg-emerald-500"
+                    [style.width.%]="
+                      (+percentage > 100 ? 100 : (+percentage < 0 ? 0 : +percentage))
+                    "
+                  ></div>
+                </div>
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {{ +percentage || 0 | number : "1.0-0" }}%
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #noTotalBase>
+              <span class="text-xs text-slate-400">—</span>
+            </ng-template>
+          </td>
+          <td *ngIf="auth.isAdmin" class="px-4 py-3">
+            <span
+              *ngIf="overallMissingReasons === 0; else missingTotal"
+              class="inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-1"
+            >
+              OK
+            </span>
+            <ng-template #missingTotal>
+              <span
+                class="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-1"
+              >
+                {{ overallMissingReasons }}/{{ overallTotalReasons }}
+              </span>
+            </ng-template>
+          </td>
           <td *ngIf="auth.isAdmin" class="px-4 md:px-8 py-3 md:py-4 text-right">
             <span
               *ngIf="+overallTransportAmount > 0; else noTransportTotal"

@@ -219,6 +219,8 @@ export class GestionDayComponent implements OnInit {
   paymentTotal: number = 0;
   overallTotalReserveInDollars: number = 0;
   overallTransportAmount: number = 0;
+  overallMissingReasons: number = 0;
+  overallTotalReasons: number = 0;
   getAllClients() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -233,6 +235,8 @@ export class GestionDayComponent implements OnInit {
     this.paymentTotal = 0;
     this.overallTotalReserve = 0;
     this.overallTransportAmount = 0;
+    this.overallMissingReasons = 0;
+    this.overallTotalReasons = 0;
 
     // NEW: reset today's structures
     this.userServeTodayTotals = [];
@@ -492,6 +496,20 @@ export class GestionDayComponent implements OnInit {
               const tr = row.transportAmount ?? 0;
               return t > 0 || a > 0 || p > 0 || tr > 0;
             });
+            const reasonsTotals = this.reserveTotals.reduce(
+              (acc, row) => {
+                const total = row.totalReasons ?? 0;
+                const missing = row.missingReasons ?? 0;
+                if (total > 0) {
+                  acc.total += total;
+                  acc.missing += missing;
+                }
+                return acc;
+              },
+              { missing: 0, total: 0 }
+            );
+            this.overallMissingReasons = reasonsTotals.missing;
+            this.overallTotalReasons = reasonsTotals.total;
             this.userRequestTotals.sort((a, b) => {
               return b.total - a.total;
             });
