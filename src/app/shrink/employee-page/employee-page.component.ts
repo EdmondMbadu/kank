@@ -2011,7 +2011,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             bullets: [
               `Base mensuelle : ${baseSalary}`,
               'Être présent chaque jour au travail et confirmer sa présence par une photo claire prise sur le lieu de travail (logo ou élément visible du site). Toute photo floue ou non claire est considérée comme absence.',
-              "Respecter les règles de travail : absence = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas 600 000 FC de paiements collectés sur la semaine, une retenue de 5 $ par employé est appliquée pour chaque semaine où l’objectif n’est pas atteint. Ce montant peut être réajusté au cours de l’année selon l’évolution des activités.",
+              "Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas 600 000 FC de paiements collectés sur la semaine, une retenue de 5 $ par employé est appliquée pour chaque semaine où l’objectif n’est pas atteint. Ce montant peut être réajusté au cours de l’année selon l’évolution des activités.",
               'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
               'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
               'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',
@@ -2072,7 +2072,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             bullets: [
               `Base mensuelle : ${baseSalary}`,
               'Être présent chaque jour au travail et confirmer sa présence par une photo claire prise sur le lieu de travail (logo ou élément visible du site). Toute photo floue ou non claire est considérée comme absence.',
-              'Respecter les règles de travail : absence = –3 $ / jour, retard = –1 $ / jour.',
+              'Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour.',
               'Primes de performance Distribution(%) par rapport au minimum de perte accru : 30$ (si la perte est de moins de 2%).',
               'Les paiements sont effectués dans un compte bancaire (RAWBANK) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de base de 10$ chaque année que vous demeurez dans la fondation.',
               "D'autres primes seront accordées en fonction de l'efficacité de votre travail dans l'accomplissement de tâches spécifiques, à la discrétion du conseil d'administration.",
@@ -2136,7 +2136,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             bullets: [
               `Base mensuelle : ${baseSalary}`,
               'Être présent chaque jour au travail et confirmer sa présence par une photo claire prise sur le lieu de travail (logo ou élément visible du site). Toute photo floue ou non claire est considérée comme absence.',
-              'Respecter les règles de travail : absence = –3 $ / jour, retard = –1 $ / jour.',
+              'Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour.',
               'Primes de performance Distribution(%) par rapport au minimum de perte accru : 30$ (si la perte est de moins de 2%).',
               'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de base de 10$ chaque année que vous demeurez dans la fondation.',
               "D'autres primes seront accordées en fonction de l'efficacité de votre travail dans l'accomplissement de tâches spécifiques, à la discrétion du conseil d'administration.",
@@ -2200,7 +2200,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           bullets: [
             `Base mensuelle : ${baseSalary}`,
             'Être présent chaque jour au travail et confirmer sa présence par une photo claire prise sur le lieu de travail (logo ou élément visible du site). Toute photo floue ou non claire est considérée comme absence.',
-            "Respecter les règles de travail : absence = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas 600 000 FC de paiements collectés sur la semaine, une retenue de 5 $ par employé est appliquée pour chaque semaine où l’objectif n’est pas atteint. Ce montant peut être réajusté au cours de l’année selon l’évolution des activités.",
+            "Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas 600 000 FC de paiements collectés sur la semaine, une retenue de 5 $ par employé est appliquée pour chaque semaine où l’objectif n’est pas atteint. Ce montant peut être réajusté au cours de l’année selon l’évolution des activités.",
             'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
             'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
             'Les paiements sont effectués dans un compte bancaire (RAWBANK) le 1er de chaque mois, les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',
