@@ -1207,8 +1207,19 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
   async setCode() {
     try {
-      this.employee.paymentCode = this.code;
+      const previousCode = this.paymentCode;
+      const nextCode = (this.code || '').trim();
+
+      this.employee.paymentCode = nextCode;
       await this.data.updateEmployeePaymentCode(this.employee);
+
+      if ((previousCode || '').trim() !== nextCode) {
+        await this.auth.updateTeamCodeForPaymentCodeChange(
+          previousCode,
+          nextCode
+        );
+        this.paymentCode = nextCode;
+      }
       this.toggleSetCode();
     } catch (error) {
       console.error('Error setting payment code:', error);

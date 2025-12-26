@@ -671,6 +671,75 @@ export class AuthService {
   }
 
   /**
+   * Replace an employee's old payment code in teamCode with the new one.
+   * If the old code is missing, append the new code. Keeps '-' separators.
+   */
+  async updateTeamCodeForPaymentCodeChange(
+    oldCode: string,
+    newCode: string
+  ): Promise<void> {
+    const userId = this.currentUser?.uid;
+    if (!userId) {
+      console.warn('No current user, cannot update teamCode');
+      return;
+    }
+
+    const trimmedOld = (oldCode || '').trim();
+    const trimmedNew = (newCode || '').trim();
+
+    if (!trimmedOld && !trimmedNew) {
+      return;
+    }
+
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${userId}`
+    );
+    const userDoc = await firstValueFrom(userRef.valueChanges());
+
+    if (!userDoc) {
+      console.warn(`User ${userId} not found, cannot update teamCode`);
+      return;
+    }
+
+    const currentTeamCode = userDoc.teamCode || '';
+    const codes = currentTeamCode
+      .split('-')
+      .map((c) => c.trim())
+      .filter((c) => !!c);
+
+    const updatedCodes = [...codes];
+    let replaced = false;
+
+    if (trimmedOld) {
+      const index = updatedCodes.indexOf(trimmedOld);
+      if (index !== -1) {
+        if (trimmedNew) {
+          updatedCodes[index] = trimmedNew;
+        } else {
+          updatedCodes.splice(index, 1);
+        }
+        replaced = true;
+      }
+    }
+
+    if (!replaced && trimmedNew && !updatedCodes.includes(trimmedNew)) {
+      updatedCodes.push(trimmedNew);
+    }
+
+    const dedupedCodes: string[] = [];
+    for (const code of updatedCodes) {
+      if (!dedupedCodes.includes(code)) {
+        dedupedCodes.push(code);
+      }
+    }
+
+    const newTeamCode = dedupedCodes.join('-');
+    if (newTeamCode !== currentTeamCode) {
+      await userRef.set({ teamCode: newTeamCode }, { merge: true });
+    }
+  }
+
+  /**
    * Delete an employee completely from Firestore.
    * Also removes their paymentCode from the location's teamCode if it exists.
    * @param userId - The user ID (location) that owns the employee
