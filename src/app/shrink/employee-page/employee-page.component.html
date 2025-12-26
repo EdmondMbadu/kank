@@ -2531,6 +2531,17 @@
             $ -{{ paymentLate | number : "1.0-0" }}
           </dd>
         </dl>
+        <dl
+          *ngIf="paymentObjectiveWeekDeductionTotal !== 0 || isAdminUi"
+          class="flex items-center justify-between gap-4"
+        >
+          <dt class="text-base font-normal text-red-500">
+            Objectif semaine non atteint
+          </dt>
+          <dd class="text-base font-medium text-red-500">
+            $ -{{ paymentObjectiveWeekDeductionTotal | number : "1.0-0" }}
+          </dd>
+        </dl>
 
         <div *ngIf="isAdminUi">
           <input
@@ -2597,6 +2608,70 @@
             required=""
             [(ngModel)]="paymentLate"
           />
+        </div>
+        <div *ngIf="isAdminUi" class="space-y-3">
+          <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-700/40">
+            <div class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+              Paiement Semaine Objectif Non Atteint
+            </div>
+            <div class="grid gap-2 sm:grid-cols-3">
+              <div>
+                <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-300">Début (Lundi)</label>
+                <input
+                  type="date"
+                  class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-primary-600 focus:ring-2 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  [(ngModel)]="weekObjectiveStartDate"
+                  (change)="updateWeekObjectivePreview()"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-300">Fin (Dimanche)</label>
+                <div
+                  class="mt-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
+                >
+                  {{ weekObjectiveEndLabel }}
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-300">Montant ($)</label>
+                <input
+                  type="number"
+                  class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-primary-600 focus:ring-2 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  [(ngModel)]="weekObjectiveAmount"
+                />
+              </div>
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-xs text-gray-500 dark:text-gray-300">
+                Total retenues: $ {{ paymentObjectiveWeekDeductionTotal | number : "1.0-0" }}
+              </div>
+              <button
+                type="button"
+                (click)="addObjectiveWeekDeduction()"
+                class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+              >
+                Ajouter
+              </button>
+            </div>
+            <div *ngIf="paymentObjectiveWeekDeductions.length > 0" class="mt-3 space-y-2">
+              <div
+                *ngFor="let d of paymentObjectiveWeekDeductions; let i = index"
+                class="flex items-center justify-between rounded-md bg-gray-100 px-2 py-1.5 text-xs text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+              >
+                <span>{{ formatObjectiveWeekLabel(d) }}</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-red-600">$ -{{ d.amount | number : "1.0-0" }}</span>
+                  <button
+                    type="button"
+                    (click)="removeObjectiveWeekDeduction(i)"
+                    class="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100"
+                  >
+                    Retirer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

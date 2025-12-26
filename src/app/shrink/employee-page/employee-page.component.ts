@@ -7,7 +7,11 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Employee, Trophy } from 'src/app/models/employee';
+import {
+  Employee,
+  Trophy,
+  WeeklyObjectiveDeduction,
+} from 'src/app/models/employee';
 import { Comment } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -339,6 +343,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   paymentIncreaseYears: number = 0;
   paymentBankFee: number = 0;
   paymentLate: number = 0;
+  paymentObjectiveWeekDeductionTotal: number = 0;
+  paymentObjectiveWeekDeductions: WeeklyObjectiveDeduction[] = [];
+  weekObjectiveStartDate: string = '';
+  weekObjectiveEndDate: string = '';
+  weekObjectiveEndLabel: string = '';
+  weekObjectiveAmount: number = 5;
 
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
@@ -763,6 +773,23 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.paymentBankFee = this.employee.paymentBankFee
       ? parseFloat(this.employee.paymentBankFee)
       : 0;
+    this.paymentObjectiveWeekDeductionTotal =
+      this.employee.paymentObjectiveWeekDeductionTotal
+        ? parseFloat(this.employee.paymentObjectiveWeekDeductionTotal)
+        : 0;
+    this.paymentObjectiveWeekDeductions = Array.isArray(
+      this.employee.paymentObjectiveWeekDeductions
+    )
+      ? this.employee.paymentObjectiveWeekDeductions.map((d) =>
+          this.normalizeObjectiveDeduction(d)
+        )
+      : [];
+    if (
+      this.paymentObjectiveWeekDeductionTotal === 0 &&
+      this.paymentObjectiveWeekDeductions.length > 0
+    ) {
+      this.recomputeObjectiveWeekDeductionTotal();
+    }
     this.totalPayments = this.employee.totalPayments
       ? parseFloat(this.employee.totalPayments)
       : 0;
@@ -777,6 +804,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.contractYear = this.employee.contractYear
       ? Number.parseInt(this.employee.contractYear, 10) || this.year
       : this.year;
+
+    if (!this.weekObjectiveStartDate) {
+      this.weekObjectiveStartDate = this.time.getTodaysDateYearMonthDay();
+    }
+    this.updateWeekObjectivePreview();
   }
 
   computeTotalBonusAmount() {
@@ -796,9 +828,132 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const absent = Number(this.paymentAbsent) || 0;
     const late = Number(this.paymentLate) || 0;
     const nothing = Number(this.paymentNothing) || 0;
+    const objectiveDeduction = Number(this.paymentObjectiveWeekDeductionTotal) || 0;
 
-    this.totalPayments = amount + bankFee + increase - absent - late - nothing;
+    this.totalPayments =
+      amount + bankFee + increase - absent - late - nothing - objectiveDeduction;
     return this.totalPayments;
+  }
+
+  updateWeekObjectivePreview() {
+    if (!this.weekObjectiveStartDate) {
+      this.weekObjectiveEndDate = '';
+      this.weekObjectiveEndLabel = '';
+      return;
+    }
+    const startDate = this.parseIsoDate(this.weekObjectiveStartDate);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    this.weekObjectiveEndDate = this.formatIsoDate(endDate);
+    this.weekObjectiveEndLabel = this.formatWeekDate(endDate);
+  }
+
+  addObjectiveWeekDeduction() {
+    if (!this.weekObjectiveStartDate) {
+      alert('Sélectionnez la date de début de semaine.');
+      return;
+    }
+    const amount = Number(this.weekObjectiveAmount) || 0;
+    if (amount <= 0) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+    if (!this.weekObjectiveEndDate) {
+      this.updateWeekObjectivePreview();
+    }
+    const entry: WeeklyObjectiveDeduction = {
+      start: this.weekObjectiveStartDate,
+      end: this.weekObjectiveEndDate,
+      amount,
+    };
+    const existingIndex = this.paymentObjectiveWeekDeductions.findIndex(
+      (d) => d.start === entry.start && d.end === entry.end
+    );
+    if (existingIndex >= 0) {
+      this.paymentObjectiveWeekDeductions[existingIndex] = entry;
+    } else {
+      this.paymentObjectiveWeekDeductions.push(entry);
+    }
+    this.recomputeObjectiveWeekDeductionTotal();
+    this.computeTotalPayment();
+  }
+
+  removeObjectiveWeekDeduction(index: number) {
+    this.paymentObjectiveWeekDeductions.splice(index, 1);
+    this.recomputeObjectiveWeekDeductionTotal();
+    this.computeTotalPayment();
+  }
+
+  formatObjectiveWeekLabel(d: WeeklyObjectiveDeduction): string {
+    const start = this.parseIsoDate(d.start);
+    const end = this.parseIsoDate(d.end);
+    return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
+  }
+
+  private recomputeObjectiveWeekDeductionTotal() {
+    this.paymentObjectiveWeekDeductionTotal =
+      this.paymentObjectiveWeekDeductions.reduce(
+        (sum, d) => sum + (Number(d.amount) || 0),
+        0
+      );
+  }
+
+  private normalizeObjectiveDeduction(
+    d: WeeklyObjectiveDeduction
+  ): WeeklyObjectiveDeduction {
+    if (!d?.start) {
+      return { start: '', end: '', amount: 0 };
+    }
+    const startDate = this.parseIsoDate(d.start);
+    const endDate = d.end
+      ? this.parseIsoDate(d.end)
+      : new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6);
+    return {
+      start: d.start,
+      end: this.formatIsoDate(endDate),
+      amount: Number(d.amount) || 0,
+    };
+  }
+
+  private parseIsoDate(iso: string): Date {
+    const [year, month, day] = iso.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private formatIsoDate(date: Date): string {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  private formatWeekDate(date: Date): string {
+    const days = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+    const months = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+    const dayName = days[date.getDay()];
+    const monthName = months[date.getMonth()];
+    return `${dayName} ${date.getDate()} ${monthName} ${date.getFullYear()}`;
   }
   private resetEmployeeState(): void {
     this.employee = {};
@@ -1720,6 +1875,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     ).toString();
     this.employee.paymentBankFee = p(this.paymentBankFee).toString();
     this.employee.paymentLate = p(this.paymentLate).toString();
+    this.employee.paymentObjectiveWeekDeductionTotal = p(
+      this.paymentObjectiveWeekDeductionTotal
+    ).toString();
+    this.employee.paymentObjectiveWeekDeductions =
+      this.paymentObjectiveWeekDeductions.map((d) => ({
+        start: d.start,
+        end: d.end,
+        amount: Number(d.amount) || 0,
+      }));
     this.employee.totalPayments = this.computeTotalPayment().toString();
   }
   async updateEmployeePaymentInfoAndSignCheck() {

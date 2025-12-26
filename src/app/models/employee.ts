@@ -67,6 +67,8 @@ export class Employee {
   paidThisMonth?: boolean;
   paymentBankFee?: string;
   paymentLate?: string;
+  paymentObjectiveWeekDeductionTotal?: string;
+  paymentObjectiveWeekDeductions?: WeeklyObjectiveDeduction[];
   // NEW: parallel map of attachments by date
   attendanceAttachments?: { [date: string]: AttendanceAttachment };
 
@@ -95,6 +97,12 @@ export class Employee {
   _dailyCount?: number;
 
   originLocation?: string;
+}
+
+export interface WeeklyObjectiveDeduction {
+  start: string; // YYYY-MM-DD
+  end: string; // YYYY-MM-DD
+  amount: number; // dollars
 }
 export class Avatar {
   path?: string;

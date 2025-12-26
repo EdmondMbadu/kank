@@ -1678,9 +1678,18 @@ export class ComputationService {
       const absentDed = Number(employee.paymentAbsent ?? 0);
       const noneDed = Number(employee.paymentNothing ?? 0);
       const late = Number(employee.paymentLate ?? 0);
+      const objectiveDed = Number(
+        employee.paymentObjectiveWeekDeductionTotal ?? 0
+      );
 
       netPay =
-        baseSalary + expIncrease + bankTransfer - absentDed - noneDed - late;
+        baseSalary +
+        expIncrease +
+        bankTransfer -
+        absentDed -
+        noneDed -
+        late -
+        objectiveDed;
 
       tableRows = [
         [
@@ -1710,6 +1719,10 @@ export class ComputationService {
         [
           'Retenues – Retard',
           { text: `-${safeNumber(late)}`, alignment: 'right' },
+        ],
+        [
+          'Retenues – Objectif semaine non atteint',
+          { text: `-${safeNumber(objectiveDed)}`, alignment: 'right' },
         ],
         [
           { text: 'Net à payer', style: 'totalLabel' },
