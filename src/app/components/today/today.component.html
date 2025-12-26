@@ -942,6 +942,35 @@
       </div>
     </div>
 
+    <div class="px-5 pb-4">
+      <div class="flex items-center justify-between text-[11px] font-semibold">
+        <span class="text-slate-500 dark:text-slate-400"
+          >Objectif : 600&nbsp;000 FC</span
+        >
+        <span
+          [ngClass]="
+            weekPickerTargetReached ? 'text-emerald-600' : 'text-red-600'
+          "
+        >
+          {{ weekPickerTargetReached ? 'Atteint' : 'À faire' }}
+        </span>
+      </div>
+      <div
+        class="mt-1 h-2 w-full rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
+      >
+        <div
+          class="h-2 rounded-full transition-all duration-300"
+          [ngClass]="
+            weekPickerTargetReached ? 'bg-emerald-500' : 'bg-red-500'
+          "
+          [style.width.%]="weekPickerProgressPercent"
+        ></div>
+      </div>
+      <div class="mt-1 text-center text-[11px] text-slate-500">
+        {{ weekPickerProgressPercent | number : "1.0-0" }}% atteint
+      </div>
+    </div>
+
     <div class="px-5 pb-5 text-[11px] text-slate-500 dark:text-slate-400">
       Semaine sélectionnée : {{ weekPickerRangeLabel }}
     </div>

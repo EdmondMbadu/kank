@@ -106,6 +106,8 @@ export class TodayComponent {
   weekPickerEndLabel: string = '';
   weekPickerTotalN: number = 0;
   weekPickerTotalDollars: string = '0';
+  weekPickerTargetReached: boolean = false;
+  weekPickerProgressPercent: number = 0;
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -407,6 +409,12 @@ export class TodayComponent {
     this.weekPickerTotalDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.weekPickerTotalN.toString())
       .toString();
+    this.weekPickerTargetReached =
+      this.weekPickerTotalN >= this.weeklyTargetFc;
+    this.weekPickerProgressPercent =
+      this.weeklyTargetFc === 0
+        ? 0
+        : Math.min(100, (this.weekPickerTotalN / this.weeklyTargetFc) * 100);
   }
 
   private getWeekBounds(dateKey: string): { start: Date; end: Date } {
