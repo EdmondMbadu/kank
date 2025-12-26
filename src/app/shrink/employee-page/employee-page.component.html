@@ -2542,6 +2542,17 @@
             $ -{{ paymentObjectiveWeekDeductionTotal | number : "1.0-0" }}
           </dd>
         </dl>
+        <div
+          *ngIf="
+            isEmployeeUi && paymentObjectiveWeekDeductions.length > 0
+          "
+          class="text-[10px] text-slate-500 dark:text-slate-400"
+        >
+          Semaines concernées :
+          <span *ngFor="let d of paymentObjectiveWeekDeductions; let i = index">
+            {{ formatObjectiveWeekLabel(d) }}<span *ngIf="i + 1 < paymentObjectiveWeekDeductions.length"> · </span>
+          </span>
+        </div>
 
         <div *ngIf="isAdminUi">
           <input
