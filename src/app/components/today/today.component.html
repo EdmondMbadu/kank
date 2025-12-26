@@ -967,6 +967,35 @@
     </ng-container>
     <!-- ------------------------------------------------------------ -->
 
+    <!-- Tile #2 : « Paiement de la Semaine » ---------------------- -->
+    <a
+      class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+    >
+      <img
+        src="../../../assets/img/daily-reimbursement.png"
+        class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
+        alt="Paiement de la Semaine"
+      />
+
+      <h5
+        class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
+      >
+        Paiement de la Semaine
+      </h5>
+
+      <p
+        class="text-center text-lg font-bold text-green-700 dark:text-green-400"
+      >
+        FC&nbsp;{{ weeklyPaymentTotalN | number : "1.0-0" }}
+      </p>
+      <p
+        class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
+      >
+        $&nbsp;{{ weeklyPaymentTotalDollars | number : "1.0-0" }}
+      </p>
+    </a>
+    <!-- ------------------------------------------------------------ -->
+
     <!-- All other tiles -------------------------------------------- -->
     <ng-container *ngFor="let s of summary; let i = index">
       <ng-container *ngIf="i !== 1">

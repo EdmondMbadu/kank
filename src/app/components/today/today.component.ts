@@ -92,6 +92,8 @@ export class TodayComponent {
   dailyLending: string = '0';
   dailyPayment: string = '0';
   dailyPaymentDollars: string = '0';
+  weeklyPaymentTotalN: number = 0;
+  weeklyPaymentTotalDollars: string = '0';
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -315,6 +317,12 @@ export class TodayComponent {
     this.dailyPaymentDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyPayment)
       .toString();
+    this.weeklyPaymentTotalN = this.computeWeeklyPaymentTotal(
+      this.requestDateCorrectFormat
+    );
+    this.weeklyPaymentTotalDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.weeklyPaymentTotalN.toString())
+      .toString();
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.notPaidAmountTodayN.toString()
@@ -339,6 +347,37 @@ export class TodayComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLoss)}`,
     ];
     this.recomputeMoneyInHandsTrace();
+  }
+
+  private computeWeeklyPaymentTotal(dateKey: string): number {
+    const dateObj = this.time.toDate(dateKey);
+    const dayIndex = dateObj.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(dateObj);
+    start.setDate(dateObj.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(dateObj);
+    end.setHours(0, 0, 0, 0);
+
+    const payments = this.auth.currentUser?.dailyReimbursement || {};
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const key = this.formatDateKey(cursor);
+      const amount = Number((payments as any)[key] ?? 0);
+      if (!Number.isNaN(amount)) {
+        total += amount;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private formatDateKey(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
   }
 
   private recomputeMoneyInHandsTrace() {
