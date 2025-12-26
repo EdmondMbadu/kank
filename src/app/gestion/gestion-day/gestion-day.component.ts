@@ -10,6 +10,7 @@ import { User } from 'src/app/models/user';
 import { Client } from 'src/app/models/client';
 import { Card } from 'src/app/models/card';
 import { DataService } from 'src/app/services/data.service';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 @Component({
   selector: 'app-gestion-day',
@@ -27,7 +28,8 @@ export class GestionDayComponent implements OnInit {
     public auth: AuthService,
     private time: TimeService,
     public compute: ComputationService,
-    private data: DataService
+    private data: DataService,
+    private afs: AngularFirestore
   ) {}
   ngOnInit(): void {
     this.auth.getManagementInfo().subscribe((data) => {
@@ -209,12 +211,14 @@ export class GestionDayComponent implements OnInit {
     totalReasons?: number; // # clients to leave a comment
     moneyInHands: number;
     moneyInHandsDollar: number;
+    transportAmount?: number;
   }> = [];
   overallTotal: number = 0;
   overallTotalReserve: number = 0;
   overallTotalInDollars: number = 0;
   paymentTotal: number = 0;
   overallTotalReserveInDollars: number = 0;
+  overallTransportAmount: number = 0;
   getAllClients() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -228,6 +232,7 @@ export class GestionDayComponent implements OnInit {
     this.overallTotal = 0;
     this.paymentTotal = 0;
     this.overallTotalReserve = 0;
+    this.overallTransportAmount = 0;
 
     // NEW: reset today's structures
     this.userServeTodayTotals = [];
@@ -252,13 +257,28 @@ export class GestionDayComponent implements OnInit {
     const targetDate = this.requestDateRigthFormat === this.tomorrow 
       ? this.effectiveTomorrowDate 
       : this.requestDateRigthFormat; // freeze the value
+    const { start: transportStart, end: transportEnd } =
+      this.getDayRange(this.requestDateCorrectFormat);
+
+    type TransportReceipt = { amount?: number };
+
     this.allUsers.forEach((user) => {
       // For each user, fetch both clients and cards
       forkJoin({
         clients: this.auth.getClientsOfAUser(user.uid!).pipe(take(1)),
         cards: this.auth.getClientsCardOfAUser(user.uid!).pipe(take(1)),
+        receipts: this.afs
+          .collection<TransportReceipt>(
+            `users/${user.uid}/transportReceipts`,
+            (ref) =>
+              ref
+                .where('ts', '>=', transportStart)
+                .where('ts', '<=', transportEnd)
+          )
+          .valueChanges()
+          .pipe(take(1)),
       }).subscribe(
-        ({ clients, cards }) => {
+        ({ clients, cards, receipts }) => {
           let userTotal = 0;
           let reserveTotal = 0;
           let userTotalToday = 0;
@@ -389,6 +409,15 @@ export class GestionDayComponent implements OnInit {
             0
           );
 
+          const transportReceipts: TransportReceipt[] = receipts ?? [];
+          const transportAmount = transportReceipts.reduce(
+            (sum: number, receipt) => {
+              const amount = Number(receipt.amount ?? 0);
+              return sum + (isFinite(amount) ? amount : 0);
+            },
+            0
+          );
+
           this.reserveTotals.push({
             firstName: user.firstName!,
 
@@ -422,6 +451,7 @@ export class GestionDayComponent implements OnInit {
             /* NEW ↓ */
             moneyInHands: moneyHandsFC,
             moneyInHandsDollar: moneyHandsDollar,
+            transportAmount,
           });
 
           // Add to the overall total
@@ -429,6 +459,7 @@ export class GestionDayComponent implements OnInit {
           this.overallTotalToday += userTotalToday;
           this.overallTotalReserve += reserveTotal;
           this.paymentTotal += payment;
+          this.overallTransportAmount += transportAmount;
           // aggregate
           this.overallMoneyInHands += moneyHandsFC;
           this.overallMoneyInHandsDollar += moneyHandsDollar;
@@ -458,7 +489,8 @@ export class GestionDayComponent implements OnInit {
               const t = row.total ?? 0;
               const a = row.actual ?? 0;
               const p = row.payment ?? 0; // optional: keep if a payment was recorded
-              return t > 0 || a > 0 || p > 0;
+              const tr = row.transportAmount ?? 0;
+              return t > 0 || a > 0 || p > 0 || tr > 0;
             });
             this.userRequestTotals.sort((a, b) => {
               return b.total - a.total;
@@ -820,6 +852,13 @@ export class GestionDayComponent implements OnInit {
     const prevYear = date.getFullYear();
 
     return `${prevMonth}-${prevDay}-${prevYear}`;
+  }
+
+  private getDayRange(dateStr: string): { start: number; end: number } {
+    const [month, day, year] = dateStr.split('-').map(Number);
+    const start = new Date(year, month - 1, day, 0, 0, 0, 0).getTime();
+    const end = new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+    return { start, end };
   }
   setGraphics() {
     let num = Number(this.percentage);
