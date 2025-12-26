@@ -1620,6 +1620,11 @@ export class ComputationService {
         return v.toLocaleString(undefined, { minimumFractionDigits: 0 });
       }
     };
+    const formatWeekRange = (start?: string, end?: string) => {
+      if (!start) return '';
+      const endLabel = end || start;
+      return `${start} au ${endLabel}`;
+    };
 
     const todayFr = this.time.getTodaysDateInFrench();
     const periodFr = `${
@@ -1681,6 +1686,11 @@ export class ComputationService {
       const objectiveDed = Number(
         employee.paymentObjectiveWeekDeductionTotal ?? 0
       );
+      const objectiveWeeks = Array.isArray(
+        employee.paymentObjectiveWeekDeductions
+      )
+        ? employee.paymentObjectiveWeekDeductions
+        : [];
 
       netPay =
         baseSalary +
@@ -1729,6 +1739,21 @@ export class ComputationService {
           { text: safeNumber(netPay), style: 'total', alignment: 'right' },
         ],
       ];
+
+      if (objectiveWeeks.length > 0) {
+        const weekLabel = objectiveWeeks
+          .map((w) => formatWeekRange(w.start, w.end))
+          .filter((v) => v)
+          .join(' | ');
+        tableRows.splice(tableRows.length - 1, 0, [
+          {
+            text: `Semaines concernées: ${weekLabel}`,
+            colSpan: 2,
+            style: 'tiny',
+          } as any,
+          '' as any,
+        ]);
+      }
     }
 
     /* ---------- Attendance stats (kept for both) ------------------------*/
