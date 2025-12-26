@@ -2009,7 +2009,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             title: 'Motifs de Licenciement',
             bullets: [
               "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
-              'Si vos performances sont inférieures à 50% pendant 3 mois consécutifs, vous serez notifié.',
+              'Si l’équipe et/ou l’employé ne parviennent pas à atteindre l’objectif de paiements hebdomadaires à quatre (4) reprises sur une période de trois (3) mois, une notification sera adressée.',
               'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
               'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
             ],
@@ -2198,7 +2198,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           title: 'Motifs de Licenciement',
           bullets: [
             "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
-            'Si vos performances sont inférieures à 50% pendant 5 mois consécutifs, vous serez licencié. Vous pourrez postuler à nouveau après 3 mois.',
+            'Si l’équipe et/ou l’employé ne parviennent pas à atteindre l’objectif de paiements hebdomadaires à quatre (4) reprises sur une période de trois (3) mois, une notification sera adressée.',
             'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
             'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
           ],
