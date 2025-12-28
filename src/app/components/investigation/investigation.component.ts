@@ -58,7 +58,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.dayKey = this.time.todaysDateMonthDayYear();
-    this.dayLabel = this.time.convertDateToDayMonthYear(this.dayKey);
+    const dayName = this.time.getDayOfWeek(this.dayKey);
+    const dayFrench = this.time.englishToFrenchDay[dayName] ?? dayName;
+    this.dayLabel = `${dayFrench} ${this.time.convertDateToDayMonthYear(
+      this.dayKey
+    )}`;
     this.loadClients();
     this.initDayDoc();
   }
