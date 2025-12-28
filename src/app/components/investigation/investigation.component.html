@@ -394,45 +394,42 @@
 >
   <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl">
     <div
-      class="flex items-center justify-between border-b border-slate-200 px-6 py-4"
+      class="flex flex-col items-center gap-4 border-b border-slate-200 px-6 py-6 text-center"
     >
-      <div>
-        <div class="flex items-center gap-3">
-          <ng-container *ngIf="activeClient.profilePicture?.downloadURL; else modalInitials">
-            <img
-              [src]="activeClient.profilePicture?.downloadURL"
-              alt="Photo client"
-              class="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow"
-            />
-          </ng-container>
-          <ng-template #modalInitials>
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 ring-2 ring-white shadow">
-              {{ clientInitials(activeClient) }}
-            </div>
-          </ng-template>
-          <div>
-            <h3 class="text-lg font-semibold text-slate-900">
-              {{ activeClient.firstName }} {{ activeClient.lastName }}
-              <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                {{ activeClient.locationName || "Site" }}
-              </span>
-            </h3>
-            <p class="text-sm text-slate-600">
-              {{ displayPhone(activeClient.phoneNumber) }}
-            </p>
-          </div>
-        </div>
-        <p class="text-sm text-slate-600">
-          {{ displayPhone(activeClient.phoneNumber) }}
-        </p>
+      <div class="flex w-full justify-end">
+        <button
+          type="button"
+          (click)="closeClientModal()"
+          class="text-sm text-slate-500 hover:text-slate-800"
+        >
+          Fermer
+        </button>
       </div>
-      <button
-        type="button"
-        (click)="closeClientModal()"
-        class="text-sm text-slate-500 hover:text-slate-800"
-      >
-        Fermer
-      </button>
+      <div class="flex flex-col items-center gap-3">
+        <ng-container *ngIf="activeClient.profilePicture?.downloadURL; else modalInitials">
+          <img
+            [src]="activeClient.profilePicture?.downloadURL"
+            alt="Photo client"
+            class="h-28 w-28 rounded-full object-cover ring-4 ring-emerald-200 shadow-lg"
+          />
+        </ng-container>
+        <ng-template #modalInitials>
+          <div class="flex h-28 w-28 items-center justify-center rounded-full bg-emerald-100 text-2xl font-semibold text-emerald-700 ring-4 ring-emerald-200 shadow-lg">
+            {{ clientInitials(activeClient) }}
+          </div>
+        </ng-template>
+        <div>
+          <h3 class="text-xl font-semibold text-slate-900">
+            {{ activeClient.firstName }} {{ activeClient.lastName }}
+            <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+              {{ activeClient.locationName || "Site" }}
+            </span>
+          </h3>
+          <p class="text-sm text-slate-600">
+            {{ displayPhone(activeClient.phoneNumber) }}
+          </p>
+        </div>
+      </div>
     </div>
 
     <div class="space-y-6 px-6 py-5">
