@@ -12,7 +12,7 @@
       <div>
         <h2 class="text-2xl font-semibold text-slate-900">Investigation</h2>
         <p class="text-sm text-slate-600">
-          Suivi des ecarts, verifications du jour et commentaires equipe.
+          Suivi des écarts, vérifications du jour et commentaires équipe.
         </p>
       </div>
       <div
@@ -25,7 +25,7 @@
   </header>
 
   <div class="container mx-auto max-w-4xl space-y-6">
-    <!-- Section 1: Clients Problematic -->
+    <!-- Section 1: Clients Problématiques -->
     <details class="rounded-2xl border border-red-200 bg-white shadow-sm" open>
       <summary
         class="flex cursor-pointer items-center justify-between gap-4 px-6 py-4"
@@ -34,11 +34,11 @@
           <span class="h-3 w-3 rounded-full bg-red-500"></span>
           <div>
             <h3 class="text-lg font-semibold text-red-700">
-              Clients Problematic
+              Clients Problématiques
             </h3>
             <p class="text-xs text-red-600">
-              Clients dont la dette reconnue ne correspond pas a la dette
-              reelle.
+              Clients dont la dette reconnue ne correspond pas à la dette
+              réelle.
             </p>
           </div>
         </div>
@@ -66,7 +66,7 @@
           *ngIf="problematicClients.length === 0"
           class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700"
         >
-          Aucun client problematique pour le moment.
+          Aucun client problématique pour le moment.
         </div>
 
         <div *ngIf="problematicClients.length > 0" class="space-y-4">
@@ -211,7 +211,7 @@
                 *ngIf="isProblematic(client)"
                 class="rounded-full bg-red-100 px-2 py-1 text-red-700"
               >
-                Problematic
+                Problématique
               </span>
             </div>
           </button>
@@ -219,14 +219,14 @@
       </div>
     </details>
 
-    <!-- Section 3: Commentairee -->
+    <!-- Section 3: Commentaire -->
     <details class="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <summary
         class="flex cursor-pointer items-center justify-between gap-4 px-6 py-4"
       >
         <div>
-          <h3 class="text-lg font-semibold text-slate-900">Resume Du Jour</h3>
-          <p class="text-xs text-slate-500">Notes generales de l'equipe.</p>
+          <h3 class="text-lg font-semibold text-slate-900">Résumé du jour</h3>
+          <p class="text-xs text-slate-500">Notes générales de l'équipe.</p>
         </div>
         <div class="flex items-center gap-2">
           <span
@@ -250,7 +250,7 @@
       <div class="space-y-6 px-6 pb-6 pt-2">
         <div class="rounded-xl border border-slate-200 bg-white p-4">
           <h4 class="text-sm font-semibold text-slate-800">
-            Commentaire general
+            Commentaire général
           </h4>
           <div class="mt-3 grid gap-3">
             <input
@@ -262,7 +262,7 @@
             <textarea
               [(ngModel)]="dayCommentText"
               rows="3"
-              placeholder="Commentaire sur la journee pour l'equipe..."
+              placeholder="Commentaire sur la journée pour l'équipe..."
               class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             ></textarea>
             <button
@@ -279,7 +279,7 @@
               *ngIf="dayComments.length === 0"
               class="text-sm text-slate-500"
             >
-              Aucun commentaire general pour le moment.
+              Aucun commentaire général pour le moment.
             </div>
             <div
               *ngFor="
@@ -292,7 +292,7 @@
               <span
                 class="absolute -top-2 left-4 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"
               >
-                Resume
+                Résumé
               </span>
               <div
                 class="flex items-center justify-between text-xs text-emerald-700"
@@ -381,7 +381,7 @@
               *ngIf="isProblematic(activeClient)"
               class="mt-1 text-xs text-red-600"
             >
-              Devient problematique si la valeur differe.
+              Devient problématique si la valeur diffère.
             </p>
           </div>
         </div>
