@@ -1,11 +1,17 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { AngularFirestore, AngularFirestoreDocument } from '@angular/fire/compat/firestore';
+import {
+  AngularFirestore,
+  AngularFirestoreDocument,
+} from '@angular/fire/compat/firestore';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { combineLatest, Subscription } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { User } from 'src/app/models/user';
 import { Client, Comment } from 'src/app/models/client';
+import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 
 type InvestigationDayComment = {
@@ -21,6 +27,9 @@ type InvestigationDayDoc = {
   comments?: InvestigationDayComment[];
   updatedAt?: string;
 };
+
+type TFEntry = { loc: string; employees: string[] };
+type TFCell = { iso: string; entries?: TFEntry[] };
 
 @Component({
   selector: 'app-investigation',
@@ -52,16 +61,59 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   dayCommentPosting = false;
   showAllDayComments = false;
 
+  employees: Employee[] = [];
+  taskForceLocations: string[] = [];
+  taskMonthWeeks: (TFCell | null)[][] = [];
+  taskWeekSummary: { day: string; entries: TFEntry[] }[] = [];
+  taskPicker = {
+    visible: false,
+    day: null as null | { iso: string; date: Date },
+    entries: [] as { loc: string; employees: string[] }[],
+    newLoc: '',
+    search: '',
+    selected: new Set<string>(),
+  };
+
+  readonly weekHeaders = [
+    'Dimanche',
+    'Lundi',
+    'Mardi',
+    'Mercredi',
+    'Jeudi',
+    'Vendredi',
+    'Samedi',
+  ];
+  readonly monthNames: string[] = [
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre',
+  ];
+  month = new Date().getMonth() + 1;
+  year = new Date().getFullYear();
+
   private dayDoc?: AngularFirestoreDocument<InvestigationDayDoc>;
   private subs = new Subscription();
   private dayDocSub?: Subscription;
   private clientsSub?: Subscription;
   private allClientsSub = new Subscription();
+  private allEmployeesSub = new Subscription();
+  private tfSubs: Subscription[] = [];
+  private tfCellByIso = new Map<string, TFCell>();
 
   constructor(
     public auth: AuthService,
     private time: TimeService,
     private data: DataService,
+    private performance: PerformanceService,
     private afs: AngularFirestore,
     private router: Router
   ) {}
@@ -85,15 +137,20 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const locationsSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.locations = Array.isArray(data) ? (data as User[]) : [];
       this.ensureDefaultLocation();
+      this.updateTaskForceLocations();
+      this.loadAllEmployeesForLocations();
       this.loadAllProblematicClients();
     });
 
     this.subs.add(userSub);
     this.subs.add(locationsSub);
+
+    this.loadTaskForceMonth();
   }
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
+    this.tfSubs.forEach((s) => s.unsubscribe());
   }
 
   private loadClientsForLocation(userId: string): void {
@@ -194,6 +251,49 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.dayComments = [];
     this.loadClientsForLocation(user.uid);
     this.initDayDocForLocation(user.uid);
+  }
+
+  private updateTaskForceLocations(): void {
+    const names = (this.locations || [])
+      .map((loc) => (loc.firstName || loc.email || 'Site').trim())
+      .filter((name) => name.length > 0);
+    this.taskForceLocations = Array.from(new Set(names));
+  }
+
+  private loadAllEmployeesForLocations(): void {
+    this.allEmployeesSub.unsubscribe();
+    this.allEmployeesSub = new Subscription();
+
+    const sources = this.locations
+      .filter((loc) => !!loc?.uid)
+      .map((loc) =>
+        this.auth.getAllEmployeesGivenUser(loc).pipe(
+          map((data: any) =>
+            Array.isArray(data) ? (data.filter(Boolean) as Employee[]) : []
+          )
+        )
+      );
+
+    if (sources.length === 0) {
+      this.employees = [];
+      return;
+    }
+
+    const sub = combineLatest(sources).subscribe((lists) => {
+      const merged = lists.flat();
+      const deduped = new Map<string, Employee>();
+
+      merged.forEach((emp) => {
+        if (emp?.uid) {
+          deduped.set(emp.uid, emp);
+        }
+      });
+
+      this.employees = Array.from(deduped.values());
+    });
+
+    this.allEmployeesSub.add(sub);
+    this.subs.add(this.allEmployeesSub);
   }
 
   onLocationChange(): void {
@@ -492,5 +592,296 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       const dateB = this.time.parseFlexibleDateTime(b.time ?? '').getTime();
       return dateB - dateA;
     });
+  }
+
+  private loadTaskForceMonth(): void {
+    this.tfSubs.forEach((s) => s.unsubscribe());
+    this.tfSubs = [];
+    this.tfCellByIso.clear();
+
+    const first = this.startOfMonth(new Date(this.year, this.month - 1));
+    const last = this.endOfMonth(first);
+    const weeks: typeof this.taskMonthWeeks = [];
+    let row = new Array(7).fill(null);
+
+    for (let d = first; d <= last; d = this.addDays(d, 1)) {
+      const iso = this.ymd(d);
+      row[d.getDay()] = { iso };
+      if (d.getDay() === 6) {
+        weeks.push(row);
+        row = new Array(7).fill(null);
+      }
+    }
+    if (row.some((c) => c)) weeks.push(row);
+
+    for (const r of weeks) {
+      for (const c of r) {
+        if (c) this.tfCellByIso.set(c.iso, c);
+      }
+    }
+
+    this.taskMonthWeeks = weeks;
+
+    const ids = new Set<string>();
+    for (let d = first; d <= last; d = this.addDays(d, 7)) {
+      ids.add(this.isoWeekId(d));
+    }
+
+    ids.forEach((id) => {
+      const sub = this.performance.getTaskForce(id).subscribe((doc) => {
+        const days = doc?.days ?? {};
+
+        for (const [iso, cell] of this.tfCellByIso) {
+          if (this.isoWeekId(this.isoToLocal(iso)) === id) {
+            cell.entries = [];
+          }
+        }
+
+        Object.entries(days).forEach(([iso, val]) => {
+          const cell = this.tfCellByIso.get(iso);
+          if (!cell) return;
+
+          const dayMap =
+            typeof val === 'string'
+              ? { [val.toLowerCase()]: { loc: val, employees: [] } }
+              : (val as Record<string, { loc: string; employees: string[] }>);
+
+          cell.entries = Object.values(dayMap).map((d) => ({
+            loc: d.loc,
+            employees: Array.isArray(d.employees) ? d.employees : [],
+          }));
+        });
+
+        this.recomputeTaskWeekSummary();
+      });
+
+      this.tfSubs.push(sub);
+    });
+  }
+
+  private recomputeTaskWeekSummary(): void {
+    const base = this.startOfWeek(new Date());
+    const names = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+
+    this.taskWeekSummary = Array.from({ length: 7 }).map((_, i) => {
+      const d = this.addDays(base, i);
+      const iso = this.ymd(d);
+
+      let entries: TFEntry[] = [];
+      for (const row of this.taskMonthWeeks) {
+        for (const c of row) {
+          if (c && c.iso === iso) entries = c.entries ?? [];
+        }
+      }
+
+      return { day: names[i], entries };
+    });
+  }
+
+  get tfCanEdit(): boolean {
+    return this.auth.isAdmin;
+  }
+
+  openTFPicker(cell: { iso: string }): void {
+    if (!this.tfCanEdit) return;
+
+    const dateObj = this.isoToLocal(cell.iso);
+    let entries: TFEntry[] = [];
+    for (const row of this.taskMonthWeeks) {
+      for (const c of row) {
+        if (c && c.iso === cell.iso) entries = c.entries ?? [];
+      }
+    }
+
+    this.taskPicker = {
+      visible: true,
+      day: { iso: cell.iso, date: dateObj },
+      entries: entries.map((e) => ({
+        loc: e.loc,
+        employees: [...(e.employees || [])],
+      })),
+      newLoc: '',
+      search: '',
+      selected: new Set<string>(),
+    };
+  }
+
+  closeTFPicker(): void {
+    this.taskPicker.visible = false;
+  }
+
+  byUid(uid?: string): Employee | undefined {
+    return this.employees.find((e) => e.uid === uid);
+  }
+
+  filteredEmployees(): Employee[] {
+    const needle = this.taskPicker.search.trim().toLowerCase();
+    return this.employees.filter((e) => {
+      if (!e.uid) return false;
+      if (!needle) return true;
+      const full = `${e.firstName ?? ''} ${e.lastName ?? ''}`.toLowerCase();
+      return full.includes(needle);
+    });
+  }
+
+  toggleSelect(uid: string): void {
+    if (this.taskPicker.selected.has(uid)) {
+      this.taskPicker.selected.delete(uid);
+    } else {
+      this.taskPicker.selected.add(uid);
+    }
+  }
+
+  addSelectedToLocation(targetLoc: string): void {
+    const loc = (targetLoc || '').trim();
+    if (!loc || this.taskPicker.selected.size === 0) return;
+
+    const found = this.taskPicker.entries.find(
+      (e) => e.loc.toLowerCase() === loc.toLowerCase()
+    );
+    const toAdd = Array.from(this.taskPicker.selected);
+
+    if (found) {
+      const set = new Set(found.employees);
+      toAdd.forEach((u) => set.add(u));
+      found.employees = Array.from(set);
+    } else {
+      this.taskPicker.entries.push({ loc, employees: toAdd });
+    }
+
+    this.taskPicker.newLoc = '';
+    this.taskPicker.selected.clear();
+    this.taskPicker.search = '';
+  }
+
+  removeUidFromLoc(loc: string, uid: string): void {
+    const e = this.taskPicker.entries.find((x) => x.loc === loc);
+    if (!e || !this.taskPicker.day) return;
+
+    e.employees = e.employees.filter((u) => u !== uid);
+    const weekId = this.isoWeekId(this.taskPicker.day.date);
+    this.performance.removeTFPerson(weekId, this.taskPicker.day.iso, loc, uid);
+
+    if (e.employees.length === 0) {
+      this.taskPicker.entries = this.taskPicker.entries.filter(
+        (x) => x.loc !== loc
+      );
+      this.performance.clearTFLocation(weekId, this.taskPicker.day.iso, loc);
+    }
+  }
+
+  removeLocation(loc: string): void {
+    if (!this.taskPicker.day) return;
+
+    this.taskPicker.entries = this.taskPicker.entries.filter(
+      (e) => e.loc !== loc
+    );
+
+    const weekId = this.isoWeekId(this.taskPicker.day.date);
+    this.performance.clearTFLocation(weekId, this.taskPicker.day.iso, loc);
+  }
+
+  async saveTF(): Promise<void> {
+    if (!this.taskPicker.day) return;
+
+    const iso = this.taskPicker.day.iso;
+    const weekId = this.isoWeekId(this.taskPicker.day.date);
+
+    const map: { [k: string]: { loc: string; employees: string[] } } = {};
+    for (const e of this.taskPicker.entries) {
+      const key = e.loc
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      map[key] = { loc: e.loc, employees: e.employees };
+    }
+
+    await this.performance.setTaskForceDay(
+      weekId,
+      iso,
+      Object.keys(map).length ? map : null
+    );
+
+    this.closeTFPicker();
+    this.loadTaskForceMonth();
+  }
+
+  private getISOWeek(d: Date): number {
+    const t = new Date(d.getTime());
+    t.setHours(0, 0, 0, 0);
+    t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));
+    const week1 = new Date(t.getFullYear(), 0, 4);
+    return (
+      1 +
+      Math.round(
+        ((t.getTime() - week1.getTime()) / 86400000 -
+          3 +
+          ((week1.getDay() + 6) % 7)) /
+          7
+      )
+    );
+  }
+
+  private isoWeekId(d: Date): string {
+    return `${d.getFullYear()}-W${this.getISOWeek(d)
+      .toString()
+      .padStart(2, '0')}`;
+  }
+
+  private startOfWeek(d: Date): Date {
+    const s = new Date(d);
+    s.setDate(s.getDate() - s.getDay());
+    s.setHours(0, 0, 0, 0);
+    return s;
+  }
+
+  private isoToLocal(iso: string): Date {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  private addDays(d: Date, n: number): Date {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+
+  private startOfMonth(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+
+  private endOfMonth(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  }
+
+  prevTaskForceMonth(): void {
+    const d = new Date(this.year, this.month - 1, 1);
+    d.setMonth(d.getMonth() - 1);
+    this.month = d.getMonth() + 1;
+    this.year = d.getFullYear();
+    this.loadTaskForceMonth();
+  }
+
+  nextTaskForceMonth(): void {
+    const d = new Date(this.year, this.month - 1, 1);
+    d.setMonth(d.getMonth() + 1);
+    this.month = d.getMonth() + 1;
+    this.year = d.getFullYear();
+    this.loadTaskForceMonth();
+  }
+
+  private ymd(d: Date): string {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 }
