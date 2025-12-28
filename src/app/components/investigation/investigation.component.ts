@@ -111,7 +111,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const todayKey = this.time.todaysDateMonthDayYear();
     const dayName = this.time.getDayOfWeek(todayKey);
     this.shouldPayToday = this.clients.filter(
-      (client) => client.paymentDay === dayName
+      (client) => {
+        const isAlive =
+          !client.vitalStatus || client.vitalStatus.toLowerCase() === 'vivant';
+        const hasDebt = Number(client.debtLeft ?? 0) > 0;
+        return client.paymentDay === dayName && isAlive && hasDebt;
+      }
     );
   }
 
