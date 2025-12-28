@@ -22,6 +22,12 @@
           <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
           Jour: {{ dayLabel }}
         </div>
+        <input
+          [(ngModel)]="selectedDate"
+          (change)="onDateChange()"
+          type="date"
+          class="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+        />
         <label
           class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow"
         >

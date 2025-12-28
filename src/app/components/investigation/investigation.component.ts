@@ -53,6 +53,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   dayKey = '';
   dayLabel = '';
+  selectedDate = '';
   daySummary = '';
   daySummarySaving = false;
   dayComments: InvestigationDayComment[] = [];
@@ -123,12 +124,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.router.navigate(['/home']);
       return;
     }
-    this.dayKey = this.time.todaysDateMonthDayYear();
-    const dayName = this.time.getDayOfWeek(this.dayKey);
-    const dayFrench = this.time.englishToFrenchDay[dayName] ?? dayName;
-    this.dayLabel = `${dayFrench} ${this.time.convertDateToDayMonthYear(
-      this.dayKey
-    )}`;
+    this.selectedDate = this.time.getTodaysDateYearMonthDay();
+    this.updateDateContext();
 
     const userSub = this.auth.user$.subscribe((user: User | null) => {
       this.currentUserId = user?.uid ?? '';
@@ -311,8 +308,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private filterShouldPayToday(): void {
-    const todayKey = this.time.todaysDateMonthDayYear();
-    const dayName = this.time.getDayOfWeek(todayKey);
+    const dayName = this.time.getDayOfWeek(this.dayKey);
     this.shouldPayToday = this.clients.filter(
       (client) => {
         const isAlive =
@@ -321,6 +317,31 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         return client.paymentDay === dayName && isAlive && hasDebt;
       }
     );
+  }
+
+  private updateDateContext(): void {
+    if (this.selectedDate) {
+      this.dayKey = this.time.convertDateToMonthDayYear(this.selectedDate);
+    } else {
+      this.dayKey = this.time.todaysDateMonthDayYear();
+    }
+
+    const dayName = this.time.getDayOfWeek(this.dayKey);
+    const dayFrench = this.time.englishToFrenchDay[dayName] ?? dayName;
+    this.dayLabel = `${dayFrench} ${this.time.convertDateToDayMonthYear(
+      this.dayKey
+    )}`;
+  }
+
+  onDateChange(): void {
+    this.updateDateContext();
+    this.filterShouldPayToday();
+    const ownerId = this.selectedLocationId || this.currentUserId;
+    if (ownerId) {
+      this.daySummary = '';
+      this.dayComments = [];
+      this.initDayDocForLocation(ownerId);
+    }
   }
 
   private refreshProblematic(): void {
