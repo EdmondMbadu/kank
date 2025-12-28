@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument } from '@angular/fire/compat/firestore';
 import { Subscription } from 'rxjs';
+import { User } from 'src/app/models/user';
 import { Client, Comment } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
@@ -45,6 +46,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   private dayDoc?: AngularFirestoreDocument<InvestigationDayDoc>;
   private subs = new Subscription();
+  private dayDocSub?: Subscription;
 
   constructor(
     public auth: AuthService,
@@ -74,18 +76,26 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private initDayDoc(): void {
-    const uid = this.auth.currentUser?.uid;
-    if (!uid) return;
+    const sub = this.auth.user$.subscribe((user: User | null) => {
+      if (!user?.uid) return;
 
-    this.dayDoc = this.afs.doc<InvestigationDayDoc>(
-      `users/${uid}/investigationDays/${this.dayKey}`
-    );
+      this.dayDoc = this.afs.doc<InvestigationDayDoc>(
+        `users/${user.uid}/investigationDays/${this.dayKey}`
+      );
 
-    const sub = this.dayDoc.valueChanges().subscribe((doc) => {
-      this.daySummary = doc?.summary ?? '';
-      this.dayComments = Array.isArray(doc?.comments) ? doc!.comments! : [];
-      this.dayComments = this.sortDayComments(this.dayComments);
+      if (this.dayDocSub) {
+        this.dayDocSub.unsubscribe();
+      }
+
+      this.dayDocSub = this.dayDoc.valueChanges().subscribe((doc) => {
+        this.daySummary = doc?.summary ?? '';
+        this.dayComments = Array.isArray(doc?.comments) ? doc!.comments! : [];
+        this.dayComments = this.sortDayComments(this.dayComments);
+      });
+
+      this.subs.add(this.dayDocSub);
     });
+
     this.subs.add(sub);
   }
 
@@ -231,7 +241,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   postDayComment(): void {
-    if (!this.dayDoc) return;
+    if (!this.dayDoc) {
+      alert('Utilisateur non disponible. Veuillez reessayer.');
+      return;
+    }
     if (!this.dayCommentName.trim() || !this.dayCommentText.trim()) {
       alert('Veuillez saisir votre nom et un commentaire.');
       return;
@@ -249,7 +262,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.dayComments = this.sortDayComments(updated);
 
     this.dayDoc
-      .set({ comments: this.dayComments }, { merge: true })
+      .set(
+        {
+          dateKey: this.dayKey,
+          comments: this.dayComments,
+          updatedAt: time,
+        },
+        { merge: true }
+      )
       .then(() => {
         this.dayCommentText = '';
       })
