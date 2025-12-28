@@ -1584,6 +1584,18 @@
             employeeModalEmployee.tempLocationHolder || "Lieu indisponible"
           }}
         </p>
+        <div class="mt-2 flex flex-wrap justify-center gap-2">
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700"
+          >
+            🏆 Équipe: {{ getTeamTrophies(employeeModalEmployee).length }}
+          </span>
+          <span
+            class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700"
+          >
+            🏅 Employé: {{ getEmployeeTrophies(employeeModalEmployee).length }}
+          </span>
+        </div>
       </div>
 
       <div class="w-full rounded-xl border border-slate-200 bg-slate-50 p-4">
