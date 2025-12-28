@@ -1596,6 +1596,20 @@ export class DataService {
     };
     return clientRef.set(data, { merge: true });
   }
+
+  addCommentToClientProfileForUser(
+    userId: string,
+    client: Client,
+    comments: Comment[]
+  ) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${userId}/clients/${client.uid}`
+    );
+    const data = {
+      comments: comments,
+    };
+    return clientRef.set(data, { merge: true });
+  }
   updateEmployeeAttendance(attendance: any, employeeId: string) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employeeId}`

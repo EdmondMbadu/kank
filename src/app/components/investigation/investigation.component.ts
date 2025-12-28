@@ -358,8 +358,20 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       : [];
     const updated = [...existing, newComment];
 
-    this.data
-      .addCommentToClientProfile(this.activeClient, updated)
+    const ownerId =
+      this.activeClient.locationOwnerId ||
+      this.selectedLocationId ||
+      this.currentUserId;
+
+    const save = ownerId
+      ? this.data.addCommentToClientProfileForUser(
+          ownerId,
+          this.activeClient,
+          updated
+        )
+      : this.data.addCommentToClientProfile(this.activeClient, updated);
+
+    save
       .then(() => {
         this.activeClient!.comments = updated;
         this.clientCommentText = '';
