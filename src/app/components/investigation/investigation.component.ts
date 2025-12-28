@@ -37,6 +37,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   clientCommentText = '';
 
   dayKey = '';
+  dayLabel = '';
   daySummary = '';
   daySummarySaving = false;
   dayComments: InvestigationDayComment[] = [];
@@ -57,6 +58,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.dayKey = this.time.todaysDateMonthDayYear();
+    this.dayLabel = this.time.convertDateToDayMonthYear(this.dayKey);
     this.loadClients();
     this.initDayDoc();
   }
