@@ -8,7 +8,7 @@ import {
   AngularFirestoreCollection,
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
-import { firstValueFrom, Observable, of } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, Observable, of } from 'rxjs';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { filter, map, shareReplay, switchMap, take, tap } from 'rxjs/operators';
 import { User } from '../models/user';
@@ -25,6 +25,13 @@ import { Audit, Management } from '../models/management';
 
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
+const INVESTIGATOR_FLAG_KEY = 'kank-investigator-flag';
+
+type RolePasswords = {
+  admin: string;
+  gestion: string;
+  investigator: string;
+};
 @Injectable({
   providedIn: 'root',
 })
@@ -37,11 +44,25 @@ export class AuthService {
   currentUser: any = {};
   managementInfo: any = {};
   private readonly adminWord = 'synergie';
-  private readonly distributorWord = 'plan';
+  private readonly distributorWord = 'geste';
+  private readonly investigatorWord = 'invest';
   public isAdmninistrator: boolean = false;
   public isDistributoring: boolean = false;
+  public isInvestigating: boolean = false;
   clientId: string = '';
   currentClient: Client = new Client();
+  private readonly defaultRolePasswords: RolePasswords = {
+    admin: this.adminWord,
+    gestion: this.distributorWord,
+    investigator: this.investigatorWord,
+  };
+  private rolePasswordsState: RolePasswords = { ...this.defaultRolePasswords };
+  private rolePasswordsSubject = new BehaviorSubject<RolePasswords>(
+    this.rolePasswordsState
+  );
+  rolePasswords$ = this.rolePasswordsSubject.asObservable();
+  private managementDocId: string = '';
+  private lastRoleWord = '';
 
   constructor(
     private fireauth: AngularFireAuth,
@@ -119,6 +140,7 @@ export class AuthService {
     this.getCurrentUser();
     this.getManagementInfoData();
     this.restoreRoleFlags();
+    this.loadRolePasswords();
   }
   ngOnInit() {}
   getAllClients(): Observable<Client> {
@@ -1340,6 +1362,10 @@ export class AuthService {
     const allowed = ['distributor'];
     return this.matchingRoleDistributor(allowed);
   }
+  get isInvestigator() {
+    const allowed = ['investigator'];
+    return this.matchingRoleInvestigator(allowed);
+  }
 
   private matchingRole(alloweedRoles: string[]): boolean {
     if (!this.currentUser || this.currentUser.roles === undefined) return false;
@@ -1358,6 +1384,15 @@ export class AuthService {
         this.isDistributoring ||
         (this.currentUser.distributor &&
           this.currentUser.distributor === 'true')
+    );
+  }
+  private matchingRoleInvestigator(alloweedRoles: string[]): boolean {
+    if (!this.currentUser || this.currentUser.roles === undefined) return false;
+    return alloweedRoles.some(
+      (element) =>
+        this.currentUser.roles.includes(element) ||
+        this.isInvestigating ||
+        (this.currentUser as any).investigator === 'true'
     );
   }
 
@@ -1407,6 +1442,7 @@ export class AuthService {
 
     localStorage.setItem(ADMIN_FLAG_KEY, String(this.isAdmninistrator));
     localStorage.setItem(DISTRIBUTOR_FLAG_KEY, String(this.isDistributoring));
+    localStorage.setItem(INVESTIGATOR_FLAG_KEY, String(this.isInvestigating));
   }
 
   private normalizeSecret(value: string | null | undefined): string {
@@ -1414,10 +1450,15 @@ export class AuthService {
   }
 
   public applyRoleWord(word: string): void {
+    this.lastRoleWord = word;
     const normalized = this.normalizeSecret(word);
-    this.isAdmninistrator = normalized === this.normalizeSecret(this.adminWord);
+    const rolePasswords = this.rolePasswordsState;
+    this.isAdmninistrator =
+      normalized === this.normalizeSecret(rolePasswords.admin);
     this.isDistributoring =
-      normalized === this.normalizeSecret(this.distributorWord);
+      normalized === this.normalizeSecret(rolePasswords.gestion);
+    this.isInvestigating =
+      normalized === this.normalizeSecret(rolePasswords.investigator);
 
     this.persistRoleFlags();
   }
@@ -1430,17 +1471,21 @@ export class AuthService {
     if (typeof window === 'undefined') {
       this.isAdmninistrator = false;
       this.isDistributoring = false;
+      this.isInvestigating = false;
       return;
     }
 
     this.isAdmninistrator = localStorage.getItem(ADMIN_FLAG_KEY) === 'true';
     this.isDistributoring =
       localStorage.getItem(DISTRIBUTOR_FLAG_KEY) === 'true';
+    this.isInvestigating =
+      localStorage.getItem(INVESTIGATOR_FLAG_KEY) === 'true';
   }
 
   private clearRoleFlags(): void {
     this.isAdmninistrator = false;
     this.isDistributoring = false;
+    this.isInvestigating = false;
 
     if (typeof window === 'undefined') {
       return;
@@ -1448,6 +1493,36 @@ export class AuthService {
 
     localStorage.removeItem(ADMIN_FLAG_KEY);
     localStorage.removeItem(DISTRIBUTOR_FLAG_KEY);
+    localStorage.removeItem(INVESTIGATOR_FLAG_KEY);
+  }
+
+  private loadRolePasswords(): void {
+    this.afs
+      .collection('management')
+      .snapshotChanges()
+      .subscribe((actions) => {
+        if (!actions.length) return;
+        const action = actions[0];
+        const data: any = action.payload.doc.data() || {};
+        this.managementDocId = action.payload.doc.id;
+        const stored = data.rolePasswords || {};
+        this.rolePasswordsState = {
+          ...this.defaultRolePasswords,
+          ...stored,
+        };
+        this.rolePasswordsSubject.next(this.rolePasswordsState);
+        if (this.lastRoleWord) {
+          this.applyRoleWord(this.lastRoleWord);
+        }
+      });
+  }
+
+  updateRolePasswords(payload: RolePasswords): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef.set({ rolePasswords: payload }, { merge: true }).then(() => {});
   }
 
   async deleteReview(

@@ -111,3 +111,66 @@
     </a>
   </div>
 </section>
+
+<section *ngIf="auth.isAdmin" class="container mx-auto px-6 pb-16">
+  <div
+    class="rounded-3xl border border-emerald-200/70 bg-white p-6 shadow-lg"
+  >
+    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
+          Admin Panel
+        </p>
+        <h2 class="mt-2 text-2xl font-semibold text-slate-900">
+          Mots de passe d’accès
+        </h2>
+        <p class="mt-2 text-sm text-slate-600">
+          Modifiez les mots de passe pour les rôles Admin, Gestion et
+          Investigateur.
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="saveRolePasswords()"
+        [disabled]="rolePasswordsSaving"
+        class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {{ rolePasswordsSaving ? 'Sauvegarde...' : 'Enregistrer' }}
+      </button>
+    </div>
+
+    <div class="mt-6 grid gap-4 md:grid-cols-3">
+      <label class="text-sm font-semibold text-slate-700">
+        Admin
+        <input
+          [(ngModel)]="rolePasswords.admin"
+          type="text"
+          class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          placeholder="synergie"
+        />
+      </label>
+      <label class="text-sm font-semibold text-slate-700">
+        Gestion
+        <input
+          [(ngModel)]="rolePasswords.gestion"
+          type="text"
+          class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          placeholder="geste"
+        />
+      </label>
+      <label class="text-sm font-semibold text-slate-700">
+        Investigateur
+        <input
+          [(ngModel)]="rolePasswords.investigator"
+          type="text"
+          class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          placeholder="invest"
+        />
+      </label>
+    </div>
+
+    <p *ngIf="rolePasswordsSaved" class="mt-4 text-sm text-emerald-600">
+      Mots de passe mis à jour.
+    </p>
+  </div>
+</section>

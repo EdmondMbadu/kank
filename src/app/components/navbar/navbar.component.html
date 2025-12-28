@@ -313,6 +313,50 @@
             >
           </div>
 
+          <button
+            *ngIf="auth.isAdmin || auth.isInvestigator"
+            (click)="toggle('investigationDropDown')"
+            id="doubleDropdownButton"
+            data-dropdown-toggle="doubleDropdown"
+            data-dropdown-placement="right-start"
+            type="button"
+            class="flex items-center justify-between w-full px-4 py-2 hover:bg-gray-100 font-extrabold dark:hover:bg-gray-600 dark:hover:text-white text-lg"
+          >
+            Investigation
+            <svg
+              class="-mr-1 h-5 w-5 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+
+          <div
+            *ngIf="investigationDropDown && (auth.isAdmin || auth.isInvestigator)"
+            id="doubleDropdown"
+            class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+          >
+            <ul
+              class="py-2 text-sm text-gray-700 dark:text-gray-200"
+              aria-labelledby="doubleDropdownButton"
+            >
+              <li>
+                <a
+                  routerLink="/investigation"
+                  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                >
+                  Investigation
+                </a>
+              </li>
+            </ul>
+          </div>
+
           <a
             routerLink="/home"
             class="text-gray-700 block px-4 py-2 text-lg hover:bg-slate-100"

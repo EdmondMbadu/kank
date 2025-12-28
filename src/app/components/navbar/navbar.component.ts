@@ -18,6 +18,7 @@ export class NavbarComponent {
   centralCreditDropDown: boolean = false;
   centralCardDropDown: boolean = false;
   gestionDropDown: boolean = false;
+  investigationDropDown: boolean = false;
 
   employeeInfo: boolean = false;
   @Input() firstName = '';
@@ -36,7 +37,7 @@ export class NavbarComponent {
     }
   }
 
-  toggle(property: 'employeeInfo') {
+  toggle(property: 'employeeInfo' | 'investigationDropDown') {
     this[property] = !this[property];
   }
 

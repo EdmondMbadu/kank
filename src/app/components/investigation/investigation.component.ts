@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AngularFirestore, AngularFirestoreDocument } from '@angular/fire/compat/firestore';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { User } from 'src/app/models/user';
 import { Client, Comment } from 'src/app/models/client';
@@ -61,10 +62,15 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     public auth: AuthService,
     private time: TimeService,
     private data: DataService,
-    private afs: AngularFirestore
+    private afs: AngularFirestore,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
+    if (!this.auth.isAdmin && !this.auth.isInvestigator) {
+      this.router.navigate(['/home']);
+      return;
+    }
     this.dayKey = this.time.todaysDateMonthDayYear();
     const dayName = this.time.getDayOfWeek(this.dayKey);
     const dayFrench = this.time.englishToFrenchDay[dayName] ?? dayName;

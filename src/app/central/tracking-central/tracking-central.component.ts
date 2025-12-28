@@ -19,11 +19,21 @@ export class TrackingCentralComponent {
     private compute: ComputationService
   ) {}
   allUsers: User[] = [];
+  rolePasswords = {
+    admin: '',
+    gestion: '',
+    investigator: '',
+  };
+  rolePasswordsSaving = false;
+  rolePasswordsSaved = false;
   ngOnInit(): void {
     if (this.auth.isAdmin) {
       this.auth.getAllUsersInfo().subscribe((data) => {
         this.allUsers = data;
         this.initalizeInputs();
+      });
+      this.auth.rolePasswords$.subscribe((payload) => {
+        this.rolePasswords = { ...payload };
       });
     }
   }
@@ -119,5 +129,31 @@ export class TrackingCentralComponent {
         this.compute.convertCongoleseFrancToUsDollars(realBenefit.toString())
       ) ?? 0,
     ];
+  }
+
+  saveRolePasswords(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.rolePasswordsSaving) return;
+    this.rolePasswordsSaving = true;
+    this.rolePasswordsSaved = false;
+
+    const payload = {
+      admin: this.rolePasswords.admin.trim(),
+      gestion: this.rolePasswords.gestion.trim(),
+      investigator: this.rolePasswords.investigator.trim(),
+    };
+
+    this.auth
+      .updateRolePasswords(payload)
+      .then(() => {
+        this.rolePasswordsSaved = true;
+      })
+      .catch((err) => {
+        console.error('Failed to update role passwords:', err);
+        alert("Impossible d'enregistrer les mots de passe.");
+      })
+      .finally(() => {
+        this.rolePasswordsSaving = false;
+      });
   }
 }
