@@ -75,6 +75,7 @@ export class Client {
   birthDate?: string;
   age?: string;
   locationName?: string;
+  locationOwnerId?: string;
   archivedAt?: string;
   bonus?: string;
   bonusHistory?: { [key: string]: ClientBonusEvent } = {};

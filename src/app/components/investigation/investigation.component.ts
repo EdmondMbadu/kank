@@ -98,6 +98,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.clients = base.map((client) => ({
         ...client,
         locationName: this.selectedLocationLabel,
+        locationOwnerId: userId,
       }));
       this.assignTrackingIds();
       this.filterShouldPayToday();
@@ -129,6 +130,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
           ? clients.map((c) => ({
               ...c,
               locationName: loc.firstName || loc.email || 'Site',
+              locationOwnerId: loc.uid,
             }))
           : [];
         tempClients = tempClients.concat(tagged);
@@ -264,8 +266,21 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   saveDebtRecognized(client: Client): void {
     if (!client?.uid) return;
     const debtRecognized = client.debtRecognized ?? '';
-    this.data
-      .updateClientInvestigationFields(client.uid, { debtRecognized })
+    const ownerId =
+      client.locationOwnerId ||
+      this.selectedLocationId ||
+      this.currentUserId;
+    const update = ownerId
+      ? this.data.updateClientInvestigationFieldsForUser(
+          ownerId,
+          client.uid,
+          { debtRecognized }
+        )
+      : this.data.updateClientInvestigationFields(client.uid, {
+          debtRecognized,
+        });
+
+    update
       .then(() => {
         this.refreshProblematic();
       })
