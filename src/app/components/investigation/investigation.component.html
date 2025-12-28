@@ -309,7 +309,8 @@
               *ngFor="
                 let com of showAllDayComments
                   ? dayComments
-                  : (dayComments | slice : 0 : 2)
+                  : (dayComments | slice : 0 : 2);
+                let i = index
               "
               class="relative rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm"
             >
@@ -322,7 +323,17 @@
                 class="flex items-center justify-between text-xs text-emerald-700"
               >
                 <span class="font-semibold text-emerald-900">{{ com.name }}</span>
-                <span>{{ commentTime(com) }}</span>
+                <div class="flex items-center gap-2">
+                  <span>{{ commentTime(com) }}</span>
+                  <button
+                    *ngIf="auth.isAdmin"
+                    type="button"
+                    (click)="deleteDayComment(i)"
+                    class="rounded-full border border-emerald-300 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 hover:border-emerald-500 hover:bg-emerald-100"
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </div>
               <p
                 class="mt-3 border-l-4 border-emerald-500 pl-3 text-sm italic text-emerald-900"

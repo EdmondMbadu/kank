@@ -147,9 +147,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private initDayDocForLocation(userId: string): void {
-    this.dayDoc = this.afs.doc<InvestigationDayDoc>(
-      `users/${userId}/investigationDays/${this.dayKey}`
-    );
+    this.dayDoc = this.getDayDocRef(userId);
 
     if (this.dayDocSub) {
       this.dayDocSub.unsubscribe();
@@ -162,6 +160,13 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     });
 
     this.subs.add(this.dayDocSub);
+  }
+
+  private getDayDocRef(userId?: string) {
+    const ownerId = userId || this.selectedLocationId || this.currentUserId;
+    return this.afs.doc<InvestigationDayDoc>(
+      `users/${ownerId}/investigationDays/${this.dayKey}`
+    );
   }
 
   private ensureDefaultLocation(): void {
@@ -379,7 +384,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   postDayComment(): void {
-    if (!this.dayDoc) {
+    if (!this.selectedLocationId && !this.currentUserId) {
       alert('Utilisateur non disponible. Veuillez reessayer.');
       return;
     }
@@ -399,7 +404,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const updated = [...this.dayComments, newComment];
     this.dayComments = this.sortDayComments(updated);
 
-    this.dayDoc
+    const dayDoc = this.getDayDocRef();
+    dayDoc
       .set(
         {
           dateKey: this.dayKey,
@@ -414,6 +420,26 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       .catch((err) => {
         console.error('Failed to post day comment:', err);
         alert('Impossible de publier le commentaire.');
+      });
+  }
+
+  deleteDayComment(index: number): void {
+    if (!this.auth.isAdmin) return;
+    if (!this.selectedLocationId && !this.currentUserId) return;
+    if (index < 0 || index >= this.dayComments.length) return;
+
+    if (!confirm('Supprimer définitivement ce commentaire ?')) return;
+
+    const updated = [...this.dayComments];
+    updated.splice(index, 1);
+    this.dayComments = this.sortDayComments(updated);
+
+    const dayDoc = this.getDayDocRef();
+    dayDoc
+      .set({ comments: this.dayComments }, { merge: true })
+      .catch((err) => {
+        console.error('Failed to delete day comment:', err);
+        alert('Impossible de supprimer le commentaire.');
       });
   }
 
