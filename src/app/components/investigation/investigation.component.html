@@ -85,22 +85,28 @@
                   {{ displayPhone(client.phoneNumber) }}
                 </p>
               </div>
-              <div class="flex flex-wrap gap-4 text-sm text-slate-700">
-                <div>
-                  Dette actuelle:
-                  <span class="ml-1 font-semibold text-slate-900"
-                    >{{ formatAmount(client.debtLeft) }} FC</span
-                  >
+              <div
+                class="grid gap-3 text-sm text-slate-700 sm:grid-cols-2 sm:items-center"
+              >
+                <div class="flex flex-col gap-1">
+                  <span class="text-xs uppercase tracking-wide text-red-600">
+                    Dette actuelle
+                  </span>
+                  <span class="text-base font-semibold text-slate-900">
+                    {{ formatAmount(client.debtLeft) }} FC
+                  </span>
                 </div>
-                <label class="flex items-center gap-2">
-                  Dette reconnue:
+                <label class="flex flex-col gap-1">
+                  <span class="text-xs uppercase tracking-wide text-red-600">
+                    Dette reconnue
+                  </span>
                   <input
                     [(ngModel)]="client.debtRecognized"
                     (blur)="saveDebtRecognized(client)"
                     (keyup.enter)="saveDebtRecognized(client)"
                     type="text"
                     placeholder="Saisir le montant"
-                    class="w-32 rounded-lg border border-red-200 bg-white px-2 py-1 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-200"
+                    class="w-full min-w-[140px] rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-200"
                   />
                 </label>
               </div>
