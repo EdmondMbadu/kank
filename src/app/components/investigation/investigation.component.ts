@@ -112,9 +112,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   isProblematic(client: Client): boolean {
     const debt = Number(client.debtLeft ?? 0);
     const recognizedRaw = client.debtRecognized ?? '';
-    const recognized = Number(recognizedRaw);
     if (debt <= 0) return false;
-    if (recognizedRaw === '' || Number.isNaN(recognized)) return true;
+    if (recognizedRaw === '') return false;
+    const recognized = Number(recognizedRaw);
+    if (Number.isNaN(recognized)) return false;
     return recognized !== debt;
   }
 
