@@ -1611,7 +1611,7 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
 
-  uploadCommentImage(file: File, path: string): Promise<string> {
+  uploadCommentFile(file: File, path: string): Promise<string> {
     const ref = this.storage.ref(path);
     return this.storage
       .upload(path, file)
@@ -1619,7 +1619,7 @@ export class DataService {
         return await ref.getDownloadURL().toPromise();
       })
       .catch((error) => {
-        console.error('Image upload failed:', error);
+        console.error('File upload failed:', error);
         throw error;
       });
   }

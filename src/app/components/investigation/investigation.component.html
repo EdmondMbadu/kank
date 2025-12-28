@@ -782,20 +782,82 @@
             class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           ></textarea>
           <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <label class="text-xs font-semibold text-slate-500">
-              Ajouter une photo
+            <p class="text-xs font-semibold text-slate-500">Joindre un média</p>
+            <div class="mt-2 flex items-center gap-2">
+              <label
+                for="investigationImage"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50"
+                title="Ajouter une photo"
+              >
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 6h4l2-2h4l2 2h4v12H4z" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
+              </label>
+              <label
+                for="investigationVideo"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50"
+                title="Ajouter une vidéo"
+              >
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M23 7l-7 5 7 5V7z" />
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                </svg>
+              </label>
+              <label
+                for="investigationAudio"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-600 hover:border-emerald-400 hover:bg-emerald-50"
+                title="Ajouter un audio"
+              >
+                <svg
+                  class="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M12 3v10a4 4 0 1 1-2-3.464V5h8V3z" />
+                </svg>
+              </label>
               <input
+                id="investigationImage"
                 type="file"
                 accept="image/*"
                 (change)="onCommentImageSelected($any($event.target).files)"
-                class="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700"
+                class="hidden"
               />
-            </label>
+              <input
+                id="investigationVideo"
+                type="file"
+                accept="video/*"
+                (change)="onCommentVideoSelected($any($event.target).files)"
+                class="hidden"
+              />
+              <input
+                id="investigationAudio"
+                type="file"
+                accept="audio/*"
+                (change)="onCommentAudioSelected($any($event.target).files)"
+                class="hidden"
+              />
+            </div>
             <div *ngIf="selectedCommentImagePreview" class="mt-3 flex items-center gap-3">
               <img
                 [src]="selectedCommentImagePreview"
                 alt="Aperçu"
-                class="h-16 w-16 rounded-lg object-cover ring-1 ring-emerald-200"
+                class="h-14 w-14 rounded-lg object-cover ring-1 ring-emerald-200"
               />
               <button
                 type="button"
@@ -805,14 +867,38 @@
                 Retirer
               </button>
             </div>
+            <div *ngIf="selectedCommentVideoPreview" class="mt-3 flex items-center gap-3">
+              <video
+                [src]="selectedCommentVideoPreview"
+                class="h-16 w-24 rounded-lg object-cover ring-1 ring-emerald-200"
+                controls
+              ></video>
+              <button
+                type="button"
+                (click)="clearCommentVideo()"
+                class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-red-300 hover:text-red-600"
+              >
+                Retirer
+              </button>
+            </div>
+            <div *ngIf="selectedCommentAudioPreview" class="mt-3 flex items-center gap-3">
+              <audio [src]="selectedCommentAudioPreview" controls class="w-full"></audio>
+              <button
+                type="button"
+                (click)="clearCommentAudio()"
+                class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-red-300 hover:text-red-600"
+              >
+                Retirer
+              </button>
+            </div>
           </div>
           <button
             type="button"
             (click)="postClientComment()"
-            [disabled]="commentImageUploading"
+            [disabled]="commentMediaUploading"
             class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {{ commentImageUploading ? "Envoi..." : "Publier" }}
+            {{ commentMediaUploading ? "Envoi..." : "Publier" }}
           </button>
         </div>
 
@@ -841,13 +927,27 @@
               *ngIf="com.attachments?.length"
               class="mt-3 flex flex-wrap gap-2"
             >
-              <img
-                *ngFor="let att of com.attachments"
-                [src]="att.url"
-                alt="Image jointe"
-                class="h-20 w-20 rounded-lg object-cover ring-1 ring-emerald-200"
-              />
+              <ng-container *ngFor="let att of com.attachments">
+                <img
+                  *ngIf="att.type === 'image'"
+                  [src]="att.url"
+                  alt="Image jointe"
+                  class="h-20 w-20 rounded-lg object-cover ring-1 ring-emerald-200"
+                />
+                <video
+                  *ngIf="att.type === 'video'"
+                  [src]="att.url"
+                  class="h-20 w-28 rounded-lg object-cover ring-1 ring-emerald-200"
+                  controls
+                ></video>
+              </ng-container>
             </div>
+            <audio
+              *ngIf="com.audioUrl"
+              [src]="com.audioUrl"
+              class="mt-3 w-full"
+              controls
+            ></audio>
           </div>
         </div>
       </div>

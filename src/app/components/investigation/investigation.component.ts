@@ -52,8 +52,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   clientCommentText = '';
   selectedCommentImageFile?: File;
   selectedCommentImagePreview?: string;
+  selectedCommentVideoFile?: File;
+  selectedCommentVideoPreview?: string;
+  selectedCommentAudioFile?: File;
+  selectedCommentAudioPreview?: string;
   commentImageUploadUrl = '';
-  commentImageUploading = false;
+  commentVideoUploadUrl = '';
+  commentAudioUploadUrl = '';
+  commentMediaUploading = false;
 
   dayKey = '';
   dayLabel = '';
@@ -477,13 +483,15 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     const hasText = this.clientCommentText.trim().length > 0;
     const hasImage = !!this.selectedCommentImageFile;
-    if (!hasText && !hasImage) {
-      alert('Veuillez saisir un commentaire ou joindre une image.');
+    const hasVideo = !!this.selectedCommentVideoFile;
+    const hasAudio = !!this.selectedCommentAudioFile;
+    if (!hasText && !hasImage && !hasVideo && !hasAudio) {
+      alert('Veuillez saisir un commentaire ou joindre un média.');
       return;
     }
 
-    if (this.selectedCommentImageFile) {
-      this.uploadCommentImageAndPost();
+    if (hasImage || hasVideo || hasAudio) {
+      this.uploadCommentMediaAndPost();
     } else {
       this.finalizeClientCommentPost();
     }
@@ -505,6 +513,38 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedCommentImagePreview = URL.createObjectURL(file);
   }
 
+  onCommentVideoSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file.type.startsWith('video/')) {
+      alert('Veuillez sélectionner une vidéo.');
+      return;
+    }
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('La vidéo dépasse la limite de 20MB.');
+      return;
+    }
+    this.selectedCommentVideoFile = file;
+    this.selectedCommentVideoPreview = URL.createObjectURL(file);
+  }
+
+  onCommentAudioSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file.type.startsWith('audio/')) {
+      alert('Veuillez sélectionner un audio.');
+      return;
+    }
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("L'audio dépasse la limite de 20MB.");
+      return;
+    }
+    this.selectedCommentAudioFile = file;
+    this.selectedCommentAudioPreview = URL.createObjectURL(file);
+  }
+
   clearCommentImage(): void {
     this.selectedCommentImageFile = undefined;
     if (this.selectedCommentImagePreview) {
@@ -513,34 +553,74 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedCommentImagePreview = undefined;
   }
 
-  private uploadCommentImageAndPost(): void {
-    if (!this.selectedCommentImageFile || !this.activeClient?.uid) return;
-    if (this.commentImageUploading) return;
+  clearCommentVideo(): void {
+    this.selectedCommentVideoFile = undefined;
+    if (this.selectedCommentVideoPreview) {
+      URL.revokeObjectURL(this.selectedCommentVideoPreview);
+    }
+    this.selectedCommentVideoPreview = undefined;
+  }
 
-    this.commentImageUploading = true;
+  clearCommentAudio(): void {
+    this.selectedCommentAudioFile = undefined;
+    if (this.selectedCommentAudioPreview) {
+      URL.revokeObjectURL(this.selectedCommentAudioPreview);
+    }
+    this.selectedCommentAudioPreview = undefined;
+  }
+
+  private uploadCommentMediaAndPost(): void {
+    if (!this.activeClient?.uid) return;
+    if (this.commentMediaUploading) return;
+
     const ownerId =
       this.activeClient.locationOwnerId ||
       this.selectedLocationId ||
       this.currentUserId;
     const userId = ownerId || this.currentUserId;
     const time = this.time.todaysDate();
-    const file = this.selectedCommentImageFile;
-    const path = `comment-images/${userId}/${this.activeClient.uid}/${time}-${
-      file.name
-    }`;
 
-    this.data
-      .uploadCommentImage(file, path)
-      .then((url) => {
-        this.commentImageUploadUrl = url;
+    this.commentMediaUploading = true;
+
+    const jobs: Promise<void>[] = [];
+    if (this.selectedCommentImageFile) {
+      const file = this.selectedCommentImageFile;
+      const path = `comment-images/${userId}/${this.activeClient.uid}/${time}-${file.name}`;
+      jobs.push(
+        this.data.uploadCommentFile(file, path).then((url) => {
+          this.commentImageUploadUrl = url;
+        })
+      );
+    }
+    if (this.selectedCommentVideoFile) {
+      const file = this.selectedCommentVideoFile;
+      const path = `comment-videos/${userId}/${this.activeClient.uid}/${time}-${file.name}`;
+      jobs.push(
+        this.data.uploadCommentFile(file, path).then((url) => {
+          this.commentVideoUploadUrl = url;
+        })
+      );
+    }
+    if (this.selectedCommentAudioFile) {
+      const file = this.selectedCommentAudioFile;
+      const path = `comment-audios/${userId}/${this.activeClient.uid}/${time}-${file.name}`;
+      jobs.push(
+        this.data.uploadCommentFile(file, path).then((url) => {
+          this.commentAudioUploadUrl = url;
+        })
+      );
+    }
+
+    Promise.all(jobs)
+      .then(() => {
         this.finalizeClientCommentPost();
       })
       .catch((err) => {
-        console.error('Failed to upload comment image:', err);
-        alert("Impossible d'envoyer l'image.");
+        console.error('Failed to upload comment media:', err);
+        alert("Impossible d'envoyer le média.");
       })
       .finally(() => {
-        this.commentImageUploading = false;
+        this.commentMediaUploading = false;
       });
   }
 
@@ -549,16 +629,23 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     const time = this.time.todaysDate();
     const commentText = this.clientCommentText.trim();
-    const attachments = this.commentImageUploadUrl
-      ? [
-          {
-            type: 'image' as const,
-            url: this.commentImageUploadUrl,
-            mimeType: this.selectedCommentImageFile?.type || 'image/jpeg',
-            size: this.selectedCommentImageFile?.size || 0,
-          },
-        ]
-      : undefined;
+    const attachments = [];
+    if (this.commentImageUploadUrl) {
+      attachments.push({
+        type: 'image' as const,
+        url: this.commentImageUploadUrl,
+        mimeType: this.selectedCommentImageFile?.type || 'image/jpeg',
+        size: this.selectedCommentImageFile?.size || 0,
+      });
+    }
+    if (this.commentVideoUploadUrl) {
+      attachments.push({
+        type: 'video' as const,
+        url: this.commentVideoUploadUrl,
+        mimeType: this.selectedCommentVideoFile?.type || 'video/mp4',
+        size: this.selectedCommentVideoFile?.size || 0,
+      });
+    }
 
     const newComment: Comment = {
       name: this.clientCommentName.trim(),
@@ -566,7 +653,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       time,
       timeFormatted: this.time.convertDateToDesiredFormat(time),
       source: 'investigation',
-      ...(attachments ? { attachments } : {}),
+      ...(attachments.length ? { attachments } : {}),
+      ...(this.commentAudioUploadUrl
+        ? { audioUrl: this.commentAudioUploadUrl }
+        : {}),
     };
 
     const existing = Array.isArray(this.activeClient.comments)
@@ -592,7 +682,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         this.activeClient!.comments = updated;
         this.clientCommentText = '';
         this.commentImageUploadUrl = '';
+        this.commentVideoUploadUrl = '';
+        this.commentAudioUploadUrl = '';
         this.clearCommentImage();
+        this.clearCommentVideo();
+        this.clearCommentAudio();
         this.refreshProblematic();
       })
       .catch((err) => {
