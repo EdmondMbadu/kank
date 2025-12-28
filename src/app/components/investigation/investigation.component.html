@@ -1,0 +1,320 @@
+<app-navbar [email]="this.auth.currentUser.email" [firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+
+<section class="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4 py-8">
+  <header class="container mx-auto mb-8">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h2 class="text-2xl font-semibold text-slate-900">Investigation</h2>
+        <p class="text-sm text-slate-600">Suivi des ecarts, verifications du jour et commentaires equipe.</p>
+      </div>
+      <div class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow">
+        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+        Jour: {{ dayKey }}
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto space-y-6">
+    <!-- Section 1: Clients Problematic -->
+    <details class="rounded-2xl border border-red-200 bg-white shadow-sm" open>
+      <summary class="flex cursor-pointer items-center justify-between gap-4 px-6 py-4">
+        <div class="flex items-center gap-3">
+          <span class="h-3 w-3 rounded-full bg-red-500"></span>
+          <div>
+            <h3 class="text-lg font-semibold text-red-700">Clients Problematic</h3>
+            <p class="text-xs text-red-600">Clients dont la dette reconnue ne correspond pas a la dette reelle.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+            {{ problematicClients.length }}
+          </span>
+          <svg class="chevron h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.7a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </summary>
+      <div class="px-6 pb-6 pt-2">
+        <div *ngIf="problematicClients.length === 0" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          Aucun client problematique pour le moment.
+        </div>
+
+        <div *ngIf="problematicClients.length > 0" class="space-y-4">
+          <div *ngFor="let client of problematicClients" class="rounded-xl border border-red-200 bg-red-50/70 p-4">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p class="text-base font-semibold text-slate-900">
+                  {{ client.firstName }} {{ client.lastName }}
+                </p>
+                <p class="text-sm text-slate-600">{{ displayPhone(client.phoneNumber) }}</p>
+              </div>
+              <div class="flex flex-wrap gap-4 text-sm text-slate-700">
+                <div>
+                  Dette actuelle:
+                  <span class="ml-1 font-semibold text-slate-900">{{ formatAmount(client.debtLeft) }} FC</span>
+                </div>
+                <label class="flex items-center gap-2">
+                  Dette reconnue:
+                  <input
+                    [(ngModel)]="client.debtRecognized"
+                    (blur)="saveDebtRecognized(client)"
+                    (keyup.enter)="saveDebtRecognized(client)"
+                    type="text"
+                    placeholder="Saisir le montant"
+                    class="w-32 rounded-lg border border-red-200 bg-white px-2 py-1 text-sm text-slate-900 shadow-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-200"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                (click)="saveDebtRecognized(client)"
+                class="self-start rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-red-700"
+              >
+                Sauvegarder
+              </button>
+            </div>
+            <div *ngIf="latestInvestigationComment(client) as com" class="mt-3 text-sm text-slate-700">
+              <span class="font-semibold text-red-700">Commentaire:</span>
+              <span class="ml-1">{{ com.comment }}</span>
+              <span class="ml-2 text-xs text-slate-500">({{ commentTime(com) }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Section 2: Verification Du jour -->
+    <details class="rounded-2xl border border-slate-200 bg-white shadow-sm" open>
+      <summary class="flex cursor-pointer items-center justify-between gap-4 px-6 py-4">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">Verification Du jour</h3>
+          <p class="text-xs text-slate-500">Clients programmes pour payer aujourd'hui.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            {{ shouldPayToday.length }}
+          </span>
+          <svg class="chevron h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.7a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </summary>
+      <div class="px-6 pb-6 pt-2">
+        <div *ngIf="shouldPayToday.length === 0" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          Aucun client programme aujourd'hui.
+        </div>
+        <div *ngIf="shouldPayToday.length > 0" class="max-h-[320px] space-y-3 overflow-y-auto pr-2">
+          <button
+            *ngFor="let client of shouldPayToday"
+            type="button"
+            (click)="openClientModal(client)"
+            class="w-full rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50"
+          >
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-base font-semibold text-slate-900">
+                  {{ client.firstName }} {{ client.lastName }}
+                </p>
+                <p class="text-sm text-slate-600">{{ displayPhone(client.phoneNumber) }}</p>
+              </div>
+              <div class="text-sm text-slate-600">
+                <span class="font-semibold text-slate-900">{{ formatAmount(client.debtLeft) }} FC</span>
+                <span class="ml-1">dette restante</span>
+              </div>
+            </div>
+            <div class="mt-2 flex flex-wrap gap-2 text-xs">
+              <span class="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
+                Jour: {{ client.paymentDay || '-' }}
+              </span>
+              <span
+                *ngIf="isProblematic(client)"
+                class="rounded-full bg-red-100 px-2 py-1 text-red-700"
+              >
+                Problematic
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </details>
+
+    <!-- Section 3: Commentary of the day -->
+    <details class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <summary class="flex cursor-pointer items-center justify-between gap-4 px-6 py-4">
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">Commentary Du jour</h3>
+          <p class="text-xs text-slate-500">Resume et notes generales de l'equipe.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            {{ dayComments.length }}
+          </span>
+          <svg class="chevron h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.7a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </summary>
+      <div class="space-y-6 px-6 pb-6 pt-2">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h4 class="text-sm font-semibold text-slate-800">Resume du jour</h4>
+            <button
+              type="button"
+              (click)="saveDaySummary()"
+              class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-slate-800"
+            >
+              {{ daySummarySaving ? 'Sauvegarde...' : 'Sauvegarder' }}
+            </button>
+          </div>
+          <textarea
+            [(ngModel)]="daySummary"
+            rows="3"
+            placeholder="Ex: resume de la journee, clients verifies, ecarts notes, actions prises, prochaines etapes."
+            class="mt-3 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-900 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          ></textarea>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+          <h4 class="text-sm font-semibold text-slate-800">Commentaire general</h4>
+          <div class="mt-3 grid gap-3">
+            <input
+              [(ngModel)]="dayCommentName"
+              type="text"
+              placeholder="Votre nom"
+              class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+            <textarea
+              [(ngModel)]="dayCommentText"
+              rows="3"
+              placeholder="Commentaire sur la journee pour l'equipe..."
+              class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            ></textarea>
+            <button
+              type="button"
+              (click)="postDayComment()"
+              class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700"
+            >
+              Publier
+            </button>
+          </div>
+
+          <div class="mt-5 space-y-3">
+            <div *ngIf="dayComments.length === 0" class="text-sm text-slate-500">
+              Aucun commentaire general pour le moment.
+            </div>
+            <div
+              *ngFor="let com of (showAllDayComments ? dayComments : (dayComments | slice: 0 : 2))"
+              class="rounded-lg border border-slate-100 bg-slate-50 p-3"
+            >
+              <div class="flex items-center justify-between text-xs text-slate-500">
+                <span class="font-semibold text-slate-800">{{ com.name }}</span>
+                <span>{{ commentTime(com) }}</span>
+              </div>
+              <p class="mt-2 text-sm text-slate-700">{{ com.comment }}</p>
+            </div>
+            <button
+              *ngIf="dayComments.length > 2"
+              type="button"
+              (click)="showAllDayComments = !showAllDayComments"
+              class="text-xs font-semibold text-emerald-700"
+            >
+              {{ showAllDayComments ? 'Voir moins' : 'Voir plus' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- Modal: Client verification -->
+<div
+  *ngIf="showClientModal && activeClient"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="w-full max-w-2xl rounded-2xl bg-white shadow-xl">
+    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+      <div>
+        <h3 class="text-lg font-semibold text-slate-900">
+          {{ activeClient.firstName }} {{ activeClient.lastName }}
+        </h3>
+        <p class="text-sm text-slate-600">{{ displayPhone(activeClient.phoneNumber) }}</p>
+      </div>
+      <button type="button" (click)="closeClientModal()" class="text-sm text-slate-500 hover:text-slate-800">
+        Fermer
+      </button>
+    </div>
+
+    <div class="space-y-6 px-6 py-5">
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div>
+            <p class="text-xs uppercase text-slate-500">Dette actuelle</p>
+            <p class="text-base font-semibold text-slate-900">{{ formatAmount(activeClient.debtLeft) }} FC</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase text-slate-500">Dette reconnue</p>
+            <div class="mt-1 flex items-center gap-2">
+              <input
+                [(ngModel)]="activeClient.debtRecognized"
+                (blur)="saveDebtRecognized(activeClient)"
+                (keyup.enter)="saveDebtRecognized(activeClient)"
+                type="text"
+                placeholder="Saisir le montant"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+              <button
+                type="button"
+                (click)="saveDebtRecognized(activeClient)"
+                class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-semibold text-white"
+              >
+                Sauver
+              </button>
+            </div>
+            <p *ngIf="isProblematic(activeClient)" class="mt-1 text-xs text-red-600">Devient problematique si la valeur differe.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <h4 class="text-sm font-semibold text-slate-800">Commentaire investigation</h4>
+        <div class="mt-3 grid gap-3">
+          <input
+            [(ngModel)]="clientCommentName"
+            type="text"
+            placeholder="Votre nom"
+            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
+          <textarea
+            [(ngModel)]="clientCommentText"
+            rows="3"
+            placeholder="Ajouter un commentaire pour ce client..."
+            class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          ></textarea>
+          <button
+            type="button"
+            (click)="postClientComment()"
+            class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700"
+          >
+            Publier
+          </button>
+        </div>
+
+        <div class="mt-4 space-y-3" *ngIf="getInvestigationComments(activeClient) as clientComments">
+          <div *ngIf="clientComments.length === 0" class="text-sm text-slate-500">
+            Aucun commentaire investigation pour ce client.
+          </div>
+          <div *ngFor="let com of clientComments" class="rounded-lg border border-slate-100 bg-slate-50 p-3">
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <span class="font-semibold text-slate-800">{{ com.name }}</span>
+              <span>{{ commentTime(com) }}</span>
+            </div>
+            <p class="mt-2 text-sm text-slate-700">{{ com.comment }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

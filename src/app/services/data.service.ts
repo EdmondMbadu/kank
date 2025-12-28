@@ -394,6 +394,16 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
 
+  updateClientInvestigationFields(
+    clientId: string,
+    payload: Partial<Client>
+  ) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${clientId}`
+    );
+    return clientRef.set(payload, { merge: true });
+  }
+
   updateEmployeeInfoForClientAgentAssignment(agent: Employee) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${agent.uid}`

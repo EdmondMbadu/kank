@@ -82,6 +82,7 @@ import { CertificateComponent } from '../components/certificate/certificate.comp
 import { TutorialComponent } from '../components/tutorial/tutorial.component';
 import { ReviewsComponent } from '../components/reviews/reviews.component';
 import { QuestionsComponent } from '../components/questions/questions.component';
+import { InvestigationComponent } from '../components/investigation/investigation.component';
 
 const routes: Routes = [
   {
@@ -256,6 +257,7 @@ const routes: Routes = [
   { path: 'tutorial', component: TutorialComponent },
   { path: 'reviews', component: ReviewsComponent },
   { path: 'questions', component: QuestionsComponent },
+  { path: 'investigation', component: InvestigationComponent },
   {
     path: 'employee-page',
     loadChildren: () =>

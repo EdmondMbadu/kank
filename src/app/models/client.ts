@@ -34,6 +34,7 @@ export class Client {
   creditScore?: string;
   amountPaid?: string;
   debtLeft?: string;
+  debtRecognized?: string;
   dateJoined?: string;
   numberOfPaymentsMissed?: string;
   numberOfPaymentsMade?: string;
@@ -90,6 +91,7 @@ export class Comment {
   stars?: string;
   starsNumber?: number;
   audioUrl?: string;
+  source?: string;
 
   visible?: boolean; // false par défaut
 

@@ -93,6 +93,7 @@ import { SavingCycleActivityComponent } from '../components/saving-cycle-activit
 import { ReviewsComponent } from '../components/reviews/reviews.component';
 import { QuestionsComponent } from '../components/questions/questions.component';
 import { RotationScheduleComponent } from '../components/rotation-schedule/rotation-schedule.component';
+import { InvestigationComponent } from '../components/investigation/investigation.component';
 
 PlotlyModule.plotlyjs = PlotlyJS;
 
@@ -181,6 +182,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     ReviewsComponent,
     QuestionsComponent,
     RotationScheduleComponent,
+    InvestigationComponent,
   ],
   imports: [
     CommonModule,
