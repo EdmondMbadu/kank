@@ -30,6 +30,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   clients: Client[] = [];
   shouldPayToday: Client[] = [];
   problematicClients: Client[] = [];
+  locations: User[] = [];
+  selectedLocationId = '';
+  selectedLocationLabel = '';
+  private currentUserId = '';
 
   activeClient?: Client;
   showClientModal = false;
@@ -48,6 +52,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   private dayDoc?: AngularFirestoreDocument<InvestigationDayDoc>;
   private subs = new Subscription();
   private dayDocSub?: Subscription;
+  private clientsSub?: Subscription;
 
   constructor(
     public auth: AuthService,
@@ -63,46 +68,81 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.dayLabel = `${dayFrench} ${this.time.convertDateToDayMonthYear(
       this.dayKey
     )}`;
-    this.loadClients();
-    this.initDayDoc();
+
+    const userSub = this.auth.user$.subscribe((user: User | null) => {
+      this.currentUserId = user?.uid ?? '';
+      this.ensureDefaultLocation();
+    });
+    const locationsSub = this.auth.getAllUsersInfo().subscribe((data) => {
+      this.locations = Array.isArray(data) ? (data as User[]) : [];
+      this.ensureDefaultLocation();
+    });
+
+    this.subs.add(userSub);
+    this.subs.add(locationsSub);
   }
 
   ngOnDestroy(): void {
     this.subs.unsubscribe();
   }
 
-  private loadClients(): void {
-    const sub = this.auth.getAllClients().subscribe((data: any) => {
+  private loadClientsForLocation(userId: string): void {
+    if (this.clientsSub) {
+      this.clientsSub.unsubscribe();
+    }
+    this.clientsSub = this.auth.getClientsOfAUser(userId).subscribe((data) => {
       this.clients = Array.isArray(data) ? (data.filter(Boolean) as Client[]) : [];
       this.assignTrackingIds();
       this.filterShouldPayToday();
       this.refreshProblematic();
     });
-    this.subs.add(sub);
+    this.subs.add(this.clientsSub);
   }
 
-  private initDayDoc(): void {
-    const sub = this.auth.user$.subscribe((user: User | null) => {
-      if (!user?.uid) return;
+  private initDayDocForLocation(userId: string): void {
+    this.dayDoc = this.afs.doc<InvestigationDayDoc>(
+      `users/${userId}/investigationDays/${this.dayKey}`
+    );
 
-      this.dayDoc = this.afs.doc<InvestigationDayDoc>(
-        `users/${user.uid}/investigationDays/${this.dayKey}`
-      );
+    if (this.dayDocSub) {
+      this.dayDocSub.unsubscribe();
+    }
 
-      if (this.dayDocSub) {
-        this.dayDocSub.unsubscribe();
-      }
-
-      this.dayDocSub = this.dayDoc.valueChanges().subscribe((doc) => {
-        this.daySummary = doc?.summary ?? '';
-        this.dayComments = Array.isArray(doc?.comments) ? doc!.comments! : [];
-        this.dayComments = this.sortDayComments(this.dayComments);
-      });
-
-      this.subs.add(this.dayDocSub);
+    this.dayDocSub = this.dayDoc.valueChanges().subscribe((doc) => {
+      this.daySummary = doc?.summary ?? '';
+      this.dayComments = Array.isArray(doc?.comments) ? doc!.comments! : [];
+      this.dayComments = this.sortDayComments(this.dayComments);
     });
 
-    this.subs.add(sub);
+    this.subs.add(this.dayDocSub);
+  }
+
+  private ensureDefaultLocation(): void {
+    if (this.selectedLocationId) return;
+    const preferred = this.currentUserId || this.locations[0]?.uid || '';
+    if (!preferred) return;
+    const user =
+      this.locations.find((loc) => loc.uid === preferred) ||
+      ({ uid: preferred } as User);
+    this.applyLocation(user);
+  }
+
+  private applyLocation(user: User): void {
+    if (!user?.uid) return;
+    this.selectedLocationId = user.uid;
+    this.selectedLocationLabel = user.firstName || user.email || 'Site';
+    this.daySummary = '';
+    this.dayComments = [];
+    this.loadClientsForLocation(user.uid);
+    this.initDayDocForLocation(user.uid);
+  }
+
+  onLocationChange(): void {
+    const user = this.locations.find(
+      (loc) => loc.uid === this.selectedLocationId
+    );
+    if (!user) return;
+    this.applyLocation(user);
   }
 
   private assignTrackingIds(): void {

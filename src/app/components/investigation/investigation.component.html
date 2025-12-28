@@ -15,11 +15,29 @@
           Suivi des écarts, vérifications du jour et commentaires équipe.
         </p>
       </div>
-      <div
-        class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow"
-      >
-        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-        Jour: {{ dayLabel }}
+      <div class="flex flex-col items-center gap-3 sm:flex-row">
+        <div
+          class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow"
+        >
+          <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+          Jour: {{ dayLabel }}
+        </div>
+        <label
+          class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow"
+        >
+          <span class="text-[10px] uppercase tracking-wide text-slate-400">
+            Site
+          </span>
+          <select
+            [(ngModel)]="selectedLocationId"
+            (change)="onLocationChange()"
+            class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          >
+            <option *ngFor="let loc of locations" [ngValue]="loc.uid">
+              {{ loc.firstName || loc.email || "Site" }}
+            </option>
+          </select>
+        </label>
       </div>
     </div>
   </header>
