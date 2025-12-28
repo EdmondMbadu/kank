@@ -51,6 +51,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   trophyModalVisible = false;
   trophyModalType: 'team' | 'employee' | null = null;
   trophyModalEmployee: Employee | null = null;
+  employeeModalVisible = false;
+  employeeModalEmployee: Employee | null = null;
   todayDayKey: string = this.time.todaysDateMonthDayYear(); // e.g. "9-15-2025"
   
   // Date picker for daily payments (visible to everyone)
@@ -1406,6 +1408,24 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.trophyModalVisible = false;
     this.trophyModalType = null;
     this.trophyModalEmployee = null;
+  }
+
+  openEmployeeModal(employee: Employee): void {
+    this.employeeModalEmployee = employee;
+    this.employeeModalVisible = true;
+  }
+
+  closeEmployeeModal(): void {
+    this.employeeModalVisible = false;
+    this.employeeModalEmployee = null;
+  }
+
+  employeeInitials(employee?: Employee | null): string {
+    const first = (employee?.firstName || '').trim();
+    const last = (employee?.lastName || '').trim();
+    const a = first ? first[0] : '';
+    const b = last ? last[0] : '';
+    return (a + b || '•').toUpperCase();
   }
 
   /**

@@ -389,18 +389,20 @@
             *ngIf="em?.profilePicture?.downloadURL; else perfAvatarFallback"
             [src]="em.profilePicture?.downloadURL"
             alt="Employee Avatar"
-            class="h-14 w-14 rounded-full object-cover border-2"
+            class="h-14 w-14 rounded-full object-cover border-2 cursor-pointer"
             [ngStyle]="{
               borderColor: colorForPerf(em.performancePercentageMonth)
             }"
+            (click)="openEmployeeModal(em)"
           />
           <ng-template #perfAvatarFallback>
             <div
-              class="h-14 w-14 rounded-full flex items-center justify-center text-white font-bold border-2"
+              class="h-14 w-14 rounded-full flex items-center justify-center text-white font-bold border-2 cursor-pointer"
               [ngStyle]="{
                 borderColor: colorForPerf(em.performancePercentageMonth),
                 background: '#94a3b8'
               }"
+              (click)="openEmployeeModal(em)"
             >
               {{ (em.firstName || "?").charAt(0)
               }}{{ (em.lastName || "").charAt(0) }}
@@ -685,23 +687,25 @@
               <img
                 *ngIf="em?.profilePicture?.downloadURL; else avatarFallback"
                 [src]="em.profilePicture?.downloadURL"
-                class="rounded-full object-cover"
+                class="rounded-full object-cover cursor-pointer"
                 [ngClass]="[
                   idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
                   trophyMeta(idx + 1).ringClass
                 ]"
                 alt="avatar"
+                (click)="openEmployeeModal(em)"
               />
             </div>
 
             <ng-template #avatarFallback>
               <div
-                class="flex items-center justify-center font-bold text-white rounded-full"
+                class="flex items-center justify-center font-bold text-white rounded-full cursor-pointer"
                 [ngClass]="[
                   idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
                   trophyMeta(idx + 1).avatarClass,
                   trophyMeta(idx + 1).ringClass
                 ]"
+                (click)="openEmployeeModal(em)"
               >
                 {{ (em.firstName || "?").charAt(0)
                 }}{{ (em.lastName || "").charAt(0) }}
@@ -807,12 +811,14 @@
               <img
                 *ngIf="em?.profilePicture?.downloadURL; else smallFallback"
                 [src]="em.profilePicture?.downloadURL"
-                class="h-10 w-10 rounded-full object-cover"
+                class="h-10 w-10 rounded-full object-cover cursor-pointer"
                 alt="avatar"
+                (click)="openEmployeeModal(em)"
               />
               <ng-template #smallFallback>
                 <div
-                  class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600"
+                  class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600 cursor-pointer"
+                  (click)="openEmployeeModal(em)"
                 >
                   {{ (em.firstName || "?").charAt(0)
                   }}{{ (em.lastName || "").charAt(0) }}
@@ -1001,23 +1007,25 @@
               <img
                 *ngIf="em?.profilePicture?.downloadURL; else mAvatarFallback"
                 [src]="em.profilePicture?.downloadURL"
-                class="rounded-full object-cover"
+                class="rounded-full object-cover cursor-pointer"
                 [ngClass]="[
                   idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
                   trophyMeta(idx + 1).ringClass
                 ]"
                 alt="avatar"
+                (click)="openEmployeeModal(em)"
               />
             </div>
 
             <ng-template #mAvatarFallback>
               <div
-                class="flex items-center justify-center font-bold text-white rounded-full"
+                class="flex items-center justify-center font-bold text-white rounded-full cursor-pointer"
                 [ngClass]="[
                   idx + 1 === 1 ? 'h-12 w-12 ring-4' : 'h-12 w-12 ring-2',
                   trophyMeta(idx + 1).avatarClass,
                   trophyMeta(idx + 1).ringClass
                 ]"
+                (click)="openEmployeeModal(em)"
               >
                 {{ (em.firstName || "?").charAt(0)
                 }}{{ (em.lastName || "").charAt(0) }}
@@ -1139,12 +1147,14 @@
               <img
                 *ngIf="em?.profilePicture?.downloadURL; else mSmallFallback"
                 [src]="em.profilePicture?.downloadURL"
-                class="h-10 w-10 rounded-full object-cover"
+                class="h-10 w-10 rounded-full object-cover cursor-pointer"
                 alt="avatar"
+                (click)="openEmployeeModal(em)"
               />
               <ng-template #mSmallFallback>
                 <div
-                  class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600"
+                  class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600 cursor-pointer"
+                  (click)="openEmployeeModal(em)"
                 >
                   {{ (em.firstName || "?").charAt(0)
                   }}{{ (em.lastName || "").charAt(0) }}
@@ -1525,6 +1535,66 @@
     </section>
   </div>
 </section>
+
+<!-- Employee quick view modal -->
+<div
+  *ngIf="employeeModalVisible && employeeModalEmployee"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+  (click)="closeEmployeeModal()"
+>
+  <div
+    (click)="$event.stopPropagation()"
+    class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl text-center"
+  >
+    <div class="flex justify-end">
+      <button
+        type="button"
+        class="text-sm text-slate-400 hover:text-slate-700"
+        (click)="closeEmployeeModal()"
+      >
+        Fermer
+      </button>
+    </div>
+
+    <div class="mt-2 flex flex-col items-center gap-4">
+      <ng-container
+        *ngIf="employeeModalEmployee.profilePicture?.downloadURL; else modalFallback"
+      >
+        <img
+          [src]="employeeModalEmployee.profilePicture?.downloadURL"
+          alt="Photo employé"
+          class="h-32 w-32 rounded-full object-cover ring-4 ring-slate-200 shadow-lg"
+        />
+      </ng-container>
+      <ng-template #modalFallback>
+        <div
+          class="flex h-32 w-32 items-center justify-center rounded-full bg-slate-200 text-3xl font-semibold text-slate-600 ring-4 ring-slate-200 shadow-lg"
+        >
+          {{ employeeInitials(employeeModalEmployee) }}
+        </div>
+      </ng-template>
+
+      <div>
+        <h3 class="text-lg font-semibold text-slate-900">
+          {{ employeeModalEmployee.firstName }}
+          {{ employeeModalEmployee.lastName }}
+        </h3>
+        <p class="text-sm text-slate-500">
+          {{ employeeModalEmployee.role || "Employé" }}
+        </p>
+      </div>
+
+      <div class="w-full rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div class="text-xs uppercase tracking-wide text-slate-400">
+          Téléphone
+        </div>
+        <div class="mt-1 text-base font-semibold text-slate-800">
+          {{ employeeModalEmployee.phoneNumber || "Numéro indisponible" }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Boîte à idées -->
 <div
