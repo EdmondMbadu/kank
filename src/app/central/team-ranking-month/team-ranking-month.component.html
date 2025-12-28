@@ -1580,13 +1580,7 @@
           {{ employeeModalEmployee.lastName }}
         </h3>
         <p class="text-sm text-slate-500">
-          {{ employeeModalEmployee.role || "Employé" }}
-        </p>
-        <p
-          *ngIf="(employeeModalEmployee.role || '').includes('Manager')"
-          class="text-xs text-slate-400"
-        >
-          Manager — {{
+          {{ employeeModalEmployee.role || "Employé" }} — {{
             employeeModalEmployee.tempLocationHolder || "Lieu indisponible"
           }}
         </p>
