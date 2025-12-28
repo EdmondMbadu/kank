@@ -10,9 +10,9 @@
   <header class="container mx-auto mb-8">
     <div class="flex flex-col items-center gap-3 text-center">
       <div>
-        <h2 class="text-2xl font-semibold text-slate-900">Investigation</h2>
+        <h2 class="text-2xl font-semibold text-slate-900">Vérification</h2>
         <p class="text-sm text-slate-600">
-          Suivi des écarts, vérifications du jour et commentaires équipe.
+          Suivi des écarts, vérifications du jour et commentaires d'équipe.
         </p>
       </div>
       <div class="flex flex-col items-center gap-3 sm:flex-row">
@@ -168,7 +168,7 @@
       </div>
     </details>
 
-    <!-- Section 2: Verification Du jour -->
+    <!-- Section 2: Vérification du jour -->
     <details
       class="rounded-2xl border border-slate-200 bg-white shadow-sm"
       open
@@ -178,10 +178,10 @@
       >
         <div>
           <h3 class="text-lg font-semibold text-slate-900">
-            Verification Du jour
+            Vérification du jour
           </h3>
           <p class="text-xs text-slate-500">
-            Clients programmes pour payer aujourd'hui.
+            Clients programmés pour payer aujourd'hui.
           </p>
         </div>
         <div class="flex items-center gap-2">
@@ -385,7 +385,7 @@
   </div>
 </section>
 
-<!-- Modal: Client verification -->
+<!-- Modal: Client vérification -->
 <div
   *ngIf="showClientModal && activeClient"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -472,7 +472,7 @@
 
       <div class="rounded-xl border border-slate-200 bg-white p-4">
         <h4 class="text-sm font-semibold text-slate-800">
-          Commentaire investigation
+          Commentaire de vérification
         </h4>
         <div class="mt-3 grid gap-3">
           <input
@@ -504,7 +504,7 @@
             *ngIf="clientComments.length === 0"
             class="text-sm text-slate-500"
           >
-            Aucun commentaire investigation pour ce client.
+            Aucun commentaire de vérification pour ce client.
           </div>
           <div
             *ngFor="let com of clientComments"
