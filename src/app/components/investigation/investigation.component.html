@@ -781,12 +781,38 @@
             placeholder="Ajouter un commentaire pour ce client..."
             class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
           ></textarea>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <label class="text-xs font-semibold text-slate-500">
+              Ajouter une photo
+              <input
+                type="file"
+                accept="image/*"
+                (change)="onCommentImageSelected($any($event.target).files)"
+                class="mt-2 block w-full text-xs text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-emerald-700"
+              />
+            </label>
+            <div *ngIf="selectedCommentImagePreview" class="mt-3 flex items-center gap-3">
+              <img
+                [src]="selectedCommentImagePreview"
+                alt="Aperçu"
+                class="h-16 w-16 rounded-lg object-cover ring-1 ring-emerald-200"
+              />
+              <button
+                type="button"
+                (click)="clearCommentImage()"
+                class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-red-300 hover:text-red-600"
+              >
+                Retirer
+              </button>
+            </div>
+          </div>
           <button
             type="button"
             (click)="postClientComment()"
-            class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700"
+            [disabled]="commentImageUploading"
+            class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Publier
+            {{ commentImageUploading ? "Envoi..." : "Publier" }}
           </button>
         </div>
 
@@ -811,6 +837,17 @@
               <span>{{ commentTime(com) }}</span>
             </div>
             <p class="mt-2 text-sm text-slate-700">{{ com.comment }}</p>
+            <div
+              *ngIf="com.attachments?.length"
+              class="mt-3 flex flex-wrap gap-2"
+            >
+              <img
+                *ngFor="let att of com.attachments"
+                [src]="att.url"
+                alt="Image jointe"
+                class="h-20 w-20 rounded-lg object-cover ring-1 ring-emerald-200"
+              />
+            </div>
           </div>
         </div>
       </div>

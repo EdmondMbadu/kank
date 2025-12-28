@@ -1610,6 +1610,19 @@ export class DataService {
     };
     return clientRef.set(data, { merge: true });
   }
+
+  uploadCommentImage(file: File, path: string): Promise<string> {
+    const ref = this.storage.ref(path);
+    return this.storage
+      .upload(path, file)
+      .then(async () => {
+        return await ref.getDownloadURL().toPromise();
+      })
+      .catch((error) => {
+        console.error('Image upload failed:', error);
+        throw error;
+      });
+  }
   updateEmployeeAttendance(attendance: any, employeeId: string) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employeeId}`

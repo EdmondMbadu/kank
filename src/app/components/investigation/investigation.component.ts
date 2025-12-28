@@ -50,6 +50,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   showClientModal = false;
   clientCommentName = '';
   clientCommentText = '';
+  selectedCommentImageFile?: File;
+  selectedCommentImagePreview?: string;
+  commentImageUploadUrl = '';
+  commentImageUploading = false;
 
   dayKey = '';
   dayLabel = '';
@@ -466,18 +470,103 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   postClientComment(): void {
     if (!this.activeClient?.uid) return;
-    if (!this.clientCommentName.trim() || !this.clientCommentText.trim()) {
-      alert('Veuillez saisir votre nom et un commentaire.');
+    if (!this.clientCommentName.trim()) {
+      alert('Veuillez saisir votre nom.');
       return;
     }
 
+    const hasText = this.clientCommentText.trim().length > 0;
+    const hasImage = !!this.selectedCommentImageFile;
+    if (!hasText && !hasImage) {
+      alert('Veuillez saisir un commentaire ou joindre une image.');
+      return;
+    }
+
+    if (this.selectedCommentImageFile) {
+      this.uploadCommentImageAndPost();
+    } else {
+      this.finalizeClientCommentPost();
+    }
+  }
+
+  onCommentImageSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image.');
+      return;
+    }
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("L'image dépasse la limite de 20MB.");
+      return;
+    }
+    this.selectedCommentImageFile = file;
+    this.selectedCommentImagePreview = URL.createObjectURL(file);
+  }
+
+  clearCommentImage(): void {
+    this.selectedCommentImageFile = undefined;
+    if (this.selectedCommentImagePreview) {
+      URL.revokeObjectURL(this.selectedCommentImagePreview);
+    }
+    this.selectedCommentImagePreview = undefined;
+  }
+
+  private uploadCommentImageAndPost(): void {
+    if (!this.selectedCommentImageFile || !this.activeClient?.uid) return;
+    if (this.commentImageUploading) return;
+
+    this.commentImageUploading = true;
+    const ownerId =
+      this.activeClient.locationOwnerId ||
+      this.selectedLocationId ||
+      this.currentUserId;
+    const userId = ownerId || this.currentUserId;
     const time = this.time.todaysDate();
+    const file = this.selectedCommentImageFile;
+    const path = `comment-images/${userId}/${this.activeClient.uid}/${time}-${
+      file.name
+    }`;
+
+    this.data
+      .uploadCommentImage(file, path)
+      .then((url) => {
+        this.commentImageUploadUrl = url;
+        this.finalizeClientCommentPost();
+      })
+      .catch((err) => {
+        console.error('Failed to upload comment image:', err);
+        alert("Impossible d'envoyer l'image.");
+      })
+      .finally(() => {
+        this.commentImageUploading = false;
+      });
+  }
+
+  private finalizeClientCommentPost(): void {
+    if (!this.activeClient?.uid) return;
+
+    const time = this.time.todaysDate();
+    const commentText = this.clientCommentText.trim();
+    const attachments = this.commentImageUploadUrl
+      ? [
+          {
+            type: 'image' as const,
+            url: this.commentImageUploadUrl,
+            mimeType: this.selectedCommentImageFile?.type || 'image/jpeg',
+            size: this.selectedCommentImageFile?.size || 0,
+          },
+        ]
+      : undefined;
+
     const newComment: Comment = {
       name: this.clientCommentName.trim(),
-      comment: this.clientCommentText.trim(),
+      comment: commentText,
       time,
       timeFormatted: this.time.convertDateToDesiredFormat(time),
       source: 'investigation',
+      ...(attachments ? { attachments } : {}),
     };
 
     const existing = Array.isArray(this.activeClient.comments)
@@ -502,6 +591,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       .then(() => {
         this.activeClient!.comments = updated;
         this.clientCommentText = '';
+        this.commentImageUploadUrl = '';
+        this.clearCommentImage();
         this.refreshProblematic();
       })
       .catch((err) => {
