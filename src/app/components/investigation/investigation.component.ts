@@ -48,6 +48,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   dayComments: InvestigationDayComment[] = [];
   dayCommentName = '';
   dayCommentText = '';
+  dayCommentPosting = false;
   showAllDayComments = false;
 
   private dayDoc?: AngularFirestoreDocument<InvestigationDayDoc>;
@@ -392,6 +393,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       alert('Veuillez saisir votre nom et un commentaire.');
       return;
     }
+    if (this.dayCommentPosting) return;
 
     const time = this.time.todaysDate();
     const newComment: InvestigationDayComment = {
@@ -405,6 +407,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.dayComments = this.sortDayComments(updated);
 
     const dayDoc = this.getDayDocRef();
+    this.dayCommentPosting = true;
     dayDoc
       .set(
         {
@@ -415,11 +418,15 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         { merge: true }
       )
       .then(() => {
+        this.dayCommentName = '';
         this.dayCommentText = '';
       })
       .catch((err) => {
         console.error('Failed to post day comment:', err);
         alert('Impossible de publier le commentaire.');
+      })
+      .finally(() => {
+        this.dayCommentPosting = false;
       });
   }
 
