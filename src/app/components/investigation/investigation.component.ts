@@ -142,6 +142,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return raw.length ? raw : 'numero indisponible';
   }
 
+  displayPaymentDay(day?: string): string {
+    const raw = (day ?? '').toString().trim();
+    if (!raw) return '-';
+    return this.time.englishToFrenchDay[raw] ?? raw;
+  }
+
   getInvestigationComments(client: Client): Comment[] {
     const comments = Array.isArray(client.comments) ? client.comments : [];
     const filtered = comments.filter(
