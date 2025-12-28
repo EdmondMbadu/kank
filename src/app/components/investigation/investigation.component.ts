@@ -250,6 +250,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return this.time.englishToFrenchDay[raw] ?? raw;
   }
 
+  clientInitials(client: Client): string {
+    const first = (client.firstName ?? '').trim();
+    const last = (client.lastName ?? '').trim();
+    const a = first ? first[0] : '';
+    const b = last ? last[0] : '';
+    return (a + b || '•').toUpperCase();
+  }
+
   getInvestigationComments(client: Client): Comment[] {
     const comments = Array.isArray(client.comments) ? client.comments : [];
     const filtered = comments.filter(

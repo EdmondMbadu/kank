@@ -95,16 +95,30 @@
             <div
               class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
             >
-              <div>
-                <p class="text-base font-semibold text-slate-900">
-                  {{ client.firstName }} {{ client.lastName }}
-                  <span class="ml-2 rounded-full bg-white/80 px-2 py-0.5 text-xs font-semibold text-red-700">
-                    {{ client.locationName || "Site" }}
-                  </span>
-                </p>
-                <p class="text-sm text-slate-600">
-                  {{ displayPhone(client.phoneNumber) }}
-                </p>
+              <div class="flex items-center gap-3">
+                <ng-container *ngIf="client.profilePicture?.downloadURL; else problemInitials">
+                  <img
+                    [src]="client.profilePicture?.downloadURL"
+                    alt="Photo client"
+                    class="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow"
+                  />
+                </ng-container>
+                <ng-template #problemInitials>
+                  <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-sm font-semibold text-red-700 ring-2 ring-white shadow">
+                    {{ clientInitials(client) }}
+                  </div>
+                </ng-template>
+                <div>
+                  <p class="text-base font-semibold text-slate-900">
+                    {{ client.firstName }} {{ client.lastName }}
+                    <span class="ml-2 rounded-full bg-white/80 px-2 py-0.5 text-xs font-semibold text-red-700">
+                      {{ client.locationName || "Site" }}
+                    </span>
+                  </p>
+                  <p class="text-sm text-slate-600">
+                    {{ displayPhone(client.phoneNumber) }}
+                  </p>
+                </div>
               </div>
               <div
                 class="grid gap-3 text-sm text-slate-700 sm:grid-cols-2 sm:items-center"
@@ -209,16 +223,30 @@
             <div
               class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div>
-                <p class="text-base font-semibold text-slate-900">
-                  {{ client.firstName }} {{ client.lastName }}
-                  <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                    {{ client.locationName || "Site" }}
-                  </span>
-                </p>
-                <p class="text-sm text-slate-600">
-                  {{ displayPhone(client.phoneNumber) }}
-                </p>
+              <div class="flex items-center gap-3">
+                <ng-container *ngIf="client.profilePicture?.downloadURL; else verifyInitials">
+                  <img
+                    [src]="client.profilePicture?.downloadURL"
+                    alt="Photo client"
+                    class="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow"
+                  />
+                </ng-container>
+                <ng-template #verifyInitials>
+                  <div class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700 ring-2 ring-white shadow">
+                    {{ clientInitials(client) }}
+                  </div>
+                </ng-template>
+                <div>
+                  <p class="text-base font-semibold text-slate-900">
+                    {{ client.firstName }} {{ client.lastName }}
+                    <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                      {{ client.locationName || "Site" }}
+                    </span>
+                  </p>
+                  <p class="text-sm text-slate-600">
+                    {{ displayPhone(client.phoneNumber) }}
+                  </p>
+                </div>
               </div>
               <div class="text-sm text-slate-600">
                 <span class="font-semibold text-slate-900"
@@ -369,12 +397,31 @@
       class="flex items-center justify-between border-b border-slate-200 px-6 py-4"
     >
       <div>
-        <h3 class="text-lg font-semibold text-slate-900">
-          {{ activeClient.firstName }} {{ activeClient.lastName }}
-          <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-            {{ activeClient.locationName || "Site" }}
-          </span>
-        </h3>
+        <div class="flex items-center gap-3">
+          <ng-container *ngIf="activeClient.profilePicture?.downloadURL; else modalInitials">
+            <img
+              [src]="activeClient.profilePicture?.downloadURL"
+              alt="Photo client"
+              class="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow"
+            />
+          </ng-container>
+          <ng-template #modalInitials>
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 ring-2 ring-white shadow">
+              {{ clientInitials(activeClient) }}
+            </div>
+          </ng-template>
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900">
+              {{ activeClient.firstName }} {{ activeClient.lastName }}
+              <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                {{ activeClient.locationName || "Site" }}
+              </span>
+            </h3>
+            <p class="text-sm text-slate-600">
+              {{ displayPhone(activeClient.phoneNumber) }}
+            </p>
+          </div>
+        </div>
         <p class="text-sm text-slate-600">
           {{ displayPhone(activeClient.phoneNumber) }}
         </p>
