@@ -209,14 +209,33 @@ export class TeamPageComponent implements OnInit {
         this.employees[i].performancePercantage = rounded.toString();
       }
     }
-    if (!this.auth.isAdmninistrator) {
+    const isAdmin = this.auth.isAdmninistrator;
+    const isGestion = this.auth.isDistributor;
+    const isInvestigator = this.auth.isInvestigator;
+
+    if (!isAdmin) {
       if (this.employees) {
         this.employees = this.employees.filter((emp) => {
           return emp?.status === 'Travaille' || emp?.status === 'Vacance';
         });
       }
     }
-    if (!this.auth.isAdmninistrator && !this.auth.isDistributor) {
+
+    if (isInvestigator && !isAdmin && this.employees) {
+      this.employees = this.employees.filter((emp) =>
+        this.isVerifierRole(emp.role)
+      );
+    }
+
+    if (isGestion && !isAdmin && this.employees) {
+      if (this.employees) {
+        this.employees = this.employees.filter(
+          (emp) => !this.isVerifierRole(emp.role)
+        );
+      }
+    }
+
+    if (!isAdmin && !isGestion && !isInvestigator) {
       if (this.employees) {
         this.employees = this.employees.filter((emp) => {
           return (
@@ -230,6 +249,21 @@ export class TeamPageComponent implements OnInit {
         });
       }
     }
+  }
+
+  private isVerifierRole(role?: string): boolean {
+    if (!role) return false;
+    const normalized = this.normalizeRoleName(role);
+    return (
+      normalized === 'verificateur' ||
+      normalized === 'verificatrice' ||
+      normalized === 'vérificateur' ||
+      normalized === 'vérificatrice'
+    );
+  }
+
+  private normalizeRoleName(value?: string): string {
+    return (value ?? '').trim().toLowerCase();
   }
 
   findClientsWithDebts() {
