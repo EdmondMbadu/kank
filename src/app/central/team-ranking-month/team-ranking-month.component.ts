@@ -262,6 +262,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
   totalHouse: string = '0';
   allUsers: User[] = [];
   ngOnInit(): void {
+    if (this.auth.isInvestigator) {
+      this.rankingMode = 'performance';
+    }
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.logDebug('Locations fetched', {

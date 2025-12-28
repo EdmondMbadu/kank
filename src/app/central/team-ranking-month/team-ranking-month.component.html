@@ -1582,6 +1582,14 @@
         <p class="text-sm text-slate-500">
           {{ employeeModalEmployee.role || "Employé" }}
         </p>
+        <p
+          *ngIf="(employeeModalEmployee.role || '').includes('Manager')"
+          class="text-xs text-slate-400"
+        >
+          Manager — {{
+            employeeModalEmployee.tempLocationHolder || "Lieu indisponible"
+          }}
+        </p>
       </div>
 
       <div class="w-full rounded-xl border border-slate-200 bg-slate-50 p-4">
