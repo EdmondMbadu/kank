@@ -282,12 +282,33 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     update
       .then(() => {
+        this.applyDebtRecognizedLocal(client.uid!, debtRecognized, ownerId);
         this.refreshProblematic();
       })
       .catch((err) => {
         console.error('Failed to update debtRecognized:', err);
         alert('Impossible de sauvegarder la dette reconnue.');
       });
+  }
+
+  private applyDebtRecognizedLocal(
+    clientId: string,
+    debtRecognized: string,
+    ownerId: string
+  ): void {
+    const updateList = (list: Client[]) => {
+      list.forEach((c) => {
+        if (
+          c.uid === clientId &&
+          (c.locationOwnerId ? c.locationOwnerId === ownerId : true)
+        ) {
+          c.debtRecognized = debtRecognized;
+        }
+      });
+    };
+
+    updateList(this.clients);
+    updateList(this.allClients);
   }
 
   openClientModal(client: Client): void {
