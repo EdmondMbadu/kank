@@ -1997,6 +1997,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           {
             title: 'Votre Rôle',
             bullets: [
+              'Recruter de nouveaux clients chaque mois et assurer leur suivi actif, en se rendant sur leurs lieux de vente ou en les contactant directement lorsqu’un paiement n’est pas effectué, avec un objectif de suivi d’au moins trente (30) clients par employé.',
               'Garantir que les clients comprennent et respectent les accords, notamment les paiements à temps et l\'utilisation des crédits.',
               'Connaître vos clients et identifier ceux que vous devez visiter chaque jour.',
               'Encadrer les agents de marketing, les informer des priorités et surveiller leurs performances et les vôtres.',
@@ -2021,7 +2022,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             title: 'Motifs de Licenciement',
             bullets: [
               "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
-              'Si l’équipe et/ou l’employé ne parviennent pas à atteindre l’objectif de paiements hebdomadaires à quatre (4) reprises sur une période de trois (3) mois, une notification sera adressée.',
+              'Si l’équipe et/ou l’employé ne parviennent pas à atteindre l’objectif de paiements hebdomadaires à cinq (5) reprises sur une période de trois (3) mois, une notification sera adressée.',
               'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
               'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
             ],
@@ -2061,6 +2062,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           {
             title: 'Votre Rôle',
             bullets: [
+              'Recruter de nouveaux clients chaque mois et assurer leur suivi actif, en se rendant sur leurs lieux de vente ou en les contactant directement lorsqu’un paiement n’est pas effectué, avec un objectif de suivi d’au moins trente (30) clients par employé.',
               'Ouvrir et établir de nouveaux emplacements.',
               'Recruter et former de nouveaux employés à la mission et à la vision de la Fondation.',
               'Faciliter la distribution des fonds aux différents emplacements.',
@@ -2186,6 +2188,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         {
           title: 'Votre Rôle',
           bullets: [
+            'Recruter de nouveaux clients chaque mois et assurer leur suivi actif, en se rendant sur leurs lieux de vente ou en les contactant directement lorsqu’un paiement n’est pas effectué, avec un objectif de suivi d’au moins trente (30) clients par employé.',
             'Respecter les clients et éviter tout conflit, quelles que soient les circonstances.',
             'Connaître vos clients et identifier ceux que vous devez visiter chaque jour.',
             'Mettre à jour les données de paiement des clients en temps réel.',
@@ -2210,7 +2213,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           title: 'Motifs de Licenciement',
           bullets: [
             "Si vous êtes pris en train de voler de l'argent, vous serez licencié immédiatement.",
-            'Si l’équipe et/ou l’employé ne parviennent pas à atteindre l’objectif de paiements hebdomadaires à quatre (4) reprises sur une période de trois (3) mois, une notification sera adressée.',
+            'Si l’équipe et/ou l’employé ne parviennent pas à atteindre l’objectif de paiements hebdomadaires à cinq (5) reprises sur une période de trois (3) mois, une notification sera adressée.',
             'Si vous êtes impliqué(e) dans des insultes ou des actes de violence de quelque nature que ce soit, vous serez licencié(e) ou suspendu selon la gravité des actes commis.',
             'Pour tous les détails concernant les Cas de Vol, veuillez consulter la section "Aperçu et Tutoriels" dans le système, dernière section.',
           ],
