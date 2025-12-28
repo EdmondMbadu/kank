@@ -28,6 +28,7 @@ type InvestigationDayDoc = {
 })
 export class InvestigationComponent implements OnInit, OnDestroy {
   clients: Client[] = [];
+  allClients: Client[] = [];
   shouldPayToday: Client[] = [];
   problematicClients: Client[] = [];
   locations: User[] = [];
@@ -53,6 +54,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   private subs = new Subscription();
   private dayDocSub?: Subscription;
   private clientsSub?: Subscription;
+  private allClientsSub = new Subscription();
 
   constructor(
     public auth: AuthService,
@@ -76,6 +78,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const locationsSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.locations = Array.isArray(data) ? (data as User[]) : [];
       this.ensureDefaultLocation();
+      this.loadAllProblematicClients();
     });
 
     this.subs.add(userSub);
@@ -91,12 +94,54 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.clientsSub.unsubscribe();
     }
     this.clientsSub = this.auth.getClientsOfAUser(userId).subscribe((data) => {
-      this.clients = Array.isArray(data) ? (data.filter(Boolean) as Client[]) : [];
+      const base = Array.isArray(data) ? (data.filter(Boolean) as Client[]) : [];
+      this.clients = base.map((client) => ({
+        ...client,
+        locationName: this.selectedLocationLabel,
+      }));
       this.assignTrackingIds();
       this.filterShouldPayToday();
-      this.refreshProblematic();
     });
     this.subs.add(this.clientsSub);
+  }
+
+  private loadAllProblematicClients(): void {
+    this.allClientsSub.unsubscribe();
+    this.allClientsSub = new Subscription();
+
+    if (!this.locations.length) {
+      this.allClients = [];
+      this.refreshProblematic();
+      return;
+    }
+
+    let tempClients: Client[] = [];
+    let completedRequests = 0;
+    const total = this.locations.length;
+
+    this.locations.forEach((loc) => {
+      if (!loc?.uid) {
+        completedRequests++;
+        return;
+      }
+      const sub = this.auth.getClientsOfAUser(loc.uid).subscribe((clients) => {
+        const tagged = Array.isArray(clients)
+          ? clients.map((c) => ({
+              ...c,
+              locationName: loc.firstName || loc.email || 'Site',
+            }))
+          : [];
+        tempClients = tempClients.concat(tagged);
+        completedRequests++;
+        if (completedRequests === total) {
+          this.allClients = tempClients.filter(Boolean) as Client[];
+          this.refreshProblematic();
+        }
+      });
+      this.allClientsSub.add(sub);
+    });
+
+    this.subs.add(this.allClientsSub);
   }
 
   private initDayDocForLocation(userId: string): void {
@@ -165,7 +210,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private refreshProblematic(): void {
-    this.problematicClients = this.clients.filter((client) =>
+    this.problematicClients = this.allClients.filter((client) =>
       this.isProblematic(client)
     );
   }
