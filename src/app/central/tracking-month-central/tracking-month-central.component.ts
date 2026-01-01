@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { Employee } from 'src/app/models/employee';
 import { User, UserDailyField } from 'src/app/models/user';
 
 type RangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
@@ -167,6 +169,8 @@ export class TrackingMonthCentralComponent {
   reserveCurrentTotalAmountDollars: string = '0';
   paymentCurrentTotalAmount: string = '0';
   paymentCurrentTotalAmountDollars: string = '0';
+  copyPaymentsMessage: string | null = null;
+  isCopyingPayments = false;
 
   sortedPaymentPreviousMonth: {
     firstName: string;
@@ -737,6 +741,157 @@ export class TrackingMonthCentralComponent {
       }
     }
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
+  }
+
+  async copyPaymentRanking(): Promise<void> {
+    if (this.isCopyingPayments || !this.sortedPaymentMonth.length) {
+      return;
+    }
+
+    this.isCopyingPayments = true;
+    this.copyPaymentsMessage = null;
+
+    try {
+      const winner = this.sortedPaymentMonth[0];
+      const winnerLines = await this.buildWinnerMembersLines(winner?.firstName);
+      const dateLabel = this.buildPaymentCopyDateLabel();
+
+      const lines: string[] = [dateLabel, '==============='];
+
+      this.sortedPaymentMonth.forEach((team, index) => {
+        const rankLabel = index + 1;
+        if (index === 0) {
+          lines.push(`${rankLabel}. Equipe Gagnante:  ${team.firstName}`);
+          if (winnerLines.length) {
+            lines.push(...winnerLines);
+          }
+        } else {
+          lines.push(`${rankLabel}. ${team.firstName}`);
+        }
+      });
+
+      const textToCopy = lines.join('\n');
+      await this.copyToClipboard(textToCopy);
+      this.copyPaymentsMessage = 'Classement copié (montants exclus)';
+    } catch (error) {
+      console.error('Failed to copy payment ranking', error);
+      this.copyPaymentsMessage = 'Impossible de copier le classement.';
+    } finally {
+      this.isCopyingPayments = false;
+      if (this.copyPaymentsMessage) {
+        setTimeout(() => (this.copyPaymentsMessage = null), 2200);
+      }
+    }
+  }
+
+  private buildPaymentCopyDateLabel(): string {
+    if (this.rankingMode === 'all') {
+      return 'Paiement - Tout le temps';
+    }
+    if (this.rankingMode === 'year') {
+      return `Paiement - Année ${this.rankingYear}`;
+    }
+    const monthName =
+      this.time.monthFrenchNames[this.paymentCurrentMonth - 1] ?? '';
+    return `Paiement - ${monthName} ${this.paymentCurrentYear}`;
+  }
+
+  private async buildWinnerMembersLines(
+    locationName?: string
+  ): Promise<string[]> {
+    if (!locationName) {
+      return [];
+    }
+
+    const owner = this.allUsers.find((u) => u.firstName === locationName);
+    if (!owner?.uid) {
+      return [];
+    }
+
+    try {
+      const employees = (await firstValueFrom(
+        this.auth.getAllEmployeesGivenUser(owner)
+      )) as Employee[] | null;
+
+      if (!Array.isArray(employees) || !employees.length) {
+        return [];
+      }
+
+      const working = employees.filter(
+        (emp) => (emp.status ?? '').toLowerCase() === 'travaille'
+      );
+
+      const manager = this.pickManager(working) ?? working[0];
+      const partner = this.pickPartner(working, manager);
+
+      const namesWorking = [
+        this.formatEmployeeName(manager),
+        this.formatEmployeeName(partner),
+      ].filter(Boolean);
+
+      const lines: string[] = [];
+
+      if (namesWorking.length === 1) {
+        lines.push(`Avec ${namesWorking[0]}`);
+      } else if (namesWorking.length >= 2) {
+        lines.push(`Avec ${namesWorking[0]} et ${namesWorking[1]}`);
+      }
+
+      return lines;
+    } catch (err) {
+      console.error('Failed to fetch employees for winning team', err);
+      return [];
+    }
+  }
+
+  private pickManager(employees: Employee[]): Employee | undefined {
+    return employees.find((emp) =>
+      (emp.role || '').toLowerCase().includes('manager')
+    );
+  }
+
+  private pickPartner(
+    employees: Employee[],
+    manager?: Employee
+  ): Employee | undefined {
+    return employees.find((emp) => {
+      if (manager?.uid && emp.uid) {
+        return emp.uid !== manager.uid;
+      }
+      return emp !== manager;
+    });
+  }
+
+  private formatEmployeeName(employee?: Employee | null): string {
+    if (!employee) {
+      return '';
+    }
+    const parts = [employee.firstName, employee.lastName].filter(Boolean);
+    const base = parts.join(' ').trim();
+    if (base) {
+      return base;
+    }
+    return employee.middleName ?? '';
+  }
+
+  private async copyToClipboard(text: string): Promise<void> {
+    if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    if (typeof document === 'undefined') {
+      throw new Error('Clipboard API not available');
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
   }
 
   updateReserveGraphics(range: number): void {
