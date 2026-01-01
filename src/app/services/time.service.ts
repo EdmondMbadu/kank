@@ -33,7 +33,18 @@ export class TimeService {
     const endDate = this.getDateInNineWeeks(startDate);
     return [startDate, endDate];
   }
-  yearsList: number[] = [2023, 2024, 2025, 2026];
+  private readonly yearListStart = 2023;
+  get yearsList(): number[] {
+    const currentYear = new Date().getFullYear();
+    const endYear = currentYear + 2;
+    const years: number[] = [];
+
+    for (let year = this.yearListStart; year <= endYear; year += 1) {
+      years.push(year);
+    }
+
+    return years;
+  }
   monthFrenchNames = [
     'Janvier',
     'Février',

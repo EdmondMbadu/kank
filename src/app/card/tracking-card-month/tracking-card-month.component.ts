@@ -26,7 +26,7 @@ export class TrackingCardMonthComponent {
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
   givenYear = this.year;
-  yearsList: number[] = [2023, 2024, 2025];
+  yearsList: number[] = this.time.yearsList;
   monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   monthYear = `${this.month} ${this.year}`;
   totalPerfomance: number = 0;

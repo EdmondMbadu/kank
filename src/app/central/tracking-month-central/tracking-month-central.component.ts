@@ -38,7 +38,7 @@ export class TrackingMonthCentralComponent {
   givenYear = this.year;
   previousYear = this.givenYear;
   givenDay: number = this.currentDate.getDate();
-  yearsList: number[] = [2023, 2024];
+  yearsList: number[] = this.time.yearsList;
   monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   monthYear = `${this.month} ${this.year}`;
   totalPerfomance: number = 0;
