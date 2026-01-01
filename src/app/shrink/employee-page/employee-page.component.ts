@@ -255,7 +255,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   salaryPaid: string = '';
   showRequestVacation: boolean = false;
-  readonly TOTAL_VACATION_DAYS = 7;
+  readonly DEFAULT_VACATION_DAYS = 7;
 
   /* ─── Component state ───────────────────────────── */
   auditReceipts: AuditReceipt[] = [];
@@ -532,11 +532,19 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     },
   };
 
+  private getVacationTotalDays(): number {
+    const total = Number(this.employee.vacationTotalDays);
+    if (Number.isNaN(total)) {
+      return this.DEFAULT_VACATION_DAYS;
+    }
+    return Math.max(0, total);
+  }
+
   /** Met à jour this.vacation (= jours restants) */
   findNumberOfVacationDaysLeft() {
     const acceptedDays =
       Number(this.employee.vacationAcceptedNumberOfDays) || 0;
-    this.vacation = this.TOTAL_VACATION_DAYS - acceptedDays;
+    this.vacation = Math.max(0, this.getVacationTotalDays() - acceptedDays);
   }
 
   get perfColor(): string {
@@ -992,6 +1000,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         }
 
         this.employee = selectedEmployee;
+        if (
+          this.employee.vacationTotalDays === undefined ||
+          this.employee.vacationTotalDays === null ||
+          this.employee.vacationTotalDays === ''
+        ) {
+          this.employee.vacationTotalDays = `${this.DEFAULT_VACATION_DAYS}`;
+        }
         this.loadIndividualReviews(this.employee.uid);
         this.paymentCodeLoaded = true; // we now know employee.paymentCode
 
@@ -2691,6 +2706,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       Number(this.employee.vacationAcceptedNumberOfDays) || 0;
     acceptedVacations += 1;
     this.employee.vacationAcceptedNumberOfDays = acceptedVacations.toString();
+    this.vacation = Math.max(
+      0,
+      this.getVacationTotalDays() - acceptedVacations
+    );
 
     console.log(
       'Updated attendance after acceptance:',
@@ -2926,7 +2945,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     // Add the number of requests for vacation
     let vacationRequests =
       Number(this.employee.vacationRequestNumberOfDays) || 0;
-    if (vacationRequests >= 8) {
+    const maxRequests = this.getVacationTotalDays();
+    if (vacationRequests >= maxRequests) {
       alert(
         "Vous avez déjà utilisé toutes vos vacances. Essayez l'année prochaine"
       );
@@ -3939,7 +3959,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     const acceptedVacations =
       Number(this.employee.vacationAcceptedNumberOfDays) || 0;
-    const remainingDays = this.TOTAL_VACATION_DAYS - acceptedVacations;
+    const remainingDays = this.getVacationTotalDays() - acceptedVacations;
     if (remainingDays <= 0) {
       alert(
         "Vous n'avez plus de jours de vacances disponibles pour cette période."
@@ -3967,7 +3987,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       );
       this.employee.attendance = newAtt;
       this.employee.vacationAcceptedNumberOfDays = updatedAccepted.toString();
-      this.vacation = Math.max(0, this.TOTAL_VACATION_DAYS - updatedAccepted);
+      this.vacation = Math.max(
+        0,
+        this.getVacationTotalDays() - updatedAccepted
+      );
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (e) {
       alert('❌ Impossible de marquer cette journée comme vacances.');
