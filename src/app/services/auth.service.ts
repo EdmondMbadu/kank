@@ -602,6 +602,7 @@ export class AuthService {
       clients: [],
       dailyStatus: {},
       dateLeft: '',
+      vacationTotalDays: employee.vacationTotalDays ?? '7',
     };
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.currentUser.uid}/employees/${data.uid}`

@@ -816,6 +816,7 @@ export class DataService {
       status: employee.status,
       role: employee.role,
       vacationAcceptedNumberOfDays: employee.vacationAcceptedNumberOfDays,
+      vacationTotalDays: employee.vacationTotalDays,
       arrivalHour: employee.arrivalHour,
       arrivalMinute: employee.arrivalMinute,
       originLocation: employee.originLocation || '',

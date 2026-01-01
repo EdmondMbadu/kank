@@ -60,6 +60,7 @@ export class Employee {
   rotationSourceLocationId?: string; // Original location ID for rotation employees
   vacationRequestNumberOfDays?: string;
   vacationAcceptedNumberOfDays?: string;
+  vacationTotalDays?: string;
   bank?: string;
   tempUser?: User;
   showAttendance?: boolean;

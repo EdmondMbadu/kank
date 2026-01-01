@@ -57,7 +57,7 @@ export class TeamPageComponent implements OnInit {
   ngOnInit(): void {
     this.retreiveClients();
   }
-  readonly TOTAL_VACATION_DAYS = 7;
+  readonly DEFAULT_VACATION_DAYS = 7;
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
@@ -177,6 +177,13 @@ export class TeamPageComponent implements OnInit {
       this.migrateTrophyData(this.employees[i]);
       // console.log(' here I am employee ', this.employees[i]);
       this.employees[i].trackingId = `${i}`;
+      if (
+        this.employees[i].vacationTotalDays === undefined ||
+        this.employees[i].vacationTotalDays === null ||
+        this.employees[i].vacationTotalDays === ''
+      ) {
+        this.employees[i].vacationTotalDays = `${this.DEFAULT_VACATION_DAYS}`;
+      }
       this.employees[i].age = this.time
         .calculateAge(this.employees[i].dateOfBirth!)
         .toString();
@@ -287,8 +294,10 @@ export class TeamPageComponent implements OnInit {
   /** Met à jour this.vacation (= jours restants) */
   numberOfVacationDaysLeft(employee: Employee) {
     const acceptedDays = Number(employee.vacationAcceptedNumberOfDays) || 0;
+    const totalDays =
+      Number(employee.vacationTotalDays) || this.DEFAULT_VACATION_DAYS;
 
-    return this.TOTAL_VACATION_DAYS - acceptedDays;
+    return Math.max(0, totalDays - acceptedDays);
   }
 
   getAgentsWithClients() {
@@ -405,6 +414,7 @@ export class TeamPageComponent implements OnInit {
     this.employee.sex = this.sex;
     this.employee.dateJoined = this.dateJoined;
     this.employee.status = this.status;
+    this.employee.vacationTotalDays = `${this.DEFAULT_VACATION_DAYS}`;
   }
 
   updateEmployeeInfo(index: number) {
