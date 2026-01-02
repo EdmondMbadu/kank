@@ -2187,8 +2187,8 @@ export class ComputationService {
           // Normalize the date to ignore the time component if present
           const normalizedDate = date.split('-').slice(0, 3).join('-');
           if (normalizedDate === requestDate) {
-            // Check if the amount contains a colon indicating additional text
-            const numericAmount = amount.split(':')[0]; // Assumes the amount is before the colon if it exists
+            const raw = typeof amount === 'string' ? amount : String(amount);
+            const numericAmount = raw.split(':')[0]; // Amount is before the colon if it exists
             total += parseInt(numericAmount, 10);
           }
         });
@@ -2223,7 +2223,8 @@ export class ComputationService {
         Object.entries(dailyData).forEach(([date, amount]) => {
           const normalizedDate = date.split('-').slice(0, 3).join('-'); // Normalize the date
           if (normalizedDate === requestDate) {
-            totalReserve += parseInt(amount.split(':')[0], 10); // Sum up today's reserves
+            const raw = typeof amount === 'string' ? amount : String(amount);
+            totalReserve += parseInt(raw.split(':')[0], 10); // Sum up today's reserves
           }
         });
       }
