@@ -1985,10 +1985,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   ): ContractViewModel {
     const role = this.normalizeContractRole();
     const name = this.contractSignatureName || this.buildEmployeeName();
-    const effectiveYear =
-      Number.isFinite(this.contractYear) && this.contractYear
-        ? this.contractYear
-        : this.year;
+    const effectiveYear = new Date().getFullYear();
     const effectiveDate = `Ce contrat est valable pour une durée d'un (1) an à compter du 1er janvier ${effectiveYear} renouvelable chaque année.`;
     // Get base salary from employee paymentAmount, fallback to role defaults if not set
     const baseSalary = this.employee?.paymentAmount 
