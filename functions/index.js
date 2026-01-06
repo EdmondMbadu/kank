@@ -429,72 +429,95 @@ exports.processScheduledBulkMessages = functions.pubsub
     .schedule("every 1 minutes")
     .onRun(async () => {
       const now = Date.now();
-      const dueSnap = await db
-          .collection("scheduled_bulk_messages")
-          .where("status", "==", "scheduled")
-          .where("scheduledForMs", "<=", now)
-          .orderBy("scheduledForMs", "asc")
-          .limit(3)
-          .get();
+      const maxClaims = 3;
+      const pageSize = 25;
+      const maxScan = 200;
+      let claimedCount = 0;
+      let scannedCount = 0;
+      let lastDoc = null;
 
-      for (const doc of dueSnap.docs) {
-        const ref = doc.ref;
-        let claimed = false;
-        await db.runTransaction(async (tx) => {
-          const snap = await tx.get(ref);
-          const current = snap.data() || {};
-          if (current.status !== "scheduled") return;
-          tx.update(ref, {
-            status: "processing",
-            processingAt: admin.firestore.FieldValue.serverTimestamp(),
-            processingAtMs: Date.now(),
-          });
-          claimed = true;
-        });
-        if (!claimed) continue;
+      while (claimedCount < maxClaims && scannedCount < maxScan) {
+        let query = db
+            .collection("scheduled_bulk_messages")
+            .where("scheduledForMs", "<=", now)
+            .orderBy("scheduledForMs", "asc")
+            .limit(pageSize);
 
-        const data = doc.data() || {};
-        const recipientsSnap = await ref.collection("recipients").get();
-        let succeeded = 0;
-        let failed = 0;
-
-        for (const recipient of recipientsSnap.docs) {
-          const {phoneNumber, message} = recipient.data() || {};
-          const to = makeValidE164(phoneNumber);
-          if (!to || !message) {
-            failed += 1;
-            continue;
-          }
-          try {
-            await sms.send({to: [to], message});
-            succeeded += 1;
-          } catch (err) {
-            console.error("Scheduled SMS send failed:", err);
-            failed += 1;
-          }
+        if (lastDoc) {
+          query = query.startAfter(lastDoc);
         }
 
-        await ref.update({
-          status: "sent",
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          sentAtMs: Date.now(),
-          succeeded,
-          failed,
-        });
+        const dueSnap = await query.get();
+        if (dueSnap.empty) break;
 
-        await db.collection("bulk_message_logs").add({
-          type: data.type || "custom",
-          total: data.total || recipientsSnap.size,
-          succeeded,
-          failed,
-          locationTotals: data.locationTotals || {},
-          template: data.template || "",
-          messagePreview: data.messagePreview || "",
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          sentAtMs: Date.now(),
-          sentBy: data.createdBy || null,
-          sentById: data.createdById || null,
-        });
+        for (const doc of dueSnap.docs) {
+          lastDoc = doc;
+          scannedCount += 1;
+          const ref = doc.ref;
+          const preData = doc.data() || {};
+          if (preData.status !== "scheduled") continue;
+          let claimed = false;
+          await db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            const current = snap.data() || {};
+            if (current.status !== "scheduled") return;
+            tx.update(ref, {
+              status: "processing",
+              processingAt: admin.firestore.FieldValue.serverTimestamp(),
+              processingAtMs: Date.now(),
+            });
+            claimed = true;
+          });
+          if (!claimed) continue;
+
+          const data = preData;
+          const recipientsSnap = await ref.collection("recipients").get();
+          let succeeded = 0;
+          let failed = 0;
+
+          for (const recipient of recipientsSnap.docs) {
+            const {phoneNumber, message} = recipient.data() || {};
+            const to = makeValidE164(phoneNumber);
+            if (!to || !message) {
+              failed += 1;
+              continue;
+            }
+            try {
+              await sms.send({to: [to], message});
+              succeeded += 1;
+            } catch (err) {
+              console.error("Scheduled SMS send failed:", err);
+              failed += 1;
+            }
+          }
+
+          await ref.update({
+            status: "sent",
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            sentAtMs: Date.now(),
+            succeeded,
+            failed,
+          });
+
+          await db.collection("bulk_message_logs").add({
+            type: data.type || "custom",
+            total: data.total || recipientsSnap.size,
+            succeeded,
+            failed,
+            locationTotals: data.locationTotals || {},
+            template: data.template || "",
+            messagePreview: data.messagePreview || "",
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            sentAtMs: Date.now(),
+            sentBy: data.createdBy || null,
+            sentById: data.createdById || null,
+          });
+
+          claimedCount += 1;
+          if (claimedCount >= maxClaims) break;
+        }
+
+        if (dueSnap.size < pageSize) break;
       }
     });
 
