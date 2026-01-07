@@ -263,6 +263,21 @@
                       </button>
                       <button
                         *ngIf="isAdminUi"
+                        class="rounded-lg bg-teal-600 px-3 py-1.5 font-medium text-white hover:bg-teal-700 mt-1 transition"
+                        (click)="openGenericSmsModal()"
+                      >
+                        <svg
+                          class="mr-1 inline h-3.5 w-3.5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path d="M4 4h16v12H5.17L4 17.17V4z" />
+                          <path d="M6 20h12v-2H6v2z" />
+                        </svg>
+                        SMS Libre ▶︎ {{ employee.firstName }}
+                      </button>
+                      <button
+                        *ngIf="isAdminUi"
                         (click)="openContractModal()"
                         type="button"
                         class="rounded-lg bg-slate-700 px-3 py-1.5 font-medium text-white hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 dark:bg-slate-700 dark:hover:bg-slate-800 dark:focus:ring-slate-800 transition"
@@ -3332,6 +3347,109 @@
           Enregistrer
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- === GENERIC SMS MODAL (Admin) === -->
+<div
+  *ngIf="showGenericSmsModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+  (click)="closeGenericSmsModal()"
+>
+  <div
+    class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-gray-900 dark:ring-white/10"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5 dark:border-slate-800">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 4h16v12H5.17L4 17.17V4z" />
+            <path d="M6 20h12v-2H6v2z" />
+          </svg>
+        </span>
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            SMS Libre — {{ employee.firstName }} {{ employee.lastName }}
+          </h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Message prérempli (paiement) modifiable avant envoi.
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="closeGenericSmsModal()"
+        class="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        aria-label="Fermer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-6 py-5">
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="sm:col-span-1">
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Numéro
+          </label>
+          <input
+            [(ngModel)]="genericSmsPhone"
+            type="text"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-teal-400 focus:ring-teal-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            placeholder="+243..."
+          />
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Numéro mobile de l'employé.
+          </p>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Message
+          </label>
+          <textarea
+            [(ngModel)]="genericSmsMessage"
+            rows="6"
+            class="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-teal-400 focus:ring-teal-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          ></textarea>
+          <div class="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>{{ genericSmsMessage?.length || 0 }} caractères</span>
+            <span>~ {{ genericSmsSegments() }} segment(s) SMS</span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        *ngIf="genericSmsResult"
+        class="mt-4 rounded-xl border px-3 py-2 text-sm"
+        [ngClass]="{
+          'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200': genericSmsResult.ok,
+          'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-900/30 dark:text-rose-200': !genericSmsResult.ok
+        }"
+      >
+        {{ genericSmsResult.text }}
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/40">
+      <button
+        type="button"
+        (click)="closeGenericSmsModal()"
+        class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        (click)="sendGenericSms()"
+        [disabled]="genericSmsSending"
+        class="rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400"
+      >
+        {{ genericSmsSending ? 'Envoi…' : 'Envoyer le SMS' }}
+      </button>
     </div>
   </div>
 </div>

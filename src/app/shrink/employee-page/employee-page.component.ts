@@ -100,6 +100,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   public statePickerCurr: string | undefined; // current state at that key, if any
   selectedState: AttendanceStateCode = '';
   statePickerMode: 'admin' | 'employee' = 'admin';
+  showGenericSmsModal = false;
+  genericSmsMessage = '';
+  genericSmsPhone = '';
+  genericSmsSending = false;
+  genericSmsResult: { ok: boolean; text: string } | null = null;
 
   viewAsMode: 'admin' | 'employee' = this.auth.isAdmninistrator
     ? 'admin'
@@ -3083,6 +3088,67 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       next: (res: any) => alert(`SMS envoyé : ${res.sent}/1`),
       error: (err) => alert('Erreur SMS : ' + err.message),
     });
+  }
+  private buildPaymentSmsTemplate(): string {
+    const firstName = this.employee?.firstName ?? '';
+    const lastName = this.employee?.lastName ?? '';
+    return (
+      `FONDATION GERVAIS : ${firstName} ${lastName}, ` +
+      'votre paiement est disponible. ' +
+      "Allez le SIGNER dans l’appli pour déclencher le virement. " +
+      'Montant incorrect? Contactez +1 2156877614.'
+    );
+  }
+  openGenericSmsModal() {
+    if (!this.isAdminUi) return;
+    this.genericSmsPhone = this.employee?.phoneNumber ?? '';
+    this.genericSmsMessage = this.buildPaymentSmsTemplate();
+    this.genericSmsResult = null;
+    this.showGenericSmsModal = true;
+  }
+  closeGenericSmsModal() {
+    this.showGenericSmsModal = false;
+  }
+  genericSmsSegments(): number {
+    const len = (this.genericSmsMessage || '').trim().length;
+    if (!len) return 0;
+    return Math.ceil(len / 160);
+  }
+  async sendGenericSms() {
+    if (!this.isAdminUi || this.genericSmsSending) return;
+    const phone = (this.genericSmsPhone || '').trim();
+    const message = (this.genericSmsMessage || '').trim();
+    if (!phone || !message) {
+      this.genericSmsResult = {
+        ok: false,
+        text: 'Numéro et message requis.',
+      };
+      return;
+    }
+    this.genericSmsSending = true;
+    this.genericSmsResult = null;
+    try {
+      const callable = this.fns.httpsCallable('sendCustomSMS');
+      await firstValueFrom(
+        callable({
+          phoneNumber: phone,
+          message,
+          metadata: {
+            type: 'employee_generic_sms',
+            employeeId: this.employee?.uid ?? null,
+            source: 'employee_page',
+            template: 'paiement',
+          },
+        })
+      );
+      this.genericSmsResult = { ok: true, text: 'SMS envoyé avec succès.' };
+    } catch (err: any) {
+      const msg = err?.message || "Échec de l'envoi du SMS.";
+      this.genericSmsResult = { ok: false, text: msg };
+      console.error('Generic SMS send failed', err);
+    } finally {
+      this.genericSmsSending = false;
+    }
   }
   verifyCode() {
     if (this.code.trim() === this.paymentCode) {
