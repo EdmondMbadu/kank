@@ -59,6 +59,7 @@ type BulkMessageLogDocument = {
   locationTotals?: Record<string, number>;
   template?: string;
   messagePreview?: string;
+  conditionSummary?: string;
   sentBy?: string;
   sentById?: string | null;
 };
@@ -87,6 +88,7 @@ type ScheduledBulkMessageDocument = {
   template?: string;
   messagePreview?: string;
   locationTotals?: Record<string, number>;
+  conditionSummary?: string;
   createdAt?: any;
   createdAtMs?: number;
   createdBy?: string;
@@ -1273,6 +1275,126 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     this.applyFinishedFilters();
   }
 
+  private joinConditionParts(parts: string[]): string {
+    const cleaned = parts.map((part) => part.trim()).filter(Boolean);
+    return cleaned.length ? cleaned.join(' · ') : 'Aucune condition';
+  }
+
+  private formatScoreRange(min: number, max: number): string {
+    const safeMin = Number.isFinite(min) ? min : 0;
+    const safeMax = Number.isFinite(max) ? max : 100;
+    if (safeMin <= 0 && safeMax >= 100) return 'Score: tous';
+    if (safeMin <= 0) return `Score ≤ ${safeMax}`;
+    if (safeMax >= 100) return `Score ≥ ${safeMin}`;
+    if (safeMin === safeMax) return `Score = ${safeMin}`;
+    return `Score ${safeMin}-${safeMax}`;
+  }
+
+  private buildFinishedConditionsSummary(): string {
+    const parts: string[] = [];
+    const min = Number(this.fdMinScore) || 0;
+    const max = Number(this.fdMaxScore);
+    parts.push(this.formatScoreRange(min, max));
+
+    const search = String(this.fdSearchControl.value || '').trim();
+    if (search) parts.push(`Recherche: "${search}"`);
+
+    if (
+      this.selectAllLocations ||
+      this.selectedLocations.size === this.uniqueLocations.length
+    ) {
+      parts.push('Sites: tous');
+    } else if (this.selectedLocations.size > 0) {
+      parts.push(`Sites: ${Array.from(this.selectedLocations).join(', ')}`);
+    }
+
+    return this.joinConditionParts(parts);
+  }
+
+  private buildGeneralConditionsSummary(): string {
+    const parts: string[] = [];
+    const search = String(this.searchControl.value || '').trim();
+    if (search) parts.push(`Recherche: "${search}"`);
+
+    parts.push(this.formatScoreRange(this.minCreditScore, this.maxCreditScore));
+
+    if (this.loanAmountFilterValue != null) {
+      const label =
+        this.loanAmountFilterMode === 'exact'
+          ? `Montant = ${this.formatFc(this.loanAmountFilterValue)} FC`
+          : `Montant ≥ ${this.formatFc(this.loanAmountFilterValue)} FC`;
+      parts.push(label);
+    }
+
+    if (this.debtStatusFilter !== 'all') {
+      parts.push(
+        this.debtStatusFilter === 'withDebt'
+          ? 'Dette: avec'
+          : 'Dette: sans'
+      );
+    }
+
+    if (this.quitteStatusFilter !== 'all') {
+      parts.push(
+        this.quitteStatusFilter === 'quitte'
+          ? 'Statut: quitté'
+          : 'Statut: actif'
+      );
+    }
+
+    if (this.starsFilter !== 'all') {
+      if (this.starsFilter === 'noStars') parts.push('Étoiles: aucune');
+      else if (this.starsFilter === 'withStars') parts.push('Étoiles: avec');
+      else if (this.starsFilter === 'exact' && this.starsFilterValue != null) {
+        parts.push(`Étoiles = ${this.starsFilterValue}`);
+      }
+    }
+
+    if (this.birthdayFilterMode !== 'all') {
+      if (this.birthdayFilterMode === 'today')
+        parts.push("Anniversaire: aujourd'hui");
+      else if (this.birthdayFilterMode === 'tomorrow')
+        parts.push('Anniversaire: demain');
+      else if (this.birthdayFilterMode === 'custom' && this.customBirthdayInput) {
+        parts.push(`Anniversaire: ${this.customBirthdayInput}`);
+      }
+    }
+
+    if (this.selectedPaymentDay) {
+      parts.push(`Paiement: ${this.displayPaymentDay(this.selectedPaymentDay)}`);
+    }
+
+    if (
+      this.masterSelectAllLocations ||
+      this.masterSelectedLocations.size === this.uniqueLocations.length
+    ) {
+      parts.push('Sites: tous');
+    } else if (this.masterSelectedLocations.size > 0) {
+      parts.push(
+        `Sites: ${Array.from(this.masterSelectedLocations).join(', ')}`
+      );
+    }
+
+    return this.joinConditionParts(parts);
+  }
+
+  private buildContactConditionsSummary(): string {
+    const parts: string[] = [];
+    const search = this.contactSearchTerm.trim();
+    if (search) parts.push(`Recherche: "${search}"`);
+
+    if (this.contactSelectedOwnerKeys.size > 0) {
+      const labels = this.contactAvailableLocations
+        .filter((opt) => this.contactSelectedOwnerKeys.has(opt.value))
+        .map((opt) => opt.label);
+      if (labels.length) parts.push(`Sites: ${labels.join(', ')}`);
+    } else {
+      parts.push('Sites: tous');
+    }
+
+    return this.joinConditionParts(parts);
+  }
+
   // ====== single SMS modal ======
   openSmsModal(c: Client) {
     this.sendResult = null;
@@ -1426,6 +1548,7 @@ Merci pona confiance na FONDATION GERVAIS`;
       locationTotals,
       template: this.bulkModal.message,
       messagePreview: this.previewPersonalized(),
+      conditionSummary: this.buildFinishedConditionsSummary(),
     });
   }
 
@@ -1456,6 +1579,7 @@ Merci pona confiance na FONDATION GERVAIS`;
         template: this.bulkModal.message,
         messagePreview: this.previewPersonalized(),
         locationTotals,
+        conditionSummary: this.buildFinishedConditionsSummary(),
       });
       this.bulkScheduleResult = {
         ok: true,
@@ -1563,6 +1687,7 @@ Merci pour ta confiance !`;
       locationTotals,
       template: this.generalBulkModal.message,
       messagePreview: this.generalPreviewPersonalized(),
+      conditionSummary: this.buildGeneralConditionsSummary(),
     });
   }
 
@@ -1593,6 +1718,7 @@ Merci pour ta confiance !`;
         template: this.generalBulkModal.message,
         messagePreview: this.generalPreviewPersonalized(),
         locationTotals,
+        conditionSummary: this.buildGeneralConditionsSummary(),
       });
       this.generalBulkScheduleResult = {
         ok: true,
@@ -2117,6 +2243,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
       locationTotals,
       template: this.contactBulkModal.message,
       messagePreview: this.contactBulkPreviewMessage,
+      conditionSummary: this.buildContactConditionsSummary(),
     });
   }
 
@@ -2150,6 +2277,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
         template: this.contactBulkModal.message,
         messagePreview: this.contactBulkPreviewMessage,
         locationTotals,
+        conditionSummary: this.buildContactConditionsSummary(),
       });
       this.contactBulkScheduleResult = {
         ok: true,
@@ -2352,6 +2480,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
     template: string;
     messagePreview?: string;
     locationTotals: Record<string, number>;
+    conditionSummary?: string;
   }): Promise<void> {
     const user = this.auth.currentUser || {};
     const sentBy = `${user.firstName ?? ''} ${user.lastName ?? ''}`
@@ -2365,6 +2494,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
         template: payload.template,
         messagePreview: payload.messagePreview ?? null,
         locationTotals: payload.locationTotals,
+        conditionSummary: payload.conditionSummary ?? null,
         scheduledForLocal: payload.scheduledForLocal,
         timeZone: 'Africa/Kinshasa',
         recipients: payload.recipients,
@@ -2457,6 +2587,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
       locationTotals: Record<string, number>;
       template: string;
       messagePreview?: string;
+      conditionSummary?: string;
     }
   ): Promise<void> {
     const user = this.auth.currentUser || {};
@@ -2475,6 +2606,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
           locationTotals: payload.locationTotals,
           template: payload.template,
           messagePreview: payload.messagePreview ?? null,
+          conditionSummary: payload.conditionSummary ?? null,
           sentBy: sentBy || user.email || undefined,
           sentById: user.uid ?? null,
         })
