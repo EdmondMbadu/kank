@@ -1741,6 +1741,14 @@
           Planifiez les envois en heure de Kinshasa et annulez avant l'envoi.
         </p>
       </div>
+      <button
+        *ngIf="hasMoreScheduledBulkMessages"
+        type="button"
+        (click)="toggleScheduledBulkExpansion()"
+        class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+      >
+        {{ showAllScheduledBulk ? "Voir moins" : "Voir toutes les programmations" }}
+      </button>
     </div>
 
     <div
@@ -1764,9 +1772,9 @@
       Aucune programmation en attente pour l'instant.
     </div>
 
-    <div class="mt-6 space-y-4" *ngIf="scheduledBulkMessages.length">
+    <div class="mt-6 space-y-4" *ngIf="visibleScheduledBulkMessages.length">
       <article
-        *ngFor="let schedule of scheduledBulkMessages"
+        *ngFor="let schedule of visibleScheduledBulkMessages"
         class="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm transition hover:border-amber-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800/80"
       >
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

@@ -1865,6 +1865,7 @@ Merci pour ta confiance !`;
   scheduledBulkMessages: ScheduledBulkMessage[] = [];
   scheduledBulkLoading = false;
   scheduledBulkError: string | null = null;
+  showAllScheduledBulk = false;
   private scheduledBulkSub?: Subscription;
 
 
@@ -2314,6 +2315,22 @@ Merci pona confiance na FONDATION GERVAIS.`;
   toggleBulkLogExpansion(): void {
     if (!this.hasMoreBulkLogs) return;
     this.showAllBulkLogs = !this.showAllBulkLogs;
+  }
+
+  get visibleScheduledBulkMessages(): ScheduledBulkMessage[] {
+    if (this.showAllScheduledBulk) {
+      return this.scheduledBulkMessages;
+    }
+    return this.scheduledBulkMessages.slice(0, 2);
+  }
+
+  get hasMoreScheduledBulkMessages(): boolean {
+    return this.scheduledBulkMessages.length > 2;
+  }
+
+  toggleScheduledBulkExpansion(): void {
+    if (!this.hasMoreScheduledBulkMessages) return;
+    this.showAllScheduledBulk = !this.showAllScheduledBulk;
   }
 
   trackBulkLog(index: number, log: BulkMessageLog): string {
