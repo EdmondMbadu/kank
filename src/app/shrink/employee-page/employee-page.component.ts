@@ -3094,9 +3094,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const lastName = this.employee?.lastName ?? '';
     return (
       `FONDATION GERVAIS : ${firstName} ${lastName}, ` +
-      'votre paiement est disponible. ' +
-      "Allez le SIGNER dans l’appli pour déclencher le virement. " +
-      'Montant incorrect? Contactez +1 2156877614.'
+      'votre Bonus est disponible. Vous devez d\'abord signer votre contract pour acceder au bonus. ' +
+      'Allez le SIGNER le Contract dans l’appl. ' +
+      'Probleme? Contactez +1 2156877614.'
     );
   }
   openGenericSmsModal() {
