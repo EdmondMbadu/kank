@@ -169,6 +169,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   finishedFiltered: Client[] = []; // after filters
   fdSearchControl = new FormControl('');
   fdMinScore = 60;
+  fdMaxScore = 100;
 
   uniqueLocations: string[] = [];
   selectedLocations = new Set<string>();
@@ -1216,11 +1217,17 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       .trim()
       .toLowerCase();
     const min = Number(this.fdMinScore) || 0;
+    const max = Number(this.fdMaxScore);
 
     const base = this.finishedAll.filter((c) =>
       this.selectedLocations.has(c.locationName || '')
     );
-    const withScore = base.filter((c) => Number(c.creditScore ?? 0) >= min);
+    const withScore = base.filter((c) => {
+      const score = Number(c.creditScore ?? 0);
+      if (!Number.isFinite(score)) return false;
+      if (!Number.isFinite(max)) return score >= min;
+      return score >= min && score <= max;
+    });
     const withPhone = withScore.filter(
       (c) =>
         !!(
@@ -1236,6 +1243,34 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
               .includes(v) || (c.phoneNumber || '').includes(v)
         )
       : withPhone;
+  }
+
+  onFdMinScoreChange(rawValue: number | string) {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) {
+      this.fdMinScore = 0;
+    } else {
+      const newMin = Math.max(Math.round(value), 0);
+      this.fdMinScore = Math.min(newMin, this.fdMaxScore);
+      if (this.fdMaxScore < this.fdMinScore) {
+        this.fdMaxScore = this.fdMinScore;
+      }
+    }
+    this.applyFinishedFilters();
+  }
+
+  onFdMaxScoreChange(rawValue: number | string) {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) {
+      this.fdMaxScore = 100;
+    } else {
+      const newMax = Math.max(Math.round(value), this.fdMinScore);
+      this.fdMaxScore = newMax;
+      if (this.fdMinScore > this.fdMaxScore) {
+        this.fdMinScore = this.fdMaxScore;
+      }
+    }
+    this.applyFinishedFilters();
   }
 
   // ====== single SMS modal ======

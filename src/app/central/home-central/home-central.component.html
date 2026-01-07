@@ -789,14 +789,14 @@
             </div>
           </div>
 
-          <!-- min score -->
+          <!-- score interval -->
           <div
             class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
           >
             <p
               class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
             >
-              Score minimum
+              Intervalle score
             </p>
             <div
               class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300"
@@ -807,7 +807,7 @@
                 max="100"
                 step="1"
                 [(ngModel)]="fdMinScore"
-                (input)="applyFinishedFilters()"
+                (input)="onFdMinScoreChange(fdMinScore)"
                 class="w-16 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
               <input
@@ -816,12 +816,40 @@
                 max="100"
                 step="1"
                 [(ngModel)]="fdMinScore"
-                (input)="applyFinishedFilters()"
+                (input)="onFdMinScoreChange(fdMinScore)"
                 class="flex-1 accent-indigo-500"
               />
               <span class="font-semibold text-indigo-600 dark:text-indigo-300">
-                ≥ {{ fdMinScore }}
+                {{ fdMinScore }}
               </span>
+            </div>
+            <div
+              class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300"
+            >
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                [(ngModel)]="fdMaxScore"
+                (input)="onFdMaxScoreChange(fdMaxScore)"
+                class="w-16 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                [(ngModel)]="fdMaxScore"
+                (input)="onFdMaxScoreChange(fdMaxScore)"
+                class="flex-1 accent-indigo-500"
+              />
+              <span class="font-semibold text-indigo-600 dark:text-indigo-300">
+                {{ fdMaxScore }}
+              </span>
+            </div>
+            <div class="mt-2 text-[11px] font-semibold text-slate-400">
+              {{ fdMinScore }} ≤ Score ≤ {{ fdMaxScore }}
             </div>
           </div>
 
