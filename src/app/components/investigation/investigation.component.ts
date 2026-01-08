@@ -71,6 +71,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   dayCommentText = '';
   dayCommentPosting = false;
   showAllDayComments = false;
+  quitteStatusFilter: 'active' | 'quitte' = 'active';
 
   employees: Employee[] = [];
   taskForceLocations: string[] = [];
@@ -321,10 +322,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const dayName = this.time.getDayOfWeek(this.dayKey);
     this.shouldPayToday = this.clients.filter(
       (client) => {
-        const isAlive =
-          !client.vitalStatus || client.vitalStatus.toLowerCase() === 'vivant';
+        const isAllowedStatus = this.matchesQuitteFilter(client);
         const hasDebt = Number(client.debtLeft ?? 0) > 0;
-        return client.paymentDay === dayName && isAlive && hasDebt;
+        return client.paymentDay === dayName && isAllowedStatus && hasDebt;
       }
     );
   }
@@ -355,9 +355,57 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private refreshProblematic(): void {
-    this.problematicClients = this.allClients.filter((client) =>
-      this.isProblematic(client)
+    this.problematicClients = this.allClients.filter(
+      (client) => this.isProblematic(client) && this.matchesQuitteFilter(client)
     );
+  }
+
+  setQuitteStatusFilter(mode: 'active' | 'quitte'): void {
+    if (this.quitteStatusFilter === mode) return;
+    this.quitteStatusFilter = mode;
+    this.filterShouldPayToday();
+    this.refreshProblematic();
+  }
+
+  isQuitteStatusFilter(mode: 'active' | 'quitte'): boolean {
+    return this.quitteStatusFilter === mode;
+  }
+
+  quitteStatusButtonClasses(mode: 'active' | 'quitte') {
+    return {
+      'bg-emerald-600 text-white shadow': this.isQuitteStatusFilter(mode),
+      'text-slate-600 hover:bg-slate-100': !this.isQuitteStatusFilter(mode),
+    };
+  }
+
+  private matchesQuitteFilter(client: Client): boolean {
+    if (this.quitteStatusFilter === 'quitte') {
+      return this.isClientQuitte(client);
+    }
+    return this.isClientActive(client) && !this.isClientQuitte(client);
+  }
+
+  private normalizeStatus(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private isClientQuitte(client: Client): boolean {
+    const normalized = this.normalizeStatus(client.vitalStatus ?? '');
+    return (
+      normalized === 'quitte' ||
+      normalized === 'quittee' ||
+      normalized === 'quite' ||
+      normalized === 'quit'
+    );
+  }
+
+  private isClientActive(client: Client): boolean {
+    const normalized = this.normalizeStatus(client.vitalStatus ?? '');
+    return !normalized || normalized === 'vivant';
   }
 
   isProblematic(client: Client): boolean {

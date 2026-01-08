@@ -44,6 +44,26 @@
             </option>
           </select>
         </label>
+        <div
+          class="inline-flex items-center gap-1 rounded-full bg-white p-1 text-xs font-semibold text-slate-600 shadow"
+        >
+          <button
+            type="button"
+            (click)="setQuitteStatusFilter('active')"
+            [ngClass]="quitteStatusButtonClasses('active')"
+            class="rounded-full px-3 py-1 transition"
+          >
+            Actifs
+          </button>
+          <button
+            type="button"
+            (click)="setQuitteStatusFilter('quitte')"
+            [ngClass]="quitteStatusButtonClasses('quitte')"
+            class="rounded-full px-3 py-1 transition"
+          >
+            Quittés
+          </button>
+        </div>
       </div>
     </div>
   </header>
