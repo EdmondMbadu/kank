@@ -340,16 +340,25 @@ export class NewCycleRegisterComponent implements OnInit {
   savingsPaidAtleast30PercentOfLoanAmount() {
     let savings = Number(this.savings) + Number(this.client.savings);
     let loanAmount = Number(this.loanAmount);
-    let savingsToAdd = Number(loanAmount) * 0.3 - Number(this.client.savings);
-    if (savings < loanAmount * 0.3) {
+    const percent = this.getRequiredSavingsPercent();
+    const requiredSavings = loanAmount * (percent / 100);
+    let savingsToAdd = requiredSavings - Number(this.client.savings);
+    if (savings < requiredSavings) {
       alert(
-        `Le montant d'épargne doit être au moins 30% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${
-          loanAmount * 0.3
-        } FC. Vous devez ajouter au moins ${savingsToAdd} FC d'épargne pour continuer.`
+        `Le montant d'épargne doit être au moins ${percent}% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${Math.round(
+          requiredSavings
+        )} FC. Vous devez ajouter au moins ${Math.round(
+          savingsToAdd
+        )} FC d'épargne pour continuer.`
       );
       return false;
     }
     return true;
+  }
+
+  private getRequiredSavingsPercent(): number {
+    const raw = Number(this.auth.currentUser?.savingsRequiredPercent);
+    return Number.isFinite(raw) && raw > 0 ? raw : 30;
   }
   resetFields() {
     this.applicationFee = '';

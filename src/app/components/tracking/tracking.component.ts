@@ -125,6 +125,7 @@ export class TrackingComponent {
   maxNumberOfDaysToLend: Number = 0;
   startingBudget: string = '';
   teamCode: string = '';
+  savingsRequiredPercent: number = 30;
 
   initalizeInputs() {
     const user = this.auth.currentUser;
@@ -161,6 +162,11 @@ export class TrackingComponent {
     this.moneyInHands = user.moneyInHands ? user.moneyInHands : '0';
     this.teamCode = user.teamCode ? user.teamCode : '';
     this.startingBudget = user.startingBudget ? user.startingBudget : '0';
+    const requiredPercent = Number(user.savingsRequiredPercent);
+    this.savingsRequiredPercent =
+      Number.isFinite(requiredPercent) && requiredPercent > 0
+        ? requiredPercent
+        : 30;
     const clientsSavings = coerceToNumber(user.clientsSavings);
     const cardsMoney = coerceToNumber(user.cardsMoney);
     const moneyInHands = coerceToNumber(user.moneyInHands);
@@ -230,8 +236,18 @@ export class TrackingComponent {
     this.moneyInHands = '0';
     this.teamCode = '';
     this.startingBudget = '0';
+    this.savingsRequiredPercent = 30;
     this.summaryContent = [0, 0, 0, 0, 0, 0, 0];
     this.valuesConvertedToDollars = [0, 0, 0, 0, 0, 0, 0];
+  }
+
+  async setSavingsRequiredPercent(): Promise<void> {
+    const value = Number(this.savingsRequiredPercent);
+    if (!Number.isFinite(value) || value <= 0 || value > 100) {
+      alert('Entrez un pourcentage valide (1 à 100).');
+      return;
+    }
+    await this.setUserField('savingsRequiredPercent', value);
   }
 
   async setUserField(field: string, value: any, pass = '') {

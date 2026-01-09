@@ -50,6 +50,7 @@ export class User {
   objectifPerformance?: string;
   teamCode?: string;
   startingBudget?: string;
+  savingsRequiredPercent?: string;
 }
 export class LocationCoordinates {
   longitude?: string;

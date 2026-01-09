@@ -201,6 +201,32 @@
         Confirmer
       </button>
     </div>
+
+    <!-- Pourcentage d'épargne obligatoire -->
+    <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
+      <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Pourcentage d'épargne obligatoire
+      </h3>
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle&nbsp;: <strong>{{ savingsRequiredPercent }}%</strong>
+      </p>
+      <input
+        [(ngModel)]="savingsRequiredPercent"
+        type="number"
+        min="1"
+        max="100"
+        placeholder="Pourcentage (ex : 30)"
+        class="mb-3 w-full rounded-lg border bg-gray-50 p-2.5
+               text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500
+               dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+      <button
+        (click)="setSavingsRequiredPercent()"
+        class="w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white
+               transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+        Confirmer
+      </button>
+    </div>
+
     <div class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800">
       <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-50">
        Code(s) de L'Equipe
