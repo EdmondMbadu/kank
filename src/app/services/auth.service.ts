@@ -61,6 +61,12 @@ export class AuthService {
     this.rolePasswordsState
   );
   rolePasswords$ = this.rolePasswordsSubject.asObservable();
+  private readonly defaultWeeklyPaymentTargetFc = 600000;
+  private weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
+  private weeklyPaymentTargetSubject = new BehaviorSubject<number>(
+    this.weeklyPaymentTargetState
+  );
+  weeklyPaymentTarget$ = this.weeklyPaymentTargetSubject.asObservable();
   private managementDocId: string = '';
   private lastRoleWord = '';
 
@@ -1450,6 +1456,17 @@ export class AuthService {
     return (value ?? '').trim().toLowerCase();
   }
 
+  public get weeklyPaymentTargetFc(): number {
+    return this.weeklyPaymentTargetState;
+  }
+
+  private normalizeWeeklyPaymentTarget(value: any): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0
+      ? parsed
+      : this.defaultWeeklyPaymentTargetFc;
+  }
+
   public applyRoleWord(word: string): void {
     this.lastRoleWord = word;
     const normalized = this.normalizeSecret(word);
@@ -1512,6 +1529,10 @@ export class AuthService {
           ...stored,
         };
         this.rolePasswordsSubject.next(this.rolePasswordsState);
+        this.weeklyPaymentTargetState = this.normalizeWeeklyPaymentTarget(
+          data.weeklyPaymentTargetFc
+        );
+        this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
         if (this.lastRoleWord) {
           this.applyRoleWord(this.lastRoleWord);
         }
@@ -1524,6 +1545,16 @@ export class AuthService {
     }
     const docRef = this.afs.doc(`management/${this.managementDocId}`);
     return docRef.set({ rolePasswords: payload }, { merge: true }).then(() => {});
+  }
+
+  updateWeeklyPaymentTargetGlobal(targetFc: number): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set({ weeklyPaymentTargetFc: targetFc }, { merge: true })
+      .then(() => {});
   }
 
   async deleteReview(

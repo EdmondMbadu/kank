@@ -558,7 +558,7 @@
   >
     <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-700">
       <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">
-        Paiement Hebdomadaire — Synthèse
+        Paiement Semaine — Synthèse
       </h3>
       <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
         Semaine de Lundi à Dimanche
@@ -625,7 +625,8 @@
     <div class="px-5 pb-4">
       <div class="flex items-center justify-between text-[11px] font-semibold">
         <span class="text-slate-500 dark:text-slate-400"
-          ><strong>Minimum</strong>&nbsp;600&nbsp;000 FC</span
+          ><strong>Minimum</strong>&nbsp;{{ weeklyTargetFc | number : "1.0-0" }}
+          FC</span
         >
         <span
           [ngClass]="
@@ -1113,7 +1114,10 @@
             class="flex items-center justify-between text-[11px] font-semibold"
           >
             <span class="text-slate-500 dark:text-slate-400"
-              ><strong>Minimum</strong>&nbsp;600&nbsp;000 FC</span
+              ><strong>Minimum</strong>&nbsp;{{
+                weeklyTargetFc | number : "1.0-0"
+              }}
+              FC</span
             >
             <span
               [ngClass]="
@@ -1314,6 +1318,31 @@
   <div
     class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
   >
+    <div
+      class="flex flex-col rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800"
+    >
+      <h3 class="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
+        Paiement de la semaine (objectif)
+      </h3>
+      <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
+        Valeur actuelle :
+        <strong>{{ weeklyTargetFc | number : "1.0-0" }} FC</strong>
+      </p>
+
+      <input
+        [(ngModel)]="weeklyTargetInput"
+        type="number"
+        placeholder="Ex: 700000"
+        class="mb-4 w-full rounded-lg border bg-gray-50 p-2.5 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+      />
+
+      <button
+        (click)="setWeeklyTargetForUser()"
+        class="mt-auto w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+      >
+        Confirmer
+      </button>
+    </div>
     <ng-container *ngFor="let f of dailyFieldConfigs">
       <div
         class="flex flex-col rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800"

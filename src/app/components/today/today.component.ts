@@ -68,6 +68,9 @@ export class TodayComponent {
     this.detailOpen = new Date().getHours() >= 16; // 4pm works better
     this.weekPickerStartDate = this.requestDate;
     this.updateWeekPickerTotals();
+    this.auth.weeklyPaymentTarget$.subscribe(() => {
+      this.syncWeeklyTargetFc();
+    });
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
 
@@ -97,6 +100,7 @@ export class TodayComponent {
   weeklyPaymentTotalN: number = 0;
   weeklyPaymentTotalDollars: string = '0';
   weeklyTargetFc: number = 600000;
+  weeklyTargetInput: string = '';
   weeklyProgressPercent: number = 0;
   weeklyTargetReached: boolean = false;
   weeklyRangeLabel: string = '';
@@ -337,18 +341,10 @@ export class TodayComponent {
     this.weeklyPaymentTotalDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.weeklyPaymentTotalN.toString())
       .toString();
-    this.weeklyTargetReached = this.weeklyPaymentTotalN >= this.weeklyTargetFc;
-    this.weeklyProgressPercent =
-      this.weeklyTargetFc === 0
-        ? 0
-        : Math.min(
-            100,
-            (this.weeklyPaymentTotalN / this.weeklyTargetFc) * 100
-          );
     this.weeklyRangeLabel = this.computeWeeklyRangeLabel(
       this.requestDateCorrectFormat
     );
-    this.updateWeekPickerTotals();
+    this.syncWeeklyTargetFc();
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.notPaidAmountTodayN.toString()
@@ -554,6 +550,52 @@ export class TodayComponent {
       );
       alert('Montant changé avec succès');
       this.initalizeInputs(); // rafraîchit l’écran
+    } catch (err) {
+      alert('Erreur lors de la mise à jour, réessayez');
+    }
+  }
+
+  private resolveWeeklyTargetFc(): number {
+    const userOverride = Number(this.auth.currentUser?.weeklyPaymentTargetFc);
+    if (Number.isFinite(userOverride) && userOverride > 0) {
+      return userOverride;
+    }
+
+    const globalTarget = Number(this.auth.weeklyPaymentTargetFc);
+    if (Number.isFinite(globalTarget) && globalTarget > 0) {
+      return globalTarget;
+    }
+
+    return 600000;
+  }
+
+  private syncWeeklyTargetFc() {
+    this.weeklyTargetFc = this.resolveWeeklyTargetFc();
+    this.weeklyTargetReached = this.weeklyPaymentTotalN >= this.weeklyTargetFc;
+    this.weeklyProgressPercent =
+      this.weeklyTargetFc === 0
+        ? 0
+        : Math.min(
+            100,
+            (this.weeklyPaymentTotalN / this.weeklyTargetFc) * 100
+          );
+    this.updateWeekPickerTotals();
+  }
+
+  async setWeeklyTargetForUser() {
+    if (!this.auth.isAdmin) return;
+    const value = Number(this.weeklyTargetInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      alert('Entrez un nombre valide');
+      return;
+    }
+
+    try {
+      await this.auth.setUserField('weeklyPaymentTargetFc', value.toString());
+      this.auth.currentUser.weeklyPaymentTargetFc = value.toString();
+      this.weeklyTargetInput = '';
+      this.syncWeeklyTargetFc();
+      alert('Objectif mis à jour');
     } catch (err) {
       alert('Erreur lors de la mise à jour, réessayez');
     }

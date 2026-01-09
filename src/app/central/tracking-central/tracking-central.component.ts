@@ -26,6 +26,10 @@ export class TrackingCentralComponent {
   };
   rolePasswordsSaving = false;
   rolePasswordsSaved = false;
+  weeklyPaymentTargetFc = 600000;
+  weeklyPaymentTargetInput = '';
+  weeklyPaymentTargetSaving = false;
+  weeklyPaymentTargetSaved = false;
   ngOnInit(): void {
     if (this.auth.isAdmin) {
       this.auth.getAllUsersInfo().subscribe((data) => {
@@ -36,6 +40,9 @@ export class TrackingCentralComponent {
         this.rolePasswords = { ...payload };
       });
     }
+    this.auth.weeklyPaymentTarget$.subscribe((value) => {
+      this.weeklyPaymentTargetFc = value;
+    });
   }
 
   totalPerfomance: number = 0;
@@ -154,6 +161,32 @@ export class TrackingCentralComponent {
       })
       .finally(() => {
         this.rolePasswordsSaving = false;
+      });
+  }
+
+  saveWeeklyPaymentTargetGlobal(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.weeklyPaymentTargetSaving) return;
+    const value = Number(this.weeklyPaymentTargetInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+
+    this.weeklyPaymentTargetSaving = true;
+    this.weeklyPaymentTargetSaved = false;
+    this.auth
+      .updateWeeklyPaymentTargetGlobal(value)
+      .then(() => {
+        this.weeklyPaymentTargetSaved = true;
+        this.weeklyPaymentTargetInput = '';
+      })
+      .catch((err) => {
+        console.error('Failed to update weekly payment target:', err);
+        alert("Impossible d'enregistrer le montant.");
+      })
+      .finally(() => {
+        this.weeklyPaymentTargetSaving = false;
       });
   }
 }
