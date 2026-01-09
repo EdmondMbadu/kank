@@ -551,6 +551,113 @@
 
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
+<!-- ╭─ Weekly payment admin summary ────────────────────────────────╮ -->
+<section class="mx-auto mt-10 max-w-5xl px-4 sm:px-6 lg:px-8">
+  <div
+    class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+  >
+    <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-700">
+      <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">
+        Paiement Hebdomadaire — Synthèse
+      </h3>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        Semaine de Lundi à Dimanche
+      </p>
+    </div>
+
+    <div class="grid gap-4 p-5 sm:grid-cols-3">
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300"
+          >Début de semaine (Lundi)</label
+        >
+        <ng-container *ngIf="auth.isAdmin; else weekStartReadOnly">
+          <input
+            [(ngModel)]="weekPickerStartDate"
+            type="date"
+            class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            (change)="updateWeekPickerTotals()"
+          />
+        </ng-container>
+        <ng-template #weekStartReadOnly>
+          <div
+            class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-200"
+          >
+            {{ weekPickerStartLabel || weekPickerStartDate }}
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300"
+          >Fin de semaine (Dimanche)</label
+        >
+        <div
+          class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-200"
+        >
+          {{ weekPickerEndLabel }}
+        </div>
+      </div>
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300"
+          >Total Paiement</label
+        >
+        <div
+          class="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200"
+        >
+          <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else weeklyTotalHidden">
+            FC&nbsp;{{ weekPickerTotalN | number : "1.0-0" }}
+            <span class="mx-1 text-emerald-300">·</span>
+            $&nbsp;{{ weekPickerTotalDollars | number : "1.0-0" }}
+          </ng-container>
+          <ng-template #weeklyTotalHidden>
+            •••
+            <button
+              (click)="openCodeModal()"
+              class="ml-2 rounded bg-emerald-200/70 px-2 py-0.5 text-xs text-emerald-800 hover:bg-emerald-300/70 dark:bg-emerald-900/40 dark:text-emerald-100"
+            >
+              🔒
+            </button>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-5 pb-4">
+      <div class="flex items-center justify-between text-[11px] font-semibold">
+        <span class="text-slate-500 dark:text-slate-400"
+          ><strong>Minimum</strong>&nbsp;600&nbsp;000 FC</span
+        >
+        <span
+          [ngClass]="
+            weekPickerTargetReached ? 'text-emerald-600' : 'text-red-600'
+          "
+        >
+          {{ weekPickerTargetReached ? 'Atteint' : 'À faire' }}
+        </span>
+      </div>
+      <div
+        class="mt-1 h-2 w-full rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
+      >
+        <div
+          class="h-2 rounded-full transition-all duration-300"
+          [ngClass]="
+            weekPickerTargetReached ? 'bg-emerald-500' : 'bg-red-500'
+          "
+          [style.width.%]="weekPickerProgressPercent"
+        ></div>
+      </div>
+      <div class="mt-1 text-center text-[11px] text-slate-500">
+        {{ weekPickerProgressPercent | number : "1.0-0" }}% atteint
+      </div>
+    </div>
+
+    <div class="px-5 pb-5 text-[11px] text-slate-500 dark:text-slate-400">
+      Semaine sélectionnée : {{ weekPickerRangeLabel }}
+    </div>
+  </div>
+</section>
+<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
+
 <!-- ╭─ Performance & reserve ──────────────────────────────────────────╮ -->
 <section class="mx-auto mt-12 max-w-3xl px-4 sm:px-6 lg:px-8">
   <!-- ── Performance cards ─────────────────────────────────────────── -->
@@ -884,97 +991,6 @@
       </div>
     </div>
   </details>
-</section>
-<!-- ╰───────────────────────────────────────────────────────────────────╯ -->
-
-<!-- ╭─ Weekly payment admin summary ────────────────────────────────╮ -->
-<section
-  *ngIf="auth.isAdmin"
-  class="mx-auto mt-10 max-w-5xl px-4 sm:px-6 lg:px-8"
->
-  <div
-    class="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
-  >
-    <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-700">
-      <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">
-        Paiement Hebdomadaire — Synthèse
-      </h3>
-      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-        Semaine de Lundi à Dimanche
-      </p>
-    </div>
-
-    <div class="grid gap-4 p-5 sm:grid-cols-3">
-      <div class="space-y-2">
-        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300"
-          >Début de semaine (Lundi)</label
-        >
-        <input
-          [(ngModel)]="weekPickerStartDate"
-          type="date"
-          class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-          (change)="updateWeekPickerTotals()"
-        />
-      </div>
-
-      <div class="space-y-2">
-        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300"
-          >Fin de semaine (Dimanche)</label
-        >
-        <div
-          class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-700/40 dark:text-slate-200"
-        >
-          {{ weekPickerEndLabel }}
-        </div>
-      </div>
-
-      <div class="space-y-2">
-        <label class="text-xs font-semibold text-slate-600 dark:text-slate-300"
-          >Total Paiement</label
-        >
-        <div
-          class="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200"
-        >
-          FC&nbsp;{{ weekPickerTotalN | number : "1.0-0" }}
-          <span class="mx-1 text-emerald-300">·</span>
-          $&nbsp;{{ weekPickerTotalDollars | number : "1.0-0" }}
-        </div>
-      </div>
-    </div>
-
-    <div class="px-5 pb-4">
-      <div class="flex items-center justify-between text-[11px] font-semibold">
-        <span class="text-slate-500 dark:text-slate-400"
-          ><strong>Minimum</strong>&nbsp;600&nbsp;000 FC</span
-        >
-        <span
-          [ngClass]="
-            weekPickerTargetReached ? 'text-emerald-600' : 'text-red-600'
-          "
-        >
-          {{ weekPickerTargetReached ? 'Atteint' : 'À faire' }}
-        </span>
-      </div>
-      <div
-        class="mt-1 h-2 w-full rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
-      >
-        <div
-          class="h-2 rounded-full transition-all duration-300"
-          [ngClass]="
-            weekPickerTargetReached ? 'bg-emerald-500' : 'bg-red-500'
-          "
-          [style.width.%]="weekPickerProgressPercent"
-        ></div>
-      </div>
-      <div class="mt-1 text-center text-[11px] text-slate-500">
-        {{ weekPickerProgressPercent | number : "1.0-0" }}% atteint
-      </div>
-    </div>
-
-    <div class="px-5 pb-5 text-[11px] text-slate-500 dark:text-slate-400">
-      Semaine sélectionnée : {{ weekPickerRangeLabel }}
-    </div>
-  </div>
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
