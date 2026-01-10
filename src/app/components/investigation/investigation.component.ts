@@ -1049,22 +1049,42 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const iso = this.taskPicker.day.iso;
     const weekId = this.isoWeekId(this.taskPicker.day.date);
 
-    const map: { [k: string]: { loc: string; employees: string[] } } = {};
-    for (const e of this.taskPicker.entries) {
-      const key = e.loc
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-      map[key] = { loc: e.loc, employees: e.employees };
-    }
+    const map = this.buildTaskForceMap(this.taskPicker.entries);
 
     await this.performance.setTaskForceDay(
       weekId,
       iso,
       Object.keys(map).length ? map : null
     );
+
+    this.closeTFPicker();
+    this.loadTaskForceMonth();
+  }
+
+  async applyTFToWeek(): Promise<void> {
+    if (!this.taskPicker.day || !this.taskPicker.entries.length) return;
+    if (!this.auth.isAdmin) return;
+    const ok = confirm(
+      'Appliquer ces affectations a toute la semaine (Lun-Sam) ?'
+    );
+    if (!ok) return;
+
+    const start = this.startOfIsoWeek(this.taskPicker.day.date);
+    for (let i = 0; i < 6; i++) {
+      const date = this.addDays(start, i);
+      const iso = this.ymd(date);
+      const weekId = this.isoWeekId(date);
+      const baseEntries = this.tfCellByIso.get(iso)?.entries ?? [];
+      const map = this.mergeTaskForceEntries(
+        baseEntries,
+        this.taskPicker.entries
+      );
+      await this.performance.setTaskForceDay(
+        weekId,
+        iso,
+        Object.keys(map).length ? map : null
+      );
+    }
 
     this.closeTFPicker();
     this.loadTaskForceMonth();
@@ -1092,6 +1112,15 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       .padStart(2, '0')}`;
   }
 
+  private startOfIsoWeek(d: Date): Date {
+    const s = new Date(d);
+    s.setHours(0, 0, 0, 0);
+    const day = s.getDay();
+    const diff = (day + 6) % 7;
+    s.setDate(s.getDate() - diff);
+    return s;
+  }
+
   private startOfWeek(d: Date): Date {
     const s = new Date(d);
     s.setDate(s.getDate() - s.getDay());
@@ -1116,6 +1145,44 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   private endOfMonth(d: Date): Date {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  }
+
+  private slugLocation(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private buildTaskForceMap(
+    entries: TFEntry[]
+  ): { [k: string]: { loc: string; employees: string[] } } {
+    const map: { [k: string]: { loc: string; employees: string[] } } = {};
+    entries.forEach((e) => {
+      const key = this.slugLocation(e.loc);
+      map[key] = {
+        loc: e.loc,
+        employees: Array.from(new Set(e.employees || [])),
+      };
+    });
+    return map;
+  }
+
+  private mergeTaskForceEntries(
+    baseEntries: TFEntry[],
+    overrides: TFEntry[]
+  ): { [k: string]: { loc: string; employees: string[] } } {
+    const map = this.buildTaskForceMap(baseEntries);
+    overrides.forEach((e) => {
+      const key = this.slugLocation(e.loc);
+      map[key] = {
+        loc: e.loc,
+        employees: Array.from(new Set(e.employees || [])),
+      };
+    });
+    return map;
   }
 
   prevTaskForceMonth(): void {

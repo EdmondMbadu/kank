@@ -692,6 +692,14 @@
         Annuler
       </button>
       <button
+        *ngIf="auth.isAdmin"
+        class="px-3 py-1 rounded bg-indigo-600 text-white disabled:opacity-50"
+        [disabled]="!taskPicker.entries.length"
+        (click)="applyTFToWeek()"
+      >
+        Appliquer semaine (Lun-Sam)
+      </button>
+      <button
         class="px-3 py-1 rounded bg-blue-600 text-white"
         (click)="saveTF()"
       >
