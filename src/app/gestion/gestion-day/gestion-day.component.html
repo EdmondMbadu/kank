@@ -851,6 +851,138 @@
 
 <div
   *ngIf="auth.isAdmin"
+  class="container mx-auto flex flex-col items-center gap-4 mb-6 px-4"
+>
+  <div
+    class="w-full max-w-5xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-5"
+  >
+    <div
+      class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+    >
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Paiement de la Semaine
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400">
+          Semaine : {{ weeklyPaymentRangeLabel }}
+        </p>
+      </div>
+      <div>
+        <input
+          [(ngModel)]="weeklyPaymentDate"
+          type="date"
+          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+          (change)="updateWeeklyPaymentDate()"
+          required
+        />
+      </div>
+    </div>
+
+    <table
+      class="w-full mt-4 text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
+    >
+      <thead
+        class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
+      >
+        <tr>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4 rounded-s-lg">
+            Équipe
+          </th>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Total semaine</th>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Minimum</th>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Avancement</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          *ngFor="let s of weeklyPaymentTotals; let i = index"
+          class="bg-white dark:bg-gray-800/40"
+        >
+          <th
+            scope="row"
+            class="px-4 md:px-8 py-4 md:py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap"
+          >
+            {{ i + 1 }}.&nbsp;{{ s.firstName }}
+          </th>
+
+          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.total || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
+          </td>
+
+          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ +s.weeklyTargetFc || 0 | number : "1.0-0" }} FC
+              </span>
+              <span
+                class="text-xs font-semibold"
+                [ngClass]="
+                  s.weeklyTargetReached ? 'text-emerald-600' : 'text-red-600'
+                "
+              >
+                {{ s.weeklyTargetReached ? 'Atteint' : 'À faire' }}
+              </span>
+            </div>
+          </td>
+
+          <td class="px-4 md:px-8 py-4 md:py-5">
+            <div class="w-32">
+              <div
+                class="relative w-full h-2 rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
+              >
+                <div
+                  class="absolute left-0 top-0 h-2 rounded-full transition-all duration-300"
+                  [ngClass]="
+                    s.weeklyTargetReached ? 'bg-emerald-500' : 'bg-red-500'
+                  "
+                  [style.width.%]="s.weeklyProgressPercent || 0"
+                ></div>
+              </div>
+              <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {{ s.weeklyProgressPercent || 0 | number : "1.0-0" }}%
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+
+      <tfoot>
+        <tr class="font-semibold">
+          <th scope="row" class="px-4 md:px-8 py-3 md:py-4 text-base">
+            Total semaine
+          </th>
+          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +overallWeeklyPaymentTotalDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +overallWeeklyPaymentTotal || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
+          </td>
+          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+            <span class="text-slate-400">—</span>
+          </td>
+          <td class="px-4 md:px-8 py-3 md:py-4">
+            <span class="text-slate-400">—</span>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div
+  *ngIf="auth.isAdmin"
   class="container lg:block flex mx-auto shadow-xl flex-col md:justify-center md:flex-row"
 >
   <!-- COMBINED CHART -->

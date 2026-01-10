@@ -47,6 +47,9 @@ export class GestionDayComponent implements OnInit {
         this.getAllClients();
         // this.getAllClientsCard();
       }
+      if (this.auth.isAdmin && this.allUsers.length > 0) {
+        this.updateWeeklyPaymentDate();
+      }
     });
   }
   percentage: string = '0';
@@ -221,6 +224,20 @@ export class GestionDayComponent implements OnInit {
   overallTransportAmount: number = 0;
   overallMissingReasons: number = 0;
   overallTotalReasons: number = 0;
+  weeklyPaymentDate: string = this.time.getTodaysDateYearMonthDay();
+  weeklyPaymentDateCorrectFormat: string = this.time.todaysDateMonthDayYear();
+  weeklyPaymentRangeLabel: string = '';
+  weeklyPaymentTotals: Array<{
+    firstName: string;
+    total: number;
+    totalInDollar: number;
+    weeklyTargetFc: number;
+    weeklyProgressPercent: number;
+    weeklyTargetReached: boolean;
+    trackingId: string;
+  }> = [];
+  overallWeeklyPaymentTotal: number = 0;
+  overallWeeklyPaymentTotalDollar: number = 0;
   getAllClients() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -877,6 +894,141 @@ export class GestionDayComponent implements OnInit {
     const start = new Date(year, month - 1, day, 0, 0, 0, 0).getTime();
     const end = new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
     return { start, end };
+  }
+
+  updateWeeklyPaymentDate() {
+    if (!this.auth.isAdmin) return;
+    this.weeklyPaymentDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.weeklyPaymentDate
+    );
+    this.weeklyPaymentRangeLabel = this.computeWeeklyRangeLabel(
+      this.weeklyPaymentDateCorrectFormat
+    );
+    this.computeWeeklyPaymentTotals();
+  }
+
+  private computeWeeklyPaymentTotals() {
+    if (!this.auth.isAdmin) return;
+    if (!this.allUsers || this.allUsers.length === 0) return;
+
+    this.overallWeeklyPaymentTotal = 0;
+    this.weeklyPaymentTotals = this.allUsers.map((user) => {
+      const weeklyTargetFc = this.resolveWeeklyTargetFcForUser(user);
+      const total = this.computeWeeklyPaymentTotalForUser(
+        user,
+        this.weeklyPaymentDateCorrectFormat
+      );
+      const totalInDollar = Number(
+        this.compute.convertCongoleseFrancToUsDollars(total.toString())
+      );
+      const weeklyTargetReached = total >= weeklyTargetFc;
+      const weeklyProgressPercent =
+        weeklyTargetFc === 0 ? 0 : Math.min(100, (total / weeklyTargetFc) * 100);
+
+      this.overallWeeklyPaymentTotal += total;
+
+      return {
+        firstName: user.firstName!,
+        total,
+        totalInDollar,
+        weeklyTargetFc,
+        weeklyProgressPercent,
+        weeklyTargetReached,
+        trackingId: user.uid!,
+      };
+    });
+
+    this.weeklyPaymentTotals.sort((a, b) => b.total - a.total);
+    this.overallWeeklyPaymentTotalDollar = Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.overallWeeklyPaymentTotal.toString()
+      )
+    );
+  }
+
+  private computeWeeklyPaymentTotalForUser(user: User, dateKey: string): number {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const payments = user.dailyReimbursement || {};
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const key = this.formatDateKey(cursor);
+      const amount = Number((payments as any)[key] ?? 0);
+      if (!Number.isNaN(amount)) {
+        total += amount;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private resolveWeeklyTargetFcForUser(user: User): number {
+    const userOverride = Number(user.weeklyPaymentTargetFc);
+    if (Number.isFinite(userOverride) && userOverride > 0) {
+      return userOverride;
+    }
+
+    const globalTarget = Number(this.auth.weeklyPaymentTargetFc);
+    if (Number.isFinite(globalTarget) && globalTarget > 0) {
+      return globalTarget;
+    }
+
+    return 600000;
+  }
+
+  private computeWeeklyRangeLabel(dateKey: string): string {
+    const { start, end } = this.getWeekBounds(dateKey);
+    return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
+  }
+
+  private getWeekBounds(dateKey: string): { start: Date; end: Date } {
+    const dateObj = this.time.toDate(dateKey);
+    const dayIndex = dateObj.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(dateObj);
+    start.setDate(dateObj.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+  }
+
+  private formatWeekDate(date: Date): string {
+    const days = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+    const months = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+    const dayName = days[date.getDay()];
+    const monthName = months[date.getMonth()];
+    return `${dayName} ${date.getDate()} ${monthName} ${date.getFullYear()}`;
+  }
+
+  private formatDateKey(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
   }
   setGraphics() {
     let num = Number(this.percentage);
