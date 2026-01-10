@@ -623,11 +623,15 @@
     </div>
 
     <div class="px-5 pb-4">
-      <div class="flex items-center justify-between text-[11px] font-semibold">
-        <span class="text-slate-500 dark:text-slate-400"
-          ><strong>Minimum</strong>&nbsp;{{ weeklyTargetFc | number : "1.0-0" }}
-          FC</span
-        >
+      <div class="flex items-center justify-between text-sm font-semibold">
+        <span class="text-slate-600 dark:text-slate-300">
+          Minimum
+          <span
+            class="ml-2 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-sm font-bold text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
+          >
+            {{ weeklyTargetFc | number : "1.0-0" }} FC
+          </span>
+        </span>
         <span
           [ngClass]="
             weekPickerTargetReached ? 'text-emerald-600' : 'text-red-600'
