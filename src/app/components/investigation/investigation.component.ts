@@ -141,10 +141,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const userSub = this.auth.user$.subscribe((user: User | null) => {
       this.currentUserId = user?.uid ?? '';
       this.ensureDefaultLocation();
+      this.applyInvestigatorLocationFromSchedule();
     });
     const locationsSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.locations = Array.isArray(data) ? (data as User[]) : [];
       this.ensureDefaultLocation();
+      this.applyInvestigatorLocationFromSchedule();
       this.updateTaskForceLocations();
       this.loadAllEmployeesForLocations();
       this.loadAllProblematicClients();
@@ -261,6 +263,51 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.initDayDocForLocation(user.uid);
   }
 
+  private selectedDateAsLocalDate(): Date {
+    if (this.selectedDate) {
+      const [y, m, d] = this.selectedDate.split('-').map(Number);
+      if (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d)) {
+        return new Date(y, m - 1, d);
+      }
+    }
+    return new Date();
+  }
+
+  private applyInvestigatorLocationFromSchedule(): void {
+    if (!this.auth.isInvestigator || this.auth.isAdmin) return;
+    if (!this.currentUserId || !this.locations.length) return;
+
+    const date = this.selectedDateAsLocalDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    if (this.month !== month || this.year !== year) {
+      this.month = month;
+      this.year = year;
+      this.loadTaskForceMonth();
+      return;
+    }
+
+    const iso = this.ymd(date);
+    const cell = this.tfCellByIso.get(iso);
+    if (!cell?.entries?.length) return;
+
+    const directMatch = cell.entries.find((entry) =>
+      (entry.employees || []).includes(this.currentUserId)
+    );
+    const targetLoc =
+      directMatch?.loc || (cell.entries.length === 1 ? cell.entries[0].loc : '');
+    if (!targetLoc) return;
+
+    const targetSlug = this.slugLocation(targetLoc);
+    const user = this.locations.find((loc) => {
+      const label = (loc.firstName || loc.email || 'Site').trim();
+      return this.slugLocation(label) === targetSlug;
+    });
+    if (!user || user.uid === this.selectedLocationId) return;
+
+    this.applyLocation(user);
+  }
+
   private updateTaskForceLocations(): void {
     const names = (this.locations || [])
       .map((loc) => (loc.firstName || loc.email || 'Site').trim())
@@ -345,6 +392,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   onDateChange(): void {
     this.updateDateContext();
+    this.applyInvestigatorLocationFromSchedule();
     this.filterShouldPayToday();
     const ownerId = this.selectedLocationId || this.currentUserId;
     if (ownerId) {
@@ -907,6 +955,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         });
 
         this.recomputeTaskWeekSummary();
+        this.applyInvestigatorLocationFromSchedule();
       });
 
       this.tfSubs.push(sub);
