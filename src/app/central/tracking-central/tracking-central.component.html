@@ -223,107 +223,122 @@
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
-            Parametre Global
+            Parametre Budget
           </p>
           <h3 class="mt-2 text-xl font-semibold text-slate-900">
-            Budget Emprunts du Mois (global)
+            Budget Emprunts du Mois
           </h3>
           <p class="mt-2 text-sm text-slate-600">
-            Applique un seul budget à tous les sites.
+            Choisissez un budget global pour tous les sites ou un budget par site.
           </p>
         </div>
-        <button
-          type="button"
-          (click)="saveMonthlyBudgetGlobal()"
-          [disabled]="monthlyBudgetGlobalSaving"
-          class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {{
-            monthlyBudgetGlobalSaving ? 'Sauvegarde...' : 'Enregistrer'
-          }}
-        </button>
       </div>
 
-      <div class="mt-6">
-        <label class="text-sm font-semibold text-slate-700">
-          Montant global (FC)
-          <input
-            [(ngModel)]="monthlyBudgetGlobalInput"
-            type="number"
-            class="mt-2 w-full max-w-xs rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-            placeholder="Entrez le budget"
-          />
-        </label>
-      </div>
+      <div class="mt-6 grid gap-6 lg:grid-cols-2">
+        <div class="rounded-2xl border border-slate-200/80 bg-slate-50 p-5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
+                Global
+              </p>
+              <h4 class="mt-2 text-lg font-semibold text-slate-900">
+                Appliquer à tous les sites
+              </h4>
+            </div>
+            <button
+              type="button"
+              (click)="saveMonthlyBudgetGlobal()"
+              [disabled]="monthlyBudgetGlobalSaving"
+              class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {{
+                monthlyBudgetGlobalSaving ? 'Sauvegarde...' : 'Enregistrer'
+              }}
+            </button>
+          </div>
 
-      <p
-        *ngIf="monthlyBudgetGlobalSaved"
-        class="mt-4 text-sm text-emerald-600"
-      >
-        Budget global mis à jour.
-      </p>
-    </div>
+          <div class="mt-4">
+            <label class="text-sm font-semibold text-slate-700">
+              Montant global (FC)
+              <input
+                [(ngModel)]="monthlyBudgetGlobalInput"
+                type="number"
+                class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                placeholder="Entrez le budget"
+              />
+            </label>
+          </div>
 
-    <div class="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
-            Parametre Site
-          </p>
-          <h3 class="mt-2 text-xl font-semibold text-slate-900">
-            Budget Emprunts du Mois (par site)
-          </h3>
-          <p class="mt-2 text-sm text-slate-600">
-            Valeur actuelle :
-            <strong>
-              {{ selectedBudgetLocation?.monthBudget || '—' }}
-            </strong>
-          </p>
-        </div>
-        <button
-          type="button"
-          (click)="saveMonthlyBudgetForLocation()"
-          [disabled]="monthlyBudgetLocationSaving"
-          class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {{
-            monthlyBudgetLocationSaving ? 'Sauvegarde...' : 'Enregistrer'
-          }}
-        </button>
-      </div>
-
-      <div class="mt-6 grid gap-4 md:grid-cols-2">
-        <label class="text-sm font-semibold text-slate-700">
-          Site
-          <select
-            [(ngModel)]="monthlyBudgetLocationId"
-            (ngModelChange)="onBudgetLocationChange($event)"
-            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          <p
+            *ngIf="monthlyBudgetGlobalSaved"
+            class="mt-4 text-sm text-emerald-600"
           >
-            <option value="">Choisir un site</option>
-            <option *ngFor="let user of allUsers" [value]="user.uid">
-              {{ user.firstName || user.email || user.uid }}
-            </option>
-          </select>
-        </label>
+            Budget global mis à jour.
+          </p>
+        </div>
 
-        <label class="text-sm font-semibold text-slate-700">
-          Montant (FC)
-          <input
-            [(ngModel)]="monthlyBudgetLocationInput"
-            type="number"
-            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-            placeholder="Entrez le budget"
-          />
-        </label>
+        <div class="rounded-2xl border border-slate-200/80 bg-slate-50 p-5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
+                Par site
+              </p>
+              <h4 class="mt-2 text-lg font-semibold text-slate-900">
+                Définir pour un site
+              </h4>
+              <p class="mt-2 text-sm text-slate-600">
+                Valeur actuelle :
+                <strong>
+                  {{ selectedBudgetLocation?.monthBudget || '—' }}
+                </strong>
+              </p>
+            </div>
+            <button
+              type="button"
+              (click)="saveMonthlyBudgetForLocation()"
+              [disabled]="monthlyBudgetLocationSaving"
+              class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {{
+                monthlyBudgetLocationSaving ? 'Sauvegarde...' : 'Enregistrer'
+              }}
+            </button>
+          </div>
+
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <label class="text-sm font-semibold text-slate-700">
+              Site
+              <select
+                [(ngModel)]="monthlyBudgetLocationId"
+                (ngModelChange)="onBudgetLocationChange($event)"
+                class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              >
+                <option value="">Choisir un site</option>
+                <option *ngFor="let user of allUsers" [value]="user.uid">
+                  {{ user.firstName || user.email || user.uid }}
+                </option>
+              </select>
+            </label>
+
+            <label class="text-sm font-semibold text-slate-700">
+              Montant (FC)
+              <input
+                [(ngModel)]="monthlyBudgetLocationInput"
+                type="number"
+                class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                placeholder="Entrez le budget"
+              />
+            </label>
+          </div>
+
+          <p
+            *ngIf="monthlyBudgetLocationSaved"
+            class="mt-4 text-sm text-emerald-600"
+          >
+            Budget du site mis à jour.
+          </p>
+        </div>
       </div>
-
-      <p
-        *ngIf="monthlyBudgetLocationSaved"
-        class="mt-4 text-sm text-emerald-600"
-      >
-        Budget du site mis à jour.
-      </p>
     </div>
   </div>
 </section>
