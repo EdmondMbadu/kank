@@ -101,7 +101,6 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   recoveredAwayByMonth: RecoveredAwayMonth[] = [];
   recoveredAwayTotal = 0;
   recoveredAwayByMonthAll: RecoveredAwayMonth[] = [];
-  recoveredAwayTotalAll = 0;
   recoveredAwayFilterMonth = new Date().getMonth() + 1;
   recoveredAwayFilterYear = new Date().getFullYear();
   recoveredAwayYears: number[] = [];
@@ -170,6 +169,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
     this.selectedDate = this.time.getTodaysDateYearMonthDay();
     this.updateDateContext();
+    this.recoveredAwayYears = this.time.yearsList;
 
     const userSub = this.auth.user$.subscribe((user: User | null) => {
       this.currentUserId = user?.uid ?? '';
@@ -637,12 +637,6 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       bucket.items.sort((a, b) => b.entry.createdAtISO.localeCompare(a.entry.createdAtISO))
     );
     this.recoveredAwayByMonthAll = sorted;
-    this.recoveredAwayTotalAll = total;
-    this.recoveredAwayYears = Array.from(
-      new Set(
-        sorted.map((bucket) => Number(bucket.monthKey.split('-')[0])).filter(Boolean)
-      )
-    ).sort((a, b) => b - a);
     this.applyRecoveredAwayFilter();
   }
 
@@ -651,11 +645,6 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.recoveredAwayByMonth = [];
       this.recoveredAwayTotal = 0;
       return;
-    }
-
-    const hasYear = this.recoveredAwayYears.includes(this.recoveredAwayFilterYear);
-    if (!hasYear) {
-      this.recoveredAwayFilterYear = this.recoveredAwayYears[0];
     }
 
     const monthKey = `${this.recoveredAwayFilterYear}-${String(
