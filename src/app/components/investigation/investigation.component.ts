@@ -100,6 +100,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   recoveredAwaySaving = false;
   recoveredAwayByMonth: RecoveredAwayMonth[] = [];
   recoveredAwayTotal = 0;
+  recoveredAwayByMonthAll: RecoveredAwayMonth[] = [];
+  recoveredAwayTotalAll = 0;
+  recoveredAwayFilterMonth = new Date().getMonth() + 1;
+  recoveredAwayFilterYear = new Date().getFullYear();
+  recoveredAwayYears: number[] = [];
 
   employees: Employee[] = [];
   taskForceLocations: string[] = [];
@@ -631,8 +636,37 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     sorted.forEach((bucket) =>
       bucket.items.sort((a, b) => b.entry.createdAtISO.localeCompare(a.entry.createdAtISO))
     );
-    this.recoveredAwayByMonth = sorted;
-    this.recoveredAwayTotal = total;
+    this.recoveredAwayByMonthAll = sorted;
+    this.recoveredAwayTotalAll = total;
+    this.recoveredAwayYears = Array.from(
+      new Set(
+        sorted.map((bucket) => Number(bucket.monthKey.split('-')[0])).filter(Boolean)
+      )
+    ).sort((a, b) => b - a);
+    this.applyRecoveredAwayFilter();
+  }
+
+  applyRecoveredAwayFilter(): void {
+    if (!this.recoveredAwayByMonthAll.length) {
+      this.recoveredAwayByMonth = [];
+      this.recoveredAwayTotal = 0;
+      return;
+    }
+
+    const hasYear = this.recoveredAwayYears.includes(this.recoveredAwayFilterYear);
+    if (!hasYear) {
+      this.recoveredAwayFilterYear = this.recoveredAwayYears[0];
+    }
+
+    const monthKey = `${this.recoveredAwayFilterYear}-${String(
+      this.recoveredAwayFilterMonth
+    ).padStart(2, '0')}`;
+
+    const filtered = this.recoveredAwayByMonthAll.filter(
+      (bucket) => bucket.monthKey === monthKey
+    );
+    this.recoveredAwayByMonth = filtered;
+    this.recoveredAwayTotal = filtered.reduce((sum, bucket) => sum + bucket.total, 0);
   }
 
   formatAmount(value?: string | number): string {

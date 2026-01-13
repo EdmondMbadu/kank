@@ -423,12 +423,15 @@
             Montants récupérés enregistrés par mois.
           </p>
         </div>
-        <div class="flex items-center gap-2">
-          <span
-            class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700"
-          >
-            {{ recoveredAwayTotal | number : "1.0-0" }} FC
-          </span>
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-[10px] uppercase tracking-wide text-amber-500">
+              Total sélectionné
+            </div>
+            <div class="text-lg font-extrabold text-amber-700">
+              {{ recoveredAwayTotal | number : "1.0-0" }} FC
+            </div>
+          </div>
           <svg
             class="chevron h-4 w-4 text-amber-400"
             viewBox="0 0 20 20"
@@ -443,6 +446,36 @@
         </div>
       </summary>
       <div class="space-y-6 px-6 pb-6 pt-2">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-semibold text-amber-700">Mois</span>
+            <select
+              [(ngModel)]="recoveredAwayFilterMonth"
+              (ngModelChange)="applyRecoveredAwayFilter()"
+              class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+            >
+              <option
+                *ngFor="let m of monthNames; let idx = index"
+                [ngValue]="idx + 1"
+              >
+                {{ m }}
+              </option>
+            </select>
+            <span class="text-xs font-semibold text-amber-700">Année</span>
+            <select
+              [(ngModel)]="recoveredAwayFilterYear"
+              (ngModelChange)="applyRecoveredAwayFilter()"
+              class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+            >
+              <option *ngFor="let y of recoveredAwayYears" [ngValue]="y">
+                {{ y }}
+              </option>
+            </select>
+          </div>
+          <div class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+            Total général: {{ recoveredAwayTotalAll | number : "1.0-0" }} FC
+          </div>
+        </div>
         <div
           *ngIf="recoveredAwayByMonth.length === 0"
           class="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-700"
