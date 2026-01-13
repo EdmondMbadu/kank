@@ -30,6 +30,14 @@ export class TrackingCentralComponent {
   weeklyPaymentTargetInput = '';
   weeklyPaymentTargetSaving = false;
   weeklyPaymentTargetSaved = false;
+  monthlyBudgetGlobalInput = '';
+  monthlyBudgetGlobalSaving = false;
+  monthlyBudgetGlobalSaved = false;
+  monthlyBudgetLocationId = '';
+  monthlyBudgetLocationInput = '';
+  monthlyBudgetLocationSaving = false;
+  monthlyBudgetLocationSaved = false;
+  selectedBudgetLocation?: User;
   ngOnInit(): void {
     if (this.auth.isAdmin) {
       this.auth.getAllUsersInfo().subscribe((data) => {
@@ -187,6 +195,96 @@ export class TrackingCentralComponent {
       })
       .finally(() => {
         this.weeklyPaymentTargetSaving = false;
+      });
+  }
+
+  onBudgetLocationChange(userId: string): void {
+    this.selectedBudgetLocation = this.allUsers.find(
+      (user) => user.uid === userId
+    );
+    this.monthlyBudgetLocationSaved = false;
+  }
+
+  saveMonthlyBudgetGlobal(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.monthlyBudgetGlobalSaving) return;
+    const value = Number(this.monthlyBudgetGlobalInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+    const payload = value.toString();
+    const userIds = this.allUsers.map((user) => user.uid || '').filter(Boolean);
+    if (!userIds.length) {
+      alert('Aucun site trouvé.');
+      return;
+    }
+
+    this.monthlyBudgetGlobalSaving = true;
+    this.monthlyBudgetGlobalSaved = false;
+    this.auth
+      .updateUsersFieldBulk(userIds, 'monthBudget', payload)
+      .then(() => {
+        this.monthlyBudgetGlobalSaved = true;
+        this.monthlyBudgetGlobalInput = '';
+        this.allUsers = this.allUsers.map((user) => ({
+          ...user,
+          monthBudget: payload,
+        }));
+        if (this.selectedBudgetLocation) {
+          this.selectedBudgetLocation = {
+            ...this.selectedBudgetLocation,
+            monthBudget: payload,
+          };
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to update monthly budget global:', err);
+        alert("Impossible d'enregistrer le budget global.");
+      })
+      .finally(() => {
+        this.monthlyBudgetGlobalSaving = false;
+      });
+  }
+
+  saveMonthlyBudgetForLocation(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.monthlyBudgetLocationSaving) return;
+    const value = Number(this.monthlyBudgetLocationInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+    if (!this.monthlyBudgetLocationId) {
+      alert('Choisissez un site.');
+      return;
+    }
+    const payload = value.toString();
+
+    this.monthlyBudgetLocationSaving = true;
+    this.monthlyBudgetLocationSaved = false;
+    this.auth
+      .updateUserFieldForUserId(
+        this.monthlyBudgetLocationId,
+        'monthBudget',
+        payload
+      )
+      .then(() => {
+        this.monthlyBudgetLocationSaved = true;
+        this.monthlyBudgetLocationInput = '';
+        this.allUsers = this.allUsers.map((user) =>
+          user.uid === this.monthlyBudgetLocationId
+            ? { ...user, monthBudget: payload }
+            : user
+        );
+        this.onBudgetLocationChange(this.monthlyBudgetLocationId);
+      })
+      .catch((err) => {
+        console.error('Failed to update monthly budget for location:', err);
+        alert("Impossible d'enregistrer le budget du site.");
+      })
+      .finally(() => {
+        this.monthlyBudgetLocationSaving = false;
       });
   }
 }

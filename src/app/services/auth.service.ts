@@ -1557,6 +1557,41 @@ export class AuthService {
       .then(() => {});
   }
 
+  updateUserFieldForUserId(
+    userId: string,
+    field: string,
+    value: any
+  ): Promise<void> {
+    if (!userId) {
+      return Promise.reject('Identifiant utilisateur manquant.');
+    }
+    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
+      `users/${userId}`
+    );
+    return userRef.set({ [field]: value }, { merge: true });
+  }
+
+  async updateUsersFieldBulk(
+    userIds: string[],
+    field: string,
+    value: any
+  ): Promise<void> {
+    const ids = (userIds || []).filter((id) => !!id);
+    if (!ids.length) {
+      return;
+    }
+    const chunkSize = 400; // stay under Firestore 500 ops per batch
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const batch = this.afs.firestore.batch();
+      const slice = ids.slice(i, i + chunkSize);
+      slice.forEach((id) => {
+        const ref = this.afs.doc(`users/${id}`).ref;
+        batch.set(ref, { [field]: value }, { merge: true });
+      });
+      await batch.commit();
+    }
+  }
+
   async deleteReview(
     reviewDocId: string,
     reviewToRemove: Comment,
