@@ -66,12 +66,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   weekPickerStartLabel: string = '';
   weekPickerEndLabel: string = '';
   weekPickerRangeLabel: string = '';
+  weeklyTargetFc: number = 300000;
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
   showMonthlyAmounts = false;
   showDailyAmounts = false;
+  showWeeklyAmounts = false;
   performanceEmployees: Employee[] = [];
 
   // state: all closed initially
@@ -155,6 +157,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   toggleDailyAmounts(): void {
     this.showDailyAmounts = !this.showDailyAmounts;
   }
+  toggleWeeklyAmounts(): void {
+    this.showWeeklyAmounts = !this.showWeeklyAmounts;
+  }
+
+  weeklyProgressPercent(total: number): number {
+    if (this.weeklyTargetFc === 0) return 0;
+    return Math.min(100, (total / this.weeklyTargetFc) * 100);
+  }
 
   onDailyPaymentDateChange(): void {
     // Convert yyyy-MM-dd to MM-DD-YYYY format
@@ -215,6 +225,19 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   get totalMonthlyAmountUsd(): number {
     const total = this.totalMonthlyAmount;
+    const usd = this.compute.convertCongoleseFrancToUsDollars(String(total));
+    return usd === '' ? 0 : usd;
+  }
+
+  get totalWeeklyAmount(): number {
+    return this.paidEmployeesWeek.reduce(
+      (sum, e: any) => sum + Number(e._weekTotal || 0),
+      0
+    );
+  }
+
+  get totalWeeklyAmountUsd(): number {
+    const total = this.totalWeeklyAmount;
     const usd = this.compute.convertCongoleseFrancToUsDollars(String(total));
     return usd === '' ? 0 : usd;
   }
