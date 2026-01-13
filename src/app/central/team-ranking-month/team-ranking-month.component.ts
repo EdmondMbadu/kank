@@ -38,13 +38,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
   yearsList: number[] = this.time.yearsList;
   // top-level props
   paidEmployeesToday: any[] = [];
+  paidEmployeesWeek: any[] = [];
   public excludedEmployees: any[] = []; // holds NaN or ≤ 0 employees
   public showExcludedForAdmin = false; // admin toggle to include them
 
   // team-ranking-month.component.ts (add near top-level props)
-  rankingMode: 'performance' | 'dailyPayments' | 'monthlyPayments' =
-    'dailyPayments';
+  rankingMode:
+    | 'performance'
+    | 'dailyPayments'
+    | 'weeklyPayments'
+    | 'monthlyPayments' = 'dailyPayments';
   loadingDaily = false;
+  loadingWeekly = false;
   todayKin: string = this.time.todaysDateKinshasFormat()
 
   // ===== Trophy Modal state =====
@@ -57,6 +62,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   
   // Date picker for daily payments (visible to everyone)
   selectedPaymentDate: string = this.time.getTodaysDateYearMonthDay(); // yyyy-MM-dd format for input
+  selectedWeekStartDate: string = this.time.getTodaysDateYearMonthDay();
+  weekPickerStartLabel: string = '';
+  weekPickerEndLabel: string = '';
+  weekPickerRangeLabel: string = '';
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
   loadingMonthly = false;
@@ -155,6 +164,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
     // Reload daily totals for the selected date
     if (this.rankingMode === 'dailyPayments') {
       this.loadDailyTotalsForEmployees();
+    }
+  }
+
+  onWeeklyPaymentDateChange(): void {
+    this.updateWeekPickerLabels();
+    if (this.rankingMode === 'weeklyPayments') {
+      this.loadWeeklyTotalsForEmployees();
     }
   }
 
@@ -265,6 +281,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (this.auth.isInvestigator) {
       this.rankingMode = 'performance';
     }
+    this.updateWeekPickerLabels();
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.logDebug('Locations fetched', {
@@ -881,13 +898,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   // team-ranking-month.component.ts (add these methods inside the class)
-  setRankingMode(mode: 'performance' | 'dailyPayments' | 'monthlyPayments') {
+  setRankingMode(
+    mode: 'performance' | 'dailyPayments' | 'weeklyPayments' | 'monthlyPayments'
+  ) {
     if (this.rankingMode === mode) return;
     this.logDebug('Switching ranking mode', { from: this.rankingMode, to: mode });
     this.rankingMode = mode;
 
     if (mode === 'dailyPayments') {
       this.loadDailyTotalsForEmployees();
+    } else if (mode === 'weeklyPayments') {
+      this.loadWeeklyTotalsForEmployees();
     } else if (mode === 'monthlyPayments') {
       this.loadMonthlyTotalsForEmployees();
     } else {
@@ -1006,6 +1027,196 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.paidEmployeesToday = [];
     } finally {
       this.loadingDaily = false;
+    }
+  }
+
+  private updateWeekPickerLabels(): void {
+    const baseIsoDate =
+      this.selectedWeekStartDate || this.time.getTodaysDateYearMonthDay();
+    const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
+    const { start, end } = this.getWeekBounds(dateKey);
+    this.weekPickerStartLabel = this.formatWeekDate(start);
+    this.weekPickerEndLabel = this.formatWeekDate(end);
+    this.weekPickerRangeLabel = `${this.weekPickerStartLabel} - ${this.weekPickerEndLabel}`;
+  }
+
+  private weekKeysForDate(dateKey: string): string[] {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const keys: string[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      keys.push(this.formatDateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return keys;
+  }
+
+  private getWeekBounds(dateKey: string): { start: Date; end: Date } {
+    const dateObj = this.time.toDate(dateKey);
+    const dayIndex = dateObj.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(dateObj);
+    start.setDate(dateObj.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+  }
+
+  private formatWeekDate(date: Date): string {
+    const days = [
+      'Dimanche',
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+    ];
+    const months = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+    const dayName = days[date.getDay()];
+    const monthName = months[date.getMonth()];
+    return `${dayName} ${date.getDate()} ${monthName} ${date.getFullYear()}`;
+  }
+
+  private formatDateKey(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+  }
+
+  private async loadWeeklyTotalsForEmployees() {
+    if (!this.allEmployees?.length) {
+      this.logDebug(
+        'loadWeeklyTotalsForEmployees() skipped because no active employees are available.'
+      );
+      return;
+    }
+    this.updateWeekPickerLabels();
+    const dateKey = this.time.convertDateToMonthDayYear(
+      this.selectedWeekStartDate || this.time.getTodaysDateYearMonthDay()
+    );
+    const weekKeys = this.weekKeysForDate(dateKey);
+    this.logDebug('loadWeeklyTotalsForEmployees() triggered', {
+      activeCount: this.allEmployees.length,
+      allKnownCount: this.allEmployeesAll?.length ?? 0,
+      weekKeys,
+    });
+    this.loadingWeekly = true;
+
+    try {
+      const everyone = (
+        this.allEmployeesAll?.length ? this.allEmployeesAll : this.allEmployees
+      ) as any[];
+
+      const weekTotalsById = new Map<
+        string,
+        { total: number; count: number; ownerUid: string; status: string }
+      >();
+
+      await Promise.all(
+        everyone.map(async (e) => {
+          if (!e?.uid) return;
+          const ownerUid = e?.tempUser?.uid || this.auth.currentUser.uid;
+          let sumTotal = 0;
+          let sumCount = 0;
+
+          await Promise.all(
+            weekKeys.map(async (k) => {
+              const { total, count } =
+                await this.data.getEmployeeDayTotalsForDay(ownerUid, e.uid, k);
+              sumTotal += Number(total || 0);
+              sumCount += Number(count || 0);
+            })
+          );
+
+          weekTotalsById.set(e.uid, {
+            total: sumTotal,
+            count: sumCount,
+            ownerUid,
+            status: e.status || 'Travaille',
+          });
+        })
+      );
+      this.logDebug('Weekly totals fetched', {
+        employees: weekTotalsById.size,
+        daysCount: weekKeys.length,
+      });
+
+      const adjusted = new Map<string, { total: number; count: number }>();
+      for (const e of this.allEmployees) {
+        const base = weekTotalsById.get(e.uid!) || {
+          total: 0,
+          count: 0,
+          ownerUid: e?.tempUser?.uid,
+          status: e.status,
+        };
+        adjusted.set(e.uid!, { total: base.total, count: base.count });
+      }
+
+      for (const donor of everyone) {
+        const meta = weekTotalsById.get(donor.uid!);
+        if (!meta) continue;
+
+        const isInactive = (donor.status || '') !== 'Travaille';
+        if (!isInactive) continue;
+
+        const recipient = this.findRecipientForTotals(meta.ownerUid);
+        if (!recipient) continue;
+
+        const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
+        rec.total += meta.total;
+        rec.count += meta.count;
+        adjusted.set(recipient.uid!, rec);
+      }
+
+      this.allEmployees.forEach((e: any) => {
+        const a = adjusted.get(e.uid!) || { total: 0, count: 0 };
+        e._weekTotal = a.total;
+        e._weekCount = a.count;
+        const usd = this.compute.convertCongoleseFrancToUsDollars(
+          String(a.total ?? 0)
+        );
+        e._weekTotalUsd = usd === '' ? 0 : usd;
+      });
+
+      this.allEmployees.sort((a: any, b: any) => {
+        const ta = Number(a._weekTotal || 0),
+          tb = Number(b._weekTotal || 0);
+        if (tb !== ta) return tb - ta;
+        const ca = Number(a._weekCount || 0),
+          cb = Number(b._weekCount || 0);
+        if (cb !== ca) return cb - ca;
+        const an = `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim();
+        const bn = `${b.firstName ?? ''} ${b.lastName ?? ''}`.trim();
+        return an.localeCompare(bn);
+      });
+
+      this.paidEmployeesWeek = this.allEmployees.filter(
+        (e: any) => Number(e._weekTotal || 0) > 0
+      );
+      this.logDebug('Weekly totals computed', {
+        paidCount: this.paidEmployeesWeek.length,
+      });
+    } catch (error) {
+      console.error('Failed to load weekly totals', error);
+      this.paidEmployeesWeek = [];
+    } finally {
+      this.loadingWeekly = false;
     }
   }
 
@@ -1872,6 +2083,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
     if (this.rankingMode === 'dailyPayments') {
       this.loadDailyTotalsForEmployees();
+    } else if (this.rankingMode === 'weeklyPayments') {
+      this.loadWeeklyTotalsForEmployees();
     } else if (this.rankingMode === 'monthlyPayments') {
       this.loadMonthlyTotalsForEmployees();
     } else {
