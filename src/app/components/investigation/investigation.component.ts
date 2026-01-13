@@ -582,7 +582,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   startPhoneEdit(): void {
     if (!this.activeClient) return;
     this.phoneEditValue = this.activeClient.phoneNumber ?? '';
-    this.phoneEditOpen = true;
+    this.phoneEditOpen = !this.phoneEditOpen;
   }
 
   get allActivePhones(): string[] {

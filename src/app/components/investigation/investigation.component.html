@@ -766,22 +766,22 @@
             </button>
             <div
               *ngIf="showPhoneHistory"
-              class="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+              class="mt-2 rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs text-slate-700 shadow-lg ring-1 ring-emerald-100"
             >
-              <div class="mb-1 font-semibold text-slate-500">
+              <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                 Numéros précédents
               </div>
               <ul class="space-y-1">
                 <li *ngFor="let phone of allActivePhones; let i = index">
                   <a
                     [href]="'tel:' + phone"
-                    class="hover:underline"
+                    class="rounded-md px-1 py-0.5 font-mono text-[12px] text-slate-800 hover:underline"
                   >
                     {{ displayPhone(phone) }}
                   </a>
                   <span
                     *ngIf="i === 0"
-                    class="ml-2 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
+                    class="ml-2 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200"
                   >
                     Actuel
                   </span>
