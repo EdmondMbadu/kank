@@ -756,6 +756,39 @@
           >
             {{ displayPhone(activeClient.phoneNumber) }}
           </button>
+          <div *ngIf="allActivePhones.length > 1" class="mt-1">
+            <button
+              type="button"
+              class="text-[11px] font-medium text-emerald-700 hover:text-emerald-800"
+              (click)="togglePhoneHistory()"
+            >
+              Historique ({{ allActivePhones.length }})
+            </button>
+            <div
+              *ngIf="showPhoneHistory"
+              class="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+            >
+              <div class="mb-1 font-semibold text-slate-500">
+                Numéros précédents
+              </div>
+              <ul class="space-y-1">
+                <li *ngFor="let phone of allActivePhones; let i = index">
+                  <a
+                    [href]="'tel:' + phone"
+                    class="hover:underline"
+                  >
+                    {{ displayPhone(phone) }}
+                  </a>
+                  <span
+                    *ngIf="i === 0"
+                    class="ml-2 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
+                  >
+                    Actuel
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
           <div
             *ngIf="phoneEditOpen"
             class="mt-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-center"

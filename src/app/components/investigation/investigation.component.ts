@@ -53,6 +53,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   phoneEditValue = '';
   phoneEditSaving = false;
   phoneEditOpen = false;
+  showPhoneHistory = false;
   selectedCommentImageFile?: File;
   selectedCommentImagePreview?: string;
   selectedCommentVideoFile?: File;
@@ -567,6 +568,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.clientCommentText = '';
     this.phoneEditValue = client.phoneNumber ?? '';
     this.phoneEditOpen = false;
+    this.showPhoneHistory = false;
     this.showClientModal = true;
   }
 
@@ -574,12 +576,34 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.showClientModal = false;
     this.activeClient = undefined;
     this.phoneEditOpen = false;
+    this.showPhoneHistory = false;
   }
 
   startPhoneEdit(): void {
     if (!this.activeClient) return;
     this.phoneEditValue = this.activeClient.phoneNumber ?? '';
     this.phoneEditOpen = true;
+  }
+
+  get allActivePhones(): string[] {
+    const raw = [
+      this.activeClient?.phoneNumber || '',
+      ...(this.activeClient?.previousPhoneNumbers || []),
+    ].filter(Boolean);
+
+    const norm = (value: string) => value.replace(/\D+/g, '');
+    const out: string[] = [];
+    for (const phone of raw) {
+      if (!out.some((p) => norm(p) === norm(phone))) {
+        out.push(phone);
+      }
+    }
+    return out;
+  }
+
+  togglePhoneHistory(): void {
+    if (!this.allActivePhones.length) return;
+    this.showPhoneHistory = !this.showPhoneHistory;
   }
 
   updateClientPhoneNumber(): void {
