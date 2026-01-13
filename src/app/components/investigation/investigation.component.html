@@ -167,6 +167,14 @@
                     {{ formatAmount(client.debtLeft) }} FC
                   </span>
                 </div>
+                <div class="flex flex-col gap-1">
+                  <span class="text-xs uppercase tracking-wide text-red-600">
+                    Epargne
+                  </span>
+                  <span class="text-base font-semibold text-slate-900">
+                    {{ formatAmount(client.savings) }} FC
+                  </span>
+                </div>
                 <label class="flex flex-col gap-1">
                   <span class="text-xs uppercase tracking-wide text-red-600">
                     Dette reconnue
@@ -349,6 +357,9 @@
                     >{{ formatAmount(client.debtLeft) }} FC</span
                   >
                   <span class="ml-1">dette restante</span>
+                  <div class="mt-1 text-xs text-slate-500">
+                    Epargne: {{ formatAmount(client.savings) }} FC
+                  </div>
                 </div>
               </div>
               <div class="mt-2 flex flex-wrap gap-2 text-xs">
@@ -448,6 +459,9 @@
                   >{{ formatAmount(client.debtLeft) }} FC</span
                 >
                 <span class="ml-1">dette restante</span>
+                <div class="mt-1 text-xs text-slate-500">
+                  Epargne: {{ formatAmount(client.savings) }} FC
+                </div>
               </div>
             </div>
             <div class="mt-2 flex flex-wrap gap-2 text-xs">
