@@ -249,9 +249,7 @@ export class TeamPageComponent implements OnInit {
             emp.role === 'Manager' ||
             emp.role === 'Agent' ||
             emp.role === 'Agent Marketing' ||
-            emp.role === 'Stagaire' ||
-            emp.role === 'Vérificateur' ||
-            emp.role === 'Vérificatrice'
+            emp.role === 'Stagaire'
           );
         });
       }
