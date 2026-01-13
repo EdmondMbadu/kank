@@ -82,6 +82,15 @@ export class Client {
   stars?: string;
   requestNotTosend?: string;
   transferStatus?: 'pending' | 'accepted';
+  recoveredAwayDebts?: {
+    [id: string]: {
+      amount: number;
+      createdAt: string;
+      createdAtISO: string;
+      createdById?: string;
+      createdByName?: string;
+    };
+  };
 }
 
 export class Comment {

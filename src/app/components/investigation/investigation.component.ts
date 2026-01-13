@@ -28,6 +28,26 @@ type InvestigationDayDoc = {
   updatedAt?: string;
 };
 
+type RecoveredAwayEntry = {
+  id: string;
+  amount: number;
+  createdAt: string;
+  createdAtISO: string;
+  createdById?: string;
+  createdByName?: string;
+};
+
+type RecoveredAwayMonth = {
+  monthKey: string;
+  label: string;
+  total: number;
+  items: Array<{
+    client: Client;
+    entry: RecoveredAwayEntry;
+    ownerId: string;
+  }>;
+};
+
 type TFEntry = { loc: string; employees: string[] };
 type TFCell = { iso: string; entries?: TFEntry[] };
 
@@ -76,6 +96,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   dayCommentPosting = false;
   showAllDayComments = false;
   quitteStatusFilter: 'active' | 'quitte' = 'active';
+  recoveredAwayAmountInput = '';
+  recoveredAwaySaving = false;
+  recoveredAwayByMonth: RecoveredAwayMonth[] = [];
+  recoveredAwayTotal = 0;
 
   employees: Employee[] = [];
   taskForceLocations: string[] = [];
@@ -216,6 +240,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         if (completedRequests === total) {
           this.allClients = tempClients.filter(Boolean) as Client[];
           this.refreshProblematic();
+          this.updateRecoveredAwaySummary();
         }
       });
       this.allClientsSub.add(sub);
@@ -445,7 +470,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       .trim();
   }
 
-  private isClientQuitte(client: Client): boolean {
+  isClientQuitte(client: Client): boolean {
     const normalized = this.normalizeStatus(client.vitalStatus ?? '');
     return (
       normalized === 'quitte' ||
@@ -468,6 +493,146 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const recognized = Number(recognizedRaw);
     if (Number.isNaN(recognized)) return false;
     return recognized !== debt;
+  }
+
+  recoveredAwayEntries(client?: Client): RecoveredAwayEntry[] {
+    const map = client?.recoveredAwayDebts || {};
+    return Object.entries(map)
+      .map(([id, entry]) => ({ ...entry, id }))
+      .filter((entry) => entry && Number(entry.amount || 0) > 0)
+      .sort((a, b) => b.createdAtISO.localeCompare(a.createdAtISO));
+  }
+
+  formatRecoveredAwayDate(entry: RecoveredAwayEntry): string {
+    if (entry.createdAt) {
+      return this.time.convertDateToDesiredFormat(entry.createdAt);
+    }
+    const iso = entry.createdAtISO ? new Date(entry.createdAtISO) : new Date();
+    return iso.toLocaleString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  async addRecoveredAwayEntry(): Promise<void> {
+    if (!this.activeClient?.uid || !this.isClientQuitte(this.activeClient)) {
+      return;
+    }
+    const amount = Number(this.recoveredAwayAmountInput);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+    if (this.recoveredAwaySaving) return;
+    this.recoveredAwaySaving = true;
+
+    try {
+      const ownerId =
+        this.activeClient.locationOwnerId ||
+        this.selectedLocationId ||
+        this.currentUserId;
+      const now = new Date();
+      const entry: RecoveredAwayEntry = {
+        id: `${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`,
+        amount,
+        createdAt: this.time.todaysDate(),
+        createdAtISO: now.toISOString(),
+        createdById: this.currentUserId,
+        createdByName: `${this.auth.currentUser?.firstName || ''} ${
+          this.auth.currentUser?.lastName || ''
+        }`.trim(),
+      };
+
+      const existing = this.activeClient.recoveredAwayDebts || {};
+      const updated = { ...existing, [entry.id]: entry };
+
+      if (ownerId) {
+        await this.data.updateClientInvestigationFieldsForUser(ownerId, this.activeClient.uid, {
+          recoveredAwayDebts: updated,
+        });
+      } else {
+        await this.data.updateClientInvestigationFields(this.activeClient.uid, {
+          recoveredAwayDebts: updated,
+        });
+      }
+
+      this.activeClient.recoveredAwayDebts = updated;
+      const index = this.allClients.findIndex((c) => c.uid === this.activeClient?.uid);
+      if (index >= 0) {
+        this.allClients[index] = { ...this.allClients[index], recoveredAwayDebts: updated };
+      }
+      this.recoveredAwayAmountInput = '';
+      this.updateRecoveredAwaySummary();
+    } catch (err) {
+      console.error('Failed to add recovered amount:', err);
+      alert("Une erreur s'est produite. Réessayez.");
+    } finally {
+      this.recoveredAwaySaving = false;
+    }
+  }
+
+  async removeRecoveredAwayEntry(
+    client: Client,
+    entryId: string,
+    ownerId: string
+  ): Promise<void> {
+    if (!this.auth.isAdmin || !client?.uid) return;
+    const targetOwnerId =
+      ownerId || client.locationOwnerId || this.selectedLocationId || this.currentUserId;
+    const existing = { ...(client.recoveredAwayDebts || {}) };
+    if (!existing[entryId]) return;
+    delete existing[entryId];
+
+    try {
+      await this.data.updateClientInvestigationFieldsForUser(targetOwnerId, client.uid, {
+        recoveredAwayDebts: existing,
+      });
+      client.recoveredAwayDebts = existing;
+      if (this.activeClient?.uid === client.uid) {
+        this.activeClient.recoveredAwayDebts = existing;
+      }
+      this.updateRecoveredAwaySummary();
+    } catch (err) {
+      console.error('Failed to remove recovered amount:', err);
+      alert("Impossible de supprimer cette entrée pour l'instant.");
+    }
+  }
+
+  private updateRecoveredAwaySummary(): void {
+    const months = new Map<string, RecoveredAwayMonth>();
+    let total = 0;
+
+    (this.allClients || []).forEach((client) => {
+      if (!this.isClientQuitte(client)) return;
+      const ownerId =
+        client.locationOwnerId || this.selectedLocationId || this.currentUserId;
+      this.recoveredAwayEntries(client).forEach((entry) => {
+        const date = new Date(entry.createdAtISO);
+        const monthKey = `${date.getFullYear()}-${String(
+          date.getMonth() + 1
+        ).padStart(2, '0')}`;
+        const monthLabel = `${this.monthNames[date.getMonth()]} ${date.getFullYear()}`;
+        if (!months.has(monthKey)) {
+          months.set(monthKey, { monthKey, label: monthLabel, total: 0, items: [] });
+        }
+        const bucket = months.get(monthKey)!;
+        bucket.total += Number(entry.amount || 0);
+        bucket.items.push({ client, entry, ownerId });
+        total += Number(entry.amount || 0);
+      });
+    });
+
+    const sorted = Array.from(months.values()).sort((a, b) =>
+      b.monthKey.localeCompare(a.monthKey)
+    );
+    sorted.forEach((bucket) =>
+      bucket.items.sort((a, b) => b.entry.createdAtISO.localeCompare(a.entry.createdAtISO))
+    );
+    this.recoveredAwayByMonth = sorted;
+    this.recoveredAwayTotal = total;
   }
 
   formatAmount(value?: string | number): string {
