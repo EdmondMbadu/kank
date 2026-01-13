@@ -550,6 +550,9 @@
                 [style.width.%]="weeklyPaymentProgressPercent"
               ></div>
             </div>
+            <div class="mt-1 text-[11px] text-slate-500 text-right">
+              {{ weeklyPaymentProgressPercent | number : "1.0-0" }}%
+            </div>
           </div>
 
           <div
