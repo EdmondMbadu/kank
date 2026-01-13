@@ -428,8 +428,22 @@
             <div class="text-[10px] uppercase tracking-wide text-amber-500">
               Total sélectionné
             </div>
-            <div class="text-lg font-extrabold text-amber-700">
+            <div
+              class="text-2xl font-extrabold text-amber-700 drop-shadow-sm"
+            >
               {{ recoveredAwayTotal | number : "1.0-0" }} FC
+            </div>
+            <div
+              class="mt-1 inline-flex items-center gap-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
+            >
+              Bonus potentiel
+              <span class="font-bold text-amber-900"
+                >{{ recoveredAwayBonusPercent }}%</span
+              >
+              ·
+              <span class="font-bold text-amber-900"
+                >{{ recoveredAwayBonusAmount | number : "1.0-0" }} FC</span
+              >
             </div>
           </div>
           <svg
@@ -471,6 +485,27 @@
                 {{ y }}
               </option>
             </select>
+          </div>
+          <div
+            *ngIf="auth.isAdmin"
+            class="flex flex-wrap items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-[11px] text-amber-800"
+          >
+            <span class="font-semibold">Bonus %</span>
+            <input
+              [(ngModel)]="recoveredAwayBonusInput"
+              type="number"
+              min="1"
+              step="0.1"
+              class="w-16 rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[11px] text-amber-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+            />
+            <button
+              type="button"
+              (click)="saveRecoveredAwayBonusPercent()"
+              [disabled]="recoveredAwayBonusSaving"
+              class="rounded-full bg-amber-600 px-2 py-0.5 text-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{ recoveredAwayBonusSaving ? "..." : "Enregistrer" }}
+            </button>
           </div>
         </div>
         <div

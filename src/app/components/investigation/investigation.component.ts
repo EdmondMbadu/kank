@@ -104,6 +104,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   recoveredAwayFilterMonth = new Date().getMonth() + 1;
   recoveredAwayFilterYear = new Date().getFullYear();
   recoveredAwayYears: number[] = [];
+  recoveredAwayBonusPercent = 10;
+  recoveredAwayBonusInput = '10';
+  recoveredAwayBonusAmount = 0;
+  recoveredAwayBonusSaving = false;
+  private recoveredAwayBonusSub?: Subscription;
 
   employees: Employee[] = [];
   taskForceLocations: string[] = [];
@@ -170,6 +175,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedDate = this.time.getTodaysDateYearMonthDay();
     this.updateDateContext();
     this.recoveredAwayYears = this.time.yearsList;
+    this.loadRecoveredAwayBonusPercent();
 
     const userSub = this.auth.user$.subscribe((user: User | null) => {
       this.currentUserId = user?.uid ?? '';
@@ -194,6 +200,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subs.unsubscribe();
     this.tfSubs.forEach((s) => s.unsubscribe());
+    this.recoveredAwayBonusSub?.unsubscribe();
   }
 
   private loadClientsForLocation(userId: string): void {
@@ -656,6 +663,73 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     );
     this.recoveredAwayByMonth = filtered;
     this.recoveredAwayTotal = filtered.reduce((sum, bucket) => sum + bucket.total, 0);
+    this.recomputeRecoveredAwayBonus();
+    this.loadRecoveredAwayBonusPercent();
+  }
+
+  private recoveredAwayBonusOwnerId(): string {
+    return this.selectedLocationId || this.currentUserId;
+  }
+
+  private recoveredAwayMonthKey(): string {
+    return `${this.recoveredAwayFilterYear}-${String(
+      this.recoveredAwayFilterMonth
+    ).padStart(2, '0')}`;
+  }
+
+  private loadRecoveredAwayBonusPercent(): void {
+    if (!this.recoveredAwayFilterYear || !this.recoveredAwayFilterMonth) return;
+    const ownerId = this.recoveredAwayBonusOwnerId();
+    if (!ownerId) return;
+    const docRef = this.afs.doc<{ percent?: number }>(
+      `users/${ownerId}/investigationRecoveredBonus/${this.recoveredAwayMonthKey()}`
+    );
+    this.recoveredAwayBonusSub?.unsubscribe();
+    this.recoveredAwayBonusSub = docRef.valueChanges().subscribe((doc) => {
+      const percent = Number(doc?.percent);
+      this.recoveredAwayBonusPercent = Number.isFinite(percent) && percent > 0 ? percent : 10;
+      this.recoveredAwayBonusInput = this.recoveredAwayBonusPercent.toString();
+      this.recomputeRecoveredAwayBonus();
+    });
+    this.subs.add(this.recoveredAwayBonusSub);
+  }
+
+  async saveRecoveredAwayBonusPercent(): Promise<void> {
+    if (!this.auth.isAdmin) return;
+    const percent = Number(this.recoveredAwayBonusInput);
+    if (!Number.isFinite(percent) || percent <= 0) {
+      alert('Entrez un pourcentage valide.');
+      return;
+    }
+    const ownerId = this.recoveredAwayBonusOwnerId();
+    if (!ownerId) return;
+    this.recoveredAwayBonusSaving = true;
+    try {
+      await this.afs
+        .doc(`users/${ownerId}/investigationRecoveredBonus/${this.recoveredAwayMonthKey()}`)
+        .set(
+          {
+            percent,
+            updatedAtISO: new Date().toISOString(),
+            updatedById: this.currentUserId,
+          },
+          { merge: true }
+        );
+      this.recoveredAwayBonusPercent = percent;
+      this.recomputeRecoveredAwayBonus();
+    } catch (err) {
+      console.error('Failed to save bonus percent', err);
+      alert("Impossible d'enregistrer le pourcentage.");
+    } finally {
+      this.recoveredAwayBonusSaving = false;
+    }
+  }
+
+  private recomputeRecoveredAwayBonus(): void {
+    const percent = Number(this.recoveredAwayBonusPercent) || 0;
+    this.recoveredAwayBonusAmount = Math.round(
+      (this.recoveredAwayTotal * percent) / 100
+    );
   }
 
   formatAmount(value?: string | number): string {
