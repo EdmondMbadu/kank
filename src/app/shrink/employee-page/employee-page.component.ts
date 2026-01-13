@@ -372,6 +372,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weeklyPaymentTargetFc = 300000;
   weeklyPaymentTargetReached = false;
   weeklyPaymentProgressPercent = 0;
+  private weeklyTargetSub?: Subscription;
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
   performanceActiveRange: PerformanceRangeKey = '3M';
@@ -431,10 +432,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.retrieveEmployees();
     if (this.auth.isAdmninistrator) this.isAuthorized = true;
     this.attendanceTargetDate = this.resolveAttendanceTargetDate('today');
+    this.weeklyTargetSub = this.auth.weeklyPaymentTarget$.subscribe(() => {
+      this.updateWeeklyPaymentTotals();
+    });
   }
   ngOnDestroy(): void {
     this.employeesSub?.unsubscribe();
     this.individualReviewsSub?.unsubscribe();
+    this.weeklyTargetSub?.unsubscribe();
   }
   public graphPerformance: PerformanceGraph =
     this.createEmptyPerformanceGraph();
@@ -888,6 +893,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.weeklyPaymentTargetFc = this.resolveWeeklyTargetFc() / 2;
     const baseIsoDate =
       this.weeklyPaymentStartDate || this.time.getTodaysDateYearMonthDay();
     const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
@@ -922,6 +928,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.weeklyPaymentTargetFc === 0
         ? 0
         : Math.min(100, (total / this.weeklyPaymentTargetFc) * 100);
+  }
+
+  private resolveWeeklyTargetFc(): number {
+    const userOverride = Number(this.auth.currentUser?.weeklyPaymentTargetFc);
+    if (Number.isFinite(userOverride) && userOverride > 0) {
+      return userOverride;
+    }
+
+    const globalTarget = Number(this.auth.weeklyPaymentTargetFc);
+    if (Number.isFinite(globalTarget) && globalTarget > 0) {
+      return globalTarget;
+    }
+
+    return 600000;
   }
 
   private weekKeysForDate(dateKey: string): string[] {
