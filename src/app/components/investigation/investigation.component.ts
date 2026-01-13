@@ -50,6 +50,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   showClientModal = false;
   clientCommentName = '';
   clientCommentText = '';
+  phoneEditValue = '';
+  phoneEditSaving = false;
+  phoneEditOpen = false;
   selectedCommentImageFile?: File;
   selectedCommentImagePreview?: string;
   selectedCommentVideoFile?: File;
@@ -562,12 +565,136 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.activeClient = client;
     this.clientCommentName = '';
     this.clientCommentText = '';
+    this.phoneEditValue = client.phoneNumber ?? '';
+    this.phoneEditOpen = false;
     this.showClientModal = true;
   }
 
   closeClientModal(): void {
     this.showClientModal = false;
     this.activeClient = undefined;
+    this.phoneEditOpen = false;
+  }
+
+  startPhoneEdit(): void {
+    if (!this.activeClient) return;
+    this.phoneEditValue = this.activeClient.phoneNumber ?? '';
+    this.phoneEditOpen = true;
+  }
+
+  updateClientPhoneNumber(): void {
+    if (!this.activeClient?.uid) return;
+    const newPhone = this.phoneEditValue.trim();
+    const currentPhone = (this.activeClient.phoneNumber ?? '').trim();
+    const previousPhoneNumbers = this.buildPreviousPhoneNumbers(
+      this.activeClient.previousPhoneNumbers,
+      currentPhone,
+      newPhone
+    );
+
+    if (!newPhone) {
+      alert('Veuillez saisir un numéro de téléphone.');
+      return;
+    }
+
+    if (newPhone === currentPhone) {
+      alert('Aucun changement détecté.');
+      return;
+    }
+
+    if (
+      !confirm(
+        `Confirmer la mise à jour du numéro ?\nAncien: ${
+          currentPhone || 'indisponible'
+        }\nNouveau: ${newPhone}`
+      )
+    ) {
+      return;
+    }
+
+    const ownerId =
+      this.activeClient.locationOwnerId ||
+      this.selectedLocationId ||
+      this.currentUserId;
+    const update = ownerId
+      ? this.data.updateClientInvestigationFieldsForUser(ownerId, this.activeClient.uid, {
+          phoneNumber: newPhone,
+          previousPhoneNumbers,
+        })
+      : this.data.updateClientInvestigationFields(this.activeClient.uid, {
+          phoneNumber: newPhone,
+          previousPhoneNumbers,
+        });
+
+    this.phoneEditSaving = true;
+    update
+      .then(() => {
+        this.applyPhoneNumberLocal(this.activeClient!.uid!, newPhone, ownerId);
+        this.activeClient!.phoneNumber = newPhone;
+        this.activeClient!.previousPhoneNumbers = previousPhoneNumbers;
+        this.phoneEditValue = newPhone;
+      })
+      .catch((err) => {
+        console.error('Failed to update phone number:', err);
+        alert('Impossible de mettre à jour le numéro.');
+      })
+      .finally(() => {
+        this.phoneEditSaving = false;
+      });
+  }
+
+  private applyPhoneNumberLocal(
+    clientId: string,
+    phoneNumber: string,
+    ownerId: string
+  ): void {
+    const updateList = (list: Client[]) => {
+      list.forEach((c) => {
+        if (
+          c.uid === clientId &&
+          (c.locationOwnerId ? c.locationOwnerId === ownerId : true)
+        ) {
+          const oldPhone = c.phoneNumber ?? '';
+          c.previousPhoneNumbers = this.buildPreviousPhoneNumbers(
+            c.previousPhoneNumbers,
+            oldPhone,
+            phoneNumber
+          );
+          c.phoneNumber = phoneNumber;
+        }
+      });
+    };
+
+    updateList(this.clients);
+    updateList(this.allClients);
+  }
+
+  private buildPreviousPhoneNumbers(
+    existing: string[] | undefined,
+    oldPhone: string,
+    newPhone: string
+  ): string[] {
+    const oldNorm = this.normalizePhone(oldPhone);
+    const newNorm = this.normalizePhone(newPhone);
+    const list = Array.isArray(existing) ? [...existing] : [];
+
+    if (!oldNorm || !newNorm || oldNorm === newNorm) {
+      return list;
+    }
+
+    const alreadyInList = list.some(
+      (p) => this.normalizePhone(p) === oldNorm
+    );
+
+    if (!alreadyInList && oldPhone) {
+      list.push(oldPhone);
+    }
+
+    return list;
+  }
+
+  private normalizePhone(value?: string): string {
+    return (value ?? '').replace(/\D+/g, '');
   }
 
   postClientComment(): void {
