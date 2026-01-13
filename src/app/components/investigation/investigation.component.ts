@@ -98,6 +98,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   quitteStatusFilter: 'active' | 'quitte' | 'all' = 'active';
   clientSearchTerm = '';
   filteredAllClients: Client[] = [];
+  clientCommentsExpanded: Record<string, boolean> = {};
   recoveredAwayAmountInput = '';
   recoveredAwaySaving = false;
   recoveredAwayByMonth: RecoveredAwayMonth[] = [];
@@ -797,23 +798,60 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return (a + b || '•').toUpperCase();
   }
 
-  getInvestigationComments(client: Client): Comment[] {
-    const comments = Array.isArray(client.comments) ? client.comments : [];
+  getInvestigationComments(client?: Client | null): Comment[] {
+    if (!client) return [];
+    const comments = Array.isArray(client.comments)
+      ? client.comments.filter(Boolean)
+      : [];
     const filtered = comments.filter(
       (comment) => comment && comment.source === 'investigation'
     );
     return this.sortClientComments(filtered);
   }
 
-  latestInvestigationComment(client: Client): Comment | null {
+  latestInvestigationComment(client?: Client | null): Comment | null {
     const list = this.getInvestigationComments(client);
     return list.length ? list[0] : null;
+  }
+
+  getClientComments(client?: Client | null): Comment[] {
+    if (!client) return [];
+    const comments = Array.isArray(client.comments) ? client.comments : [];
+    return this.sortClientComments(comments);
+  }
+
+  visibleClientComments(client?: Client | null): Comment[] {
+    const list = this.getClientComments(client);
+    if (!client?.uid) return list.slice(0, 3);
+    return this.isClientCommentsExpanded(client) ? list : list.slice(0, 3);
+  }
+
+  isClientCommentsExpanded(client?: Client | null): boolean {
+    if (!client?.uid) return false;
+    return !!this.clientCommentsExpanded[client.uid];
+  }
+
+  toggleClientComments(client?: Client | null): void {
+    if (!client?.uid) return;
+    this.clientCommentsExpanded[client.uid] = !this.isClientCommentsExpanded(
+      client
+    );
   }
 
   commentTime(comment: Comment | InvestigationDayComment): string {
     if (comment.timeFormatted) return comment.timeFormatted;
     if (!comment.time) return '';
     return this.time.convertDateToDesiredFormat(comment.time);
+  }
+
+  commentPreview(comment: Comment): string {
+    const text = (comment.comment ?? '').trim();
+    if (text) return text;
+    if (comment.audioUrl) return 'Audio joint';
+    if (Array.isArray(comment.attachments) && comment.attachments.length > 0) {
+      return 'Media joint';
+    }
+    return 'Commentaire vide';
   }
 
   saveDebtRecognized(client: Client): void {
