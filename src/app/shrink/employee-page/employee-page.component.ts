@@ -362,6 +362,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   totalToday: string = '';
   today: string = this.time.todaysDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
+  weeklyPaymentStartDate: string = this.time.getTodaysDateYearMonthDay();
+  weeklyPaymentStartLabel: string = '';
+  weeklyPaymentEndLabel: string = '';
+  weeklyPaymentRangeLabel: string = '';
+  weeklyPaymentTotalN = 0;
+  weeklyPaymentTotalUsd = '0';
+  weeklyPaymentCount = 0;
+  weeklyPaymentTargetFc = 300000;
+  weeklyPaymentTargetReached = false;
+  weeklyPaymentProgressPercent = 0;
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
   performanceActiveRange: PerformanceRangeKey = '3M';
@@ -862,6 +872,88 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.weekObjectiveEndLabel = this.formatWeekDate(endDate);
   }
 
+  onWeeklyPaymentDateChange(): void {
+    this.updateWeeklyPaymentTotals();
+  }
+
+  private async updateWeeklyPaymentTotals(): Promise<void> {
+    const ownerUid = this.auth.currentUser?.uid;
+    const empUid = this.employee?.uid;
+    if (!ownerUid || !empUid) {
+      this.weeklyPaymentTotalN = 0;
+      this.weeklyPaymentTotalUsd = '0';
+      this.weeklyPaymentCount = 0;
+      this.weeklyPaymentTargetReached = false;
+      this.weeklyPaymentProgressPercent = 0;
+      return;
+    }
+
+    const baseIsoDate =
+      this.weeklyPaymentStartDate || this.time.getTodaysDateYearMonthDay();
+    const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
+    const { start, end } = this.getWeekBounds(dateKey);
+    this.weeklyPaymentStartLabel = this.formatWeekDate(start);
+    this.weeklyPaymentEndLabel = this.formatWeekDate(end);
+    this.weeklyPaymentRangeLabel = `${this.weeklyPaymentStartLabel} - ${this.weeklyPaymentEndLabel}`;
+
+    const weekKeys = this.weekKeysForDate(dateKey);
+    let total = 0;
+    let count = 0;
+
+    await Promise.all(
+      weekKeys.map(async (key) => {
+        const res = await this.data.getEmployeeDayTotalsForDay(
+          ownerUid,
+          empUid,
+          key
+        );
+        total += Number(res?.total || 0);
+        count += Number(res?.count || 0);
+      })
+    );
+
+    this.weeklyPaymentTotalN = total;
+    this.weeklyPaymentCount = count;
+    this.weeklyPaymentTotalUsd = this.compute
+      .convertCongoleseFrancToUsDollars(String(total))
+      .toString();
+    this.weeklyPaymentTargetReached = total >= this.weeklyPaymentTargetFc;
+    this.weeklyPaymentProgressPercent =
+      this.weeklyPaymentTargetFc === 0
+        ? 0
+        : Math.min(100, (total / this.weeklyPaymentTargetFc) * 100);
+  }
+
+  private weekKeysForDate(dateKey: string): string[] {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const keys: string[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      keys.push(this.formatDateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return keys;
+  }
+
+  private getWeekBounds(dateKey: string): { start: Date; end: Date } {
+    const dateObj = this.time.toDate(dateKey);
+    const dayIndex = dateObj.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(dateObj);
+    start.setDate(dateObj.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+  }
+
+  private formatDateKey(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+  }
+
   addObjectiveWeekDeduction() {
     if (!this.weekObjectiveStartDate) {
       alert('Sélectionnez la date de début de semaine.');
@@ -1038,6 +1130,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.preposition = this.time.findPrepositionStartWithVowelOrConsonant(
           this.time.monthFrenchNames[this.givenMonth - 1]
         );
+        await this.updateWeeklyPaymentTotals();
 
         this.maxRange = Object.keys(this.employee.dailyPoints!).length;
         if (this.employee.role === 'Manager') {
