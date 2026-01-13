@@ -63,6 +63,14 @@
         </button>
         <button
           type="button"
+          (click)="setQuitteStatusFilter('all')"
+          [ngClass]="quitteStatusButtonClasses('all')"
+          class="rounded-full px-5 py-2 transition"
+        >
+          Tous
+        </button>
+        <button
+          type="button"
           (click)="setQuitteStatusFilter('quitte')"
           [ngClass]="quitteStatusButtonClasses('quitte')"
           class="rounded-full px-5 py-2 transition"
@@ -206,17 +214,25 @@
       >
         <div>
           <h3 class="text-lg font-semibold text-slate-900">
-            Vérification du jour
+            {{ quitteStatusFilter === "all" ? "Tous les clients" : "Vérification du jour" }}
           </h3>
           <p class="text-xs text-slate-500">
-            Clients programmés pour payer aujourd'hui.
+            {{
+              quitteStatusFilter === "all"
+                ? "Liste complète des clients, tous jours confondus."
+                : "Clients programmés pour payer aujourd'hui."
+            }}
           </p>
         </div>
         <div class="flex items-center gap-2">
           <span
             class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
           >
-            {{ shouldPayToday.length }}
+            {{
+              quitteStatusFilter === "all"
+                ? filteredAllClients.length
+                : shouldPayToday.length
+            }}
           </span>
           <svg
             class="chevron h-4 w-4 text-slate-400"
@@ -232,14 +248,108 @@
         </div>
       </summary>
       <div class="px-6 pb-6 pt-2">
+        <div *ngIf="quitteStatusFilter === 'all'" class="space-y-4">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm text-slate-600">
+              Recherchez par nom, prénom ou numéro de téléphone.
+            </p>
+            <div class="relative w-full sm:w-72">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="M21 21l-4.35-4.35"></path>
+                </svg>
+              </div>
+              <input
+                [(ngModel)]="clientSearchTerm"
+                (ngModelChange)="onClientSearchChange()"
+                type="text"
+                placeholder="Nom, prénom, téléphone..."
+                class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 pl-9 text-sm text-slate-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+            </div>
+          </div>
+          <div
+            *ngIf="filteredAllClients.length === 0"
+            class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"
+          >
+            Aucun client trouvé.
+          </div>
+          <div
+            *ngIf="filteredAllClients.length > 0"
+            class="max-h-[360px] space-y-3 overflow-y-auto pr-2"
+          >
+            <button
+              *ngFor="let client of filteredAllClients"
+              type="button"
+              (click)="openClientModal(client)"
+              class="w-full rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50"
+            >
+              <div
+                class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div class="flex items-center gap-3">
+                  <ng-container *ngIf="client.profilePicture?.downloadURL; else allInitials">
+                    <img
+                      [src]="client.profilePicture?.downloadURL"
+                      alt="Photo client"
+                      class="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow"
+                    />
+                  </ng-container>
+                  <ng-template #allInitials>
+                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-700 ring-2 ring-white shadow">
+                      {{ clientInitials(client) }}
+                    </div>
+                  </ng-template>
+                  <div>
+                    <p class="text-base font-semibold text-slate-900">
+                      {{ client.firstName }} {{ client.lastName }}
+                      <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                        {{ client.locationName || "Site" }}
+                      </span>
+                    </p>
+                    <p class="text-sm text-slate-600">
+                      {{ displayPhone(client.phoneNumber) }}
+                    </p>
+                  </div>
+                </div>
+                <div class="text-sm text-slate-600">
+                  <span class="font-semibold text-slate-900"
+                    >{{ formatAmount(client.debtLeft) }} FC</span
+                  >
+                  <span class="ml-1">dette restante</span>
+                </div>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                <span class="rounded-full bg-slate-100 px-2 py-1 text-slate-600">
+                  Jour: {{ displayPaymentDay(client.paymentDay) }}
+                </span>
+                <span
+                  *ngIf="isProblematic(client)"
+                  class="rounded-full bg-red-100 px-2 py-1 text-red-700"
+                >
+                  Problématique
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
         <div
-          *ngIf="shouldPayToday.length === 0"
+          *ngIf="quitteStatusFilter !== 'all' && shouldPayToday.length === 0"
           class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600"
         >
           Aucun client programme aujourd'hui.
         </div>
         <div
-          *ngIf="shouldPayToday.length > 0"
+          *ngIf="quitteStatusFilter !== 'all' && shouldPayToday.length > 0"
           class="max-h-[320px] space-y-3 overflow-y-auto pr-2"
         >
           <button

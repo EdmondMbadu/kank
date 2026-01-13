@@ -95,7 +95,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   dayCommentText = '';
   dayCommentPosting = false;
   showAllDayComments = false;
-  quitteStatusFilter: 'active' | 'quitte' = 'active';
+  quitteStatusFilter: 'active' | 'quitte' | 'all' = 'active';
+  clientSearchTerm = '';
+  filteredAllClients: Client[] = [];
   recoveredAwayAmountInput = '';
   recoveredAwaySaving = false;
   recoveredAwayByMonth: RecoveredAwayMonth[] = [];
@@ -216,6 +218,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       }));
       this.assignTrackingIds();
       this.filterShouldPayToday();
+      this.filterAllClients();
     });
     this.subs.add(this.clientsSub);
   }
@@ -417,6 +420,35 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     );
   }
 
+  private filterAllClients(): void {
+    const term = this.clientSearchTerm.trim().toLowerCase();
+    const base = this.clients.filter((client) => this.matchesQuitteFilter(client));
+
+    if (!term) {
+      this.filteredAllClients = base;
+      return;
+    }
+
+    this.filteredAllClients = base.filter((client) =>
+      this.matchesClientSearch(client, term)
+    );
+  }
+
+  private matchesClientSearch(client: Client, term: string): boolean {
+    const fields = [
+      client.firstName,
+      client.lastName,
+      client.middleName,
+      client.phoneNumber,
+      client.amountPaid?.toString(),
+      client.debtLeft?.toString(),
+    ];
+
+    return fields.some((value) =>
+      value ? value.toLowerCase().includes(term) : false
+    );
+  }
+
   private updateDateContext(): void {
     if (this.selectedDate) {
       this.dayKey = this.time.convertDateToMonthDayYear(this.selectedDate);
@@ -449,18 +481,23 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     );
   }
 
-  setQuitteStatusFilter(mode: 'active' | 'quitte'): void {
+  setQuitteStatusFilter(mode: 'active' | 'quitte' | 'all'): void {
     if (this.quitteStatusFilter === mode) return;
     this.quitteStatusFilter = mode;
     this.filterShouldPayToday();
     this.refreshProblematic();
+    this.filterAllClients();
   }
 
-  isQuitteStatusFilter(mode: 'active' | 'quitte'): boolean {
+  onClientSearchChange(): void {
+    this.filterAllClients();
+  }
+
+  isQuitteStatusFilter(mode: 'active' | 'quitte' | 'all'): boolean {
     return this.quitteStatusFilter === mode;
   }
 
-  quitteStatusButtonClasses(mode: 'active' | 'quitte') {
+  quitteStatusButtonClasses(mode: 'active' | 'quitte' | 'all') {
     return {
       'bg-emerald-600 text-white shadow': this.isQuitteStatusFilter(mode),
       'text-slate-600 hover:bg-slate-100': !this.isQuitteStatusFilter(mode),
@@ -468,6 +505,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private matchesQuitteFilter(client: Client): boolean {
+    if (this.quitteStatusFilter === 'all') {
+      return true;
+    }
     if (this.quitteStatusFilter === 'quitte') {
       return this.isClientQuitte(client);
     }
