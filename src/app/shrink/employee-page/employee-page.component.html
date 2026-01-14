@@ -2389,7 +2389,7 @@
     <div class="space-y-4 p-6">
       <h2 class="font-bold">
         {{ employee.firstName }} {{ employee.lastName }} Bonus
-        {{ time.monthFrenchNames[lastMonth - 1] }} {{ year }}
+        {{ time.monthFrenchNames[lastMonth - 1] }} {{ lastMonthYear }}
       </h2>
       <div class="space-y-2">
         <dl
@@ -2542,7 +2542,7 @@
     <div class="space-y-4 p-6">
       <h2 class="font-bold">
         {{ employee.firstName }} {{ employee.lastName }} Paiement
-        {{ time.monthFrenchNames[lastMonth] }} {{ year }}
+        {{ time.monthFrenchNames[currentMonth - 1] }} {{ year }}
       </h2>
       <div class="space-y-2">
         <dl

@@ -324,7 +324,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
-  lastMonth: number = this.currentMonth - 1;
+  lastMonth: number = this.currentMonth === 1 ? 12 : this.currentMonth - 1;
+  lastMonthYear: number =
+    this.currentMonth === 1
+      ? this.currentDate.getFullYear() - 1
+      : this.currentDate.getFullYear();
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
   contractYear: number = this.year;
