@@ -88,6 +88,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     {
       id: 'client_disagrees',
       label: 'Le client ne reconnait pas la dette du systeme.',
+      text: 'Le client ne reconnait pas la dette du systeme.',
       children: [
         {
           id: 'client_disagrees_agent_received',
@@ -978,7 +979,16 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
 
     if (preset.text) {
-      this.clientCommentText = preset.text;
+      let text = preset.text;
+      if (this.activeClientCommentPresetGroupId) {
+        const parent = this.clientCommentPresets.find(
+          (item) => item.id === this.activeClientCommentPresetGroupId
+        );
+        if (parent?.text) {
+          text = `${parent.text} ${preset.text}`;
+        }
+      }
+      this.clientCommentText = text;
     }
     this.selectedClientCommentPresetId = preset.id;
     this.activeClientCommentPresetGroupId = '';
