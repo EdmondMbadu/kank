@@ -21,6 +21,13 @@ type InvestigationDayComment = {
   timeFormatted?: string;
 };
 
+type CommentPreset = {
+  id: string;
+  label: string;
+  text?: string;
+  children?: CommentPreset[];
+};
+
 type InvestigationDayDoc = {
   dateKey?: string;
   summary?: string;
@@ -70,6 +77,40 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   showClientModal = false;
   clientCommentName = '';
   clientCommentText = '';
+  activeClientCommentPresetGroupId = '';
+  selectedClientCommentPresetId = '';
+  readonly clientCommentPresets: CommentPreset[] = [
+    {
+      id: 'all_ok',
+      label: 'Tout est en ordre',
+      text: 'Tout est en ordre (clients, carnets, systeme reconnait la dette).',
+    },
+    {
+      id: 'client_disagrees',
+      label: 'Le client ne reconnait pas la dette du systeme.',
+      children: [
+        {
+          id: 'client_disagrees_agent_received',
+          label:
+            "Agent de la fondation a eu l'argent, mais n'a pas mis dans le systeme.",
+          text: "Agent de la fondation a eu l'argent, mais n'a pas mis dans le systeme.",
+        },
+        {
+          id: 'client_disagrees_agent_ack',
+          label:
+            "Agent de la fondation reconnait le probleme. (Raison du probleme c'est: ...)",
+          text: "Agent de la fondation reconnait le probleme. (Raison du probleme c'est: ...)",
+        },
+        {
+          id: 'client_disagrees_need_verification',
+          label:
+            "L'agent de la fondation et le client ne sont pas d'accord. Ce cas necessite plus d'information et de verification.",
+          text:
+            "L'agent de la fondation et le client ne sont pas d'accord. Ce cas necessite plus d'information et de verification.",
+        },
+      ],
+    },
+  ];
   phoneEditValue = '';
   phoneEditSaving = false;
   phoneEditOpen = false;
@@ -906,6 +947,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.activeClient = client;
     this.clientCommentName = '';
     this.clientCommentText = '';
+    this.activeClientCommentPresetGroupId = '';
+    this.selectedClientCommentPresetId = '';
     this.phoneEditValue = client.phoneNumber ?? '';
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
@@ -917,6 +960,47 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.activeClient = undefined;
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
+  }
+
+  get activeClientCommentPresetChildren(): CommentPreset[] {
+    if (!this.activeClientCommentPresetGroupId) return [];
+    const group = this.clientCommentPresets.find(
+      (preset) => preset.id === this.activeClientCommentPresetGroupId
+    );
+    return group?.children ?? [];
+  }
+
+  selectClientCommentPreset(preset: CommentPreset): void {
+    if (preset.children?.length) {
+      this.activeClientCommentPresetGroupId = preset.id;
+      this.selectedClientCommentPresetId = '';
+      return;
+    }
+
+    if (preset.text) {
+      this.clientCommentText = preset.text;
+    }
+    this.selectedClientCommentPresetId = preset.id;
+    this.activeClientCommentPresetGroupId = '';
+  }
+
+  clientCommentPresetButtonClass(preset: CommentPreset): string {
+    const isActiveGroup = preset.id === this.activeClientCommentPresetGroupId;
+    const isSelected = preset.id === this.selectedClientCommentPresetId;
+    const isActive = isActiveGroup || isSelected;
+    return [
+      'rounded-lg',
+      'border',
+      'px-3',
+      'py-2',
+      'text-left',
+      'text-xs',
+      'font-semibold',
+      'transition',
+      isActive
+        ? 'border-emerald-400 bg-emerald-50 text-emerald-800'
+        : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/60',
+    ].join(' ');
   }
 
   startPhoneEdit(): void {
