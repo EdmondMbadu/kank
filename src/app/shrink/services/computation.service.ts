@@ -641,11 +641,8 @@ export class ComputationService {
       }
     });
 
-    // Sort by reserve amount in dollars in descending order
-    results.sort(
-      (a, b) =>
-        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
-    );
+    // Sort by base currency (CDF) to avoid FX rounding affecting rankings
+    results.sort((a, b) => b.totalReserve - a.totalReserve);
     return results;
   }
 
@@ -686,10 +683,8 @@ export class ComputationService {
       }
     });
 
-    results.sort(
-      (a, b) =>
-        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
-    );
+    // Sort by base currency (CDF) to avoid FX rounding affecting rankings
+    results.sort((a, b) => b.totalReserve - a.totalReserve);
     return results;
   }
 
@@ -755,10 +750,8 @@ export class ComputationService {
       }
     });
 
-    results.sort(
-      (a, b) =>
-        parseInt(b.totalReserveInDollars) - parseInt(a.totalReserveInDollars)
-    );
+    // Sort by base currency (CDF) to avoid FX rounding affecting rankings
+    results.sort((a, b) => b.totalReserve - a.totalReserve);
     return results;
   }
 
