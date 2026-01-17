@@ -656,6 +656,66 @@
       </div>
     </div>
 
+    <div class="px-5 pb-2">
+      <div
+        class="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-amber-100/40 p-4 text-[11px] text-slate-700 shadow-sm"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 font-semibold text-slate-800">
+            <span
+              class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-200/70 text-amber-900"
+              >!</span
+            >
+            <span>Semaines sous objectif</span>
+          </div>
+          <span
+            class="rounded-full bg-amber-900 px-2.5 py-0.5 text-[10px] font-semibold text-amber-50"
+          >
+            -$5 / personne (deduction)
+          </span>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-600">
+          Deduction appliquee uniquement apres fin de semaine.
+        </div>
+
+        <div class="mt-2 space-y-2" *ngIf="weeklyShortfalls.length > 0; else noWeeklyShortfalls">
+          <div
+            *ngFor="let w of weeklyShortfalls"
+            class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white/80 px-3 py-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.5)]"
+          >
+            <div class="min-w-0 flex items-start gap-2">
+              <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-rose-500"></span>
+              <div>
+                <div class="text-[12px] font-semibold text-slate-800">
+                  {{ w.label }}
+                </div>
+                <div class="text-[10px] text-rose-600">
+                  Deduction appliquee
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-[12px] font-semibold text-slate-900">
+                <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else weeklyShortfallHidden">
+                  FC&nbsp;{{ w.totalFc | number : "1.0-0" }}
+                  <span class="mx-1 text-slate-300">·</span>
+                  $&nbsp;{{ w.totalUsd | number : "1.0-0" }}
+                </ng-container>
+                <ng-template #weeklyShortfallHidden>•••</ng-template>
+              </div>
+              <div class="text-[10px] text-slate-500">Sous objectif</div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noWeeklyShortfalls>
+          <div class="mt-2 text-[11px] text-slate-500">
+            Aucune semaine en dessous du minimum.
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
     <div class="px-5 pb-5 text-[11px] text-slate-500 dark:text-slate-400">
       Semaine sélectionnée : {{ weekPickerRangeLabel }}
     </div>

@@ -17,6 +17,14 @@ interface Receipt {
   frenchDate: string;
   amount?: number;
 }
+interface WeeklyShortfall {
+  start: Date;
+  end: Date;
+  label: string;
+  totalFc: number;
+  totalUsd: number;
+  isComplete: boolean;
+}
 @Component({
   selector: 'app-today',
   templateUrl: './today.component.html',
@@ -112,6 +120,7 @@ export class TodayComponent {
   weekPickerTotalDollars: string = '0';
   weekPickerTargetReached: boolean = false;
   weekPickerProgressPercent: number = 0;
+  weeklyShortfalls: WeeklyShortfall[] = [];
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -461,6 +470,66 @@ export class TodayComponent {
     return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
   }
 
+  private formatWeekShortLabel(start: Date, end: Date): string {
+    const months = [
+      'Janvier',
+      'Fevrier',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Aout',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Decembre',
+    ];
+    const monthName = months[start.getMonth()];
+    return `${start.getDate()}-${end.getDate()} ${monthName} ${start.getFullYear()}`;
+  }
+
+  private computeMonthlyWeeklyShortfalls() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const lastDay = new Date(year, month + 1, 0);
+    const shortfalls: WeeklyShortfall[] = [];
+
+    for (let day = 1; day <= lastDay.getDate(); day += 1) {
+      const start = new Date(year, month, day);
+      if (start.getDay() !== 1) continue; // Monday only
+
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      if (end.getMonth() !== month) continue; // skip weeks crossing months
+      if (start > today) continue; // skip future weeks
+
+      const totalFc = this.computeWeeklyPaymentTotal(
+        this.formatDateKey(start)
+      );
+      if (totalFc >= this.weeklyTargetFc) continue;
+
+      const totalUsd = Number(
+        this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
+      );
+      const isComplete = today > end;
+      if (!isComplete) continue; // current week isn't deducted yet
+
+      shortfalls.push({
+        start,
+        end,
+        label: this.formatWeekShortLabel(start, end),
+        totalFc,
+        totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
+        isComplete,
+      });
+    }
+
+    this.weeklyShortfalls = shortfalls;
+  }
+
   private recomputeMoneyInHandsTrace() {
     const n = (x: any) => Number(x) || 0;
 
@@ -580,6 +649,7 @@ export class TodayComponent {
             (this.weeklyPaymentTotalN / this.weeklyTargetFc) * 100
           );
     this.updateWeekPickerTotals();
+    this.computeMonthlyWeeklyShortfalls();
   }
 
   async setWeeklyTargetForUser() {
