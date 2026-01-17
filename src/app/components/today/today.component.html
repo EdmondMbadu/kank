@@ -1065,80 +1065,106 @@
 
 <!-- ╭─ Summary cards ────────────────────────────────────────────────╮ -->
 <section class="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
-  <div
-    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-  >
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
     <!-- Tile #2 : « Paiement Du Jour » ----------------------------- -->
     <ng-container *ngIf="true">
       <!-- unlocked : normal link -->
       <a
         *ngIf="isPayUnlocked || auth.isAdmin"
         routerLink="{{ linkPaths[1] }}"
-        class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+        class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
       >
-        <img
-          [src]="imagePaths[1]"
-          class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
-        />
+        <div class="flex items-start gap-4">
+          <span
+            class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset bg-sky-50 text-sky-600 ring-sky-200"
+          >
+            <img
+              [src]="imagePaths[1]"
+              alt=""
+              class="h-6 w-6 object-contain"
+              loading="lazy"
+            />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[11px] uppercase tracking-wide text-slate-400">
+              Indicateur #2
+            </p>
+            <h3
+              class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
+            >
+              {{ summary[1] }}
+            </h3>
+            <div class="mt-4 space-y-1">
+              <p
+                class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
+              >
+                FC {{ summaryContent[1] | number : "1.0-0" }}
+              </p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                ≈ $ {{ valuesConvertedToDollars[1] | number : "1.0-0" }}
+              </p>
+            </div>
+          </div>
+        </div>
 
-        <h5
-          class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
-        >
-          {{ summary[1] }}
-        </h5>
+        <div class="mt-6">
+          <span
+            class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
+          >
+            Ouvrir
+            <svg
+              class="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </span>
+        </div>
 
-        <p
-          class="text-center text-lg font-bold text-green-700 dark:text-green-400"
-        >
-          FC&nbsp;{{ summaryContent[1] | number : "1.0-0" }}
-        </p>
-        <p
-          class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
-        >
-          $&nbsp;{{ valuesConvertedToDollars[1] | number : "1.0-0" }}
-        </p>
+        <div
+          class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
+        ></div>
       </a>
 
       <!-- locked : whole card is a button -->
       <button
         *ngIf="!isPayUnlocked && !auth.isAdmin"
         (click)="openCodeModal()"
-        class="group relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-5 shadow-md ring-1 ring-inset ring-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-gray-300/60 dark:from-slate-800/60 dark:to-slate-700/50 dark:ring-slate-600/50 dark:hover:ring-slate-500/60 w-full"
+        class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 w-full"
       >
-        <!-- Blurred/disabled image -->
-        <div class="mb-3 transition-all duration-300 group-hover:scale-105">
-          <img
-            [src]="imagePaths[1]"
-            class="mx-auto h-16 w-16 object-contain opacity-30 blur-[2px] filter transition-all duration-300 group-hover:opacity-40 dark:invert dark:brightness-50"
-          />
-        </div>
-
-        <!-- Title with smooth styling -->
-        <h5 class="mb-1.5 text-center text-xl font-semibold text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
-          {{ summary[1] }}
-        </h5>
-
-        <!-- Placeholder values with subtle styling -->
-        <div class="mb-2 space-y-0.5">
-          <p class="text-center text-lg font-bold text-gray-300 dark:text-gray-600">•••</p>
-          <p class="text-center text-base font-semibold text-gray-300 dark:text-gray-600">•••</p>
-        </div>
-
-        <!-- Centred padlock with enhanced styling -->
-        <div
-          class="flex items-center justify-center rounded-full bg-white/80 p-2 shadow-lg ring-2 ring-gray-200/50 transition-all duration-300 group-hover:scale-110 group-hover:bg-white group-hover:shadow-xl group-hover:ring-gray-300/70 dark:bg-slate-600/80 dark:ring-slate-500/50 dark:group-hover:bg-slate-500/80 dark:group-hover:ring-slate-400/70"
-        >
+        <div class="flex items-start gap-4 opacity-70">
           <span
-            class="text-2xl text-gray-400 transition-all duration-300 group-hover:text-gray-600 group-hover:scale-110 dark:text-gray-400 dark:group-hover:text-gray-200"
+            class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset bg-slate-100 text-slate-400 ring-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:ring-slate-700"
           >
-            🔒
+            <img
+              [src]="imagePaths[1]"
+              alt=""
+              class="h-6 w-6 object-contain opacity-40"
+              loading="lazy"
+            />
           </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[11px] uppercase tracking-wide text-slate-400">
+              Indicateur #2
+            </p>
+            <h3 class="mt-1 text-base font-semibold text-slate-500">
+              {{ summary[1] }}
+            </h3>
+            <div class="mt-4 space-y-1 text-slate-300 dark:text-slate-600">
+              <p class="text-2xl font-semibold">•••</p>
+              <p class="text-sm">•••</p>
+            </div>
+          </div>
         </div>
-
-        <!-- Subtle unlock hint -->
-        <p class="mt-1.5 text-[10px] font-medium text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
-          Cliquez pour déverrouiller
-        </p>
+        <div class="mt-6 inline-flex items-center gap-2 text-xs font-medium text-slate-400">
+          🔒 Verrouille
+        </div>
+        <div
+          class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-slate-200/60"
+        ></div>
       </button>
     </ng-container>
     <!-- ------------------------------------------------------------ -->
@@ -1148,49 +1174,51 @@
       <!-- unlocked : normal card -->
       <a
         *ngIf="isPayUnlocked || auth.isAdmin"
-        class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+        class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
       >
-        <img
-          src="../../../assets/img/daily-reimbursement.png"
-          class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
-          alt="Paiement de la Semaine"
-        />
-
-        <h5
-          class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
-        >
-          Paiement de la Semaine
-        </h5>
-
-        <p class="text-center text-[11px] text-slate-500 dark:text-slate-400">
-          Semaine : {{ weeklyRangeLabel }}
-        </p>
-
-        <p
-          class="mt-2 text-center text-lg font-bold text-green-700 dark:text-green-400"
-        >
-          FC&nbsp;{{ weeklyPaymentTotalN | number : "1.0-0" }}
-        </p>
-        <p
-          class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
-        >
-          $&nbsp;{{ weeklyPaymentTotalDollars | number : "1.0-0" }}
-        </p>
-
-        <div class="mt-3">
-          <div
-            class="flex items-center justify-between text-[11px] font-semibold"
+        <div class="flex items-start gap-4">
+          <span
+            class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset bg-amber-50 text-amber-600 ring-amber-200"
           >
-            <span class="text-slate-500 dark:text-slate-400"
-              ><strong>Minimum</strong>&nbsp;{{
-                weeklyTargetFc | number : "1.0-0"
-              }}
-              FC</span
+            <img
+              src="../../../assets/img/daily-reimbursement.png"
+              alt=""
+              class="h-6 w-6 object-contain"
+              loading="lazy"
+            />
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[11px] uppercase tracking-wide text-slate-400">
+              Indicateur #3
+            </p>
+            <h3
+              class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
             >
+              Paiement de la Semaine
+            </h3>
+            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+              Semaine : {{ weeklyRangeLabel }}
+            </p>
+            <div class="mt-3 space-y-1">
+              <p
+                class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
+              >
+                FC {{ weeklyPaymentTotalN | number : "1.0-0" }}
+              </p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                ≈ $ {{ weeklyPaymentTotalDollars | number : "1.0-0" }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="flex items-center justify-between text-[11px] font-semibold">
+            <span class="text-slate-500 dark:text-slate-400">
+              <strong>Minimum</strong>&nbsp;{{ weeklyTargetFc | number : "1.0-0" }} FC
+            </span>
             <span
-              [ngClass]="
-                weeklyTargetReached ? 'text-emerald-600' : 'text-red-600'
-              "
+              [ngClass]="weeklyTargetReached ? 'text-emerald-600' : 'text-red-600'"
             >
               {{ weeklyTargetReached ? 'Atteint' : 'À faire' }}
             </span>
@@ -1201,9 +1229,7 @@
           >
             <div
               class="h-2 rounded-full transition-all duration-300"
-              [ngClass]="
-                weeklyTargetReached ? 'bg-emerald-500' : 'bg-red-500'
-              "
+              [ngClass]="weeklyTargetReached ? 'bg-emerald-500' : 'bg-red-500'"
               [style.width.%]="weeklyProgressPercent"
             ></div>
           </div>
@@ -1212,49 +1238,48 @@
             {{ weeklyProgressPercent | number : "1.0-0" }}% atteint
           </div>
         </div>
+
+        <div
+          class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
+        ></div>
       </a>
 
       <!-- locked : whole card is a button -->
       <button
         *ngIf="!isPayUnlocked && !auth.isAdmin"
         (click)="openCodeModal()"
-        class="group relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-5 shadow-md ring-1 ring-inset ring-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-gray-300/60 dark:from-slate-800/60 dark:to-slate-700/50 dark:ring-slate-600/50 dark:hover:ring-slate-500/60 w-full"
+        class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 w-full"
       >
-        <!-- Blurred/disabled image -->
-        <div class="mb-3 transition-all duration-300 group-hover:scale-105">
-          <img
-            src="../../../assets/img/daily-reimbursement.png"
-            class="mx-auto h-16 w-16 object-contain opacity-30 blur-[2px] filter transition-all duration-300 group-hover:opacity-40 dark:invert dark:brightness-50"
-            alt="Paiement de la Semaine"
-          />
-        </div>
-
-        <!-- Title with smooth styling -->
-        <h5 class="mb-1.5 text-center text-xl font-semibold text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
-          Paiement de la Semaine
-        </h5>
-
-        <!-- Placeholder values with subtle styling -->
-        <div class="mb-2 space-y-0.5">
-          <p class="text-center text-lg font-bold text-gray-300 dark:text-gray-600">•••</p>
-          <p class="text-center text-base font-semibold text-gray-300 dark:text-gray-600">•••</p>
-        </div>
-
-        <!-- Centred padlock with enhanced styling -->
-        <div
-          class="flex items-center justify-center rounded-full bg-white/80 p-2 shadow-lg ring-2 ring-gray-200/50 transition-all duration-300 group-hover:scale-110 group-hover:bg-white group-hover:shadow-xl group-hover:ring-gray-300/70 dark:bg-slate-600/80 dark:ring-slate-500/50 dark:group-hover:bg-slate-500/80 dark:group-hover:ring-slate-400/70"
-        >
+        <div class="flex items-start gap-4 opacity-70">
           <span
-            class="text-2xl text-gray-400 transition-all duration-300 group-hover:text-gray-600 group-hover:scale-110 dark:text-gray-400 dark:group-hover:text-gray-200"
+            class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset bg-slate-100 text-slate-400 ring-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:ring-slate-700"
           >
-            🔒
+            <img
+              src="../../../assets/img/daily-reimbursement.png"
+              alt=""
+              class="h-6 w-6 object-contain opacity-40"
+              loading="lazy"
+            />
           </span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[11px] uppercase tracking-wide text-slate-400">
+              Indicateur #3
+            </p>
+            <h3 class="mt-1 text-base font-semibold text-slate-500">
+              Paiement de la Semaine
+            </h3>
+            <div class="mt-4 space-y-1 text-slate-300 dark:text-slate-600">
+              <p class="text-2xl font-semibold">•••</p>
+              <p class="text-sm">•••</p>
+            </div>
+          </div>
         </div>
-
-        <!-- Subtle unlock hint -->
-        <p class="mt-1.5 text-[10px] font-medium text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
-          Cliquez pour déverrouiller
-        </p>
+        <div class="mt-6 inline-flex items-center gap-2 text-xs font-medium text-slate-400">
+          🔒 Verrouille
+        </div>
+        <div
+          class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-slate-200/60"
+        ></div>
       </button>
     </ng-container>
     <!-- ------------------------------------------------------------ -->
@@ -1268,71 +1293,104 @@
           <a
             *ngIf="isSavingUnlocked || auth.isAdmin"
             routerLink="{{ linkPaths[7] }}"
-            class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+            class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
           >
-            <img
-              [src]="imagePaths[7]"
-              class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
-            />
+            <div class="flex items-start gap-4">
+              <span
+                class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset"
+                [ngClass]="{
+                  'bg-emerald-50 text-emerald-600 ring-emerald-200': 7 % 3 === 0,
+                  'bg-sky-50 text-sky-600 ring-sky-200': 7 % 3 === 1,
+                  'bg-amber-50 text-amber-600 ring-amber-200': 7 % 3 === 2
+                }"
+              >
+                <img
+                  [src]="imagePaths[7]"
+                  alt=""
+                  class="h-6 w-6 object-contain"
+                  loading="lazy"
+                />
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-[11px] uppercase tracking-wide text-slate-400">
+                  Indicateur #8
+                </p>
+                <h3
+                  class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
+                >
+                  {{ summary[7] }}
+                </h3>
+                <div class="mt-4 space-y-1">
+                  <p
+                    class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
+                  >
+                    FC {{ summaryContent[7] | number : "1.0-0" }}
+                  </p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    ≈ $ {{ valuesConvertedToDollars[7] | number : "1.0-0" }}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <h5
-              class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
-            >
-              {{ summary[7] }}
-            </h5>
+            <div class="mt-6">
+              <span
+                class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
+              >
+                Ouvrir
+                <svg
+                  class="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </div>
 
-            <p
-              class="text-center text-lg font-bold text-green-700 dark:text-green-400"
-            >
-              FC&nbsp;{{ summaryContent[7] | number : "1.0-0" }}
-            </p>
-            <p
-              class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
-            >
-              $&nbsp;{{ valuesConvertedToDollars[7] | number : "1.0-0" }}
-            </p>
+            <div
+              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
+            ></div>
           </a>
 
           <!-- locked : whole card is a button -->
           <button
             *ngIf="!isSavingUnlocked && !auth.isAdmin"
             (click)="openCodeModal()"
-            class="group relative flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-5 shadow-md ring-1 ring-inset ring-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-gray-300/60 dark:from-slate-800/60 dark:to-slate-700/50 dark:ring-slate-600/50 dark:hover:ring-slate-500/60 w-full"
+            class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 w-full"
           >
-            <!-- Blurred/disabled image -->
-            <div class="mb-3 transition-all duration-300 group-hover:scale-105">
-              <img
-                [src]="imagePaths[7]"
-                class="mx-auto h-16 w-16 object-contain opacity-30 blur-[2px] filter transition-all duration-300 group-hover:opacity-40 dark:invert dark:brightness-50"
-              />
-            </div>
-
-            <!-- Title with smooth styling -->
-            <h5 class="mb-1.5 text-center text-xl font-semibold text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
-              {{ summary[7] }}
-            </h5>
-
-            <!-- Placeholder values with subtle styling -->
-            <div class="mb-2 space-y-0.5">
-              <p class="text-center text-lg font-bold text-gray-300 dark:text-gray-600">•••</p>
-              <p class="text-center text-base font-semibold text-gray-300 dark:text-gray-600">•••</p>
-            </div>
-
-            <!-- Centred padlock with enhanced styling -->
-            <div
-              class="flex items-center justify-center rounded-full bg-white/80 p-2 shadow-lg ring-2 ring-gray-200/50 transition-all duration-300 group-hover:scale-110 group-hover:bg-white group-hover:shadow-xl group-hover:ring-gray-300/70 dark:bg-slate-600/80 dark:ring-slate-500/50 dark:group-hover:bg-slate-500/80 dark:group-hover:ring-slate-400/70"
-            >
+            <div class="flex items-start gap-4 opacity-70">
               <span
-                class="text-2xl text-gray-400 transition-all duration-300 group-hover:text-gray-600 group-hover:scale-110 dark:text-gray-400 dark:group-hover:text-gray-200"
+                class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset bg-slate-100 text-slate-400 ring-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:ring-slate-700"
               >
-                🔒
+                <img
+                  [src]="imagePaths[7]"
+                  alt=""
+                  class="h-6 w-6 object-contain opacity-40"
+                  loading="lazy"
+                />
               </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-[11px] uppercase tracking-wide text-slate-400">
+                  Indicateur #8
+                </p>
+                <h3 class="mt-1 text-base font-semibold text-slate-500">
+                  {{ summary[7] }}
+                </h3>
+                <div class="mt-4 space-y-1 text-slate-300 dark:text-slate-600">
+                  <p class="text-2xl font-semibold">•••</p>
+                  <p class="text-sm">•••</p>
+                </div>
+              </div>
             </div>
-
-            <!-- Subtle unlock hint -->
-            <p class="mt-1.5 text-[10px] font-medium text-gray-400 transition-colors duration-300 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
-              Cliquez pour déverrouiller
-            </p>
+            <div class="mt-6 inline-flex items-center gap-2 text-xs font-medium text-slate-400">
+              🔒 Verrouille
+            </div>
+            <div
+              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-slate-200/60"
+            ></div>
           </button>
         </ng-container>
 
@@ -1340,29 +1398,66 @@
         <ng-container *ngIf="i !== 7">
           <a
             routerLink="{{ linkPaths[i] }}"
-            class="group block rounded-2xl bg-white dark:bg-slate-800 ring-1 ring-inset ring-gray-200 dark:ring-slate-700 p-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:ring-green-400 dark:hover:ring-green-500 transition"
+            class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
           >
-            <img
-              [src]="imagePaths[i]"
-              class="mx-auto mb-4 h-16 w-16 object-contain filter dark:invert dark:brightness-125"
-            />
+            <div class="flex items-start gap-4">
+              <span
+                class="inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset"
+                [ngClass]="{
+                  'bg-emerald-50 text-emerald-600 ring-emerald-200': i % 3 === 0,
+                  'bg-sky-50 text-sky-600 ring-sky-200': i % 3 === 1,
+                  'bg-amber-50 text-amber-600 ring-amber-200': i % 3 === 2
+                }"
+              >
+                <img
+                  [src]="imagePaths[i]"
+                  alt=""
+                  class="h-6 w-6 object-contain"
+                  loading="lazy"
+                />
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-[11px] uppercase tracking-wide text-slate-400">
+                  Indicateur #{{ i + 1 }}
+                </p>
+                <h3
+                  class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
+                >
+                  {{ s }}
+                </h3>
+                <div class="mt-4 space-y-1">
+                  <p
+                    class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300"
+                  >
+                    FC {{ summaryContent[i] | number : "1.0-0" }}
+                  </p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">
+                    ≈ $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <h5
-              class="mb-2 text-center text-xl font-semibold text-gray-900 dark:text-gray-50 group-hover:text-green-700 dark:group-hover:text-green-400"
-            >
-              {{ s }}
-            </h5>
+            <div class="mt-6">
+              <span
+                class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 transition group-hover:text-emerald-700 dark:text-emerald-300 dark:group-hover:text-emerald-200"
+              >
+                Ouvrir
+                <svg
+                  class="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
+            </div>
 
-            <p
-              class="text-center text-lg font-bold text-green-700 dark:text-green-400"
-            >
-              FC&nbsp;{{ summaryContent[i] | number : "1.0-0" }}
-            </p>
-            <p
-              class="text-center text-base font-semibold text-yellow-900 dark:text-yellow-300"
-            >
-              $&nbsp;{{ valuesConvertedToDollars[i] | number : "1.0-0" }}
-            </p>
+            <div
+              class="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-transparent transition group-hover:ring-emerald-200"
+            ></div>
           </a>
         </ng-container>
       </ng-container>
