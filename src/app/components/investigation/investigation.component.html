@@ -1054,7 +1054,7 @@
       </button>
       <button
         *ngIf="auth.isAdmin"
-        class="px-3 py-1 rounded bg-indigo-600 text-white disabled:opacity-50"
+        class="px-2 py-1 rounded text-xs bg-indigo-600 text-white disabled:opacity-50"
         [disabled]="!taskPicker.entries.length"
         (click)="applyTFToWeek()"
       >
@@ -1062,7 +1062,7 @@
       </button>
       <button
         *ngIf="auth.isAdmin"
-        class="px-3 py-1 rounded bg-rose-600 text-white disabled:opacity-50"
+        class="px-2 py-1 rounded text-xs bg-rose-600 text-white disabled:opacity-50"
         [disabled]="!taskPicker.entries.length"
         (click)="removeTFForWeek()"
       >
