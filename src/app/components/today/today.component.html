@@ -674,6 +674,19 @@
             -$5 / personne
           </span>
         </div>
+        <div
+          *ngIf="auth.isAdmin"
+          class="mt-2 flex items-center justify-end gap-2 text-[10px] text-slate-600"
+        >
+          <label for="shortfallMonth" class="font-semibold">Mois</label>
+          <input
+            id="shortfallMonth"
+            type="month"
+            [(ngModel)]="selectedShortfallMonth"
+            (change)="onShortfallMonthChange()"
+            class="rounded border border-amber-200 bg-white px-2 py-1 text-[10px]"
+          />
+        </div>
         <div class="mt-1 text-[10px] text-slate-600">
           Deduction appliquee uniquement apres fin de semaine.
         </div>

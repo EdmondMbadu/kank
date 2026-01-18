@@ -75,6 +75,7 @@ export class TodayComponent {
     this.initalizeInputs();
     this.detailOpen = new Date().getHours() >= 16; // 4pm works better
     this.weekPickerStartDate = this.requestDate;
+    this.selectedShortfallMonth = this.currentMonthKey();
     this.updateWeekPickerTotals();
     this.auth.weeklyPaymentTarget$.subscribe(() => {
       this.syncWeeklyTargetFc();
@@ -121,6 +122,7 @@ export class TodayComponent {
   weekPickerTargetReached: boolean = false;
   weekPickerProgressPercent: number = 0;
   weeklyShortfalls: WeeklyShortfall[] = [];
+  selectedShortfallMonth = '';
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -492,8 +494,7 @@ export class TodayComponent {
   private computeMonthlyWeeklyShortfalls() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const { year, month } = this.resolveShortfallMonth();
     const lastDay = new Date(year, month + 1, 0);
     const shortfalls: WeeklyShortfall[] = [];
 
@@ -528,6 +529,33 @@ export class TodayComponent {
     }
 
     this.weeklyShortfalls = shortfalls;
+  }
+
+  onShortfallMonthChange(): void {
+    if (!this.auth.isAdmin) return;
+    if (!this.selectedShortfallMonth) {
+      this.selectedShortfallMonth = this.currentMonthKey();
+    }
+    this.computeMonthlyWeeklyShortfalls();
+  }
+
+  private currentMonthKey(): string {
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+  }
+
+  private resolveShortfallMonth(): { year: number; month: number } {
+    if (!this.auth.isAdmin || !this.selectedShortfallMonth) {
+      const now = new Date();
+      return { year: now.getFullYear(), month: now.getMonth() };
+    }
+    const [y, m] = this.selectedShortfallMonth.split('-').map(Number);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) {
+      const now = new Date();
+      return { year: now.getFullYear(), month: now.getMonth() };
+    }
+    return { year: y, month: m - 1 };
   }
 
   private recomputeMoneyInHandsTrace() {
