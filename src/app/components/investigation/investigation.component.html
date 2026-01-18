@@ -1061,6 +1061,14 @@
         Appliquer semaine (Lun-Sam)
       </button>
       <button
+        *ngIf="auth.isAdmin"
+        class="px-3 py-1 rounded bg-rose-600 text-white disabled:opacity-50"
+        [disabled]="!taskPicker.entries.length"
+        (click)="removeTFForWeek()"
+      >
+        Retirer semaine (Lun-Sam)
+      </button>
+      <button
         class="px-3 py-1 rounded bg-blue-600 text-white"
         (click)="saveTF()"
       >

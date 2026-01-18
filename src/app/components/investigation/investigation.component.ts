@@ -1724,6 +1724,35 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.loadTaskForceMonth();
   }
 
+  async removeTFForWeek(): Promise<void> {
+    if (!this.taskPicker.day || !this.taskPicker.entries.length) return;
+    if (!this.auth.isAdmin) return;
+    const ok = confirm(
+      'Retirer ces affectations de toute la semaine (Lun-Sam) ?'
+    );
+    if (!ok) return;
+
+    const start = this.startOfIsoWeek(this.taskPicker.day.date);
+    for (let i = 0; i < 6; i++) {
+      const date = this.addDays(start, i);
+      const iso = this.ymd(date);
+      const weekId = this.isoWeekId(date);
+      const baseEntries = this.tfCellByIso.get(iso)?.entries ?? [];
+      const map = this.removeTaskForceEntries(
+        baseEntries,
+        this.taskPicker.entries
+      );
+      await this.performance.setTaskForceDay(
+        weekId,
+        iso,
+        map && Object.keys(map).length ? map : null
+      );
+    }
+
+    this.closeTFPicker();
+    this.loadTaskForceMonth();
+  }
+
   private getISOWeek(d: Date): number {
     const t = new Date(d.getTime());
     t.setHours(0, 0, 0, 0);
@@ -1817,6 +1846,32 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       };
     });
     return map;
+  }
+
+  private removeTaskForceEntries(
+    baseEntries: TFEntry[],
+    removals: TFEntry[]
+  ): { [k: string]: { loc: string; employees: string[] } } | null {
+    const map = this.buildTaskForceMap(baseEntries);
+    removals.forEach((e) => {
+      const key = this.slugLocation(e.loc);
+      const current = map[key];
+      if (!current) return;
+      const removeEmployees = Array.isArray(e.employees) ? e.employees : [];
+      if (removeEmployees.length === 0) {
+        delete map[key];
+        return;
+      }
+      const remaining = current.employees.filter(
+        (uid) => !removeEmployees.includes(uid)
+      );
+      if (remaining.length) {
+        map[key] = { loc: current.loc, employees: remaining };
+      } else {
+        delete map[key];
+      }
+    });
+    return Object.keys(map).length ? map : null;
   }
 
   prevTaskForceMonth(): void {
