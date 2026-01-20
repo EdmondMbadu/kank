@@ -195,6 +195,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   feedbackFilterYear = new Date().getFullYear();
   feedbackYears: number[] = [];
   feedbackSummary: ClientFeedbackSummaryItem[] = [];
+  feedbackSummaryAll: ClientFeedbackSummaryItem[] = [];
   selectedFeedbackImageFile?: File;
   selectedFeedbackImagePreview?: string;
   selectedFeedbackVideoFile?: File;
@@ -446,9 +447,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
             merged.push({ ...entry, dayKey: entry.dayKey || doc?.dateKey });
           });
         });
-    this.allClientFeedbackEntries = this.sortFeedbackEntries(merged);
-    this.applyFeedbackFilter();
-  });
+        this.allClientFeedbackEntries = this.sortFeedbackEntries(merged);
+        this.feedbackSummaryAll = this.buildFeedbackSummary(
+          this.allClientFeedbackEntries
+        );
+        this.applyFeedbackFilter();
+      });
 
     this.subs.add(this.feedbackDocSub);
   }
@@ -1030,6 +1034,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     if (!this.allClientFeedbackEntries.length) {
       this.clientFeedbackEntries = [];
       this.feedbackSummary = this.buildFeedbackSummary([]);
+      this.feedbackSummaryAll = this.buildFeedbackSummary([]);
       return;
     }
 
@@ -1044,6 +1049,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     this.clientFeedbackEntries = filtered;
     this.feedbackSummary = this.buildFeedbackSummary(filtered);
+    this.feedbackSummaryAll = this.buildFeedbackSummary(
+      this.allClientFeedbackEntries
+    );
   }
 
   private feedbackEntryDate(entry: ClientFeedbackEntry): Date | null {
@@ -1765,6 +1773,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
           ...this.allClientFeedbackEntries,
           entry,
         ]);
+        this.feedbackSummaryAll = this.buildFeedbackSummary(
+          this.allClientFeedbackEntries
+        );
         this.applyFeedbackFilter();
         this.resetFeedbackForm();
         this.feedbackImageUploadUrl = '';
@@ -1818,6 +1829,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       )
       .then(() => {
         this.allClientFeedbackEntries = this.sortFeedbackEntries(remaining);
+        this.feedbackSummaryAll = this.buildFeedbackSummary(
+          this.allClientFeedbackEntries
+        );
         this.applyFeedbackFilter();
       })
       .catch((err) => {
