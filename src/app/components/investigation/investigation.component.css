@@ -6,7 +6,7 @@ details summary::-webkit-details-marker {
   display: none;
 }
 
-details[open] .chevron {
+details[open] > summary .chevron {
   transform: rotate(180deg);
 }
 
