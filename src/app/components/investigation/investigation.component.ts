@@ -171,6 +171,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   showAllDayComments = false;
   clientFeedbackEntries: ClientFeedbackEntry[] = [];
   feedbackClientId = '';
+  feedbackClientSearch = '';
   feedbackVerifierName = '';
   feedbackFinalComment = '';
   feedbackAnswers: Record<string, string> = {};
@@ -1010,6 +1011,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     });
   }
 
+  get feedbackClientMatches(): Client[] {
+    const term = this.feedbackClientSearch.trim().toLowerCase();
+    if (!term) return [];
+    return this.feedbackClientOptions.filter((client) =>
+      this.matchesFeedbackClientSearch(client, term)
+    );
+  }
+
   get visibleFeedbackEntries(): ClientFeedbackEntry[] {
     return this.showAllFeedbackEntries
       ? this.clientFeedbackEntries
@@ -1046,6 +1055,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   resetFeedbackForm(): void {
     this.feedbackClientId = '';
+    this.feedbackClientSearch = '';
     this.feedbackVerifierName = '';
     this.feedbackFinalComment = '';
     this.feedbackAnswers = {};
@@ -1055,6 +1065,31 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.clearFeedbackImage();
     this.clearFeedbackVideo();
     this.clearFeedbackAudio();
+  }
+
+  onFeedbackClientSearchChange(): void {
+    this.feedbackClientId = '';
+  }
+
+  selectFeedbackClient(client: Client): void {
+    if (!client?.uid) return;
+    this.feedbackClientId = client.uid;
+    this.feedbackClientSearch = `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim();
+  }
+
+  private matchesFeedbackClientSearch(client: Client, term: string): boolean {
+    const fields = [
+      client.firstName,
+      client.lastName,
+      client.middleName,
+      client.phoneNumber,
+      client.amountPaid?.toString(),
+      client.debtLeft?.toString(),
+    ];
+
+    return fields.some((value) =>
+      value ? value.toLowerCase().includes(term) : false
+    );
   }
 
   saveDebtRecognized(client: Client): void {
@@ -1486,7 +1521,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   postClientFeedback(): void {
     const client = this.selectedFeedbackClient;
     if (!client?.uid) {
-      alert('Veuillez sélectionner un client.');
+      alert('Veuillez sélectionner un client dans la liste.');
       return;
     }
     if (!this.feedbackVerifierName.trim()) {
@@ -1663,6 +1698,35 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       const dateB = this.time.parseFlexibleDateTime(b.time ?? '').getTime();
       return dateB - dateA;
     });
+  }
+
+  deleteClientFeedbackEntry(entry: ClientFeedbackEntry): void {
+    if (!this.auth.isAdmin) return;
+    if (!entry?.id) return;
+    if (!confirm('Supprimer cet avis client ?')) return;
+
+    const ownerId =
+      entry.clientLocationOwnerId || this.selectedLocationId || this.currentUserId;
+    if (!ownerId) return;
+
+    const updated = this.clientFeedbackEntries.filter((item) => item.id !== entry.id);
+    const docRef = this.getFeedbackDocRef(ownerId);
+    docRef
+      .set(
+        {
+          dateKey: this.dayKey,
+          entries: updated,
+          updatedAt: this.time.todaysDate(),
+        },
+        { merge: true }
+      )
+      .then(() => {
+        this.clientFeedbackEntries = this.sortFeedbackEntries(updated);
+      })
+      .catch((err) => {
+        console.error('Failed to delete client feedback:', err);
+        alert("Impossible de supprimer cet avis.");
+      });
   }
 
   private uploadCommentMediaAndPost(): void {
