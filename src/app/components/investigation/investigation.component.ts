@@ -43,6 +43,7 @@ type ClientFeedbackAnswer = {
 
 type ClientFeedbackEntry = {
   id: string;
+  dayKey?: string;
   clientId: string;
   clientName: string;
   clientLocationName: string;
@@ -177,6 +178,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   feedbackAnswers: Record<string, string> = {};
   feedbackPosting = false;
   showAllFeedbackEntries = false;
+  allClientFeedbackEntries: ClientFeedbackEntry[] = [];
+  feedbackFilterMonth = new Date().getMonth() + 1;
+  feedbackFilterYear = new Date().getFullYear();
+  feedbackYears: number[] = [];
   selectedFeedbackImageFile?: File;
   selectedFeedbackImagePreview?: string;
   selectedFeedbackVideoFile?: File;
@@ -271,7 +276,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
     this.selectedDate = this.time.getTodaysDateYearMonthDay();
     this.updateDateContext();
+    this.syncFeedbackFilterWithSelectedDate();
     this.recoveredAwayYears = this.time.yearsList;
+    this.feedbackYears = this.time.yearsList;
     this.loadRecoveredAwayBonusPercent();
 
     const userSub = this.auth.user$.subscribe((user: User | null) => {
@@ -385,17 +392,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   private initFeedbackDocForLocation(userId: string): void {
     this.feedbackDoc = this.getFeedbackDocRef(userId);
-
-    if (this.feedbackDocSub) {
-      this.feedbackDocSub.unsubscribe();
-    }
-
-    this.feedbackDocSub = this.feedbackDoc.valueChanges().subscribe((doc) => {
-      const entries = Array.isArray(doc?.entries) ? doc!.entries! : [];
-      this.clientFeedbackEntries = this.sortFeedbackEntries(entries);
-    });
-
-    this.subs.add(this.feedbackDocSub);
+    this.loadFeedbackForLocation(userId);
   }
 
   private getDayDocRef(userId?: string) {
@@ -410,6 +407,37 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return this.afs.doc<ClientFeedbackDayDoc>(
       `users/${ownerId}/clientFeedbackDays/${this.dayKey}`
     );
+  }
+
+  private getFeedbackDocRefForDay(userId: string, dayKey: string) {
+    return this.afs.doc<ClientFeedbackDayDoc>(
+      `users/${userId}/clientFeedbackDays/${dayKey}`
+    );
+  }
+
+  private loadFeedbackForLocation(userId: string): void {
+    if (this.feedbackDocSub) {
+      this.feedbackDocSub.unsubscribe();
+    }
+
+    this.feedbackDocSub = this.afs
+      .collection<ClientFeedbackDayDoc>(
+        `users/${userId}/clientFeedbackDays`
+      )
+      .valueChanges()
+      .subscribe((docs) => {
+        const merged: ClientFeedbackEntry[] = [];
+        (docs || []).forEach((doc) => {
+          const entries = Array.isArray(doc?.entries) ? doc!.entries! : [];
+          entries.forEach((entry) => {
+            merged.push({ ...entry, dayKey: entry.dayKey || doc?.dateKey });
+          });
+        });
+        this.allClientFeedbackEntries = this.sortFeedbackEntries(merged);
+        this.applyFeedbackFilter();
+      });
+
+    this.subs.add(this.feedbackDocSub);
   }
 
   private ensureDefaultLocation(): void {
@@ -429,6 +457,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.daySummary = '';
     this.dayComments = [];
     this.clientFeedbackEntries = [];
+    this.allClientFeedbackEntries = [];
     this.loadClientsForLocation(user.uid);
     this.initDayDocForLocation(user.uid);
     this.initFeedbackDocForLocation(user.uid);
@@ -592,6 +621,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   onDateChange(): void {
     this.updateDateContext();
+    this.syncFeedbackFilterWithSelectedDate();
     this.applyInvestigatorLocationFromSchedule();
     this.filterShouldPayToday();
     const ownerId = this.selectedLocationId || this.currentUserId;
@@ -975,6 +1005,42 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     if (entry.timeFormatted) return entry.timeFormatted;
     if (!entry.time) return '';
     return this.time.convertDateToDesiredFormat(entry.time);
+  }
+
+  private syncFeedbackFilterWithSelectedDate(): void {
+    const date = this.selectedDateAsLocalDate();
+    this.feedbackFilterMonth = date.getMonth() + 1;
+    this.feedbackFilterYear = date.getFullYear();
+  }
+
+  applyFeedbackFilter(): void {
+    if (!this.allClientFeedbackEntries.length) {
+      this.clientFeedbackEntries = [];
+      return;
+    }
+
+    const filtered = this.allClientFeedbackEntries.filter((entry) => {
+      const date = this.feedbackEntryDate(entry);
+      if (!date) return false;
+      return (
+        date.getMonth() + 1 === this.feedbackFilterMonth &&
+        date.getFullYear() === this.feedbackFilterYear
+      );
+    });
+
+    this.clientFeedbackEntries = filtered;
+  }
+
+  private feedbackEntryDate(entry: ClientFeedbackEntry): Date | null {
+    if (entry.time) {
+      const date = this.time.parseFlexibleDateTime(entry.time);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+    if (entry.dayKey) {
+      const date = this.time.parseFlexibleDateTime(entry.dayKey);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+    return null;
   }
 
   commentPreview(comment: Comment): string {
@@ -1616,6 +1682,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     const now = new Date();
     const time = this.time.todaysDate();
+    const dayKey = this.dayKey;
     const responses: ClientFeedbackAnswer[] = this.clientFeedbackQuestions.map(
       (q) => ({
         id: q.id,
@@ -1644,6 +1711,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     const entry: ClientFeedbackEntry = {
       id: `${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`,
+      dayKey,
       clientId: client.uid,
       clientName: this.feedbackClientLabel,
       clientLocationName: this.feedbackClientLocation,
@@ -1660,10 +1728,13 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         : {}),
     };
 
-    const updated = [...this.clientFeedbackEntries, entry];
+    const existingDayEntries = this.allClientFeedbackEntries.filter(
+      (item) => (item.dayKey || dayKey) === dayKey
+    );
+    const updated = [...existingDayEntries, entry];
     const ownerId =
       client.locationOwnerId || this.selectedLocationId || this.currentUserId;
-    const docRef = this.getFeedbackDocRef(ownerId);
+    const docRef = this.getFeedbackDocRefForDay(ownerId, dayKey);
     this.feedbackPosting = true;
     docRef
       .set(
@@ -1675,7 +1746,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         { merge: true }
       )
       .then(() => {
-        this.clientFeedbackEntries = this.sortFeedbackEntries(updated);
+        this.allClientFeedbackEntries = this.sortFeedbackEntries([
+          ...this.allClientFeedbackEntries,
+          entry,
+        ]);
+        this.applyFeedbackFilter();
         this.resetFeedbackForm();
         this.feedbackImageUploadUrl = '';
         this.feedbackVideoUploadUrl = '';
@@ -1709,19 +1784,26 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       entry.clientLocationOwnerId || this.selectedLocationId || this.currentUserId;
     if (!ownerId) return;
 
-    const updated = this.clientFeedbackEntries.filter((item) => item.id !== entry.id);
-    const docRef = this.getFeedbackDocRef(ownerId);
+    const dayKey = entry.dayKey || this.dayKey;
+    const remaining = this.allClientFeedbackEntries.filter(
+      (item) => item.id !== entry.id
+    );
+    const dayEntries = remaining.filter(
+      (item) => (item.dayKey || this.dayKey) === dayKey
+    );
+    const docRef = this.getFeedbackDocRefForDay(ownerId, dayKey);
     docRef
       .set(
         {
-          dateKey: this.dayKey,
-          entries: updated,
+          dateKey: dayKey,
+          entries: dayEntries,
           updatedAt: this.time.todaysDate(),
         },
         { merge: true }
       )
       .then(() => {
-        this.clientFeedbackEntries = this.sortFeedbackEntries(updated);
+        this.allClientFeedbackEntries = this.sortFeedbackEntries(remaining);
+        this.applyFeedbackFilter();
       })
       .catch((err) => {
         console.error('Failed to delete client feedback:', err);
