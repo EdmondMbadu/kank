@@ -35,6 +35,38 @@ type InvestigationDayDoc = {
   updatedAt?: string;
 };
 
+type ClientFeedbackAnswer = {
+  id: string;
+  question: string;
+  answer: string;
+};
+
+type ClientFeedbackEntry = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientLocationName: string;
+  clientLocationOwnerId?: string;
+  verifierName: string;
+  responses: ClientFeedbackAnswer[];
+  finalComment?: string;
+  time: string;
+  timeFormatted?: string;
+  attachments?: Array<{
+    type: 'image' | 'video';
+    url: string;
+    mimeType: string;
+    size: number;
+  }>;
+  audioUrl?: string;
+};
+
+type ClientFeedbackDayDoc = {
+  dateKey?: string;
+  entries?: ClientFeedbackEntry[];
+  updatedAt?: string;
+};
+
 type RecoveredAwayEntry = {
   id: string;
   amount: number;
@@ -137,6 +169,23 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   dayCommentText = '';
   dayCommentPosting = false;
   showAllDayComments = false;
+  clientFeedbackEntries: ClientFeedbackEntry[] = [];
+  feedbackClientId = '';
+  feedbackVerifierName = '';
+  feedbackFinalComment = '';
+  feedbackAnswers: Record<string, string> = {};
+  feedbackPosting = false;
+  showAllFeedbackEntries = false;
+  selectedFeedbackImageFile?: File;
+  selectedFeedbackImagePreview?: string;
+  selectedFeedbackVideoFile?: File;
+  selectedFeedbackVideoPreview?: string;
+  selectedFeedbackAudioFile?: File;
+  selectedFeedbackAudioPreview?: string;
+  feedbackImageUploadUrl = '';
+  feedbackVideoUploadUrl = '';
+  feedbackAudioUploadUrl = '';
+  feedbackMediaUploading = false;
   quitteStatusFilter: 'active' | 'quitte' | 'all' = 'active';
   clientSearchTerm = '';
   filteredAllClients: Client[] = [];
@@ -195,8 +244,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   year = new Date().getFullYear();
 
   private dayDoc?: AngularFirestoreDocument<InvestigationDayDoc>;
+  private feedbackDoc?: AngularFirestoreDocument<ClientFeedbackDayDoc>;
   private subs = new Subscription();
   private dayDocSub?: Subscription;
+  private feedbackDocSub?: Subscription;
   private clientsSub?: Subscription;
   private allClientsSub = new Subscription();
   private allEmployeesSub = new Subscription();
@@ -259,6 +310,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         locationName: this.selectedLocationLabel,
         locationOwnerId: userId,
       }));
+      if (this.feedbackClientId) {
+        const stillExists = this.clients.some(
+          (client) => client.uid === this.feedbackClientId
+        );
+        if (!stillExists) {
+          this.resetFeedbackForm();
+        }
+      }
       this.assignTrackingIds();
       this.filterShouldPayToday();
       this.filterAllClients();
@@ -323,10 +382,32 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.subs.add(this.dayDocSub);
   }
 
+  private initFeedbackDocForLocation(userId: string): void {
+    this.feedbackDoc = this.getFeedbackDocRef(userId);
+
+    if (this.feedbackDocSub) {
+      this.feedbackDocSub.unsubscribe();
+    }
+
+    this.feedbackDocSub = this.feedbackDoc.valueChanges().subscribe((doc) => {
+      const entries = Array.isArray(doc?.entries) ? doc!.entries! : [];
+      this.clientFeedbackEntries = this.sortFeedbackEntries(entries);
+    });
+
+    this.subs.add(this.feedbackDocSub);
+  }
+
   private getDayDocRef(userId?: string) {
     const ownerId = userId || this.selectedLocationId || this.currentUserId;
     return this.afs.doc<InvestigationDayDoc>(
       `users/${ownerId}/investigationDays/${this.dayKey}`
+    );
+  }
+
+  private getFeedbackDocRef(userId?: string) {
+    const ownerId = userId || this.selectedLocationId || this.currentUserId;
+    return this.afs.doc<ClientFeedbackDayDoc>(
+      `users/${ownerId}/clientFeedbackDays/${this.dayKey}`
     );
   }
 
@@ -346,8 +427,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedLocationLabel = user.firstName || user.email || 'Site';
     this.daySummary = '';
     this.dayComments = [];
+    this.clientFeedbackEntries = [];
     this.loadClientsForLocation(user.uid);
     this.initDayDocForLocation(user.uid);
+    this.initFeedbackDocForLocation(user.uid);
   }
 
   private selectedDateAsLocalDate(): Date {
@@ -515,6 +598,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.daySummary = '';
       this.dayComments = [];
       this.initDayDocForLocation(ownerId);
+      this.initFeedbackDocForLocation(ownerId);
     }
   }
 
@@ -886,6 +970,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return this.time.convertDateToDesiredFormat(comment.time);
   }
 
+  feedbackTime(entry: ClientFeedbackEntry): string {
+    if (entry.timeFormatted) return entry.timeFormatted;
+    if (!entry.time) return '';
+    return this.time.convertDateToDesiredFormat(entry.time);
+  }
+
   commentPreview(comment: Comment): string {
     const text = (comment.comment ?? '').trim();
     if (text) return text;
@@ -894,6 +984,77 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       return 'Media joint';
     }
     return 'Commentaire vide';
+  }
+
+  get selectedFeedbackClient(): Client | undefined {
+    return this.clients.find((client) => client.uid === this.feedbackClientId);
+  }
+
+  get feedbackClientLabel(): string {
+    const client = this.selectedFeedbackClient;
+    if (!client) return '';
+    const name = `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim();
+    return name || 'Client';
+  }
+
+  get feedbackClientLocation(): string {
+    const client = this.selectedFeedbackClient;
+    return client?.locationName || this.selectedLocationLabel || 'Site';
+  }
+
+  get feedbackClientOptions(): Client[] {
+    return [...(this.clients || [])].sort((a, b) => {
+      const nameA = `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim().toLowerCase();
+      const nameB = `${b.firstName ?? ''} ${b.lastName ?? ''}`.trim().toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+  }
+
+  get visibleFeedbackEntries(): ClientFeedbackEntry[] {
+    return this.showAllFeedbackEntries
+      ? this.clientFeedbackEntries
+      : this.clientFeedbackEntries.slice(0, 3);
+  }
+
+  readonly clientFeedbackQuestions = [
+    {
+      id: 'satisfaction_service',
+      text: 'Êtes-vous satisfait(e) du service reçu à la Fondation Gervais ?',
+      options: ['Très satisfait(e)', 'Satisfait(e)', 'Pas satisfait(e)'],
+    },
+    {
+      id: 'explication_claire',
+      text: 'Notre agent vous a-t-il expliqué les choses clairement et avec respect ?',
+      options: ['Oui', 'Moyennement', 'Non'],
+    },
+    {
+      id: 'delai_traitement',
+      text: 'Votre demande a-t-elle été traitée dans un délai raisonnable ?',
+      options: ['Oui', 'Acceptable', 'Trop lent'],
+    },
+    {
+      id: 'ecoute_serieuse',
+      text: 'Vous êtes-vous senti(e) écouté(e) et pris(e) au sérieux ?',
+      options: ['Oui', 'Pas totalement', 'Non'],
+    },
+    {
+      id: 'recommandation',
+      text: 'Recommanderiez-vous la Fondation Gervais à une autre personne ?',
+      options: ['Oui', 'Peut-être', 'Non'],
+    },
+  ];
+
+  resetFeedbackForm(): void {
+    this.feedbackClientId = '';
+    this.feedbackVerifierName = '';
+    this.feedbackFinalComment = '';
+    this.feedbackAnswers = {};
+    this.feedbackImageUploadUrl = '';
+    this.feedbackVideoUploadUrl = '';
+    this.feedbackAudioUploadUrl = '';
+    this.clearFeedbackImage();
+    this.clearFeedbackVideo();
+    this.clearFeedbackAudio();
   }
 
   saveDebtRecognized(client: Client): void {
@@ -1248,6 +1409,260 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       URL.revokeObjectURL(this.selectedCommentAudioPreview);
     }
     this.selectedCommentAudioPreview = undefined;
+  }
+
+  onFeedbackImageSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file.type.startsWith('image/')) {
+      alert('Veuillez sélectionner une image.');
+      return;
+    }
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("L'image dépasse la limite de 20MB.");
+      return;
+    }
+    this.selectedFeedbackImageFile = file;
+    this.selectedFeedbackImagePreview = URL.createObjectURL(file);
+  }
+
+  onFeedbackVideoSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file.type.startsWith('video/')) {
+      alert('Veuillez sélectionner une vidéo.');
+      return;
+    }
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('La vidéo dépasse la limite de 20MB.');
+      return;
+    }
+    this.selectedFeedbackVideoFile = file;
+    this.selectedFeedbackVideoPreview = URL.createObjectURL(file);
+  }
+
+  onFeedbackAudioSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file.type.startsWith('audio/')) {
+      alert('Veuillez sélectionner un audio.');
+      return;
+    }
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("L'audio dépasse la limite de 20MB.");
+      return;
+    }
+    this.selectedFeedbackAudioFile = file;
+    this.selectedFeedbackAudioPreview = URL.createObjectURL(file);
+  }
+
+  clearFeedbackImage(): void {
+    this.selectedFeedbackImageFile = undefined;
+    if (this.selectedFeedbackImagePreview) {
+      URL.revokeObjectURL(this.selectedFeedbackImagePreview);
+    }
+    this.selectedFeedbackImagePreview = undefined;
+  }
+
+  clearFeedbackVideo(): void {
+    this.selectedFeedbackVideoFile = undefined;
+    if (this.selectedFeedbackVideoPreview) {
+      URL.revokeObjectURL(this.selectedFeedbackVideoPreview);
+    }
+    this.selectedFeedbackVideoPreview = undefined;
+  }
+
+  clearFeedbackAudio(): void {
+    this.selectedFeedbackAudioFile = undefined;
+    if (this.selectedFeedbackAudioPreview) {
+      URL.revokeObjectURL(this.selectedFeedbackAudioPreview);
+    }
+    this.selectedFeedbackAudioPreview = undefined;
+  }
+
+  postClientFeedback(): void {
+    const client = this.selectedFeedbackClient;
+    if (!client?.uid) {
+      alert('Veuillez sélectionner un client.');
+      return;
+    }
+    if (!this.feedbackVerifierName.trim()) {
+      alert('Veuillez saisir le nom du vérificateur.');
+      return;
+    }
+
+    const missing = this.clientFeedbackQuestions.filter(
+      (q) => !this.feedbackAnswers[q.id]
+    );
+    if (missing.length) {
+      alert("Veuillez répondre à toutes les questions de satisfaction.");
+      return;
+    }
+
+    const hasText = this.feedbackFinalComment.trim().length > 0;
+    const hasImage = !!this.selectedFeedbackImageFile;
+    const hasVideo = !!this.selectedFeedbackVideoFile;
+    const hasAudio = !!this.selectedFeedbackAudioFile;
+    if (!hasText && !hasImage && !hasVideo && !hasAudio) {
+      alert('Veuillez ajouter un commentaire final ou un média.');
+      return;
+    }
+
+    if (this.feedbackMediaUploading || this.feedbackPosting) return;
+
+    if (hasImage || hasVideo || hasAudio) {
+      this.uploadFeedbackMediaAndPost();
+    } else {
+      this.finalizeFeedbackPost();
+    }
+  }
+
+  private uploadFeedbackMediaAndPost(): void {
+    const client = this.selectedFeedbackClient;
+    if (!client?.uid) return;
+    if (this.feedbackMediaUploading) return;
+
+    const ownerId =
+      client.locationOwnerId || this.selectedLocationId || this.currentUserId;
+    const userId = ownerId || this.currentUserId;
+    const time = this.time.todaysDate();
+
+    this.feedbackMediaUploading = true;
+
+    const jobs: Promise<void>[] = [];
+    if (this.selectedFeedbackImageFile) {
+      const file = this.selectedFeedbackImageFile;
+      const path = `client-feedback/images/${userId}/${client.uid}/${time}-${file.name}`;
+      jobs.push(
+        this.data.uploadCommentFile(file, path).then((url) => {
+          this.feedbackImageUploadUrl = url;
+        })
+      );
+    }
+    if (this.selectedFeedbackVideoFile) {
+      const file = this.selectedFeedbackVideoFile;
+      const path = `client-feedback/videos/${userId}/${client.uid}/${time}-${file.name}`;
+      jobs.push(
+        this.data.uploadCommentFile(file, path).then((url) => {
+          this.feedbackVideoUploadUrl = url;
+        })
+      );
+    }
+    if (this.selectedFeedbackAudioFile) {
+      const file = this.selectedFeedbackAudioFile;
+      const path = `client-feedback/audios/${userId}/${client.uid}/${time}-${file.name}`;
+      jobs.push(
+        this.data.uploadCommentFile(file, path).then((url) => {
+          this.feedbackAudioUploadUrl = url;
+        })
+      );
+    }
+
+    Promise.all(jobs)
+      .then(() => {
+        this.finalizeFeedbackPost();
+      })
+      .catch((err) => {
+        console.error('Failed to upload client feedback media:', err);
+        alert("Impossible d'envoyer le média.");
+      })
+      .finally(() => {
+        this.feedbackMediaUploading = false;
+      });
+  }
+
+  private finalizeFeedbackPost(): void {
+    const client = this.selectedFeedbackClient;
+    if (!client?.uid) return;
+    if (this.feedbackPosting) return;
+
+    const now = new Date();
+    const time = this.time.todaysDate();
+    const responses: ClientFeedbackAnswer[] = this.clientFeedbackQuestions.map(
+      (q) => ({
+        id: q.id,
+        question: q.text,
+        answer: this.feedbackAnswers[q.id],
+      })
+    );
+
+    const attachments = [];
+    if (this.feedbackImageUploadUrl) {
+      attachments.push({
+        type: 'image' as const,
+        url: this.feedbackImageUploadUrl,
+        mimeType: this.selectedFeedbackImageFile?.type || 'image/jpeg',
+        size: this.selectedFeedbackImageFile?.size || 0,
+      });
+    }
+    if (this.feedbackVideoUploadUrl) {
+      attachments.push({
+        type: 'video' as const,
+        url: this.feedbackVideoUploadUrl,
+        mimeType: this.selectedFeedbackVideoFile?.type || 'video/mp4',
+        size: this.selectedFeedbackVideoFile?.size || 0,
+      });
+    }
+
+    const entry: ClientFeedbackEntry = {
+      id: `${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`,
+      clientId: client.uid,
+      clientName: this.feedbackClientLabel,
+      clientLocationName: this.feedbackClientLocation,
+      clientLocationOwnerId:
+        client.locationOwnerId || this.selectedLocationId || this.currentUserId,
+      verifierName: this.feedbackVerifierName.trim(),
+      responses,
+      finalComment: this.feedbackFinalComment.trim(),
+      time,
+      timeFormatted: this.time.convertDateToDesiredFormat(time),
+      ...(attachments.length ? { attachments } : {}),
+      ...(this.feedbackAudioUploadUrl
+        ? { audioUrl: this.feedbackAudioUploadUrl }
+        : {}),
+    };
+
+    const updated = [...this.clientFeedbackEntries, entry];
+    const ownerId =
+      client.locationOwnerId || this.selectedLocationId || this.currentUserId;
+    const docRef = this.getFeedbackDocRef(ownerId);
+    this.feedbackPosting = true;
+    docRef
+      .set(
+        {
+          dateKey: this.dayKey,
+          entries: updated,
+          updatedAt: time,
+        },
+        { merge: true }
+      )
+      .then(() => {
+        this.clientFeedbackEntries = this.sortFeedbackEntries(updated);
+        this.resetFeedbackForm();
+        this.feedbackImageUploadUrl = '';
+        this.feedbackVideoUploadUrl = '';
+        this.feedbackAudioUploadUrl = '';
+      })
+      .catch((err) => {
+        console.error('Failed to post client feedback:', err);
+        alert("Impossible d'enregistrer l'avis du client.");
+      })
+      .finally(() => {
+        this.feedbackPosting = false;
+      });
+  }
+
+  private sortFeedbackEntries(
+    entries: ClientFeedbackEntry[]
+  ): ClientFeedbackEntry[] {
+    return [...entries].sort((a, b) => {
+      const dateA = this.time.parseFlexibleDateTime(a.time ?? '').getTime();
+      const dateB = this.time.parseFlexibleDateTime(b.time ?? '').getTime();
+      return dateB - dateA;
+    });
   }
 
   private uploadCommentMediaAndPost(): void {

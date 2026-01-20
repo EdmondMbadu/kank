@@ -772,6 +772,350 @@
       </div>
     </details>
 
+    <!-- Section: Avis des clients -->
+    <details class="rounded-2xl border border-sky-200 bg-white shadow-sm">
+      <summary
+        class="flex cursor-pointer items-center justify-between gap-4 px-6 py-4"
+      >
+        <div>
+          <h3 class="text-lg font-semibold text-slate-900">Avis des clients</h3>
+          <p class="text-xs text-slate-500">
+            Questions de satisfaction – Fondation Gervais.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span
+            class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700"
+          >
+            {{ clientFeedbackEntries.length }}
+          </span>
+          <svg
+            class="chevron h-4 w-4 text-sky-400"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.7a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </div>
+      </summary>
+      <div class="space-y-6 px-6 pb-6 pt-2">
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="flex flex-col gap-1">
+              <span class="text-xs uppercase tracking-wide text-slate-500">
+                Client
+              </span>
+              <select
+                [(ngModel)]="feedbackClientId"
+                class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+              >
+                <option value="">Selectionner un client</option>
+                <option
+                  *ngFor="let client of feedbackClientOptions"
+                  [ngValue]="client.uid"
+                >
+                  {{ client.firstName }} {{ client.lastName }}
+                  ({{ client.locationName || "Site" }})
+                </option>
+              </select>
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-xs uppercase tracking-wide text-slate-500">
+                Nom du client
+              </span>
+              <input
+                [value]="feedbackClientLabel"
+                type="text"
+                readonly
+                class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-700"
+              />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-xs uppercase tracking-wide text-slate-500">
+                Lieu
+              </span>
+              <input
+                [value]="feedbackClientLocation"
+                type="text"
+                readonly
+                class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-700"
+              />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-xs uppercase tracking-wide text-slate-500">
+                Verificateur
+              </span>
+              <input
+                [(ngModel)]="feedbackVerifierName"
+                type="text"
+                placeholder="Nom du verificateur"
+                class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+              />
+            </label>
+          </div>
+
+          <div class="mt-5 space-y-3">
+            <div
+              *ngFor="let q of clientFeedbackQuestions"
+              class="rounded-lg border border-slate-200 bg-slate-50 p-3"
+            >
+              <p class="text-sm font-semibold text-slate-800">
+                {{ q.text }}
+              </p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <label
+                  *ngFor="let option of q.options"
+                  class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:border-sky-200"
+                >
+                  <input
+                    type="radio"
+                    [name]="'feedback-' + q.id"
+                    [value]="option"
+                    [(ngModel)]="feedbackAnswers[q.id]"
+                    class="text-sky-600"
+                  />
+                  <span>{{ option }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-3">
+            <textarea
+              [(ngModel)]="feedbackFinalComment"
+              rows="3"
+              placeholder="Autres mots du client pour ajouter un peu de contexte..."
+              class="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+            ></textarea>
+
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p class="text-xs font-semibold text-slate-500">
+                Joindre un media
+              </p>
+              <div class="mt-2 flex items-center gap-2">
+                <label
+                  for="feedbackImage"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-600 hover:border-sky-400 hover:bg-sky-50"
+                  title="Ajouter une photo"
+                >
+                  <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M4 6h4l2-2h4l2 2h4v12H4z" />
+                    <circle cx="12" cy="13" r="3" />
+                  </svg>
+                </label>
+                <label
+                  for="feedbackVideo"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-600 hover:border-sky-400 hover:bg-sky-50"
+                  title="Ajouter une video"
+                >
+                  <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M23 7l-7 5 7 5V7z" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                  </svg>
+                </label>
+                <label
+                  for="feedbackAudio"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-600 hover:border-sky-400 hover:bg-sky-50"
+                  title="Ajouter un audio"
+                >
+                  <svg
+                    class="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                    <path d="M19 11a7 7 0 0 1-14 0" />
+                    <path d="M12 18v4" />
+                    <path d="M8 22h8" />
+                  </svg>
+                </label>
+                <input
+                  id="feedbackImage"
+                  type="file"
+                  accept="image/*"
+                  (change)="onFeedbackImageSelected($any($event.target).files)"
+                  class="hidden"
+                />
+                <input
+                  id="feedbackVideo"
+                  type="file"
+                  accept="video/*"
+                  (change)="onFeedbackVideoSelected($any($event.target).files)"
+                  class="hidden"
+                />
+                <input
+                  id="feedbackAudio"
+                  type="file"
+                  accept="audio/*"
+                  (change)="onFeedbackAudioSelected($any($event.target).files)"
+                  class="hidden"
+                />
+              </div>
+              <div
+                *ngIf="selectedFeedbackImagePreview"
+                class="mt-3 flex items-center gap-3"
+              >
+                <img
+                  [src]="selectedFeedbackImagePreview"
+                  alt="Aperçu"
+                  class="h-14 w-14 rounded-lg object-cover ring-1 ring-sky-200"
+                />
+                <button
+                  type="button"
+                  (click)="clearFeedbackImage()"
+                  class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-red-300 hover:text-red-600"
+                >
+                  Retirer
+                </button>
+              </div>
+              <div
+                *ngIf="selectedFeedbackVideoPreview"
+                class="mt-3 flex items-center gap-3"
+              >
+                <video
+                  [src]="selectedFeedbackVideoPreview"
+                  class="h-16 w-24 rounded-lg object-cover ring-1 ring-sky-200"
+                  controls
+                ></video>
+                <button
+                  type="button"
+                  (click)="clearFeedbackVideo()"
+                  class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-red-300 hover:text-red-600"
+                >
+                  Retirer
+                </button>
+              </div>
+              <div
+                *ngIf="selectedFeedbackAudioPreview"
+                class="mt-3 flex items-center gap-3"
+              >
+                <audio
+                  [src]="selectedFeedbackAudioPreview"
+                  controls
+                  class="w-full"
+                ></audio>
+                <button
+                  type="button"
+                  (click)="clearFeedbackAudio()"
+                  class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-red-300 hover:text-red-600"
+                >
+                  Retirer
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              (click)="postClientFeedback()"
+              [disabled]="feedbackMediaUploading || feedbackPosting"
+              class="rounded-full bg-sky-600 px-5 py-2 text-xs font-semibold text-white shadow hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {{
+                feedbackMediaUploading || feedbackPosting
+                  ? "Envoi..."
+                  : "Publier"
+              }}
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div
+            *ngIf="clientFeedbackEntries.length === 0"
+            class="text-sm text-slate-500"
+          >
+            Aucun avis client pour le moment.
+          </div>
+          <div
+            *ngFor="let entry of visibleFeedbackEntries"
+            class="rounded-xl border border-sky-200 bg-sky-50/60 p-4"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="text-sm font-semibold text-slate-900">
+                {{ entry.clientName }}
+                <span
+                  class="ml-2 rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-sky-700"
+                >
+                  {{ entry.clientLocationName || "Site" }}
+                </span>
+              </div>
+              <div class="text-xs text-slate-500">
+                {{ feedbackTime(entry) }}
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-slate-600">
+              Vérificateur: <span class="font-semibold">{{ entry.verifierName }}</span>
+            </div>
+            <div class="mt-3 space-y-2 text-sm text-slate-700">
+              <div *ngFor="let ans of entry.responses">
+                <span class="font-semibold text-slate-800">
+                  {{ ans.question }}
+                </span>
+                <span class="ml-2 text-sky-700">{{ ans.answer }}</span>
+              </div>
+            </div>
+            <p
+              *ngIf="entry.finalComment"
+              class="mt-3 rounded-lg border border-sky-100 bg-white p-3 text-sm italic text-slate-700"
+            >
+              &ldquo;{{ entry.finalComment }}&rdquo;
+            </p>
+            <div
+              *ngIf="entry.attachments?.length"
+              class="mt-3 flex flex-wrap gap-2"
+            >
+              <ng-container *ngFor="let att of entry.attachments">
+                <img
+                  *ngIf="att.type === 'image'"
+                  [src]="att.url"
+                  alt="Image jointe"
+                  class="h-20 w-20 rounded-lg object-cover ring-1 ring-sky-200"
+                />
+                <video
+                  *ngIf="att.type === 'video'"
+                  [src]="att.url"
+                  class="h-20 w-28 rounded-lg object-cover ring-1 ring-sky-200"
+                  controls
+                ></video>
+              </ng-container>
+            </div>
+            <audio
+              *ngIf="entry.audioUrl"
+              [src]="entry.audioUrl"
+              class="mt-3 w-full"
+              controls
+            ></audio>
+          </div>
+          <button
+            *ngIf="clientFeedbackEntries.length > 3"
+            type="button"
+            (click)="showAllFeedbackEntries = !showAllFeedbackEntries"
+            class="text-xs font-semibold text-sky-700"
+          >
+            {{ showAllFeedbackEntries ? "Voir moins" : "Voir plus" }}
+          </button>
+        </div>
+      </div>
+    </details>
+
     <!-- Section 3: Vérification (TaskForce) -->
     <section
       *ngIf="auth.isAdmin || auth.isInvestigator"
