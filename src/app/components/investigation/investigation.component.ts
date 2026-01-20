@@ -62,6 +62,18 @@ type ClientFeedbackEntry = {
   audioUrl?: string;
 };
 
+type ClientFeedbackSummaryOption = {
+  option: string;
+  count: number;
+  percent: number;
+};
+
+type ClientFeedbackSummaryItem = {
+  question: string;
+  total: number;
+  options: ClientFeedbackSummaryOption[];
+};
+
 type ClientFeedbackDayDoc = {
   dateKey?: string;
   entries?: ClientFeedbackEntry[];
@@ -182,6 +194,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   feedbackFilterMonth = new Date().getMonth() + 1;
   feedbackFilterYear = new Date().getFullYear();
   feedbackYears: number[] = [];
+  feedbackSummary: ClientFeedbackSummaryItem[] = [];
   selectedFeedbackImageFile?: File;
   selectedFeedbackImagePreview?: string;
   selectedFeedbackVideoFile?: File;
@@ -433,9 +446,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
             merged.push({ ...entry, dayKey: entry.dayKey || doc?.dateKey });
           });
         });
-        this.allClientFeedbackEntries = this.sortFeedbackEntries(merged);
-        this.applyFeedbackFilter();
-      });
+    this.allClientFeedbackEntries = this.sortFeedbackEntries(merged);
+    this.applyFeedbackFilter();
+  });
 
     this.subs.add(this.feedbackDocSub);
   }
@@ -1016,6 +1029,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   applyFeedbackFilter(): void {
     if (!this.allClientFeedbackEntries.length) {
       this.clientFeedbackEntries = [];
+      this.feedbackSummary = this.buildFeedbackSummary([]);
       return;
     }
 
@@ -1029,6 +1043,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     });
 
     this.clientFeedbackEntries = filtered;
+    this.feedbackSummary = this.buildFeedbackSummary(filtered);
   }
 
   private feedbackEntryDate(entry: ClientFeedbackEntry): Date | null {
@@ -1809,6 +1824,33 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         console.error('Failed to delete client feedback:', err);
         alert("Impossible de supprimer cet avis.");
       });
+  }
+
+  private buildFeedbackSummary(
+    entries: ClientFeedbackEntry[]
+  ): ClientFeedbackSummaryItem[] {
+    return this.clientFeedbackQuestions.map((question) => {
+      const counts = new Map<string, number>();
+      question.options.forEach((opt) => counts.set(opt, 0));
+
+      entries.forEach((entry) => {
+        const answer = entry.responses?.find((r) => r.id === question.id)?.answer;
+        if (!answer) return;
+        if (!counts.has(answer)) {
+          counts.set(answer, 0);
+        }
+        counts.set(answer, (counts.get(answer) || 0) + 1);
+      });
+
+      const total = Array.from(counts.values()).reduce((sum, v) => sum + v, 0);
+      const options = Array.from(counts.entries()).map(([option, count]) => ({
+        option,
+        count,
+        percent: total ? Math.round((count / total) * 100) : 0,
+      }));
+
+      return { question: question.text, total, options };
+    });
   }
 
   private uploadCommentMediaAndPost(): void {
