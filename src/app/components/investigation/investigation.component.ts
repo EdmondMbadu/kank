@@ -196,6 +196,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   feedbackYears: number[] = [];
   feedbackSummary: ClientFeedbackSummaryItem[] = [];
   feedbackSummaryAll: ClientFeedbackSummaryItem[] = [];
+  feedbackSummaryMode: 'month' | 'total' = 'month';
   selectedFeedbackImageFile?: File;
   selectedFeedbackImagePreview?: string;
   selectedFeedbackVideoFile?: File;
