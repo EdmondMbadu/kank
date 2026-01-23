@@ -56,9 +56,10 @@ export class NotPaidTodayComponent {
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = data;
+      this.clients = Array.isArray(data) ? data : [];
+      this.assignTrackingIds();
       this.retrieveEmployees();
-      this.filteredItems = data;
+      this.filteredItems = this.clients;
 
       this.extractTodayPayments();
       this.filterPayments();
@@ -71,19 +72,27 @@ export class NotPaidTodayComponent {
   }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
+      this.employees = Array.isArray(data) ? data : [];
       this.addIdToFilterItems();
     });
   }
 
   addIdToFilterItems() {
-    for (let i = 0; i < this.filteredItems!.length; i++) {
+    if (!this.filteredItems?.length) return;
+    for (let i = 0; i < this.filteredItems.length; i++) {
       this.filteredItems![i].trackingId = `${i}`;
       let emp = this.employees.find(
         (element) => element.uid === this.filteredItems![i].agent
       );
       this.filteredItems![i].employee = emp;
     }
+  }
+
+  private assignTrackingIds(): void {
+    if (!this.clients?.length) return;
+    this.clients.forEach((client, index) => {
+      client.trackingId = `${index}`;
+    });
   }
 
   extractTodayPayments() {

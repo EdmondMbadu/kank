@@ -459,13 +459,23 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private ensureDefaultLocation(): void {
-    if (this.selectedLocationId) return;
-    const preferred = this.currentUserId || this.locations[0]?.uid || '';
+    const preferred =
+      this.selectedLocationId || this.currentUserId || this.locations[0]?.uid || '';
     if (!preferred) return;
-    const user =
-      this.locations.find((loc) => loc.uid === preferred) ||
-      ({ uid: preferred } as User);
-    this.applyLocation(user);
+
+    const user = this.locations.find((loc) => loc.uid === preferred);
+
+    if (this.selectedLocationId) {
+      if (!user) return;
+      const nextLabel = (user.firstName || user.email || 'Site').trim();
+      const currentLabel = (this.selectedLocationLabel || '').trim();
+      if (!currentLabel || currentLabel === 'Site' || currentLabel !== nextLabel) {
+        this.applyLocation(user);
+      }
+      return;
+    }
+
+    this.applyLocation(user || ({ uid: preferred } as User));
   }
 
   private applyLocation(user: User): void {
