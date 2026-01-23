@@ -1650,6 +1650,13 @@
             <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
               {{ activeClient.locationName || "Site" }}
             </span>
+            <span
+              *ngIf="isClientQuitte(activeClient)"
+              class="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-200"
+              aria-label="Client à l'écart"
+            >
+              À l'écart
+            </span>
           </h3>
           <button
             type="button"
