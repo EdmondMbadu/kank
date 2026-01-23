@@ -741,6 +741,30 @@
               Total: {{ month.total | number : "1.0-0" }} FC
             </span>
           </div>
+          <div
+            *ngIf="month.weeks?.length"
+            class="rounded-xl border border-amber-200 bg-amber-50/70 p-3"
+          >
+            <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+              Totaux par semaine
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <div
+                *ngFor="let w of month.weeks"
+                class="flex items-center justify-between rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs"
+              >
+                <div class="font-semibold text-slate-700">
+                  {{ w.label }}
+                  <span class="ml-2 text-[10px] text-slate-400">
+                    ({{ w.count }})
+                  </span>
+                </div>
+                <div class="font-semibold text-amber-800">
+                  {{ w.total | number : "1.0-0" }} FC
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="space-y-2">
             <div
               *ngFor="let item of month.items"

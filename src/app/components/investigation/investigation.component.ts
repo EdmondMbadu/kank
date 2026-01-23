@@ -89,6 +89,15 @@ type RecoveredAwayEntry = {
   createdByName?: string;
 };
 
+type RecoveredAwayWeek = {
+  key: string;
+  start: Date;
+  end: Date;
+  label: string;
+  total: number;
+  count: number;
+};
+
 type RecoveredAwayMonth = {
   monthKey: string;
   label: string;
@@ -98,6 +107,7 @@ type RecoveredAwayMonth = {
     entry: RecoveredAwayEntry;
     ownerId: string;
   }>;
+  weeks?: RecoveredAwayWeek[];
 };
 
 type TFEntry = { loc: string; employees: string[] };
@@ -887,10 +897,72 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const filtered = this.recoveredAwayByMonthAll.filter(
       (bucket) => bucket.monthKey === monthKey
     );
-    this.recoveredAwayByMonth = filtered;
+    this.recoveredAwayByMonth = filtered.map((bucket) => ({
+      ...bucket,
+      weeks: this.buildRecoveredAwayWeeks(bucket.items),
+    }));
     this.recoveredAwayTotal = filtered.reduce((sum, bucket) => sum + bucket.total, 0);
     this.recomputeRecoveredAwayBonus();
     this.loadRecoveredAwayBonusPercent();
+  }
+
+  private buildRecoveredAwayWeeks(
+    items: Array<{ entry: RecoveredAwayEntry }>
+  ): RecoveredAwayWeek[] {
+    if (!items?.length) return [];
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const map = new Map<string, RecoveredAwayWeek>();
+
+    items.forEach(({ entry }) => {
+      const date = entry.createdAtISO ? new Date(entry.createdAtISO) : new Date(entry.createdAt);
+      if (Number.isNaN(date.getTime())) return;
+      const { start, end } = this.weekBounds(date);
+      const key = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          start,
+          end,
+          label: this.formatRecoveredAwayWeekLabel(start, end),
+          total: 0,
+          count: 0,
+        });
+      }
+      const bucket = map.get(key)!;
+      bucket.total += Number(entry.amount || 0);
+      bucket.count += 1;
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      b.start.getTime() - a.start.getTime()
+    );
+  }
+
+  private weekBounds(date: Date): { start: Date; end: Date } {
+    const dayIndex = date.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(date);
+    start.setDate(date.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+  }
+
+  private formatRecoveredAwayWeekLabel(start: Date, end: Date): string {
+    const startMonth = this.monthNames[start.getMonth()];
+    const endMonth = this.monthNames[end.getMonth()];
+    const sameMonth = start.getMonth() === end.getMonth();
+    const sameYear = start.getFullYear() === end.getFullYear();
+
+    if (sameMonth && sameYear) {
+      return `${start.getDate()}-${end.getDate()} ${startMonth} ${start.getFullYear()}`;
+    }
+
+    return `${start.getDate()} ${startMonth} ${start.getFullYear()} - ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
   }
 
   private recoveredAwayBonusOwnerId(): string {
