@@ -78,25 +78,34 @@ export class DailyPaymentsComponent implements OnInit {
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = data;
+      this.clients = Array.isArray(data) ? data : [];
+      this.assignTrackingIds();
       this.retrieveEmployees();
     });
   }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
+      this.employees = Array.isArray(data) ? data : [];
       this.addIdToFilterItems();
       this.extractTodayPayments();
     });
   }
   addIdToFilterItems() {
-    for (let i = 0; i < this.clients!.length; i++) {
+    if (!this.clients?.length) return;
+    for (let i = 0; i < this.clients.length; i++) {
       this.clients![i].trackingId = `${i}`;
       let emp = this.employees.find(
         (element) => element.uid === this.clients![i].agent
       );
       this.clients![i].employee = emp;
     }
+  }
+
+  private assignTrackingIds(): void {
+    if (!this.clients?.length) return;
+    this.clients.forEach((client, index) => {
+      client.trackingId = `${index}`;
+    });
   }
 
   extractTodayPayments() {
@@ -107,6 +116,11 @@ export class DailyPaymentsComponent implements OnInit {
     this.trackingIds = [];
     this.dailyPayments = [];
     this.dailyPaymentsCopy = [];
+
+    if (!this.clients?.length) {
+      this.computeAgentRanking();
+      return;
+    }
 
     for (let client of this.clients!) {
       const paymentsEntries = client.payments
