@@ -628,43 +628,42 @@
       </div>
     </details>
 
-    <details class="rounded-2xl border border-amber-200 bg-white shadow-sm">
+    <details class="overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-white to-amber-50/30 shadow-lg shadow-amber-100/50">
       <summary
-        class="flex cursor-pointer items-center justify-between gap-4 px-6 py-4"
+        class="flex cursor-pointer flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:py-6"
       >
-        <div>
-          <h3 class="text-lg font-semibold text-amber-800">
-            Dettes récupérées (clients à l'écart)
-          </h3>
-          <p class="text-xs text-amber-600">
-            Montants récupérés enregistrés par mois.
-          </p>
+        <div class="flex items-start gap-4">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-md shadow-amber-200/60">
+            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-800">
+              Dettes récupérées
+            </h3>
+            <p class="mt-0.5 text-sm text-slate-500">
+              Clients à l'écart · Montants récupérés par mois
+            </p>
+          </div>
         </div>
-        <div class="flex items-center gap-3">
-          <div class="text-right">
-            <div class="text-[10px] uppercase tracking-wide text-amber-500">
+        <div class="flex items-center gap-4 sm:gap-5">
+          <div class="min-w-0 flex-1 sm:text-right">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-amber-600/80">
               Total sélectionné
             </div>
-            <div
-              class="text-2xl font-extrabold text-amber-700 drop-shadow-sm"
-            >
-              {{ recoveredAwayTotal | number : "1.0-0" }} FC
+            <div class="mt-1 truncate text-xl font-extrabold tracking-tight text-slate-800 sm:text-2xl">
+              {{ recoveredAwayTotal | number : "1.0-0" }}<span class="ml-1 text-base font-bold text-amber-600 sm:text-lg">FC</span>
             </div>
-            <div
-              class="mt-1 inline-flex items-center gap-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800"
-            >
-              Bonus potentiel
-              <span class="font-bold text-amber-900"
-                >{{ recoveredAwayBonusPercent }}%</span
-              >
-              ·
-              <span class="font-bold text-amber-900"
-                >{{ recoveredAwayBonusAmount | number : "1.0-0" }} FC</span
-              >
+            <div class="mt-2 inline-flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-100/80 px-3 py-1.5 text-xs font-semibold text-amber-800 sm:gap-2">
+              <span>Bonus</span>
+              <span class="rounded-md bg-amber-600 px-1.5 py-0.5 text-[11px] font-bold text-white">{{ recoveredAwayBonusPercent }}%</span>
+              <span class="text-amber-500">→</span>
+              <span class="font-bold text-amber-900">{{ recoveredAwayBonusAmount | number : "1.0-0" }} FC</span>
             </div>
           </div>
           <svg
-            class="chevron h-4 w-4 text-amber-400"
+            class="chevron h-5 w-5 shrink-0 text-amber-400"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -676,126 +675,147 @@
           </svg>
         </div>
       </summary>
-      <div class="space-y-6 px-6 pb-6 pt-2">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-xs font-semibold text-amber-700">Mois</span>
-            <select
-              [(ngModel)]="recoveredAwayFilterMonth"
-              (ngModelChange)="applyRecoveredAwayFilter()"
-              class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
-            >
-              <option
-                *ngFor="let m of monthNames; let idx = index"
-                [ngValue]="idx + 1"
+
+      <div class="space-y-6 border-t border-amber-100 px-5 pb-6 pt-5 sm:space-y-8 sm:px-7 sm:pb-8 sm:pt-6">
+        <!-- Filters -->
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-600">Mois</span>
+              <select
+                [(ngModel)]="recoveredAwayFilterMonth"
+                (ngModelChange)="applyRecoveredAwayFilter()"
+                class="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
               >
-                {{ m }}
-              </option>
-            </select>
-            <span class="text-xs font-semibold text-amber-700">Année</span>
-            <select
-              [(ngModel)]="recoveredAwayFilterYear"
-              (ngModelChange)="applyRecoveredAwayFilter()"
-              class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
-            >
-              <option *ngFor="let y of recoveredAwayYears" [ngValue]="y">
-                {{ y }}
-              </option>
-            </select>
+                <option
+                  *ngFor="let m of monthNames; let idx = index"
+                  [ngValue]="idx + 1"
+                >
+                  {{ m }}
+                </option>
+              </select>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-600">Année</span>
+              <select
+                [(ngModel)]="recoveredAwayFilterYear"
+                (ngModelChange)="applyRecoveredAwayFilter()"
+                class="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              >
+                <option *ngFor="let y of recoveredAwayYears" [ngValue]="y">
+                  {{ y }}
+                </option>
+              </select>
+            </div>
           </div>
           <div
             *ngIf="auth.isAdmin"
-            class="flex flex-wrap items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-[11px] text-amber-800"
+            class="flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/50 px-3 py-2"
           >
-            <span class="font-semibold">Bonus %</span>
+            <span class="text-xs font-semibold text-amber-700">Bonus %</span>
             <input
               [(ngModel)]="recoveredAwayBonusInput"
               type="number"
               min="1"
               step="0.1"
-              class="w-16 rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[11px] text-amber-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100"
+              class="w-16 rounded-lg border border-amber-200 bg-white px-2 py-1 text-sm text-amber-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200"
             />
             <button
               type="button"
               (click)="saveRecoveredAwayBonusPercent()"
               [disabled]="recoveredAwayBonusSaving"
-              class="rounded-full bg-amber-600 px-2 py-0.5 text-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              class="rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 text-xs font-semibold text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {{ recoveredAwayBonusSaving ? "..." : "Enregistrer" }}
             </button>
           </div>
         </div>
+
+        <!-- Empty state -->
         <div
           *ngIf="recoveredAwayByMonth.length === 0"
-          class="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-700"
+          class="rounded-xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50/50 p-6 text-center"
         >
-          Aucun montant récupéré enregistré pour le moment.
+          <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+            <svg class="h-6 w-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+          <p class="text-sm font-medium text-amber-700">Aucun montant récupéré enregistré pour le moment.</p>
         </div>
 
-        <div *ngFor="let month of recoveredAwayByMonth" class="space-y-3">
-          <div class="flex items-center justify-between">
-            <h4 class="text-sm font-semibold text-amber-800">
+        <!-- Monthly data -->
+        <div *ngFor="let month of recoveredAwayByMonth" class="space-y-4">
+          <div class="flex items-center justify-between border-b border-amber-100 pb-3">
+            <h4 class="text-base font-bold text-slate-800">
               {{ month.label }}
             </h4>
-            <span class="text-xs font-semibold text-amber-700">
-              Total: {{ month.total | number : "1.0-0" }} FC
-            </span>
+            <div class="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-bold text-white shadow-sm">
+              {{ month.total | number : "1.0-0" }} FC
+            </div>
           </div>
+
+          <!-- Weekly breakdown -->
           <div
             *ngIf="month.weeks?.length"
-            class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5"
+            class="rounded-xl border border-amber-200/70 bg-gradient-to-br from-amber-50/80 to-orange-50/50 p-4 sm:p-5"
           >
-            <div class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+            <div class="mb-4 text-xs font-bold uppercase tracking-wider text-amber-700/70">
               Totaux par semaine
             </div>
             <div class="grid gap-3 sm:grid-cols-2">
               <div
                 *ngFor="let w of month.weeks"
-                class="flex flex-col gap-2 rounded-lg border border-amber-200 bg-white px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between"
+                class="flex flex-col gap-3 rounded-xl border border-amber-200/80 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
               >
-                <div class="font-semibold text-slate-700">
-                  {{ w.label }}
-                  <span class="ml-2 text-[10px] text-slate-400">
-                    ({{ w.count }})
-                  </span>
+                <div>
+                  <div class="font-semibold text-slate-800">{{ w.label }}</div>
+                  <div class="mt-0.5 text-xs text-slate-500">{{ w.count }} récupération(s)</div>
                 </div>
-                <div class="sm:text-right">
-                  <div class="text-sm font-semibold text-amber-800 sm:text-xs">
-                    {{ w.total | number : "1.0-0" }} FC
+                <div class="flex flex-col items-start gap-1 sm:items-end">
+                  <div class="text-lg font-bold text-slate-800">
+                    {{ w.total | number : "1.0-0" }}<span class="ml-0.5 text-sm text-amber-600">FC</span>
                   </div>
-                  <div class="text-[11px] font-semibold text-amber-600 sm:text-[10px]">
-                    +{{ recoveredAwayBonusPercent }}% ·
-                    {{ w.bonusAmount | number : "1.0-0" }} FC
+                  <div class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    <span>+{{ recoveredAwayBonusPercent }}%</span>
+                    <span class="text-emerald-500">→</span>
+                    <span>{{ w.bonusAmount | number : "1.0-0" }} FC</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Individual entries -->
           <div class="space-y-2">
             <div
               *ngFor="let item of month.items"
-              class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-xs"
+              class="group flex flex-col gap-3 rounded-xl border border-amber-200/60 bg-white p-4 shadow-sm transition-all hover:border-amber-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
             >
-              <div class="font-semibold text-slate-900">
-                {{ item.client.firstName }} {{ item.client.lastName }}
-                <span class="ml-2 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold text-slate-800">
+                  {{ item.client.firstName }} {{ item.client.lastName }}
+                </span>
+                <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
                   {{ item.client.locationName || "Site" }}
                 </span>
               </div>
-              <div class="text-amber-900">
-                FC {{ item.entry.amount | number : "1.0-0" }}
+              <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                <div class="text-lg font-bold text-slate-800 sm:text-base">
+                  {{ item.entry.amount | number : "1.0-0" }}<span class="ml-0.5 text-sm text-amber-600">FC</span>
+                </div>
+                <div class="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                  {{ formatRecoveredAwayDate(item.entry) }}
+                </div>
+                <button
+                  *ngIf="auth.isAdmin"
+                  type="button"
+                  (click)="removeRecoveredAwayEntry(item.client, item.entry.id, item.ownerId)"
+                  class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 transition-all hover:border-red-300 hover:bg-red-100"
+                >
+                  Supprimer
+                </button>
               </div>
-              <div class="text-amber-700">
-                {{ formatRecoveredAwayDate(item.entry) }}
-              </div>
-              <button
-                *ngIf="auth.isAdmin"
-                type="button"
-                (click)="removeRecoveredAwayEntry(item.client, item.entry.id, item.ownerId)"
-                class="rounded-full border border-amber-300 px-2 py-0.5 text-[10px] font-semibold text-amber-700 hover:border-amber-500 hover:bg-amber-100"
-              >
-                Supprimer
-              </button>
             </div>
           </div>
         </div>
