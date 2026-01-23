@@ -743,15 +743,15 @@
           </div>
           <div
             *ngIf="month.weeks?.length"
-            class="rounded-xl border border-amber-200 bg-amber-50/70 p-3"
+            class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5"
           >
-            <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+            <div class="mb-3 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
               Totaux par semaine
             </div>
-            <div class="grid gap-2 sm:grid-cols-2">
+            <div class="grid gap-3 sm:grid-cols-2">
               <div
                 *ngFor="let w of month.weeks"
-                class="flex items-center justify-between rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs"
+                class="flex flex-col gap-2 rounded-lg border border-amber-200 bg-white px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between"
               >
                 <div class="font-semibold text-slate-700">
                   {{ w.label }}
@@ -759,11 +759,11 @@
                     ({{ w.count }})
                   </span>
                 </div>
-                <div class="text-right">
-                  <div class="font-semibold text-amber-800">
+                <div class="sm:text-right">
+                  <div class="text-sm font-semibold text-amber-800 sm:text-xs">
                     {{ w.total | number : "1.0-0" }} FC
                   </div>
-                  <div class="text-[10px] font-semibold text-amber-600">
+                  <div class="text-[11px] font-semibold text-amber-600 sm:text-[10px]">
                     +{{ recoveredAwayBonusPercent }}% ·
                     {{ w.bonusAmount | number : "1.0-0" }} FC
                   </div>
