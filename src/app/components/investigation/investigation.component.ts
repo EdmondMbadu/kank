@@ -96,6 +96,7 @@ type RecoveredAwayWeek = {
   label: string;
   total: number;
   count: number;
+  bonusAmount: number;
 };
 
 type RecoveredAwayMonth = {
@@ -926,6 +927,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
           label: this.formatRecoveredAwayWeekLabel(start, end),
           total: 0,
           count: 0,
+          bonusAmount: 0,
         });
       }
       const bucket = map.get(key)!;
@@ -933,8 +935,13 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       bucket.count += 1;
     });
 
-    return Array.from(map.values()).sort((a, b) =>
-      b.start.getTime() - a.start.getTime()
+    const percent = Number(this.recoveredAwayBonusPercent || 0);
+    Array.from(map.values()).forEach((bucket) => {
+      bucket.bonusAmount = percent > 0 ? (bucket.total * percent) / 100 : 0;
+    });
+
+    return Array.from(map.values()).sort(
+      (a, b) => b.start.getTime() - a.start.getTime()
     );
   }
 

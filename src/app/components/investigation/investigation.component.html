@@ -759,8 +759,14 @@
                     ({{ w.count }})
                   </span>
                 </div>
-                <div class="font-semibold text-amber-800">
-                  {{ w.total | number : "1.0-0" }} FC
+                <div class="text-right">
+                  <div class="font-semibold text-amber-800">
+                    {{ w.total | number : "1.0-0" }} FC
+                  </div>
+                  <div class="text-[10px] font-semibold text-amber-600">
+                    +{{ recoveredAwayBonusPercent }}% ·
+                    {{ w.bonusAmount | number : "1.0-0" }} FC
+                  </div>
                 </div>
               </div>
             </div>
