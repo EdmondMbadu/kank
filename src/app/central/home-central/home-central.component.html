@@ -1623,10 +1623,20 @@
             </button>
             <button
               type="button"
-              class="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              class="inline-flex items-center justify-center rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
               (click)="toggleDuplicateGroupCollapsed(group.digits)"
+              [attr.aria-label]="isDuplicateGroupCollapsed(group.digits) ? 'Afficher le groupe' : 'Réduire le groupe'"
             >
-              {{ isDuplicateGroupCollapsed(group.digits) ? "Afficher" : "Réduire" }}
+              <svg
+                class="h-3.5 w-3.5 transition-transform"
+                [class.rotate-180]="!isDuplicateGroupCollapsed(group.digits)"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </button>
           </div>
         </div>
