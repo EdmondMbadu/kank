@@ -156,6 +156,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   quitteStatusFilter: 'all' | 'quitte' | 'active' = 'all';
   starsFilter: 'all' | 'noStars' | 'withStars' | 'exact' = 'all';
   starsFilterValue: number | null = null;
+  duplicatePhoneFilter: 'all' | 'duplicates' = 'all';
+  duplicatePhoneDigits = new Set<string>();
+  duplicatePhoneCounts: Record<string, number> = {};
+  duplicatePhoneGroupsCount = 0;
+  duplicatePhoneClientsCount = 0;
   filteredDebtTotal = 0;
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
@@ -277,6 +282,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
     this.initalizeInputs();
     this.setupSearch();
+    this.buildDuplicatePhoneIndex();
     this.applyClientFilters();
 
     // build finished-debt dataset + filters
@@ -498,6 +504,25 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     };
   }
 
+  setDuplicatePhoneFilter(mode: 'all' | 'duplicates') {
+    if (this.duplicatePhoneFilter === mode) return;
+    this.duplicatePhoneFilter = mode;
+    this.applyClientFilters();
+  }
+
+  isDuplicatePhoneFilter(mode: 'all' | 'duplicates') {
+    return this.duplicatePhoneFilter === mode;
+  }
+
+  duplicatePhoneButtonClasses(mode: 'all' | 'duplicates') {
+    return {
+      'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+        this.isDuplicatePhoneFilter(mode),
+      'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+        !this.isDuplicatePhoneFilter(mode),
+    };
+  }
+
   displayPaymentDay(day: string | null) {
     if (!day) return 'Tous';
     return this.time.englishToFrenchDay?.[day] || day;
@@ -549,6 +574,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const hasQuitteFilter = this.quitteStatusFilter !== 'all';
     const hasPaymentDayFilter = !!this.selectedPaymentDay;
     const hasLocationFilter = !this.masterSelectAllLocations;
+    const hasDuplicateFilter = this.duplicatePhoneFilter !== 'all';
 
     const isDefaultView =
       !this.birthdayFilterSummary &&
@@ -558,7 +584,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       !hasDebtFilter &&
       !hasQuitteFilter &&
       !hasPaymentDayFilter &&
-      !hasLocationFilter;
+      !hasLocationFilter &&
+      !hasDuplicateFilter;
 
     if (isDefaultView) {
       return `Tous les clients · ${baseTotal} client(s)`;
@@ -612,6 +639,9 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         `${this.masterSelectedLocations.size} site(s)`
       );
     }
+    if (hasDuplicateFilter) {
+      parts.push('Doublons téléphone');
+    }
 
     parts.push(`${count} client(s)`);
     return parts.join(' · ');
@@ -626,12 +656,61 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       .filter((client) => this.matchesQuitteStatus(client))
       .filter((client) => this.matchesMasterLocation(client))
       .filter((client) => this.matchesPaymentDay(client))
-      .filter((client) => this.matchesStarsFilter(client));
+      .filter((client) => this.matchesStarsFilter(client))
+      .filter((client) => this.matchesDuplicatePhone(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
     this.updateSelectedPaymentDayTotal();
     if (this.generalBulkModal.open) this.updateGeneralBulkRecipients();
+  }
+
+  private normalizePhoneDigits(raw?: string | null): string {
+    if (!raw) return '';
+    return ('' + raw).replace(/\D/g, '');
+  }
+
+  private buildDuplicatePhoneIndex() {
+    const counts = new Map<string, number>();
+    for (const client of this.allClients ?? []) {
+      const digits = this.normalizePhoneDigits(client.phoneNumber);
+      if (!digits) continue;
+      counts.set(digits, (counts.get(digits) || 0) + 1);
+    }
+
+    this.duplicatePhoneDigits = new Set(
+      Array.from(counts.entries())
+        .filter(([, count]) => count >= 2)
+        .map(([digits]) => digits)
+    );
+    this.duplicatePhoneCounts = Object.fromEntries(counts);
+    this.duplicatePhoneGroupsCount = this.duplicatePhoneDigits.size;
+
+    let dupClients = 0;
+    for (const client of this.allClients ?? []) {
+      const digits = this.normalizePhoneDigits(client.phoneNumber);
+      if (digits && this.duplicatePhoneDigits.has(digits)) dupClients += 1;
+    }
+    this.duplicatePhoneClientsCount = dupClients;
+  }
+
+  private matchesDuplicatePhone(client: Client): boolean {
+    if (this.duplicatePhoneFilter !== 'duplicates') return true;
+    const digits = this.normalizePhoneDigits(client.phoneNumber);
+    return !!digits && this.duplicatePhoneDigits.has(digits);
+  }
+
+  isDuplicatePhoneClient(client: Client | null | undefined): boolean {
+    if (!client) return false;
+    const digits = this.normalizePhoneDigits(client.phoneNumber);
+    return !!digits && this.duplicatePhoneDigits.has(digits);
+  }
+
+  getDuplicatePhoneCount(client: Client | null | undefined): number {
+    if (!client) return 0;
+    const digits = this.normalizePhoneDigits(client.phoneNumber);
+    if (!digits) return 0;
+    return this.duplicatePhoneCounts[digits] || 0;
   }
 
   private matchesSearchTerm(client: Client, rawTerm: string): boolean {
