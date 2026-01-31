@@ -724,6 +724,9 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         return nameA.localeCompare(nameB);
       });
     });
+    this.duplicatePhoneGroupCollapsed = new Set(
+      this.duplicatePhoneGroups.map((group) => group.digits)
+    );
   }
 
   private matchesDuplicatePhone(client: Client): boolean {
