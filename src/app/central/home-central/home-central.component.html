@@ -1609,8 +1609,18 @@
               {{ formatDisplayPhone(group.digits) }}
             </span>
           </div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">
-            {{ group.clients.length }} client(s)
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ group.clients.length }} client(s)
+            </span>
+            <button
+              type="button"
+              class="rounded-full border border-emerald-500 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-40 dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-slate-800"
+              (click)="applyDuplicatePhoneUpdatesForGroup(group.digits)"
+              [disabled]="duplicatePhoneModal.isSaving"
+            >
+              Appliquer ce groupe
+            </button>
           </div>
         </div>
 
@@ -1648,7 +1658,7 @@
             <div class="text-[11px] text-slate-500 dark:text-slate-400">
               Actuel : {{ formatDisplayPhone(c.phoneNumber) }}
             </div>
-            <div>
+            <div class="flex flex-col gap-2">
               <input
                 type="text"
                 [ngModel]="getDuplicatePhoneUpdate(c)"
@@ -1656,6 +1666,14 @@
                 placeholder="Nouveau numéro"
                 class="w-full rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               />
+              <button
+                type="button"
+                class="self-start rounded-full border border-emerald-500 px-3 py-1 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-40 dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-slate-800"
+                (click)="applyDuplicatePhoneUpdateForClient(c, group.digits)"
+                [disabled]="duplicatePhoneModal.isSaving"
+              >
+                Appliquer ce client
+              </button>
             </div>
           </div>
         </div>

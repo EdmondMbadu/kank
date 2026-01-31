@@ -799,34 +799,26 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     );
   }
 
-  async applyDuplicatePhoneUpdates() {
-    if (this.duplicatePhoneModal.isSaving) return;
-    this.duplicatePhoneModal.isSaving = true;
-    this.duplicatePhoneModal.error = null;
-    this.duplicatePhoneModal.result = null;
+  private resolveDuplicatePhoneUpdate(
+    client: Client,
+    groupDigits: string
+  ): string {
+    const direct = this.getDuplicatePhoneUpdate(client).trim();
+    if (direct) return direct;
+    const groupValue = this.getDuplicatePhoneGroupUpdate(groupDigits).trim();
+    return groupValue;
+  }
 
-    const updates: Array<{ client: Client; newPhone: string }> = [];
-    let skipped = 0;
+  private normalizeForHistory(phone?: string | null): string {
+    return this.normalizePhoneDigits(phone || '');
+  }
 
-    for (const group of this.duplicatePhoneGroups) {
-      for (const client of group.clients) {
-        const raw = this.getDuplicatePhoneUpdate(client).trim();
-        if (!raw) {
-          continue;
-        }
-        const newDigits = this.normalizePhoneDigits(raw);
-        const oldDigits = this.normalizePhoneDigits(client.phoneNumber);
-        if (!newDigits || newDigits === oldDigits) {
-          skipped += 1;
-          continue;
-        }
-        updates.push({ client, newPhone: raw });
-      }
-    }
-
+  private async commitDuplicatePhoneUpdates(
+    updates: Array<{ client: Client; newPhone: string }>,
+    skipped: number
+  ) {
     if (updates.length === 0) {
       this.duplicatePhoneModal.result = { updated: 0, skipped, failed: 0 };
-      this.duplicatePhoneModal.isSaving = false;
       return;
     }
 
@@ -841,7 +833,6 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         client: Client;
         newPhone: string;
         payload: Partial<Client>;
-        refPath: string;
       }> = [];
 
       for (const item of chunk) {
@@ -851,11 +842,20 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
           failed += 1;
           continue;
         }
+
         const prev = Array.isArray(client.previousPhoneNumbers)
           ? [...client.previousPhoneNumbers]
           : [];
         const currentRaw = (client.phoneNumber || '').toString();
-        if (currentRaw && !prev.includes(currentRaw)) prev.push(currentRaw);
+        const oldNorm = this.normalizeForHistory(currentRaw);
+        const newNorm = this.normalizeForHistory(item.newPhone);
+
+        if (oldNorm && newNorm && oldNorm !== newNorm) {
+          const alreadyInList = prev.some(
+            (p) => this.normalizeForHistory(p) === oldNorm
+          );
+          if (!alreadyInList && currentRaw) prev.push(currentRaw);
+        }
 
         const payload: Partial<Client> = {
           phoneNumber: item.newPhone,
@@ -869,7 +869,6 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
           client,
           newPhone: item.newPhone,
           payload,
-          refPath: `users/${ownerId}/clients/${client.uid}`,
         });
       }
 
@@ -890,6 +889,64 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     this.buildDuplicatePhoneIndex();
     this.applyClientFilters();
     this.duplicatePhoneModal.result = { updated, skipped, failed };
+  }
+
+  async applyDuplicatePhoneUpdates(groupDigits?: string) {
+    if (this.duplicatePhoneModal.isSaving) return;
+    this.duplicatePhoneModal.isSaving = true;
+    this.duplicatePhoneModal.error = null;
+    this.duplicatePhoneModal.result = null;
+
+    const updates: Array<{ client: Client; newPhone: string }> = [];
+    let skipped = 0;
+
+    for (const group of this.duplicatePhoneGroups) {
+      if (groupDigits && group.digits !== groupDigits) continue;
+      for (const client of group.clients) {
+        const raw = this.resolveDuplicatePhoneUpdate(client, group.digits).trim();
+        if (!raw) continue;
+        const newDigits = this.normalizePhoneDigits(raw);
+        const oldDigits = this.normalizePhoneDigits(client.phoneNumber);
+        if (!newDigits || newDigits === oldDigits) {
+          skipped += 1;
+          continue;
+        }
+        updates.push({ client, newPhone: raw });
+      }
+    }
+
+    await this.commitDuplicatePhoneUpdates(updates, skipped);
+    this.duplicatePhoneModal.isSaving = false;
+  }
+
+  async applyDuplicatePhoneUpdatesForGroup(groupDigits: string) {
+    await this.applyDuplicatePhoneUpdates(groupDigits);
+  }
+
+  async applyDuplicatePhoneUpdateForClient(
+    client: Client,
+    groupDigits: string
+  ) {
+    if (this.duplicatePhoneModal.isSaving) return;
+    this.duplicatePhoneModal.isSaving = true;
+    this.duplicatePhoneModal.error = null;
+    this.duplicatePhoneModal.result = null;
+
+    const raw = this.resolveDuplicatePhoneUpdate(client, groupDigits).trim();
+    if (!raw) {
+      this.duplicatePhoneModal.result = { updated: 0, skipped: 1, failed: 0 };
+      this.duplicatePhoneModal.isSaving = false;
+      return;
+    }
+    const newDigits = this.normalizePhoneDigits(raw);
+    const oldDigits = this.normalizePhoneDigits(client.phoneNumber);
+    if (!newDigits || newDigits === oldDigits) {
+      this.duplicatePhoneModal.result = { updated: 0, skipped: 1, failed: 0 };
+      this.duplicatePhoneModal.isSaving = false;
+      return;
+    }
+
+    await this.commitDuplicatePhoneUpdates([{ client, newPhone: raw }], 0);
     this.duplicatePhoneModal.isSaving = false;
   }
 

@@ -161,7 +161,19 @@ export class AuthService {
   getClientsOfAUser(userId: string) {
     return this.afs
       .collection<Client>(`users/${userId}/clients/`)
-      .valueChanges();
+      .snapshotChanges()
+      .pipe(
+        map((actions) =>
+          actions.map((a) => {
+            const data = a.payload.doc.data() as Client;
+            const id = a.payload.doc.id;
+            return {
+              ...data,
+              uid: data.uid || id,
+            };
+          })
+        )
+      );
   }
   getReviews(): Observable<any[]> {
     return this.user$.pipe(
