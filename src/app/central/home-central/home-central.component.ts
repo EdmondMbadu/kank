@@ -164,6 +164,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   duplicatePhoneGroups: Array<{ digits: string; clients: Client[] }> = [];
   duplicatePhoneUpdates: Record<string, string> = {};
   duplicatePhoneGroupUpdates: Record<string, string> = {};
+  duplicatePhoneGroupCollapsed = new Set<string>();
   duplicatePhoneModal = {
     open: false,
     isSaving: false,
@@ -777,6 +778,18 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
   getDuplicatePhoneGroupUpdate(groupDigits: string): string {
     return this.duplicatePhoneGroupUpdates[groupDigits] || '';
+  }
+
+  isDuplicateGroupCollapsed(groupDigits: string): boolean {
+    return this.duplicatePhoneGroupCollapsed.has(groupDigits);
+  }
+
+  toggleDuplicateGroupCollapsed(groupDigits: string) {
+    if (this.duplicatePhoneGroupCollapsed.has(groupDigits)) {
+      this.duplicatePhoneGroupCollapsed.delete(groupDigits);
+    } else {
+      this.duplicatePhoneGroupCollapsed.add(groupDigits);
+    }
   }
 
   applyDuplicateGroupValue(groupDigits: string) {
