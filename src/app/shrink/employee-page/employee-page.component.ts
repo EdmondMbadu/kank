@@ -851,7 +851,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       Number(this.bestEmployeeBonusAmount) +
       Number(this.bestManagerBonusAmount);
 
-    this.employee.totalPayments = this.totalBonusAmount.toString();
     this.employee.totalBonusThisMonth = this.totalBonusAmount.toString();
   }
   computeTotalPayment(): number {
