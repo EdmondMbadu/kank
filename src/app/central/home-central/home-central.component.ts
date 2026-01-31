@@ -712,7 +712,10 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         digits,
         clients: (groups.get(digits) || []).slice(),
       }))
-      .sort((a, b) => a.digits.localeCompare(b.digits));
+      .sort((a, b) => {
+        const lenDiff = b.clients.length - a.clients.length;
+        return lenDiff !== 0 ? lenDiff : a.digits.localeCompare(b.digits);
+      });
     this.duplicatePhoneGroups.forEach((group) => {
       group.clients.sort((a, b) => {
         const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
