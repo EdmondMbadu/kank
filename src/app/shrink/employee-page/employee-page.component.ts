@@ -728,7 +728,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.displayBonus = !this.displayBonus;
   }
   togglePayment() {
+    const opening = !this.displayPayment;
     this.displayPayment = !this.displayPayment;
+    if (opening && this.isAdminUi) {
+      this.prefillPaymentDeductions();
+    }
   }
   toggleCode() {
     this.displayCode = !this.displayCode;
@@ -1025,6 +1029,113 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         (sum, d) => sum + (Number(d.amount) || 0),
         0
       );
+  }
+
+  private prefillPaymentDeductions() {
+    this.applyAttendanceDeductionsForMonth(this.currentMonth, this.year);
+    this.applyWeeklyObjectiveDeductionsForMonth(this.currentMonth, this.year);
+    this.computeTotalPayment();
+  }
+
+  private applyAttendanceDeductionsForMonth(month: number, year: number) {
+    const attendance = this.employee?.attendance || {};
+    const byDate = new Map<string, string>();
+    Object.entries(attendance).forEach(([key, value]) => {
+      const label = this.normalizeLabel(key);
+      if (label) byDate.set(label, String(value));
+    });
+
+    let absentCount = 0;
+    let nothingCount = 0;
+    let lateCount = 0;
+
+    for (const [label, value] of byDate.entries()) {
+      const parts = this.labelToDateParts(label);
+      if (!parts) continue;
+      if (parts.m !== month || parts.y !== year) continue;
+      if (value === 'A') absentCount += 1;
+      if (value === 'N') nothingCount += 1;
+      if (value === 'L') lateCount += 1;
+    }
+
+    this.paymentAbsent = absentCount * 3;
+    this.paymentNothing = nothingCount * 3;
+    this.paymentLate = lateCount * 1;
+  }
+
+  private applyWeeklyObjectiveDeductionsForMonth(month: number, year: number) {
+    const computed = this.computeWeeklyShortfallDeductions(month, year);
+    if (computed.length === 0) return;
+
+    const map = new Map<string, WeeklyObjectiveDeduction>();
+    (this.paymentObjectiveWeekDeductions || []).forEach((d) => {
+      if (!d?.start) return;
+      map.set(`${d.start}|${d.end}`, d);
+    });
+    computed.forEach((d) => {
+      const key = `${d.start}|${d.end}`;
+      if (!map.has(key)) {
+        map.set(key, d);
+      }
+    });
+
+    this.paymentObjectiveWeekDeductions = Array.from(map.values()).sort(
+      (a, b) => a.start.localeCompare(b.start)
+    );
+    this.recomputeObjectiveWeekDeductionTotal();
+  }
+
+  private computeWeeklyShortfallDeductions(
+    month: number,
+    year: number
+  ): WeeklyObjectiveDeduction[] {
+    const weeklyTargetFc = this.resolveWeeklyTargetFc();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastDay = new Date(year, month, 0);
+    const deductions: WeeklyObjectiveDeduction[] = [];
+
+    for (let day = 1; day <= lastDay.getDate(); day += 1) {
+      const start = new Date(year, month - 1, day);
+      if (start.getDay() !== 1) continue; // Monday only
+
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      if (end.getMonth() !== month - 1) continue; // skip weeks crossing months
+      if (start > today) continue; // skip future weeks
+      if (today <= end) continue; // current week isn't deducted yet
+
+      const totalFc = this.computeWeeklyPaymentTotalForLocation(
+        this.formatDateKey(start)
+      );
+      if (totalFc >= weeklyTargetFc) continue;
+
+      deductions.push({
+        start: this.formatIsoDate(start),
+        end: this.formatIsoDate(end),
+        amount: Number(this.weekObjectiveAmount) || 0,
+      });
+    }
+
+    return deductions;
+  }
+
+  private computeWeeklyPaymentTotalForLocation(dateKey: string): number {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const payments = this.auth.currentUser?.dailyReimbursement || {};
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const key = this.formatDateKey(cursor);
+      const amount = Number((payments as any)[key] ?? 0);
+      if (!Number.isNaN(amount)) {
+        total += amount;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
   }
 
   private normalizeObjectiveDeduction(
