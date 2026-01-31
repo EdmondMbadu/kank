@@ -163,6 +163,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   duplicatePhoneClientsCount = 0;
   duplicatePhoneGroups: Array<{ digits: string; clients: Client[] }> = [];
   duplicatePhoneUpdates: Record<string, string> = {};
+  duplicatePhoneGroupUpdates: Record<string, string> = {};
   duplicatePhoneModal = {
     open: false,
     isSaving: false,
@@ -743,6 +744,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   openDuplicatePhoneModal() {
     if (!this.auth.isAdmin || this.duplicatePhoneFilter !== 'duplicates') return;
     this.duplicatePhoneUpdates = {};
+    this.duplicatePhoneGroupUpdates = {};
     this.duplicatePhoneModal.open = true;
     this.duplicatePhoneModal.isSaving = false;
     this.duplicatePhoneModal.error = null;
@@ -764,6 +766,26 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   getDuplicatePhoneUpdate(client: Client): string {
     const key = this.clientKey(client);
     return this.duplicatePhoneUpdates[key] || '';
+  }
+
+  setDuplicatePhoneGroupUpdate(groupDigits: string, value: string) {
+    this.duplicatePhoneGroupUpdates[groupDigits] = value;
+  }
+
+  getDuplicatePhoneGroupUpdate(groupDigits: string): string {
+    return this.duplicatePhoneGroupUpdates[groupDigits] || '';
+  }
+
+  applyDuplicateGroupValue(groupDigits: string) {
+    const value = this.getDuplicatePhoneGroupUpdate(groupDigits).trim();
+    if (!value) return;
+    const group = this.duplicatePhoneGroups.find(
+      (g) => g.digits === groupDigits
+    );
+    if (!group) return;
+    group.clients.forEach((client) => {
+      this.setDuplicatePhoneUpdate(client, value);
+    });
   }
 
   private clientKey(client: Client): string {
