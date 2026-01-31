@@ -161,6 +161,14 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   duplicatePhoneCounts: Record<string, number> = {};
   duplicatePhoneGroupsCount = 0;
   duplicatePhoneClientsCount = 0;
+  duplicatePhoneGroups: Array<{ digits: string; clients: Client[] }> = [];
+  duplicatePhoneUpdates: Record<string, string> = {};
+  duplicatePhoneModal = {
+    open: false,
+    isSaving: false,
+    error: '' as string | null,
+    result: null as { updated: number; skipped: number; failed: number } | null,
+  };
   filteredDebtTotal = 0;
 
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
@@ -258,6 +266,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         const tagged = clients.map((c) => ({
           ...c,
           locationName: user.firstName,
+          locationOwnerId: c.locationOwnerId || user.uid,
         }));
         tempClients = tempClients.concat(tagged);
         completedRequests++;
@@ -672,10 +681,14 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
   private buildDuplicatePhoneIndex() {
     const counts = new Map<string, number>();
+    const groups = new Map<string, Client[]>();
     for (const client of this.allClients ?? []) {
       const digits = this.normalizePhoneDigits(client.phoneNumber);
       if (!digits) continue;
       counts.set(digits, (counts.get(digits) || 0) + 1);
+      const list = groups.get(digits) || [];
+      list.push(client);
+      groups.set(digits, list);
     }
 
     this.duplicatePhoneDigits = new Set(
@@ -692,6 +705,20 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       if (digits && this.duplicatePhoneDigits.has(digits)) dupClients += 1;
     }
     this.duplicatePhoneClientsCount = dupClients;
+
+    this.duplicatePhoneGroups = Array.from(this.duplicatePhoneDigits)
+      .map((digits) => ({
+        digits,
+        clients: (groups.get(digits) || []).slice(),
+      }))
+      .sort((a, b) => a.digits.localeCompare(b.digits));
+    this.duplicatePhoneGroups.forEach((group) => {
+      group.clients.sort((a, b) => {
+        const nameA = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+        const nameB = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+        return nameA.localeCompare(nameB);
+      });
+    });
   }
 
   private matchesDuplicatePhone(client: Client): boolean {
@@ -711,6 +738,134 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const digits = this.normalizePhoneDigits(client.phoneNumber);
     if (!digits) return 0;
     return this.duplicatePhoneCounts[digits] || 0;
+  }
+
+  openDuplicatePhoneModal() {
+    if (!this.auth.isAdmin || this.duplicatePhoneFilter !== 'duplicates') return;
+    this.duplicatePhoneUpdates = {};
+    this.duplicatePhoneModal.open = true;
+    this.duplicatePhoneModal.isSaving = false;
+    this.duplicatePhoneModal.error = null;
+    this.duplicatePhoneModal.result = null;
+  }
+
+  closeDuplicatePhoneModal() {
+    this.duplicatePhoneModal.open = false;
+    this.duplicatePhoneModal.isSaving = false;
+    this.duplicatePhoneModal.error = null;
+    this.duplicatePhoneModal.result = null;
+  }
+
+  setDuplicatePhoneUpdate(client: Client, value: string) {
+    const key = this.clientKey(client);
+    this.duplicatePhoneUpdates[key] = value;
+  }
+
+  getDuplicatePhoneUpdate(client: Client): string {
+    const key = this.clientKey(client);
+    return this.duplicatePhoneUpdates[key] || '';
+  }
+
+  private clientKey(client: Client): string {
+    return (
+      client.uid ||
+      client.trackingId ||
+      `${client.firstName || ''}-${client.lastName || ''}-${client.phoneNumber || ''}`
+    );
+  }
+
+  async applyDuplicatePhoneUpdates() {
+    if (this.duplicatePhoneModal.isSaving) return;
+    this.duplicatePhoneModal.isSaving = true;
+    this.duplicatePhoneModal.error = null;
+    this.duplicatePhoneModal.result = null;
+
+    const updates: Array<{ client: Client; newPhone: string }> = [];
+    let skipped = 0;
+
+    for (const group of this.duplicatePhoneGroups) {
+      for (const client of group.clients) {
+        const raw = this.getDuplicatePhoneUpdate(client).trim();
+        if (!raw) {
+          continue;
+        }
+        const newDigits = this.normalizePhoneDigits(raw);
+        const oldDigits = this.normalizePhoneDigits(client.phoneNumber);
+        if (!newDigits || newDigits === oldDigits) {
+          skipped += 1;
+          continue;
+        }
+        updates.push({ client, newPhone: raw });
+      }
+    }
+
+    if (updates.length === 0) {
+      this.duplicatePhoneModal.result = { updated: 0, skipped, failed: 0 };
+      this.duplicatePhoneModal.isSaving = false;
+      return;
+    }
+
+    const chunkSize = 400;
+    let updated = 0;
+    let failed = 0;
+
+    for (let i = 0; i < updates.length; i += chunkSize) {
+      const chunk = updates.slice(i, i + chunkSize);
+      const batch = this.afs.firestore.batch();
+      const localUpdates: Array<{
+        client: Client;
+        newPhone: string;
+        payload: Partial<Client>;
+        refPath: string;
+      }> = [];
+
+      for (const item of chunk) {
+        const client = item.client;
+        const ownerId = client.locationOwnerId;
+        if (!ownerId || !client.uid) {
+          failed += 1;
+          continue;
+        }
+        const prev = Array.isArray(client.previousPhoneNumbers)
+          ? [...client.previousPhoneNumbers]
+          : [];
+        const currentRaw = (client.phoneNumber || '').toString();
+        if (currentRaw && !prev.includes(currentRaw)) prev.push(currentRaw);
+
+        const payload: Partial<Client> = {
+          phoneNumber: item.newPhone,
+          previousPhoneNumbers: prev,
+        };
+        const ref = this.afs.firestore.doc(
+          `users/${ownerId}/clients/${client.uid}`
+        );
+        batch.set(ref, payload, { merge: true });
+        localUpdates.push({
+          client,
+          newPhone: item.newPhone,
+          payload,
+          refPath: `users/${ownerId}/clients/${client.uid}`,
+        });
+      }
+
+      try {
+        await batch.commit();
+        for (const entry of localUpdates) {
+          entry.client.phoneNumber = entry.newPhone;
+          entry.client.previousPhoneNumbers = (entry.payload
+            .previousPhoneNumbers || []) as string[];
+          updated += 1;
+        }
+      } catch (error) {
+        console.error('Duplicate phone bulk update failed', error);
+        failed += localUpdates.length;
+      }
+    }
+
+    this.buildDuplicatePhoneIndex();
+    this.applyClientFilters();
+    this.duplicatePhoneModal.result = { updated, skipped, failed };
+    this.duplicatePhoneModal.isSaving = false;
   }
 
   private matchesSearchTerm(client: Client, rawTerm: string): boolean {
