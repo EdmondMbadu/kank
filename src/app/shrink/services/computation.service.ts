@@ -1606,7 +1606,7 @@ export class ComputationService {
     /* ---------- Helpers --------------------------------------------------*/
     const safeNumber = (v: number) => {
       const n = Number.isFinite(v) ? Math.round(v) : 0;
-      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     };
     const formatWeekRange = (start?: string, end?: string) => {
       if (!start) return '';
@@ -2005,10 +2005,10 @@ export class ComputationService {
               },
             ],
             [
-              { text: 'Total bonus annuel', style: 'totalLabel' },
+              { text: 'TOTAL BONUS ANNUEL', style: 'yearTotalBonusLabel' },
               {
                 text: `$ ${safeNumber(totalBonus)}`,
-                style: 'total',
+                style: 'yearTotalBonusValue',
                 alignment: 'right',
               },
             ],
@@ -2097,6 +2097,20 @@ export class ComputationService {
           fontSize: 14,
           color: '#0F172A',
           fillColor: '#E2E8F0',
+          margin: [0, 4, 0, 4],
+        },
+        yearTotalBonusLabel: {
+          bold: true,
+          fontSize: 12,
+          color: '#0F172A',
+          fillColor: '#DCFCE7',
+          margin: [0, 4, 0, 4],
+        },
+        yearTotalBonusValue: {
+          bold: true,
+          fontSize: 14,
+          color: '#166534',
+          fillColor: '#DCFCE7',
           margin: [0, 4, 0, 4],
         },
       },
