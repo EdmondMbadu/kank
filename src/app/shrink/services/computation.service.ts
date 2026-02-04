@@ -2012,6 +2012,14 @@ export class ComputationService {
                 alignment: 'right',
               },
             ],
+            [
+              { text: 'TOTAL RÉMUNÉRATIONS', style: 'yearTotalAllLabel' },
+              {
+                text: `$ ${safeNumber(totalPayment + totalBonus)}`,
+                style: 'yearTotalAllValue',
+                alignment: 'right',
+              },
+            ],
           ],
         },
         layout: {
@@ -2111,6 +2119,20 @@ export class ComputationService {
           fontSize: 14,
           color: '#166534',
           fillColor: '#DCFCE7',
+          margin: [0, 4, 0, 4],
+        },
+        yearTotalAllLabel: {
+          bold: true,
+          fontSize: 12,
+          color: '#1F2937',
+          fillColor: '#FEF3C7',
+          margin: [0, 4, 0, 4],
+        },
+        yearTotalAllValue: {
+          bold: true,
+          fontSize: 15,
+          color: '#92400E',
+          fillColor: '#FEF3C7',
           margin: [0, 4, 0, 4],
         },
       },
