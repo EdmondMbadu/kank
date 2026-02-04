@@ -86,6 +86,27 @@ type ContractViewModel = {
   effectiveDate?: string;
   signatureDataUrl?: string;
 };
+type PaymentEntryKind = 'paiement' | 'bonus';
+type PaymentYearEntry = {
+  rawKey: string;
+  date: Date;
+  dateLabel: string;
+  amount: number;
+  kind: PaymentEntryKind;
+};
+type PaymentYearMonthSummary = {
+  month: number;
+  monthLabel: string;
+  entries: PaymentYearEntry[];
+  totalPayment: number;
+  totalBonus: number;
+};
+type PaymentYearSummary = {
+  year: number;
+  months: PaymentYearMonthSummary[];
+  totalPayment: number;
+  totalBonus: number;
+};
 
 @Component({
   selector: 'app-employee-page',
@@ -346,6 +367,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   totalPointsMonth: string = '';
   paymentAmounts: string[] = [];
   paymentDates: string[] = [];
+  paymentViewMode: 'month' | 'year' = 'month';
+  paymentYearSummaries: PaymentYearSummary[] = [];
 
   paymentNothing: number = 0;
   paymentAbsent: number = 0;
@@ -1496,6 +1519,121 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.paymentAmounts = currentPayments.map((entry) => entry[1]);
       this.paymentDates = currentPayments.map((entry) =>
         this.time.convertTimeFormat(entry[0])
+      );
+      this.buildPaymentYearSummaries();
+      return;
+    }
+    this.paymentYearSummaries = [];
+  }
+
+  private resolvePaymentKind(rawKey: string): PaymentEntryKind {
+    const lower = (rawKey || '').toLowerCase();
+    if (lower.includes('bonus')) return 'bonus';
+    if (lower.includes('paiement') || lower.includes('payment')) return 'paiement';
+    return 'paiement';
+  }
+
+  private buildPaymentYearSummaries(): void {
+    const payments = this.employee.payments;
+    if (!payments) {
+      this.paymentYearSummaries = [];
+      return;
+    }
+
+    const entries: PaymentYearEntry[] = Object.entries(payments)
+      .map(([rawKey, rawAmount]) => {
+        const date = this.time.parseFlexibleDateTime(rawKey);
+        if (Number.isNaN(date.getTime())) return null;
+        const amount = Number(rawAmount ?? 0);
+        return {
+          rawKey,
+          date,
+          dateLabel: this.time.convertTimeFormat(rawKey),
+          amount: Number.isFinite(amount) ? amount : 0,
+          kind: this.resolvePaymentKind(rawKey),
+        } as PaymentYearEntry;
+      })
+      .filter((entry): entry is PaymentYearEntry => !!entry);
+
+    const yearMap = new Map<number, Map<number, PaymentYearEntry[]>>();
+
+    entries.forEach((entry) => {
+      const year = entry.date.getFullYear();
+      const month = entry.date.getMonth() + 1;
+      if (!yearMap.has(year)) yearMap.set(year, new Map());
+      const monthMap = yearMap.get(year)!;
+      if (!monthMap.has(month)) monthMap.set(month, []);
+      monthMap.get(month)!.push(entry);
+    });
+
+    const summaries: PaymentYearSummary[] = [];
+    yearMap.forEach((monthsMap, year) => {
+      const months: PaymentYearMonthSummary[] = [];
+      let totalPayment = 0;
+      let totalBonus = 0;
+
+      Array.from(monthsMap.entries())
+        .sort((a, b) => a[0] - b[0])
+        .forEach(([month, monthEntries]) => {
+          const entriesSorted = [...monthEntries].sort(
+            (a, b) => a.date.getTime() - b.date.getTime()
+          );
+          let monthPayment = 0;
+          let monthBonus = 0;
+          entriesSorted.forEach((entry) => {
+            if (entry.kind === 'bonus') {
+              monthBonus += entry.amount;
+            } else {
+              monthPayment += entry.amount;
+            }
+          });
+
+          totalPayment += monthPayment;
+          totalBonus += monthBonus;
+
+          months.push({
+            month,
+            monthLabel: this.time.monthFrenchNames[month - 1],
+            entries: entriesSorted,
+            totalPayment: monthPayment,
+            totalBonus: monthBonus,
+          });
+        });
+
+      summaries.push({
+        year,
+        months,
+        totalPayment,
+        totalBonus,
+      });
+    });
+
+    this.paymentYearSummaries = summaries.sort((a, b) => b.year - a.year);
+  }
+
+  paymentYearAnchor(year: number): string {
+    return `payment-year-${year}`;
+  }
+
+  async downloadYearlyPaymentSummary(summary: PaymentYearSummary): Promise<void> {
+    try {
+      const blob = await this.compute.generateYearlyPaymentSummary(
+        this.employee,
+        summary.year,
+        summary.months,
+        summary.totalPayment,
+        summary.totalBonus
+      );
+      if (!blob) {
+        throw new Error('Le PDF de résumé annuel est invalide.');
+      }
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (error) {
+      console.error('Erreur lors de la génération du résumé annuel', error);
+      alert(
+        "La génération du résumé annuel a échoué. Veuillez réessayer plus tard."
       );
     }
   }

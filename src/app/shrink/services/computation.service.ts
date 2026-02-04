@@ -1605,13 +1605,8 @@ export class ComputationService {
   ) {
     /* ---------- Helpers --------------------------------------------------*/
     const safeNumber = (v: number) => {
-      try {
-        return new Intl.NumberFormat('fr-FR', {
-          minimumFractionDigits: 0,
-        }).format(v);
-      } catch {
-        return v.toLocaleString(undefined, { minimumFractionDigits: 0 });
-      }
+      const n = Number.isFinite(v) ? Math.round(v) : 0;
+      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
     };
     const formatWeekRange = (start?: string, end?: string) => {
       if (!start) return '';
@@ -1906,6 +1901,208 @@ export class ComputationService {
     };
 
     /* ---------- Generate -------------------------------------------------*/
+    const pdfMake = await this.ensurePdfMake();
+    const pdfDoc = pdfMake.createPdf(dd);
+
+    return new Promise<Blob>((resolve, reject) => {
+      pdfDoc.getBlob(
+        (b: Blob) => resolve(b),
+        (e: any) => reject(e)
+      );
+    });
+  }
+
+  async generateYearlyPaymentSummary(
+    employee: Employee,
+    year: number,
+    months: {
+      month: number;
+      monthLabel: string;
+      entries: { dateLabel: string; amount: number; kind: 'paiement' | 'bonus' }[];
+      totalPayment: number;
+      totalBonus: number;
+    }[],
+    totalPayment: number,
+    totalBonus: number
+  ): Promise<Blob> {
+    const safeNumber = (v: number) => {
+      try {
+        return new Intl.NumberFormat('fr-FR', {
+          minimumFractionDigits: 0,
+        }).format(v);
+      } catch {
+        return v.toLocaleString(undefined, { minimumFractionDigits: 0 });
+      }
+    };
+
+    const base64Logo = await this.fetchImageAsBase64(
+      '../../../assets/img/gervais.png'
+    );
+
+    const content: any[] = [
+      {
+        columns: [
+          [
+            { text: 'FONDATION GERVAIS', style: 'brand' },
+            {
+              text: '9 Av. Nations-Unies\nMon‑Ngafula, Kinshasa (RDC)',
+              style: 'tiny',
+            },
+            { text: 'Téléphone : +243 825 333 567', style: 'tiny' },
+          ],
+          { image: base64Logo, width: 75, alignment: 'right' },
+        ],
+      },
+      {
+        canvas: [
+          {
+            type: 'line',
+            x1: 0,
+            y1: 0,
+            x2: 515 - 80,
+            y2: 0,
+            lineWidth: 1.5,
+            lineColor: '#263238',
+          },
+        ],
+        margin: [0, 5, 0, 15],
+      },
+      { text: 'Résumé annuel des paiements', style: 'docTitle' },
+      {
+        columns: [
+          {
+            text: [
+              { text: 'Employé : ', bold: true },
+              `${employee.firstName} ${employee.middleName ?? ''} ${
+                employee.lastName
+              }\n`,
+              { text: 'Rôle : ', bold: true },
+              `${employee.role ?? ''}\n`,
+              { text: 'Année : ', bold: true },
+              `${year}`,
+            ],
+          },
+          {
+            text: [
+              { text: "Date d'édition : ", bold: true },
+              this.time.getTodaysDateInFrench(),
+            ],
+            alignment: 'right',
+          },
+        ],
+        margin: [0, 0, 0, 10],
+      },
+      {
+        table: {
+          widths: ['*', 'auto'],
+          body: [
+            [
+              { text: 'TOTAL PAIEMENTS ANNUEL', style: 'yearTotalLabel' },
+              {
+                text: `$ ${safeNumber(totalPayment)}`,
+                style: 'yearTotalValue',
+                alignment: 'right',
+              },
+            ],
+            [
+              { text: 'Total bonus annuel', style: 'totalLabel' },
+              {
+                text: `$ ${safeNumber(totalBonus)}`,
+                style: 'total',
+                alignment: 'right',
+              },
+            ],
+          ],
+        },
+        layout: {
+          hLineWidth: () => 0.7,
+          vLineWidth: () => 0,
+          hLineColor: () => '#B0BEC5',
+        },
+        margin: [0, 0, 0, 15],
+      },
+    ];
+
+    months.forEach((month) => {
+      if (!month.entries || month.entries.length === 0) return;
+      content.push(
+        { text: `${month.monthLabel} ${year}`, style: 'subHeader' },
+        {
+          style: 'table',
+          table: {
+            widths: ['*', 'auto', 'auto'],
+            body: [
+              [
+                { text: 'Date', style: 'th' },
+                { text: 'Type', style: 'th' },
+                { text: 'Montant ($)', style: 'th', alignment: 'right' },
+              ],
+              ...month.entries.map((entry) => [
+                entry.dateLabel,
+                entry.kind === 'bonus' ? 'Bonus' : 'Paiement',
+                { text: safeNumber(entry.amount), alignment: 'right' },
+              ]),
+              [
+                { text: 'Total paiements', style: 'totalLabel' },
+                '',
+                {
+                  text: safeNumber(month.totalPayment),
+                  alignment: 'right',
+                  style: 'total',
+                },
+              ],
+              [
+                { text: 'Total bonus', style: 'totalLabel' },
+                '',
+                {
+                  text: safeNumber(month.totalBonus),
+                  alignment: 'right',
+                  style: 'total',
+                },
+              ],
+            ],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#B0BEC5',
+          },
+          margin: [0, 6, 0, 16],
+        }
+      );
+    });
+
+    const dd: any = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      content,
+      styles: {
+        brand: { fontSize: 14, bold: true, color: '#263238' },
+        tiny: { fontSize: 8, color: '#546E7A' },
+        docTitle: { fontSize: 18, bold: true, margin: [0, 0, 0, 15] },
+        subHeader: { fontSize: 12, bold: true, margin: [0, 6, 0, 6] },
+        table: { margin: [0, 0, 0, 10] },
+        th: { bold: true, fillColor: '#ECEFF1', margin: [0, 3, 0, 3] },
+        totalLabel: { bold: true, margin: [0, 3, 0, 3] },
+        total: { bold: true, fontSize: 10, margin: [0, 3, 0, 3] },
+        yearTotalLabel: {
+          bold: true,
+          fontSize: 12,
+          color: '#0F172A',
+          fillColor: '#E2E8F0',
+          margin: [0, 4, 0, 4],
+        },
+        yearTotalValue: {
+          bold: true,
+          fontSize: 14,
+          color: '#0F172A',
+          fillColor: '#E2E8F0',
+          margin: [0, 4, 0, 4],
+        },
+      },
+      defaultStyle: { fontSize: 10 },
+    };
+
     const pdfMake = await this.ensurePdfMake();
     const pdfDoc = pdfMake.createPdf(dd);
 

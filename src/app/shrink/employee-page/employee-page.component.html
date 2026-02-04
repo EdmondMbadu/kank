@@ -1744,6 +1744,31 @@
           </h5>
         </div>
 
+        <div class="flex items-center gap-2">
+          <button
+            (click)="paymentViewMode = 'month'"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg border"
+            [ngClass]="
+              paymentViewMode === 'month'
+                ? 'bg-white text-indigo-700 border-white'
+                : 'bg-white/10 text-white border-white/30 hover:bg-white/20'
+            "
+          >
+            Mois
+          </button>
+          <button
+            (click)="paymentViewMode = 'year'"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg border"
+            [ngClass]="
+              paymentViewMode === 'year'
+                ? 'bg-white text-indigo-700 border-white'
+                : 'bg-white/10 text-white border-white/30 hover:bg-white/20'
+            "
+          >
+            Année
+          </button>
+        </div>
+
         <div class="flex items-center" *ngIf="isEmployeeUi">
           <label for="simple-search" class="sr-only">Chercher</label>
           <div class="relative w-48 sm:w-56">
@@ -1783,126 +1808,170 @@
       </div>
 
       <div *ngIf="code?.trim() === paymentCode || (auth.isAdmin && viewAsMode === 'admin')" class="p-4">
-        <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <li
-            class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
-            *ngFor="let i of getFilteredPayments()"
-          >
-            <div class="flex items-center gap-4 px-1">
-              <div
-                class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-slate-100 rounded-full dark:bg-slate-700 ring-1 ring-black/5 dark:ring-white/10"
-              >
-                <span class="font-medium text-slate-700 dark:text-slate-100">{{
-                  this.auth.currentUser.firstName?.substring(0, 2)
-                }}</span>
+        <ng-container *ngIf="paymentViewMode === 'month'">
+          <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
+            <li
+              class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
+              *ngFor="let i of getFilteredPayments()"
+            >
+              <div class="flex items-center gap-4 px-1">
+                <div
+                  class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-slate-100 rounded-full dark:bg-slate-700 ring-1 ring-black/5 dark:ring-white/10"
+                >
+                  <span class="font-medium text-slate-700 dark:text-slate-100">{{
+                    this.auth.currentUser.firstName?.substring(0, 2)
+                  }}</span>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <p
+                    class="text-sm font-medium text-slate-900 truncate dark:text-white"
+                  >
+                    {{ paymentDates[i] }}
+                  </p>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Virement
+                  </p>
+                </div>
+
+                <div class="inline-flex items-center">
+                  <span
+                    class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
+                  >
+                    $ {{ paymentAmounts[i] | number : "1.0-0" }}
+                  </span>
+                </div>
               </div>
 
-              <div class="flex-1 min-w-0">
-                <p
-                  class="text-sm font-medium text-slate-900 truncate dark:text-white"
-                >
-                  {{ paymentDates[i] }}
-                </p>
-                <p class="text-xs text-slate-500 dark:text-slate-400">
-                  Virement
-                </p>
-              </div>
-
-              <div class="inline-flex items-center">
-                <span
-                  class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
-                >
-                  $ {{ paymentAmounts[i] | number : "1.0-0" }}
-                </span>
-              </div>
-            </div>
-
-            <div class="mt-3 flex items-center justify-center gap-6">
-              <a
-                [href]="
-                  employee.paymentsPicturePath![paymentAmounts.length - 1 - i]
-                "
-                target="_blank"
-                class="group inline-flex items-center gap-2"
-              >
-                <img
-                  src="../../../assets/img/receipt.png"
-                  class="w-12 h-12 object-cover rounded-md border bg-white border-slate-200 dark:border-slate-700"
-                  alt=""
-                />
-                <span
-                  class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline"
-                  >Facture</span
-                >
-              </a>
-
-              <ng-container
-                *ngIf="
-                  employee.receipts &&
-                  employee.receipts[paymentAmounts.length - 1 - i]
-                "
-              >
+              <div class="mt-3 flex items-center justify-center gap-6">
                 <a
-                  [href]="employee.receipts[paymentAmounts.length - 1 - i]"
+                  [href]="
+                    employee.paymentsPicturePath![paymentAmounts.length - 1 - i]
+                  "
                   target="_blank"
                   class="group inline-flex items-center gap-2"
                 >
                   <img
-                    src="../../../assets/img/validating-ticket.png"
-                    class="w-12 h-12 object-cover rounded-md border border-slate-200 dark:border-slate-700"
-                    alt="Bank Transfer Receipt"
+                    src="../../../assets/img/receipt.png"
+                    class="w-12 h-12 object-cover rounded-md border bg-white border-slate-200 dark:border-slate-700"
+                    alt=""
                   />
                   <span
                     class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline"
-                    >Reçu</span
+                    >Facture</span
                   >
                 </a>
-                <button
-                  *ngIf="this.auth.isAdmin"
-                  (click)="attachReceipt(paymentAmounts.length - 1 - i)"
-                  class="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                >
-                  Changer Reçu
-                </button>
-              </ng-container>
 
-              <ng-container
-                *ngIf="
-                  !employee.receipts ||
-                  !employee.receipts[paymentAmounts.length - 1 - i]
-                "
+                <ng-container
+                  *ngIf="
+                    employee.receipts &&
+                    employee.receipts[paymentAmounts.length - 1 - i]
+                  "
+                >
+                  <a
+                    [href]="employee.receipts[paymentAmounts.length - 1 - i]"
+                    target="_blank"
+                    class="group inline-flex items-center gap-2"
+                  >
+                    <img
+                      src="../../../assets/img/validating-ticket.png"
+                      class="w-12 h-12 object-cover rounded-md border border-slate-200 dark:border-slate-700"
+                      alt="Bank Transfer Receipt"
+                    />
+                    <span
+                      class="text-xs text-slate-600 dark:text-slate-300 group-hover:underline"
+                      >Reçu</span
+                    >
+                  </a>
+                  <button
+                    *ngIf="this.auth.isAdmin"
+                    (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                    class="px-2.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                  >
+                    Changer Reçu
+                  </button>
+                </ng-container>
+
+                <ng-container
+                  *ngIf="
+                    !employee.receipts ||
+                    !employee.receipts[paymentAmounts.length - 1 - i]
+                  "
+                >
+                  <button
+                    *ngIf="this.auth.isAdmin"
+                    (click)="attachReceipt(paymentAmounts.length - 1 - i)"
+                    class="px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
+                  >
+                    Attacher Reçu
+                  </button>
+                </ng-container>
+              </div>
+            </li>
+          </ul>
+
+          <!-- See more button for all users -->
+          <div *ngIf="paymentAmounts.length > 2 && !showAllPayments" class="mt-4 flex justify-center">
+            <button
+              (click)="showAllPayments = true"
+              class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              Voir plus
+            </button>
+          </div>
+
+          <!-- See less button for all users -->
+          <div *ngIf="paymentAmounts.length > 2 && showAllPayments" class="mt-4 flex justify-center">
+            <button
+              (click)="showAllPayments = false"
+              class="px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+            >
+              Voir moins
+            </button>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="paymentViewMode === 'year'">
+          <div *ngIf="paymentYearSummaries.length === 0" class="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+            Aucun paiement annuel disponible.
+          </div>
+
+          <div *ngIf="paymentYearSummaries.length > 0" class="space-y-8">
+            <div class="flex flex-wrap gap-2">
+              <a
+                *ngFor="let summary of paymentYearSummaries"
+                [href]="'#' + paymentYearAnchor(summary.year)"
+                class="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
               >
-                <button
-                  *ngIf="this.auth.isAdmin"
-                  (click)="attachReceipt(paymentAmounts.length - 1 - i)"
-                  class="px-2.5 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
-                >
-                  Attacher Reçu
-                </button>
-              </ng-container>
+                {{ summary.year }}
+              </a>
             </div>
-          </li>
-        </ul>
 
-        <!-- See more button for all users -->
-        <div *ngIf="paymentAmounts.length > 2 && !showAllPayments" class="mt-4 flex justify-center">
-          <button
-            (click)="showAllPayments = true"
-            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            Voir plus
-          </button>
-        </div>
-
-        <!-- See less button for all users -->
-        <div *ngIf="paymentAmounts.length > 2 && showAllPayments" class="mt-4 flex justify-center">
-          <button
-            (click)="showAllPayments = false"
-            class="px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
-          >
-            Voir moins
-          </button>
-        </div>
+            <div
+              *ngFor="let summary of paymentYearSummaries"
+              [id]="paymentYearAnchor(summary.year)"
+              class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h6 class="text-sm font-semibold text-slate-900 dark:text-white">
+                    Année {{ summary.year }}
+                  </h6>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Total paiements: $ {{ summary.totalPayment | number : "1.0-0" }} ·
+                    Total bonus: $ {{ summary.totalBonus | number : "1.0-0" }}
+                  </p>
+                </div>
+                <button
+                  (click)="downloadYearlyPaymentSummary(summary)"
+                  class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                >
+                  Voir PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        </ng-container>
       </div>
 
       <input
