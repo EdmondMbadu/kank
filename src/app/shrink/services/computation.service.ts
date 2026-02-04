@@ -2067,6 +2067,15 @@ export class ComputationService {
                   style: 'total',
                 },
               ],
+              [
+                { text: 'Total rémunérations', style: 'totalLabel' },
+                '',
+                {
+                  text: safeNumber(month.totalPayment + month.totalBonus),
+                  alignment: 'right',
+                  style: 'total',
+                },
+              ],
             ],
           },
           layout: {
