@@ -1605,8 +1605,10 @@ export class ComputationService {
   ) {
     /* ---------- Helpers --------------------------------------------------*/
     const safeNumber = (v: number) => {
-      const n = Number.isFinite(v) ? Math.round(v) : 0;
-      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      const cleaned = String(v ?? '').replace(/[^\d.-]/g, '');
+      const parsed = Number(cleaned);
+      const n = Number.isFinite(parsed) ? Math.round(parsed) : 0;
+      return n.toString();
     };
     const formatWeekRange = (start?: string, end?: string) => {
       if (!start) return '';
@@ -1926,13 +1928,10 @@ export class ComputationService {
     totalBonus: number
   ): Promise<Blob> {
     const safeNumber = (v: number) => {
-      try {
-        return new Intl.NumberFormat('fr-FR', {
-          minimumFractionDigits: 0,
-        }).format(v);
-      } catch {
-        return v.toLocaleString(undefined, { minimumFractionDigits: 0 });
-      }
+      const cleaned = String(v ?? '').replace(/[^0-9.-]/g, '');
+      const parsed = Number(cleaned);
+      const n = Number.isFinite(parsed) ? Math.round(parsed) : 0;
+      return n.toString();
     };
 
     const base64Logo = await this.fetchImageAsBase64(
@@ -1999,7 +1998,7 @@ export class ComputationService {
             [
               { text: 'TOTAL PAIEMENTS ANNUEL', style: 'yearTotalLabel' },
               {
-                text: `$ ${safeNumber(totalPayment)}`,
+                text: `$${safeNumber(totalPayment)}`,
                 style: 'yearTotalValue',
                 alignment: 'right',
               },
@@ -2007,7 +2006,7 @@ export class ComputationService {
             [
               { text: 'TOTAL BONUS ANNUEL', style: 'yearTotalBonusLabel' },
               {
-                text: `$ ${safeNumber(totalBonus)}`,
+                text: `$${safeNumber(totalBonus)}`,
                 style: 'yearTotalBonusValue',
                 alignment: 'right',
               },
@@ -2015,7 +2014,7 @@ export class ComputationService {
             [
               { text: 'TOTAL RÉMUNÉRATIONS', style: 'yearTotalAllLabel' },
               {
-                text: `$ ${safeNumber(totalPayment + totalBonus)}`,
+                text: `$${safeNumber(totalPayment + totalBonus)}`,
                 style: 'yearTotalAllValue',
                 alignment: 'right',
               },
@@ -2124,15 +2123,15 @@ export class ComputationService {
         yearTotalAllLabel: {
           bold: true,
           fontSize: 12,
-          color: '#1F2937',
-          fillColor: '#FEF3C7',
+          color: '#14532D',
+          fillColor: '#DCFCE7',
           margin: [0, 4, 0, 4],
         },
         yearTotalAllValue: {
           bold: true,
           fontSize: 15,
-          color: '#92400E',
-          fillColor: '#FEF3C7',
+          color: '#166534',
+          fillColor: '#DCFCE7',
           margin: [0, 4, 0, 4],
         },
       },
