@@ -838,9 +838,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       : '';
     this.contractSignatureName =
       this.employee.contractSignedBy ?? this.buildEmployeeName(this.employee);
+    const signedYearFallback =
+      this.extractYearFromSignedDate(this.employee.contractSignedAt || '') ??
+      this.year;
     this.contractYear = this.employee.contractYear
-      ? Number.parseInt(this.employee.contractYear, 10) || this.year
-      : this.year;
+      ? Number.parseInt(this.employee.contractYear, 10) || signedYearFallback
+      : signedYearFallback;
 
     if (!this.weekObjectiveStartDate) {
       this.weekObjectiveStartDate = this.time.getTodaysDateYearMonthDay();
@@ -2210,6 +2213,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     };
   }
 
+  private extractYearFromSignedDate(value: string): number | null {
+    const matches = value.match(/\d{4}/g);
+    if (!matches || matches.length === 0) return null;
+    const year = Number.parseInt(matches[matches.length - 1], 10);
+    return Number.isNaN(year) ? null : year;
+  }
+
   private buildContractView(
     signedDate = this.contractSignedAt || this.buildSignedDateTime().full,
     signedDateShort = this.contractSignedDateOnly ||
@@ -2217,7 +2227,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   ): ContractViewModel {
     const role = this.normalizeContractRole();
     const name = this.contractSignatureName || this.buildEmployeeName();
-    const effectiveYear = new Date().getFullYear();
+    const effectiveYear =
+      this.extractYearFromSignedDate(signedDateShort || signedDate) ??
+      new Date().getFullYear();
     const effectiveDate = `Ce contrat est valable pour une durée d'un (1) an à compter du 1er janvier ${effectiveYear} renouvelable chaque année.`;
     // Get base salary from employee paymentAmount, fallback to role defaults if not set
     const baseSalary = this.employee?.paymentAmount 
@@ -2527,11 +2539,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       alert('Employé introuvable, impossible de générer le contrat.');
       return;
     }
-    this.contractYear = this.year;
     if (!this.contractSignatureName) {
       this.contractSignatureName = this.buildEmployeeName();
     }
     const signedDate = this.buildSignedDateTime();
+    this.contractYear =
+      this.extractYearFromSignedDate(signedDate.full) ?? this.year;
     this.contractView = this.buildContractView(
       signedDate.full,
       signedDate.dateOnly
