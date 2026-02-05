@@ -1387,6 +1387,8 @@ export class ComputationService {
         docTitle: { fontSize: 18, bold: true, margin: [0, 0, 0, 15] },
         subHeader: { fontSize: 12, bold: true },
         table: { margin: [0, 0, 0, 10] },
+        tableHeader: { bold: true, color: '#0F172A', margin: [0, 3, 0, 3] },
+        monthCell: { bold: true, color: '#0F172A' },
         th: { bold: true, fillColor: '#ECEFF1', margin: [0, 3, 0, 3] },
         totalLabel: { bold: true, margin: [0, 3, 0, 3] },
         total: { bold: true, fontSize: 12, margin: [0, 3, 0, 3] },
@@ -2030,62 +2032,50 @@ export class ComputationService {
       },
     ];
 
-    months.forEach((month) => {
-      if (!month.entries || month.entries.length === 0) return;
-      content.push(
-        { text: `${month.monthLabel} ${year}`, style: 'subHeader' },
+    const formatMoney = (value: number) => `$${safeNumber(value)}`;
+
+    const monthSummaryRows = months
+      .filter((month) => month.entries && month.entries.length > 0)
+      .map((month) => [
+        { text: month.monthLabel, style: 'monthCell' },
+        { text: formatMoney(month.totalPayment), alignment: 'right' },
+        { text: formatMoney(month.totalBonus), alignment: 'right' },
         {
-          style: 'table',
-          table: {
-            widths: ['*', 'auto', 'auto'],
-            body: [
-              [
-                { text: 'Date', style: 'th' },
-                { text: 'Type', style: 'th' },
-                { text: 'Montant ($)', style: 'th', alignment: 'right' },
-              ],
-              ...month.entries.map((entry) => [
-                entry.dateLabel,
-                entry.kind === 'bonus' ? 'Bonus' : 'Paiement',
-                { text: safeNumber(entry.amount), alignment: 'right' },
-              ]),
-              [
-                { text: 'Total paiements', style: 'totalLabel' },
-                '',
-                {
-                  text: safeNumber(month.totalPayment),
-                  alignment: 'right',
-                  style: 'total',
-                },
-              ],
-              [
-                { text: 'Total bonus', style: 'totalLabel' },
-                '',
-                {
-                  text: safeNumber(month.totalBonus),
-                  alignment: 'right',
-                  style: 'total',
-                },
-              ],
-              [
-                { text: 'Total rémunérations', style: 'totalLabel' },
-                '',
-                {
-                  text: safeNumber(month.totalPayment + month.totalBonus),
-                  alignment: 'right',
-                  style: 'total',
-                },
-              ],
-            ],
-          },
-          layout: {
-            hLineWidth: () => 0.5,
-            vLineWidth: () => 0,
-            hLineColor: () => '#B0BEC5',
-          },
-          margin: [0, 6, 0, 16],
-        }
-      );
+          text: formatMoney(month.totalPayment + month.totalBonus),
+          alignment: 'right',
+          style: 'total',
+        },
+      ]);
+
+    content.push({
+      text: 'Résumé mensuel',
+      style: 'subHeader',
+      margin: [0, 6, 0, 6],
+    });
+    content.push({
+      style: 'table',
+      table: {
+        widths: ['*', 'auto', 'auto', 'auto'],
+        body: [
+          [
+            { text: 'Mois', style: 'tableHeader' },
+            { text: 'Paiements', style: 'tableHeader', alignment: 'right' },
+            { text: 'Bonus', style: 'tableHeader', alignment: 'right' },
+            { text: 'Rémunérations', style: 'tableHeader', alignment: 'right' },
+          ],
+          ...monthSummaryRows,
+        ],
+      },
+      layout: {
+        hLineWidth: () => 0.5,
+        vLineWidth: () => 0,
+        hLineColor: () => '#B0BEC5',
+        fillColor: (rowIndex: number) => {
+          if (rowIndex === 0) return '#E2E8F0';
+          return rowIndex % 2 === 0 ? '#F8FAFC' : null;
+        },
+      },
+      margin: [0, 0, 0, 16],
     });
 
     const dd: any = {
