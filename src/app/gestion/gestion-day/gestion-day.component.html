@@ -657,6 +657,16 @@
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +s.payment! || 0 | number : "1.0-0" }} FC
               </span>
+              <span
+                class="text-xs font-semibold"
+                [ngClass]="
+                  (+(s.dayExpense ?? 0)) > 0
+                    ? 'text-red-600'
+                    : 'text-slate-400 dark:text-slate-500'
+                "
+              >
+                Dépense du jour: {{ +(s.dayExpense ?? 0) | number : "1.0-0" }} FC
+              </span>
             </div>
           </td>
 

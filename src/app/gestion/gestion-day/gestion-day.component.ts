@@ -215,6 +215,8 @@ export class GestionDayComponent implements OnInit {
     moneyInHands: number;
     moneyInHandsDollar: number;
     transportAmount?: number;
+    dayExpense?: number;
+    dayExpenseDollar?: number;
   }> = [];
   overallTotal: number = 0;
   overallTotalReserve: number = 0;
@@ -439,6 +441,18 @@ export class GestionDayComponent implements OnInit {
             0
           );
 
+          const dayExpense = Number(
+            this.compute.findTotalForToday(
+              (user.expenses ?? {}) as { [key: string]: string },
+              this.requestDateCorrectFormat
+            )
+          );
+          const dayExpenseDollar = Number(
+            this.compute.convertCongoleseFrancToUsDollars(
+              (Number.isFinite(dayExpense) ? dayExpense : 0).toString()
+            )
+          );
+
           this.reserveTotals.push({
             firstName: user.firstName!,
 
@@ -473,6 +487,10 @@ export class GestionDayComponent implements OnInit {
             moneyInHands: moneyHandsFC,
             moneyInHandsDollar: moneyHandsDollar,
             transportAmount,
+            dayExpense: Number.isFinite(dayExpense) ? dayExpense : 0,
+            dayExpenseDollar: Number.isFinite(dayExpenseDollar)
+              ? dayExpenseDollar
+              : 0,
           });
 
           // Add to the overall total
