@@ -1054,6 +1054,23 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return this.time.englishToFrenchDay[raw] ?? raw;
   }
 
+  formatDebtDate(value?: string): string {
+    const raw = (value ?? '').toString().trim();
+    if (!raw) return '-';
+    if (raw.includes('/')) return raw;
+    const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+      const [, year, month, day] = isoMatch;
+      return `${day}/${month}/${year}`;
+    }
+    const parts = raw.split('-');
+    if (parts.length >= 3) {
+      const [month, day, year] = parts;
+      if (month && day && year) return `${day}/${month}/${year}`;
+    }
+    return raw;
+  }
+
   clientInitials(client: Client): string {
     const first = (client.firstName ?? '').trim();
     const last = (client.lastName ?? '').trim();

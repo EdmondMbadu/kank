@@ -1831,23 +1831,39 @@
     </div>
 
     <div class="space-y-6 px-4 py-4 sm:px-6">
-      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div>
-            <p class="text-xs uppercase text-slate-500">Dette actuelle</p>
-            <p class="text-base font-semibold text-slate-900">
-              {{ formatAmount(activeClient.debtLeft) }} FC
-            </p>
-          </div>
-          <div>
-            <p class="text-xs uppercase text-slate-500">Epargne</p>
-            <p class="text-base font-semibold text-slate-900">
-              {{ formatAmount(activeClient.savings) }} FC
-            </p>
-          </div>
-          <div>
-            <p class="text-xs uppercase text-slate-500">Dette reconnue</p>
-            <div class="mt-1 flex items-center gap-2">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p class="text-xs uppercase text-slate-500">Dette actuelle</p>
+              <p class="text-base font-semibold text-slate-900">
+                {{ formatAmount(activeClient.debtLeft) }} FC
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase text-slate-500">Epargne</p>
+              <p class="text-base font-semibold text-slate-900">
+                {{ formatAmount(activeClient.savings) }} FC
+              </p>
+            </div>
+            <div class="rounded-lg border border-emerald-100 bg-white px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
+                Début dette
+              </p>
+              <p class="mt-1 text-base font-semibold text-slate-900">
+                {{ formatDebtDate(activeClient.debtCycleStartDate) }}
+              </p>
+            </div>
+            <div class="rounded-lg border border-amber-100 bg-white px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+                Date prévue fin de dette
+              </p>
+              <p class="mt-1 text-base font-semibold text-slate-900">
+                {{ formatDebtDate(activeClient.debtCycleEndDate) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase text-slate-500">Dette reconnue</p>
+              <div class="mt-1 flex items-center gap-2">
               <input
                 [(ngModel)]="activeClient.debtRecognized"
                 (blur)="saveDebtRecognized(activeClient)"
