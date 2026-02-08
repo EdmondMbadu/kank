@@ -2194,6 +2194,15 @@ Merci pour ta confiance !`;
   private formatFc(n: number | string): string {
     return Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
   }
+  fcToUsdDisplay(value: number | string | null | undefined): string {
+    const num = Number(value ?? 0);
+    if (!Number.isFinite(num) || num <= 0) return '0';
+    const usdRaw = Number(
+      this.compute.convertCongoleseFrancToUsDollars(num.toString())
+    );
+    if (!Number.isFinite(usdRaw) || usdRaw <= 0) return '0';
+    return usdRaw.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
   private maxAmountFor(c: Client): number | null {
     const score = Number(c.creditScore);
     if (!Number.isFinite(score)) return null;
