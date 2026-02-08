@@ -1595,6 +1595,26 @@
         <span class="font-semibold">Clients :</span>
         <span>{{ duplicatePhoneClientsCount }}</span>
       </div>
+      <div class="mt-2 grid gap-2 text-xs md:grid-cols-3">
+        <div class="rounded-lg border border-slate-200 bg-white/80 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
+          <div class="font-semibold text-slate-700 dark:text-slate-200">Dette totale</div>
+          <div class="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100">
+            FC {{ duplicateModalDebtTotal | number : "1.0-0" }}
+          </div>
+        </div>
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 dark:border-emerald-700/60 dark:bg-emerald-900/20">
+          <div class="font-semibold text-emerald-700 dark:text-emerald-300">En cours</div>
+          <div class="mt-0.5 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+            FC {{ duplicateModalActiveDebtTotal | number : "1.0-0" }}
+          </div>
+        </div>
+        <div class="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 dark:border-amber-700/60 dark:bg-amber-900/20">
+          <div class="font-semibold text-amber-700 dark:text-amber-300">À l’écart</div>
+          <div class="mt-0.5 text-sm font-bold text-amber-800 dark:text-amber-200">
+            FC {{ duplicateModalAwayDebtTotal | number : "1.0-0" }}
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="mt-4 space-y-4">
@@ -1612,6 +1632,15 @@
           <div class="flex items-center gap-2">
             <span class="text-xs text-slate-500 dark:text-slate-400">
               {{ group.clients.length }} client(s)
+            </span>
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              Dette groupe: <strong>FC {{ duplicateGroupDebtTotal(group) | number : "1.0-0" }}</strong>
+            </span>
+            <span class="text-xs text-emerald-700 dark:text-emerald-300">
+              En cours: <strong>FC {{ duplicateGroupActiveDebtTotal(group) | number : "1.0-0" }}</strong>
+            </span>
+            <span class="text-xs text-amber-700 dark:text-amber-300">
+              À l’écart: <strong>FC {{ duplicateGroupAwayDebtTotal(group) | number : "1.0-0" }}</strong>
             </span>
             <button
               type="button"
@@ -1670,6 +1699,21 @@
               </div>
               <div class="text-[11px] text-slate-500 dark:text-slate-400">
                 {{ c.locationName }}
+              </div>
+              <div class="mt-1 flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-100">
+                  Dette: FC {{ duplicateClientDebt(c) | number : "1.0-0" }}
+                </span>
+                <span
+                  class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                  [ngClass]="
+                    isDuplicateClientAway(c)
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                      : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  "
+                >
+                  {{ duplicateClientStatusLabel(c) }}
+                </span>
               </div>
             </div>
             <div class="text-[11px] text-slate-500 dark:text-slate-400">

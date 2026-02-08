@@ -795,6 +795,91 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     }
   }
 
+  duplicateClientDebt(client: Client): number {
+    const debt = this.parseDebtLeft(client.debtLeft ?? client.debtInProcess);
+    return debt > 0 ? debt : 0;
+  }
+
+  private normalizeVitalStatus(value?: string | null): string {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  duplicateClientStatusLabel(client: Client): string {
+    const raw = (client.vitalStatus || '').trim();
+    const normalized = this.normalizeVitalStatus(raw);
+    if (!normalized || normalized === 'vivant') return 'En cours';
+    if (
+      normalized === 'quitte' ||
+      normalized === 'quittee' ||
+      normalized === 'quite' ||
+      normalized === 'quit'
+    ) {
+      return 'Quitté';
+    }
+    if (
+      normalized === 'mort' ||
+      normalized === 'decede' ||
+      normalized === 'deceased' ||
+      normalized === 'dead'
+    ) {
+      return 'Décédé';
+    }
+    return raw || 'À l’écart';
+  }
+
+  isDuplicateClientAway(client: Client): boolean {
+    return this.duplicateClientStatusLabel(client) !== 'En cours';
+  }
+
+  duplicateGroupDebtTotal(group: { digits: string; clients: Client[] }): number {
+    return (group?.clients || []).reduce(
+      (sum, client) => sum + this.duplicateClientDebt(client),
+      0
+    );
+  }
+
+  duplicateGroupActiveDebtTotal(group: {
+    digits: string;
+    clients: Client[];
+  }): number {
+    return (group?.clients || []).reduce((sum, client) => {
+      if (this.isDuplicateClientAway(client)) return sum;
+      return sum + this.duplicateClientDebt(client);
+    }, 0);
+  }
+
+  duplicateGroupAwayDebtTotal(group: { digits: string; clients: Client[] }): number {
+    return (group?.clients || []).reduce((sum, client) => {
+      if (!this.isDuplicateClientAway(client)) return sum;
+      return sum + this.duplicateClientDebt(client);
+    }, 0);
+  }
+
+  get duplicateModalDebtTotal(): number {
+    return this.duplicatePhoneGroups.reduce(
+      (sum, group) => sum + this.duplicateGroupDebtTotal(group),
+      0
+    );
+  }
+
+  get duplicateModalActiveDebtTotal(): number {
+    return this.duplicatePhoneGroups.reduce(
+      (sum, group) => sum + this.duplicateGroupActiveDebtTotal(group),
+      0
+    );
+  }
+
+  get duplicateModalAwayDebtTotal(): number {
+    return this.duplicatePhoneGroups.reduce(
+      (sum, group) => sum + this.duplicateGroupAwayDebtTotal(group),
+      0
+    );
+  }
+
   applyDuplicateGroupValue(groupDigits: string) {
     const value = this.getDuplicatePhoneGroupUpdate(groupDigits).trim();
     if (!value) return;
