@@ -181,125 +181,150 @@
                       </a>
                     </div>
 
-                    <div class="mt-4 flex flex-wrap gap-2 *:text-xs">
-                      <button
-                        *ngIf="isAdminUi"
-                        (click)="toggleCheckVisibility()"
-                        type="button"
-                        class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
-                      >
-                        Basculer Bonus Visibilité
-                      </button>
+                    <div
+                      *ngIf="isAdminUi"
+                      class="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/50"
+                    >
+                      <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                        Actions admin
+                      </div>
 
-                      <button
-                        *ngIf="checkVisible === 'true'"
-                        (click)="toggleCode()"
-                        type="button"
-                        class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
-                      >
-                        Signer Bonus
-                      </button>
+                      <div class="grid gap-2 md:grid-cols-2">
+                        <section class="rounded-xl border border-emerald-200/70 bg-white/80 p-2 dark:border-emerald-900/50 dark:bg-slate-800/80">
+                          <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                            Visibilité
+                          </h4>
+                          <div class="flex flex-wrap gap-2 text-xs">
+                            <button
+                              (click)="toggleCheckVisibility()"
+                              type="button"
+                              class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
+                            >
+                              Basculer Bonus Visibilité
+                            </button>
+                            <button
+                              (click)="togglePaymentCheckVisibility()"
+                              type="button"
+                              class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
+                            >
+                              Basculer Paiement Visibilité
+                            </button>
+                            <button
+                              (click)="toggleContractSignVisibility()"
+                              type="button"
+                              class="rounded-lg bg-purple-600 px-3 py-1.5 font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800 transition"
+                            >
+                              Basculer Signature Contrat
+                            </button>
+                          </div>
+                        </section>
 
-                      <button
-                        *ngIf="isAdminUi"
-                        (click)="togglePaymentCheckVisibility()"
-                        type="button"
-                        class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
-                      >
-                        Basculer Paiement Visibilité
-                      </button>
+                        <section class="rounded-xl border border-indigo-200/70 bg-white/80 p-2 dark:border-indigo-900/50 dark:bg-slate-800/80">
+                          <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                            Signature
+                          </h4>
+                          <div class="flex flex-wrap gap-2 text-xs">
+                            <button
+                              *ngIf="checkVisible === 'true'"
+                              (click)="toggleCode()"
+                              type="button"
+                              class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
+                            >
+                              Signer Bonus
+                            </button>
+                            <button
+                              *ngIf="paymentCheckVisible === 'true'"
+                              (click)="toggleCode()"
+                              type="button"
+                              class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
+                            >
+                              Signer Paiement
+                            </button>
+                            <button
+                              *ngIf="contractSignVisible === 'true'"
+                              (click)="openContractModal()"
+                              type="button"
+                              class="rounded-lg bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-700 dark:hover:bg-emerald-800 dark:focus:ring-emerald-900 transition"
+                            >
+                              Signer Contrat
+                            </button>
+                          </div>
+                        </section>
 
-                      <button
-                        *ngIf="paymentCheckVisible === 'true'"
-                        (click)="toggleCode()"
-                        type="button"
-                        class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
-                      >
-                        Signer Paiement
-                      </button>
+                        <section class="rounded-xl border border-sky-200/70 bg-white/80 p-2 dark:border-sky-900/50 dark:bg-slate-800/80">
+                          <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                            SMS
+                          </h4>
+                          <div class="flex flex-wrap gap-2 text-xs">
+                            <button
+                              *ngIf="checkVisible === 'true'"
+                              class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 transition"
+                              (click)="sendSMSCurrent('bonus')"
+                            >
+                              <svg
+                                class="mr-1 inline h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M4 4h16v12H5.17L4 17.17V4z" />
+                                <path d="M6 20h12v-2H6v2z" />
+                              </svg>
+                              SMS Bonus ▶︎ {{ employee.firstName }}
+                            </button>
+                            <button
+                              *ngIf="paymentCheckVisible === 'true'"
+                              class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 transition"
+                              (click)="sendSMSCurrent('paiement')"
+                            >
+                              <svg
+                                class="mr-1 inline h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M4 4h16v12H5.17L4 17.17V4z" />
+                                <path d="M6 20h12v-2H6v2z" />
+                              </svg>
+                              SMS Paiement ▶︎ {{ employee.firstName }}
+                            </button>
+                            <button
+                              class="rounded-lg bg-teal-600 px-3 py-1.5 font-medium text-white hover:bg-teal-700 transition"
+                              (click)="openGenericSmsModal()"
+                            >
+                              <svg
+                                class="mr-1 inline h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <path d="M4 4h16v12H5.17L4 17.17V4z" />
+                                <path d="M6 20h12v-2H6v2z" />
+                              </svg>
+                              SMS Libre ▶︎ {{ employee.firstName }}
+                            </button>
+                          </div>
+                        </section>
 
-                      <button
-                        *ngIf="isAdminUi"
-                        (click)="toggleSetCode()"
-                        type="button"
-                        class="rounded-lg bg-rose-600 px-3 py-1.5 font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-300 dark:bg-rose-600 dark:hover:bg-rose-700 dark:focus:ring-rose-800 transition"
-                      >
-                        Mis A Jour Code
-                      </button>
-
-                      <button
-                        *ngIf="isAdminUi && checkVisible === 'true'"
-                        class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1 transition"
-                        (click)="sendSMSCurrent('bonus')"
-                      >
-                        <svg
-                          class="mr-1 inline h-3.5 w-3.5"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M4 4h16v12H5.17L4 17.17V4z" />
-                          <path d="M6 20h12v-2H6v2z" />
-                        </svg>
-                        SMS Bonus ▶︎ {{ employee.firstName }}
-                      </button>
-
-                      <button
-                        *ngIf="
-                          isAdminUi &&
-                          paymentCheckVisible === 'true'
-                        "
-                        class="rounded-lg bg-sky-600 px-3 py-1.5 font-medium text-white hover:bg-sky-700 mt-1 transition"
-                        (click)="sendSMSCurrent('paiement')"
-                      >
-                        <svg
-                          class="mr-1 inline h-3.5 w-3.5"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M4 4h16v12H5.17L4 17.17V4z" />
-                          <path d="M6 20h12v-2H6v2z" />
-                        </svg>
-                        SMS Paiement ▶︎ {{ employee.firstName }}
-                      </button>
-                      <button
-                        *ngIf="isAdminUi"
-                        class="rounded-lg bg-teal-600 px-3 py-1.5 font-medium text-white hover:bg-teal-700 mt-1 transition"
-                        (click)="openGenericSmsModal()"
-                      >
-                        <svg
-                          class="mr-1 inline h-3.5 w-3.5"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M4 4h16v12H5.17L4 17.17V4z" />
-                          <path d="M6 20h12v-2H6v2z" />
-                        </svg>
-                        SMS Libre ▶︎ {{ employee.firstName }}
-                      </button>
-                      <button
-                        *ngIf="isAdminUi"
-                        (click)="openContractModal()"
-                        type="button"
-                        class="rounded-lg bg-slate-700 px-3 py-1.5 font-medium text-white hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 dark:bg-slate-700 dark:hover:bg-slate-800 dark:focus:ring-slate-800 transition"
-                      >
-                        Voir / Éditer Contrat
-                      </button>
-                      <button
-                        *ngIf="isAdminUi"
-                        (click)="toggleContractSignVisibility()"
-                        type="button"
-                        class="rounded-lg bg-purple-600 px-3 py-1.5 font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800 transition"
-                      >
-                        Basculer Signature Contrat
-                      </button>
-                      <button
-                        *ngIf="contractSignVisible === 'true'"
-                        (click)="openContractModal()"
-                        type="button"
-                        class="rounded-lg bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-700 dark:hover:bg-emerald-800 dark:focus:ring-emerald-900 transition"
-                      >
-                        Signer Contrat
-                      </button>
+                        <section class="rounded-xl border border-slate-300/70 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-800/80">
+                          <h4 class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+                            Contrat & code
+                          </h4>
+                          <div class="flex flex-wrap gap-2 text-xs">
+                            <button
+                              (click)="openContractModal()"
+                              type="button"
+                              class="rounded-lg bg-slate-700 px-3 py-1.5 font-medium text-white hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 dark:bg-slate-700 dark:hover:bg-slate-800 dark:focus:ring-slate-800 transition"
+                            >
+                              Voir / Éditer Contrat
+                            </button>
+                            <button
+                              (click)="toggleSetCode()"
+                              type="button"
+                              class="rounded-lg bg-rose-600 px-3 py-1.5 font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-300 dark:bg-rose-600 dark:hover:bg-rose-700 dark:focus:ring-rose-800 transition"
+                            >
+                              Mis A Jour Code
+                            </button>
+                          </div>
+                        </section>
+                      </div>
                     </div>
                   </div>
                 </div>
