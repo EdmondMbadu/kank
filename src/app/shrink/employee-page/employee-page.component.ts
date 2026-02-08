@@ -329,6 +329,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   displayCode: boolean = false;
   displaySetCode: boolean = false;
   displayContract: boolean = false;
+  pendingCodeAction: 'bonus' | 'payment' | null = null;
   contractView?: ContractViewModel;
   @ViewChild('signaturePad') signaturePad!: ElementRef<HTMLCanvasElement>;
   isDrawingSignature = false;
@@ -763,6 +764,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
   toggleCode() {
     this.displayCode = !this.displayCode;
+    if (!this.displayCode) {
+      this.pendingCodeAction = null;
+    }
+  }
+  openCodeModalFor(action: 'bonus' | 'payment') {
+    this.pendingCodeAction = action;
+    if (!this.displayCode) {
+      this.displayCode = true;
+    }
   }
   toggleSetCode() {
     this.displaySetCode = !this.displaySetCode;
@@ -1406,14 +1416,39 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   toggleBonusIfCodeCorrect() {
     const entered = (this.code || '').trim();
     const expected = (this.paymentCode || '').trim();
-    if (entered === expected && this.checkVisible === 'true') {
+    if (entered !== expected) {
+      alert('Code incorrect. Essayez encore');
+      return;
+    }
+
+    if (this.pendingCodeAction === 'bonus') {
+      if (this.checkVisible === 'true') {
+        this.toggleBonus();
+        this.toggleCode();
+      } else {
+        alert("La signature Bonus n'est pas visible pour le moment.");
+      }
+      return;
+    }
+
+    if (this.pendingCodeAction === 'payment') {
+      if (this.paymentCheckVisible === 'true') {
+        this.togglePayment();
+        this.toggleCode();
+      } else {
+        alert("La signature Paiement n'est pas visible pour le moment.");
+      }
+      return;
+    }
+
+    if (this.checkVisible === 'true') {
       this.toggleBonus();
       this.toggleCode();
-    } else if (entered === expected && this.paymentCheckVisible === 'true') {
+    } else if (this.paymentCheckVisible === 'true') {
       this.togglePayment();
       this.toggleCode();
     } else {
-      alert('Code incorrect. Essayez encore');
+      alert("Aucune signature n'est activée pour le moment.");
     }
   }
   computePerformancePercentage(average: string, total: string) {
