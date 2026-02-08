@@ -937,6 +937,10 @@ export class DataService {
       paymentIncreaseYears: employee.paymentIncreaseYears,
       paymentLate: employee.paymentLate,
       paymentBankFee: employee.paymentBankFee,
+      paymentManualWithdrawal: employee.paymentManualWithdrawal,
+      paymentManualWithdrawalReason: employee.paymentManualWithdrawalReason,
+      paymentManualAddition: employee.paymentManualAddition,
+      paymentManualAdditionReason: employee.paymentManualAdditionReason,
       paymentObjectiveWeekDeductionTotal:
         employee.paymentObjectiveWeekDeductionTotal,
       paymentObjectiveWeekDeductions: employee.paymentObjectiveWeekDeductions,

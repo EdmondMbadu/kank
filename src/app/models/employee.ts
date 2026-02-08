@@ -68,6 +68,10 @@ export class Employee {
   paidThisMonth?: boolean;
   paymentBankFee?: string;
   paymentLate?: string;
+  paymentManualWithdrawal?: string;
+  paymentManualWithdrawalReason?: string;
+  paymentManualAddition?: string;
+  paymentManualAdditionReason?: string;
   paymentObjectiveWeekDeductionTotal?: string;
   paymentObjectiveWeekDeductions?: WeeklyObjectiveDeduction[];
   // NEW: parallel map of attachments by date

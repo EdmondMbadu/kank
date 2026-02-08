@@ -1603,7 +1603,21 @@ export class ComputationService {
   async generatePaymentCheck(
     employee: Employee,
     title: string = 'Paiement', // "Paiement" or "Bonus"
-    paymentAmount: string // net amount actually paid / total bonus
+    paymentAmount: string, // net amount actually paid / total bonus
+    breakdown?: {
+      baseSalary?: number;
+      expIncrease?: number;
+      bankTransfer?: number;
+      absentDed?: number;
+      noneDed?: number;
+      late?: number;
+      objectiveDed?: number;
+      objectiveWeeks?: Array<{ start: string; end: string; amount: number }>;
+      manualWithdrawal?: number;
+      manualWithdrawalReason?: string;
+      manualAddition?: number;
+      manualAdditionReason?: string;
+    }
   ) {
     /* ---------- Helpers --------------------------------------------------*/
     const safeNumber = (v: number) => {
@@ -1669,18 +1683,56 @@ export class ComputationService {
         ],
       ];
     } else {
-      const baseSalary = Number(employee.paymentAmount ?? 0);
-      const expIncrease = Number(employee.paymentIncreaseYears ?? 0);
-      const bankTransfer = Number(employee.paymentBankFee ?? 0);
-      const absentDed = Number(employee.paymentAbsent ?? 0);
-      const noneDed = Number(employee.paymentNothing ?? 0);
-      const late = Number(employee.paymentLate ?? 0);
+      const baseSalary = Number(
+        breakdown?.baseSalary ?? employee.paymentAmount ?? 0
+      );
+      const expIncrease = Number(
+        breakdown?.expIncrease ?? employee.paymentIncreaseYears ?? 0
+      );
+      const bankTransfer = Number(
+        breakdown?.bankTransfer ?? employee.paymentBankFee ?? 0
+      );
+      const absentDed = Number(
+        breakdown?.absentDed ?? employee.paymentAbsent ?? 0
+      );
+      const noneDed = Number(
+        breakdown?.noneDed ?? employee.paymentNothing ?? 0
+      );
+      const late = Number(breakdown?.late ?? employee.paymentLate ?? 0);
+      const manualWithdrawal = Math.max(
+        Number(breakdown?.manualWithdrawal ?? employee.paymentManualWithdrawal ?? 0),
+        0
+      );
+      const manualWithdrawalReason = (
+        breakdown?.manualWithdrawalReason ??
+        employee.paymentManualWithdrawalReason ??
+        ''
+      )
+        .toString()
+        .trim();
+      const manualAddition = Math.max(
+        Number(breakdown?.manualAddition ?? employee.paymentManualAddition ?? 0),
+        0
+      );
+      const manualAdditionReason = (
+        breakdown?.manualAdditionReason ??
+        employee.paymentManualAdditionReason ??
+        ''
+      )
+        .toString()
+        .trim();
       const objectiveDed = Number(
-        employee.paymentObjectiveWeekDeductionTotal ?? 0
+        breakdown?.objectiveDed ?? employee.paymentObjectiveWeekDeductionTotal ?? 0
       );
       const objectiveWeeks = Array.isArray(
-        employee.paymentObjectiveWeekDeductions
+        breakdown?.objectiveWeeks
       )
+        ? (breakdown?.objectiveWeeks as Array<{
+            start: string;
+            end: string;
+            amount: number;
+          }>)
+        : Array.isArray(employee.paymentObjectiveWeekDeductions)
         ? employee.paymentObjectiveWeekDeductions
         : [];
 
@@ -1691,7 +1743,13 @@ export class ComputationService {
         absentDed -
         noneDed -
         late -
-        objectiveDed;
+        objectiveDed -
+        manualWithdrawal +
+        manualAddition;
+      const modalNetPay = Number(paymentAmount);
+      if (Number.isFinite(modalNetPay)) {
+        netPay = modalNetPay;
+      }
 
       tableRows = [
         [
@@ -1725,6 +1783,16 @@ export class ComputationService {
         [
           'Retenues – Objectif semaine non atteint',
           { text: `-${safeNumber(objectiveDed)}`, alignment: 'right' },
+        ],
+        [
+          manualWithdrawalReason
+            ? `Retrait (${manualWithdrawalReason})`
+            : 'Retrait',
+          { text: `-${safeNumber(manualWithdrawal)}`, alignment: 'right' },
+        ],
+        [
+          manualAdditionReason ? `Ajout (${manualAdditionReason})` : 'Ajout',
+          { text: safeNumber(manualAddition), alignment: 'right' },
         ],
         [
           { text: 'Net à payer', style: 'totalLabel' },

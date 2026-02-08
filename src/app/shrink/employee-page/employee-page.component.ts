@@ -376,6 +376,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   paymentIncreaseYears: number = 0;
   paymentBankFee: number = 0;
   paymentLate: number = 0;
+  paymentManualWithdrawal: number = 0;
+  paymentManualWithdrawalReason: string = '';
+  paymentManualAddition: number = 0;
+  paymentManualAdditionReason: string = '';
   paymentObjectiveWeekDeductionTotal: number = 0;
   paymentObjectiveWeekDeductions: WeeklyObjectiveDeduction[] = [];
   weekObjectiveStartDate: string = '';
@@ -830,6 +834,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.paymentLate = this.employee.paymentLate
       ? parseFloat(this.employee.paymentLate)
       : 0;
+    this.paymentManualWithdrawal = this.employee.paymentManualWithdrawal
+      ? parseFloat(this.employee.paymentManualWithdrawal)
+      : 0;
+    this.paymentManualWithdrawalReason = this.employee.paymentManualWithdrawalReason
+      ? this.employee.paymentManualWithdrawalReason
+      : '';
+    this.paymentManualAddition = this.employee.paymentManualAddition
+      ? parseFloat(this.employee.paymentManualAddition)
+      : 0;
+    this.paymentManualAdditionReason = this.employee.paymentManualAdditionReason
+      ? this.employee.paymentManualAdditionReason
+      : '';
     this.paymentBankFee = this.employee.paymentBankFee
       ? parseFloat(this.employee.paymentBankFee)
       : 0;
@@ -890,10 +906,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const absent = Number(this.paymentAbsent) || 0;
     const late = Number(this.paymentLate) || 0;
     const nothing = Number(this.paymentNothing) || 0;
+    const manualWithdrawal = Math.max(Number(this.paymentManualWithdrawal) || 0, 0);
+    const manualAddition = Math.max(Number(this.paymentManualAddition) || 0, 0);
     const objectiveDeduction = Number(this.paymentObjectiveWeekDeductionTotal) || 0;
 
     this.totalPayments =
-      amount + bankFee + increase - absent - late - nothing - objectiveDeduction;
+      amount +
+      bankFee +
+      increase +
+      manualAddition -
+      absent -
+      late -
+      nothing -
+      objectiveDeduction -
+      manualWithdrawal;
     return this.totalPayments;
   }
 
@@ -2275,6 +2301,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     ).toString();
     this.employee.paymentBankFee = p(this.paymentBankFee).toString();
     this.employee.paymentLate = p(this.paymentLate).toString();
+    this.employee.paymentManualWithdrawal = Math.max(
+      p(this.paymentManualWithdrawal),
+      0
+    ).toString();
+    this.employee.paymentManualWithdrawalReason = (
+      this.paymentManualWithdrawalReason || ''
+    ).trim();
+    this.employee.paymentManualAddition = Math.max(
+      p(this.paymentManualAddition),
+      0
+    ).toString();
+    this.employee.paymentManualAdditionReason = (
+      this.paymentManualAdditionReason || ''
+    ).trim();
     this.employee.paymentObjectiveWeekDeductionTotal = p(
       this.paymentObjectiveWeekDeductionTotal
     ).toString();
@@ -2295,7 +2335,30 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const blob = await this.compute.generatePaymentCheck(
         this.employee,
         'Paiement',
-        this.totalPayments.toString()
+        this.totalPayments.toString(),
+        {
+          baseSalary: Number(this.paymentAmount) || 0,
+          expIncrease: Number(this.paymentIncreaseYears) || 0,
+          bankTransfer: Number(this.paymentBankFee) || 0,
+          absentDed: Number(this.paymentAbsent) || 0,
+          noneDed: Number(this.paymentNothing) || 0,
+          late: Number(this.paymentLate) || 0,
+          objectiveDed: Number(this.paymentObjectiveWeekDeductionTotal) || 0,
+          objectiveWeeks: this.paymentObjectiveWeekDeductions.map((d) => ({
+            start: d.start,
+            end: d.end,
+            amount: Number(d.amount) || 0,
+          })),
+          manualWithdrawal: Math.max(
+            Number(this.paymentManualWithdrawal) || 0,
+            0
+          ),
+          manualWithdrawalReason: (
+            this.paymentManualWithdrawalReason || ''
+          ).trim(),
+          manualAddition: Math.max(Number(this.paymentManualAddition) || 0, 0),
+          manualAdditionReason: (this.paymentManualAdditionReason || '').trim(),
+        }
       );
 
       if (!blob) {
@@ -3156,11 +3219,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   async toggleCheckVisibility() {
     try {
       await this.data.toggleEmployeeCheckVisibility(this.employee);
-      // Optionally, you can add a success message here
-      // console.log('Check visibility toggled successfully');
     } catch (error) {
       console.error('Error toggling check visibility:', error);
-      // Optionally, you can show an alert or handle the error in some way
       alert(
         'An error occurred while toggling check visibility. Please try again.'
       );
@@ -3169,7 +3229,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   async togglePaymentCheckVisibility() {
     try {
       await this.data.toggleEmployeePaymentCheckVisibility(this.employee);
-      // console.log('Payment check visibility toggled successfully');
     } catch (error) {
       console.error('Error toggling payment check visibility:', error);
       alert(

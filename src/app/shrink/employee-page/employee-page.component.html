@@ -326,6 +326,45 @@
                         </section>
                       </div>
                     </div>
+                    <div
+                      *ngIf="
+                        isEmployeeUi &&
+                        (checkVisible === 'true' ||
+                          paymentCheckVisible === 'true' ||
+                          contractSignVisible === 'true')
+                      "
+                      class="mt-4 rounded-xl border border-slate-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/70"
+                    >
+                      <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+                        Signature
+                      </div>
+                      <div class="flex flex-wrap gap-2 text-xs">
+                        <button
+                          *ngIf="checkVisible === 'true'"
+                          (click)="toggleCode()"
+                          type="button"
+                          class="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800 transition"
+                        >
+                          Signer Bonus
+                        </button>
+                        <button
+                          *ngIf="paymentCheckVisible === 'true'"
+                          (click)="toggleCode()"
+                          type="button"
+                          class="rounded-lg bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800 transition"
+                        >
+                          Signer Paiement
+                        </button>
+                        <button
+                          *ngIf="contractSignVisible === 'true'"
+                          (click)="openContractModal()"
+                          type="button"
+                          class="rounded-lg bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-800 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-700 dark:hover:bg-emerald-800 dark:focus:ring-emerald-900 transition"
+                        >
+                          Signer Contrat
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2711,6 +2750,34 @@
             $ -{{ paymentObjectiveWeekDeductionTotal | number : "1.0-0" }}
           </dd>
         </dl>
+        <dl
+          *ngIf="paymentManualWithdrawal !== 0 || isAdminUi"
+          class="flex items-center justify-between gap-4"
+        >
+          <dt class="text-base font-normal text-red-500">
+            Retrait
+            <span *ngIf="paymentManualWithdrawalReason?.trim()" class="text-xs text-red-400">
+              ({{ paymentManualWithdrawalReason }})
+            </span>
+          </dt>
+          <dd class="text-base font-medium text-red-500">
+            $ -{{ paymentManualWithdrawal | number : "1.0-0" }}
+          </dd>
+        </dl>
+        <dl
+          *ngIf="paymentManualAddition !== 0 || isAdminUi"
+          class="flex items-center justify-between gap-4"
+        >
+          <dt class="text-base font-normal text-green-500">
+            Ajout
+            <span *ngIf="paymentManualAdditionReason?.trim()" class="text-xs text-green-400">
+              ({{ paymentManualAdditionReason }})
+            </span>
+          </dt>
+          <dd class="text-base font-medium text-green-500">
+            $ {{ paymentManualAddition | number : "1.0-0" }}
+          </dd>
+        </dl>
         <div
           *ngIf="
             isEmployeeUi && paymentObjectiveWeekDeductions.length > 0
@@ -2732,6 +2799,7 @@
             placeholder="100"
             required=""
             [(ngModel)]="paymentAmount"
+            (ngModelChange)="computeTotalPayment()"
           />
         </div>
         <div *ngIf="isAdminUi">
@@ -2743,6 +2811,7 @@
             placeholder="6"
             required=""
             [(ngModel)]="paymentIncreaseYears"
+            (ngModelChange)="computeTotalPayment()"
           />
         </div>
         <div *ngIf="isAdminUi">
@@ -2754,6 +2823,7 @@
             placeholder="6"
             required=""
             [(ngModel)]="paymentBankFee"
+            (ngModelChange)="computeTotalPayment()"
           />
         </div>
         <div *ngIf="isAdminUi">
@@ -2765,6 +2835,7 @@
             placeholder="6"
             required=""
             [(ngModel)]="paymentAbsent"
+            (ngModelChange)="computeTotalPayment()"
           />
         </div>
         <div *ngIf="isAdminUi">
@@ -2776,6 +2847,7 @@
             placeholder="6"
             required=""
             [(ngModel)]="paymentNothing"
+            (ngModelChange)="computeTotalPayment()"
           />
         </div>
         <div *ngIf="isAdminUi">
@@ -2787,7 +2859,74 @@
             placeholder="6"
             required=""
             [(ngModel)]="paymentLate"
+            (ngModelChange)="computeTotalPayment()"
           />
+        </div>
+        <div *ngIf="isAdminUi" class="space-y-3">
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-700/40"
+          >
+            <div class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+              Retrait manuel
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <div>
+                <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-300">
+                  Raison
+                </label>
+                <input
+                  type="text"
+                  class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-primary-600 focus:ring-2 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  [(ngModel)]="paymentManualWithdrawalReason"
+                  placeholder="Ex: avance, correction, retrait divers"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-300">
+                  Montant ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-primary-600 focus:ring-2 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  [(ngModel)]="paymentManualWithdrawal"
+                  (ngModelChange)="computeTotalPayment()"
+                />
+              </div>
+            </div>
+          </div>
+          <div
+            class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-700/40"
+          >
+            <div class="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+              Ajout manuel
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <div>
+                <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-300">
+                  Raison
+                </label>
+                <input
+                  type="text"
+                  class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-primary-600 focus:ring-2 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  [(ngModel)]="paymentManualAdditionReason"
+                  placeholder="Ex: prime ponctuelle, ajustement"
+                />
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold text-gray-500 dark:text-gray-300">
+                  Montant ($)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  class="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-primary-600 focus:ring-2 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  [(ngModel)]="paymentManualAddition"
+                  (ngModelChange)="computeTotalPayment()"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div *ngIf="isAdminUi" class="space-y-3">
           <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-600 dark:bg-gray-700/40">
