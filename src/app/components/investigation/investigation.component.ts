@@ -172,6 +172,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   phoneEditSaving = false;
   phoneEditOpen = false;
   showPhoneHistory = false;
+  showRecentPaymentsExpanded = false;
   selectedCommentImageFile?: File;
   selectedCommentImagePreview?: string;
   selectedCommentVideoFile?: File;
@@ -1060,6 +1061,28 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       .filter((entry) => entry.name || entry.phone || entry.raw);
   }
 
+  recentClientPayments(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const payments = client?.payments || {};
+    const entries = Object.entries(payments)
+      .map(([key, value]) => ({
+        key,
+        amount: Number(value ?? 0),
+        label: this.formatClientPaymentDate(key),
+      }))
+      .filter((entry) => Number.isFinite(entry.amount) && entry.amount > 0);
+
+    entries.sort(
+      (a, b) => this.paymentKeyToTimestamp(b.key) - this.paymentKeyToTimestamp(a.key)
+    );
+    return entries.slice(0, 2);
+  }
+
+  toggleRecentPayments(): void {
+    this.showRecentPaymentsExpanded = !this.showRecentPaymentsExpanded;
+  }
+
   private parseReferenceEntry(entry: unknown): {
     name: string;
     phone: string;
@@ -1082,6 +1105,37 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       tel: digits,
       raw,
     };
+  }
+
+  private formatClientPaymentDate(key: string): string {
+    const parts = key.split('-');
+    if (parts.length >= 6) {
+      return this.time.convertTimeFormat(key);
+    }
+    if (parts.length >= 3) {
+      return this.time.convertDateToDayMonthYear(parts.slice(0, 3).join('-'));
+    }
+    return key;
+  }
+
+  private paymentKeyToTimestamp(key: string): number {
+    const parts = key.split('-').map((p) => Number(p));
+    if (
+      parts.length >= 6 &&
+      parts.slice(0, 6).every((n) => Number.isFinite(n))
+    ) {
+      const [month, day, year, hour, minute, second] = parts;
+      return new Date(year, month - 1, day, hour, minute, second).getTime();
+    }
+    if (
+      parts.length >= 3 &&
+      parts.slice(0, 3).every((n) => Number.isFinite(n))
+    ) {
+      const [month, day, year] = parts;
+      return new Date(year, month - 1, day).getTime();
+    }
+    const fallback = new Date(key).getTime();
+    return Number.isNaN(fallback) ? 0 : fallback;
   }
 
   displayPaymentDay(day?: string): string {
@@ -1381,6 +1435,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.phoneEditValue = client.phoneNumber ?? '';
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
+    this.showRecentPaymentsExpanded = false;
     this.showClientModal = true;
   }
 
@@ -1389,6 +1444,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.activeClient = undefined;
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
+    this.showRecentPaymentsExpanded = false;
   }
 
   get activeClientCommentPresetChildren(): CommentPreset[] {
