@@ -33,6 +33,7 @@ export class GestionFraudeComponent implements OnInit {
   selectedMonth: number = new Date().getMonth() + 1;
   selectedYear: number = new Date().getFullYear();
   selectedLocationFilter: string = 'Total';
+  personNameFilter: string = '';
   locations: string[] = ['Total'];
   siteLocations: string[] = ['Total'];
   yearsList: number[] = [];
@@ -157,7 +158,12 @@ export class GestionFraudeComponent implements OnInit {
       const locationMatch =
         this.selectedLocationFilter === 'Total' ||
         entry.location === this.selectedLocationFilter;
-      return monthMatch && locationMatch;
+      const personMatch =
+        this.personNameFilter.trim() === '' ||
+        entry.reason
+          .toLowerCase()
+          .includes(this.personNameFilter.trim().toLowerCase());
+      return monthMatch && locationMatch && personMatch;
     });
     this.monthTotalFiltered = this.filteredEntries.reduce(
       (sum, entry) => sum + entry.amount,
