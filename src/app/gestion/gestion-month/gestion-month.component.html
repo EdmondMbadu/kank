@@ -122,7 +122,7 @@
             {{ s }}
           </h3>
           <div class="mt-4 space-y-1">
-            <ng-container *ngIf="i === 0; else monetaryBlock">
+            <ng-container *ngIf="i === 0; else fraudOrMonetaryBlock">
               <p
                 class="text-2xl font-semibold"
                 [ngClass]="{
@@ -136,6 +136,18 @@
                 Ratio des pertes par rapport à la réserve du mois.
               </p>
             </ng-container>
+
+            <ng-template #fraudOrMonetaryBlock>
+              <ng-container *ngIf="i === 9; else monetaryBlock">
+                <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+                  FC {{ summaryContent[i] | number : "1.0-0" }}
+                </p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  {{ fraudRatioOfReserve | number : "1.0-2" }} % de la réserve du mois.
+                </p>
+              </ng-container>
+            </ng-template>
+
             <ng-template #monetaryBlock>
               <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
                 FC {{ summaryContent[i] | number : "1.0-0" }}

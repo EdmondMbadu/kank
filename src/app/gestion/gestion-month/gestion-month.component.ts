@@ -79,6 +79,7 @@ export class GestionMonthComponent {
     '/gestion-bank',
     '/gestion-loss',
     '/gestion-investment',
+    '/gestion-fraudes',
     '/gestion-month',
   ];
   summary: string[] = [
@@ -91,6 +92,7 @@ export class GestionMonthComponent {
     'Argent En Banque Du Mois',
     'Perte Du Du Mois',
     'Investissement Du Mois',
+    'Suivi des fraudes du mois',
     ' Benefice Reel Du Mois',
   ];
   valuesConvertedToDollars: string[] = [];
@@ -105,6 +107,8 @@ export class GestionMonthComponent {
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
   givenMonthTotalBudgetedExpenseAmount: string = '';
+  givenMonthTotalFraudAmount: string = '0';
+  fraudRatioOfReserve: number = 0;
 
   givenMonthRealGain: string = '';
 
@@ -118,6 +122,7 @@ export class GestionMonthComponent {
     '../../../assets/img/bank.png',
     '../../../assets/img/loss.png',
     '../../../assets/img/invest.svg',
+    '../../../assets/img/expense.svg',
     '../../../assets/img/benefit.svg',
   ];
 
@@ -180,6 +185,11 @@ export class GestionMonthComponent {
       this.givenMonth,
       this.givenYear
     );
+    this.givenMonthTotalFraudAmount = this.compute.findTotalGiventMonth(
+      this.managementInfo?.fraudes!,
+      this.givenMonth,
+      this.givenYear
+    );
     let totalLoss = (
       Number(this.givenMonthTotalLossAmount) +
       Number(
@@ -192,6 +202,14 @@ export class GestionMonthComponent {
       Math.ceil(
         (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 10000
       ) / 100;
+    this.fraudRatioOfReserve =
+      Number(this.givenMonthTotalReserveAmount) > 0
+        ? Math.ceil(
+            (Number(this.givenMonthTotalFraudAmount) /
+              Number(this.givenMonthTotalReserveAmount)) *
+              10000
+          ) / 100
+        : 0;
 
     // find the real gain
     this.givenMonthRealGain = (
@@ -211,6 +229,7 @@ export class GestionMonthComponent {
       `${this.givenMonthTotalBankAmountFrancs}`,
       `${totalLoss}`,
       `${this.givenMonthTotalInvestmentAmount}`,
+      `${this.givenMonthTotalFraudAmount}`,
       `${this.givenMonthRealGain}`,
     ];
     this.valuesConvertedToDollars = [
@@ -232,6 +251,9 @@ export class GestionMonthComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(totalLoss)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalInvestmentAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalFraudAmount
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthRealGain

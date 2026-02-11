@@ -72,6 +72,7 @@ import { GestionBankComponent } from '../gestion/gestion-bank/gestion-bank.compo
 import { GestionLossComponent } from '../gestion/gestion-loss/gestion-loss.component';
 import { GestionInvestmentComponent } from '../gestion/gestion-investment/gestion-investment.component';
 import { GestionMonthComponent } from '../gestion/gestion-month/gestion-month.component';
+import { GestionFraudeComponent } from '../gestion/gestion-fraude/gestion-fraude.component';
 import { PaidDateComponent } from '../components/paid-date/paid-date.component';
 import { LendingDateComponent } from '../components/lending-date/lending-date.component';
 import { NotPaidTodayComponent } from '../components/not-paid-today/not-paid-today.component';
@@ -246,6 +247,7 @@ const routes: Routes = [
   { path: 'gestion-bank', component: GestionBankComponent },
   { path: 'gestion-loss', component: GestionLossComponent },
   { path: 'gestion-investment', component: GestionInvestmentComponent },
+  { path: 'gestion-fraudes', component: GestionFraudeComponent },
   { path: 'gestion-month', component: GestionMonthComponent },
   { path: 'paid-date', component: PaidDateComponent },
   { path: 'lending-date', component: LendingDateComponent },

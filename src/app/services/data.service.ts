@@ -1565,6 +1565,21 @@ export class DataService {
     return userRef.set(data, { merge: true });
   }
 
+  /**
+   * Add a fraud tracking entry without changing moneyInHands or any other totals.
+   * Stored as "amount:reason" to stay consistent with expense/history parsing.
+   */
+  updateManagementInfoForAddFraud(amount: string, reason: string) {
+    const userRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    const data = {
+      fraudes: { [this.time.todaysDate()]: `${amount}:${reason}` },
+    };
+
+    return userRef.set(data, { merge: true });
+  }
+
   updateEmployeePictureData(employee: Employee, avatar: Avatar) {
     const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/employees/${employee.uid}`

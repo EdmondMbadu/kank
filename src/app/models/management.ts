@@ -4,6 +4,7 @@ export class Management {
   id?: string;
   moneyInHands?: string;
   expenses?: { [key: string]: string } = {};
+  fraudes?: { [key: string]: string } = {};
   reserve?: { [key: string]: string } = {};
   investment?: { [key: string]: string } = {};
   moneyGiven?: { [key: string]: string } = {};

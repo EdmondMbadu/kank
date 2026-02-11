@@ -160,6 +160,7 @@ export class GestionDayComponent implements OnInit {
     '/gestion-bank',
     '/gestion-loss',
     '/gestion-investment',
+    '/gestion-fraudes',
   ];
   summary: string[] = [
     'Pourcentage Perte Du Mois',
@@ -171,6 +172,7 @@ export class GestionDayComponent implements OnInit {
     'Argent En Banque Du Jour',
     'Perte Du Jour',
     'Investissement Du Jour',
+    'Suivi des fraudes du mois',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -184,6 +186,7 @@ export class GestionDayComponent implements OnInit {
     '../../../assets/img/bank.png',
     '../../../assets/img/loss.png',
     '../../../assets/img/invest.svg',
+    '../../../assets/img/expense.svg',
   ];
 
   isFetchingClients = false;
@@ -722,17 +725,23 @@ export class GestionDayComponent implements OnInit {
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalLossAmountDollar: string = '';
   givenMonthTotalReserveAmount: string = '';
+  givenMonthTotalFraudAmount: string = '0';
+  fraudRatioOfReserve: number = 0;
   lossRatio: number = 0;
   input: string = '0';
   inputDOllars: string = '0';
   plannedToServeToday: string = '0';
   plannedToServeTodayDollars: string = '0';
   initalizeInputs() {
+    const [selectedMonth, , selectedYear] = this.requestDateCorrectFormat
+      .split('-')
+      .map(Number);
+
     // this is to compute the loss ratio of the month which will serve for bonus for rebecca
     this.givenMonthTotalReserveAmount = this.compute.findTotalGiventMonth(
       this.managementInfo?.reserve!,
-      this.givenMonth,
-      this.givenYear
+      selectedMonth,
+      selectedYear
     );
     this.givenMonthTotalLossAmount = this.compute.findTotalGiventMonth(
       this.managementInfo?.exchangeLoss!,
@@ -848,6 +857,21 @@ export class GestionDayComponent implements OnInit {
       Number(this.compute.convertUsDollarsToCongoleseFranc(this.dollarLoss)) +
       Number(this.dailyLoss)
     ).toString();
+
+    this.givenMonthTotalFraudAmount = this.compute.findTotalGiventMonth(
+      this.managementInfo?.fraudes!,
+      selectedMonth,
+      selectedYear
+    );
+    this.fraudRatioOfReserve =
+      Number(this.givenMonthTotalReserveAmount) > 0
+        ? Math.ceil(
+            (Number(this.givenMonthTotalFraudAmount) /
+              Number(this.givenMonthTotalReserveAmount)) *
+              10000
+          ) / 100
+        : 0;
+
     this.summaryContent = [
       `${this.lossRatio}`,
       ` ${this.dailyReserve}`,
@@ -858,6 +882,7 @@ export class GestionDayComponent implements OnInit {
       `${this.dailyBankFranc}`,
       `${dloss}`,
       `${this.dailyInvestment}`,
+      `${this.givenMonthTotalFraudAmount}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -872,6 +897,9 @@ export class GestionDayComponent implements OnInit {
       `${this.dailyBankDollar}`,
       `${this.compute.convertCongoleseFrancToUsDollars(dloss)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestment)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalFraudAmount
+      )}`,
     ];
   }
 
