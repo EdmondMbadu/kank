@@ -101,12 +101,14 @@ export class GestionFraudeComponent implements OnInit {
           reason,
           location
         );
+        alert('Entrée de fraude modifiée avec succès.');
       } else {
         await this.data.updateManagementInfoForAddFraud(
           amount.toString(),
           reason,
           location
         );
+        alert('Fraude ajoutée avec succès.');
       }
       this.resetForm();
     } catch (err) {
