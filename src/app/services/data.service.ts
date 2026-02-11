@@ -1567,17 +1567,50 @@ export class DataService {
 
   /**
    * Add a fraud tracking entry without changing moneyInHands or any other totals.
-   * Stored as "amount:reason" to stay consistent with expense/history parsing.
+   * Stored as "amount:reason:location" so runtime totals can keep using numeric prefix parsing.
    */
-  updateManagementInfoForAddFraud(amount: string, reason: string) {
+  updateManagementInfoForAddFraud(
+    amount: string,
+    reason: string,
+    location: string = 'Total'
+  ) {
     const userRef: AngularFirestoreDocument<Management> = this.afs.doc(
       `management/${this.auth.managementInfo.id}`
     );
     const data = {
-      fraudes: { [this.time.todaysDate()]: `${amount}:${reason}` },
+      fraudes: { [this.time.todaysDate()]: `${amount}:${reason}:${location}` },
     };
 
     return userRef.set(data, { merge: true });
+  }
+
+  updateManagementFraudEntry(
+    entryKey: string,
+    amount: string,
+    reason: string,
+    location: string = 'Total'
+  ) {
+    const userRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    const data = {
+      fraudes: { [entryKey]: `${amount}:${reason}:${location}` },
+    };
+    return userRef.set(data, { merge: true });
+  }
+
+  deleteManagementFraudEntry(entryKey: string) {
+    const userRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+    return userRef.ref.get().then((snapshot) => {
+      const current = (snapshot.data() || {}) as Management;
+      const nextFraudes = { ...(current.fraudes || {}) } as {
+        [key: string]: string;
+      };
+      delete nextFraudes[entryKey];
+      return userRef.set({ fraudes: nextFraudes }, { merge: true });
+    });
   }
 
   updateEmployeePictureData(employee: Employee, avatar: Avatar) {
