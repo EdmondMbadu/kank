@@ -1545,6 +1545,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   startPhoneEdit(): void {
+    if (!this.auth.isAdmin) return;
     if (!this.activeClient) return;
     this.phoneEditValue = this.activeClient.phoneNumber ?? '';
     this.phoneEditOpen = !this.phoneEditOpen;
@@ -1572,6 +1573,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   updateClientPhoneNumber(): void {
+    if (!this.auth.isAdmin) return;
     if (!this.activeClient?.uid) return;
     const newPhone = this.phoneEditValue.trim();
     const currentPhone = (this.activeClient.phoneNumber ?? '').trim();

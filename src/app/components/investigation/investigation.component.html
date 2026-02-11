@@ -1767,13 +1767,20 @@
               À l'écart
             </span>
           </h3>
-          <button
-            type="button"
-            class="text-sm text-slate-600 hover:text-slate-800"
-            (click)="startPhoneEdit()"
-          >
-            {{ displayPhone(activeClient.phoneNumber) }}
-          </button>
+          <ng-container *ngIf="auth.isAdmin; else readonlyPhone">
+            <button
+              type="button"
+              class="text-sm text-slate-600 hover:text-slate-800"
+              (click)="startPhoneEdit()"
+            >
+              {{ displayPhone(activeClient.phoneNumber) }}
+            </button>
+          </ng-container>
+          <ng-template #readonlyPhone>
+            <p class="text-sm text-slate-600">
+              {{ displayPhone(activeClient.phoneNumber) }}
+            </p>
+          </ng-template>
           <div *ngIf="allActivePhones.length > 1" class="mt-1">
             <button
               type="button"
@@ -1808,7 +1815,7 @@
             </div>
           </div>
           <div
-            *ngIf="phoneEditOpen"
+            *ngIf="auth.isAdmin && phoneEditOpen"
             class="mt-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-center"
           >
             <input
