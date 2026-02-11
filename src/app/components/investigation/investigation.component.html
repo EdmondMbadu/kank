@@ -1904,45 +1904,31 @@
         </div>
 
         <div *ngIf="recentPayments.length; else noRecentPayments" class="mt-3 space-y-2">
-          <div class="rounded-lg border border-emerald-100 bg-white px-3 py-2">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-[11px] uppercase tracking-wide text-emerald-700">
-                  Dernier paiement
-                </p>
-                <p class="text-sm text-slate-500">{{ recentPayments[0].label }}</p>
-              </div>
-              <p class="text-sm font-semibold text-slate-900">
-                FC {{ recentPayments[0].amount | number : "1.0-0" }}
-              </p>
-            </div>
-          </div>
-
-          <button
-            *ngIf="recentPayments.length > 1"
-            type="button"
-            (click)="toggleRecentPayments()"
-            class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold text-emerald-700 hover:border-emerald-300 hover:text-emerald-800"
-          >
-            {{ showRecentPaymentsExpanded ? "Masquer l'avant-dernier" : "Voir l'avant-dernier paiement" }}
-          </button>
-
           <div
-            *ngIf="showRecentPaymentsExpanded && recentPayments.length > 1"
+            *ngFor="let payment of visibleRecentPayments(activeClient); let i = index"
             class="rounded-lg border border-emerald-100 bg-white px-3 py-2"
           >
             <div class="flex items-center justify-between gap-3">
               <div>
                 <p class="text-[11px] uppercase tracking-wide text-emerald-700">
-                  Avant-dernier paiement
+                  {{ i === 0 ? "Dernier paiement" : "Paiement récent" }}
                 </p>
-                <p class="text-sm text-slate-500">{{ recentPayments[1].label }}</p>
+                <p class="text-sm text-slate-500">{{ payment.label }}</p>
               </div>
               <p class="text-sm font-semibold text-slate-900">
-                FC {{ recentPayments[1].amount | number : "1.0-0" }}
+                FC {{ payment.amount | number : "1.0-0" }}
               </p>
             </div>
           </div>
+
+          <button
+            *ngIf="hasMoreRecentPayments(activeClient)"
+            type="button"
+            (click)="toggleRecentPayments()"
+            class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[11px] font-semibold text-emerald-700 hover:border-emerald-300 hover:text-emerald-800"
+          >
+            {{ showRecentPaymentsExpanded ? "Voir moins" : "Voir plus" }}
+          </button>
         </div>
 
         <ng-template #noRecentPayments>

@@ -1076,7 +1076,18 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     entries.sort(
       (a, b) => this.paymentKeyToTimestamp(b.key) - this.paymentKeyToTimestamp(a.key)
     );
-    return entries.slice(0, 2);
+    return entries;
+  }
+
+  visibleRecentPayments(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const all = this.recentClientPayments(client);
+    return this.showRecentPaymentsExpanded ? all : all.slice(0, 2);
+  }
+
+  hasMoreRecentPayments(client?: Client | null): boolean {
+    return this.recentClientPayments(client).length > 2;
   }
 
   toggleRecentPayments(): void {
