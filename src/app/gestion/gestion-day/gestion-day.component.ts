@@ -725,6 +725,8 @@ export class GestionDayComponent implements OnInit {
   givenMonthTotalLossAmount: string = '';
   givenMonthTotalLossAmountDollar: string = '';
   givenMonthTotalReserveAmount: string = '';
+  givenMonthTotalLossCombinedCdf: string = '0';
+  givenMonthTotalLossCombinedUsd: string = '0';
   givenMonthTotalFraudAmount: string = '0';
   fraudRatioOfReserve: number = 0;
   lossRatio: number = 0;
@@ -761,6 +763,10 @@ export class GestionDayComponent implements OnInit {
         )
       )
     ).toString();
+    this.givenMonthTotalLossCombinedCdf = totalLoss;
+    this.givenMonthTotalLossCombinedUsd = String(
+      this.compute.convertCongoleseFrancToUsDollars(totalLoss)
+    );
     this.lossRatio =
       Math.ceil(
         (Number(totalLoss) / Number(this.givenMonthTotalReserveAmount)) * 10000
