@@ -173,6 +173,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   phoneEditOpen = false;
   showPhoneHistory = false;
   showRecentPaymentsExpanded = false;
+  showRecentSavingsExpanded = false;
   selectedCommentImageFile?: File;
   selectedCommentImagePreview?: string;
   selectedCommentVideoFile?: File;
@@ -1094,6 +1095,39 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.showRecentPaymentsExpanded = !this.showRecentPaymentsExpanded;
   }
 
+  recentClientSavings(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const savings = client?.savingsPayments || {};
+    const entries = Object.entries(savings)
+      .map(([key, value]) => ({
+        key,
+        amount: Number(value ?? 0),
+        label: this.formatClientPaymentDate(key),
+      }))
+      .filter((entry) => Number.isFinite(entry.amount) && entry.amount !== 0);
+
+    entries.sort(
+      (a, b) => this.paymentKeyToTimestamp(b.key) - this.paymentKeyToTimestamp(a.key)
+    );
+    return entries;
+  }
+
+  visibleRecentSavings(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const all = this.recentClientSavings(client);
+    return this.showRecentSavingsExpanded ? all : all.slice(0, 2);
+  }
+
+  hasMoreRecentSavings(client?: Client | null): boolean {
+    return this.recentClientSavings(client).length > 2;
+  }
+
+  toggleRecentSavings(): void {
+    this.showRecentSavingsExpanded = !this.showRecentSavingsExpanded;
+  }
+
   private parseReferenceEntry(entry: unknown): {
     name: string;
     phone: string;
@@ -1447,6 +1481,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
     this.showRecentPaymentsExpanded = false;
+    this.showRecentSavingsExpanded = false;
     this.showClientModal = true;
   }
 
@@ -1456,6 +1491,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
     this.showRecentPaymentsExpanded = false;
+    this.showRecentSavingsExpanded = false;
   }
 
   get activeClientCommentPresetChildren(): CommentPreset[] {
