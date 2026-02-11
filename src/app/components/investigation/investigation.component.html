@@ -1891,6 +1891,7 @@
       </div>
 
       <div
+        *ngIf="clientReferences(activeClient).length"
         class="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-white p-4 shadow-sm"
       >
         <div class="flex items-center justify-between gap-2">
@@ -1906,10 +1907,7 @@
           Personnes à joindre si le client est indisponible ou en difficulté de paiement.
         </p>
 
-        <div
-          *ngIf="clientReferences(activeClient).length; else noClientRefs"
-          class="mt-3 grid gap-2"
-        >
+        <div class="mt-3 grid gap-2">
           <div
             *ngFor="let ref of clientReferences(activeClient); let i = index"
             class="rounded-lg border border-indigo-100 bg-white px-3 py-2"
@@ -1940,12 +1938,6 @@
             </div>
           </div>
         </div>
-
-        <ng-template #noClientRefs>
-          <div class="mt-3 rounded-lg border border-dashed border-indigo-200 bg-white px-3 py-2 text-xs text-slate-500">
-            Aucune référence disponible pour ce client.
-          </div>
-        </ng-template>
       </div>
 
       <div
