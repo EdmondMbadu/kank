@@ -1048,6 +1048,42 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return raw.length ? raw : 'numero indisponible';
   }
 
+  clientReferences(client?: Client | null): Array<{
+    name: string;
+    phone: string;
+    tel: string;
+    raw: string;
+  }> {
+    const refs = Array.isArray(client?.references) ? client!.references : [];
+    return refs
+      .map((entry) => this.parseReferenceEntry(entry))
+      .filter((entry) => entry.name || entry.phone || entry.raw);
+  }
+
+  private parseReferenceEntry(entry: unknown): {
+    name: string;
+    phone: string;
+    tel: string;
+    raw: string;
+  } {
+    const raw = (entry ?? '').toString().trim();
+    if (!raw) {
+      return { name: '', phone: '', tel: '', raw: '' };
+    }
+
+    const parts = raw.split(' - ');
+    const name = (parts[0] || '').trim();
+    const phone = (parts.slice(1).join(' - ') || '').trim();
+    const digits = phone.replace(/[^\d+]/g, '');
+
+    return {
+      name: name || raw,
+      phone,
+      tel: digits,
+      raw,
+    };
+  }
+
   displayPaymentDay(day?: string): string {
     const raw = (day ?? '').toString().trim();
     if (!raw) return '-';
