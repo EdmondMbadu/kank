@@ -25,6 +25,24 @@ const africastalking = AfricasTalking({
 const sms = africastalking.SMS;
 
 const KINSHASA_TIME_ZONE = "Africa/Kinshasa";
+const FLEXPAY_CALLBACK_URL_FALLBACK = "https://kank-4bbbc.web.app/";
+
+const flexpayConfig = (functions.config() && functions.config().flexpay) || {};
+const FLEXPAY_MERCHANT =
+  flexpayConfig.merchant || process.env.FLEXPAY_MERCHANT || "";
+const FLEXPAY_TOKEN = flexpayConfig.token || process.env.FLEXPAY_TOKEN || "";
+const FLEXPAY_CALLBACK_URL =
+  flexpayConfig.callback_url ||
+  process.env.FLEXPAY_CALLBACK_URL ||
+  FLEXPAY_CALLBACK_URL_FALLBACK;
+const FLEXPAY_PAYMENT_URL =
+  flexpayConfig.payment_url ||
+  process.env.FLEXPAY_PAYMENT_URL ||
+  "https://backend.flexpay.cd/api/rest/v1/paymentService";
+const FLEXPAY_CHECK_URL_BASE =
+  flexpayConfig.check_url_base ||
+  process.env.FLEXPAY_CHECK_URL_BASE ||
+  "https://apicheck.flexpaie.com/api/rest/v1/check";
 
 /**
  * Formats a phone number to E.164 standard based on its origin.
@@ -61,6 +79,136 @@ function makeValidE164(number) {
   // If none of the above conditions are met, return null
   console.log(`Invalid phone number format: ${number}`);
   return null;
+}
+
+function toNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function sanitizeDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+/**
+ * FlexPay expects DRC mobile number in 243XXXXXXXXX format (without +).
+ * Accepts:
+ * - 0XXXXXXXXX (10 digits local)
+ * - XXXXXXXXX (9 digits local)
+ * - 243XXXXXXXXX (international, no plus)
+ * - +243XXXXXXXXX (international, with plus)
+ *
+ * @param {string} raw
+ * @return {string|null}
+ */
+function normalizePhoneForFlexpay(raw) {
+  const digits = sanitizeDigits(raw);
+
+  if (digits.length === 10 && digits.startsWith("0")) {
+    return `243${digits.slice(1)}`;
+  }
+  if (digits.length === 9) {
+    return `243${digits}`;
+  }
+  if (digits.length === 12 && digits.startsWith("243")) {
+    return digits;
+  }
+  return null;
+}
+
+function parseMonthDayYear(dateString) {
+  if (!dateString || typeof dateString !== "string") return null;
+  const parts = dateString.split("-").map((x) => Number(x));
+  if (parts.length < 3 || parts.some((x) => !Number.isFinite(x))) return null;
+  const [month, day, year] = parts;
+  return new Date(year, month - 1, day);
+}
+
+function formatMonthDayYear(date) {
+  return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+}
+
+function weeksSince(dateString) {
+  const givenDate = new Date(dateString);
+  const today = new Date();
+
+  if (!Number.isFinite(givenDate.getTime())) return 0;
+
+  givenDate.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  const daysPassed = (today - givenDate) / millisecondsPerDay;
+  return Math.floor(daysPassed / 7);
+}
+
+function isGivenDateLessOrEqual(dateX, today) {
+  const x = parseMonthDayYear(dateX);
+  const t = parseMonthDayYear(today);
+  if (!x || !t) return false;
+  return t <= x;
+}
+
+function weeksElapsed(dateX, today) {
+  const x = parseMonthDayYear(dateX);
+  const t = parseMonthDayYear(today);
+  if (!x || !t) return 0;
+  const diff = Math.abs(x.getTime() - t.getTime());
+  const msInWeek = 1000 * 60 * 60 * 24 * 7;
+  return Math.floor(diff / msInWeek);
+}
+
+function getDateInWeeksPlus(inputDate, weeksToAdd) {
+  const start = parseMonthDayYear(inputDate);
+  if (!start) return "";
+  const copy = new Date(start);
+  copy.setDate(copy.getDate() + weeksToAdd * 7);
+  return formatMonthDayYear(copy);
+}
+
+function computeUpdatedCreditScore(clientData, paymentAmount, newDebtLeft, todayMdy) {
+  if (newDebtLeft > 0) {
+    return String(clientData.creditScore || "0");
+  }
+  if (paymentAmount <= 0) {
+    return String(clientData.creditScore || "0");
+  }
+
+  const period = Number(clientData.paymentPeriodRange || 0);
+  const start = clientData.debtCycleStartDate || "";
+  let targetDate = "";
+
+  if (period === 4) {
+    targetDate = getDateInWeeksPlus(start, 5);
+  } else if (period === 8) {
+    targetDate = getDateInWeeksPlus(start, 9);
+  } else {
+    return String(clientData.creditScore || "0");
+  }
+
+  const prev = toNumber(clientData.creditScore || 0);
+  if (isGivenDateLessOrEqual(targetDate, todayMdy)) {
+    return String(prev + 5);
+  }
+  const elapsed = weeksElapsed(targetDate, todayMdy);
+  return String(prev - 2 * elapsed);
+}
+
+function isWorkingEmployeeForMobileMoney(employee) {
+  if (!employee) return false;
+  const raw =
+    employee.status || employee.workStatus || employee.employmentStatus || "";
+  const val = String(raw).trim().toLowerCase();
+  return ["travaille", "tavaille", "en travail", "working", "work"].includes(
+      val,
+  );
+}
+
+function toFlexpayBearer(value) {
+  const token = String(value || "").trim();
+  if (!token) return "";
+  if (token.toLowerCase().startsWith("bearer ")) return token;
+  return `Bearer ${token}`;
 }
 
 function parseLocalDateTimeInput(raw) {
@@ -159,6 +307,417 @@ exports.sendCustomSMS = functions.https.onCall(async (data, context) => {
     console.error("sendCustomSMS failed:", err);
     throw new functions.https.HttpsError("internal", "SMS send failed");
   }
+});
+
+exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Authentication is required.");
+  }
+  if (!FLEXPAY_MERCHANT || !FLEXPAY_TOKEN) {
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        "FlexPay configuration is missing on the server.",
+    );
+  }
+
+  const ownerUid = context.auth.uid;
+  const {
+    clientUid,
+    paymentAmount,
+    savingsAmount = "0",
+    currency = "CDF",
+    phone,
+    dayKey,
+    paymentEntryKey,
+  } = data || {};
+
+  if (!clientUid) {
+    throw new functions.https.HttpsError("invalid-argument", "clientUid is required.");
+  }
+
+  const paymentNum = toNumber(paymentAmount);
+  const savingsNum = toNumber(savingsAmount);
+  if (paymentNum < 0 || savingsNum < 0) {
+    throw new functions.https.HttpsError("invalid-argument", "Amounts must be positive.");
+  }
+  if (paymentNum <= 0 && savingsNum <= 0) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "At least one amount must be greater than zero.",
+    );
+  }
+
+  const phoneNormalized = normalizePhoneForFlexpay(phone);
+  if (!phoneNormalized) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Invalid DRC phone number format.",
+    );
+  }
+
+  const clientRef = db.doc(`users/${ownerUid}/clients/${clientUid}`);
+  const clientSnap = await clientRef.get();
+  if (!clientSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "Client not found.");
+  }
+
+  const createdAtMs = Date.now();
+  const reference = `KANK-${ownerUid.slice(0, 6)}-${clientUid.slice(0, 6)}-${createdAtMs}`;
+
+  const requestBody = {
+    merchant: FLEXPAY_MERCHANT,
+    type: "1",
+    reference,
+    phone: phoneNormalized,
+    amount: String(paymentNum),
+    currency: String(currency || "CDF").toUpperCase(),
+    callbackUrl: FLEXPAY_CALLBACK_URL,
+  };
+
+  let initJson;
+  try {
+    const resp = await fetch(FLEXPAY_PAYMENT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": toFlexpayBearer(FLEXPAY_TOKEN),
+      },
+      body: JSON.stringify(requestBody),
+    });
+    initJson = await resp.json();
+  } catch (error) {
+    console.error("FlexPay init call failed:", error);
+    throw new functions.https.HttpsError(
+        "unavailable",
+        "FlexPay payment initiation failed.",
+    );
+  }
+
+  const code = String((initJson && initJson.code) || "1");
+  const orderNumber = String((initJson && initJson.orderNumber) || "");
+  const message = String((initJson && initJson.message) || "");
+  if (code !== "0" || !orderNumber) {
+    await db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`).set({
+      reference,
+      clientUid,
+      paymentAmount: String(paymentNum),
+      savingsAmount: String(savingsNum),
+      currency: requestBody.currency,
+      phoneRaw: String(phone || ""),
+      phoneNormalized,
+      requestBody,
+      initResponse: initJson || null,
+      status: "FAILED_TO_INIT",
+      createdAtMs,
+      updatedAtMs: Date.now(),
+      ownerUid,
+      dayKey: dayKey || formatMonthDayYear(new Date()),
+      paymentEntryKey:
+        paymentEntryKey ||
+        `${formatMonthDayYear(new Date())}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`,
+      dbWriteDone: false,
+    });
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        `FlexPay rejected initiation: ${message || "unknown error"}`,
+    );
+  }
+
+  await db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`).set({
+    reference,
+    orderNumber,
+    clientUid,
+    paymentAmount: String(paymentNum),
+    savingsAmount: String(savingsNum),
+    currency: requestBody.currency,
+    phoneRaw: String(phone || ""),
+    phoneNormalized,
+    requestBody,
+    initResponse: initJson || null,
+    status: "PENDING",
+    createdAtMs,
+    updatedAtMs: Date.now(),
+    ownerUid,
+    dayKey: dayKey || formatMonthDayYear(new Date()),
+    paymentEntryKey:
+      paymentEntryKey ||
+      `${formatMonthDayYear(new Date())}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`,
+    dbWriteDone: false,
+  });
+
+  return {
+    ok: true,
+    status: "PENDING",
+    reference,
+    orderNumber,
+    message,
+  };
+});
+
+exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Authentication is required.");
+  }
+  if (!FLEXPAY_TOKEN) {
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        "FlexPay token is missing on the server.",
+    );
+  }
+
+  const ownerUid = context.auth.uid;
+  const {reference} = data || {};
+  if (!reference) {
+    throw new functions.https.HttpsError("invalid-argument", "reference is required.");
+  }
+
+  const txRef = db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`);
+  const txSnap = await txRef.get();
+  if (!txSnap.exists) {
+    throw new functions.https.HttpsError("not-found", "Transaction not found.");
+  }
+  const employeesSnap = await db.collection(`users/${ownerUid}/employees`).get();
+  const employeeIds = employeesSnap.docs.map((d) => d.id);
+
+  const txData = txSnap.data() || {};
+  const orderNumber = String(txData.orderNumber || "");
+  if (!orderNumber) {
+    throw new functions.https.HttpsError(
+        "failed-precondition",
+        "Missing orderNumber for this transaction.",
+    );
+  }
+
+  let checkJson;
+  try {
+    const url = `${FLEXPAY_CHECK_URL_BASE}/${encodeURIComponent(orderNumber)}`;
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Authorization": toFlexpayBearer(FLEXPAY_TOKEN),
+      },
+    });
+    checkJson = await resp.json();
+  } catch (error) {
+    console.error("FlexPay check call failed:", error);
+    throw new functions.https.HttpsError(
+        "unavailable",
+        "Unable to verify transaction with FlexPay.",
+    );
+  }
+
+  const code = String((checkJson && checkJson.code) || "1");
+  const transaction = (checkJson && checkJson.transaction) || null;
+  const providerStatus = String((transaction && transaction.status) || "");
+  const providerReference =
+    (transaction && transaction.provider_reference) || null;
+
+  let status = "PENDING";
+  if (code === "0" && providerStatus === "0") {
+    status = "SUCCESS";
+  } else if (code === "0" && providerStatus === "1") {
+    status = "FAILED";
+  } else if (code === "1" && transaction === null) {
+    status = "PENDING";
+  }
+
+  const posted = await db.runTransaction(async (t) => {
+    const latestTxSnap = await t.get(txRef);
+    if (!latestTxSnap.exists) {
+      throw new functions.https.HttpsError("not-found", "Transaction missing.");
+    }
+    const latestTxData = latestTxSnap.data() || {};
+    const alreadyPosted = latestTxData.dbWriteDone === true;
+
+    t.set(txRef, {
+      status,
+      checkResponse: checkJson || null,
+      providerStatus,
+      providerReference,
+      checkedAtMs: Date.now(),
+      updatedAtMs: Date.now(),
+    }, {merge: true});
+
+    if (status !== "SUCCESS" || alreadyPosted) {
+      return false;
+    }
+
+    const clientUid = String(latestTxData.clientUid || "");
+    if (!clientUid) {
+      throw new functions.https.HttpsError(
+          "failed-precondition",
+          "clientUid is missing in transaction.",
+      );
+    }
+
+    const paymentNum = toNumber(latestTxData.paymentAmount || 0);
+    const savingsNum = toNumber(latestTxData.savingsAmount || 0);
+    const dayKey = String(latestTxData.dayKey || formatMonthDayYear(new Date()));
+    const paymentEntryKey = String(
+        latestTxData.paymentEntryKey ||
+        `${formatMonthDayYear(new Date())}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`,
+    );
+
+    const clientRef = db.doc(`users/${ownerUid}/clients/${clientUid}`);
+    const ownerRef = db.doc(`users/${ownerUid}`);
+    const ownerStatsDailyRef = db.doc(`users/${ownerUid}/stats/dailyReimbursement`);
+    const clientSnap = await t.get(clientRef);
+    const ownerSnap = await t.get(ownerRef);
+    const ownerStatsSnap = await t.get(ownerStatsDailyRef);
+    if (!clientSnap.exists || !ownerSnap.exists) {
+      throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Client or owner document is missing.",
+      );
+    }
+
+    const clientData = clientSnap.data() || {};
+    const ownerData = ownerSnap.data() || {};
+
+    const amountPaid = toNumber(clientData.amountPaid || 0) + paymentNum;
+    const amountToPay = toNumber(clientData.amountToPay || 0);
+    const debtLeft = amountToPay - amountPaid;
+    const numberOfPaymentsMade = toNumber(clientData.numberOfPaymentsMade || 0) + 1;
+    const numberOfPaymentsMissed = Math.max(
+        0,
+        weeksSince(String(clientData.dateJoined || "")) - numberOfPaymentsMade,
+    );
+    const savings = toNumber(clientData.savings || 0) + savingsNum;
+    const todayMdy = formatMonthDayYear(new Date());
+    const creditScore = computeUpdatedCreditScore(
+        clientData,
+        paymentNum,
+        debtLeft,
+        todayMdy,
+    );
+
+    const clientPayload = {
+      amountPaid: String(amountPaid),
+      creditScore,
+      numberOfPaymentsMade: String(numberOfPaymentsMade),
+      numberOfPaymentsMissed: String(numberOfPaymentsMissed),
+      payments: {
+        [paymentEntryKey]: String(paymentNum),
+      },
+      debtLeft: String(debtLeft),
+    };
+    if (savingsNum > 0) {
+      clientPayload.savings = String(savings);
+      clientPayload.savingsPayments = {
+        [paymentEntryKey]: String(savingsNum),
+      };
+    }
+    t.set(clientRef, clientPayload, {merge: true});
+
+    const prevOwnerDailyStats = toNumber(ownerStatsSnap.exists ? ownerStatsSnap.get(dayKey) : 0);
+    t.set(ownerStatsDailyRef, {[dayKey]: prevOwnerDailyStats + paymentNum}, {merge: true});
+
+    let finalAgentUid =
+      (clientData.employee && clientData.employee.uid) ||
+      clientData.agent ||
+      null;
+    if (finalAgentUid) {
+      const assignedEmpRef = db.doc(`users/${ownerUid}/employees/${finalAgentUid}`);
+      const assignedEmpSnap = await t.get(assignedEmpRef);
+      if (
+        !assignedEmpSnap.exists ||
+        !isWorkingEmployeeForMobileMoney(assignedEmpSnap.data())
+      ) {
+        let foundWorking = null;
+        for (const empId of employeeIds) {
+          if (empId === finalAgentUid) continue;
+          const empRef = db.doc(`users/${ownerUid}/employees/${empId}`);
+          const empSnap = await t.get(empRef);
+          if (empSnap.exists && isWorkingEmployeeForMobileMoney(empSnap.data())) {
+            foundWorking = empId;
+            break;
+          }
+        }
+        finalAgentUid = foundWorking || finalAgentUid;
+      }
+    } else {
+      for (const empId of employeeIds) {
+        const empRef = db.doc(`users/${ownerUid}/employees/${empId}`);
+        const empSnap = await t.get(empRef);
+        if (empSnap.exists && isWorkingEmployeeForMobileMoney(empSnap.data())) {
+          finalAgentUid = empId;
+          break;
+        }
+      }
+    }
+
+    if (finalAgentUid) {
+      const dayTotalsRef = db.doc(`users/${ownerUid}/employees/${finalAgentUid}/dayTotals/${dayKey}`);
+      const ledgerRef = db.collection(`users/${ownerUid}/employees/${finalAgentUid}/payments`).doc();
+      const dayTotalsSnap = await t.get(dayTotalsRef);
+      const prevTotal = toNumber(dayTotalsSnap.exists ? dayTotalsSnap.get("total") : 0);
+      const prevCount = toNumber(dayTotalsSnap.exists ? dayTotalsSnap.get("count") : 0);
+
+      const now = new Date();
+      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const nowMs = Date.now();
+      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+      t.set(dayTotalsRef, {
+        total: prevTotal + paymentNum,
+        count: prevCount + 1,
+        dayKey,
+        dayStartMs: dayStart,
+        monthKey,
+        updatedAtMs: nowMs,
+      }, {merge: true});
+
+      t.set(ledgerRef, {
+        amount: paymentNum,
+        dayKey,
+        clientUid,
+        trackingId: clientData.trackingId || null,
+        createdAtMs: nowMs,
+        savings: savingsNum || 0,
+        source: "mobile_money",
+        provider: "flexpay",
+        reference,
+        orderNumber,
+      });
+    }
+
+    const ownerDailyReimbursement = ownerData.dailyReimbursement || {};
+    const ownerDailySaving = ownerData.dailySaving || {};
+    const dailyReimbursementValue = toNumber(ownerDailyReimbursement[dayKey]) + paymentNum;
+    const dailySavingValue = toNumber(ownerDailySaving[dayKey]) + savingsNum;
+
+    t.set(ownerRef, {
+      clientsSavings: String(toNumber(ownerData.clientsSavings || 0) + savingsNum),
+      dailyReimbursement: {
+        [dayKey]: String(dailyReimbursementValue),
+      },
+      dailySaving: {
+        [dayKey]: String(dailySavingValue),
+      },
+      moneyInHands: String(toNumber(ownerData.moneyInHands || 0) + paymentNum + savingsNum),
+      totalDebtLeft: String(toNumber(ownerData.totalDebtLeft || 0) - paymentNum),
+    }, {merge: true});
+
+    t.set(txRef, {
+      dbWriteDone: true,
+      dbWriteAtMs: Date.now(),
+      status: "SUCCESS",
+      updatedAtMs: Date.now(),
+      providerReference,
+    }, {merge: true});
+
+    return true;
+  });
+
+  return {
+    ok: true,
+    status,
+    posted,
+    reference,
+    orderNumber,
+    providerStatus,
+    message: (checkJson && checkJson.message) || "",
+  };
 });
 
 /**
@@ -510,11 +1069,11 @@ exports.processScheduledBulkMessages = functions.pubsub
             failed,
             locationTotals: data.locationTotals || {},
             template: data.template || "",
-          messagePreview: data.messagePreview || "",
-          conditionSummary: data.conditionSummary || null,
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          sentAtMs: Date.now(),
-          sentBy: data.createdBy || null,
+            messagePreview: data.messagePreview || "",
+            conditionSummary: data.conditionSummary || null,
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            sentAtMs: Date.now(),
+            sentBy: data.createdBy || null,
             sentById: data.createdById || null,
           });
 

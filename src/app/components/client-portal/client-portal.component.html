@@ -925,6 +925,15 @@
     </button>
 
     <button
+      *ngIf="auth.isAdmninistrator"
+      class="rounded-full bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+      [routerLink]="['/payment', id]"
+      [queryParams]="{ method: 'mobile' }"
+    >
+      Payer par Mobile Money
+    </button>
+
+    <button
       class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400"
       [routerLink]="['/payment-activity', id]"
     >

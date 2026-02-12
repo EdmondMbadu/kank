@@ -6,9 +6,18 @@
 <div class="flex container justify-center mx-auto">
 
 <div class=" border-2 border-green-800 rounded-lg p-12">
-  
-    
-
+<div class="mb-6">
+    <label for="paymentMethod" class="block mb-2 text-sm font-medium text-gray-900">Mode de Paiement</label>
+    <select
+      id="paymentMethod"
+      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+      [(ngModel)]="paymentMethod"
+      (change)="onPaymentMethodChange()"
+    >
+      <option value="manual">Paiement Manuel</option>
+      <option *ngIf="auth.isAdmninistrator" value="mobile">Payer par Mobile Money</option>
+    </select>
+</div>
 
 <div class="mb-6">
     <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
@@ -41,12 +50,48 @@
     <input type="text" [(ngModel)]="paymentAmount"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
 </div> 
 
+<div *ngIf="paymentMethod === 'mobile'" class="mb-6">
+    <label for="mobileMoneyPhone" class="block mb-2 text-sm font-medium text-gray-900">Téléphone Mobile Money (10 chiffres)</label>
+    <input
+      id="mobileMoneyPhone"
+      type="tel"
+      inputmode="numeric"
+      maxlength="10"
+      [(ngModel)]="mobileMoneyPhone"
+      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+      placeholder="0893258653"
+    />
+    <p class="mt-1 text-xs text-gray-500">
+      Numéro du client par défaut, modifiable si nécessaire.
+    </p>
+</div>
+
+<div *ngIf="paymentMethod === 'mobile' && mobileMoneyOrderNumber" class="mb-3 text-xs text-gray-600">
+  Référence FlexPay: {{ mobileMoneyReference }} | Order: {{ mobileMoneyOrderNumber }}
+</div>
+
+<div *ngIf="mobileMoneyStatus" class="mb-3 rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700">
+  {{ mobileMoneyStatus }}
+</div>
+
+<div *ngIf="mobileMoneyError" class="mb-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+  {{ mobileMoneyError }}
+  <button
+    *ngIf="mobileMoneyReference"
+    (click)="checkMobileMoneyAgain()"
+    type="button"
+    class="ml-2 underline"
+  >
+    Revérifier
+  </button>
+</div>
+
 
    
 
 <button class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
    <button
-  (click)="makePayment()"
+  (click)="submitPayment()"
   [disabled]="isSubmitting"
   class="relative text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center disabled:opacity-60 disabled:cursor-not-allowed"
 >
@@ -77,5 +122,4 @@
 
 
 </div>
-
 

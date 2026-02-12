@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
-import { isFormGroup } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { firstValueFrom } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -23,6 +24,14 @@ export class PaymentComponent {
   numberOfPaymentToday = 0;
   minPayment: string = '';
   isSubmitting = false;
+  paymentMethod: 'manual' | 'mobile' = 'manual';
+  mobileMoneyPhone = '';
+  mobileMoneyStatus = '';
+  mobileMoneyError = '';
+  mobileMoneyReference = '';
+  mobileMoneyOrderNumber = '';
+  private readonly maxMobileChecks = 24;
+  private readonly mobileCheckIntervalMs = 5000;
 
   client: Client = new Client();
   constructor(
@@ -32,12 +41,17 @@ export class PaymentComponent {
     private router: Router,
     private time: TimeService,
     private compute: ComputationService,
-    private performance: PerformanceService
+    private performance: PerformanceService,
+    private fns: AngularFireFunctions
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
     this.retrieveClient();
+    const methodQuery = this.activatedRoute.snapshot.queryParamMap.get('method');
+    if (methodQuery === 'mobile' && this.auth.isAdmninistrator) {
+      this.paymentMethod = 'mobile';
+    }
   }
 
   retrieveClient(): void {
@@ -46,6 +60,7 @@ export class PaymentComponent {
 
       this.minPayment = this.compute.minimumPayment(this.client);
       this.numberOfPaymentToday = this.howManyTimesPaidToday();
+      this.mobileMoneyPhone = this.normalizePhoneInput(this.client.phoneNumber || '');
     });
   }
   displaySavingsOtherAmount() {
@@ -64,79 +79,99 @@ export class PaymentComponent {
       this.paymentOtherAmount = false;
     }
   }
+  onPaymentMethodChange() {
+    this.mobileMoneyError = '';
+    this.mobileMoneyStatus = '';
+    if (this.paymentMethod === 'mobile' && !this.mobileMoneyPhone) {
+      this.mobileMoneyPhone = this.normalizePhoneInput(this.client.phoneNumber || '');
+    }
+  }
 
-  makePayment() {
-    if (this.isSubmitting) return; // hard guard against double clicks
+  submitPayment() {
+    if (this.paymentMethod === 'mobile') {
+      this.makeMobileMoneyPayment();
+      return;
+    }
+    this.makePayment();
+  }
+
+  private validateBasePaymentInputs(): boolean {
     if (this.paymentAmount === '' || this.savingsAmount === '') {
       alert('Remplissez toutes les données');
-      return;
+      return false;
     } else if (
       Number.isNaN(Number(this.paymentAmount)) ||
       Number.isNaN(Number(this.savingsAmount))
     ) {
       alert('Entrée incorrecte. Entrez un numéro');
-      return;
-    } // skip this test if admin because they can undo a payment
-    else if (
+      return false;
+    } else if (
       !this.auth.isAdmninistrator &&
       (Number(this.paymentAmount) < 0 || Number(this.savingsAmount) < 0)
     ) {
       alert('les nombres doivent etre positifs');
-      return;
-    } // skip this test if admin because they can undo a payment
-    else if (
+      return false;
+    } else if (
       !this.auth.isAdmninistrator &&
       Number(this.paymentAmount) <= 0 &&
       Number(this.savingsAmount) <= 0
     ) {
       alert('Au moins un nombre doit etre plus grand que 0.');
-      return;
+      return false;
     } else if (
       !this.auth.isAdmninistrator &&
       Number(this.client.debtLeft) <= 0
     ) {
       alert('Vous avez tout payé. Plus besoin de paiements!');
-      return;
+      return false;
     } else if (Number(this.paymentAmount) > Number(this.client.debtLeft)) {
       alert(
         'Votre paiement dépassera le montant nécessaire. Ajuster le montant'
       );
-      return;
-    } else {
-      let conf = confirm(
-        ` Vous avez effectué ${this.numberOfPaymentToday} paiement(s) aujourd'hui. Voulez-vous quand même continuer ?`
-      );
-      if (!conf) {
-        return;
-      }
-      this.client.amountPaid = (
-        Number(this.client.amountPaid) + Number(this.paymentAmount)
-      ).toString();
-      this.client.numberOfPaymentsMade = (
-        Number(this.client.numberOfPaymentsMade) + 1
-      ).toString();
-
-      this.client.numberOfPaymentsMissed = Math.max(
-        0,
-        this.time.weeksSince(this.client.dateJoined!) -
-          Number(this.client.numberOfPaymentsMade)
-      ).toString();
-
-      this.client.payments = { [this.time.todaysDate()]: this.paymentAmount };
-      if (this.savingsAmount !== '0') {
-        this.client.savings = (
-          Number(this.client.savings) + Number(this.savingsAmount)
-        ).toString();
-        this.client.savingsPayments = {
-          [this.time.todaysDate()]: this.savingsAmount,
-        };
-      }
-      this.client.debtLeft = (
-        Number(this.client.amountToPay) - Number(this.client.amountPaid)
-      ).toString();
-
-      this.client.creditScore = this.computeCreditScore();
+      return false;
     }
+    return true;
+  }
+
+  makePayment() {
+    if (this.isSubmitting) return; // hard guard against double clicks
+    if (!this.validateBasePaymentInputs()) {
+      return;
+    }
+    let conf = confirm(
+      ` Vous avez effectué ${this.numberOfPaymentToday} paiement(s) aujourd'hui. Voulez-vous quand même continuer ?`
+    );
+    if (!conf) {
+      return;
+    }
+    this.client.amountPaid = (
+      Number(this.client.amountPaid) + Number(this.paymentAmount)
+    ).toString();
+    this.client.numberOfPaymentsMade = (
+      Number(this.client.numberOfPaymentsMade) + 1
+    ).toString();
+
+    this.client.numberOfPaymentsMissed = Math.max(
+      0,
+      this.time.weeksSince(this.client.dateJoined!) -
+        Number(this.client.numberOfPaymentsMade)
+    ).toString();
+
+    this.client.payments = { [this.time.todaysDate()]: this.paymentAmount };
+    if (this.savingsAmount !== '0') {
+      this.client.savings = (
+        Number(this.client.savings) + Number(this.savingsAmount)
+      ).toString();
+      this.client.savingsPayments = {
+        [this.time.todaysDate()]: this.savingsAmount,
+      };
+    }
+    this.client.debtLeft = (
+      Number(this.client.amountToPay) - Number(this.client.amountPaid)
+    ).toString();
+
+    this.client.creditScore = this.computeCreditScore();
+
     let date = this.time.todaysDateMonthDayYear();
     this.isSubmitting = true; // 👉 show loader + disable button immediately
     this.data
@@ -164,6 +199,140 @@ export class PaymentComponent {
       .finally(() => {
         this.isSubmitting = false; // safety in case navigation doesn’t happen
       });
+  }
+
+  async makeMobileMoneyPayment() {
+    if (!this.auth.isAdmninistrator) {
+      alert('Le paiement mobile money est réservé aux administrateurs.');
+      return;
+    }
+    if (this.isSubmitting) return;
+    if (!this.validateBasePaymentInputs()) return;
+
+    const localPhone = this.normalizePhoneInput(this.mobileMoneyPhone);
+    if (!/^\d{10}$/.test(localPhone)) {
+      this.mobileMoneyError = 'Le numéro doit contenir exactement 10 chiffres.';
+      return;
+    }
+
+    let conf = confirm(
+      ` Vous avez effectué ${this.numberOfPaymentToday} paiement(s) aujourd'hui. Continuer avec Mobile Money ?`
+    );
+    if (!conf) return;
+
+    this.mobileMoneyError = '';
+    this.mobileMoneyStatus = 'Initialisation du paiement Mobile Money...';
+    this.isSubmitting = true;
+
+    try {
+      const initCallable = this.fns.httpsCallable('initMobileMoneyPayment');
+      const initResponse: any = await firstValueFrom(
+        initCallable({
+          clientUid: this.client.uid,
+          paymentAmount: this.paymentAmount,
+          savingsAmount: this.savingsAmount,
+          currency: 'CDF',
+          phone: localPhone,
+          dayKey: this.time.todaysDateMonthDayYear(),
+          paymentEntryKey: this.time.todaysDate(),
+        })
+      );
+
+      this.mobileMoneyReference = initResponse?.reference || '';
+      this.mobileMoneyOrderNumber = initResponse?.orderNumber || '';
+      this.mobileMoneyStatus =
+        "Demande envoyée. Veuillez valider le push Mobile Money sur le téléphone du client.";
+
+      if (!this.mobileMoneyReference) {
+        throw new Error('Reference FlexPay manquante.');
+      }
+
+      const finalStatus = await this.pollMobileMoneyStatus(
+        this.mobileMoneyReference
+      );
+      if (finalStatus === 'SUCCESS') {
+        this.mobileMoneyStatus = 'Paiement confirmé et enregistré.';
+        this.router.navigate(['/client-portal', this.id]);
+        return;
+      }
+      if (finalStatus === 'FAILED') {
+        this.mobileMoneyError =
+          "La transaction Mobile Money a échoué. Aucun paiement n'a été enregistré.";
+        this.mobileMoneyStatus = '';
+        return;
+      }
+
+      this.mobileMoneyError =
+        'La transaction est toujours en attente. Vous pouvez relancer la vérification.';
+      this.mobileMoneyStatus = '';
+    } catch (err: any) {
+      console.error('Mobile money payment flow failed:', err);
+      this.mobileMoneyError =
+        err?.message || "Le paiement Mobile Money n'a pas pu être traité.";
+      this.mobileMoneyStatus = '';
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  checkMobileMoneyAgain() {
+    if (!this.mobileMoneyReference) return;
+    this.verifyExistingMobileMoneyTransaction();
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async pollMobileMoneyStatus(
+    reference: string,
+    maxChecks: number = this.maxMobileChecks
+  ): Promise<'SUCCESS' | 'FAILED' | 'PENDING'> {
+    const checkCallable = this.fns.httpsCallable('checkMobileMoneyPayment');
+    for (let attempt = 0; attempt < maxChecks; attempt++) {
+      await this.sleep(this.mobileCheckIntervalMs);
+      this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (${attempt + 1}/${maxChecks})`;
+      const checkResponse: any = await firstValueFrom(
+        checkCallable({ reference })
+      );
+      const status = String(checkResponse?.status || 'PENDING');
+      if (status === 'SUCCESS') return 'SUCCESS';
+      if (status === 'FAILED') return 'FAILED';
+    }
+    return 'PENDING';
+  }
+
+  private async verifyExistingMobileMoneyTransaction() {
+    if (!this.mobileMoneyReference) return;
+    this.isSubmitting = true;
+    this.mobileMoneyError = '';
+    this.mobileMoneyStatus = 'Nouvelle vérification en cours...';
+    try {
+      const status = await this.pollMobileMoneyStatus(this.mobileMoneyReference, 1);
+      if (status === 'SUCCESS') {
+        this.router.navigate(['/client-portal', this.id]);
+        return;
+      }
+      if (status === 'FAILED') {
+        this.mobileMoneyError =
+          "La transaction Mobile Money a échoué. Aucun paiement n'a été enregistré.";
+        this.mobileMoneyStatus = '';
+        return;
+      }
+      this.mobileMoneyError =
+        'La transaction est toujours en attente. Réessayez dans quelques secondes.';
+      this.mobileMoneyStatus = '';
+    } catch (err: any) {
+      this.mobileMoneyError =
+        err?.message || 'Erreur pendant la vérification du paiement.';
+      this.mobileMoneyStatus = '';
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  private normalizePhoneInput(value: string): string {
+    return String(value || '').replace(/\D/g, '');
   }
 
   computeCreditScore() {
