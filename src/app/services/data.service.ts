@@ -1775,6 +1775,13 @@ export class DataService {
     return ref.update({ [`attendance.${label}`]: status });
   }
 
+  clearAttendanceKey(userId: string, employeeId: string, label: string) {
+    const ref = this.afs.doc(`users/${userId}/employees/${employeeId}`);
+    return ref.update({
+      [`attendance.${label}`]: firebase.firestore.FieldValue.delete(),
+    });
+  }
+
   // NEW: write parallel map attendanceAttachments[date] = attachment
   updateEmployeeAttendanceAttachment(
     employeeId: string,

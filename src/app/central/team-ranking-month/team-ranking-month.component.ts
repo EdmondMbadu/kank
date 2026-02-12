@@ -13,6 +13,8 @@ import { DataService } from 'src/app/services/data.service';
 import exifr from 'exifr';
 import { Subscription } from 'rxjs';
 
+type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
+
 @Component({
   selector: 'app-team-ranking-month',
   templateUrl: './team-ranking-month.component.html',
@@ -67,6 +69,35 @@ export class TeamRankingMonthComponent implements OnDestroy {
   weekPickerEndLabel: string = '';
   weekPickerRangeLabel: string = '';
   weeklyTargetFc: number = 300000;
+  attendanceQuickOptions: Array<{
+    code: AttendanceQuickCode;
+    label: string;
+    classes: string;
+  }> = [
+    {
+      code: 'P',
+      label: 'Présent',
+      classes:
+        'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+    },
+    {
+      code: 'A',
+      label: 'Absent',
+      classes: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
+    },
+    {
+      code: 'L',
+      label: 'Retard',
+      classes:
+        'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+    },
+    {
+      code: '',
+      label: 'Non marqué',
+      classes:
+        'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100',
+    },
+  ];
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
   loadingMonthly = false;
@@ -174,6 +205,153 @@ export class TeamRankingMonthComponent implements OnDestroy {
     // Reload daily totals for the selected date
     if (this.rankingMode === 'dailyPayments') {
       this.loadDailyTotalsForEmployees();
+    }
+  }
+
+  normalizeAttendanceCode(raw: unknown): '' | 'P' | 'A' | 'L' | 'N' | 'V' | 'VP' {
+    const value = (raw ?? '').toString().trim().toUpperCase();
+    if (!value) return '';
+    if (value === 'P' || value === 'PRESENT' || value === 'PRÉSENT') return 'P';
+    if (value === 'A' || value === 'ABSENT') return 'A';
+    if (value === 'L' || value === 'LATE' || value === 'RETARD') return 'L';
+    if (value === 'N' || value === 'NEANT' || value === 'NÉANT') return 'N';
+    if (value === 'VP') return 'VP';
+    if (value === 'V' || value === 'VACANCES' || value === 'VACANCE') return 'V';
+    return '';
+  }
+
+  attendanceCodeForDate(employee: Employee): '' | 'P' | 'A' | 'L' | 'N' | 'V' | 'VP' {
+    const dayKey = this.todayDayKey || this.time.todaysDateMonthDayYear();
+    const fullEmployee =
+      this.allEmployeesAll?.find((e) => e?.uid && e.uid === employee?.uid) ||
+      employee;
+    const attendanceMap = fullEmployee?.attendance || {};
+
+    if (attendanceMap[dayKey] !== undefined) {
+      return this.normalizeAttendanceCode(attendanceMap[dayKey]);
+    }
+
+    const keysForDay = Object.keys(attendanceMap).filter(
+      (key) => this.normalizeAttendanceDayKey(key) === dayKey
+    );
+    if (!keysForDay.length) return '';
+
+    const latestKey = keysForDay.reduce((prev, current) =>
+      this.attendanceKeyTimeValue(current) > this.attendanceKeyTimeValue(prev)
+        ? current
+        : prev
+    );
+    return this.normalizeAttendanceCode(attendanceMap[latestKey]);
+  }
+
+  private normalizeAttendanceDayKey(rawKey: string): string {
+    const parts = (rawKey || '').split('-');
+    if (parts.length < 3) return '';
+    const month = Number(parts[0]);
+    const day = Number(parts[1]);
+    const year = Number(parts[2]);
+    if (!Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(year)) {
+      return '';
+    }
+    return `${month}-${day}-${year}`;
+  }
+
+  private attendanceKeyTimeValue(rawKey: string): number {
+    const parts = (rawKey || '').split('-');
+    const h = Number(parts[3] || 0);
+    const m = Number(parts[4] || 0);
+    const s = Number(parts[5] || 0);
+    const hh = Number.isFinite(h) ? h : 0;
+    const mm = Number.isFinite(m) ? m : 0;
+    const ss = Number.isFinite(s) ? s : 0;
+    return hh * 3600 + mm * 60 + ss;
+  }
+
+  attendanceLabelForCode(code: string): string {
+    switch (code) {
+      case 'P':
+        return 'Présent';
+      case 'A':
+        return 'Absent';
+      case 'L':
+        return 'Retard';
+      case 'V':
+        return 'Vacances';
+      case 'VP':
+        return 'Vacances en cours';
+      case 'N':
+      case '':
+      default:
+        return 'Non marqué';
+    }
+  }
+
+  attendanceBadgeClass(code: string): string {
+    switch (code) {
+      case 'P':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'A':
+        return 'bg-rose-100 text-rose-800 border-rose-200';
+      case 'L':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'V':
+      case 'VP':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'N':
+      case '':
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  }
+
+  isAttendanceSelected(employee: Employee, code: AttendanceQuickCode): boolean {
+    const current = this.attendanceCodeForDate(employee);
+    if (code === '') {
+      return current === '' || current === 'N';
+    }
+    return current === code;
+  }
+
+  async setAttendanceForSelectedDate(
+    employee: Employee,
+    code: AttendanceQuickCode
+  ): Promise<void> {
+    if (!this.auth.isAdmin) return;
+    if (!employee?.uid) return;
+    const ownerUid = employee?.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) return;
+    const e: any = employee;
+    if (e._attendanceSaving) return;
+
+    e._attendanceSaving = true;
+    const label = this.time.todaysDateMonthDayYear();
+    const dateISO = this.time.getTodaysDateYearMonthDay();
+
+    try {
+      if (code === '') {
+        await this.data.clearAttendanceKey(ownerUid, employee.uid, label);
+        if (!employee.attendance) employee.attendance = {};
+        delete employee.attendance[label];
+        return;
+      }
+
+      await this.data.updateAttendanceKey(ownerUid, employee.uid, label, code);
+      await this.data.setAttendanceEntry(
+        ownerUid,
+        employee.uid,
+        dateISO,
+        code,
+        label,
+        this.auth.currentUser?.uid || 'unknown'
+      );
+
+      if (!employee.attendance) employee.attendance = {};
+      employee.attendance[label] = code;
+    } catch (error) {
+      console.error('Failed to set attendance status for selected date', error);
+      alert("Impossible d'enregistrer la présence pour cette date.");
+    } finally {
+      e._attendanceSaving = false;
     }
   }
 
