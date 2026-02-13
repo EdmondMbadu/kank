@@ -32,6 +32,11 @@ type RolePasswords = {
   gestion: string;
   investigator: string;
 };
+
+export type WeeklyPaymentProjection = {
+  projectedTargetFc: number | null;
+  effectiveDateIso: string;
+};
 @Injectable({
   providedIn: 'root',
 })
@@ -62,11 +67,24 @@ export class AuthService {
   );
   rolePasswords$ = this.rolePasswordsSubject.asObservable();
   private readonly defaultWeeklyPaymentTargetFc = 600000;
+  private readonly defaultWeeklyPaymentProjection: WeeklyPaymentProjection = {
+    projectedTargetFc: null,
+    effectiveDateIso: '',
+  };
   private weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
   private weeklyPaymentTargetSubject = new BehaviorSubject<number>(
     this.weeklyPaymentTargetState
   );
   weeklyPaymentTarget$ = this.weeklyPaymentTargetSubject.asObservable();
+  private weeklyPaymentProjectionState: WeeklyPaymentProjection = {
+    ...this.defaultWeeklyPaymentProjection,
+  };
+  private weeklyPaymentProjectionSubject =
+    new BehaviorSubject<WeeklyPaymentProjection>(
+      this.weeklyPaymentProjectionState
+    );
+  weeklyPaymentProjection$ =
+    this.weeklyPaymentProjectionSubject.asObservable();
   private managementDocId: string = '';
   private lastRoleWord = '';
 
@@ -1479,6 +1497,21 @@ export class AuthService {
       : this.defaultWeeklyPaymentTargetFc;
   }
 
+  private normalizeWeeklyPaymentProjection(
+    targetFc: any,
+    effectiveDateIso: any
+  ): WeeklyPaymentProjection {
+    const parsedTarget = Number(targetFc);
+    const normalizedTarget =
+      Number.isFinite(parsedTarget) && parsedTarget > 0 ? parsedTarget : null;
+    const normalizedDate =
+      typeof effectiveDateIso === 'string' ? effectiveDateIso.trim() : '';
+    return {
+      projectedTargetFc: normalizedTarget,
+      effectiveDateIso: normalizedDate,
+    };
+  }
+
   public applyRoleWord(word: string): void {
     this.lastRoleWord = word;
     const normalized = this.normalizeSecret(word);
@@ -1545,6 +1578,14 @@ export class AuthService {
           data.weeklyPaymentTargetFc
         );
         this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+        this.weeklyPaymentProjectionState =
+          this.normalizeWeeklyPaymentProjection(
+            data.projectedWeeklyPaymentTargetFc,
+            data.projectedWeeklyPaymentEffectiveDate
+          );
+        this.weeklyPaymentProjectionSubject.next(
+          this.weeklyPaymentProjectionState
+        );
         if (this.lastRoleWord) {
           this.applyRoleWord(this.lastRoleWord);
         }
@@ -1566,6 +1607,25 @@ export class AuthService {
     const docRef = this.afs.doc(`management/${this.managementDocId}`);
     return docRef
       .set({ weeklyPaymentTargetFc: targetFc }, { merge: true })
+      .then(() => {});
+  }
+
+  updateWeeklyPaymentProjectionGlobal(
+    projectedTargetFc: number,
+    effectiveDateIso: string
+  ): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set(
+        {
+          projectedWeeklyPaymentTargetFc: projectedTargetFc,
+          projectedWeeklyPaymentEffectiveDate: effectiveDateIso,
+        },
+        { merge: true }
+      )
       .then(() => {});
   }
 

@@ -1,6 +1,9 @@
 import { Component, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from 'src/app/services/auth.service';
+import {
+  AuthService,
+  WeeklyPaymentProjection,
+} from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { Client } from 'src/app/models/client';
@@ -80,6 +83,12 @@ export class TodayComponent {
     this.auth.weeklyPaymentTarget$.subscribe(() => {
       this.syncWeeklyTargetFc();
     });
+    this.auth.weeklyPaymentProjection$.subscribe(
+      (projection: WeeklyPaymentProjection) => {
+        this.projectedWeeklyTargetFc = projection.projectedTargetFc;
+        this.projectedWeeklyTargetEffectiveDate = projection.effectiveDateIso;
+      }
+    );
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
 
@@ -109,6 +118,8 @@ export class TodayComponent {
   weeklyPaymentTotalN: number = 0;
   weeklyPaymentTotalDollars: string = '0';
   weeklyTargetFc: number = 600000;
+  projectedWeeklyTargetFc: number | null = null;
+  projectedWeeklyTargetEffectiveDate = '';
   weeklyTargetInput: string = '';
   weeklyProgressPercent: number = 0;
   weeklyTargetReached: boolean = false;
@@ -650,6 +661,49 @@ export class TodayComponent {
     } catch (err) {
       alert('Erreur lors de la mise à jour, réessayez');
     }
+  }
+
+  private parseIsoDate(dateIso: string): Date | null {
+    const value = (dateIso || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return null;
+    }
+    const [y, m, d] = value.split('-').map((v) => Number(v));
+    const parsed = new Date(y, m - 1, d);
+    if (
+      parsed.getFullYear() !== y ||
+      parsed.getMonth() + 1 !== m ||
+      parsed.getDate() !== d
+    ) {
+      return null;
+    }
+    return parsed;
+  }
+
+  get hasProjectedWeeklyTarget(): boolean {
+    return (
+      this.projectedWeeklyTargetFc != null &&
+      Number.isFinite(this.projectedWeeklyTargetFc) &&
+      this.projectedWeeklyTargetFc > 0 &&
+      !!this.projectedWeeklyTargetEffectiveDate
+    );
+  }
+
+  get projectedWeeklyTargetDeltaFc(): number {
+    if (this.projectedWeeklyTargetFc == null) return 0;
+    return this.projectedWeeklyTargetFc - this.weeklyTargetFc;
+  }
+
+  get projectedWeeklyTargetEffectiveDateLabel(): string {
+    const parsed = this.parseIsoDate(this.projectedWeeklyTargetEffectiveDate);
+    if (!parsed) {
+      return this.projectedWeeklyTargetEffectiveDate || 'date non définie';
+    }
+    return parsed.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
   private resolveWeeklyTargetFc(): number {

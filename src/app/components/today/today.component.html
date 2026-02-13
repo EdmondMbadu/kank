@@ -641,6 +641,20 @@
         </span>
       </div>
       <div
+        *ngIf="hasProjectedWeeklyTarget"
+        class="mt-1 text-[11px] text-slate-500 dark:text-slate-400"
+      >
+        <ng-container *ngIf="projectedWeeklyTargetDeltaFc > 0; else projectedTargetNoIncrease">
+          Prévision: +{{ projectedWeeklyTargetDeltaFc | number : "1.0-0" }} FC
+          ({{ projectedWeeklyTargetFc | number : "1.0-0" }} FC)
+          dès le {{ projectedWeeklyTargetEffectiveDateLabel }}.
+        </ng-container>
+        <ng-template #projectedTargetNoIncrease>
+          Prévision: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
+          dès le {{ projectedWeeklyTargetEffectiveDateLabel }}.
+        </ng-template>
+      </div>
+      <div
         class="mt-1 h-2 w-full rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
       >
         <div
@@ -1241,6 +1255,19 @@
             >
               {{ weeklyTargetReached ? 'Atteint' : 'À faire' }}
             </span>
+          </div>
+          <div
+            *ngIf="hasProjectedWeeklyTarget"
+            class="mt-1 text-[11px] text-slate-500 dark:text-slate-400"
+          >
+            <ng-container *ngIf="projectedWeeklyTargetDeltaFc > 0; else projectedTileNoIncrease">
+              Prévision: +{{ projectedWeeklyTargetDeltaFc | number : "1.0-0" }} FC
+              dès le {{ projectedWeeklyTargetEffectiveDateLabel }}
+            </ng-container>
+            <ng-template #projectedTileNoIncrease>
+              Prévision: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
+              dès le {{ projectedWeeklyTargetEffectiveDateLabel }}
+            </ng-template>
           </div>
 
           <div

@@ -1,7 +1,10 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { User } from 'src/app/models/user';
-import { AuthService } from 'src/app/services/auth.service';
+import {
+  AuthService,
+  WeeklyPaymentProjection,
+} from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { coerceToNumber } from 'src/app/utils/number-utils';
@@ -30,6 +33,12 @@ export class TrackingCentralComponent {
   weeklyPaymentTargetInput = '';
   weeklyPaymentTargetSaving = false;
   weeklyPaymentTargetSaved = false;
+  projectedWeeklyPaymentTargetFc: number | null = null;
+  projectedWeeklyPaymentEffectiveDate = '';
+  projectedWeeklyPaymentTargetInput = '';
+  projectedWeeklyPaymentEffectiveDateInput = '';
+  projectedWeeklyPaymentSaving = false;
+  projectedWeeklyPaymentSaved = false;
   monthlyBudgetGlobalInput = '';
   monthlyBudgetGlobalSaving = false;
   monthlyBudgetGlobalSaved = false;
@@ -51,6 +60,12 @@ export class TrackingCentralComponent {
     this.auth.weeklyPaymentTarget$.subscribe((value) => {
       this.weeklyPaymentTargetFc = value;
     });
+    this.auth.weeklyPaymentProjection$.subscribe(
+      (projection: WeeklyPaymentProjection) => {
+        this.projectedWeeklyPaymentTargetFc = projection.projectedTargetFc;
+        this.projectedWeeklyPaymentEffectiveDate = projection.effectiveDateIso;
+      }
+    );
   }
 
   totalPerfomance: number = 0;
@@ -195,6 +210,41 @@ export class TrackingCentralComponent {
       })
       .finally(() => {
         this.weeklyPaymentTargetSaving = false;
+      });
+  }
+
+  saveProjectedWeeklyPaymentTargetGlobal(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.projectedWeeklyPaymentSaving) return;
+
+    const value = Number(this.projectedWeeklyPaymentTargetInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      alert('Entrez un montant projeté valide.');
+      return;
+    }
+
+    const effectiveDate = (this.projectedWeeklyPaymentEffectiveDateInput || '')
+      .trim();
+    if (!effectiveDate) {
+      alert('Choisissez la date effective.');
+      return;
+    }
+
+    this.projectedWeeklyPaymentSaving = true;
+    this.projectedWeeklyPaymentSaved = false;
+    this.auth
+      .updateWeeklyPaymentProjectionGlobal(value, effectiveDate)
+      .then(() => {
+        this.projectedWeeklyPaymentSaved = true;
+        this.projectedWeeklyPaymentTargetInput = '';
+        this.projectedWeeklyPaymentEffectiveDateInput = '';
+      })
+      .catch((err) => {
+        console.error('Failed to update projected weekly payment target:', err);
+        alert("Impossible d'enregistrer le montant projeté.");
+      })
+      .finally(() => {
+        this.projectedWeeklyPaymentSaving = false;
       });
   }
 
