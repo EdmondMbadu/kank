@@ -66,6 +66,10 @@ export class Employee {
   showAttendance?: boolean;
   receipts?: string[];
   paidThisMonth?: boolean;
+  signedPaymentThisMonth?: boolean;
+  signedBonusThisMonth?: boolean;
+  lastPaymentSignatureLabelThisMonth?: string;
+  lastBonusSignatureLabelThisMonth?: string;
   paymentBankFee?: string;
   paymentLate?: string;
   paymentManualWithdrawal?: string;

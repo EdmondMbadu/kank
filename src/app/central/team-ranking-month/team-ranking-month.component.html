@@ -617,10 +617,67 @@
 
                 <!-- Status / alerts -->
                 <span
-                  *ngIf="!em.paidThisMonth && auth.isAdmin"
-                  class="inline-flex items-center rounded-full bg-red-50 text-red-700 px-2 py-0.5 text-xs font-semibold"
-                  >⚠️ Not Signed</span
+                  *ngIf="auth.isAdmin && em.signedPaymentThisMonth"
+                  class="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50/70 px-2 py-0.5 text-[10px] font-medium text-indigo-700"
+                  [title]="
+                    'Paiement signé ce mois' +
+                    (em.lastPaymentSignatureLabelThisMonth
+                      ? ' · ' + em.lastPaymentSignatureLabelThisMonth
+                      : '')
+                  "
                 >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M16.5 3.75l3.75 3.75M4.5 20.25l4.5-1.125 9.75-9.75a1.5 1.5 0 000-2.121l-1.629-1.629a1.5 1.5 0 00-2.121 0l-9.75 9.75L4.5 20.25z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M8.625 14.625l2.25 2.25 3.75-3.75"
+                    />
+                  </svg>
+                  Paiement signé
+                </span>
+                <span
+                  *ngIf="auth.isAdmin && em.signedBonusThisMonth"
+                  class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50/70 px-2 py-0.5 text-[10px] font-medium text-emerald-700"
+                  [title]="
+                    'Bonus signé ce mois' +
+                    (em.lastBonusSignatureLabelThisMonth
+                      ? ' · ' + em.lastBonusSignatureLabelThisMonth
+                      : '')
+                  "
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M16.5 3.75l3.75 3.75M4.5 20.25l4.5-1.125 9.75-9.75a1.5 1.5 0 000-2.121l-1.629-1.629a1.5 1.5 0 00-2.121 0l-9.75 9.75L4.5 20.25z"
+                    />
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M8.625 14.625l2.25 2.25 3.75-3.75"
+                    />
+                  </svg>
+                  Bonus signé
+                </span>
                 <span
                   *ngIf="em.status !== 'Travaille'"
                   class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-2 py-0.5 text-xs font-medium"

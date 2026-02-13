@@ -660,6 +660,77 @@ export class TeamRankingMonthComponent implements OnDestroy {
       });
     });
   }
+
+  private resolvePaymentKind(rawKey: string): 'paiement' | 'bonus' {
+    const lower = (rawKey || '').toLowerCase();
+    if (lower.includes('bonus')) return 'bonus';
+    if (lower.includes('paiement') || lower.includes('payment')) {
+      return 'paiement';
+    }
+    return 'paiement';
+  }
+
+  private formatSignatureLabel(rawKey: string, parsedDate: Date): string {
+    const parts = (rawKey || '').split('-');
+    if (parts.length >= 6) {
+      return this.time.convertTimeFormat(parts.slice(0, 6).join('-'));
+    }
+    return parsedDate.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  private getLatestSignatureThisMonth(
+    employee: Employee,
+    kind: 'paiement' | 'bonus'
+  ): { rawKey: string; date: Date } | null {
+    const payments = employee?.payments;
+    if (!payments || typeof payments !== 'object') return null;
+
+    const now = new Date();
+    let latest: { rawKey: string; date: Date } | null = null;
+
+    Object.keys(payments).forEach((rawKey) => {
+      if (this.resolvePaymentKind(rawKey) !== kind) return;
+
+      const date = this.time.parseFlexibleDateTime(rawKey);
+      if (Number.isNaN(date.getTime())) return;
+      if (
+        date.getMonth() !== now.getMonth() ||
+        date.getFullYear() !== now.getFullYear()
+      ) {
+        return;
+      }
+
+      if (!latest || date.getTime() > latest.date.getTime()) {
+        latest = { rawKey, date };
+      }
+    });
+
+    return latest;
+  }
+
+  private decorateMonthlySignatureState(employee: Employee): void {
+    const latestPayment = this.getLatestSignatureThisMonth(employee, 'paiement');
+    const latestBonus = this.getLatestSignatureThisMonth(employee, 'bonus');
+
+    employee.signedPaymentThisMonth = !!latestPayment;
+    employee.signedBonusThisMonth = !!latestBonus;
+    employee.lastPaymentSignatureLabelThisMonth = latestPayment
+      ? this.formatSignatureLabel(latestPayment.rawKey, latestPayment.date)
+      : undefined;
+    employee.lastBonusSignatureLabelThisMonth = latestBonus
+      ? this.formatSignatureLabel(latestBonus.rawKey, latestBonus.date)
+      : undefined;
+
+    // Keep legacy flag aligned with payment signature status.
+    employee.paidThisMonth = employee.signedPaymentThisMonth;
+  }
+
   filterAndInitializeEmployees(
     allEmployees: Employee[],
     currentClients: Client[]
@@ -679,11 +750,6 @@ export class TeamRankingMonthComponent implements OnDestroy {
           currentClients,
           employee
         );
-      // ────────────── NEW: did they get paid this month? ──────────────
-      const now = new Date();
-      const targetMonth = now.getMonth() + 1; // 1–12
-      const targetYear = now.getFullYear(); // e.g. 2025
-      const payments = employee.payments || {}; // might be undefined
       if (!employee.uid) {
         this.logDebug('Employee without uid skipped during filtering', {
           name: `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim(),
@@ -691,18 +757,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         return;
       }
 
-      employee.paidThisMonth = Object.keys(payments).some((key) => {
-        // split "M-D-YYYY-HH-mm-ss" into ["M","D","YYYY"]
-        const [mStr, dStr, yStr] = key.split('-', 3);
-        const m = Number(mStr),
-          d = Number(dStr),
-          y = Number(yStr);
-
-        return (
-          m === targetMonth && y === targetYear && d > 15 // ← only count payments after the 15th
-        );
-      });
-      // ────────────────────────────────────────────────────────────────
+      this.decorateMonthlySignatureState(employee);
 
       // If the employee isn't already in the Map, add them
       if (!uniqueEmployees.has(employee.uid!)) {
