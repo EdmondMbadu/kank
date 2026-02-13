@@ -684,6 +684,42 @@ export class TeamRankingMonthComponent implements OnDestroy {
     });
   }
 
+  private getSignatureTargetMonthYear(): { month: number; year: number } {
+    const month = Number(this.givenMonth);
+    const year = Number(this.givenYear);
+    if (
+      Number.isFinite(month) &&
+      Number.isFinite(year) &&
+      month >= 1 &&
+      month <= 12 &&
+      year >= 1900
+    ) {
+      return { month, year };
+    }
+
+    const now = new Date();
+    return { month: now.getMonth() + 1, year: now.getFullYear() };
+  }
+
+  private getEffectiveSignatureMonthYear(
+    date: Date,
+    kind: 'paiement' | 'bonus'
+  ): { month: number; year: number } {
+    let month = date.getMonth() + 1;
+    let year = date.getFullYear();
+
+    // Edge case: payroll signed from day 1..5 counts toward previous month.
+    if (kind === 'paiement' && date.getDate() >= 1 && date.getDate() <= 5) {
+      month -= 1;
+      if (month === 0) {
+        month = 12;
+        year -= 1;
+      }
+    }
+
+    return { month, year };
+  }
+
   private getLatestSignatureThisMonth(
     employee: Employee,
     kind: 'paiement' | 'bonus'
@@ -691,7 +727,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const payments = employee?.payments;
     if (!payments || typeof payments !== 'object') return null;
 
-    const now = new Date();
+    const target = this.getSignatureTargetMonthYear();
     let latest: { rawKey: string; date: Date } | null = null;
 
     Object.keys(payments).forEach((rawKey) => {
@@ -699,9 +735,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
       const date = this.time.parseFlexibleDateTime(rawKey);
       if (Number.isNaN(date.getTime())) return;
+      const effective = this.getEffectiveSignatureMonthYear(date, kind);
       if (
-        date.getMonth() !== now.getMonth() ||
-        date.getFullYear() !== now.getFullYear()
+        effective.month !== target.month ||
+        effective.year !== target.year
       ) {
         return;
       }
