@@ -689,11 +689,6 @@ export class TodayComponent {
     );
   }
 
-  get projectedWeeklyTargetDeltaFc(): number {
-    if (this.projectedWeeklyTargetFc == null) return 0;
-    return this.projectedWeeklyTargetFc - this.weeklyTargetFc;
-  }
-
   get projectedWeeklyTargetEffectiveDateLabel(): string {
     const parsed = this.parseIsoDate(this.projectedWeeklyTargetEffectiveDate);
     if (!parsed) {

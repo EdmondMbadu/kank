@@ -642,17 +642,16 @@
       </div>
       <div
         *ngIf="hasProjectedWeeklyTarget"
-        class="mt-1 text-[11px] text-slate-500 dark:text-slate-400"
+        class="mt-2"
       >
-        <ng-container *ngIf="projectedWeeklyTargetDeltaFc > 0; else projectedTargetNoIncrease">
-          Prévision: +{{ projectedWeeklyTargetDeltaFc | number : "1.0-0" }} FC
-          ({{ projectedWeeklyTargetFc | number : "1.0-0" }} FC)
-          dès le {{ projectedWeeklyTargetEffectiveDateLabel }}.
-        </ng-container>
-        <ng-template #projectedTargetNoIncrease>
-          Prévision: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
-          dès le {{ projectedWeeklyTargetEffectiveDateLabel }}.
-        </ng-template>
+        <span
+          class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-extrabold text-indigo-800 ring-1 ring-indigo-300 dark:bg-indigo-900/40 dark:text-indigo-200 dark:ring-indigo-700"
+        >
+          Nouveau minimum bientôt: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
+        </span>
+        <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+          Effectif dès le {{ projectedWeeklyTargetEffectiveDateLabel }}.
+        </div>
       </div>
       <div
         class="mt-1 h-2 w-full rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
@@ -739,6 +738,12 @@
                 </div>
                 <div class="text-[10px] text-slate-500">
                   Objectif: {{ weeklyTargetFc | number : "1.0-0" }} FC
+                </div>
+                <div
+                  *ngIf="hasProjectedWeeklyTarget"
+                  class="mt-1 text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300"
+                >
+                  Nouveau minimum bientôt: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
                 </div>
               </div>
             </div>
@@ -1258,16 +1263,16 @@
           </div>
           <div
             *ngIf="hasProjectedWeeklyTarget"
-            class="mt-1 text-[11px] text-slate-500 dark:text-slate-400"
+            class="mt-2"
           >
-            <ng-container *ngIf="projectedWeeklyTargetDeltaFc > 0; else projectedTileNoIncrease">
-              Prévision: +{{ projectedWeeklyTargetDeltaFc | number : "1.0-0" }} FC
-              dès le {{ projectedWeeklyTargetEffectiveDateLabel }}
-            </ng-container>
-            <ng-template #projectedTileNoIncrease>
-              Prévision: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
-              dès le {{ projectedWeeklyTargetEffectiveDateLabel }}
-            </ng-template>
+            <span
+              class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-extrabold text-indigo-800 ring-1 ring-indigo-300 dark:bg-indigo-900/40 dark:text-indigo-200 dark:ring-indigo-700"
+            >
+              Nouveau minimum bientôt: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
+            </span>
+            <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              Effectif dès le {{ projectedWeeklyTargetEffectiveDateLabel }}
+            </div>
           </div>
 
           <div
@@ -1536,6 +1541,15 @@
       <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
         Valeur actuelle :
         <strong>{{ weeklyTargetFc | number : "1.0-0" }} FC</strong>
+      </p>
+      <p
+        *ngIf="hasProjectedWeeklyTarget"
+        class="mb-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-extrabold text-indigo-800 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200"
+      >
+        Nouveau minimum bientôt : {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
+        <span class="font-semibold">
+          ({{ projectedWeeklyTargetEffectiveDateLabel }})
+        </span>
       </p>
 
       <input
