@@ -26,15 +26,32 @@ const sms = africastalking.SMS;
 
 const KINSHASA_TIME_ZONE = "Africa/Kinshasa";
 const FLEXPAY_CALLBACK_URL_FALLBACK = "https://kank-4bbbc.web.app/";
+const DEFAULT_PROJECT_ID = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "";
+const FLEXPAY_CALLBACK_HTTP_URL_DEFAULT = DEFAULT_PROJECT_ID ?
+  `https://us-central1-${DEFAULT_PROJECT_ID}.cloudfunctions.net/flexpayMobileMoneyCallback` :
+  FLEXPAY_CALLBACK_URL_FALLBACK;
+const MOBILE_MONEY_LOOKUP_COLLECTION = "mobileMoneyTransactionLookup";
 
 const flexpayConfig = (functions.config() && functions.config().flexpay) || {};
 const FLEXPAY_MERCHANT =
   flexpayConfig.merchant || process.env.FLEXPAY_MERCHANT || "";
 const FLEXPAY_TOKEN = flexpayConfig.token || process.env.FLEXPAY_TOKEN || "";
-const FLEXPAY_CALLBACK_URL =
-  flexpayConfig.callback_url ||
-  process.env.FLEXPAY_CALLBACK_URL ||
-  FLEXPAY_CALLBACK_URL_FALLBACK;
+function resolveFlexpayCallbackUrl(rawUrl) {
+  const trimmed = String(rawUrl || "").trim();
+  if (!trimmed) return FLEXPAY_CALLBACK_HTTP_URL_DEFAULT;
+  const normalized = trimmed.replace(/\/+$/, "");
+  if (
+    normalized === FLEXPAY_CALLBACK_URL_FALLBACK.replace(/\/+$/, "") ||
+    normalized.endsWith(".web.app")
+  ) {
+    return FLEXPAY_CALLBACK_HTTP_URL_DEFAULT;
+  }
+  return trimmed;
+}
+
+const FLEXPAY_CALLBACK_URL = resolveFlexpayCallbackUrl(
+    flexpayConfig.callback_url || process.env.FLEXPAY_CALLBACK_URL || "",
+);
 const FLEXPAY_PAYMENT_URL =
   flexpayConfig.payment_url ||
   process.env.FLEXPAY_PAYMENT_URL ||
@@ -43,6 +60,10 @@ const FLEXPAY_CHECK_URL_BASE =
   flexpayConfig.check_url_base ||
   process.env.FLEXPAY_CHECK_URL_BASE ||
   "https://apicheck.flexpaie.com/api/rest/v1/check";
+const FLEXPAY_CHECK_URL_BASE_FALLBACK =
+  flexpayConfig.check_url_base_fallback ||
+  process.env.FLEXPAY_CHECK_URL_BASE_FALLBACK ||
+  "https://backend.flexpay.cd/api/rest/v1/check";
 
 /**
  * Formats a phone number to E.164 standard based on its origin.
@@ -219,6 +240,76 @@ function normalizeStatusToken(raw) {
       .toUpperCase();
 }
 
+function uniqueNonEmpty(values) {
+  return [...new Set((values || []).map((v) => String(v || "").trim()).filter(Boolean))];
+}
+
+async function upsertMobileMoneyLookup(reference, payload) {
+  const ref = String(reference || "").trim();
+  if (!ref) return;
+  await db.doc(`${MOBILE_MONEY_LOOKUP_COLLECTION}/${ref}`).set({
+    reference: ref,
+    updatedAtMs: Date.now(),
+    ...(payload || {}),
+  }, {merge: true});
+}
+
+async function runFlexpayCheck(orderNumber, reference) {
+  const bases = uniqueNonEmpty([
+    FLEXPAY_CHECK_URL_BASE,
+    FLEXPAY_CHECK_URL_BASE_FALLBACK,
+  ]);
+  const identifiers = uniqueNonEmpty([orderNumber, reference]);
+  let firstJson = null;
+  let firstSource = null;
+
+  for (const base of bases) {
+    for (const identifier of identifiers) {
+      const url = `${base}/${encodeURIComponent(identifier)}`;
+      try {
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Authorization": toFlexpayBearer(FLEXPAY_TOKEN),
+          },
+        });
+        const json = await resp.json();
+        const code = String((json && json.code) || "");
+        const tx = (json && json.transaction) || null;
+        const message = String((json && json.message) || "");
+
+        console.log("FlexPay check candidate:", {
+          base,
+          identifier,
+          code,
+          hasTransaction: Boolean(tx),
+          message,
+        });
+
+        if (!firstJson) {
+          firstJson = json;
+          firstSource = {base, identifier};
+        }
+
+        if (tx) {
+          return {json, source: {base, identifier}};
+        }
+      } catch (error) {
+        console.error("FlexPay check candidate failed:", {
+          base,
+          identifier,
+          message: error && error.message ? error.message : String(error),
+        });
+      }
+    }
+  }
+
+  return {
+    json: firstJson || {code: "1", message: "No check response received"},
+    source: firstSource || {base: "", identifier: ""},
+  };
+}
+
 function parseLocalDateTimeInput(raw) {
   if (!raw || typeof raw !== "string") return null;
   const trimmed = raw.trim();
@@ -384,6 +475,14 @@ exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) =>
 
   let initJson;
   try {
+    console.log("FlexPay init request:", {
+      reference,
+      paymentUrl: FLEXPAY_PAYMENT_URL,
+      callbackUrl: requestBody.callbackUrl,
+      phone: phoneNormalized,
+      amount: requestBody.amount,
+      currency: requestBody.currency,
+    });
     const resp = await fetch(FLEXPAY_PAYMENT_URL, {
       method: "POST",
       headers: {
@@ -393,6 +492,10 @@ exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) =>
       body: JSON.stringify(requestBody),
     });
     initJson = await resp.json();
+    console.log("FlexPay init response raw:", {
+      reference,
+      response: initJson || null,
+    });
   } catch (error) {
     console.error("FlexPay init call failed:", error);
     throw new functions.https.HttpsError(
@@ -425,6 +528,14 @@ exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) =>
         `${formatMonthDayYear(new Date())}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`,
       dbWriteDone: false,
     });
+    await upsertMobileMoneyLookup(reference, {
+      ownerUid,
+      clientUid,
+      orderNumber: orderNumber || null,
+      status: "FAILED_TO_INIT",
+      dbWriteDone: false,
+      failedToInit: true,
+    });
     throw new functions.https.HttpsError(
         "failed-precondition",
         `FlexPay rejected initiation: ${message || "unknown error"}`,
@@ -451,6 +562,14 @@ exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) =>
       paymentEntryKey ||
       `${formatMonthDayYear(new Date())}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`,
     dbWriteDone: false,
+  });
+  await upsertMobileMoneyLookup(reference, {
+    ownerUid,
+    clientUid,
+    orderNumber,
+    status: "PENDING",
+    dbWriteDone: false,
+    createdAtMs,
   });
 
   console.log("FlexPay init parsed:", {
@@ -487,47 +606,66 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
   const employeeIds = employeesSnap.docs.map((d) => d.id);
 
   const txData = txSnap.data() || {};
-  const orderNumber = String(txData.orderNumber || "");
-  if (!orderNumber) {
-    throw new functions.https.HttpsError(
-        "failed-precondition",
-        "Missing orderNumber for this transaction.",
+  const orderNumber = String(txData.orderNumber || txData.callbackOrderNumber || "");
+  const storedStatus = normalizeStatusToken(txData.status || "");
+  const hasStoredTerminalStatus = storedStatus === "SUCCESS" || storedStatus === "FAILED";
+
+  let checkJson = null;
+  let checkSource = {base: "", identifier: ""};
+  let code = "";
+  let transaction = null;
+  let providerStatus = "";
+  let providerReference = null;
+  let checkMessage = "";
+  let providerReason = "";
+
+  if (hasStoredTerminalStatus) {
+    checkJson = txData.checkResponse || txData.callbackPayload || null;
+    checkSource = {base: "callback_cache", identifier: reference};
+    code = String(txData.checkCode || txData.callbackCode || (storedStatus === "SUCCESS" ? "0" : "1"));
+    transaction = (checkJson && checkJson.transaction) || null;
+    providerStatus = String(
+        txData.providerStatus ||
+        txData.callbackProviderStatus ||
+        (storedStatus === "SUCCESS" ? "0" : "1"),
+    );
+    providerReference = txData.providerReference || txData.callbackProviderReference || null;
+    checkMessage = String(txData.checkMessage || txData.callbackMessage || "");
+    providerReason = String(txData.failureReason || txData.callbackFailureReason || "");
+  } else {
+    if (!orderNumber) {
+      throw new functions.https.HttpsError(
+          "failed-precondition",
+          "Missing orderNumber for this transaction.",
+      );
+    }
+    try {
+      const checked = await runFlexpayCheck(orderNumber, reference);
+      checkJson = checked.json;
+      checkSource = checked.source || checkSource;
+    } catch (error) {
+      console.error("FlexPay check call failed:", error);
+      throw new functions.https.HttpsError(
+          "unavailable",
+          "Unable to verify transaction with FlexPay.",
+      );
+    }
+    code = String((checkJson && checkJson.code) || "1");
+    transaction = (checkJson && checkJson.transaction) || null;
+    providerStatus = String((transaction && transaction.status) || "");
+    providerReference =
+      (transaction && transaction.provider_reference) || null;
+    checkMessage = String((checkJson && checkJson.message) || "");
+    providerReason = String(
+        (transaction &&
+          (transaction.reason ||
+            transaction.statusMessage ||
+            transaction.message ||
+            transaction.errorMessage ||
+            transaction.error)) ||
+          "",
     );
   }
-
-  let checkJson;
-  try {
-    const url = `${FLEXPAY_CHECK_URL_BASE}/${encodeURIComponent(orderNumber)}`;
-    const resp = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Authorization": toFlexpayBearer(FLEXPAY_TOKEN),
-      },
-    });
-    checkJson = await resp.json();
-  } catch (error) {
-    console.error("FlexPay check call failed:", error);
-    throw new functions.https.HttpsError(
-        "unavailable",
-        "Unable to verify transaction with FlexPay.",
-    );
-  }
-
-  const code = String((checkJson && checkJson.code) || "1");
-  const transaction = (checkJson && checkJson.transaction) || null;
-  const providerStatus = String((transaction && transaction.status) || "");
-  const providerReference =
-    (transaction && transaction.provider_reference) || null;
-  const checkMessage = String((checkJson && checkJson.message) || "");
-  const providerReason = String(
-      (transaction &&
-        (transaction.reason ||
-          transaction.statusMessage ||
-          transaction.message ||
-          transaction.errorMessage ||
-          transaction.error)) ||
-        "",
-  );
   const normalizedProviderStatus = normalizeStatusToken(providerStatus);
   const normalizedMessage = normalizeStatusToken(checkMessage);
   const normalizedReason = normalizeStatusToken(providerReason);
@@ -563,7 +701,9 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
   const hasFailureKeyword = ["INSUFF", "FAILED", "ECHEC", "ECHOUE", "REFUS", "DECLIN", "CANCEL"]
       .some((k) => normalizedMessage.includes(k) || normalizedReason.includes(k));
 
-  if (code === "0" && successStatuses.has(normalizedProviderStatus)) {
+  if (hasStoredTerminalStatus) {
+    status = storedStatus;
+  } else if (code === "0" && successStatuses.has(normalizedProviderStatus)) {
     status = "SUCCESS";
   } else if (
     code === "0" &&
@@ -585,6 +725,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     reference,
     orderNumber,
     code,
+    checkSource,
     providerStatus,
     status,
     failureReason,
@@ -603,6 +744,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     t.set(txRef, {
       status,
       checkResponse: checkJson || null,
+      checkSource,
       checkCode: code,
       providerStatus,
       providerReference,
@@ -784,17 +926,128 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     return true;
   });
 
+  await upsertMobileMoneyLookup(reference, {
+    ownerUid,
+    orderNumber: orderNumber || null,
+    status,
+    dbWriteDone: status === "SUCCESS",
+    lastCheckedAtMs: Date.now(),
+    checkCode: code,
+    providerStatus,
+  });
+
   return {
     ok: true,
     status,
     posted,
     reference,
     orderNumber,
+    checkSource,
     providerStatus,
     message: checkMessage,
     failureReason,
   };
 }
+
+exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ok: false, error: "Method not allowed"});
+    return;
+  }
+
+  const payload = (req.body && typeof req.body === "object") ? req.body : {};
+  const reference = String(payload.reference || "").trim();
+  const orderNumber = String(payload.orderNumber || "").trim();
+  const callbackCode = String(payload.code || "").trim();
+  const callbackMessage = String(
+      payload.message ||
+      payload.reason ||
+      payload.statusMessage ||
+      "",
+  ).trim();
+  const callbackProviderReference = String(
+      payload.provider_reference ||
+      payload.providerReference ||
+      "",
+  ).trim();
+
+  console.log("FlexPay callback received:", {
+    reference,
+    orderNumber,
+    code: callbackCode,
+    message: callbackMessage,
+    providerReference: callbackProviderReference,
+    payload,
+  });
+
+  if (!reference) {
+    res.status(400).json({ok: false, error: "reference is required"});
+    return;
+  }
+
+  const normalizedCallbackStatus = normalizeStatusToken(payload.status || "");
+  let callbackStatus = "PENDING";
+  if (callbackCode === "0" || ["0", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"].includes(normalizedCallbackStatus)) {
+    callbackStatus = "SUCCESS";
+  } else if (callbackCode && callbackCode !== "0") {
+    callbackStatus = "FAILED";
+  } else if (["1", "FAILED", "FAIL", "ECHEC", "ECHOUE", "DECLINED", "DECLINE", "CANCELLED", "CANCELED", "REFUSED", "REJECTED"].includes(normalizedCallbackStatus)) {
+    callbackStatus = "FAILED";
+  }
+
+  const lookupSnap = await db.doc(`${MOBILE_MONEY_LOOKUP_COLLECTION}/${reference}`).get();
+  const ownerUid = String((lookupSnap.exists && lookupSnap.get("ownerUid")) || "");
+  if (!ownerUid) {
+    console.error("FlexPay callback owner lookup missing:", {reference, orderNumber});
+    res.status(202).json({ok: true, acknowledged: true, status: "LOOKUP_MISSING"});
+    return;
+  }
+
+  const txRef = db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`);
+  await txRef.set({
+    status: callbackStatus,
+    callbackPayload: payload,
+    callbackCode,
+    callbackMessage,
+    callbackProviderReference: callbackProviderReference || null,
+    callbackOrderNumber: orderNumber || null,
+    callbackProviderStatus: String(payload.status || "").trim(),
+    callbackFailureReason: callbackStatus === "FAILED" ? callbackMessage : "",
+    callbackReceivedAtMs: Date.now(),
+    updatedAtMs: Date.now(),
+  }, {merge: true});
+
+  await upsertMobileMoneyLookup(reference, {
+    ownerUid,
+    orderNumber: orderNumber || (lookupSnap.exists ? lookupSnap.get("orderNumber") || null : null),
+    status: callbackStatus,
+    callbackReceivedAtMs: Date.now(),
+    callbackCode,
+    callbackMessage,
+  });
+
+  let posted = false;
+  try {
+    const settled = await checkMobileMoneyPaymentInternal(ownerUid, reference);
+    posted = Boolean(settled && settled.posted);
+    callbackStatus = settled && settled.status ? settled.status : callbackStatus;
+  } catch (error) {
+    console.error("FlexPay callback settlement failed:", {
+      reference,
+      ownerUid,
+      message: error && error.message ? error.message : String(error),
+    });
+  }
+
+  res.status(200).json({
+    ok: true,
+    acknowledged: true,
+    reference,
+    orderNumber,
+    status: callbackStatus,
+    posted,
+  });
+});
 
 exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
@@ -818,16 +1071,14 @@ exports.reconcilePendingMobileMoneyPayments = functions.pubsub
       let errors = 0;
 
       const pendingSnap = await db
-          .collectionGroup("mobileMoneyTransactions")
+          .collection(MOBILE_MONEY_LOOKUP_COLLECTION)
           .where("status", "==", "PENDING")
-          .limit(25)
+          .limit(50)
           .get();
 
       for (const doc of pendingSnap.docs) {
         scanned += 1;
-        const pathParts = doc.ref.path.split("/");
-        const ownerUidFromPath = pathParts.length >= 2 ? pathParts[1] : "";
-        const ownerUid = String(doc.get("ownerUid") || ownerUidFromPath || "");
+        const ownerUid = String(doc.get("ownerUid") || "");
         const reference = doc.id;
 
         if (!ownerUid || !reference) {
