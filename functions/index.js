@@ -453,6 +453,15 @@ exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) =>
     dbWriteDone: false,
   });
 
+  console.log("FlexPay init parsed:", {
+    reference,
+    orderNumber,
+    code,
+    message,
+    amount: String(paymentNum),
+    currency: requestBody.currency,
+  });
+
   return {
     ok: true,
     status: "PENDING",
@@ -462,23 +471,13 @@ exports.initMobileMoneyPayment = functions.https.onCall(async (data, context) =>
   };
 });
 
-exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Authentication is required.");
-  }
+async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
   if (!FLEXPAY_TOKEN) {
     throw new functions.https.HttpsError(
         "failed-precondition",
         "FlexPay token is missing on the server.",
     );
   }
-
-  const ownerUid = context.auth.uid;
-  const {reference} = data || {};
-  if (!reference) {
-    throw new functions.https.HttpsError("invalid-argument", "reference is required.");
-  }
-
   const txRef = db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`);
   const txSnap = await txRef.get();
   if (!txSnap.exists) {
@@ -534,7 +533,6 @@ exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) =
   const normalizedReason = normalizeStatusToken(providerReason);
   const createdAtMs = toNumber(txData.createdAtMs || 0);
   const verificationAgeMs = Math.max(0, Date.now() - createdAtMs);
-  const noTransactionTimeoutMs = 120 * 1000;
 
   let status = "PENDING";
   const successStatuses = new Set(["0", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"]);
@@ -582,18 +580,7 @@ exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) =
     status = "FAILED";
   }
 
-  let failureReason = providerReason || checkMessage || "";
-  if (
-    code === "1" &&
-    transaction === null &&
-    verificationAgeMs >= noTransactionTimeoutMs
-  ) {
-    status = "FAILED";
-    if (!failureReason) {
-      failureReason =
-        "Aucune transaction trouvée chez FlexPay après 120 secondes.";
-    }
-  }
+  const failureReason = providerReason || checkMessage || "";
   console.log("FlexPay check parsed:", {
     reference,
     orderNumber,
@@ -611,14 +598,17 @@ exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) =
     }
     const latestTxData = latestTxSnap.data() || {};
     const alreadyPosted = latestTxData.dbWriteDone === true;
+    const checkAttempts = toNumber(latestTxData.checkAttempts || 0) + 1;
 
     t.set(txRef, {
       status,
       checkResponse: checkJson || null,
+      checkCode: code,
       providerStatus,
       providerReference,
       checkMessage,
       failureReason,
+      checkAttempts,
       checkedAtMs: Date.now(),
       updatedAtMs: Date.now(),
     }, {merge: true});
@@ -804,7 +794,75 @@ exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) =
     message: checkMessage,
     failureReason,
   };
+}
+
+exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Authentication is required.");
+  }
+  const ownerUid = context.auth.uid;
+  const {reference} = data || {};
+  if (!reference) {
+    throw new functions.https.HttpsError("invalid-argument", "reference is required.");
+  }
+  return checkMobileMoneyPaymentInternal(ownerUid, reference);
 });
+
+exports.reconcilePendingMobileMoneyPayments = functions.pubsub
+    .schedule("every 1 minutes")
+    .onRun(async () => {
+      let scanned = 0;
+      let settled = 0;
+      let stillPending = 0;
+      let failed = 0;
+      let errors = 0;
+
+      const pendingSnap = await db
+          .collectionGroup("mobileMoneyTransactions")
+          .where("status", "==", "PENDING")
+          .limit(25)
+          .get();
+
+      for (const doc of pendingSnap.docs) {
+        scanned += 1;
+        const pathParts = doc.ref.path.split("/");
+        const ownerUidFromPath = pathParts.length >= 2 ? pathParts[1] : "";
+        const ownerUid = String(doc.get("ownerUid") || ownerUidFromPath || "");
+        const reference = doc.id;
+
+        if (!ownerUid || !reference) {
+          errors += 1;
+          continue;
+        }
+
+        try {
+          const result = await checkMobileMoneyPaymentInternal(ownerUid, reference);
+          if (result.status === "SUCCESS") {
+            settled += 1;
+          } else if (result.status === "FAILED") {
+            failed += 1;
+          } else {
+            stillPending += 1;
+          }
+        } catch (error) {
+          errors += 1;
+          console.error("reconcilePendingMobileMoneyPayments error:", {
+            ownerUid,
+            reference,
+            message: error && error.message ? error.message : String(error),
+          });
+        }
+      }
+
+      console.log("reconcilePendingMobileMoneyPayments summary:", {
+        scanned,
+        settled,
+        failed,
+        stillPending,
+        errors,
+      });
+      return null;
+    });
 
 /**
  * Callable: record a summary entry for a bulk or custom messaging action.

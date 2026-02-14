@@ -30,7 +30,6 @@ export class PaymentComponent {
   mobileMoneyError = '';
   mobileMoneyReference = '';
   mobileMoneyOrderNumber = '';
-  private readonly maxMobileChecks = 24;
   private readonly mobileCheckIntervalMs = 5000;
 
   client: Client = new Client();
@@ -247,9 +246,7 @@ export class PaymentComponent {
         throw new Error('Reference FlexPay manquante.');
       }
 
-      const checkResult = await this.pollMobileMoneyStatus(
-        this.mobileMoneyReference
-      );
+      const checkResult = await this.pollMobileMoneyStatus(this.mobileMoneyReference);
       if (checkResult.status === 'SUCCESS') {
         this.mobileMoneyStatus = 'Paiement confirmé et enregistré.';
         this.router.navigate(['/client-portal', this.id]);
@@ -263,9 +260,6 @@ export class PaymentComponent {
         return;
       }
 
-      this.mobileMoneyError =
-        'La transaction est toujours en attente. Vous pouvez relancer la vérification.';
-      this.mobileMoneyStatus = '';
     } catch (err: any) {
       console.error('Mobile money payment flow failed:', err);
       this.mobileMoneyError =
@@ -276,27 +270,23 @@ export class PaymentComponent {
     }
   }
 
-  checkMobileMoneyAgain() {
-    if (!this.mobileMoneyReference) return;
-    this.verifyExistingMobileMoneyTransaction();
-  }
-
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async pollMobileMoneyStatus(
-    reference: string,
-    maxChecks: number = this.maxMobileChecks
+    reference: string
   ): Promise<{
-    status: 'SUCCESS' | 'FAILED' | 'PENDING';
+    status: 'SUCCESS' | 'FAILED';
     failureReason: string;
     message: string;
   }> {
     const checkCallable = this.fns.httpsCallable('checkMobileMoneyPayment');
-    for (let attempt = 0; attempt < maxChecks; attempt++) {
+    let attempt = 0;
+    while (true) {
+      attempt += 1;
       await this.sleep(this.mobileCheckIntervalMs);
-      this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (${attempt + 1}/${maxChecks})`;
+      this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (tentative ${attempt})`;
       const checkResponse: any = await firstValueFrom(
         checkCallable({ reference })
       );
@@ -311,42 +301,8 @@ export class PaymentComponent {
       }
 
       if (message) {
-        this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (${attempt + 1}/${maxChecks}) - ${message}`;
+        this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (tentative ${attempt}) - ${message}`;
       }
-    }
-    return { status: 'PENDING', failureReason: '', message: '' };
-  }
-
-  private async verifyExistingMobileMoneyTransaction() {
-    if (!this.mobileMoneyReference) return;
-    this.isSubmitting = true;
-    this.mobileMoneyError = '';
-    this.mobileMoneyStatus = 'Nouvelle vérification en cours...';
-    try {
-      const result = await this.pollMobileMoneyStatus(
-        this.mobileMoneyReference,
-        1
-      );
-      if (result.status === 'SUCCESS') {
-        this.router.navigate(['/client-portal', this.id]);
-        return;
-      }
-      if (result.status === 'FAILED') {
-        this.mobileMoneyError = this.composeMobileMoneyFailureMessage(
-          result.failureReason
-        );
-        this.mobileMoneyStatus = '';
-        return;
-      }
-      this.mobileMoneyError =
-        'La transaction est toujours en attente. Réessayez dans quelques secondes.';
-      this.mobileMoneyStatus = '';
-    } catch (err: any) {
-      this.mobileMoneyError =
-        err?.message || 'Erreur pendant la vérification du paiement.';
-      this.mobileMoneyStatus = '';
-    } finally {
-      this.isSubmitting = false;
     }
   }
 
