@@ -197,13 +197,27 @@
                   />
                 </label>
               </div>
-              <button
-                type="button"
-                (click)="$event.stopPropagation(); saveDebtRecognized(client)"
-                class="self-start rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-red-700"
-              >
-                Sauvegarder
-              </button>
+              <div class="self-start flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="$event.stopPropagation(); saveDebtRecognized(client)"
+                  class="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-red-700"
+                >
+                  Sauvegarder
+                </button>
+                <button
+                  type="button"
+                  (click)="$event.stopPropagation(); resolveProblematicClient(client)"
+                  [disabled]="resolvingDebtRecognizedMap[client.uid!]"
+                  class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {{
+                    resolvingDebtRecognizedMap[client.uid!]
+                      ? "Résolution..."
+                      : "Résoudre"
+                  }}
+                </button>
+              </div>
             </div>
             <ng-container *ngIf="getClientComments(client) as comments">
               <div

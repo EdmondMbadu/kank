@@ -236,6 +236,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   recoveredAwayBonusInput = '10';
   recoveredAwayBonusAmount = 0;
   recoveredAwayBonusSaving = false;
+  resolvingDebtRecognizedMap: Record<string, boolean> = {};
   private recoveredAwayBonusSub?: Subscription;
 
   employees: Employee[] = [];
@@ -1448,6 +1449,41 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       .catch((err) => {
         console.error('Failed to update debtRecognized:', err);
         alert('Impossible de sauvegarder la dette reconnue.');
+      });
+  }
+
+  resolveProblematicClient(client: Client): void {
+    if (!client?.uid) return;
+    const clientId = client.uid;
+    if (this.resolvingDebtRecognizedMap[clientId]) return;
+
+    this.resolvingDebtRecognizedMap[clientId] = true;
+    const debtRecognized = '';
+    const ownerId =
+      client.locationOwnerId ||
+      this.selectedLocationId ||
+      this.currentUserId;
+    const update = ownerId
+      ? this.data.updateClientInvestigationFieldsForUser(
+          ownerId,
+          clientId,
+          { debtRecognized }
+        )
+      : this.data.updateClientInvestigationFields(clientId, {
+          debtRecognized,
+        });
+
+    update
+      .then(() => {
+        this.applyDebtRecognizedLocal(clientId, debtRecognized, ownerId);
+        this.refreshProblematic();
+      })
+      .catch((err) => {
+        console.error('Failed to resolve problematic client debt:', err);
+        alert("Impossible de résoudre ce client pour l'instant.");
+      })
+      .finally(() => {
+        this.resolvingDebtRecognizedMap[clientId] = false;
       });
   }
 
