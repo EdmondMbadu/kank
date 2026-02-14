@@ -1856,7 +1856,19 @@
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div class="grid gap-3 sm:grid-cols-2">
             <div>
-              <p class="text-xs uppercase text-slate-500">Dette actuelle</p>
+              <p class="text-xs uppercase text-slate-500">Dette empruntée</p>
+              <p class="text-base font-semibold text-slate-900">
+                {{ formatAmount(activeClient.loanAmount) }} FC
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase text-slate-500">Dette à payer</p>
+              <p class="text-base font-semibold text-slate-900">
+                {{ formatAmount(activeClient.amountToPay) }} FC
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase text-slate-500">Debt restant</p>
               <p class="text-base font-semibold text-slate-900">
                 {{ formatAmount(activeClient.debtLeft) }} FC
               </p>
