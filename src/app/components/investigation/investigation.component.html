@@ -1867,6 +1867,12 @@
                 {{ formatAmount(activeClient.amountToPay) }} FC
               </p>
             </div>
+            <div>
+              <p class="text-xs uppercase text-slate-500">Montant perçu</p>
+              <p class="text-base font-semibold text-slate-900">
+                {{ formatAmount(activeClient.amountPaid) }} FC
+              </p>
+            </div>
             <div class="rounded-lg border-2 border-rose-300 bg-rose-50 px-3 py-2 shadow-sm">
               <p class="text-xs uppercase tracking-wide text-rose-700">Dette restante</p>
               <p class="text-lg font-extrabold text-rose-800">
