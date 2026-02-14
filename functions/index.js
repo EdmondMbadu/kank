@@ -211,6 +211,14 @@ function toFlexpayBearer(value) {
   return `Bearer ${token}`;
 }
 
+function normalizeStatusToken(raw) {
+  return String(raw || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+}
+
 function parseLocalDateTimeInput(raw) {
   if (!raw || typeof raw !== "string") return null;
   const trimmed = raw.trim();
@@ -511,15 +519,90 @@ exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) =
   const providerStatus = String((transaction && transaction.status) || "");
   const providerReference =
     (transaction && transaction.provider_reference) || null;
+  const checkMessage = String((checkJson && checkJson.message) || "");
+  const providerReason = String(
+      (transaction &&
+        (transaction.reason ||
+          transaction.statusMessage ||
+          transaction.message ||
+          transaction.errorMessage ||
+          transaction.error)) ||
+        "",
+  );
+  const normalizedProviderStatus = normalizeStatusToken(providerStatus);
+  const normalizedMessage = normalizeStatusToken(checkMessage);
+  const normalizedReason = normalizeStatusToken(providerReason);
+  const createdAtMs = toNumber(txData.createdAtMs || 0);
+  const verificationAgeMs = Math.max(0, Date.now() - createdAtMs);
+  const noTransactionTimeoutMs = 120 * 1000;
 
   let status = "PENDING";
-  if (code === "0" && providerStatus === "0") {
+  const successStatuses = new Set(["0", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"]);
+  const pendingStatuses = new Set([
+    "",
+    "PENDING",
+    "EN ATTENTE",
+    "EN_ATTENTE",
+    "PROCESSING",
+    "IN_PROGRESS",
+    "IN PROGRESS",
+    "2",
+  ]);
+  const failureStatuses = new Set([
+    "1",
+    "FAILED",
+    "FAIL",
+    "ECHEC",
+    "ECHOUE",
+    "DECLINED",
+    "DECLINE",
+    "CANCELED",
+    "CANCELLED",
+    "REFUSED",
+    "REJECTED",
+  ]);
+
+  const hasFailureKeyword = ["INSUFF", "FAILED", "ECHEC", "ECHOUE", "REFUS", "DECLIN", "CANCEL"]
+      .some((k) => normalizedMessage.includes(k) || normalizedReason.includes(k));
+
+  if (code === "0" && successStatuses.has(normalizedProviderStatus)) {
     status = "SUCCESS";
-  } else if (code === "0" && providerStatus === "1") {
+  } else if (
+    code === "0" &&
+    (failureStatuses.has(normalizedProviderStatus) || hasFailureKeyword)
+  ) {
     status = "FAILED";
-  } else if (code === "1" && transaction === null) {
+  } else if (code === "1" && transaction === null && !hasFailureKeyword) {
     status = "PENDING";
+  } else if (code === "0" && pendingStatuses.has(normalizedProviderStatus)) {
+    status = "PENDING";
+  } else if (transaction) {
+    // If provider returned a transaction with unknown non-success status,
+    // fail fast instead of spinning forever.
+    status = "FAILED";
   }
+
+  let failureReason = providerReason || checkMessage || "";
+  if (
+    code === "1" &&
+    transaction === null &&
+    verificationAgeMs >= noTransactionTimeoutMs
+  ) {
+    status = "FAILED";
+    if (!failureReason) {
+      failureReason =
+        "Aucune transaction trouvée chez FlexPay après 120 secondes.";
+    }
+  }
+  console.log("FlexPay check parsed:", {
+    reference,
+    orderNumber,
+    code,
+    providerStatus,
+    status,
+    failureReason,
+    verificationAgeMs,
+  });
 
   const posted = await db.runTransaction(async (t) => {
     const latestTxSnap = await t.get(txRef);
@@ -534,6 +617,8 @@ exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) =
       checkResponse: checkJson || null,
       providerStatus,
       providerReference,
+      checkMessage,
+      failureReason,
       checkedAtMs: Date.now(),
       updatedAtMs: Date.now(),
     }, {merge: true});
@@ -716,7 +801,8 @@ exports.checkMobileMoneyPayment = functions.https.onCall(async (data, context) =
     reference,
     orderNumber,
     providerStatus,
-    message: (checkJson && checkJson.message) || "",
+    message: checkMessage,
+    failureReason,
   };
 });
 

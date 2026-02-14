@@ -247,17 +247,18 @@ export class PaymentComponent {
         throw new Error('Reference FlexPay manquante.');
       }
 
-      const finalStatus = await this.pollMobileMoneyStatus(
+      const checkResult = await this.pollMobileMoneyStatus(
         this.mobileMoneyReference
       );
-      if (finalStatus === 'SUCCESS') {
+      if (checkResult.status === 'SUCCESS') {
         this.mobileMoneyStatus = 'Paiement confirmé et enregistré.';
         this.router.navigate(['/client-portal', this.id]);
         return;
       }
-      if (finalStatus === 'FAILED') {
-        this.mobileMoneyError =
-          "La transaction Mobile Money a échoué. Aucun paiement n'a été enregistré.";
+      if (checkResult.status === 'FAILED') {
+        this.mobileMoneyError = this.composeMobileMoneyFailureMessage(
+          checkResult.failureReason
+        );
         this.mobileMoneyStatus = '';
         return;
       }
@@ -287,7 +288,11 @@ export class PaymentComponent {
   private async pollMobileMoneyStatus(
     reference: string,
     maxChecks: number = this.maxMobileChecks
-  ): Promise<'SUCCESS' | 'FAILED' | 'PENDING'> {
+  ): Promise<{
+    status: 'SUCCESS' | 'FAILED' | 'PENDING';
+    failureReason: string;
+    message: string;
+  }> {
     const checkCallable = this.fns.httpsCallable('checkMobileMoneyPayment');
     for (let attempt = 0; attempt < maxChecks; attempt++) {
       await this.sleep(this.mobileCheckIntervalMs);
@@ -296,10 +301,20 @@ export class PaymentComponent {
         checkCallable({ reference })
       );
       const status = String(checkResponse?.status || 'PENDING');
-      if (status === 'SUCCESS') return 'SUCCESS';
-      if (status === 'FAILED') return 'FAILED';
+      const failureReason = String(checkResponse?.failureReason || '').trim();
+      const message = String(checkResponse?.message || '').trim();
+      if (status === 'SUCCESS') {
+        return { status: 'SUCCESS', failureReason, message };
+      }
+      if (status === 'FAILED') {
+        return { status: 'FAILED', failureReason, message };
+      }
+
+      if (message) {
+        this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (${attempt + 1}/${maxChecks}) - ${message}`;
+      }
     }
-    return 'PENDING';
+    return { status: 'PENDING', failureReason: '', message: '' };
   }
 
   private async verifyExistingMobileMoneyTransaction() {
@@ -308,14 +323,18 @@ export class PaymentComponent {
     this.mobileMoneyError = '';
     this.mobileMoneyStatus = 'Nouvelle vérification en cours...';
     try {
-      const status = await this.pollMobileMoneyStatus(this.mobileMoneyReference, 1);
-      if (status === 'SUCCESS') {
+      const result = await this.pollMobileMoneyStatus(
+        this.mobileMoneyReference,
+        1
+      );
+      if (result.status === 'SUCCESS') {
         this.router.navigate(['/client-portal', this.id]);
         return;
       }
-      if (status === 'FAILED') {
-        this.mobileMoneyError =
-          "La transaction Mobile Money a échoué. Aucun paiement n'a été enregistré.";
+      if (result.status === 'FAILED') {
+        this.mobileMoneyError = this.composeMobileMoneyFailureMessage(
+          result.failureReason
+        );
         this.mobileMoneyStatus = '';
         return;
       }
@@ -333,6 +352,14 @@ export class PaymentComponent {
 
   private normalizePhoneInput(value: string): string {
     return String(value || '').replace(/\D/g, '');
+  }
+
+  private composeMobileMoneyFailureMessage(reason: string): string {
+    const trimmed = String(reason || '').trim();
+    if (trimmed) {
+      return `La transaction Mobile Money a échoué: ${trimmed}`;
+    }
+    return "La transaction Mobile Money a échoué. Aucun paiement n'a été enregistré.";
   }
 
   computeCreditScore() {
