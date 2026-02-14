@@ -1453,6 +1453,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   resolveProblematicClient(client: Client): void {
+    if (!this.auth.isAdmin) return;
     if (!client?.uid) return;
     const clientId = client.uid;
     if (this.resolvingDebtRecognizedMap[clientId]) return;

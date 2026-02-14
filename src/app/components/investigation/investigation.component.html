@@ -206,6 +206,7 @@
                   Sauvegarder
                 </button>
                 <button
+                  *ngIf="auth.isAdmin"
                   type="button"
                   (click)="$event.stopPropagation(); resolveProblematicClient(client)"
                   [disabled]="resolvingDebtRecognizedMap[client.uid!]"
@@ -1899,6 +1900,19 @@
                 class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-semibold text-white"
               >
                 Sauver
+              </button>
+              <button
+                *ngIf="auth.isAdmin && isProblematic(activeClient)"
+                type="button"
+                (click)="resolveProblematicClient(activeClient)"
+                [disabled]="resolvingDebtRecognizedMap[activeClient.uid!]"
+                class="rounded-full bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{
+                  resolvingDebtRecognizedMap[activeClient.uid!]
+                    ? "Résolution..."
+                    : "Résoudre"
+                }}
               </button>
             </div>
             <p
