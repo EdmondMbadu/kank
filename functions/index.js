@@ -64,7 +64,6 @@ const FLEXPAY_CHECK_URL_BASE_FALLBACK =
   flexpayConfig.check_url_base_fallback ||
   process.env.FLEXPAY_CHECK_URL_BASE_FALLBACK ||
   "https://backend.flexpay.cd/api/rest/v1/check";
-
 /**
  * Formats a phone number to E.164 standard based on its origin.
  * - If the number starts with '0', it's treated as a DRC number.
@@ -262,6 +261,7 @@ async function runFlexpayCheck(orderNumber, reference) {
   const identifiers = uniqueNonEmpty([orderNumber, reference]);
   let firstJson = null;
   let firstSource = null;
+  let best = null;
 
   for (const base of bases) {
     for (const identifier of identifiers) {
@@ -277,12 +277,68 @@ async function runFlexpayCheck(orderNumber, reference) {
         const code = String((json && json.code) || "");
         const tx = (json && json.transaction) || null;
         const message = String((json && json.message) || "");
+        const providerStatus = normalizeStatusToken(tx && tx.status);
+        const providerReason = normalizeStatusToken(
+            (tx &&
+              (tx.reason ||
+                tx.statusMessage ||
+                tx.message ||
+                tx.errorMessage ||
+                tx.error)) ||
+            "",
+        );
+        const normalizedMessage = normalizeStatusToken(message);
+        const providerReference = String(
+            (tx &&
+              (tx.provider_reference ||
+                tx.providerReference ||
+                tx.provider_ref ||
+                tx.providerRef)) ||
+            json.provider_reference ||
+            json.providerReference ||
+            "",
+        ).trim();
+        const providerRefExists = Boolean(providerReference);
+        const hasCaptureKeyword = ["CAPTURE", "ENVOI EN COURS", "ENVOI EN_COURS"]
+            .some((k) => normalizedMessage.includes(k) || providerReason.includes(k));
+        const hasFailureKeyword = ["INSUFF", "FAILED", "ECHEC", "ECHOUE", "REFUS", "DECLIN", "CANCEL"]
+            .some((k) => normalizedMessage.includes(k) || providerReason.includes(k));
+        const successStatuses = new Set(["0", "2", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"]);
+        const failureStatuses = new Set([
+          "1",
+          "FAILED",
+          "FAIL",
+          "ECHEC",
+          "ECHOUE",
+          "DECLINED",
+          "DECLINE",
+          "CANCELED",
+          "CANCELLED",
+          "REFUSED",
+          "REJECTED",
+        ]);
+        const looksSuccess =
+          Boolean(tx) &&
+          code === "0" &&
+          (successStatuses.has(providerStatus) || providerRefExists || hasCaptureKeyword) &&
+          !hasFailureKeyword;
+        const looksFailure =
+          Boolean(tx) &&
+          ((code === "0" && failureStatuses.has(providerStatus)) ||
+            (code !== "0" && !providerRefExists) ||
+            hasFailureKeyword);
+        const looksPending = Boolean(tx) && !looksSuccess && !looksFailure;
+        const semanticRank = looksSuccess ? 3 : (looksFailure ? 2 : (looksPending ? 1 : 0));
+        const qualityScore = semanticRank * 10 + (providerRefExists ? 2 : 0) + (message ? 1 : 0);
 
         console.log("FlexPay check candidate:", {
           base,
           identifier,
           code,
           hasTransaction: Boolean(tx),
+          providerStatus,
+          providerReference: providerReference || null,
+          qualityScore,
           message,
         });
 
@@ -292,7 +348,13 @@ async function runFlexpayCheck(orderNumber, reference) {
         }
 
         if (tx) {
-          return {json, source: {base, identifier}};
+          if (!best || qualityScore > best.qualityScore) {
+            best = {
+              json,
+              source: {base, identifier},
+              qualityScore,
+            };
+          }
         }
       } catch (error) {
         console.error("FlexPay check candidate failed:", {
@@ -302,6 +364,10 @@ async function runFlexpayCheck(orderNumber, reference) {
         });
       }
     }
+  }
+
+  if (best) {
+    return {json: best.json, source: best.source};
   }
 
   return {
@@ -654,7 +720,14 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     transaction = (checkJson && checkJson.transaction) || null;
     providerStatus = String((transaction && transaction.status) || "");
     providerReference =
-      (transaction && transaction.provider_reference) || null;
+      (transaction &&
+        (transaction.provider_reference ||
+          transaction.providerReference ||
+          transaction.provider_ref ||
+          transaction.providerRef)) ||
+      checkJson.provider_reference ||
+      checkJson.providerReference ||
+      null;
     checkMessage = String((checkJson && checkJson.message) || "");
     providerReason = String(
         (transaction &&
@@ -669,11 +742,15 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
   const normalizedProviderStatus = normalizeStatusToken(providerStatus);
   const normalizedMessage = normalizeStatusToken(checkMessage);
   const normalizedReason = normalizeStatusToken(providerReason);
+  const normalizedProviderReference = normalizeStatusToken(providerReference || "");
+  const providerRefExists = Boolean(normalizedProviderReference);
+  const hasCaptureKeyword = ["CAPTURE", "ENVOI EN COURS", "ENVOI EN_COURS"]
+      .some((k) => normalizedMessage.includes(k) || normalizedReason.includes(k));
   const createdAtMs = toNumber(txData.createdAtMs || 0);
   const verificationAgeMs = Math.max(0, Date.now() - createdAtMs);
 
   let status = "PENDING";
-  const successStatuses = new Set(["0", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"]);
+  const successStatuses = new Set(["0", "2", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"]);
   const pendingStatuses = new Set([
     "",
     "PENDING",
@@ -682,7 +759,6 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     "PROCESSING",
     "IN_PROGRESS",
     "IN PROGRESS",
-    "2",
   ]);
   const failureStatuses = new Set([
     "1",
@@ -703,6 +779,19 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
 
   if (hasStoredTerminalStatus) {
     status = storedStatus;
+  } else if (
+    code === "0" &&
+    providerRefExists &&
+    !hasFailureKeyword
+  ) {
+    // Provider reference means funds were captured by the operator.
+    status = "SUCCESS";
+  } else if (
+    code === "0" &&
+    hasCaptureKeyword &&
+    !hasFailureKeyword
+  ) {
+    status = "SUCCESS";
   } else if (code === "0" && successStatuses.has(normalizedProviderStatus)) {
     status = "SUCCESS";
   } else if (
@@ -727,6 +816,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     code,
     checkSource,
     providerStatus,
+    providerReference,
     status,
     failureReason,
     verificationAgeMs,
@@ -740,8 +830,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     const latestTxData = latestTxSnap.data() || {};
     const alreadyPosted = latestTxData.dbWriteDone === true;
     const checkAttempts = toNumber(latestTxData.checkAttempts || 0) + 1;
-
-    t.set(txRef, {
+    const statusUpdatePayload = {
       status,
       checkResponse: checkJson || null,
       checkSource,
@@ -753,9 +842,10 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
       checkAttempts,
       checkedAtMs: Date.now(),
       updatedAtMs: Date.now(),
-    }, {merge: true});
+    };
 
     if (status !== "SUCCESS" || alreadyPosted) {
+      t.set(txRef, statusUpdatePayload, {merge: true});
       return false;
     }
 
@@ -824,10 +914,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
         [paymentEntryKey]: String(savingsNum),
       };
     }
-    t.set(clientRef, clientPayload, {merge: true});
-
     const prevOwnerDailyStats = toNumber(ownerStatsSnap.exists ? ownerStatsSnap.get(dayKey) : 0);
-    t.set(ownerStatsDailyRef, {[dayKey]: prevOwnerDailyStats + paymentNum}, {merge: true});
 
     let finalAgentUid =
       (clientData.employee && clientData.employee.uid) ||
@@ -863,25 +950,59 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
       }
     }
 
+    let dayTotalsRef = null;
+    let ledgerRef = null;
+    let nextEmployeeDayTotal = null;
+    let nextEmployeeDayCount = null;
+    let employeeNowMs = null;
+    let employeeMonthKey = null;
+    let employeeDayStartMs = null;
+
     if (finalAgentUid) {
-      const dayTotalsRef = db.doc(`users/${ownerUid}/employees/${finalAgentUid}/dayTotals/${dayKey}`);
-      const ledgerRef = db.collection(`users/${ownerUid}/employees/${finalAgentUid}/payments`).doc();
+      dayTotalsRef = db.doc(`users/${ownerUid}/employees/${finalAgentUid}/dayTotals/${dayKey}`);
+      ledgerRef = db.collection(`users/${ownerUid}/employees/${finalAgentUid}/payments`).doc();
       const dayTotalsSnap = await t.get(dayTotalsRef);
       const prevTotal = toNumber(dayTotalsSnap.exists ? dayTotalsSnap.get("total") : 0);
       const prevCount = toNumber(dayTotalsSnap.exists ? dayTotalsSnap.get("count") : 0);
+      nextEmployeeDayTotal = prevTotal + paymentNum;
+      nextEmployeeDayCount = prevCount + 1;
 
       const now = new Date();
-      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-      const nowMs = Date.now();
-      const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      employeeDayStartMs = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+      ).getTime();
+      employeeNowMs = Date.now();
+      employeeMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    }
 
+    const ownerDailyReimbursement = ownerData.dailyReimbursement || {};
+    const ownerDailySaving = ownerData.dailySaving || {};
+    const dailyReimbursementValue = toNumber(ownerDailyReimbursement[dayKey]) + paymentNum;
+    const dailySavingValue = toNumber(ownerDailySaving[dayKey]) + savingsNum;
+
+    t.set(txRef, statusUpdatePayload, {merge: true});
+    t.set(clientRef, clientPayload, {merge: true});
+    t.set(ownerStatsDailyRef, {[dayKey]: prevOwnerDailyStats + paymentNum}, {merge: true});
+
+    if (
+      finalAgentUid &&
+      dayTotalsRef &&
+      ledgerRef &&
+      nextEmployeeDayTotal !== null &&
+      nextEmployeeDayCount !== null &&
+      employeeNowMs !== null &&
+      employeeMonthKey &&
+      employeeDayStartMs !== null
+    ) {
       t.set(dayTotalsRef, {
-        total: prevTotal + paymentNum,
-        count: prevCount + 1,
+        total: nextEmployeeDayTotal,
+        count: nextEmployeeDayCount,
         dayKey,
-        dayStartMs: dayStart,
-        monthKey,
-        updatedAtMs: nowMs,
+        dayStartMs: employeeDayStartMs,
+        monthKey: employeeMonthKey,
+        updatedAtMs: employeeNowMs,
       }, {merge: true});
 
       t.set(ledgerRef, {
@@ -889,7 +1010,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
         dayKey,
         clientUid,
         trackingId: clientData.trackingId || null,
-        createdAtMs: nowMs,
+        createdAtMs: employeeNowMs,
         savings: savingsNum || 0,
         source: "mobile_money",
         provider: "flexpay",
@@ -897,11 +1018,6 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
         orderNumber,
       });
     }
-
-    const ownerDailyReimbursement = ownerData.dailyReimbursement || {};
-    const ownerDailySaving = ownerData.dailySaving || {};
-    const dailyReimbursementValue = toNumber(ownerDailyReimbursement[dayKey]) + paymentNum;
-    const dailySavingValue = toNumber(ownerDailySaving[dayKey]) + savingsNum;
 
     t.set(ownerRef, {
       clientsSavings: String(toNumber(ownerData.clientsSavings || 0) + savingsNum),
@@ -987,7 +1103,7 @@ exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) 
 
   const normalizedCallbackStatus = normalizeStatusToken(payload.status || "");
   let callbackStatus = "PENDING";
-  if (callbackCode === "0" || ["0", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"].includes(normalizedCallbackStatus)) {
+  if (callbackCode === "0" || ["0", "2", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"].includes(normalizedCallbackStatus)) {
     callbackStatus = "SUCCESS";
   } else if (callbackCode && callbackCode !== "0") {
     callbackStatus = "FAILED";
