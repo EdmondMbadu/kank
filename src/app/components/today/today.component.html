@@ -162,13 +162,12 @@
               <span>Paiement total</span>
               <span class="font-semibold">{{ dailyPayment | number : "1.0-0" }} FC</span>
             </div>
-            <div class="flex items-center justify-between">
+            <div
+              *ngIf="dailyMobileMoneyPaymentN > 0"
+              class="flex items-center justify-between"
+            >
               <span>Paiement Mobile Money</span>
               <span class="font-semibold">{{ dailyMobileMoneyPayment | number : "1.0-0" }} FC</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span>Paiement en especes</span>
-              <span class="font-semibold">{{ dailyCashPayment | number : "1.0-0" }} FC</span>
             </div>
           </div>
 
@@ -905,11 +904,11 @@
         <ng-template #payDash>•••</ng-template>
       </p>
       <ng-container *ngIf="isPayUnlocked || auth.isAdmin">
-        <p class="mb-1 text-sm text-slate-600 dark:text-slate-300">
+        <p
+          *ngIf="dailyMobileMoneyPaymentN > 0"
+          class="mb-3 text-sm text-slate-600 dark:text-slate-300"
+        >
           Mobile Money: {{ dailyMobileMoneyPayment | number : "1.0-0" }} FC
-        </p>
-        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">
-          Paiement en especes: {{ dailyCashPayment | number : "1.0-0" }} FC
         </p>
       </ng-container>
 

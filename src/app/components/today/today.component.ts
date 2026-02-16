@@ -115,6 +115,7 @@ export class TodayComponent {
   dailyLending: string = '0';
   dailyPayment: string = '0';
   dailyMobileMoneyPayment: string = '0';
+  dailyMobileMoneyPaymentN: number = 0;
   dailyCashPayment: string = '0';
   dailyPaymentDollars: string = '0';
   weeklyPaymentTotalN: number = 0;
@@ -311,6 +312,7 @@ export class TodayComponent {
       this.auth.currentUser?.dailyMobileMoneyPayment?.[
         this.requestDateCorrectFormat
       ] ?? '0';
+    this.dailyMobileMoneyPaymentN = Number(this.dailyMobileMoneyPayment) || 0;
     this.dailyCashPayment = Math.max(
       0,
       Number(this.dailyPayment) - Number(this.dailyMobileMoneyPayment)
@@ -583,7 +585,7 @@ export class TodayComponent {
     const n = (x: any) => Number(x) || 0;
 
     const plusRaw = [
-      { label: 'Paiement (especes)', v: n(this.dailyCashPayment) },
+      { label: 'Paiement', v: n(this.dailyCashPayment) },
       { label: 'Frais', v: n(this.dailyFees) },
       { label: 'Entrée', v: n(this.dailyInvestment) },
       { label: 'Épargne', v: n(this.dailySaving) },
