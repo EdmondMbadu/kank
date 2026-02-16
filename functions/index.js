@@ -1027,7 +1027,6 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
       dailySaving: {
         [dayKey]: String(dailySavingValue),
       },
-      moneyInHands: String(toNumber(ownerData.moneyInHands || 0) + paymentNum + savingsNum),
       totalDebtLeft: String(toNumber(ownerData.totalDebtLeft || 0) - paymentNum),
     }, {merge: true});
 

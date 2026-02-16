@@ -248,6 +248,12 @@ export class PaymentComponent {
 
       const checkResult = await this.pollMobileMoneyStatus(this.mobileMoneyReference);
       if (checkResult.status === 'SUCCESS') {
+        if (Number(this.paymentAmount) > 0) {
+          this.performance.updateUserPerformance(
+            this.client,
+            this.paymentAmount
+          );
+        }
         this.mobileMoneyStatus = 'Paiement confirmé et enregistré.';
         this.router.navigate(['/client-portal', this.id]);
         return;
