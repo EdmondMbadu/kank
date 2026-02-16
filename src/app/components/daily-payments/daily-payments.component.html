@@ -51,10 +51,16 @@
 
   <!-- ===================== SUMMARY ===================== -->
   <div class="container mx-auto mb-6 flex justify-center">
-    <h2 class="text-center text-xl font-bold text-gray-700 dark:text-gray-200">
-      {{ numberOfPeople }} clients – Total:
-      {{ totalGivenDate | safeNumber:'1.0-0' }} FC
-    </h2>
+    <div class="text-center">
+      <h2 class="text-xl font-bold text-gray-700 dark:text-gray-200">
+        {{ numberOfPeople }} clients – Total:
+        {{ totalGivenDate | safeNumber:'1.0-0' }} FC
+      </h2>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        Mobile Money: {{ totalGivenDateMobileMoney | safeNumber:'1.0-0' }} FC
+        · Autres paiements: {{ totalGivenDateManual | safeNumber:'1.0-0' }} FC
+      </p>
+    </div>
   </div>
 
   <!-- ===================== LIST CARD (with per-client progress) ===================== -->
@@ -131,6 +137,12 @@
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   {{ c.timeFormatted }}
                 </p>
+                <span
+                  *ngIf="isMobileMoneySource(c.paymentSource)"
+                  class="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+                >
+                  Paiement Mobile Money
+                </span>
               </div>
             </div>
 

@@ -37,6 +37,7 @@ export class User {
   dailySavingReturns?: { [key: string]: string } = {};
   dailyFeesReturns?: { [key: string]: string } = {};
   dailyReimbursement?: { [key: string]: string } = {};
+  dailyMobileMoneyPayment?: { [key: string]: string } = {};
   dailyCardPayments?: { [key: string]: string } = {};
   dailyCardReturns?: { [key: string]: string } = {};
   dailyCardBenefits?: { [key: string]: string } = {};
@@ -69,6 +70,7 @@ export interface LocationCred {
 export type UserDailyField =
   | 'dailyLending'
   | 'dailyReimbursement'
+  | 'dailyMobileMoneyPayment'
   | 'dailyCardPayments'
   | 'dailyCardReturns'
   | 'dailyCardBenefits'

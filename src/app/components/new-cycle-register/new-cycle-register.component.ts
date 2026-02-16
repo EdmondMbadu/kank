@@ -388,7 +388,12 @@ export class NewCycleRegisterComponent implements OnInit {
       ...this.client.previousPayments,
       ...this.client.payments,
     };
+    this.client.previousPaymentSources = {
+      ...this.client.previousPaymentSources,
+      ...this.client.paymentSources,
+    };
     this.client.savingsPayments = {};
+    this.client.paymentSources = {};
 
     this.client.savings = (
       Number(this.client.savings) + Number(this.savings)

@@ -130,6 +130,7 @@ export class PublicAuthService {
       mode: 'production',
       feesData: {},
       dailyReimbursement: {},
+      dailyMobileMoneyPayment: {},
       dailySaving: {},
       dailySavingReturns: {},
       dailyCardReturns: {},

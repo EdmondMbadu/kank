@@ -16,6 +16,7 @@ export class PaymentActivityComponent implements OnInit {
   client: Client = new Client();
   public payments: string[] = [];
   public paymentDates: string[] = [];
+  public paymentSources: Array<'manual' | 'mobile_money'> = [];
   public formattedPaymentsDates: string[] = [];
   constructor(
     private activatedRoute: ActivatedRoute,
@@ -46,10 +47,15 @@ export class PaymentActivityComponent implements OnInit {
         const timestampB = this.getTimestampFromDateKey(b[0]);
         return timestampB - timestampA; // Descending order (newest first)
       });
-      
+
+      const sourceByDate: { [key: string]: 'manual' | 'mobile_money' } =
+        this.client.paymentSources || {};
       // Extract the sorted payment values and dates into separate arrays
       this.payments = paymentsArray.map((entry) => entry[1]);
       this.paymentDates = paymentsArray.map((entry) => entry[0]);
+      this.paymentSources = paymentsArray.map((entry) =>
+        sourceByDate[entry[0]] === 'mobile_money' ? 'mobile_money' : 'manual'
+      );
       this.formatPaymentDates();
     });
   }
@@ -86,9 +92,13 @@ export class PaymentActivityComponent implements OnInit {
     return Number.isFinite(timestamp) ? timestamp : 0;
   }
   formatPaymentDates() {
+    this.formattedPaymentsDates = [];
     for (let p of this.paymentDates) {
       this.formattedPaymentsDates.push(this.time.convertDateToDesiredFormat(p));
     }
+  }
+  isMobileMoneySource(source: string | undefined): boolean {
+    return source === 'mobile_money';
   }
   goToClient(ev: Event) {
     // do nothing if the click bubbled from the delete button
@@ -107,20 +117,29 @@ export class PaymentActivityComponent implements OnInit {
       /* 1️⃣  Build a fresh payments object without the chosen key */
       const newPayments: { [d: string]: string } = { ...this.client.payments };
       delete newPayments[dateKey];
+      const newPaymentSources: { [d: string]: 'manual' | 'mobile_money' } = {
+        ...(this.client.paymentSources || {}),
+      };
+      delete newPaymentSources[dateKey];
 
       /* 2️⃣  Push it back to Firestore in one set() */
       await this.afs
         .doc(`users/${this.auth.currentUser.uid}/clients/${this.client.uid}`)
-        .update({ payments: newPayments }); // ← overwrites only the payments map
+        .update({
+          payments: newPayments,
+          paymentSources: newPaymentSources,
+        }); // ← keep payments and payment source in sync
 
       /* 3️⃣  Update local copies so UI refreshes instantly */
       const idx = this.paymentDates.indexOf(dateKey);
       if (idx > -1) {
         this.paymentDates.splice(idx, 1);
         this.payments.splice(idx, 1);
+        this.paymentSources.splice(idx, 1);
         this.formattedPaymentsDates.splice(idx, 1);
       }
       this.client.payments = newPayments; // keep in-sync
+      this.client.paymentSources = newPaymentSources;
     } catch (err: any) {
       alert('Échec de suppression : ' + err.message);
     }

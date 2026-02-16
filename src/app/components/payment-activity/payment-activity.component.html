@@ -85,6 +85,12 @@
       <p class=" text-xs text-gray-500 dark:text-gray-400">
         {{ formattedPaymentsDates[i] }}
       </p>
+      <span
+        *ngIf="isMobileMoneySource(paymentSources[i])"
+        class="mt-1 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+      >
+        Paiement Mobile Money
+      </span>
     </div>
   </div>
 

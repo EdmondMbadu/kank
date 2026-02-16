@@ -906,6 +906,9 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
       payments: {
         [paymentEntryKey]: String(paymentNum),
       },
+      paymentSources: {
+        [paymentEntryKey]: "mobile_money",
+      },
       debtLeft: String(debtLeft),
     };
     if (savingsNum > 0) {
@@ -978,8 +981,10 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     }
 
     const ownerDailyReimbursement = ownerData.dailyReimbursement || {};
+    const ownerDailyMobileMoneyPayment = ownerData.dailyMobileMoneyPayment || {};
     const ownerDailySaving = ownerData.dailySaving || {};
     const dailyReimbursementValue = toNumber(ownerDailyReimbursement[dayKey]) + paymentNum;
+    const dailyMobileMoneyPaymentValue = toNumber(ownerDailyMobileMoneyPayment[dayKey]) + paymentNum;
     const dailySavingValue = toNumber(ownerDailySaving[dayKey]) + savingsNum;
 
     t.set(txRef, statusUpdatePayload, {merge: true});
@@ -1023,6 +1028,9 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
       clientsSavings: String(toNumber(ownerData.clientsSavings || 0) + savingsNum),
       dailyReimbursement: {
         [dayKey]: String(dailyReimbursementValue),
+      },
+      dailyMobileMoneyPayment: {
+        [dayKey]: String(dailyMobileMoneyPaymentValue),
       },
       dailySaving: {
         [dayKey]: String(dailySavingValue),

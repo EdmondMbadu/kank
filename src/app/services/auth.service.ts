@@ -360,6 +360,7 @@ export class AuthService {
       mode: 'production',
       feesData: {},
       dailyReimbursement: {},
+      dailyMobileMoneyPayment: {},
       dailySaving: {},
       dailySavingReturns: {},
       dailyCardReturns: {},
@@ -407,6 +408,8 @@ export class AuthService {
       numberOfPaymentsMade: '0',
       paymentDay: client.paymentDay,
       payments: {},
+      paymentSources: {},
+      previousPaymentSources: {},
       clients: [],
     };
     this.clientId = data.uid;
@@ -516,6 +519,8 @@ export class AuthService {
       dateOfRequest: client.dateOfRequest,
       dateJoined: `${month}-${day}-${year}`,
       payments: {},
+      paymentSources: {},
+      previousPaymentSources: {},
       clients: [],
       profilePicture: client.profilePicture,
 

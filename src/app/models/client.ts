@@ -39,7 +39,9 @@ export class Client {
   numberOfPaymentsMissed?: string;
   numberOfPaymentsMade?: string;
   payments?: { [key: string]: string } = {};
+  paymentSources?: { [key: string]: 'manual' | 'mobile_money' } = {};
   previousPayments?: { [key: string]: string } = {};
+  previousPaymentSources?: { [key: string]: 'manual' | 'mobile_money' } = {};
   previousSavingsPayments?: { [key: string]: string } = {};
   savingsPayments?: { [key: string]: string } = {};
   interestRate?: string;

@@ -53,6 +53,8 @@ export class DailyPaymentsComponent implements OnInit {
   requestDateCorrectFormat = this.today;
   numberOfPeople: string = '0';
   totalGivenDate: string = '0';
+  totalGivenDateMobileMoney: string = '0';
+  totalGivenDateManual: string = '0';
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
   agentRanking: AgentRank[] = [];
   constructor(
@@ -112,6 +114,8 @@ export class DailyPaymentsComponent implements OnInit {
     this.dailyPamentsAmount = [];
     this.dailyPaymentsNames = [];
     this.totalGivenDate = '0';
+    this.totalGivenDateMobileMoney = '0';
+    this.totalGivenDateManual = '0';
     this.numberOfPeople = '0';
     this.trackingIds = [];
     this.dailyPayments = [];
@@ -126,19 +130,24 @@ export class DailyPaymentsComponent implements OnInit {
       const paymentsEntries = client.payments
         ? Object.entries(client.payments)
         : [];
+      const paymentSources: { [key: string]: 'manual' | 'mobile_money' } =
+        client.paymentSources || {};
       const previousPaymentsEntries = client.previousPayments
         ? Object.entries(client.previousPayments)
         : [];
+      const previousPaymentSources: { [key: string]: 'manual' | 'mobile_money' } =
+        client.previousPaymentSources || {};
       const combinedEntries = [...paymentsEntries, ...previousPaymentsEntries];
-
-      const filteredDict = Object.fromEntries(
-        combinedEntries.filter(([key]) =>
-          key.startsWith(this.requestDateCorrectFormat)
-        )
+      const filteredEntries = combinedEntries.filter(([key]) =>
+        key.startsWith(this.requestDateCorrectFormat)
       );
-
-      const filteredValues = Object.values(filteredDict); // strings
-      const filteredKeys = Object.keys(filteredDict);
+      const filteredValues = filteredEntries.map((entry) => entry[1]); // strings
+      const filteredKeys = filteredEntries.map((entry) => entry[0]);
+      const filteredSources = filteredEntries.map(([key]) => {
+        const source =
+          paymentSources[key] || previousPaymentSources[key] || 'manual';
+        return source === 'mobile_money' ? 'mobile_money' : 'manual';
+      });
 
       if (filteredValues.length !== 0) {
         // sum paid today for this client
@@ -153,6 +162,7 @@ export class DailyPaymentsComponent implements OnInit {
           client,
           filteredValues,
           filteredKeys,
+          filteredSources,
           paidToday,
           expectedToday,
           progressPct
@@ -167,6 +177,7 @@ export class DailyPaymentsComponent implements OnInit {
     client: Client,
     values: string[],
     keys: string[],
+    sources: Array<'manual' | 'mobile_money'>,
     paidToday: number,
     expectedToday: number,
     progressPct: number
@@ -184,6 +195,8 @@ export class DailyPaymentsComponent implements OnInit {
         amount: this.n(v), // store as number for formatting
         time: keys[i++],
         timeFormatted: this.time.convertDateToDesiredFormat(keys[i - 1]),
+        paymentSource:
+          sources[i - 1] === 'mobile_money' ? 'mobile_money' : 'manual',
         employee: client.employee,
         trackingId: client.trackingId,
         // NEW: progress context for the client (same on each of today’s rows)
@@ -198,6 +211,15 @@ export class DailyPaymentsComponent implements OnInit {
         this.totalGivenDate = (
           this.n(v) + this.n(this.totalGivenDate)
         ).toString();
+        if (filt.paymentSource === 'mobile_money') {
+          this.totalGivenDateMobileMoney = (
+            this.n(v) + this.n(this.totalGivenDateMobileMoney)
+          ).toString();
+        } else {
+          this.totalGivenDateManual = (
+            this.n(v) + this.n(this.totalGivenDateManual)
+          ).toString();
+        }
         this.dailyPaymentsCopy!.push(filt);
       }
     }
@@ -339,6 +361,9 @@ export class DailyPaymentsComponent implements OnInit {
   private n(v: any): number {
     const num = Number(v);
     return isNaN(num) ? 0 : num;
+  }
+  isMobileMoneySource(source: string | undefined): boolean {
+    return source === 'mobile_money';
   }
 
   /** Min due today: min( amountToPay / paymentPeriodRange, debtLeft ) */
@@ -500,6 +525,7 @@ export class Filtered {
   amount?: number; // ← numeric now for easy formatting
   time?: string;
   timeFormatted?: string;
+  paymentSource?: 'manual' | 'mobile_money';
   employee?: Employee;
   trackingId?: string;
 

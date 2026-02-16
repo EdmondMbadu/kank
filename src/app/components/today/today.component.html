@@ -157,6 +157,21 @@
             >
           </div>
 
+          <div class="mt-2 grid gap-1 text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">
+            <div class="flex items-center justify-between">
+              <span>Paiement total</span>
+              <span class="font-semibold">{{ dailyPayment | number : "1.0-0" }} FC</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Paiement Mobile Money</span>
+              <span class="font-semibold">{{ dailyMobileMoneyPayment | number : "1.0-0" }} FC</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Paiement en especes</span>
+              <span class="font-semibold">{{ dailyCashPayment | number : "1.0-0" }} FC</span>
+            </div>
+          </div>
+
           <!-- Traceability -->
           <div
             class="mt-2 rounded-lg bg-white/80 ring-1 ring-white/50 dark:bg-slate-800/40 dark:ring-white/10"
@@ -889,6 +904,14 @@
         </ng-container>
         <ng-template #payDash>•••</ng-template>
       </p>
+      <ng-container *ngIf="isPayUnlocked || auth.isAdmin">
+        <p class="mb-1 text-sm text-slate-600 dark:text-slate-300">
+          Mobile Money: {{ dailyMobileMoneyPayment | number : "1.0-0" }} FC
+        </p>
+        <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">
+          Paiement en especes: {{ dailyCashPayment | number : "1.0-0" }} FC
+        </p>
+      </ng-container>
 
       <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
         Reserve du Jour
