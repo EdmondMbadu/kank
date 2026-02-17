@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { Card } from 'src/app/models/card';
 import { Client } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
@@ -7,7 +9,12 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { FormControl } from '@angular/forms';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import {
+  Subscription,
+  debounceTime,
+  distinctUntilChanged,
+  firstValueFrom,
+} from 'rxjs';
 import { MessagingService } from 'src/app/services/messaging.service';
 
 type BulkFailure = { client: Card; error: string };
@@ -18,19 +25,55 @@ type BulkResult = {
   failures: BulkFailure[];
 };
 type SendResult = { ok: boolean; text: string };
+type BulkLogContext = 'card_clients' | 'custom';
+type ScheduledBulkStatus =
+  | 'scheduled'
+  | 'processing'
+  | 'sent'
+  | 'canceled'
+  | 'failed';
+type ScheduledBulkMessageDocument = {
+  status: ScheduledBulkStatus;
+  type?: BulkLogContext | string;
+  scheduledForMs: number;
+  scheduledForLocal: string;
+  timeZone?: string;
+  total: number;
+  template?: string;
+  messagePreview?: string;
+  locationTotals?: Record<string, number>;
+  conditionSummary?: string;
+  createdAt?: any;
+  createdAtMs?: number;
+  createdBy?: string;
+  createdById?: string | null;
+  canceledAtMs?: number;
+  sentAtMs?: number;
+  succeeded?: number;
+  failed?: number;
+};
+type ScheduledBulkMessage = ScheduledBulkMessageDocument & {
+  id: string;
+  scheduledForDate: Date;
+  typeLabel: string;
+  statusLabel: string;
+  locationEntries: { name: string; count: number }[];
+};
 
 @Component({
   selector: 'app-summary-card-central',
   templateUrl: './summary-card-central.component.html',
   styleUrls: ['./summary-card-central.component.css'],
 })
-export class SummaryCardCentralComponent {
+export class SummaryCardCentralComponent implements OnDestroy {
   constructor(
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
     private compute: ComputationService,
-    public messaging: MessagingService
+    public messaging: MessagingService,
+    private fns: AngularFireFunctions,
+    private afs: AngularFirestore
   ) {}
 
   // Tri-state filter for finished cards
@@ -152,8 +195,16 @@ export class SummaryCardCentralComponent {
     recipients: [] as Card[],
     excludedNoPhone: 0,
     result: null as BulkResult | null,
+    scheduleAt: '' as string,
   };
   cardBulkSending = false;
+  cardBulkScheduling = false;
+  cardBulkScheduleResult: SendResult | null = null;
+  scheduledBulkMessages: ScheduledBulkMessage[] = [];
+  scheduledBulkLoading = false;
+  scheduledBulkError: string | null = null;
+  showAllScheduledBulk = false;
+  private scheduledBulkSub?: Subscription;
 
   // placeholders
   cardPlaceholderTokens = [
@@ -171,6 +222,11 @@ export class SummaryCardCentralComponent {
       this.getAllClientsCard();
       this.getAllCreditClients();
     });
+    this.listenToScheduledBulkMessages();
+  }
+
+  ngOnDestroy(): void {
+    this.scheduledBulkSub?.unsubscribe();
   }
 
   // ======== FETCH & SUMMARY =========
@@ -706,6 +762,8 @@ Merci pona confiance na FONDATION GERVAIS`;
   openCardBulkModal() {
     this.cardBulkModal.open = true;
     this.cardBulkModal.result = null;
+    this.cardBulkModal.scheduleAt = '';
+    this.cardBulkScheduleResult = null;
     this.applyDefaultCardBulkTemplate();
     this.updateCardBulkRecipients();
   }
@@ -715,7 +773,10 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.cardBulkModal.message = '';
     this.cardBulkModal.recipients = [];
     this.cardBulkModal.result = null;
+    this.cardBulkModal.scheduleAt = '';
     this.cardBulkSending = false;
+    this.cardBulkScheduling = false;
+    this.cardBulkScheduleResult = null;
   }
 
   applyDefaultCardBulkTemplate() {
@@ -782,6 +843,50 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.cardBulkSending = false;
   }
 
+  async scheduleCardBulkSms() {
+    if (
+      !this.cardBulkModal.message?.trim() ||
+      this.cardBulkModal.recipients.length === 0 ||
+      !this.cardBulkModal.scheduleAt?.trim()
+    )
+      return;
+
+    this.cardBulkScheduling = true;
+    this.cardBulkScheduleResult = null;
+
+    try {
+      const recipients = this.cardBulkModal.recipients.map((c: any) => ({
+        phoneNumber: c.phoneNumber!,
+        message: this.personalizeCardMessage(this.cardBulkModal.message, c),
+      }));
+      const locationTotals = this.aggregateLocations(
+        this.cardBulkModal.recipients,
+        (client: any) => client.locationName
+      );
+      await this.createScheduledBulkMessage({
+        type: 'card_clients',
+        scheduledForLocal: this.cardBulkModal.scheduleAt,
+        recipients,
+        template: this.cardBulkModal.message,
+        messagePreview: this.previewCardPersonalized(),
+        locationTotals,
+        conditionSummary: this.buildCardConditionsSummary(),
+      });
+      this.cardBulkScheduleResult = {
+        ok: true,
+        text: 'Envoi groupé programmé.',
+      };
+    } catch (error) {
+      console.error('Schedule card bulk SMS failed', error);
+      this.cardBulkScheduleResult = {
+        ok: false,
+        text: 'Échec de la programmation.',
+      };
+    } finally {
+      this.cardBulkScheduling = false;
+    }
+  }
+
   // ======== HELPERS =========
   monthlyContribution(c: any): number {
     // best-effort normalization (handles weekly OR monthly fields if they exist)
@@ -833,6 +938,236 @@ Merci pona confiance na FONDATION GERVAIS`;
       .replace(/\{\{\s*MAX_AMOUNT\s*\}\}/g, this.toFcDisplay(400000));
 
     return out;
+  }
+
+  get visibleScheduledBulkMessages(): ScheduledBulkMessage[] {
+    if (this.showAllScheduledBulk) return this.scheduledBulkMessages;
+    return this.scheduledBulkMessages.slice(0, 2);
+  }
+
+  get hasMoreScheduledBulkMessages(): boolean {
+    return this.scheduledBulkMessages.length > 2;
+  }
+
+  toggleScheduledBulkExpansion(): void {
+    if (!this.hasMoreScheduledBulkMessages) return;
+    this.showAllScheduledBulk = !this.showAllScheduledBulk;
+  }
+
+  async cancelScheduledBulkMessage(schedule: ScheduledBulkMessage): Promise<void> {
+    if (schedule.status !== 'scheduled') return;
+    const confirmCancel = window.confirm(
+      'Annuler cet envoi groupé programmé ?'
+    );
+    if (!confirmCancel) return;
+
+    try {
+      const callable = this.fns.httpsCallable('cancelScheduledBulkMessage');
+      await firstValueFrom(callable({ scheduleId: schedule.id }));
+    } catch (error) {
+      console.error('Cancel scheduled bulk failed', error);
+      window.alert("Impossible d'annuler pour le moment.");
+    }
+  }
+
+  async deleteScheduledBulkMessage(schedule: ScheduledBulkMessage): Promise<void> {
+    const confirmDelete = window.confirm(
+      'Supprimer définitivement cette programmation ?'
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const callable = this.fns.httpsCallable('deleteScheduledBulkMessage');
+      await firstValueFrom(callable({ scheduleId: schedule.id }));
+    } catch (error) {
+      console.error('Delete scheduled bulk failed', error);
+      window.alert('Impossible de supprimer pour le moment.');
+    }
+  }
+
+  formatScheduleLocalLabel(value?: string): string {
+    if (!value) return '—';
+    return value.replace('T', ' ');
+  }
+
+  get kinshasaNowLocal(): string {
+    return this.formatDateTimeForTimeZone(new Date(), 'Africa/Kinshasa');
+  }
+
+  private listenToScheduledBulkMessages(): void {
+    this.scheduledBulkLoading = true;
+    this.scheduledBulkError = null;
+    this.scheduledBulkSub?.unsubscribe();
+
+    this.scheduledBulkSub = this.afs
+      .collection<ScheduledBulkMessageDocument>('scheduled_bulk_messages', (ref) =>
+        ref.orderBy('scheduledForMs', 'desc').limit(30)
+      )
+      .snapshotChanges()
+      .subscribe({
+        next: (snaps) => {
+          this.scheduledBulkMessages = snaps
+            .map((snap) =>
+              this.transformScheduledBulkDocument(
+                snap.payload.doc.id,
+                snap.payload.doc.data()
+              )
+            )
+            .filter((schedule) => schedule.type === 'card_clients');
+          this.scheduledBulkLoading = false;
+        },
+        error: (error) => {
+          console.error('Scheduled bulk listener error', error);
+          this.scheduledBulkError = 'Impossible de charger les programmations.';
+          this.scheduledBulkLoading = false;
+        },
+      });
+  }
+
+  private transformScheduledBulkDocument(
+    id: string,
+    data: ScheduledBulkMessageDocument | undefined
+  ): ScheduledBulkMessage {
+    const safe: ScheduledBulkMessageDocument = data ?? {
+      status: 'scheduled',
+      scheduledForMs: Date.now(),
+      scheduledForLocal: '',
+      total: 0,
+    };
+    const scheduledForDate = new Date(safe.scheduledForMs || Date.now());
+
+    return {
+      ...safe,
+      id,
+      scheduledForDate,
+      typeLabel: this.getLogTypeLabel(safe.type),
+      statusLabel: this.getScheduleStatusLabel(safe.status),
+      locationEntries: this.buildLocationEntries(safe.locationTotals),
+    };
+  }
+
+  private getScheduleStatusLabel(status: ScheduledBulkStatus): string {
+    switch (status) {
+      case 'scheduled':
+        return 'Programmé';
+      case 'processing':
+        return 'Envoi en cours';
+      case 'sent':
+        return 'Envoyé';
+      case 'canceled':
+        return 'Annulé';
+      case 'failed':
+        return 'Échec';
+      default:
+        return 'Programmé';
+    }
+  }
+
+  private getLogTypeLabel(type?: BulkLogContext | string): string {
+    switch (type) {
+      case 'card_clients':
+        return 'Clients carte';
+      case 'custom':
+        return 'Personnalisé';
+      default:
+        return 'Envoi groupé';
+    }
+  }
+
+  private buildLocationEntries(
+    totals?: Record<string, number>
+  ): { name: string; count: number }[] {
+    if (!totals) return [];
+    return Object.entries(totals)
+      .map(([name, count]) => ({
+        name,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }
+
+  private aggregateLocations<T>(
+    items: T[],
+    picker: (item: T) => string | null | undefined
+  ): Record<string, number> {
+    return items.reduce<Record<string, number>>((acc, item) => {
+      const raw = picker(item);
+      const key = raw && raw.trim() ? raw.trim() : 'Sans localisation';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+  }
+
+  private buildCardConditionsSummary(): string {
+    const lines: string[] = [
+      `Statut terminé : ${this.doneFilterLabel()}`,
+      `Montant à payer min : ${this.toFcDisplay(this.minAmountToPay || 0)} FC`,
+      `Sites : ${
+        this.cardSelectedLocationsArray.length
+          ? this.cardSelectedLocationsArray.join(', ')
+          : 'Aucun site'
+      }`,
+    ];
+
+    if (this.cardsSearchTerm.trim()) {
+      lines.push(`Recherche : ${this.cardsSearchTerm.trim()}`);
+    }
+    if (this.excludeDuplicatePhones) {
+      lines.push('Numéros dupliqués : exclus');
+    }
+    if (this.excludeCreditOverlap) {
+      lines.push('Doublons avec crédit : exclus');
+    }
+    return lines.join('\n');
+  }
+
+  private formatDateTimeForTimeZone(date: Date, timeZone: string): string {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(date);
+    const values: Record<string, string> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') values[part.type] = part.value;
+    }
+    return `${values['year']}-${values['month']}-${values['day']}T${values['hour']}:${values['minute']}`;
+  }
+
+  private async createScheduledBulkMessage(payload: {
+    type: BulkLogContext;
+    scheduledForLocal: string;
+    recipients: { phoneNumber: string; message: string }[];
+    template: string;
+    messagePreview?: string;
+    locationTotals: Record<string, number>;
+    conditionSummary?: string;
+  }): Promise<void> {
+    const user = this.auth.currentUser || {};
+    const sentBy = `${user.firstName ?? ''} ${user.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    const callable = this.fns.httpsCallable('scheduleBulkMessage');
+    await firstValueFrom(
+      callable({
+        type: payload.type,
+        template: payload.template,
+        messagePreview: payload.messagePreview ?? null,
+        locationTotals: payload.locationTotals,
+        conditionSummary: payload.conditionSummary ?? null,
+        scheduledForLocal: payload.scheduledForLocal,
+        timeZone: 'Africa/Kinshasa',
+        recipients: payload.recipients,
+        sentBy: sentBy || user.email || undefined,
+        sentById: user.uid ?? null,
+      })
+    );
   }
 
   get cardSelectedLocationsArray(): string[] {
