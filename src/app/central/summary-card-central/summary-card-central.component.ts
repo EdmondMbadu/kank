@@ -26,6 +26,26 @@ type BulkResult = {
 };
 type SendResult = { ok: boolean; text: string };
 type BulkLogContext = 'card_clients' | 'custom';
+type BulkMessageLogDocument = {
+  type?: BulkLogContext | string;
+  sentAt?: any;
+  sentAtMs?: number;
+  total: number;
+  succeeded: number;
+  failed: number;
+  locationTotals?: Record<string, number>;
+  template?: string;
+  messagePreview?: string;
+  conditionSummary?: string;
+  sentBy?: string;
+  sentById?: string | null;
+};
+type BulkMessageLog = BulkMessageLogDocument & {
+  id: string;
+  sentAtDate: Date;
+  locationEntries: { name: string; count: number }[];
+  typeLabel: string;
+};
 type ScheduledBulkStatus =
   | 'scheduled'
   | 'processing'
@@ -200,6 +220,11 @@ export class SummaryCardCentralComponent implements OnDestroy {
   cardBulkSending = false;
   cardBulkScheduling = false;
   cardBulkScheduleResult: SendResult | null = null;
+  bulkLogs: BulkMessageLog[] = [];
+  bulkLogsLoading = false;
+  bulkLogsError: string | null = null;
+  showAllBulkLogs = false;
+  private bulkLogsSub?: Subscription;
   scheduledBulkMessages: ScheduledBulkMessage[] = [];
   scheduledBulkLoading = false;
   scheduledBulkError: string | null = null;
@@ -222,10 +247,12 @@ export class SummaryCardCentralComponent implements OnDestroy {
       this.getAllClientsCard();
       this.getAllCreditClients();
     });
+    this.listenToBulkLogs();
     this.listenToScheduledBulkMessages();
   }
 
   ngOnDestroy(): void {
+    this.bulkLogsSub?.unsubscribe();
     this.scheduledBulkSub?.unsubscribe();
   }
 
@@ -816,8 +843,9 @@ Merci pona confiance na FONDATION GERVAIS`;
     this.cardBulkSending = true;
     const failures: BulkFailure[] = [];
     let succeeded = 0;
+    const recipients = [...this.cardBulkModal.recipients];
 
-    for (const c of this.cardBulkModal.recipients as any[]) {
+    for (const c of recipients as any[]) {
       try {
         const text = this.personalizeCardMessage(this.cardBulkModal.message, c);
         await this.messaging.sendCustomSMS(c.phoneNumber!, text, {
@@ -833,7 +861,7 @@ Merci pona confiance na FONDATION GERVAIS`;
       }
     }
 
-    const total = this.cardBulkModal.recipients.length;
+    const total = recipients.length;
     this.cardBulkModal.result = {
       total,
       succeeded,
@@ -841,6 +869,20 @@ Merci pona confiance na FONDATION GERVAIS`;
       failures,
     };
     this.cardBulkSending = false;
+
+    const locationTotals = this.aggregateLocations(
+      recipients,
+      (client: any) => client.locationName
+    );
+    await this.logBulkMessage('card_clients', {
+      total,
+      succeeded,
+      failed: failures.length,
+      locationTotals,
+      template: this.cardBulkModal.message,
+      messagePreview: this.previewCardPersonalized(),
+      conditionSummary: this.buildCardConditionsSummary(),
+    });
   }
 
   async scheduleCardBulkSms() {
@@ -940,6 +982,24 @@ Merci pona confiance na FONDATION GERVAIS`;
     return out;
   }
 
+  get visibleBulkLogs(): BulkMessageLog[] {
+    if (this.showAllBulkLogs) return this.bulkLogs;
+    return this.bulkLogs.slice(0, 2);
+  }
+
+  get hasMoreBulkLogs(): boolean {
+    return this.bulkLogs.length > 2;
+  }
+
+  toggleBulkLogExpansion(): void {
+    if (!this.hasMoreBulkLogs) return;
+    this.showAllBulkLogs = !this.showAllBulkLogs;
+  }
+
+  trackBulkLog(index: number, log: BulkMessageLog): string {
+    return log.id;
+  }
+
   get visibleScheduledBulkMessages(): ScheduledBulkMessage[] {
     if (this.showAllScheduledBulk) return this.scheduledBulkMessages;
     return this.scheduledBulkMessages.slice(0, 2);
@@ -994,6 +1054,36 @@ Merci pona confiance na FONDATION GERVAIS`;
     return this.formatDateTimeForTimeZone(new Date(), 'Africa/Kinshasa');
   }
 
+  private listenToBulkLogs(): void {
+    this.bulkLogsLoading = true;
+    this.bulkLogsError = null;
+    this.bulkLogsSub?.unsubscribe();
+
+    this.bulkLogsSub = this.afs
+      .collection<BulkMessageLogDocument>('bulk_message_logs', (ref) =>
+        ref.orderBy('sentAtMs', 'desc').limit(100)
+      )
+      .snapshotChanges()
+      .subscribe({
+        next: (snaps) => {
+          this.bulkLogs = snaps
+            .map((snap) =>
+              this.transformBulkLogDocument(
+                snap.payload.doc.id,
+                snap.payload.doc.data()
+              )
+            )
+            .filter((log) => log.type === 'card_clients');
+          this.bulkLogsLoading = false;
+        },
+        error: (error) => {
+          console.error('Bulk log listener error', error);
+          this.bulkLogsError = "Impossible de charger l'historique.";
+          this.bulkLogsLoading = false;
+        },
+      });
+  }
+
   private listenToScheduledBulkMessages(): void {
     this.scheduledBulkLoading = true;
     this.scheduledBulkError = null;
@@ -1022,6 +1112,36 @@ Merci pona confiance na FONDATION GERVAIS`;
           this.scheduledBulkLoading = false;
         },
       });
+  }
+
+  private transformBulkLogDocument(
+    id: string,
+    data: BulkMessageLogDocument | undefined
+  ): BulkMessageLog {
+    const safe: BulkMessageLogDocument = data ?? {
+      total: 0,
+      succeeded: 0,
+      failed: 0,
+    };
+    const sentAtDate = new Date(this.coerceBulkLogTimestamp(safe));
+
+    return {
+      ...safe,
+      id,
+      sentAtDate,
+      locationEntries: this.buildLocationEntries(safe.locationTotals),
+      typeLabel: this.getLogTypeLabel(safe.type),
+    };
+  }
+
+  private coerceBulkLogTimestamp(data: BulkMessageLogDocument): number {
+    if (typeof data.sentAtMs === 'number') {
+      return data.sentAtMs;
+    }
+    if (data.sentAt && typeof data.sentAt.toDate === 'function') {
+      return data.sentAt.toDate().getTime();
+    }
+    return Date.now();
   }
 
   private transformScheduledBulkDocument(
@@ -1168,6 +1288,44 @@ Merci pona confiance na FONDATION GERVAIS`;
         sentById: user.uid ?? null,
       })
     );
+  }
+
+  private async logBulkMessage(
+    context: BulkLogContext,
+    payload: {
+      total: number;
+      succeeded: number;
+      failed: number;
+      locationTotals: Record<string, number>;
+      template: string;
+      messagePreview?: string;
+      conditionSummary?: string;
+    }
+  ): Promise<void> {
+    const user = this.auth.currentUser || {};
+    const sentBy = `${user.firstName ?? ''} ${user.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    try {
+      const callable = this.fns.httpsCallable('recordBulkMessageLog');
+      await firstValueFrom(
+        callable({
+          type: context,
+          total: payload.total,
+          succeeded: payload.succeeded,
+          failed: payload.failed,
+          locationTotals: payload.locationTotals,
+          template: payload.template,
+          messagePreview: payload.messagePreview ?? null,
+          conditionSummary: payload.conditionSummary ?? null,
+          sentBy: sentBy || user.email || undefined,
+          sentById: user.uid ?? null,
+        })
+      );
+    } catch (error) {
+      console.error('Bulk log write failed', error);
+    }
   }
 
   get cardSelectedLocationsArray(): string[] {
