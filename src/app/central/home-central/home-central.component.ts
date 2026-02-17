@@ -45,9 +45,18 @@ type ContactEntry = ContactDocument & {
 type BulkLogContext =
   | 'finished_clients'
   | 'general_filters'
+  | 'birthday_tomorrow'
   | 'prospect_contacts'
   | 'contacts'
   | 'custom';
+
+type BirthdayTomorrowGroup = {
+  key: string;
+  locationName: string;
+  clients: Client[];
+  recipients: Client[];
+  excludedNoPhone: number;
+};
 
 type BulkMessageLogDocument = {
   type?: BulkLogContext;
@@ -136,6 +145,17 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   birthdayFilterMode: 'all' | 'today' | 'tomorrow' | 'custom' = 'all';
   customBirthdayInput = '';
   private birthdayTarget: { month: number; day: number } | null = null;
+  tomorrowBirthdayGroups: BirthdayTomorrowGroup[] = [];
+  birthdayTomorrowResult: Record<string, SendResult | null> = {};
+  birthdayTomorrowModal = {
+    open: false,
+    group: null as BirthdayTomorrowGroup | null,
+    message: '' as string,
+    scheduleAt: '' as string,
+    result: null as SendResult | null,
+  };
+  birthdayTomorrowModalSending = false;
+  birthdayTomorrowModalScheduling = false;
   private searchTerm = '';
   paymentDayOptions: string[] = [
     'Monday',
@@ -290,6 +310,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       if (!unique.has(key)) unique.set(key, client);
     });
     this.allClients = Array.from(unique.values());
+    this.refreshTomorrowBirthdayGroups();
 
     this.initalizeInputs();
     this.setupSearch();
@@ -475,6 +496,30 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
         !this.isBirthdayFilter(mode),
     };
+  }
+
+  get tomorrowBirthdayDateLabel(): string {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return this.formatBirthdayDateForDisplay(this.createTargetFromDate(tomorrow));
+  }
+
+  get tomorrowBirthdayTotalClients(): number {
+    return this.tomorrowBirthdayGroups.reduce(
+      (sum, group) => sum + group.clients.length,
+      0
+    );
+  }
+
+  get tomorrowBirthdayTotalRecipients(): number {
+    return this.tomorrowBirthdayGroups.reduce(
+      (sum, group) => sum + group.recipients.length,
+      0
+    );
+  }
+
+  trackTomorrowBirthdayGroup(index: number, group: BirthdayTomorrowGroup): string {
+    return group.key;
   }
 
   setPaymentDayFilter(day: string | null) {
@@ -988,6 +1033,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     }
 
     this.buildDuplicatePhoneIndex();
+    this.refreshTomorrowBirthdayGroups();
     this.applyClientFilters();
     this.duplicatePhoneModal.result = { updated, skipped, failed };
   }
@@ -1427,19 +1473,78 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     return this.selectedPaymentDayTotal > 0;
   }
 
+  private refreshTomorrowBirthdayGroups(): void {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const target = this.createTargetFromDate(tomorrow);
+    const grouped = new Map<string, Client[]>();
+
+    for (const client of this.allClients ?? []) {
+      if (!this.hasBirthdayOnTarget(client, target)) continue;
+      const locationName = (client.locationName || 'Sans localisation').trim();
+      const key = locationName || 'Sans localisation';
+      const list = grouped.get(key) || [];
+      list.push(client);
+      grouped.set(key, list);
+    }
+
+    this.tomorrowBirthdayGroups = Array.from(grouped.entries())
+      .map(([locationName, clients]) => {
+        const sortedClients = clients
+          .slice()
+          .sort((a, b) =>
+            `${a.firstName || ''} ${a.lastName || ''}`
+              .trim()
+              .localeCompare(`${b.firstName || ''} ${b.lastName || ''}`.trim())
+          );
+        const recipients = sortedClients.filter((client) =>
+          this.hasDialablePhone(client)
+        );
+        return {
+          key: locationName,
+          locationName,
+          clients: sortedClients,
+          recipients,
+          excludedNoPhone: sortedClients.length - recipients.length,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.clients.length - a.clients.length ||
+          a.locationName.localeCompare(b.locationName)
+      );
+
+    const validKeys = new Set(
+      this.tomorrowBirthdayGroups.map((group) => group.key)
+    );
+    Object.keys(this.birthdayTomorrowResult).forEach((key) => {
+      if (!validKeys.has(key)) delete this.birthdayTomorrowResult[key];
+    });
+    if (
+      this.birthdayTomorrowModal.group &&
+      !validKeys.has(this.birthdayTomorrowModal.group.key)
+    ) {
+      this.closeBirthdayTomorrowModal();
+    }
+  }
+
+  private hasBirthdayOnTarget(
+    client: Client,
+    target: { month: number; day: number }
+  ): boolean {
+    const variants = this.extractMonthDayVariants(client.birthDate);
+    if (variants.length === 0) return false;
+    return variants.some(
+      (entry) => entry.month === target.month && entry.day === target.day
+    );
+  }
+
   private matchesBirthdayFilter(client: Client): boolean {
     if (this.birthdayFilterMode === 'all') return true;
 
     if (!this.birthdayTarget) return false;
 
-    const variants = this.extractMonthDayVariants(client.birthDate);
-    if (variants.length === 0) return false;
-
-    return variants.some(
-      (entry) =>
-        entry.month === this.birthdayTarget!.month &&
-        entry.day === this.birthdayTarget!.day
-    );
+    return this.hasBirthdayOnTarget(client, this.birthdayTarget);
   }
 
   private extractMonthDayVariants(input: string | undefined | null) {
@@ -1867,6 +1972,182 @@ Merci pona confiance na FONDATION GERVAIS`;
       this.sendResult = { ok: false, text: 'Échec de l’envoi du SMS.' };
     } finally {
       this.sending = false;
+    }
+  }
+
+  private birthdayTomorrowTemplate(): string {
+    return `Fondation gervais etombeli yo
+Mbotama Elamu {{FULL_NAME}}. Nzambe apambola misala na yo.`;
+  }
+
+  openBirthdayTomorrowModal(group: BirthdayTomorrowGroup): void {
+    this.birthdayTomorrowModal.open = true;
+    this.birthdayTomorrowModal.group = group;
+    this.birthdayTomorrowModal.message = this.birthdayTomorrowTemplate();
+    this.birthdayTomorrowModal.scheduleAt = '';
+    this.birthdayTomorrowModal.result = null;
+    this.birthdayTomorrowModalSending = false;
+    this.birthdayTomorrowModalScheduling = false;
+  }
+
+  closeBirthdayTomorrowModal(): void {
+    this.birthdayTomorrowModal.open = false;
+    this.birthdayTomorrowModal.group = null;
+    this.birthdayTomorrowModal.message = '';
+    this.birthdayTomorrowModal.scheduleAt = '';
+    this.birthdayTomorrowModal.result = null;
+    this.birthdayTomorrowModalSending = false;
+    this.birthdayTomorrowModalScheduling = false;
+  }
+
+  get birthdayTomorrowPreview(): string {
+    const group = this.birthdayTomorrowModal.group;
+    if (!group || !group.recipients.length) return '—';
+    return this.personalizeBirthdayTomorrowMessage(
+      group.recipients[0],
+      this.birthdayTomorrowModal.message
+    );
+  }
+
+  private personalizeBirthdayTomorrowMessage(
+    client: Client,
+    template: string
+  ): string {
+    const fullName = `${client.firstName ?? ''} ${client.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+    return template.replace(
+      /\{\{\s*FULL_NAME\s*\}\}/g,
+      fullName || 'client'
+    );
+  }
+
+  private buildBirthdayTomorrowConditionsSummary(
+    group: BirthdayTomorrowGroup
+  ): string {
+    return this.joinConditionParts([
+      'Anniversaire: demain',
+      `Site: ${group.locationName}`,
+      `Clients: ${group.clients.length}`,
+      `Sans téléphone: ${group.excludedNoPhone}`,
+    ]);
+  }
+
+  async sendBirthdayTomorrowMessagesFromModal(): Promise<void> {
+    const group = this.birthdayTomorrowModal.group;
+    const template = this.birthdayTomorrowModal.message?.trim() || '';
+    if (!group || !group.recipients.length || !template) return;
+
+    this.birthdayTomorrowModalSending = true;
+    this.birthdayTomorrowModal.result = null;
+    this.birthdayTomorrowResult[group.key] = null;
+
+    const failures: BulkFailure[] = [];
+    let succeeded = 0;
+
+    try {
+      for (const client of group.recipients) {
+        try {
+          await this.messaging.sendCustomSMS(
+            client.phoneNumber!,
+            this.personalizeBirthdayTomorrowMessage(client, template),
+            {
+              reason: 'birthday_tomorrow_bulk',
+              clientId: client.trackingId || client.uid || null,
+              clientName: `${client.firstName} ${client.lastName}`.trim(),
+              locationName: client.locationName || null,
+            }
+          );
+          succeeded += 1;
+        } catch (error: any) {
+          console.error('Tomorrow birthday SMS failed', error);
+          failures.push({
+            client,
+            error: error?.message || "Échec d'envoi",
+          });
+        }
+      }
+
+      const total = group.recipients.length;
+      const failed = failures.length;
+      const status: SendResult = {
+        ok: failed === 0,
+        text:
+          failed === 0
+            ? `SMS anniversaire envoyés (${succeeded}/${total}).`
+            : `SMS anniversaire envoyés ${succeeded}/${total}, échecs ${failed}.`,
+      };
+      this.birthdayTomorrowModal.result = status;
+      this.birthdayTomorrowResult[group.key] = status;
+
+      await this.logBulkMessage('birthday_tomorrow', {
+        total,
+        succeeded,
+        failed,
+        locationTotals: this.aggregateLocations(
+          group.recipients,
+          (client) => client.locationName
+        ),
+        template,
+        messagePreview: this.personalizeBirthdayTomorrowMessage(
+          group.recipients[0],
+          template
+        ),
+        conditionSummary: this.buildBirthdayTomorrowConditionsSummary(group),
+      });
+    } finally {
+      this.birthdayTomorrowModalSending = false;
+    }
+  }
+
+  async scheduleBirthdayTomorrowMessagesFromModal(): Promise<void> {
+    const group = this.birthdayTomorrowModal.group;
+    const template = this.birthdayTomorrowModal.message?.trim() || '';
+    const scheduleAt = this.birthdayTomorrowModal.scheduleAt?.trim() || '';
+    if (!group || !group.recipients.length || !template || !scheduleAt) return;
+
+    this.birthdayTomorrowModalScheduling = true;
+    this.birthdayTomorrowModal.result = null;
+    this.birthdayTomorrowResult[group.key] = null;
+
+    try {
+      const recipients = group.recipients.map((client) => ({
+        phoneNumber: client.phoneNumber!,
+        message: this.personalizeBirthdayTomorrowMessage(client, template),
+      }));
+
+      await this.createScheduledBulkMessage({
+        type: 'birthday_tomorrow',
+        scheduledForLocal: scheduleAt,
+        recipients,
+        template,
+        messagePreview: this.personalizeBirthdayTomorrowMessage(
+          group.recipients[0],
+          template
+        ),
+        locationTotals: this.aggregateLocations(
+          group.recipients,
+          (client) => client.locationName
+        ),
+        conditionSummary: this.buildBirthdayTomorrowConditionsSummary(group),
+      });
+
+      const status: SendResult = {
+        ok: true,
+        text: 'SMS anniversaire programmés.',
+      };
+      this.birthdayTomorrowModal.result = status;
+      this.birthdayTomorrowResult[group.key] = status;
+    } catch (error) {
+      console.error('Schedule tomorrow birthday SMS failed', error);
+      const status: SendResult = {
+        ok: false,
+        text: 'Échec de la programmation.',
+      };
+      this.birthdayTomorrowModal.result = status;
+      this.birthdayTomorrowResult[group.key] = status;
+    } finally {
+      this.birthdayTomorrowModalScheduling = false;
     }
   }
 
@@ -2995,6 +3276,8 @@ Merci pona confiance na FONDATION GERVAIS.`;
         return 'Clients terminés';
       case 'general_filters':
         return 'Filtre personnalisé';
+      case 'birthday_tomorrow':
+        return 'Anniversaire demain';
       case 'prospect_contacts':
         return 'Prospects';
       case 'contacts':
