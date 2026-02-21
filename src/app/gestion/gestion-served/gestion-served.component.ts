@@ -6,6 +6,18 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
+type PeriodMode = 'month' | 'year';
+
+interface ServedRecord {
+  dateKey: string;
+  dateLabel: string;
+  amount: number;
+  leftAfter: number | null;
+  month: number;
+  year: number;
+  timestamp: number;
+}
+
 @Component({
   selector: 'app-gestion-served',
   templateUrl: './gestion-served.component.html',
@@ -14,16 +26,31 @@ import { TimeService } from 'src/app/services/time.service';
 export class GestionServedComponent {
   reserveAmount: string = '';
   moneyGiven: Record<string, string> = {};
-  moneyGivenAmounts: string[] = [];
-  moneyGivenDates: string[] = [];
   currentUser: any = {};
   managementInfo?: Management = {};
-  records: Array<{
-    dateKey: string;
-    dateLabel: string;
-    amount: number;
-    leftAfter: number | null;
-  }> = [];
+  records: ServedRecord[] = [];
+  filteredRecords: ServedRecord[] = [];
+  showAllRecords = false;
+
+  periodMode: PeriodMode = 'month';
+  selectedMonth = new Date().getMonth() + 1;
+  selectedYear = new Date().getFullYear();
+  availableYears: number[] = [];
+  periodTotal = 0;
+  readonly monthNames = [
+    'Janvier',
+    'Fevrier',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Aout',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Decembre',
+  ];
 
   constructor(
     public auth: AuthService,
@@ -36,6 +63,25 @@ export class GestionServedComponent {
       this.managementInfo = data[0];
       this.getCurrentServed();
     });
+  }
+
+  get periodLabel(): string {
+    if (this.periodMode === 'year') return `${this.selectedYear}`;
+    return `${this.monthNames[this.selectedMonth - 1]} ${this.selectedYear}`;
+  }
+
+  get visibleRecords(): ServedRecord[] {
+    return this.showAllRecords
+      ? this.filteredRecords
+      : this.filteredRecords.slice(0, 3);
+  }
+
+  toUsd(amountFC: number | string): number {
+    const fc = Number(amountFC) || 0;
+    const converted = this.compute.convertCongoleseFrancToUsDollars(
+      fc.toString()
+    );
+    return Number(converted) || 0;
   }
 
   async addToReserve() {
@@ -68,6 +114,8 @@ export class GestionServedComponent {
     if (!this.managementInfo?.moneyGiven) {
       this.moneyGiven = {};
       this.records = [];
+      this.filteredRecords = [];
+      this.periodTotal = 0;
       return;
     }
 
@@ -81,67 +129,90 @@ export class GestionServedComponent {
 
     this.records = entries.map(([dateKey, amountStr]) => {
       const leftStr = tracking?.[dateKey];
+      const dateParts = this.parseDateKey(dateKey);
       return {
         dateKey,
         dateLabel: this.time.convertTimeFormat(dateKey),
         amount: Number(amountStr),
         leftAfter: leftStr != null ? Number(leftStr) : null, // graceful if not present
+        month: dateParts.month,
+        year: dateParts.year,
+        timestamp: dateParts.timestamp,
       };
     });
 
-    // Sort records by dateKey in descending order (newest first)
-    this.records.sort((a, b) => {
-      const timestampA = this.getTimestampFromDateKey(a.dateKey);
-      const timestampB = this.getTimestampFromDateKey(b.dateKey);
-      return timestampB - timestampA; // Descending order (newest first)
-    });
-
-    this.onQuery();
+    this.records.sort((a, b) => b.timestamp - a.timestamp);
+    this.buildAvailableYears();
+    this.applyPeriodFilter();
   }
   trackByDateKey(index: number, r: { dateKey: string }) {
     return r?.dateKey ?? index;
   }
 
-  // Helper method to convert dateKey to timestamp for sorting
-  // dateKey format: M-D-YYYY-HH-mm-ss (month-day-year-hour-minute-second)
-  private getTimestampFromDateKey(dateKey: string): number {
-    if (!dateKey) {
-      return 0;
-    }
-
-    const parts = dateKey.split('-');
-    if (parts.length < 3) {
-      return 0;
-    }
-
-    // Format: month-day-year-hour-minute-second
-    const month = parseInt(parts[0], 10);
-    const day = parseInt(parts[1], 10);
-    const year = parseInt(parts[2], 10);
-    const hour = parts.length > 3 ? parseInt(parts[3], 10) : 0;
-    const minute = parts.length > 4 ? parseInt(parts[4], 10) : 0;
-    const second = parts.length > 5 ? parseInt(parts[5], 10) : 0;
-
-    const timestamp = new Date(
-      year,
-      month - 1, // month is 0-indexed in Date constructor
-      day,
-      hour,
-      minute,
-      second
-    ).getTime();
-
-    return Number.isFinite(timestamp) ? timestamp : 0;
+  setPeriodMode(mode: PeriodMode): void {
+    if (this.periodMode === mode) return;
+    this.periodMode = mode;
+    this.showAllRecords = false;
+    this.applyPeriodFilter();
   }
 
-  // add these fields
-  query: string = '';
-  filtered: Array<{
-    dateKey: string;
-    dateLabel: string;
-    amount: number;
-    leftAfter: number | null;
-  }> = [];
+  onMonthChange(month: string): void {
+    this.selectedMonth = Number(month);
+    this.showAllRecords = false;
+    this.applyPeriodFilter();
+  }
+
+  onYearChange(year: string): void {
+    this.selectedYear = Number(year);
+    this.showAllRecords = false;
+    this.applyPeriodFilter();
+  }
+
+  private applyPeriodFilter(): void {
+    const base = this.records.filter((record) => {
+      if (record.year !== this.selectedYear) return false;
+      if (this.periodMode === 'month' && record.month !== this.selectedMonth) {
+        return false;
+      }
+      return true;
+    });
+
+    this.filteredRecords = [...base].sort((a, b) => b.timestamp - a.timestamp);
+    this.periodTotal = this.filteredRecords.reduce(
+      (sum, record) => sum + record.amount,
+      0
+    );
+  }
+
+  private buildAvailableYears(): void {
+    const years = new Set<number>([new Date().getFullYear(), this.selectedYear]);
+    this.records.forEach((record) => years.add(record.year));
+    this.availableYears = Array.from(years).sort((a, b) => b - a);
+    if (!years.has(this.selectedYear) && this.availableYears.length) {
+      this.selectedYear = this.availableYears[0];
+    }
+  }
+
+  private parseDateKey(dateKey: string): {
+    month: number;
+    year: number;
+    timestamp: number;
+  } {
+    const parsed = this.time.parseFlexibleDateTime(dateKey);
+    if (!Number.isNaN(parsed.getTime())) {
+      return {
+        month: parsed.getMonth() + 1,
+        year: parsed.getFullYear(),
+        timestamp: parsed.getTime(),
+      };
+    }
+    const fallback = new Date();
+    return {
+      month: fallback.getMonth() + 1,
+      year: fallback.getFullYear(),
+      timestamp: 0,
+    };
+  }
 
   // helper: enable/disable "Ajouter"
   canSubmit(): boolean {
@@ -149,25 +220,7 @@ export class GestionServedComponent {
     return !!this.reserveAmount && !isNaN(n) && n > 0;
   }
 
-  // live filter (search by amount or date label)
-  onQuery() {
-    const q = (this.query || '').trim().toLowerCase();
-    if (!q) {
-      this.filtered = [...this.records];
-      return;
-    }
-    this.filtered = this.records.filter(
-      (r) =>
-        r.dateLabel.toLowerCase().includes(q) ||
-        ('' + r.amount).includes(q) ||
-        (r.leftAfter !== null && ('' + r.leftAfter).includes(q))
-    );
-
-    // Ensure filtered array maintains descending order (newest first)
-    this.filtered.sort((a, b) => {
-      const timestampA = this.getTimestampFromDateKey(a.dateKey);
-      const timestampB = this.getTimestampFromDateKey(b.dateKey);
-      return timestampB - timestampA; // Descending order (newest first)
-    });
+  hasMoreRecords(): boolean {
+    return this.filteredRecords.length > 3;
   }
 }

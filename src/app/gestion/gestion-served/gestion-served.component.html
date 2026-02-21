@@ -30,6 +30,9 @@
         <div class="font-semibold">
           FC {{ managementInfo?.moneyInHands || 0 | number : "1.0-0" }}
         </div>
+        <div class="text-xs">
+          $ {{ toUsd(managementInfo?.moneyInHands || 0) | number : "1.0-0" }}
+        </div>
       </div>
     </div>
   </div>
@@ -100,6 +103,109 @@
     </div>
   </section>
 
+  <!-- Period summary -->
+  <section class="mt-10">
+    <div
+      class="rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 via-white to-emerald-50 p-5 shadow-sm"
+    >
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">
+            Vue Périodique
+          </p>
+          <h2 class="mt-1 text-xl font-bold text-gray-900 dark:text-white">
+            Analyse des montants à servir
+          </h2>
+          <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
+            Vue mensuelle par défaut, avec bascule annuelle et total de la période.
+          </p>
+        </div>
+
+        <div class="inline-flex rounded-xl border border-green-200 bg-white p-1 dark:bg-slate-800 dark:border-slate-600">
+          <button
+            type="button"
+            (click)="setPeriodMode('month')"
+            [class.bg-green-700]="periodMode === 'month'"
+            [class.text-white]="periodMode === 'month'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            Mois
+          </button>
+          <button
+            type="button"
+            (click)="setPeriodMode('year')"
+            [class.bg-green-700]="periodMode === 'year'"
+            [class.text-white]="periodMode === 'year'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            Annee
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 grid gap-3 md:grid-cols-4">
+        <div *ngIf="periodMode === 'month'" class="md:col-span-2">
+          <label
+            for="servedMonthSelect"
+            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
+          >
+            Mois
+          </label>
+          <select
+            id="servedMonthSelect"
+            [ngModel]="selectedMonth"
+            (ngModelChange)="onMonthChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+          >
+            <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+              {{ month }}
+            </option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label
+            for="servedYearSelect"
+            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
+          >
+            Annee
+          </label>
+          <select
+            id="servedYearSelect"
+            [ngModel]="selectedYear"
+            (ngModelChange)="onYearChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+          >
+            <option *ngFor="let year of availableYears" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </div>
+
+        <div class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:bg-slate-800 dark:border-slate-600">
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300">
+            Total periode
+          </p>
+          <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+            FC {{ periodTotal | number : "1.0-0" }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-slate-300">
+            $ {{ toUsd(periodTotal) | number : "1.0-0" }}
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:bg-slate-800 dark:border-slate-600">
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300">
+            Transactions
+          </p>
+          <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+            {{ filteredRecords.length }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Timeline -->
   <section class="mt-10">
     <div
@@ -108,30 +214,11 @@
       <div
         class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
       >
-        <h2 class="text-lg md:text-xl font-bold">Chronologie</h2>
-
-        <!-- Search (optional, decorative now) -->
-        <div class="w-full sm:w-80 relative">
-          <input
-            type="text"
-            [(ngModel)]="query"
-            (input)="onQuery()"
-            class="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
-            placeholder="Chercher le montant…"
-          />
-          <svg
-            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
-            viewBox="0 0 20 20"
-            fill="none"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-            />
-          </svg>
+        <div>
+          <h2 class="text-lg md:text-xl font-bold">Argent à servir · {{ periodLabel }}</h2>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+            {{ periodMode === 'month' ? 'Mois sélectionné' : 'Année sélectionnée' }}
+          </p>
         </div>
       </div>
 
@@ -139,7 +226,7 @@
       <div class="flow-root">
         <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
           <li
-            *ngFor="let r of filtered; trackBy: trackByDateKey"
+            *ngFor="let r of visibleRecords; trackBy: trackByDateKey"
             routerLink="/gestion-today"
             class="group cursor-pointer py-4 sm:py-5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40"
           >
@@ -172,10 +259,13 @@
 
                 <!-- amount given -->
                 <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <div
-                    class="text-base font-semibold text-slate-900 dark:text-white"
-                  >
-                    FC {{ r.amount | number : "1.0-0" }}
+                  <div>
+                    <div class="text-base font-semibold text-slate-900 dark:text-white">
+                      FC {{ r.amount | number : "1.0-0" }}
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-300">
+                      $ {{ toUsd(r.amount) | number : "1.0-0" }}
+                    </div>
                   </div>
 
                   <!-- pill -->
@@ -196,6 +286,9 @@
                     *ngIf="r.leftAfter !== null; else dash"
                   >
                     FC {{ r.leftAfter | number : "1.0-0" }}
+                    <span class="ml-1 text-xs text-slate-500 dark:text-slate-300">
+                      ($ {{ toUsd(r.leftAfter) | number : "1.0-0" }})
+                    </span>
                   </span>
                   <ng-template #dash>
                     <span class="text-slate-400 dark:text-slate-500">—</span>
@@ -221,7 +314,7 @@
           </li>
 
           <!-- Empty state -->
-          <li *ngIf="filtered.length === 0" class="py-12">
+          <li *ngIf="filteredRecords.length === 0" class="py-12">
             <div class="flex flex-col items-center justify-center text-center">
               <div
                 class="h-10 w-10 rounded-full bg-slate-100 ring-1 ring-slate-200 flex items-center justify-center dark:bg-slate-700 dark:ring-slate-600"
@@ -229,11 +322,21 @@
                 <div class="h-2 w-2 rounded-full bg-slate-400"></div>
               </div>
               <p class="mt-4 text-sm text-slate-500 dark:text-slate-300">
-                Aucune entrée ne correspond à votre recherche.
+                Aucune entrée pour {{ periodLabel }}.
               </p>
             </div>
           </li>
         </ul>
+      </div>
+
+      <div *ngIf="hasMoreRecords()" class="mt-4 text-center">
+        <button
+          type="button"
+          (click)="showAllRecords = !showAllRecords"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800"
+        >
+          {{ showAllRecords ? "Moins" : "Plus" }}
+        </button>
       </div>
     </div>
   </section>
