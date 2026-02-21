@@ -1,0 +1,19 @@
+.debt-left-card {
+  box-shadow:
+    0 0 0 0 rgba(225, 29, 72, 0.5),
+    0 4px 14px -4px rgba(225, 29, 72, 0.35);
+  animation: debt-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes debt-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(225, 29, 72, 0.45),
+      0 4px 14px -4px rgba(225, 29, 72, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(225, 29, 72, 0),
+      0 4px 20px -4px rgba(225, 29, 72, 0.5);
+  }
+}

@@ -316,10 +316,10 @@
 
     <!-- Debt left -->
     <div
-      class="flex flex-col items-center rounded-2xl bg-gradient-to-br from-rose-100 to-rose-200 px-4 py-6 ring-2 ring-rose-400 shadow-md shadow-rose-200/50 dark:from-rose-900/40 dark:to-rose-800/40 dark:ring-rose-500 dark:shadow-rose-900/30"
+      class="debt-left-card flex flex-col items-center rounded-2xl bg-gradient-to-br from-rose-600 to-red-700 px-4 py-6 text-white dark:from-rose-700 dark:to-red-900"
     >
-      <dt class="text-lg font-bold text-rose-700 dark:text-rose-300">Montant Restant (FC)</dt>
-      <dd class="mt-1 text-3xl font-extrabold text-rose-900 dark:text-white">
+      <dt class="text-lg font-semibold text-rose-100">Montant Restant (FC)</dt>
+      <dd class="mt-1 text-3xl font-extrabold">
         {{ client.debtLeft | number : "1.0-0" }}
       </dd>
     </div>
