@@ -322,8 +322,8 @@ export class TimeService {
     const formattedMonth = monthNames[date.getMonth()];
     const formattedDay = date.getDate();
 
-    // Format the date to "Month Day"
-    return `${formattedMonth} ${formattedDay} ${year}`;
+    // Format the date to "Day Month Year" (French format)
+    return `${formattedDay} ${formattedMonth} ${year}`;
   }
   getDateInFiveWeeks(inputDate: string) {
     // Parse the input date
