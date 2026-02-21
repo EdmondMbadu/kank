@@ -159,6 +159,7 @@ export class ClientPortalComponent {
   paymentDate = '';
   debtStart = '';
   debtEnd = '';
+  isDebtOverdue = false;
   savingsText: string = 'Transfer Epargne vers Paiement';
 
   // Image selection
@@ -256,6 +257,7 @@ export class ClientPortalComponent {
         this.client.debtCycleStartDate
       );
       this.debtEnd = this.time.formatDateString(this.endDate());
+      this.isDebtOverdue = this.checkDebtOverdue();
       if (this.auth.isAdmninistrator) {
         this.data.getClientCycles(this.client.uid!).subscribe((data) => {
           this.clientCycles = data;
@@ -634,6 +636,15 @@ export class ClientPortalComponent {
     return Number(this.client.paymentPeriodRange) === 8
       ? this.time.getDateInNineWeeks(this.client.debtCycleStartDate!)
       : this.time.getDateInFiveWeeks(this.client.debtCycleStartDate!);
+  }
+
+  private checkDebtOverdue(): boolean {
+    if (Number(this.client.debtLeft) <= 0) return false;
+    const end = this.endDate();
+    if (!end) return false;
+    const parts = end.split('-');
+    const endDate = new Date(+parts[2], +parts[0] - 1, +parts[1]);
+    return new Date() > endDate;
   }
 
   minimumPayment() {

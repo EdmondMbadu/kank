@@ -30,6 +30,7 @@ export class ClientCycleComponent {
   paymentDate = '';
   debtStart = '';
   debtEnd = '';
+  isDebtOverdue = false;
   age: number | null = null;
   birthDateDisplay = '';
   dateJoined: string = '';
@@ -185,7 +186,8 @@ export class ClientCycleComponent {
             this.client.debtCycleStartDate
           );
           this.debtEnd = this.time.formatDateString(this.endDate());
-          
+          this.isDebtOverdue = this.checkDebtOverdue();
+
           if (this.client.dateJoined) {
             this.dateJoined = this.time.formatDateForDRC(this.client.dateJoined);
           }
@@ -212,6 +214,15 @@ export class ClientCycleComponent {
     return Number(this.client.paymentPeriodRange) === 8
       ? this.time.getDateInNineWeeks(this.client.debtCycleStartDate!)
       : this.time.getDateInFiveWeeks(this.client.debtCycleStartDate!);
+  }
+
+  private checkDebtOverdue(): boolean {
+    if (Number(this.client.debtLeft) <= 0) return false;
+    const end = this.endDate();
+    if (!end) return false;
+    const parts = end.split('-');
+    const endDate = new Date(+parts[2], +parts[0] - 1, +parts[1]);
+    return new Date() > endDate;
   }
 
   minimumPayment() {

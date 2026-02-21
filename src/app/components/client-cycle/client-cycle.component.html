@@ -336,12 +336,18 @@
 
     <!-- Debt cycle -->
     <div
-      class="flex flex-col items-center rounded-2xl bg-gray-50 px-4 py-6 dark:bg-gray-900/50"
+      class="flex flex-col items-center rounded-2xl px-4 py-6"
+      [ngClass]="isDebtOverdue
+        ? 'bg-red-50 ring-2 ring-red-400 dark:bg-red-950/40 dark:ring-red-500'
+        : 'bg-gray-50 dark:bg-gray-900/50'"
     >
       <dt class="text-lg font-semibold">Cycle de Dette</dt>
       <dd class="mt-1 text-xl font-bold">{{ client.debtCycle }}</dd>
       <p class="text-xs text-gray-500 dark:text-gray-400">
         {{ debtStart }} &rarr; {{ debtEnd }}
+      </p>
+      <p *ngIf="isDebtOverdue" class="mt-2 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">
+        En retard — Payer immédiatement
       </p>
     </div>
 
