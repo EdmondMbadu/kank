@@ -6,6 +6,19 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
+type PeriodMode = 'month' | 'year';
+
+interface ExpenseEntry {
+  key: string;
+  rawValue: string;
+  amount: number;
+  reason: string;
+  dateLabel: string;
+  month: number;
+  year: number;
+  timestamp: number;
+}
+
 @Component({
   selector: 'app-gestion-expense',
   templateUrl: './gestion-expense.component.html',
@@ -14,13 +27,31 @@ import { TimeService } from 'src/app/services/time.service';
 export class GestionExpenseComponent {
   expenseAmount: string = '';
   expenseReason: string = '';
-  expenses: any = [];
-  currentExpenses: [string, string][] = [];
-  expensesAmounts: string[] = [];
-  expensesReasons: string[] = [];
-  expensesDates: string[] = [];
+  expenses: Record<string, string> = {};
+  allExpenseEntries: ExpenseEntry[] = [];
+  filteredExpenseEntries: ExpenseEntry[] = [];
   currentUser: any = {};
   managementInfo?: Management = {};
+
+  periodMode: PeriodMode = 'month';
+  selectedMonth = new Date().getMonth() + 1;
+  selectedYear = new Date().getFullYear();
+  availableYears: number[] = [];
+  periodTotal = 0;
+  readonly monthNames = [
+    'Janvier',
+    'Fevrier',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Aout',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Decembre',
+  ];
 
   showPlanned = false; // controls collapse
   showAllExpenses = false; // controls expense list expansion
@@ -54,6 +85,19 @@ export class GestionExpenseComponent {
     });
   }
 
+  get periodLabel(): string {
+    if (this.periodMode === 'year') {
+      return `${this.selectedYear}`;
+    }
+    return `${this.monthNames[this.selectedMonth - 1]} ${this.selectedYear}`;
+  }
+
+  get visibleExpenseEntries(): ExpenseEntry[] {
+    return this.showAllExpenses
+      ? this.filteredExpenseEntries
+      : this.filteredExpenseEntries.slice(0, 3);
+  }
+
   addExpense() {
     if (this.expenseAmount === '' || this.expenseReason === '') {
       alert('Fill all fields!');
@@ -75,24 +119,32 @@ export class GestionExpenseComponent {
       this.router.navigate(['/gestion-today']);
     }
   }
+
   getCurrentExpense() {
     this.expenses = this.managementInfo?.expenses || {};
-    this.currentExpenses = Object.entries(this.expenses);
-    this.currentExpenses = this.compute.sortArrayByDateDescendingOrder(
-      this.currentExpenses
+    const sortedEntries = this.compute.sortArrayByDateDescendingOrder(
+      Object.entries(this.expenses)
     );
 
-    this.expensesReasons = this.currentExpenses.map((entry) => entry[1]);
-    this.expensesDates = this.currentExpenses.map((entry) =>
-      this.time.convertTimeFormat(entry[0])
-    );
-    this.expensesAmounts = this.expensesReasons.map(
-      (item) => item.split(':')[0]
-    );
-    this.expensesReasons = this.expensesReasons.map(
-      (item) => item.split(':')[1]
-    );
+    this.allExpenseEntries = sortedEntries.map(([key, value]) => {
+      const parsed = this.parseExpenseValue(value);
+      const dateParts = this.parseDateKey(key);
+      return {
+        key,
+        rawValue: value,
+        amount: parsed.amount,
+        reason: parsed.reason || 'Sans raison',
+        dateLabel: this.time.convertTimeFormat(key),
+        month: dateParts.month,
+        year: dateParts.year,
+        timestamp: dateParts.timestamp,
+      };
+    });
+
+    this.buildAvailableYears();
+    this.applyPeriodFilter();
   }
+
   /** planned-expense list */
   getPlannedExpense() {
     const map = this.managementInfo?.budgetedExpenses || {};
@@ -102,7 +154,6 @@ export class GestionExpenseComponent {
     );
 
     const rawList = this.budgetCurrent.map((entry) => entry[1]);
-
     this.budgetAmounts = rawList.map((item) => item.split(':')[0]);
     this.budgetReasons = rawList.map((item) => item.split(':')[1] || '');
     this.budgetDates = this.budgetCurrent.map((entry) =>
@@ -110,8 +161,92 @@ export class GestionExpenseComponent {
     );
   }
 
+  setPeriodMode(mode: PeriodMode): void {
+    if (this.periodMode === mode) return;
+    this.periodMode = mode;
+    this.showAllExpenses = false;
+    this.applyPeriodFilter();
+  }
+
+  onMonthChange(month: string): void {
+    this.selectedMonth = Number(month);
+    this.showAllExpenses = false;
+    this.applyPeriodFilter();
+  }
+
+  onYearChange(year: string): void {
+    this.selectedYear = Number(year);
+    this.showAllExpenses = false;
+    this.applyPeriodFilter();
+  }
+
+  private applyPeriodFilter(): void {
+    const base = this.allExpenseEntries.filter((entry) => {
+      if (entry.year !== this.selectedYear) return false;
+      if (this.periodMode === 'month' && entry.month !== this.selectedMonth) {
+        return false;
+      }
+      return true;
+    });
+
+    this.filteredExpenseEntries = [...base].sort(
+      (a, b) => b.timestamp - a.timestamp
+    );
+    this.periodTotal = this.filteredExpenseEntries.reduce(
+      (sum, entry) => sum + entry.amount,
+      0
+    );
+  }
+
+  private buildAvailableYears(): void {
+    const years = new Set<number>([new Date().getFullYear(), this.selectedYear]);
+    this.allExpenseEntries.forEach((entry) => years.add(entry.year));
+    this.availableYears = Array.from(years).sort((a, b) => b - a);
+    if (!years.has(this.selectedYear) && this.availableYears.length) {
+      this.selectedYear = this.availableYears[0];
+    }
+  }
+
+  private parseExpenseValue(raw: string): { amount: number; reason: string } {
+    const idx = String(raw).indexOf(':');
+    if (idx < 0) {
+      return {
+        amount: Number(raw) || 0,
+        reason: '',
+      };
+    }
+    const amountPart = String(raw).slice(0, idx);
+    const reasonPart = String(raw).slice(idx + 1).trim();
+    return {
+      amount: Number(amountPart) || 0,
+      reason: reasonPart,
+    };
+  }
+
+  private parseDateKey(key: string): {
+    month: number;
+    year: number;
+    timestamp: number;
+  } {
+    const parsed = this.time.parseFlexibleDateTime(key);
+    if (!Number.isNaN(parsed.getTime())) {
+      return {
+        month: parsed.getMonth() + 1,
+        year: parsed.getFullYear(),
+        timestamp: parsed.getTime(),
+      };
+    }
+
+    const fallback = new Date();
+    return {
+      month: fallback.getMonth() + 1,
+      year: fallback.getFullYear(),
+      timestamp: 0,
+    };
+  }
+
   hasMoreExpenses(): boolean {
-    return this.currentExpenses.length > 3;
+    return this.filteredExpenseEntries.length > 3;
   }
 
   openDeleteExpenseModal(entryKey: string, event: Event): void {
@@ -119,17 +254,14 @@ export class GestionExpenseComponent {
     if (!this.auth.isAdmin) return;
     if (this.deletingExpenseKey) return;
 
-    const entryValue = this.expenses?.[entryKey];
-    if (!entryValue) return;
+    const entry = this.allExpenseEntries.find((item) => item.key === entryKey);
+    if (!entry) return;
 
-    const amount = Number(String(entryValue).split(':')[0]) || 0;
-    const reason = String(entryValue).split(':')[1] || 'Sans raison';
-    const formattedDate = this.time.convertTimeFormat(entryKey);
     this.pendingDeleteExpense = {
       key: entryKey,
-      amount,
-      reason,
-      dateLabel: formattedDate,
+      amount: entry.amount,
+      reason: entry.reason,
+      dateLabel: entry.dateLabel,
     };
     this.showDeleteExpenseModal = true;
   }

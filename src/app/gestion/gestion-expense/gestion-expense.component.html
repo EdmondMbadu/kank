@@ -112,17 +112,96 @@
       </div>
     </div>
 
+    <div
+      class="rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 via-white to-emerald-50 p-5 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">Vue Périodique</p>
+          <h2 class="mt-1 text-xl font-bold text-gray-900">Analyse des dépenses</h2>
+          <p class="mt-1 text-sm text-gray-600">
+            Filtrez par mois ou par année pour réduire la liste et suivre rapidement le total.
+          </p>
+        </div>
+
+        <div class="inline-flex rounded-xl border border-green-200 bg-white p-1">
+          <button
+            type="button"
+            (click)="setPeriodMode('month')"
+            [class.bg-green-700]="periodMode === 'month'"
+            [class.text-white]="periodMode === 'month'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100">
+            Mois
+          </button>
+          <button
+            type="button"
+            (click)="setPeriodMode('year')"
+            [class.bg-green-700]="periodMode === 'year'"
+            [class.text-white]="periodMode === 'year'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100">
+            Annee
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 grid gap-3 md:grid-cols-4">
+        <div *ngIf="periodMode === 'month'" class="md:col-span-2">
+          <label for="monthSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Mois
+          </label>
+          <select
+            id="monthSelect"
+            [ngModel]="selectedMonth"
+            (ngModelChange)="onMonthChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500">
+            <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+              {{ month }}
+            </option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label for="yearSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Annee
+          </label>
+          <select
+            id="yearSelect"
+            [ngModel]="selectedYear"
+            (ngModelChange)="onYearChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500">
+            <option *ngFor="let year of availableYears" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </div>
+
+        <div class="rounded-xl border border-green-200 bg-white px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">Total periode</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">FC {{ periodTotal | number : '1.0-0' }}</p>
+        </div>
+
+        <div class="rounded-xl border border-green-200 bg-white px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">Transactions</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">{{ filteredExpenseEntries.length }}</p>
+        </div>
+      </div>
+    </div>
+
     <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-xl font-bold text-gray-900">Chronologie des dépenses</h2>
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">Dépenses · {{ periodLabel }}</h2>
+          <p class="mt-1 text-xs text-gray-500">
+            {{ periodMode === 'month' ? 'Mois sélectionné' : 'Année sélectionnée' }}
+          </p>
+        </div>
         <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-          {{ currentExpenses.length }} entrée(s)
+          {{ filteredExpenseEntries.length }} entrée(s)
         </span>
       </div>
 
-      <ul role="list" class="divide-y divide-gray-200" *ngIf="currentExpenses.length; else emptyExpenses">
+      <ul role="list" class="divide-y divide-gray-200" *ngIf="filteredExpenseEntries.length; else emptyExpenses">
         <li
-          *ngFor="let item of (showAllExpenses ? currentExpenses : currentExpenses.slice(0, 3)); let i = index"
+          *ngFor="let entry of visibleExpenseEntries"
           class="group flex items-center gap-3 py-3 transition hover:bg-green-50/60">
           <div
             class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-medium text-green-700">
@@ -130,17 +209,17 @@
           </div>
 
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-gray-900">{{ expensesReasons[i] }}</p>
-            <p class="text-xs text-gray-500">{{ expensesDates[i] }}</p>
+            <p class="truncate text-sm font-medium text-gray-900">{{ entry.reason }}</p>
+            <p class="text-xs text-gray-500">{{ entry.dateLabel }}</p>
           </div>
 
-          <p class="text-sm font-semibold text-gray-900">FC {{ expensesAmounts[i] | number : '1.0-0' }}</p>
+          <p class="text-sm font-semibold text-gray-900">FC {{ entry.amount | number : '1.0-0' }}</p>
 
           <button
             *ngIf="auth.isAdmin"
             type="button"
-            (click)="openDeleteExpenseModal(item[0], $event)"
-            [disabled]="deletingExpenseKey === item[0]"
+            (click)="openDeleteExpenseModal(entry.key, $event)"
+            [disabled]="deletingExpenseKey === entry.key"
             class="ml-1 rounded p-1 text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Supprimer la dépense">
             <svg
@@ -162,7 +241,9 @@
       </ul>
 
       <ng-template #emptyExpenses>
-        <p class="py-8 text-center text-sm text-gray-500">Aucune dépense enregistrée.</p>
+        <p class="py-8 text-center text-sm text-gray-500">
+          Aucune dépense enregistrée pour {{ periodLabel }}.
+        </p>
       </ng-template>
 
       <div *ngIf="hasMoreExpenses()" class="mt-4 text-center">
@@ -170,7 +251,7 @@
           type="button"
           (click)="showAllExpenses = !showAllExpenses"
           class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
-          {{ showAllExpenses ? 'Voir moins' : 'Voir plus' }}
+          {{ showAllExpenses ? 'Moins' : 'Plus' }}
         </button>
       </div>
     </div>
