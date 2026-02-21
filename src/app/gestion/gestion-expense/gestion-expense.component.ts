@@ -32,6 +32,9 @@ export class GestionExpenseComponent {
     reason: string;
     dateLabel: string;
   } | null = null;
+  feedbackMessage = '';
+  feedbackType: 'success' | 'error' = 'success';
+  private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   budgetCurrent: [string, string][] = [];
   budgetAmounts: string[] = [];
   budgetReasons: string[] = [];
@@ -137,6 +140,18 @@ export class GestionExpenseComponent {
     this.pendingDeleteExpense = null;
   }
 
+  private showFeedback(message: string, type: 'success' | 'error'): void {
+    this.feedbackMessage = message;
+    this.feedbackType = type;
+    if (this.feedbackTimeout) {
+      clearTimeout(this.feedbackTimeout);
+    }
+    this.feedbackTimeout = setTimeout(() => {
+      this.feedbackMessage = '';
+      this.feedbackTimeout = null;
+    }, 3500);
+  }
+
   async confirmDeleteExpense(
     choice: 'deleteOnly' | 'deleteAndDeduct'
   ): Promise<void> {
@@ -160,13 +175,20 @@ export class GestionExpenseComponent {
           : this.managementInfo?.moneyInHands,
       };
       this.getCurrentExpense();
-      this.closeDeleteExpenseModal();
+      this.showFeedback(
+        shouldDeduct
+          ? 'Dépense supprimée et montant déduit de moneyInHands.'
+          : 'Dépense supprimée sans déduction de moneyInHands.',
+        'success'
+      );
     } catch (err: any) {
-      alert(
-        `La suppression de la dépense a échoué: ${err?.message || 'Erreur inconnue'}`
+      this.showFeedback(
+        `La suppression de la dépense a échoué: ${err?.message || 'Erreur inconnue'}`,
+        'error'
       );
     } finally {
       this.deletingExpenseKey = null;
+      this.closeDeleteExpenseModal();
     }
   }
 }

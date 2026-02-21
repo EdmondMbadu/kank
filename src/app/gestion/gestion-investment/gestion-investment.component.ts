@@ -27,6 +27,9 @@ export class GestionInvestmentComponent {
     amount: number;
     dateLabel: string;
   } | null = null;
+  feedbackMessage = '';
+  feedbackType: 'success' | 'error' = 'success';
+  private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -106,6 +109,18 @@ export class GestionInvestmentComponent {
     this.pendingDeleteInvestment = null;
   }
 
+  private showFeedback(message: string, type: 'success' | 'error'): void {
+    this.feedbackMessage = message;
+    this.feedbackType = type;
+    if (this.feedbackTimeout) {
+      clearTimeout(this.feedbackTimeout);
+    }
+    this.feedbackTimeout = setTimeout(() => {
+      this.feedbackMessage = '';
+      this.feedbackTimeout = null;
+    }, 3500);
+  }
+
   async confirmDeleteInvestment(
     choice: 'deleteOnly' | 'deleteAndDeduct'
   ): Promise<void> {
@@ -132,13 +147,20 @@ export class GestionInvestmentComponent {
           : this.managementInfo?.moneyInHands,
       };
       this.getCurrentInvestment();
-      this.closeDeleteInvestmentModal();
+      this.showFeedback(
+        shouldDeduct
+          ? 'Investissement supprimé et montant déduit de moneyInHands.'
+          : 'Investissement supprimé sans déduction de moneyInHands.',
+        'success'
+      );
     } catch (err: any) {
-      alert(
-        `La suppression de l'investissement a échoué: ${err?.message || 'Erreur inconnue'}`
+      this.showFeedback(
+        `La suppression de l'investissement a échoué: ${err?.message || 'Erreur inconnue'}`,
+        'error'
       );
     } finally {
       this.deletingInvestmentKey = null;
+      this.closeDeleteInvestmentModal();
     }
   }
 }
