@@ -14,10 +14,19 @@ import { TimeService } from 'src/app/services/time.service';
 export class GestionInvestmentComponent {
   investmentAmount: string = '';
   investment: any = [];
+  currentInvestment: [string, string][] = [];
   investmentAmounts: string[] = [];
   investmentDates: string[] = [];
   currentUser: any = {};
   managementInfo?: Management = {};
+  showAllInvestments = false;
+  deletingInvestmentKey: string | null = null;
+  showDeleteInvestmentModal = false;
+  pendingDeleteInvestment: {
+    key: string;
+    amount: number;
+    dateLabel: string;
+  } | null = null;
   constructor(
     public auth: AuthService,
     private data: DataService,
@@ -25,6 +34,7 @@ export class GestionInvestmentComponent {
     private compute: ComputationService,
     private time: TimeService
   ) {
+    this.currentUser = this.auth.currentUser;
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
       this.getCurrentInvestment();
@@ -59,14 +69,76 @@ export class GestionInvestmentComponent {
     }
   }
   getCurrentInvestment() {
-    this.investment = this.managementInfo!.investment;
+    this.investment = this.managementInfo?.investment || {};
 
-    let currentInvestment = this.compute.sortArrayByDateDescendingOrder(
-      Object.entries(this.managementInfo!.investment!)
+    this.currentInvestment = this.compute.sortArrayByDateDescendingOrder(
+      Object.entries(this.investment)
     );
-    this.investmentAmounts = currentInvestment.map((entry) => entry[1]);
-    this.investmentDates = currentInvestment.map((entry) =>
+    this.investmentAmounts = this.currentInvestment.map((entry) => entry[1]);
+    this.investmentDates = this.currentInvestment.map((entry) =>
       this.time.convertTimeFormat(entry[0])
     );
+  }
+
+  hasMoreInvestments(): boolean {
+    return this.currentInvestment.length > 4;
+  }
+
+  openDeleteInvestmentModal(entryKey: string, event: Event): void {
+    event.stopPropagation();
+    if (!this.auth.isAdmin) return;
+    if (this.deletingInvestmentKey) return;
+
+    const amountRaw = this.investment?.[entryKey];
+    const amount = Number(amountRaw) || 0;
+    const formattedDate = this.time.convertTimeFormat(entryKey);
+    this.pendingDeleteInvestment = {
+      key: entryKey,
+      amount,
+      dateLabel: formattedDate,
+    };
+    this.showDeleteInvestmentModal = true;
+  }
+
+  closeDeleteInvestmentModal(): void {
+    if (this.deletingInvestmentKey) return;
+    this.showDeleteInvestmentModal = false;
+    this.pendingDeleteInvestment = null;
+  }
+
+  async confirmDeleteInvestment(
+    choice: 'deleteOnly' | 'deleteAndDeduct'
+  ): Promise<void> {
+    const pending = this.pendingDeleteInvestment;
+    if (!pending) return;
+    const shouldDeduct = choice === 'deleteAndDeduct';
+
+    try {
+      this.deletingInvestmentKey = pending.key;
+      await this.data.deleteManagementInvestmentEntry(
+        pending.key,
+        shouldDeduct
+      );
+      const nextInvestments = { ...(this.managementInfo?.investment || {}) };
+      delete nextInvestments[pending.key];
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        investment: nextInvestments,
+        moneyInHands: shouldDeduct
+          ? (
+              Number(this.managementInfo?.moneyInHands || 0) -
+              Number(pending.amount)
+            ).toString()
+          : this.managementInfo?.moneyInHands,
+      };
+      this.getCurrentInvestment();
+      this.closeDeleteInvestmentModal();
+    } catch (err: any) {
+      alert(
+        `La suppression de l'investissement a échoué: ${err?.message || 'Erreur inconnue'}`
+      );
+    } finally {
+      this.deletingInvestmentKey = null;
+    }
   }
 }

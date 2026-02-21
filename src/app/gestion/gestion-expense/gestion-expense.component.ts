@@ -24,6 +24,14 @@ export class GestionExpenseComponent {
 
   showPlanned = false; // controls collapse
   showAllExpenses = false; // controls expense list expansion
+  deletingExpenseKey: string | null = null;
+  showDeleteExpenseModal = false;
+  pendingDeleteExpense: {
+    key: string;
+    amount: number;
+    reason: string;
+    dateLabel: string;
+  } | null = null;
   budgetCurrent: [string, string][] = [];
   budgetAmounts: string[] = [];
   budgetReasons: string[] = [];
@@ -35,6 +43,7 @@ export class GestionExpenseComponent {
     private compute: ComputationService,
     private time: TimeService
   ) {
+    this.currentUser = this.auth.currentUser;
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data[0];
       this.getCurrentExpense();
@@ -64,8 +73,8 @@ export class GestionExpenseComponent {
     }
   }
   getCurrentExpense() {
-    this.expenses = this.managementInfo?.expenses;
-    this.currentExpenses = Object.entries(this.managementInfo?.expenses!);
+    this.expenses = this.managementInfo?.expenses || {};
+    this.currentExpenses = Object.entries(this.expenses);
     this.currentExpenses = this.compute.sortArrayByDateDescendingOrder(
       this.currentExpenses
     );
@@ -100,5 +109,64 @@ export class GestionExpenseComponent {
 
   hasMoreExpenses(): boolean {
     return this.currentExpenses.length > 3;
+  }
+
+  openDeleteExpenseModal(entryKey: string, event: Event): void {
+    event.stopPropagation();
+    if (!this.auth.isAdmin) return;
+    if (this.deletingExpenseKey) return;
+
+    const entryValue = this.expenses?.[entryKey];
+    if (!entryValue) return;
+
+    const amount = Number(String(entryValue).split(':')[0]) || 0;
+    const reason = String(entryValue).split(':')[1] || 'Sans raison';
+    const formattedDate = this.time.convertTimeFormat(entryKey);
+    this.pendingDeleteExpense = {
+      key: entryKey,
+      amount,
+      reason,
+      dateLabel: formattedDate,
+    };
+    this.showDeleteExpenseModal = true;
+  }
+
+  closeDeleteExpenseModal(): void {
+    if (this.deletingExpenseKey) return;
+    this.showDeleteExpenseModal = false;
+    this.pendingDeleteExpense = null;
+  }
+
+  async confirmDeleteExpense(
+    choice: 'deleteOnly' | 'deleteAndDeduct'
+  ): Promise<void> {
+    const pending = this.pendingDeleteExpense;
+    if (!pending) return;
+    const shouldDeduct = choice === 'deleteAndDeduct';
+
+    try {
+      this.deletingExpenseKey = pending.key;
+      await this.data.deleteManagementExpenseEntry(pending.key, shouldDeduct);
+      const nextExpenses = { ...(this.managementInfo?.expenses || {}) };
+      delete nextExpenses[pending.key];
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        expenses: nextExpenses,
+        moneyInHands: shouldDeduct
+          ? (
+              Number(this.managementInfo?.moneyInHands || 0) -
+              Number(pending.amount)
+            ).toString()
+          : this.managementInfo?.moneyInHands,
+      };
+      this.getCurrentExpense();
+      this.closeDeleteExpenseModal();
+    } catch (err: any) {
+      alert(
+        `La suppression de la dépense a échoué: ${err?.message || 'Erreur inconnue'}`
+      );
+    } finally {
+      this.deletingExpenseKey = null;
+    }
   }
 }

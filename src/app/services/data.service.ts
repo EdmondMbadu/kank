@@ -1439,6 +1439,46 @@ export class DataService {
     return managementRef.set(data, { merge: true });
   }
 
+  async deleteManagementInvestmentEntry(
+    entryKey: string,
+    deductFromMoneyInHands: boolean
+  ): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef = this.afs.doc<Management>(
+      `management/${managementId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as Management;
+      const nextInvestments = { ...(current.investment || {}) } as {
+        [key: string]: string;
+      };
+      const rawAmount = nextInvestments[entryKey];
+      if (rawAmount === undefined) return;
+
+      delete nextInvestments[entryKey];
+
+      const payload: Partial<Management> = {
+        investment: nextInvestments,
+      };
+
+      if (deductFromMoneyInHands) {
+        const amountNum = Number(rawAmount) || 0;
+        const currentMoneyInHands = Number(current.moneyInHands || 0);
+        payload.moneyInHands = (currentMoneyInHands - amountNum).toString();
+      }
+
+      tx.update(managementRef, payload);
+    });
+  }
+
   updateManagementInfoForMoneyGiven(amount: string) {
     const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
       `management/${this.auth.managementInfo.id}`
@@ -1567,6 +1607,47 @@ export class DataService {
     };
 
     return userRef.set(data, { merge: true });
+  }
+
+  async deleteManagementExpenseEntry(
+    entryKey: string,
+    deductFromMoneyInHands: boolean
+  ): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef = this.afs.doc<Management>(
+      `management/${managementId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as Management;
+      const nextExpenses = { ...(current.expenses || {}) } as {
+        [key: string]: string;
+      };
+      const rawExpense = nextExpenses[entryKey];
+      if (rawExpense === undefined) return;
+
+      delete nextExpenses[entryKey];
+
+      const payload: Partial<Management> = {
+        expenses: nextExpenses,
+      };
+
+      if (deductFromMoneyInHands) {
+        const amountPart = String(rawExpense).split(':')[0];
+        const amountNum = Number(amountPart) || 0;
+        const currentMoneyInHands = Number(current.moneyInHands || 0);
+        payload.moneyInHands = (currentMoneyInHands - amountNum).toString();
+      }
+
+      tx.update(managementRef, payload);
+    });
   }
 
   /**
