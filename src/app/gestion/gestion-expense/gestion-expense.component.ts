@@ -92,6 +92,14 @@ export class GestionExpenseComponent {
     return `${this.monthNames[this.selectedMonth - 1]} ${this.selectedYear}`;
   }
 
+  toUsd(amountFC: number | string): number {
+    const fc = Number(amountFC) || 0;
+    const converted = this.compute.convertCongoleseFrancToUsDollars(
+      fc.toString()
+    );
+    return Number(converted) || 0;
+  }
+
   get visibleExpenseEntries(): ExpenseEntry[] {
     return this.showAllExpenses
       ? this.filteredExpenseEntries

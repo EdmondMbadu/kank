@@ -102,7 +102,10 @@
               <p class="truncate text-sm font-medium text-gray-900">{{ budgetReasons[i] }}</p>
               <p class="text-xs text-gray-500">{{ budgetDates[i] }}</p>
             </div>
-            <p class="text-sm font-semibold text-gray-900">FC {{ budgetAmounts[i] | number : '1.0-0' }}</p>
+            <div class="text-right">
+              <p class="text-sm font-semibold text-gray-900">FC {{ budgetAmounts[i] | number : '1.0-0' }}</p>
+              <p class="text-xs text-gray-500">$ {{ toUsd(budgetAmounts[i]) | number : '1.0-0' }}</p>
+            </div>
           </li>
         </ul>
 
@@ -177,6 +180,7 @@
         <div class="rounded-xl border border-green-200 bg-white px-4 py-3">
           <p class="text-xs font-semibold uppercase tracking-wide text-green-700">Total periode</p>
           <p class="mt-1 text-lg font-bold text-gray-900">FC {{ periodTotal | number : '1.0-0' }}</p>
+          <p class="text-xs text-gray-500">$ {{ toUsd(periodTotal) | number : '1.0-0' }}</p>
         </div>
 
         <div class="rounded-xl border border-green-200 bg-white px-4 py-3">
@@ -213,7 +217,10 @@
             <p class="text-xs text-gray-500">{{ entry.dateLabel }}</p>
           </div>
 
-          <p class="text-sm font-semibold text-gray-900">FC {{ entry.amount | number : '1.0-0' }}</p>
+          <div class="text-right">
+            <p class="text-sm font-semibold text-gray-900">FC {{ entry.amount | number : '1.0-0' }}</p>
+            <p class="text-xs text-gray-500">$ {{ toUsd(entry.amount) | number : '1.0-0' }}</p>
+          </div>
 
           <button
             *ngIf="auth.isAdmin"
@@ -270,6 +277,9 @@
     </p>
     <p class="mt-1 text-sm text-gray-600">
       Montant: <span class="font-semibold text-gray-900">FC {{ pendingDeleteExpense.amount | number : '1.0-0' }}</span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600">
+      USD: <span class="font-semibold text-gray-900">$ {{ toUsd(pendingDeleteExpense.amount) | number : '1.0-0' }}</span>
     </p>
     <p class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
       Choisissez si ce montant doit aussi être retiré de
