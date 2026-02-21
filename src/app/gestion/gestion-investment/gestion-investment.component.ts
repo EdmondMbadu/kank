@@ -6,6 +6,17 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
+type PeriodMode = 'month' | 'year';
+
+interface InvestmentEntry {
+  key: string;
+  amount: number;
+  dateLabel: string;
+  month: number;
+  year: number;
+  timestamp: number;
+}
+
 @Component({
   selector: 'app-gestion-investment',
   templateUrl: './gestion-investment.component.html',
@@ -13,12 +24,32 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class GestionInvestmentComponent {
   investmentAmount: string = '';
-  investment: any = [];
-  currentInvestment: [string, string][] = [];
-  investmentAmounts: string[] = [];
-  investmentDates: string[] = [];
+  investment: Record<string, string> = {};
+  allInvestmentEntries: InvestmentEntry[] = [];
+  filteredInvestmentEntries: InvestmentEntry[] = [];
   currentUser: any = {};
   managementInfo?: Management = {};
+
+  periodMode: PeriodMode = 'month';
+  selectedMonth = new Date().getMonth() + 1;
+  selectedYear = new Date().getFullYear();
+  availableYears: number[] = [];
+  periodTotal = 0;
+  readonly monthNames = [
+    'Janvier',
+    'Fevrier',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Aout',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Decembre',
+  ];
+
   showAllInvestments = false;
   deletingInvestmentKey: string | null = null;
   showDeleteInvestmentModal = false;
@@ -42,6 +73,27 @@ export class GestionInvestmentComponent {
       this.managementInfo = data[0];
       this.getCurrentInvestment();
     });
+  }
+
+  get periodLabel(): string {
+    if (this.periodMode === 'year') {
+      return `${this.selectedYear}`;
+    }
+    return `${this.monthNames[this.selectedMonth - 1]} ${this.selectedYear}`;
+  }
+
+  get visibleInvestmentEntries(): InvestmentEntry[] {
+    return this.showAllInvestments
+      ? this.filteredInvestmentEntries
+      : this.filteredInvestmentEntries.slice(0, 3);
+  }
+
+  toUsd(amountFC: number | string): number {
+    const fc = Number(amountFC) || 0;
+    const converted = this.compute.convertCongoleseFrancToUsDollars(
+      fc.toString()
+    );
+    return Number(converted) || 0;
   }
 
   async addToInvestment() {
@@ -74,17 +126,94 @@ export class GestionInvestmentComponent {
   getCurrentInvestment() {
     this.investment = this.managementInfo?.investment || {};
 
-    this.currentInvestment = this.compute.sortArrayByDateDescendingOrder(
+    const sortedEntries = this.compute.sortArrayByDateDescendingOrder(
       Object.entries(this.investment)
     );
-    this.investmentAmounts = this.currentInvestment.map((entry) => entry[1]);
-    this.investmentDates = this.currentInvestment.map((entry) =>
-      this.time.convertTimeFormat(entry[0])
+    this.allInvestmentEntries = sortedEntries.map(([key, rawAmount]) => {
+      const amount = Number(rawAmount) || 0;
+      const dateParts = this.parseDateKey(key);
+      return {
+        key,
+        amount,
+        dateLabel: this.time.convertTimeFormat(key),
+        month: dateParts.month,
+        year: dateParts.year,
+        timestamp: dateParts.timestamp,
+      };
+    });
+    this.buildAvailableYears();
+    this.applyPeriodFilter();
+  }
+
+  setPeriodMode(mode: PeriodMode): void {
+    if (this.periodMode === mode) return;
+    this.periodMode = mode;
+    this.showAllInvestments = false;
+    this.applyPeriodFilter();
+  }
+
+  onMonthChange(month: string): void {
+    this.selectedMonth = Number(month);
+    this.showAllInvestments = false;
+    this.applyPeriodFilter();
+  }
+
+  onYearChange(year: string): void {
+    this.selectedYear = Number(year);
+    this.showAllInvestments = false;
+    this.applyPeriodFilter();
+  }
+
+  private applyPeriodFilter(): void {
+    const base = this.allInvestmentEntries.filter((entry) => {
+      if (entry.year !== this.selectedYear) return false;
+      if (this.periodMode === 'month' && entry.month !== this.selectedMonth) {
+        return false;
+      }
+      return true;
+    });
+
+    this.filteredInvestmentEntries = [...base].sort(
+      (a, b) => b.timestamp - a.timestamp
+    );
+    this.periodTotal = this.filteredInvestmentEntries.reduce(
+      (sum, entry) => sum + entry.amount,
+      0
     );
   }
 
+  private buildAvailableYears(): void {
+    const years = new Set<number>([new Date().getFullYear(), this.selectedYear]);
+    this.allInvestmentEntries.forEach((entry) => years.add(entry.year));
+    this.availableYears = Array.from(years).sort((a, b) => b - a);
+    if (!years.has(this.selectedYear) && this.availableYears.length) {
+      this.selectedYear = this.availableYears[0];
+    }
+  }
+
+  private parseDateKey(key: string): {
+    month: number;
+    year: number;
+    timestamp: number;
+  } {
+    const parsed = this.time.parseFlexibleDateTime(key);
+    if (!Number.isNaN(parsed.getTime())) {
+      return {
+        month: parsed.getMonth() + 1,
+        year: parsed.getFullYear(),
+        timestamp: parsed.getTime(),
+      };
+    }
+    const fallback = new Date();
+    return {
+      month: fallback.getMonth() + 1,
+      year: fallback.getFullYear(),
+      timestamp: 0,
+    };
+  }
+
   hasMoreInvestments(): boolean {
-    return this.currentInvestment.length > 4;
+    return this.filteredInvestmentEntries.length > 3;
   }
 
   openDeleteInvestmentModal(entryKey: string, event: Event): void {
@@ -92,13 +221,13 @@ export class GestionInvestmentComponent {
     if (!this.auth.isAdmin) return;
     if (this.deletingInvestmentKey) return;
 
-    const amountRaw = this.investment?.[entryKey];
-    const amount = Number(amountRaw) || 0;
-    const formattedDate = this.time.convertTimeFormat(entryKey);
+    const entry = this.allInvestmentEntries.find((item) => item.key === entryKey);
+    if (!entry) return;
+
     this.pendingDeleteInvestment = {
       key: entryKey,
-      amount,
-      dateLabel: formattedDate,
+      amount: entry.amount,
+      dateLabel: entry.dateLabel,
     };
     this.showDeleteInvestmentModal = true;
   }
