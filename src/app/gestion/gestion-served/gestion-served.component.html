@@ -106,101 +106,129 @@
   <!-- Period summary -->
   <section class="mt-10">
     <div
-      class="rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 via-white to-emerald-50 p-5 shadow-sm"
+      class="rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 via-white to-emerald-50 shadow-sm"
     >
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <button
+        type="button"
+        (click)="showPeriodPanel = !showPeriodPanel"
+        class="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-green-50/70"
+      >
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-green-700">
             Vue Périodique
           </p>
-          <h2 class="mt-1 text-xl font-bold text-gray-900 dark:text-white">
-            Analyse des montants à servir
-          </h2>
-          <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
-            Vue mensuelle par défaut, avec bascule annuelle et total de la période.
+          <p class="mt-1 text-sm font-medium text-gray-700 dark:text-slate-200">
+            {{ showPeriodPanel ? "Masquer les détails" : "Afficher les détails" }}
           </p>
         </div>
+        <svg
+          [class.rotate-180]="showPeriodPanel"
+          class="h-5 w-5 text-green-700 transition-transform duration-200"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
 
-        <div class="inline-flex rounded-xl border border-green-200 bg-white p-1 dark:bg-slate-800 dark:border-slate-600">
-          <button
-            type="button"
-            (click)="setPeriodMode('month')"
-            [class.bg-green-700]="periodMode === 'month'"
-            [class.text-white]="periodMode === 'month'"
-            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
-          >
-            Mois
-          </button>
-          <button
-            type="button"
-            (click)="setPeriodMode('year')"
-            [class.bg-green-700]="periodMode === 'year'"
-            [class.text-white]="periodMode === 'year'"
-            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
-          >
-            Annee
-          </button>
-        </div>
-      </div>
+      <div *ngIf="showPeriodPanel" class="border-t border-green-200 p-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+              Analyse des montants à servir
+            </h2>
+            <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
+              Vue mensuelle par défaut, avec bascule annuelle et total de la période.
+            </p>
+          </div>
 
-      <div class="mt-5 grid gap-3 md:grid-cols-4">
-        <div *ngIf="periodMode === 'month'" class="md:col-span-2">
-          <label
-            for="servedMonthSelect"
-            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
-          >
-            Mois
-          </label>
-          <select
-            id="servedMonthSelect"
-            [ngModel]="selectedMonth"
-            (ngModelChange)="onMonthChange($event)"
-            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
-          >
-            <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
-              {{ month }}
-            </option>
-          </select>
-        </div>
-
-        <div class="md:col-span-2">
-          <label
-            for="servedYearSelect"
-            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
-          >
-            Annee
-          </label>
-          <select
-            id="servedYearSelect"
-            [ngModel]="selectedYear"
-            (ngModelChange)="onYearChange($event)"
-            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
-          >
-            <option *ngFor="let year of availableYears" [ngValue]="year">
-              {{ year }}
-            </option>
-          </select>
+          <div class="inline-flex rounded-xl border border-green-200 bg-white p-1 dark:bg-slate-800 dark:border-slate-600">
+            <button
+              type="button"
+              (click)="setPeriodMode('month')"
+              [class.bg-green-700]="periodMode === 'month'"
+              [class.text-white]="periodMode === 'month'"
+              class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              Mois
+            </button>
+            <button
+              type="button"
+              (click)="setPeriodMode('year')"
+              [class.bg-green-700]="periodMode === 'year'"
+              [class.text-white]="periodMode === 'year'"
+              class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              Annee
+            </button>
+          </div>
         </div>
 
-        <div class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:bg-slate-800 dark:border-slate-600">
-          <p class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300">
-            Total periode
-          </p>
-          <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-            FC {{ periodTotal | number : "1.0-0" }}
-          </p>
-          <p class="text-xs text-gray-500 dark:text-slate-300">
-            $ {{ toUsd(periodTotal) | number : "1.0-0" }}
-          </p>
-        </div>
+        <div class="mt-5 grid gap-3 md:grid-cols-4">
+          <div *ngIf="periodMode === 'month'" class="md:col-span-2">
+            <label
+              for="servedMonthSelect"
+              class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
+            >
+              Mois
+            </label>
+            <select
+              id="servedMonthSelect"
+              [ngModel]="selectedMonth"
+              (ngModelChange)="onMonthChange($event)"
+              class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+            >
+              <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+                {{ month }}
+              </option>
+            </select>
+          </div>
 
-        <div class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:bg-slate-800 dark:border-slate-600">
-          <p class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300">
-            Transactions
-          </p>
-          <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-            {{ filteredRecords.length }}
-          </p>
+          <div class="md:col-span-2">
+            <label
+              for="servedYearSelect"
+              class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
+            >
+              Annee
+            </label>
+            <select
+              id="servedYearSelect"
+              [ngModel]="selectedYear"
+              (ngModelChange)="onYearChange($event)"
+              class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:bg-slate-700 dark:text-white dark:border-slate-600"
+            >
+              <option *ngFor="let year of availableYears" [ngValue]="year">
+                {{ year }}
+              </option>
+            </select>
+          </div>
+
+          <div class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:bg-slate-800 dark:border-slate-600">
+            <p class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300">
+              Total periode
+            </p>
+            <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+              FC {{ periodTotal | number : "1.0-0" }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-slate-300">
+              $ {{ toUsd(periodTotal) | number : "1.0-0" }}
+            </p>
+          </div>
+
+          <div class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:bg-slate-800 dark:border-slate-600">
+            <p class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300">
+              Transactions
+            </p>
+            <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+              {{ filteredRecords.length }}
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -31,6 +31,7 @@ export class GestionServedComponent {
   records: ServedRecord[] = [];
   filteredRecords: ServedRecord[] = [];
   showAllRecords = false;
+  showPeriodPanel = false;
 
   periodMode: PeriodMode = 'month';
   selectedMonth = new Date().getMonth() + 1;
