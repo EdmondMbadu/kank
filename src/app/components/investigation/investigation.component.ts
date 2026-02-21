@@ -2412,7 +2412,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.taskMonthWeeks = weeks;
 
     const ids = new Set<string>();
-    for (let d = first; d <= last; d = this.addDays(d, 7)) {
+    // Collect ISO-week ids across every day in the month.
+    // Stepping by 7 from day 1 can miss the last partial week (e.g. Feb 23-28).
+    for (let d = first; d <= last; d = this.addDays(d, 1)) {
       ids.add(this.isoWeekId(d));
     }
 
@@ -2552,6 +2554,17 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.taskPicker.search = '';
   }
 
+  hasPendingTaskSelection(): boolean {
+    return (
+      this.taskPicker.selected.size > 0 &&
+      (this.taskPicker.newLoc || '').trim().length > 0
+    );
+  }
+
+  get canApplyTaskWeek(): boolean {
+    return this.taskPicker.entries.length > 0 || this.hasPendingTaskSelection();
+  }
+
   removeUidFromLoc(loc: string, uid: string): void {
     const e = this.taskPicker.entries.find((x) => x.loc === loc);
     if (!e || !this.taskPicker.day) return;
@@ -2582,48 +2595,67 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   async saveTF(): Promise<void> {
     if (!this.taskPicker.day) return;
 
+    // If user selected people + site but didn't click "Ajouter au site",
+    // include that pending selection in the save to avoid silent no-op.
+    if (this.hasPendingTaskSelection()) {
+      this.addSelectedToLocation(this.taskPicker.newLoc);
+    }
+
     const iso = this.taskPicker.day.iso;
     const weekId = this.isoWeekId(this.taskPicker.day.date);
 
     const map = this.buildTaskForceMap(this.taskPicker.entries);
 
-    await this.performance.setTaskForceDay(
-      weekId,
-      iso,
-      Object.keys(map).length ? map : null
-    );
-
-    this.closeTFPicker();
-    this.loadTaskForceMonth();
+    try {
+      await this.performance.setTaskForceDay(
+        weekId,
+        iso,
+        Object.keys(map).length ? map : null
+      );
+      this.closeTFPicker();
+      this.loadTaskForceMonth();
+    } catch (err) {
+      console.error('Failed to save task-force assignment:', err);
+      alert("Impossible d'enregistrer l'affectation.");
+    }
   }
 
   async applyTFToWeek(): Promise<void> {
-    if (!this.taskPicker.day || !this.taskPicker.entries.length) return;
+    if (!this.taskPicker.day) return;
+    if (this.hasPendingTaskSelection()) {
+      this.addSelectedToLocation(this.taskPicker.newLoc);
+    }
+    if (!this.taskPicker.entries.length) return;
     if (!this.auth.isAdmin) return;
     const ok = confirm(
       'Appliquer ces affectations a toute la semaine (Lun-Sam) ?'
     );
     if (!ok) return;
 
-    const start = this.startOfIsoWeek(this.taskPicker.day.date);
-    for (let i = 0; i < 6; i++) {
-      const date = this.addDays(start, i);
-      const iso = this.ymd(date);
-      const weekId = this.isoWeekId(date);
-      const baseEntries = this.tfCellByIso.get(iso)?.entries ?? [];
-      const map = this.mergeTaskForceEntries(
-        baseEntries,
-        this.taskPicker.entries
-      );
-      await this.performance.setTaskForceDay(
-        weekId,
-        iso,
-        Object.keys(map).length ? map : null
-      );
-    }
+    try {
+      const start = this.startOfIsoWeek(this.taskPicker.day.date);
+      for (let i = 0; i < 6; i++) {
+        const date = this.addDays(start, i);
+        const iso = this.ymd(date);
+        const weekId = this.isoWeekId(date);
+        const baseEntries = this.tfCellByIso.get(iso)?.entries ?? [];
+        const map = this.mergeTaskForceEntries(
+          baseEntries,
+          this.taskPicker.entries
+        );
+        await this.performance.setTaskForceDay(
+          weekId,
+          iso,
+          Object.keys(map).length ? map : null
+        );
+      }
 
-    this.closeTFPicker();
-    this.loadTaskForceMonth();
+      this.closeTFPicker();
+      this.loadTaskForceMonth();
+    } catch (err) {
+      console.error('Failed to apply task-force week assignment:', err);
+      alert("Impossible d'appliquer l'affectation sur la semaine.");
+    }
   }
 
   async removeTFForWeek(): Promise<void> {
@@ -2634,25 +2666,30 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     );
     if (!ok) return;
 
-    const start = this.startOfIsoWeek(this.taskPicker.day.date);
-    for (let i = 0; i < 6; i++) {
-      const date = this.addDays(start, i);
-      const iso = this.ymd(date);
-      const weekId = this.isoWeekId(date);
-      const baseEntries = this.tfCellByIso.get(iso)?.entries ?? [];
-      const map = this.removeTaskForceEntries(
-        baseEntries,
-        this.taskPicker.entries
-      );
-      await this.performance.setTaskForceDay(
-        weekId,
-        iso,
-        map && Object.keys(map).length ? map : null
-      );
-    }
+    try {
+      const start = this.startOfIsoWeek(this.taskPicker.day.date);
+      for (let i = 0; i < 6; i++) {
+        const date = this.addDays(start, i);
+        const iso = this.ymd(date);
+        const weekId = this.isoWeekId(date);
+        const baseEntries = this.tfCellByIso.get(iso)?.entries ?? [];
+        const map = this.removeTaskForceEntries(
+          baseEntries,
+          this.taskPicker.entries
+        );
+        await this.performance.setTaskForceDay(
+          weekId,
+          iso,
+          map && Object.keys(map).length ? map : null
+        );
+      }
 
-    this.closeTFPicker();
-    this.loadTaskForceMonth();
+      this.closeTFPicker();
+      this.loadTaskForceMonth();
+    } catch (err) {
+      console.error('Failed to remove task-force week assignment:', err);
+      alert("Impossible de retirer les affectations de la semaine.");
+    }
   }
 
   private getISOWeek(d: Date): number {
