@@ -331,6 +331,7 @@ function classifyMobileMoneyStatus({
   const normalizedProviderStatus = normalizeStatusToken(providerStatus || "");
   const normalizedCallbackCode = normalizeStatusToken(callbackCode || "");
   const normalizedCallbackStatus = normalizeStatusToken(callbackStatus || "");
+  const hasCallbackStatusToken = normalizedCallbackStatus.length > 0;
   const textValues = [message || "", reason || "", callbackMessage || ""];
 
   const hasFailureKeyword = anyKeywordMatch(textValues, FAILURE_KEYWORDS);
@@ -352,7 +353,7 @@ function classifyMobileMoneyStatus({
   const hasPendingKeyword = anyKeywordMatch(textValues, PENDING_KEYWORDS);
   const hasPendingSignal =
     PENDING_STATUS_TOKENS.has(normalizedProviderStatus) ||
-    PENDING_STATUS_TOKENS.has(normalizedCallbackStatus) ||
+    (hasCallbackStatusToken && PENDING_STATUS_TOKENS.has(normalizedCallbackStatus)) ||
     hasPendingKeyword ||
     (normalizedCode === "1" && !transactionExists && !hasFailureSignal);
 
