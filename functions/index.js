@@ -242,7 +242,6 @@ function normalizeStatusToken(raw) {
 
 const SUCCESS_STATUS_TOKENS = new Set([
   "0",
-  "2",
   "SUCCESS",
   "SUCCES",
   "APPROVED",
@@ -300,6 +299,7 @@ function anyKeywordMatch(values, keywords) {
 function classifyMobileMoneyStatus({
   code,
   providerStatus,
+  providerReference,
   message,
   reason,
   transactionExists,
@@ -314,6 +314,7 @@ function classifyMobileMoneyStatus({
   const now = toNumber(nowMs || Date.now());
   const normalizedCode = normalizeStatusToken(code || "");
   const normalizedProviderStatus = normalizeStatusToken(providerStatus || "");
+  const providerRefExists = Boolean(String(providerReference || "").trim());
   const normalizedCallbackCode = normalizeStatusToken(callbackCode || "");
   const normalizedCallbackStatus = normalizeStatusToken(callbackStatus || "");
   const hasCallbackStatusToken = normalizedCallbackStatus.length > 0;
@@ -336,15 +337,33 @@ function classifyMobileMoneyStatus({
     !hasFailureSignal;
 
   const hasPendingKeyword = anyKeywordMatch(textValues, PENDING_KEYWORDS);
+  const providerStatusPendingSignal =
+    PENDING_STATUS_TOKENS.has(normalizedProviderStatus) &&
+    !(
+      normalizedProviderStatus === "" &&
+      normalizedCode === "0" &&
+      Boolean(transactionExists) &&
+      providerRefExists
+    );
   const hasPendingSignal =
-    PENDING_STATUS_TOKENS.has(normalizedProviderStatus) ||
+    providerStatusPendingSignal ||
     (hasCallbackStatusToken && PENDING_STATUS_TOKENS.has(normalizedCallbackStatus)) ||
     hasPendingKeyword ||
     (normalizedCode === "1" && !transactionExists && !hasFailureSignal);
 
+  const inferredProviderSuccessSignal =
+    normalizedCode === "0" &&
+    Boolean(transactionExists) &&
+    providerRefExists &&
+    !hasFailureSignal &&
+    !hasCaptureKeyword &&
+    !hasPendingKeyword &&
+    !FAILURE_STATUS_TOKENS.has(normalizedProviderStatus) &&
+    !(PENDING_STATUS_TOKENS.has(normalizedProviderStatus) && normalizedProviderStatus !== "");
   const explicitSuccessSignal =
     (normalizedCode === "0" && SUCCESS_STATUS_TOKENS.has(normalizedProviderStatus)) ||
-    (normalizedCallbackCode === "0" && SUCCESS_STATUS_TOKENS.has(normalizedCallbackStatus));
+    (normalizedCallbackCode === "0" && SUCCESS_STATUS_TOKENS.has(normalizedCallbackStatus)) ||
+    inferredProviderSuccessSignal;
 
   let status = "PENDING";
   let capturedPendingSinceMs = null;
@@ -365,10 +384,10 @@ function classifyMobileMoneyStatus({
     } else {
       status = "CAPTURED_PENDING";
     }
-  } else if (hasPendingSignal) {
-    status = "PENDING";
   } else if (explicitSuccessSignal) {
     status = "SUCCESS";
+  } else if (hasPendingSignal) {
+    status = "PENDING";
   } else {
     status = "PENDING";
   }
@@ -451,6 +470,7 @@ async function runFlexpayCheck(orderNumber, reference) {
         const classification = classifyMobileMoneyStatus({
           code,
           providerStatus,
+          providerReference,
           message,
           reason: providerReason,
           transactionExists: Boolean(tx),
@@ -463,18 +483,20 @@ async function runFlexpayCheck(orderNumber, reference) {
         // override an explicit success transaction.
         const semanticRank =
           classification.status === "FAILED" ?
-          3 :
+          4 :
           classification.status === "CAPTURED_PENDING" ?
+          3 :
+          classification.status === "SUCCESS" ?
           2 :
           1;
         const confidenceScore =
-          (tx ? 30 : 0) +
+          (tx ? 25 : 0) +
           (code === "0" ? 20 : 0) +
-          (classification.explicitSuccessSignal ? 12 : 0) +
-          (providerRefExists ? 8 : 0) +
-          (classification.hasCaptureKeyword ? 10 : 0) +
-          (classification.hasPendingSignal && tx ? 20 : 0) +
-          (classification.status === "PENDING" && !tx ? -20 : 0) +
+          (classification.explicitSuccessSignal ? 35 : 0) +
+          (providerRefExists ? 15 : 0) +
+          (classification.hasCaptureKeyword ? 12 : 0) +
+          (classification.hasPendingSignal ? -10 : 0) +
+          (classification.status === "PENDING" && !tx ? -30 : 0) +
           (message ? 1 : 0);
         const qualityScore = semanticRank * 100 + confidenceScore;
 
@@ -907,6 +929,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     const classification = classifyMobileMoneyStatus({
       code,
       providerStatus,
+      providerReference,
       message: checkMessage,
       reason: providerReason,
       transactionExists: Boolean(transaction),
@@ -1245,7 +1268,14 @@ exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) 
     callbackObservedStatus = "FAILED";
   } else if (FAILURE_STATUS_TOKENS.has(normalizedCallbackStatus)) {
     callbackObservedStatus = "FAILED";
-  } else if (callbackCode === "0" || SUCCESS_STATUS_TOKENS.has(normalizedCallbackStatus)) {
+  } else if (
+    SUCCESS_STATUS_TOKENS.has(normalizedCallbackStatus) ||
+    (
+      callbackCode === "0" &&
+      normalizedCallbackStatus.length > 0 &&
+      !PENDING_STATUS_TOKENS.has(normalizedCallbackStatus)
+    )
+  ) {
     callbackObservedStatus = "SUCCESS";
   }
 

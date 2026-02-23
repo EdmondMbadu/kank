@@ -313,6 +313,15 @@ export class PaymentComponent {
       if (status === 'FAILED') {
         return { status: 'FAILED', failureReason, message };
       }
+      const elapsedMs = Date.now() - startedAtMs;
+      if (elapsedMs >= this.mobileCheckTimeoutMs) {
+        return {
+          status: 'TIMEOUT',
+          failureReason: '',
+          message:
+            "Délai de vérification atteint. Le backend continue la réconciliation en arrière-plan.",
+        };
+      }
       if (status === 'CAPTURED_PENDING') {
         this.mobileMoneyStatus =
           `Paiement capturé, transfert vers le compte marchand en cours... (tentative ${attempt})` +
@@ -322,16 +331,6 @@ export class PaymentComponent {
 
       if (message) {
         this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (tentative ${attempt}) - ${message}`;
-      }
-
-      const elapsedMs = Date.now() - startedAtMs;
-      if (elapsedMs >= this.mobileCheckTimeoutMs) {
-        return {
-          status: 'TIMEOUT',
-          failureReason: '',
-          message:
-            "Délai de vérification atteint. Le backend continue la réconciliation en arrière-plan.",
-        };
       }
     }
   }
