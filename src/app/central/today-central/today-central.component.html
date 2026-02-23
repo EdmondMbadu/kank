@@ -304,152 +304,6 @@
     <div
       class="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
     >
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-          Mobile Money du jour
-        </h2>
-        <div
-          class="hidden items-center gap-2 text-xs text-slate-600 dark:text-slate-300 sm:flex"
-        >
-          <span
-            class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
-          >
-            {{ toNum(dailyMobileMoneyPayment) | number : "1.0-0" }} FC
-          </span>
-          <span
-            class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-          >
-            {{ toNum(dailyMobileMoneyPaymentDollars) | number : "1.0-0" }} $
-          </span>
-        </div>
-      </div>
-
-      <div
-        *ngIf="sortedMobileMoneyToday.length; else emptyMobileMoneyRows"
-        class="rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-700"
-      >
-        <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
-          <table
-            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
-          >
-            <thead
-              class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-            >
-              <tr>
-                <th class="px-3 py-2 text-left">Rang</th>
-                <th class="px-2 py-2 text-left">Équipe</th>
-                <th class="px-3 py-2 text-right">Mobile Money</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-              <tr
-                *ngFor="let s of sortedMobileMoneyToday; let i = index"
-                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
-              >
-                <td class="px-3 py-2">
-                  <span
-                    class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
-                    [ngClass]="{
-                      'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
-                        i === 0
-                    }"
-                    [title]="'Rang ' + (i + 1)"
-                  >
-                    {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
-                  </span>
-                </td>
-                <td class="px-2 py-2">
-                  <div class="font-medium text-slate-900 dark:text-slate-100">
-                    {{ s.firstName }}
-                  </div>
-                  <div
-                    class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
-                    aria-hidden="true"
-                  >
-                    <div
-                      class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
-                      [style.width.%]="
-                        percentOf(
-                          toNum(
-                            val(
-                              s,
-                              'totalMobileMoneyInDollars',
-                              'totalReserveInDollars',
-                              'amountUsd'
-                            )
-                          ),
-                          mobileMoneyTodayUSDMax
-                        )
-                      "
-                    ></div>
-                  </div>
-                </td>
-                <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <div class="flex flex-col items-end">
-                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      ${{
-                        toNum(
-                          val(
-                            s,
-                            'totalMobileMoneyInDollars',
-                            'totalReserveInDollars',
-                            'amountUsd',
-                            'valueUsd'
-                          )
-                        ) | number : "1.0-0"
-                      }}
-                    </span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">
-                      {{
-                        toNum(
-                          val(
-                            s,
-                            'totalMobileMoney',
-                            'totalReserve',
-                            'amount',
-                            'value'
-                          )
-                        ) | number : "1.0-0"
-                      }} FC
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-            <tfoot
-              class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
-            >
-              <tr>
-                <td class="px-3 py-2 font-semibold">Total</td>
-                <td class="px-2 py-2"></td>
-                <td class="px-3 py-2 text-right">
-                  <div class="flex flex-col items-end">
-                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      ${{ toNum(dailyMobileMoneyPaymentDollars) | number : "1.0-0" }}
-                    </span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">
-                      {{ toNum(dailyMobileMoneyPayment) | number : "1.0-0" }} FC
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      <ng-template #emptyMobileMoneyRows>
-        <div
-          class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
-        >
-          Aucun paiement Mobile Money enregistré pour cette date.
-        </div>
-      </ng-template>
-    </div>
-
-    <div
-      class="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
-    >
       <div
         class="mb-3 flex flex-wrap items-center justify-between gap-3"
       >
@@ -750,6 +604,152 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <div
+      class="rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          Mobile Money du jour
+        </h2>
+        <div
+          class="hidden items-center gap-2 text-xs text-slate-600 dark:text-slate-300 sm:flex"
+        >
+          <span
+            class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+          >
+            {{ toNum(dailyMobileMoneyPayment) | number : "1.0-0" }} FC
+          </span>
+          <span
+            class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            {{ toNum(dailyMobileMoneyPaymentDollars) | number : "1.0-0" }} $
+          </span>
+        </div>
+      </div>
+
+      <div
+        *ngIf="sortedMobileMoneyToday.length; else emptyMobileMoneyRows"
+        class="rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-700"
+      >
+        <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
+          <table
+            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
+          >
+            <thead
+              class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            >
+              <tr>
+                <th class="px-3 py-2 text-left">Rang</th>
+                <th class="px-2 py-2 text-left">Équipe</th>
+                <th class="px-3 py-2 text-right">Mobile Money</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let s of sortedMobileMoneyToday; let i = index"
+                class="odd:bg-white/90 even:bg-white/70 hover:bg-emerald-50/50 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+              >
+                <td class="px-3 py-2">
+                  <span
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
+                        i === 0
+                    }"
+                    [title]="'Rang ' + (i + 1)"
+                  >
+                    {{ i === 0 ? "🥇" : i === 1 ? "2" : i === 2 ? "3" : i + 1 }}
+                  </span>
+                </td>
+                <td class="px-2 py-2">
+                  <div class="font-medium text-slate-900 dark:text-slate-100">
+                    {{ s.firstName }}
+                  </div>
+                  <div
+                    class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
+                    aria-hidden="true"
+                  >
+                    <div
+                      class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                      [style.width.%]="
+                        percentOf(
+                          toNum(
+                            val(
+                              s,
+                              'totalMobileMoneyInDollars',
+                              'totalReserveInDollars',
+                              'amountUsd'
+                            )
+                          ),
+                          mobileMoneyTodayUSDMax
+                        )
+                      "
+                    ></div>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{
+                        toNum(
+                          val(
+                            s,
+                            'totalMobileMoneyInDollars',
+                            'totalReserveInDollars',
+                            'amountUsd',
+                            'valueUsd'
+                          )
+                        ) | number : "1.0-0"
+                      }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{
+                        toNum(
+                          val(
+                            s,
+                            'totalMobileMoney',
+                            'totalReserve',
+                            'amount',
+                            'value'
+                          )
+                        ) | number : "1.0-0"
+                      }} FC
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot
+              class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
+            >
+              <tr>
+                <td class="px-3 py-2 font-semibold">Total</td>
+                <td class="px-2 py-2"></td>
+                <td class="px-3 py-2 text-right">
+                  <div class="flex flex-col items-end">
+                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ toNum(dailyMobileMoneyPaymentDollars) | number : "1.0-0" }}
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ toNum(dailyMobileMoneyPayment) | number : "1.0-0" }} FC
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <ng-template #emptyMobileMoneyRows>
+        <div
+          class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
+        >
+          Aucun paiement Mobile Money enregistré pour cette date.
+        </div>
+      </ng-template>
     </div>
   </div>
 </section>
