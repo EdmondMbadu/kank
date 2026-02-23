@@ -32,7 +32,9 @@ export class TodayCentralComponent {
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   dailyLending: string = '0';
   dailyPayment: string = '0';
+  dailyMobileMoneyPayment: string = '0';
   dailyPaymentDollars: string = '0';
+  dailyMobileMoneyPaymentDollars: string = '0';
   dailyReserve: string = '0';
   dailyReserveDollars: string = '0';
   dailyInvestement: string = '0';
@@ -54,15 +56,32 @@ export class TodayCentralComponent {
     totalReserve: number;
     totalReserveInDollars: string;
   }[] = [];
+  sortedMobileMoneyToday: {
+    firstName: string;
+    totalReserve: number;
+    totalReserveInDollars: string;
+  }[] = [];
   sortedRequestedTomorrow: {
     firstName: string;
     totalReserve: number;
     totalReserveInDollars: string;
   }[] = [];
   totalPerfomance: number = 0;
-  linkPaths: string[] = ['/daily-payments', '/daily-lendings', '/add-expense'];
+  linkPaths: Array<string | null> = [
+    '/daily-payments',
+    '/daily-payments',
+    '/daily-lendings',
+    null,
+    null,
+    null,
+    null,
+    '/add-expense',
+    null,
+    null,
+  ];
   summary: string[] = [
     'Paiement Du Jour',
+    'Paiement Mobile Money Du Jour',
     'Emprunt Du Jour',
     'Reserve Du Jour',
     'Entrée Du Jour',
@@ -75,6 +94,7 @@ export class TodayCentralComponent {
   valuesConvertedToDollars: string[] = [];
 
   imagePaths: string[] = [
+    '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/daily-payment.png',
     '../../../assets/img/reserve.svg',
@@ -121,6 +141,13 @@ export class TodayCentralComponent {
       .findTodayTotalResultsGivenField(
         this.allUsers,
         'dailyReimbursement',
+        this.requestDateCorrectFormat
+      )
+      .toString();
+    this.dailyMobileMoneyPayment = this.compute
+      .findTodayTotalResultsGivenField(
+        this.allUsers,
+        'dailyMobileMoneyPayment',
         this.requestDateCorrectFormat
       )
       .toString();
@@ -195,6 +222,10 @@ export class TodayCentralComponent {
       this.dailyLending === undefined ? '0' : this.dailyLending;
     this.dailyPayment =
       this.dailyPayment === undefined ? '0' : this.dailyPayment;
+    this.dailyMobileMoneyPayment =
+      this.dailyMobileMoneyPayment === undefined
+        ? '0'
+        : this.dailyMobileMoneyPayment;
     this.dailyReserve =
       this.dailyReserve === undefined ? '0' : this.dailyReserve;
     this.dailyInvestement =
@@ -213,6 +244,9 @@ export class TodayCentralComponent {
     this.dailyPaymentDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyPayment)
       .toString();
+    this.dailyMobileMoneyPaymentDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.dailyMobileMoneyPayment)
+      .toString();
     this.dailyRequestDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyRequest)
       .toString();
@@ -229,6 +263,12 @@ export class TodayCentralComponent {
         this.allUsers,
         'dailyReimbursement'
       );
+    this.sortedMobileMoneyToday =
+      this.compute.findTodayTotalResultsGivenFieldSortedDescending(
+        this.requestDateCorrectFormat,
+        this.allUsers,
+        'dailyMobileMoneyPayment'
+      );
     this.sortedRequestedTomorrow =
       this.compute.findTodayTotalResultsGivenFieldSortedDescending(
         tomorrow,
@@ -237,6 +277,7 @@ export class TodayCentralComponent {
       );
     this.summaryContent = [
       ` ${this.dailyPayment}`,
+      ` ${this.dailyMobileMoneyPayment}`,
       ` ${this.dailyLending}`,
       `${this.dailyReserve}`,
       `${this.dailyInvestement}`,
@@ -249,6 +290,9 @@ export class TodayCentralComponent {
 
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyPayment)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.dailyMobileMoneyPayment
+      )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLending)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestement)}`,
@@ -633,6 +677,20 @@ export class TodayCentralComponent {
         this.val(
           s,
           'totalPaymentInDollars',
+          'totalReserveInDollars',
+          'amountUsd'
+        )
+      )
+    );
+    return Math.max(1, ...vals, 1);
+  }
+  get mobileMoneyTodayUSDMax(): number {
+    const list = this.sortedMobileMoneyToday ?? [];
+    const vals = list.map((s) =>
+      this.toNum(
+        this.val(
+          s,
+          'totalMobileMoneyInDollars',
           'totalReserveInDollars',
           'amountUsd'
         )

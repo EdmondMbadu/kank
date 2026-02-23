@@ -56,6 +56,7 @@ export class TrackingMonthCentralComponent {
   ];
   summary: string[] = [
     'Paiment Du Mois ',
+    'Paiement Mobile Money Du Mois',
     'Emprunts Du Mois',
     'Benefice Du Mois ',
     'Depense Du Mois',
@@ -95,6 +96,7 @@ export class TrackingMonthCentralComponent {
   private paymentGraphSeriesUsd: number[] = [];
 
   givenMonthTotalPaymentAmount: string = '';
+  givenMonthTotalMobileMoneyAmount: string = '';
   givenMonthTotalPaymentAmountDollars: string = '';
   givenMonthTotalSavingAmount: string = '';
   givenMonthTotalSavingReturnsAmount: string = '';
@@ -117,6 +119,7 @@ export class TrackingMonthCentralComponent {
   previousMonthTotalReserve: string = '';
   imagePaths: string[] = [
     '../../../assets/img/audit.png',
+    '../../../assets/img/daily-reimbursement.png',
     '../../../assets/img/lending-date.png',
     '../../../assets/img/benefit.svg',
     '../../../assets/img/expense.svg',
@@ -212,6 +215,13 @@ export class TrackingMonthCentralComponent {
         this.givenMonth,
         this.givenYear
       );
+    this.givenMonthTotalMobileMoneyAmount =
+      this.compute.findTotalGivenMonthForAllUsers(
+        this.allUsers,
+        'dailyMobileMoneyPayment',
+        this.givenMonth,
+        this.givenYear
+      );
     this.givenMonthBudget = this.allUsers
       .reduce((acc, user) => Number(acc) + Number(user.monthBudget), 0)
       .toString();
@@ -287,6 +297,7 @@ export class TrackingMonthCentralComponent {
 
     this.summaryContent = [
       `${this.givenMonthTotalPaymentAmount}`,
+      `${this.givenMonthTotalMobileMoneyAmount}`,
       `${this.givenMonthTotalLendingAmount}`,
       `${this.givenMonthTotalBenefitAmount}`,
       `${this.givenMonthTotalExpenseAmount}`,
@@ -301,6 +312,9 @@ export class TrackingMonthCentralComponent {
     this.valuesConvertedToDollars = [
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalPaymentAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalMobileMoneyAmount
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalLendingAmount
