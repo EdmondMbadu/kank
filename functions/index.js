@@ -64,6 +64,7 @@ const FLEXPAY_CHECK_URL_BASE_FALLBACK =
   flexpayConfig.check_url_base_fallback ||
   process.env.FLEXPAY_CHECK_URL_BASE_FALLBACK ||
   "https://backend.flexpay.cd/api/rest/v1/check";
+const CAPTURE_GRACE_WINDOW_MS = 180000;
 /**
  * Formats a phone number to E.164 standard based on its origin.
  * - If the number starts with '0', it's treated as a DRC number.
@@ -239,6 +240,169 @@ function normalizeStatusToken(raw) {
       .toUpperCase();
 }
 
+const SUCCESS_STATUS_TOKENS = new Set([
+  "0",
+  "2",
+  "SUCCESS",
+  "SUCCES",
+  "APPROVED",
+  "APPROUVE",
+]);
+const PENDING_STATUS_TOKENS = new Set([
+  "",
+  "PENDING",
+  "EN ATTENTE",
+  "EN_ATTENTE",
+  "PROCESSING",
+  "IN_PROGRESS",
+  "IN PROGRESS",
+]);
+const FAILURE_STATUS_TOKENS = new Set([
+  "1",
+  "FAILED",
+  "FAIL",
+  "ECHEC",
+  "ECHOUE",
+  "DECLINED",
+  "DECLINE",
+  "CANCELED",
+  "CANCELLED",
+  "REFUSED",
+  "REJECTED",
+]);
+const FAILURE_KEYWORDS = [
+  "INSUFF",
+  "FAILED",
+  "ECHEC",
+  "ECHOUE",
+  "REFUS",
+  "DECLIN",
+  "CANCEL",
+  "REJECT",
+];
+const PENDING_KEYWORDS = [
+  "EN ATTENTE",
+  "PENDING",
+  "PROCESSING",
+];
+const CAPTURE_TRANSFER_KEYWORDS = [
+  "CAPTURE",
+  "CAPTUER",
+  "ENVOI EN COURS",
+  "DANS VOTRE COMPTE",
+];
+
+function anyKeywordMatch(values, keywords) {
+  const haystacks = (values || []).map((v) => normalizeStatusToken(v));
+  return keywords.some((keyword) => haystacks.some((h) => h.includes(keyword)));
+}
+
+function statusSelectionPriority(status) {
+  switch (status) {
+    case "FAILED":
+      return 4;
+    case "CAPTURED_PENDING":
+      return 3;
+    case "PENDING":
+      return 2;
+    case "SUCCESS":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+function classifyMobileMoneyStatus({
+  code,
+  providerStatus,
+  message,
+  reason,
+  transactionExists,
+  callbackCode,
+  callbackStatus,
+  callbackMessage,
+  previousStatus,
+  previousCapturedPendingSinceMs,
+  nowMs,
+  applyGraceWindow,
+}) {
+  const now = toNumber(nowMs || Date.now());
+  const normalizedCode = normalizeStatusToken(code || "");
+  const normalizedProviderStatus = normalizeStatusToken(providerStatus || "");
+  const normalizedCallbackCode = normalizeStatusToken(callbackCode || "");
+  const normalizedCallbackStatus = normalizeStatusToken(callbackStatus || "");
+  const textValues = [message || "", reason || "", callbackMessage || ""];
+
+  const hasFailureKeyword = anyKeywordMatch(textValues, FAILURE_KEYWORDS);
+  const callbackFailed =
+    (normalizedCallbackCode && normalizedCallbackCode !== "0") ||
+    FAILURE_STATUS_TOKENS.has(normalizedCallbackStatus);
+  const hasFailureSignal =
+    FAILURE_STATUS_TOKENS.has(normalizedProviderStatus) ||
+    callbackFailed ||
+    hasFailureKeyword;
+
+  const hasCaptureKeyword = anyKeywordMatch(textValues, CAPTURE_TRANSFER_KEYWORDS);
+  const captureEligible =
+    normalizedCode === "0" &&
+    Boolean(transactionExists) &&
+    hasCaptureKeyword &&
+    !hasFailureSignal;
+
+  const hasPendingKeyword = anyKeywordMatch(textValues, PENDING_KEYWORDS);
+  const hasPendingSignal =
+    PENDING_STATUS_TOKENS.has(normalizedProviderStatus) ||
+    PENDING_STATUS_TOKENS.has(normalizedCallbackStatus) ||
+    hasPendingKeyword ||
+    (normalizedCode === "1" && !transactionExists && !hasFailureSignal);
+
+  const explicitSuccessSignal =
+    (normalizedCode === "0" && SUCCESS_STATUS_TOKENS.has(normalizedProviderStatus)) ||
+    (normalizedCallbackCode === "0" && SUCCESS_STATUS_TOKENS.has(normalizedCallbackStatus));
+
+  let status = "PENDING";
+  let capturedPendingSinceMs = null;
+  let captureStableForMs = 0;
+
+  if (hasFailureSignal) {
+    status = "FAILED";
+  } else if (captureEligible) {
+    const previousCapturedMs = toNumber(previousCapturedPendingSinceMs || 0);
+    const startedAtMs =
+      normalizeStatusToken(previousStatus || "") === "CAPTURED_PENDING" && previousCapturedMs > 0 ?
+      previousCapturedMs :
+      now;
+    capturedPendingSinceMs = startedAtMs;
+    captureStableForMs = Math.max(0, now - startedAtMs);
+    if ((applyGraceWindow !== false) && captureStableForMs >= CAPTURE_GRACE_WINDOW_MS) {
+      status = "SUCCESS";
+    } else {
+      status = "CAPTURED_PENDING";
+    }
+  } else if (hasPendingSignal) {
+    status = "PENDING";
+  } else if (explicitSuccessSignal) {
+    status = "SUCCESS";
+  } else {
+    status = "PENDING";
+  }
+
+  const failureReason = hasFailureSignal ?
+    String(reason || message || callbackMessage || "").trim() :
+    "";
+
+  return {
+    status,
+    failureReason,
+    hasFailureSignal,
+    hasCaptureKeyword,
+    hasPendingSignal,
+    explicitSuccessSignal,
+    capturedPendingSinceMs,
+    captureStableForMs,
+  };
+}
+
 function uniqueNonEmpty(values) {
   return [...new Set((values || []).map((v) => String(v || "").trim()).filter(Boolean))];
 }
@@ -287,7 +451,6 @@ async function runFlexpayCheck(orderNumber, reference) {
                 tx.error)) ||
             "",
         );
-        const normalizedMessage = normalizeStatusToken(message);
         const providerReference = String(
             (tx &&
               (tx.provider_reference ||
@@ -299,37 +462,21 @@ async function runFlexpayCheck(orderNumber, reference) {
             "",
         ).trim();
         const providerRefExists = Boolean(providerReference);
-        const hasCaptureKeyword = ["CAPTURE", "ENVOI EN COURS", "ENVOI EN_COURS"]
-            .some((k) => normalizedMessage.includes(k) || providerReason.includes(k));
-        const hasFailureKeyword = ["INSUFF", "FAILED", "ECHEC", "ECHOUE", "REFUS", "DECLIN", "CANCEL"]
-            .some((k) => normalizedMessage.includes(k) || providerReason.includes(k));
-        const successStatuses = new Set(["0", "2", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"]);
-        const failureStatuses = new Set([
-          "1",
-          "FAILED",
-          "FAIL",
-          "ECHEC",
-          "ECHOUE",
-          "DECLINED",
-          "DECLINE",
-          "CANCELED",
-          "CANCELLED",
-          "REFUSED",
-          "REJECTED",
-        ]);
-        const looksSuccess =
-          Boolean(tx) &&
-          code === "0" &&
-          (successStatuses.has(providerStatus) || providerRefExists || hasCaptureKeyword) &&
-          !hasFailureKeyword;
-        const looksFailure =
-          Boolean(tx) &&
-          ((code === "0" && failureStatuses.has(providerStatus)) ||
-            (code !== "0" && !providerRefExists) ||
-            hasFailureKeyword);
-        const looksPending = Boolean(tx) && !looksSuccess && !looksFailure;
-        const semanticRank = looksSuccess ? 3 : (looksFailure ? 2 : (looksPending ? 1 : 0));
-        const qualityScore = semanticRank * 10 + (providerRefExists ? 2 : 0) + (message ? 1 : 0);
+        const classification = classifyMobileMoneyStatus({
+          code,
+          providerStatus,
+          message,
+          reason: providerReason,
+          transactionExists: Boolean(tx),
+          nowMs: Date.now(),
+          applyGraceWindow: false,
+        });
+        const semanticRank = statusSelectionPriority(classification.status);
+        const qualityScore =
+          semanticRank * 10 +
+          (providerRefExists ? 2 : 0) +
+          (tx ? 1 : 0) +
+          (message ? 1 : 0);
 
         console.log("FlexPay check candidate:", {
           base,
@@ -338,6 +485,7 @@ async function runFlexpayCheck(orderNumber, reference) {
           hasTransaction: Boolean(tx),
           providerStatus,
           providerReference: providerReference || null,
+          statusHint: classification.status,
           qualityScore,
           message,
         });
@@ -347,14 +495,13 @@ async function runFlexpayCheck(orderNumber, reference) {
           firstSource = {base, identifier};
         }
 
-        if (tx) {
-          if (!best || qualityScore > best.qualityScore) {
-            best = {
-              json,
-              source: {base, identifier},
-              qualityScore,
-            };
-          }
+        if (!best || qualityScore > best.qualityScore) {
+          best = {
+            json,
+            source: {base, identifier},
+            qualityScore,
+            statusHint: classification.status,
+          };
         }
       } catch (error) {
         console.error("FlexPay check candidate failed:", {
@@ -367,12 +514,13 @@ async function runFlexpayCheck(orderNumber, reference) {
   }
 
   if (best) {
-    return {json: best.json, source: best.source};
+    return {json: best.json, source: best.source, statusHint: best.statusHint};
   }
 
   return {
     json: firstJson || {code: "1", message: "No check response received"},
     source: firstSource || {base: "", identifier: ""},
+    statusHint: "PENDING",
   };
 }
 
@@ -674,7 +822,12 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
   const txData = txSnap.data() || {};
   const orderNumber = String(txData.orderNumber || txData.callbackOrderNumber || "");
   const storedStatus = normalizeStatusToken(txData.status || "");
-  const hasStoredTerminalStatus = storedStatus === "SUCCESS" || storedStatus === "FAILED";
+  const hasStoredTerminalStatus =
+    storedStatus === "FAILED" ||
+    (storedStatus === "SUCCESS" && txData.dbWriteDone === true);
+  const callbackCode = String(txData.callbackCode || "");
+  const callbackProviderStatus = String(txData.callbackProviderStatus || "");
+  const callbackMessage = String(txData.callbackMessage || "");
 
   let checkJson = null;
   let checkSource = {base: "", identifier: ""};
@@ -739,77 +892,41 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
           "",
     );
   }
-  const normalizedProviderStatus = normalizeStatusToken(providerStatus);
-  const normalizedMessage = normalizeStatusToken(checkMessage);
-  const normalizedReason = normalizeStatusToken(providerReason);
-  const normalizedProviderReference = normalizeStatusToken(providerReference || "");
-  const providerRefExists = Boolean(normalizedProviderReference);
-  const hasCaptureKeyword = ["CAPTURE", "ENVOI EN COURS", "ENVOI EN_COURS"]
-      .some((k) => normalizedMessage.includes(k) || normalizedReason.includes(k));
   const createdAtMs = toNumber(txData.createdAtMs || 0);
   const verificationAgeMs = Math.max(0, Date.now() - createdAtMs);
 
   let status = "PENDING";
-  const successStatuses = new Set(["0", "2", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"]);
-  const pendingStatuses = new Set([
-    "",
-    "PENDING",
-    "EN ATTENTE",
-    "EN_ATTENTE",
-    "PROCESSING",
-    "IN_PROGRESS",
-    "IN PROGRESS",
-  ]);
-  const failureStatuses = new Set([
-    "1",
-    "FAILED",
-    "FAIL",
-    "ECHEC",
-    "ECHOUE",
-    "DECLINED",
-    "DECLINE",
-    "CANCELED",
-    "CANCELLED",
-    "REFUSED",
-    "REJECTED",
-  ]);
-
-  const hasFailureKeyword = ["INSUFF", "FAILED", "ECHEC", "ECHOUE", "REFUS", "DECLIN", "CANCEL"]
-      .some((k) => normalizedMessage.includes(k) || normalizedReason.includes(k));
-
+  let capturedPendingSinceMs = null;
+  let captureStableForMs = 0;
+  let failureReason = "";
   if (hasStoredTerminalStatus) {
     status = storedStatus;
-  } else if (
-    code === "0" &&
-    providerRefExists &&
-    !hasFailureKeyword
-  ) {
-    // Provider reference means funds were captured by the operator.
-    status = "SUCCESS";
-  } else if (
-    code === "0" &&
-    hasCaptureKeyword &&
-    !hasFailureKeyword
-  ) {
-    status = "SUCCESS";
-  } else if (code === "0" && successStatuses.has(normalizedProviderStatus)) {
-    status = "SUCCESS";
-  } else if (
-    code === "0" &&
-    (failureStatuses.has(normalizedProviderStatus) || hasFailureKeyword)
-  ) {
-    status = "FAILED";
-  } else if (code === "1" && transaction === null && !hasFailureKeyword) {
-    status = "PENDING";
-  } else if (code === "0" && pendingStatuses.has(normalizedProviderStatus)) {
-    status = "PENDING";
-  } else if (transaction) {
-    // If provider returned a transaction with unknown non-success status,
-    // fail fast instead of spinning forever.
-    status = "FAILED";
+    capturedPendingSinceMs = toNumber(txData.capturedPendingSinceMs || 0) || null;
+    failureReason = String(txData.failureReason || txData.callbackFailureReason || "");
+  } else {
+    const classification = classifyMobileMoneyStatus({
+      code,
+      providerStatus,
+      message: checkMessage,
+      reason: providerReason,
+      transactionExists: Boolean(transaction),
+      callbackCode,
+      callbackStatus: callbackProviderStatus,
+      callbackMessage,
+      previousStatus: storedStatus,
+      previousCapturedPendingSinceMs: txData.capturedPendingSinceMs,
+      nowMs: Date.now(),
+      applyGraceWindow: true,
+    });
+    status = classification.status;
+    capturedPendingSinceMs = classification.capturedPendingSinceMs;
+    captureStableForMs = classification.captureStableForMs;
+    failureReason = classification.failureReason || "";
   }
 
-  const failureReason = providerReason || checkMessage || "";
+  if (!failureReason && status === "FAILED") {
+    failureReason = String(providerReason || checkMessage || callbackMessage || "").trim();
+  }
   console.log("FlexPay check parsed:", {
     reference,
     orderNumber,
@@ -820,6 +937,8 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     status,
     failureReason,
     verificationAgeMs,
+    captureStableForMs,
+    capturedPendingSinceMs,
   });
 
   const posted = await db.runTransaction(async (t) => {
@@ -828,8 +947,17 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
       throw new functions.https.HttpsError("not-found", "Transaction missing.");
     }
     const latestTxData = latestTxSnap.data() || {};
+    const nowMs = Date.now();
     const alreadyPosted = latestTxData.dbWriteDone === true;
     const checkAttempts = toNumber(latestTxData.checkAttempts || 0) + 1;
+    const previousStatus = normalizeStatusToken(latestTxData.status || "");
+    const statusChanged = previousStatus !== status;
+    const previousTransitionAtMs = toNumber(latestTxData.lastStatusTransitionAtMs || 0);
+    const normalizedCapturedPendingSinceMs = toNumber(capturedPendingSinceMs || 0);
+    const nextCapturedPendingSinceMs =
+      status === "CAPTURED_PENDING" ?
+      (normalizedCapturedPendingSinceMs || nowMs) :
+      (status === "SUCCESS" && normalizedCapturedPendingSinceMs > 0 ? normalizedCapturedPendingSinceMs : null);
     const statusUpdatePayload = {
       status,
       checkResponse: checkJson || null,
@@ -840,8 +968,10 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
       checkMessage,
       failureReason,
       checkAttempts,
-      checkedAtMs: Date.now(),
-      updatedAtMs: Date.now(),
+      checkedAtMs: nowMs,
+      updatedAtMs: nowMs,
+      capturedPendingSinceMs: nextCapturedPendingSinceMs,
+      lastStatusTransitionAtMs: statusChanged ? nowMs : (previousTransitionAtMs || nowMs),
     };
 
     if (status !== "SUCCESS" || alreadyPosted) {
@@ -1057,6 +1187,7 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     lastCheckedAtMs: Date.now(),
     checkCode: code,
     providerStatus,
+    capturedPendingSinceMs: status === "CAPTURED_PENDING" ? capturedPendingSinceMs : null,
   });
 
   return {
@@ -1109,13 +1240,13 @@ exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) 
   }
 
   const normalizedCallbackStatus = normalizeStatusToken(payload.status || "");
-  let callbackStatus = "PENDING";
-  if (callbackCode === "0" || ["0", "2", "SUCCESS", "SUCCES", "APPROVED", "APPROUVE"].includes(normalizedCallbackStatus)) {
-    callbackStatus = "SUCCESS";
-  } else if (callbackCode && callbackCode !== "0") {
-    callbackStatus = "FAILED";
-  } else if (["1", "FAILED", "FAIL", "ECHEC", "ECHOUE", "DECLINED", "DECLINE", "CANCELLED", "CANCELED", "REFUSED", "REJECTED"].includes(normalizedCallbackStatus)) {
-    callbackStatus = "FAILED";
+  let callbackObservedStatus = "PENDING";
+  if (callbackCode && callbackCode !== "0") {
+    callbackObservedStatus = "FAILED";
+  } else if (FAILURE_STATUS_TOKENS.has(normalizedCallbackStatus)) {
+    callbackObservedStatus = "FAILED";
+  } else if (callbackCode === "0" || SUCCESS_STATUS_TOKENS.has(normalizedCallbackStatus)) {
+    callbackObservedStatus = "SUCCESS";
   }
 
   const lookupSnap = await db.doc(`${MOBILE_MONEY_LOOKUP_COLLECTION}/${reference}`).get();
@@ -1128,14 +1259,14 @@ exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) 
 
   const txRef = db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`);
   await txRef.set({
-    status: callbackStatus,
     callbackPayload: payload,
     callbackCode,
     callbackMessage,
     callbackProviderReference: callbackProviderReference || null,
     callbackOrderNumber: orderNumber || null,
     callbackProviderStatus: String(payload.status || "").trim(),
-    callbackFailureReason: callbackStatus === "FAILED" ? callbackMessage : "",
+    callbackObservedStatus,
+    callbackFailureReason: callbackObservedStatus === "FAILED" ? callbackMessage : "",
     callbackReceivedAtMs: Date.now(),
     updatedAtMs: Date.now(),
   }, {merge: true});
@@ -1143,17 +1274,18 @@ exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) 
   await upsertMobileMoneyLookup(reference, {
     ownerUid,
     orderNumber: orderNumber || (lookupSnap.exists ? lookupSnap.get("orderNumber") || null : null),
-    status: callbackStatus,
     callbackReceivedAtMs: Date.now(),
     callbackCode,
     callbackMessage,
+    callbackObservedStatus,
   });
 
   let posted = false;
+  let finalStatus = callbackObservedStatus;
   try {
     const settled = await checkMobileMoneyPaymentInternal(ownerUid, reference);
     posted = Boolean(settled && settled.posted);
-    callbackStatus = settled && settled.status ? settled.status : callbackStatus;
+    finalStatus = settled && settled.status ? settled.status : finalStatus;
   } catch (error) {
     console.error("FlexPay callback settlement failed:", {
       reference,
@@ -1167,7 +1299,7 @@ exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) 
     acknowledged: true,
     reference,
     orderNumber,
-    status: callbackStatus,
+    status: finalStatus,
     posted,
   });
 });
@@ -1195,7 +1327,7 @@ exports.reconcilePendingMobileMoneyPayments = functions.pubsub
 
       const pendingSnap = await db
           .collection(MOBILE_MONEY_LOOKUP_COLLECTION)
-          .where("status", "==", "PENDING")
+          .where("status", "in", ["PENDING", "CAPTURED_PENDING"])
           .limit(50)
           .get();
 

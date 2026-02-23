@@ -31,6 +31,7 @@ export class PaymentComponent {
   mobileMoneyReference = '';
   mobileMoneyOrderNumber = '';
   private readonly mobileCheckIntervalMs = 5000;
+  private readonly mobileCheckTimeoutMs = 6 * 60 * 1000;
 
   client: Client = new Client();
   constructor(
@@ -265,6 +266,12 @@ export class PaymentComponent {
         this.mobileMoneyStatus = '';
         return;
       }
+      if (checkResult.status === 'TIMEOUT') {
+        this.mobileMoneyError = '';
+        this.mobileMoneyStatus =
+          "La vérification prend plus de temps que prévu. Le traitement continue en arrière-plan; revenez vérifier l'état dans quelques minutes.";
+        return;
+      }
 
     } catch (err: any) {
       console.error('Mobile money payment flow failed:', err);
@@ -283,13 +290,23 @@ export class PaymentComponent {
   private async pollMobileMoneyStatus(
     reference: string
   ): Promise<{
-    status: 'SUCCESS' | 'FAILED';
+    status: 'SUCCESS' | 'FAILED' | 'TIMEOUT';
     failureReason: string;
     message: string;
   }> {
     const checkCallable = this.fns.httpsCallable('checkMobileMoneyPayment');
+    const startedAtMs = Date.now();
     let attempt = 0;
     while (true) {
+      const elapsedMs = Date.now() - startedAtMs;
+      if (elapsedMs >= this.mobileCheckTimeoutMs) {
+        return {
+          status: 'TIMEOUT',
+          failureReason: '',
+          message:
+            "Délai de vérification atteint. Le backend continue la réconciliation en arrière-plan.",
+        };
+      }
       attempt += 1;
       await this.sleep(this.mobileCheckIntervalMs);
       this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (tentative ${attempt})`;
@@ -304,6 +321,12 @@ export class PaymentComponent {
       }
       if (status === 'FAILED') {
         return { status: 'FAILED', failureReason, message };
+      }
+      if (status === 'CAPTURED_PENDING') {
+        this.mobileMoneyStatus =
+          `Paiement capturé, transfert vers le compte marchand en cours... (tentative ${attempt})` +
+          (message ? ` - ${message}` : '');
+        continue;
       }
 
       if (message) {
