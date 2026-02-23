@@ -297,21 +297,6 @@ function anyKeywordMatch(values, keywords) {
   return keywords.some((keyword) => haystacks.some((h) => h.includes(keyword)));
 }
 
-function statusSelectionPriority(status) {
-  switch (status) {
-    case "FAILED":
-      return 4;
-    case "CAPTURED_PENDING":
-      return 3;
-    case "PENDING":
-      return 2;
-    case "SUCCESS":
-      return 1;
-    default:
-      return 0;
-  }
-}
-
 function classifyMobileMoneyStatus({
   code,
   providerStatus,
@@ -472,12 +457,26 @@ async function runFlexpayCheck(orderNumber, reference) {
           nowMs: Date.now(),
           applyGraceWindow: false,
         });
-        const semanticRank = statusSelectionPriority(classification.status);
-        const qualityScore =
-          semanticRank * 10 +
-          (providerRefExists ? 2 : 0) +
-          (tx ? 1 : 0) +
+        // Cross-endpoint selection:
+        // keep FAILED/CAPTURED_PENDING highest, then choose the most credible
+        // candidate among SUCCESS/PENDING so stale "no transaction found" does not
+        // override an explicit success transaction.
+        const semanticRank =
+          classification.status === "FAILED" ?
+          3 :
+          classification.status === "CAPTURED_PENDING" ?
+          2 :
+          1;
+        const confidenceScore =
+          (tx ? 30 : 0) +
+          (code === "0" ? 20 : 0) +
+          (classification.explicitSuccessSignal ? 12 : 0) +
+          (providerRefExists ? 8 : 0) +
+          (classification.hasCaptureKeyword ? 10 : 0) +
+          (classification.hasPendingSignal && tx ? 20 : 0) +
+          (classification.status === "PENDING" && !tx ? -20 : 0) +
           (message ? 1 : 0);
+        const qualityScore = semanticRank * 100 + confidenceScore;
 
         console.log("FlexPay check candidate:", {
           base,

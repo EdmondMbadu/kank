@@ -298,15 +298,6 @@ export class PaymentComponent {
     const startedAtMs = Date.now();
     let attempt = 0;
     while (true) {
-      const elapsedMs = Date.now() - startedAtMs;
-      if (elapsedMs >= this.mobileCheckTimeoutMs) {
-        return {
-          status: 'TIMEOUT',
-          failureReason: '',
-          message:
-            "Délai de vérification atteint. Le backend continue la réconciliation en arrière-plan.",
-        };
-      }
       attempt += 1;
       await this.sleep(this.mobileCheckIntervalMs);
       this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (tentative ${attempt})`;
@@ -331,6 +322,16 @@ export class PaymentComponent {
 
       if (message) {
         this.mobileMoneyStatus = `Vérification du paiement Mobile Money... (tentative ${attempt}) - ${message}`;
+      }
+
+      const elapsedMs = Date.now() - startedAtMs;
+      if (elapsedMs >= this.mobileCheckTimeoutMs) {
+        return {
+          status: 'TIMEOUT',
+          failureReason: '',
+          message:
+            "Délai de vérification atteint. Le backend continue la réconciliation en arrière-plan.",
+        };
       }
     }
   }
