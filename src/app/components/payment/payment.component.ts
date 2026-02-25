@@ -49,7 +49,7 @@ export class PaymentComponent {
   ngOnInit(): void {
     this.retrieveClient();
     const methodQuery = this.activatedRoute.snapshot.queryParamMap.get('method');
-    if (methodQuery === 'mobile' && this.auth.isAdmninistrator) {
+    if (methodQuery === 'mobile') {
       this.paymentMethod = 'mobile';
     }
   }
@@ -202,10 +202,6 @@ export class PaymentComponent {
   }
 
   async makeMobileMoneyPayment() {
-    if (!this.auth.isAdmninistrator) {
-      alert('Le paiement mobile money est réservé aux administrateurs.');
-      return;
-    }
     if (this.isSubmitting) return;
     if (!this.validateBasePaymentInputs()) return;
 
