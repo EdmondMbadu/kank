@@ -899,6 +899,7 @@ export class DataService {
 
     const data = {
       bonusAmount: employee.bonusAmount,
+      bonusSignNote: employee.bonusSignNote,
       bonusPercentage: employee.bonusPercentage,
       bestTeamBonusAmount: employee.bestTeamBonusAmount,
       bestEmployeeBonusAmount: employee.bestEmployeeBonusAmount,
@@ -932,6 +933,7 @@ export class DataService {
 
     const data = {
       paymentAmount: employee.paymentAmount,
+      paymentSignNote: employee.paymentSignNote,
       paymentAbsent: employee.paymentAbsent,
       paymentNothing: employee.paymentNothing,
       paymentIncreaseYears: employee.paymentIncreaseYears,

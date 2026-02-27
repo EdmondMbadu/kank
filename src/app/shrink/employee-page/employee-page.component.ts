@@ -388,6 +388,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   paymentManualWithdrawalReason: string = '';
   paymentManualAddition: number = 0;
   paymentManualAdditionReason: string = '';
+  bonusSignNote: string = '';
+  paymentSignNote: string = '';
   paymentObjectiveWeekDeductionTotal: number = 0;
   paymentObjectiveWeekDeductions: WeeklyObjectiveDeduction[] = [];
   weekObjectiveStartDate: string = '';
@@ -934,6 +936,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.bonusAmount = this.employee.bonusAmount
       ? parseFloat(this.employee.bonusAmount)
       : 0;
+    this.bonusSignNote = this.employee.bonusSignNote
+      ? this.employee.bonusSignNote
+      : '';
     this.bestTeamBonusAmount = this.employee.bestTeamBonusAmount
       ? parseFloat(this.employee.bestTeamBonusAmount)
       : 0;
@@ -981,6 +986,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       : 0;
     this.paymentManualAdditionReason = this.employee.paymentManualAdditionReason
       ? this.employee.paymentManualAdditionReason
+      : '';
+    this.paymentSignNote = this.employee.paymentSignNote
+      ? this.employee.paymentSignNote
       : '';
     this.paymentBankFee = this.employee.paymentBankFee
       ? parseFloat(this.employee.paymentBankFee)
@@ -2405,6 +2413,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     // Update bonus amounts
     this.employee.bonusPercentage = this.bonusPercentage.toString();
     this.employee.bonusAmount = this.bonusAmount.toString();
+    this.employee.bonusSignNote = (this.bonusSignNote || '').trim();
     this.employee.bestTeamBonusAmount = this.bestTeamBonusAmount.toString();
     this.employee.bestEmployeeBonusAmount =
       this.bestEmployeeBonusAmount.toString();
@@ -2482,6 +2491,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.employee.paymentManualAdditionReason = (
       this.paymentManualAdditionReason || ''
     ).trim();
+    this.employee.paymentSignNote = (this.paymentSignNote || '').trim();
     this.employee.paymentObjectiveWeekDeductionTotal = p(
       this.paymentObjectiveWeekDeductionTotal
     ).toString();
@@ -3068,6 +3078,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     // Update bonus amounts
     this.employee.bonusPercentage = this.bonusPercentage.toString();
     this.employee.bonusAmount = this.bonusAmount.toString();
+    this.employee.bonusSignNote = (this.bonusSignNote || '').trim();
     this.employee.bestTeamBonusAmount = this.bestTeamBonusAmount.toString();
     this.employee.bestEmployeeBonusAmount =
       this.bestEmployeeBonusAmount.toString();

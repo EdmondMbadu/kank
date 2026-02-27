@@ -35,7 +35,9 @@ export class Employee {
   checkVisible?: string;
   paymentCheckVisible?: string;
   bonusAmount?: string;
+  bonusSignNote?: string;
   paymentAmount?: string;
+  paymentSignNote?: string;
   bonusPercentage?: string;
   bestTeamBonusAmount?: string;
   bestEmployeeBonusAmount?: string;
