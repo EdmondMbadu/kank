@@ -38,6 +38,9 @@ interface AuditReceipt {
   ts: number;
   frenchDate: string;
   amount?: number;
+  docPath: string;
+  storagePath: string;
+  source: 'scoped' | 'legacy';
 }
 
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N';
@@ -285,9 +288,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   /* ─── Component state ───────────────────────────── */
   auditReceipts: AuditReceipt[] = [];
+  private auditReceiptsScoped: AuditReceipt[] = [];
+  private auditReceiptsLegacy: AuditReceipt[] = [];
   auditSearch = '';
   auditNewAmount: number | null = null;
-  private auditSel = '';
+  private auditSelReceipt: AuditReceipt | null = null;
+  private auditScopedSub?: Subscription;
+  private auditLegacySub?: Subscription;
   showAllAuditReceipts = false; // For admin to expand and see all receipts
   showAllPayments = false; // For admin to expand and see all payments
   @ViewChild('auditFileInput') auditFileInput!: ElementRef<HTMLInputElement>;
@@ -472,29 +479,148 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.employeesSub?.unsubscribe();
     this.individualReviewsSub?.unsubscribe();
     this.weeklyTargetSub?.unsubscribe();
+    this.auditScopedSub?.unsubscribe();
+    this.auditLegacySub?.unsubscribe();
   }
   public graphPerformance: PerformanceGraph =
     this.createEmptyPerformanceGraph();
   /* ─── Fetch on init ─────────────────────────────── */
+  private getAuditScope():
+    | { ownerUid: string; employeeUid: string; collectionPath: string }
+    | null {
+    const ownerUid = this.auth.currentUser?.uid;
+    const employeeUid = this.employee?.uid;
+
+    if (!ownerUid || !employeeUid) {
+      console.error('[AuditReceipt] Missing required uid(s)', {
+        ownerUid,
+        employeeUid,
+        routeId: this.id,
+      });
+      return null;
+    }
+
+    return {
+      ownerUid,
+      employeeUid,
+      collectionPath: `users/${ownerUid}/employees/${employeeUid}/auditReceipts`,
+    };
+  }
+
+  private getAuditStoragePath(docId: string): string | null {
+    const scope = this.getAuditScope();
+    if (!scope) return null;
+    return `users/${scope.ownerUid}/employees/${scope.employeeUid}/auditReceipts/${docId}`;
+  }
+
+  private formatFirebaseError(err: any): { code: string; message: string } {
+    return {
+      code: err?.code ?? 'unknown',
+      message: err?.message ?? 'No error message provided',
+    };
+  }
+
+  private mergeAuditReceipts() {
+    const dedup = new Map<string, AuditReceipt>();
+    [...this.auditReceiptsScoped, ...this.auditReceiptsLegacy]
+      .sort((a, b) => b.ts - a.ts)
+      .forEach((r) => {
+        const key = `${r.url}|${r.ts}|${Number(r.amount ?? 0)}`;
+        if (!dedup.has(key)) {
+          dedup.set(key, r);
+        }
+      });
+    this.auditReceipts = Array.from(dedup.values()).sort((a, b) => b.ts - a.ts);
+  }
+
   private loadAuditReceipts() {
+    const scope = this.getAuditScope();
+    if (!scope) {
+      this.auditScopedSub?.unsubscribe();
+      this.auditLegacySub?.unsubscribe();
+      this.auditReceipts = [];
+      this.auditReceiptsScoped = [];
+      this.auditReceiptsLegacy = [];
+      return;
+    }
+
     // Always load 50 for admin (they can expand to see all), 2 for non-admin
     const limit = this.auth.isAdmin ? 50 : 2;
-    this.afs
-      .collection(`users/${this.employee.uid}/auditReceipts`, (ref) =>
+    const legacyCollectionPath = `users/${scope.employeeUid}/auditReceipts`;
+
+    this.auditScopedSub?.unsubscribe();
+    this.auditLegacySub?.unsubscribe();
+
+    this.auditScopedSub = this.afs
+      .collection(scope.collectionPath, (ref) =>
         ref.orderBy('ts', 'desc').limit(limit)
       )
       .snapshotChanges()
-      .subscribe((snaps) => {
-        this.auditReceipts = snaps.map((s) => {
-          const d = s.payload.doc.data() as any;
-          return {
-            docId: s.payload.doc.id,
-            url: d.url,
-            ts: d.ts,
-            frenchDate: this.time.formatEpochLongFr(d.ts),
-            amount: d.amount ?? 0,
-          };
-        });
+      .subscribe({
+        next: (snaps) => {
+          this.auditReceiptsScoped = snaps.map((s) => {
+            const d = s.payload.doc.data() as any;
+            const docId = s.payload.doc.id;
+            return {
+              docId,
+              url: d.url,
+              ts: d.ts,
+              frenchDate: this.time.formatEpochLongFr(d.ts),
+              amount: d.amount ?? 0,
+              docPath: `${scope.collectionPath}/${docId}`,
+              storagePath: `users/${scope.ownerUid}/employees/${scope.employeeUid}/auditReceipts/${docId}`,
+              source: 'scoped' as const,
+            };
+          });
+          this.mergeAuditReceipts();
+        },
+        error: (err) => {
+          this.auditReceiptsScoped = [];
+          this.mergeAuditReceipts();
+          const fb = this.formatFirebaseError(err);
+          console.error('[AuditReceipt] Load failed', {
+            stage: 'firestore.query',
+            collectionPath: scope.collectionPath,
+            ...fb,
+            err,
+          });
+        },
+      });
+
+    this.auditLegacySub = this.afs
+      .collection(legacyCollectionPath, (ref) =>
+        ref.orderBy('ts', 'desc').limit(limit)
+      )
+      .snapshotChanges()
+      .subscribe({
+        next: (snaps) => {
+          this.auditReceiptsLegacy = snaps.map((s) => {
+            const d = s.payload.doc.data() as any;
+            const docId = s.payload.doc.id;
+            return {
+              docId,
+              url: d.url,
+              ts: d.ts,
+              frenchDate: this.time.formatEpochLongFr(d.ts),
+              amount: d.amount ?? 0,
+              docPath: `${legacyCollectionPath}/${docId}`,
+              storagePath: `auditReceipts/${scope.employeeUid}/${docId}`,
+              source: 'legacy' as const,
+            };
+          });
+          this.mergeAuditReceipts();
+        },
+        error: (err) => {
+          this.auditReceiptsLegacy = [];
+          this.mergeAuditReceipts();
+          const fb = this.formatFirebaseError(err);
+          console.error('[AuditReceipt] Legacy load failed', {
+            stage: 'firestore.query',
+            collectionPath: legacyCollectionPath,
+            ...fb,
+            err,
+          });
+        },
       });
   }
   private loadIndividualReviews(targetUid?: string | null): void {
@@ -1258,6 +1384,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return `${dayName} ${date.getDate()} ${monthName} ${date.getFullYear()}`;
   }
   private resetEmployeeState(): void {
+    this.auditScopedSub?.unsubscribe();
+    this.auditLegacySub?.unsubscribe();
+    this.auditReceipts = [];
+    this.auditReceiptsScoped = [];
+    this.auditReceiptsLegacy = [];
+    this.auditSelReceipt = null;
     this.employee = {};
     this.employees = [];
     this.paymentCodeLoaded = false;
@@ -3658,45 +3790,120 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const scope = this.getAuditScope();
+    if (!scope) {
+      alert('❌ Échec de l’envoi');
+      return;
+    }
+
     const file = files.item(0)!;
     const id = this.afs.createId();
-    const path = `auditReceipts/${this.employee.uid}/${id}`;
+    const storagePath = this.getAuditStoragePath(id);
+    if (!storagePath) {
+      alert('❌ Échec de l’envoi');
+      return;
+    }
+    const docPath = `${scope.collectionPath}/${id}`;
 
     try {
-      const up = await this.storage.upload(path, file);
-      const url = await up.ref.getDownloadURL();
-      await this.afs
-        .doc(`users/${this.employee.uid}/auditReceipts/${id}`)
-        .set({ url, ts: Date.now(), amount: Number(this.auditNewAmount) });
+      let url = '';
+      try {
+        const up = await this.storage.upload(storagePath, file);
+        url = await up.ref.getDownloadURL();
+      } catch (err: any) {
+        const fb = this.formatFirebaseError(err);
+        console.error('[AuditReceipt] Upload failed', {
+          stage: 'storage.upload',
+          storagePath,
+          ...fb,
+          err,
+        });
+        throw err;
+      }
+
+      try {
+        await this.afs
+          .doc(docPath)
+          .set({ url, ts: Date.now(), amount: Number(this.auditNewAmount) });
+      } catch (err: any) {
+        const fb = this.formatFirebaseError(err);
+        console.error('[AuditReceipt] Save metadata failed', {
+          stage: 'firestore.set',
+          docPath,
+          ...fb,
+          err,
+        });
+        throw err;
+      }
+
       this.auditNewAmount = null;
       alert('✅ Reçu ajouté'); // ← success toast
-    } catch {
+    } catch (err) {
+      console.error('[AuditReceipt] Upload flow failed', {
+        storagePath,
+        docPath,
+        err,
+      });
       alert('❌ Échec de l’envoi');
     }
   }
 
   /* ─── prepare file-replace ─────────────────────── */
   auditPrepareReplace(r: AuditReceipt) {
-    this.auditSel = r.docId;
+    this.auditSelReceipt = r;
     this.auditFileInput.nativeElement.click();
   }
 
   /* ─── replace existing receipt ─────────────────── */
   async auditReplace(files: FileList | null) {
-    if (!files?.length || !this.auditSel) return;
+    if (!files?.length || !this.auditSelReceipt) return;
+    const selected = this.auditSelReceipt;
+    if (!selected.docPath || !selected.storagePath) {
+      alert('❌ Impossible de remplacer');
+      return;
+    }
     const file = files.item(0)!;
-    const path = `auditReceipts/${this.employee.uid}/${this.auditSel}`;
+    const storagePath = selected.storagePath;
+    const docPath = selected.docPath;
     try {
-      const up = await this.storage.upload(path, file);
-      const url = await up.ref.getDownloadURL();
-      await this.afs
-        .doc(`users/${this.employee.uid}/auditReceipts/${this.auditSel}`)
-        .update({ url });
+      let url = '';
+      try {
+        const up = await this.storage.upload(storagePath, file);
+        url = await up.ref.getDownloadURL();
+      } catch (err: any) {
+        const fb = this.formatFirebaseError(err);
+        console.error('[AuditReceipt] Replace upload failed', {
+          stage: 'storage.upload',
+          storagePath,
+          ...fb,
+          err,
+        });
+        throw err;
+      }
+
+      try {
+        await this.afs.doc(docPath).update({ url });
+      } catch (err: any) {
+        const fb = this.formatFirebaseError(err);
+        console.error('[AuditReceipt] Replace metadata update failed', {
+          stage: 'firestore.update',
+          docPath,
+          ...fb,
+          err,
+        });
+        throw err;
+      }
+
       alert('✅ Reçu mis à jour'); // ← success toast
-    } catch {
+    } catch (err) {
+      console.error('[AuditReceipt] Replace flow failed', {
+        storagePath,
+        docPath,
+        err,
+      });
       alert('❌ Impossible de remplacer');
     }
-    this.auditSel = '';
+    this.auditSelReceipt = null;
     this.auditFileInput.nativeElement.value = '';
   }
 
@@ -3706,10 +3913,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       alert('Montant invalide');
       return;
     }
-    await this.afs
-      .doc(`users/${this.employee.uid}/auditReceipts/${r.docId}`)
-      .update({ amount: Number(r.amount) });
-    alert('✅ Montant mis à jour'); // ← success toast
+    if (!r.docPath) {
+      alert('❌ Impossible de mettre à jour');
+      return;
+    }
+    const docPath = r.docPath;
+    try {
+      await this.afs.doc(docPath).update({ amount: Number(r.amount) });
+      alert('✅ Montant mis à jour'); // ← success toast
+    } catch (err: any) {
+      const fb = this.formatFirebaseError(err);
+      console.error('[AuditReceipt] Amount update failed', {
+        stage: 'firestore.update',
+        docPath,
+        ...fb,
+        err,
+      });
+      alert('❌ Impossible de mettre à jour');
+    }
   }
 
   private async checkGeoPermission() {
