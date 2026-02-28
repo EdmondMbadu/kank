@@ -648,6 +648,61 @@
                   Paiement signé
                 </span>
                 <span
+                  *ngIf="
+                    auth.isAdmin &&
+                    em.signedPaymentThisMonth &&
+                    em.paidPaymentThisMonth
+                  "
+                  class="inline-flex items-center gap-1 rounded-full border border-teal-200 bg-teal-50/70 px-2 py-0.5 text-[10px] font-medium text-teal-700"
+                  [title]="
+                    'Paiement payé (reçu attaché)' +
+                    (em.lastPaymentPaidLabelThisMonth
+                      ? ' · ' + em.lastPaymentPaidLabelThisMonth
+                      : '')
+                  "
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4.5 12.75l6 6 9-13.5"
+                    />
+                  </svg>
+                  Paiement payé
+                </span>
+                <span
+                  *ngIf="
+                    auth.isAdmin &&
+                    em.signedPaymentThisMonth &&
+                    !em.paidPaymentThisMonth
+                  "
+                  class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50/70 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                  title="Paiement signé, reçu non attaché"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M12 9v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 3c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z"
+                    />
+                  </svg>
+                  Paiement non payé
+                </span>
+                <span
                   *ngIf="auth.isAdmin && em.signedBonusThisMonth"
                   class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50/70 px-2 py-0.5 text-[10px] font-medium text-emerald-700"
                   [title]="
@@ -677,6 +732,61 @@
                     />
                   </svg>
                   Bonus signé
+                </span>
+                <span
+                  *ngIf="
+                    auth.isAdmin &&
+                    em.signedBonusThisMonth &&
+                    em.paidBonusThisMonth
+                  "
+                  class="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50/70 px-2 py-0.5 text-[10px] font-medium text-cyan-700"
+                  [title]="
+                    'Bonus payé (reçu attaché)' +
+                    (em.lastBonusPaidLabelThisMonth
+                      ? ' · ' + em.lastBonusPaidLabelThisMonth
+                      : '')
+                  "
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M4.5 12.75l6 6 9-13.5"
+                    />
+                  </svg>
+                  Bonus payé
+                </span>
+                <span
+                  *ngIf="
+                    auth.isAdmin &&
+                    em.signedBonusThisMonth &&
+                    !em.paidBonusThisMonth
+                  "
+                  class="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50/70 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                  title="Bonus signé, reçu non attaché"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M12 9v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 3c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z"
+                    />
+                  </svg>
+                  Bonus non payé
                 </span>
                 <span
                   *ngIf="em.status !== 'Travaille'"

@@ -14,6 +14,13 @@ import exifr from 'exifr';
 import { Subscription } from 'rxjs';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
+type MonthlySignatureEntry = {
+  rawKey: string;
+  date: Date;
+  kind: 'paiement' | 'bonus';
+  receiptIndex: number;
+  receiptUrl: string | null;
+};
 
 @Component({
   selector: 'app-team-ranking-month',
@@ -720,22 +727,60 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return { month, year };
   }
 
+  private buildMonthlySignatureEntries(
+    employee: Employee
+  ): MonthlySignatureEntry[] {
+    const payments = employee?.payments;
+    if (!payments || typeof payments !== 'object') return [];
+
+    const parsed = Object.keys(payments)
+      .map((rawKey) => {
+        const date = this.time.parseFlexibleDateTime(rawKey);
+        if (Number.isNaN(date.getTime())) return null;
+        return {
+          rawKey,
+          date,
+          kind: this.resolvePaymentKind(rawKey),
+        };
+      })
+      .filter(
+        (
+          entry
+        ): entry is { rawKey: string; date: Date; kind: 'paiement' | 'bonus' } =>
+          !!entry
+      )
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    const receipts = Array.isArray(employee?.receipts) ? employee.receipts : [];
+    const total = parsed.length;
+
+    return parsed.map((entry, sortedIndex) => {
+      const receiptIndex = total - 1 - sortedIndex;
+      const rawReceipt = receipts[receiptIndex];
+      const receiptUrl =
+        typeof rawReceipt === 'string' && rawReceipt.trim().length > 0
+          ? rawReceipt.trim()
+          : null;
+
+      return {
+        ...entry,
+        receiptIndex,
+        receiptUrl,
+      };
+    });
+  }
+
   private getLatestSignatureThisMonth(
     employee: Employee,
     kind: 'paiement' | 'bonus'
-  ): { rawKey: string; date: Date } | null {
-    const payments = employee?.payments;
-    if (!payments || typeof payments !== 'object') return null;
-
+  ): MonthlySignatureEntry | null {
     const target = this.getSignatureTargetMonthYear();
-    let latest: { rawKey: string; date: Date } | null = null;
+    let latest: MonthlySignatureEntry | null = null;
+    const entries = this.buildMonthlySignatureEntries(employee);
 
-    Object.keys(payments).forEach((rawKey) => {
-      if (this.resolvePaymentKind(rawKey) !== kind) return;
-
-      const date = this.time.parseFlexibleDateTime(rawKey);
-      if (Number.isNaN(date.getTime())) return;
-      const effective = this.getEffectiveSignatureMonthYear(date, kind);
+    entries.forEach((entry) => {
+      if (entry.kind !== kind) return;
+      const effective = this.getEffectiveSignatureMonthYear(entry.date, kind);
       if (
         effective.month !== target.month ||
         effective.year !== target.year
@@ -743,8 +788,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         return;
       }
 
-      if (!latest || date.getTime() > latest.date.getTime()) {
-        latest = { rawKey, date };
+      if (!latest || entry.date.getTime() > latest.date.getTime()) {
+        latest = entry;
       }
     });
 
@@ -754,18 +799,30 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private decorateMonthlySignatureState(employee: Employee): void {
     const latestPayment = this.getLatestSignatureThisMonth(employee, 'paiement');
     const latestBonus = this.getLatestSignatureThisMonth(employee, 'bonus');
+    const paymentPaid = !!latestPayment?.receiptUrl;
+    const bonusPaid = !!latestBonus?.receiptUrl;
 
     employee.signedPaymentThisMonth = !!latestPayment;
     employee.signedBonusThisMonth = !!latestBonus;
+    employee.paidPaymentThisMonth = paymentPaid;
+    employee.paidBonusThisMonth = bonusPaid;
     employee.lastPaymentSignatureLabelThisMonth = latestPayment
       ? this.formatSignatureLabel(latestPayment.rawKey, latestPayment.date)
       : undefined;
     employee.lastBonusSignatureLabelThisMonth = latestBonus
       ? this.formatSignatureLabel(latestBonus.rawKey, latestBonus.date)
       : undefined;
+    employee.lastPaymentPaidLabelThisMonth =
+      latestPayment && paymentPaid
+        ? this.formatSignatureLabel(latestPayment.rawKey, latestPayment.date)
+        : undefined;
+    employee.lastBonusPaidLabelThisMonth =
+      latestBonus && bonusPaid
+        ? this.formatSignatureLabel(latestBonus.rawKey, latestBonus.date)
+        : undefined;
 
-    // Keep legacy flag aligned with payment signature status.
-    employee.paidThisMonth = employee.signedPaymentThisMonth;
+    // Keep legacy flag aligned with real payment state.
+    employee.paidThisMonth = paymentPaid;
   }
 
   filterAndInitializeEmployees(
