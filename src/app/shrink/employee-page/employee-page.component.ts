@@ -886,8 +886,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   togglePayment() {
     const opening = !this.displayPayment;
     this.displayPayment = !this.displayPayment;
-    if (opening && this.isAdminUi) {
-      this.prefillPaymentDeductions();
+    if (opening) {
+      this.ensurePaymentDraftForCurrentMonth();
     }
   }
   toggleCode() {
@@ -1233,6 +1233,43 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.computeTotalPayment();
   }
 
+  private paymentMonthKey(month: number, year: number): string {
+    return `${year}-${String(month).padStart(2, '0')}`;
+  }
+
+  private currentPaymentMonthKey(): string {
+    return this.paymentMonthKey(this.currentMonth, this.year);
+  }
+
+  private isPaymentConfiguredForCurrentMonth(): boolean {
+    return (
+      (this.employee?.paymentConfiguredMonthKey || '') ===
+      this.currentPaymentMonthKey()
+    );
+  }
+
+  private ensurePaymentDraftForCurrentMonth() {
+    if (this.isPaymentConfiguredForCurrentMonth()) {
+      this.paymentObjectiveWeekDeductions = this.filterObjectiveDeductionsForMonth(
+        this.paymentObjectiveWeekDeductions || [],
+        this.currentMonth,
+        this.year
+      );
+      this.recomputeObjectiveWeekDeductionTotal();
+      this.computeTotalPayment();
+      return;
+    }
+
+    // New month draft: recompute from current-month attendance/objective only.
+    this.prefillPaymentDeductions();
+    this.paymentManualWithdrawal = 0;
+    this.paymentManualWithdrawalReason = '';
+    this.paymentManualAddition = 0;
+    this.paymentManualAdditionReason = '';
+    this.paymentSignNote = '';
+    this.computeTotalPayment();
+  }
+
   private applyAttendanceDeductionsForMonth(month: number, year: number) {
     const attendance = this.employee?.attendance || {};
     const byDate = new Map<string, string>();
@@ -1261,21 +1298,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   private applyWeeklyObjectiveDeductionsForMonth(month: number, year: number) {
     const computed = this.computeWeeklyShortfallDeductions(month, year);
-    if (computed.length === 0) return;
-
-    const map = new Map<string, WeeklyObjectiveDeduction>();
-    (this.paymentObjectiveWeekDeductions || []).forEach((d) => {
-      if (!d?.start) return;
-      map.set(`${d.start}|${d.end}`, d);
-    });
-    computed.forEach((d) => {
-      const key = `${d.start}|${d.end}`;
-      if (!map.has(key)) {
-        map.set(key, d);
-      }
-    });
-
-    this.paymentObjectiveWeekDeductions = Array.from(map.values()).sort(
+    this.paymentObjectiveWeekDeductions = computed.sort(
       (a, b) => a.start.localeCompare(b.start)
     );
     this.recomputeObjectiveWeekDeductionTotal();
@@ -1349,6 +1372,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       end: this.formatIsoDate(endDate),
       amount: Number(d.amount) || 0,
     };
+  }
+
+  private filterObjectiveDeductionsForMonth(
+    deductions: WeeklyObjectiveDeduction[],
+    month: number,
+    year: number
+  ): WeeklyObjectiveDeduction[] {
+    return (deductions || [])
+      .map((d) => this.normalizeObjectiveDeduction(d))
+      .filter((d) => {
+        if (!d?.start) return false;
+        const start = this.parseIsoDate(d.start);
+        return start.getMonth() + 1 === month && start.getFullYear() === year;
+      });
   }
 
   private parseIsoDate(iso: string): Date {
@@ -2492,6 +2529,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.paymentManualAdditionReason || ''
     ).trim();
     this.employee.paymentSignNote = (this.paymentSignNote || '').trim();
+    this.employee.paymentConfiguredMonthKey = this.currentPaymentMonthKey();
     this.employee.paymentObjectiveWeekDeductionTotal = p(
       this.paymentObjectiveWeekDeductionTotal
     ).toString();

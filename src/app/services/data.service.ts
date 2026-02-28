@@ -943,6 +943,7 @@ export class DataService {
       paymentManualWithdrawalReason: employee.paymentManualWithdrawalReason,
       paymentManualAddition: employee.paymentManualAddition,
       paymentManualAdditionReason: employee.paymentManualAdditionReason,
+      paymentConfiguredMonthKey: employee.paymentConfiguredMonthKey,
       paymentObjectiveWeekDeductionTotal:
         employee.paymentObjectiveWeekDeductionTotal,
       paymentObjectiveWeekDeductions: employee.paymentObjectiveWeekDeductions,

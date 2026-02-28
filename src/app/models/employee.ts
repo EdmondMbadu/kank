@@ -38,6 +38,7 @@ export class Employee {
   bonusSignNote?: string;
   paymentAmount?: string;
   paymentSignNote?: string;
+  paymentConfiguredMonthKey?: string;
   bonusPercentage?: string;
   bestTeamBonusAmount?: string;
   bestEmployeeBonusAmount?: string;
