@@ -26,6 +26,7 @@ import { Audit, Management } from '../models/management';
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
 const INVESTIGATOR_FLAG_KEY = 'kank-investigator-flag';
+const ROLE_PASSWORDS_SIGNATURE_KEY = 'kank-role-passwords-signature';
 
 type RolePasswords = {
   admin: string;
@@ -1485,10 +1486,22 @@ export class AuthService {
     localStorage.setItem(ADMIN_FLAG_KEY, String(this.isAdmninistrator));
     localStorage.setItem(DISTRIBUTOR_FLAG_KEY, String(this.isDistributoring));
     localStorage.setItem(INVESTIGATOR_FLAG_KEY, String(this.isInvestigating));
+    localStorage.setItem(
+      ROLE_PASSWORDS_SIGNATURE_KEY,
+      this.getRolePasswordsSignature(this.rolePasswordsState)
+    );
   }
 
   private normalizeSecret(value: string | null | undefined): string {
     return (value ?? '').trim().toLowerCase();
+  }
+
+  private getRolePasswordsSignature(rolePasswords: RolePasswords): string {
+    return [
+      this.normalizeSecret(rolePasswords.admin),
+      this.normalizeSecret(rolePasswords.gestion),
+      this.normalizeSecret(rolePasswords.investigator),
+    ].join('|');
   }
 
   public get weeklyPaymentTargetFc(): number {
@@ -1554,6 +1567,7 @@ export class AuthService {
     this.isAdmninistrator = false;
     this.isDistributoring = false;
     this.isInvestigating = false;
+    this.lastRoleWord = '';
 
     if (typeof window === 'undefined') {
       return;
@@ -1562,6 +1576,32 @@ export class AuthService {
     localStorage.removeItem(ADMIN_FLAG_KEY);
     localStorage.removeItem(DISTRIBUTOR_FLAG_KEY);
     localStorage.removeItem(INVESTIGATOR_FLAG_KEY);
+    localStorage.removeItem(ROLE_PASSWORDS_SIGNATURE_KEY);
+  }
+
+  private syncRoleFlagsWithRolePasswords(): void {
+    if (this.lastRoleWord) {
+      this.applyRoleWord(this.lastRoleWord);
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const hasRoleFlags =
+      this.isAdmninistrator || this.isDistributoring || this.isInvestigating;
+    if (!hasRoleFlags) {
+      return;
+    }
+
+    const storedSignature = localStorage.getItem(ROLE_PASSWORDS_SIGNATURE_KEY);
+    const currentSignature = this.getRolePasswordsSignature(
+      this.rolePasswordsState
+    );
+    if (!storedSignature || storedSignature !== currentSignature) {
+      this.clearRoleFlags();
+    }
   }
 
   private loadRolePasswords(): void {
@@ -1591,9 +1631,7 @@ export class AuthService {
         this.weeklyPaymentProjectionSubject.next(
           this.weeklyPaymentProjectionState
         );
-        if (this.lastRoleWord) {
-          this.applyRoleWord(this.lastRoleWord);
-        }
+        this.syncRoleFlagsWithRolePasswords();
       });
   }
 
@@ -1601,8 +1639,22 @@ export class AuthService {
     if (!this.managementDocId) {
       return Promise.reject('Aucun document management trouvé.');
     }
+    const normalizedPayload: RolePasswords = {
+      admin: payload.admin,
+      gestion: payload.gestion,
+      investigator: payload.investigator,
+    };
     const docRef = this.afs.doc(`management/${this.managementDocId}`);
-    return docRef.set({ rolePasswords: payload }, { merge: true }).then(() => {});
+    return docRef
+      .set({ rolePasswords: normalizedPayload }, { merge: true })
+      .then(() => {
+        this.rolePasswordsState = {
+          ...this.defaultRolePasswords,
+          ...normalizedPayload,
+        };
+        this.rolePasswordsSubject.next(this.rolePasswordsState);
+        this.syncRoleFlagsWithRolePasswords();
+      });
   }
 
   updateWeeklyPaymentTargetGlobal(targetFc: number): Promise<void> {
