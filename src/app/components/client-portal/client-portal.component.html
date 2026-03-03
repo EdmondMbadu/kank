@@ -2262,6 +2262,15 @@
                 {{ c.timeFormatted }}
               </time>
             </div>
+
+            <button
+              *ngIf="auth.isAdmin"
+              type="button"
+              (click)="deleteComment(i, $event)"
+              class="ml-auto inline-flex items-center rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+            >
+              Supprimer
+            </button>
           </header>
 
           <!-- comment body -->

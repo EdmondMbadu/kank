@@ -793,6 +793,40 @@ export class ClientPortalComponent {
       );
     }
   }
+
+  deleteComment(index: number, event?: Event) {
+    event?.stopPropagation();
+
+    if (!this.auth.isAdmin) {
+      return;
+    }
+
+    if (index < 0 || index >= this.comments.length) {
+      return;
+    }
+
+    const conf = confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?');
+    if (!conf) {
+      return;
+    }
+
+    const previousComments = [...this.comments];
+    const updated = this.comments.filter((_, i) => i !== index);
+    const sanitized = this.stripUndefinedDeep(updated);
+
+    this.comments = sanitized;
+    this.data
+      .addCommentToClientProfile(this.client, sanitized)
+      .then(() => {
+        alert('Commentaire supprimé avec succès !');
+      })
+      .catch((error) => {
+        console.error(error);
+        this.comments = previousComments;
+        alert('Erreur lors de la suppression du commentaire.');
+      });
+  }
+
   async startRecording() {
     try {
       // 1) getUserMedia
