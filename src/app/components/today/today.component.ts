@@ -578,13 +578,16 @@ export class TodayComponent {
 
   private recomputeMoneyInHandsTrace() {
     const n = (x: any) => Number(x) || 0;
+    const cardPaymentsSigned = n(this.dailyCardPayments);
+    const cardPaymentsIn = Math.max(cardPaymentsSigned, 0);
+    const cardPartialWithdraw = Math.max(-cardPaymentsSigned, 0);
 
     const plusRaw = [
       { label: 'Paiement total', v: n(this.dailyPayment) },
       { label: 'Frais', v: n(this.dailyFees) },
       { label: 'Entrée', v: n(this.dailyInvestment) },
       { label: 'Épargne', v: n(this.dailySaving) },
-      { label: 'Paiement carte', v: n(this.dailyCardPayments) },
+      { label: 'Paiement carte', v: cardPaymentsIn },
     ];
 
     const minusRaw = [
@@ -594,6 +597,7 @@ export class TodayComponent {
       { label: 'Retrait frais', v: n(this.dailyFeesReturns) },
       { label: 'Dépenses', v: n(this.dailyExpense) },
       { label: 'Pertes', v: n(this.dailyLoss) },
+      { label: 'Retrait partielle carte', v: cardPartialWithdraw },
       { label: 'Retrait carte', v: n(this.dailyCardReturns) },
       { label: 'Reserve', v: n(this.dailyReserve) },
     ];
