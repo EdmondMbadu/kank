@@ -184,7 +184,10 @@ export class ClientPortalCardComponent {
   }
 
   removeFromCard() {
-    if (this.status !== 'En Cours') {
+    if (!this.auth.isAdmin) {
+      alert('Action réservée à l’administrateur.');
+      return;
+    } else if (this.status !== 'En Cours') {
       alert(`Ce cycle est terminé, commencez un nouveau cycle.`);
       return;
     } else if (this.clientCard.amountPaid === this.clientCard.amountToPay) {

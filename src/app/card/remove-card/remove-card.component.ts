@@ -33,6 +33,11 @@ export class RemoveCardComponent {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   ngOnInit(): void {
+    if (!this.auth.isAdmin) {
+      alert('Action réservée à l’administrateur.');
+      this.router.navigate(['/client-portal-card/' + this.id]);
+      return;
+    }
     this.retrieveClientCard();
   }
   amountToSubstract: string = '';
@@ -45,46 +50,83 @@ export class RemoveCardComponent {
     });
   }
   generatePotentialNumbersToSubstract() {
-    for (
-      let a = Number(this.clientCard.amountToPay), i = 2;
-      a < Number(this.clientCard.amountPaid);
-      i++
+    this.potentialNumbersToSubstract = [];
+
+    const step = Number(this.clientCard.amountToPay);
+    const amountPaid = Number(this.clientCard.amountPaid);
+
+    if (
+      !Number.isFinite(step) ||
+      step <= 0 ||
+      !Number.isFinite(amountPaid) ||
+      amountPaid <= step
     ) {
-      this.potentialNumbersToSubstract.push(a);
-      a *= i;
+      this.amountToSubstract = '';
+      return;
     }
+
+    for (let amount = step; amount < amountPaid; amount += step) {
+      this.potentialNumbersToSubstract.push(amount);
+    }
+
+    this.amountToSubstract = this.potentialNumbersToSubstract.length
+      ? this.potentialNumbersToSubstract[0].toString()
+      : '';
   }
   async substractFromcard() {
+    if (!this.auth.isAdmin) {
+      alert('Action réservée à l’administrateur.');
+      return;
+    }
+
     if (this.amountToSubstract === '') {
       alert('Remplissez toutes les données');
       return;
-    } else {
-      let conf = confirm(
-        ` Vous avez effectué ${this.numberOfPaymentToday} dépôt(s) aujourd'hui. Voulez-vous quand même continuer ?`
-      );
-      if (!conf) {
-        return;
-      }
-      // make the number negative
-      this.amountToSubstract = (0 - Number(this.amountToSubstract)).toString();
-      this.clientCard.amountPaid = (
-        Number(this.clientCard.amountPaid) + Number(this.amountToSubstract)
-      ).toString();
-      this.clientCard.numberOfPaymentsMade = (
-        Number(this.clientCard.numberOfPaymentsMade) + 1
-      ).toString();
-
-      this.clientCard.payments = {
-        [this.time.todaysDate()]: this.amountToSubstract,
-      };
     }
 
+    const amount = Number(this.amountToSubstract);
+    const step = Number(this.clientCard.amountToPay);
+    const amountPaid = Number(this.clientCard.amountPaid);
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      !Number.isFinite(step) ||
+      step <= 0 ||
+      !Number.isFinite(amountPaid)
+    ) {
+      alert('Montant invalide.');
+      return;
+    }
+    if (amount % step !== 0) {
+      alert(`Le montant doit être un multiple de ${step} FC.`);
+      return;
+    }
+    if (amount >= amountPaid) {
+      alert('Le retrait partiel doit laisser au moins une tranche sur la carte.');
+      return;
+    }
+
+    const conf = confirm(
+      ` Vous avez effectué ${this.numberOfPaymentToday} dépôt(s) aujourd'hui. Voulez-vous quand même continuer ?`
+    );
+    if (!conf) {
+      return;
+    }
+
+    const reverseDeposit = (0 - amount).toString();
+    this.clientCard.amountPaid = (amountPaid - amount).toString();
+    this.clientCard.numberOfPaymentsMade = (
+      Number(this.clientCard.numberOfPaymentsMade) + 1
+    ).toString();
+    this.clientCard.payments = {
+      [this.time.todaysDate()]: reverseDeposit,
+    };
+
     try {
-      const clientCardPayment = await this.data.clientCardPayment(
-        this.clientCard
-      );
-      const updateUser = await this.data.updateUserInfoForClientCardPayment(
-        this.amountToSubstract
+      await this.data.atomicClientCardAndUserUpdate(
+        this.clientCard,
+        reverseDeposit
       );
       this.router.navigate(['/client-portal-card/' + this.id]);
     } catch (err) {
@@ -94,7 +136,7 @@ export class RemoveCardComponent {
   }
 
   howManyTimesPaidToday() {
-    const filteredObj = Object.keys(this.clientCard.payments!).filter((key) =>
+    const filteredObj = Object.keys(this.clientCard.payments || {}).filter((key) =>
       key.startsWith(this.today)
     );
     let number = filteredObj.length;
