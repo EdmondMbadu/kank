@@ -3650,14 +3650,12 @@ async function handleMainMenu(input, session) {
   const clientInfo = session._clientInfo;
 
   if (choice === "1") {
-    const balDebtLeft = toNumber(clientInfo.debtLeft || 0);
+    const remainingDebt = toNumber(clientInfo.debtLeft || 0);
+    const savings = toNumber(clientInfo.savings || 0);
     const amountToPay = toNumber(clientInfo.amountToPay || 0);
-    const loanAmount = toNumber(clientInfo.loanAmount || 0);
-    const interestRate = toNumber(clientInfo.interestRate || 0);
-    const interest = Math.round(loanAmount * interestRate / 100);
     const nextDate = getNextPaymentDate(clientInfo);
 
-    const reply = `💳 VOTRE COMPTE\n\n👤 ${clientInfo.firstName || ""} ${clientInfo.lastName || ""}\n💰 Dette totale: ${formatFC(loanAmount)}\n💵 Montant dû: ${formatFC(amountToPay)}\n📅 Échéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n📊 Intérêt accumulé: ${formatFC(interest)}\n💰 Solde restant: ${formatFC(balDebtLeft)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
+    const reply = `💳 VOTRE COMPTE\n\n👤 ${clientInfo.firstName || ""} ${clientInfo.lastName || ""}\n💵 Montant dû: ${formatFC(amountToPay)}\n📅 Échéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n💰 *Dette:* ${formatFC(remainingDebt)}\n🏦 Épargne: ${formatFC(savings)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
     return {reply, newState: WA_STATES.BALANCE, tempData: {}};
   }
 
@@ -4066,6 +4064,7 @@ function buildTwilioSignatureUrlCandidates(req) {
   const proto = protoHeader || "https";
   const hostHeader = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
   const hostNoDefaultPort = hostHeader.replace(/:443$|:80$/, "");
+  const functionTarget = String(process.env.FUNCTION_TARGET || "").trim();
   const originalUrl = String(req.originalUrl || req.url || "");
   const pathOnly = originalUrl.split("?")[0];
 
@@ -4075,6 +4074,10 @@ function buildTwilioSignatureUrlCandidates(req) {
       if (!h) continue;
       candidates.add(`${p}://${h}${originalUrl}`);
       candidates.add(`${p}://${h}${pathOnly}`);
+      if (functionTarget) {
+        candidates.add(`${p}://${h}/${functionTarget}`);
+        candidates.add(`${p}://${h}/${functionTarget}/`);
+      }
     }
   }
   return Array.from(candidates);
