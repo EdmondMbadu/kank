@@ -3536,6 +3536,198 @@ exports.backfillWhatsAppPhoneIndex = functions.https.onCall(async (data, context
   return {ok: true, indexed};
 });
 
+async function assertWhatsAppAdminAccess(context) {
+  if (!context.auth || !context.auth.uid) {
+    throw new functions.https.HttpsError("unauthenticated", "Authentication is required.");
+  }
+
+  const uid = context.auth.uid;
+  const userSnap = await db.doc(`users/${uid}`).get();
+  const userData = userSnap.exists ? (userSnap.data() || {}) : {};
+  const roles = Array.isArray(userData.roles) ? userData.roles : [];
+  const hasAdminRole = roles.includes("admin");
+  const adminFlag = String(userData.admin || "").toLowerCase() === "true";
+  const tokenAdmin = Boolean(context.auth.token && context.auth.token.admin === true);
+
+  if (!hasAdminRole && !adminFlag && !tokenAdmin) {
+    throw new functions.https.HttpsError("permission-denied", "Admin only.");
+  }
+
+  return {uid, userData};
+}
+
+function parseIsoDayToDate(day) {
+  const raw = String(day || "").trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const date = Number(match[3]);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(date)) {
+    return null;
+  }
+  return new Date(year, month - 1, date);
+}
+
+function buildWhatsAppReportRange(data) {
+  const mode = String((data && data.mode) || "day").trim().toLowerCase();
+  const now = new Date();
+
+  if (mode === "month") {
+    const month = Number((data && data.month) || (now.getMonth() + 1));
+    const year = Number((data && data.year) || now.getFullYear());
+    if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year)) {
+      throw new functions.https.HttpsError("invalid-argument", "Invalid month/year.");
+    }
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 1);
+    return {
+      mode: "month",
+      start,
+      end,
+      label: `${String(month).padStart(2, "0")}/${year}`,
+    };
+  }
+
+  const day = parseIsoDayToDate(data && data.day);
+  const start = day || new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return {
+    mode: "day",
+    start,
+    end,
+    label: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`,
+  };
+}
+
+exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) => {
+  await assertWhatsAppAdminAccess(context);
+
+  const range = buildWhatsAppReportRange(data || {});
+  const startTs = admin.firestore.Timestamp.fromDate(range.start);
+  const endTs = admin.firestore.Timestamp.fromDate(range.end);
+  const startMs = range.start.getTime();
+  const endMs = range.end.getTime();
+
+  const incomingQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
+      .where("direction", "==", "incoming")
+      .where("createdAt", ">=", startTs)
+      .where("createdAt", "<", endTs);
+  const outgoingQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
+      .where("direction", "==", "outgoing")
+      .where("createdAt", ">=", startTs)
+      .where("createdAt", "<", endTs);
+  const latestMessagesQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
+      .where("createdAt", ">=", startTs)
+      .where("createdAt", "<", endTs)
+      .orderBy("createdAt", "desc")
+      .limit(10);
+  const complaintsQuery = db.collection(WHATSAPP_COMPLAINTS_COLLECTION)
+      .where("createdAt", ">=", startTs)
+      .where("createdAt", "<", endTs)
+      .orderBy("createdAt", "desc")
+      .limit(100);
+  const paymentsQuery = db.collectionGroup("mobileMoneyTransactions")
+      .where("whatsappOriginated", "==", true);
+
+  const [incomingSnap, outgoingSnap, latestMessagesSnap, complaintsSnap, paymentsSnap] = await Promise.all([
+    incomingQuery.get(),
+    outgoingQuery.get(),
+    latestMessagesQuery.get(),
+    complaintsQuery.get(),
+    paymentsQuery.get(),
+  ]);
+
+  const latestMessages = latestMessagesSnap.docs.map((doc) => {
+    const item = doc.data() || {};
+    return {
+      id: doc.id,
+      direction: item.direction || "",
+      phone: item.phone || "",
+      body: item.body || "",
+      source: item.source || "",
+      createdAtMs: Number(item.createdAtMs || 0),
+    };
+  });
+
+  const complaints = complaintsSnap.docs.map((doc) => {
+    const item = doc.data() || {};
+    return {
+      id: doc.id,
+      phone: item.phone || "",
+      clientName: item.clientName || "",
+      category: item.category || "",
+      description: item.description || "",
+      reference: item.reference || "",
+      status: item.status || "open",
+      createdAtMs: item.createdAt && item.createdAt.toMillis ? item.createdAt.toMillis() : Number(item.createdAtMs || 0),
+    };
+  });
+
+  const payments = [];
+  for (const doc of paymentsSnap.docs) {
+    const item = doc.data() || {};
+    const updatedAtMs = Number(item.updatedAtMs || item.createdAtMs || 0);
+    const status = String(item.status || "").toUpperCase();
+    if (status !== "SUCCESS") continue;
+    if (updatedAtMs < startMs || updatedAtMs >= endMs) continue;
+
+    let clientName = String(item.clientName || "").trim();
+    if (!clientName) {
+      try {
+        const ownerUid = String(item.ownerUid || "");
+        const clientUid = String(item.clientUid || "");
+        if (ownerUid && clientUid) {
+          const clientSnap = await db.doc(`users/${ownerUid}/clients/${clientUid}`).get();
+          if (clientSnap.exists) {
+            const clientData = clientSnap.data() || {};
+            clientName = [
+              String(clientData.middleName || "").trim(),
+              String(clientData.firstName || "").trim(),
+              String(clientData.lastName || "").trim(),
+            ].filter(Boolean).join(" ");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to enrich WhatsApp payment client name:", err);
+      }
+    }
+
+    payments.push({
+      id: doc.id,
+      reference: String(item.reference || doc.id),
+      clientName: clientName || "Client inconnu",
+      paymentAmount: Number(item.paymentAmount || 0),
+      status,
+      updatedAtMs,
+      sourcePhone: String(item.whatsappPhone || ""),
+    });
+  }
+
+  payments.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+
+  return {
+    ok: true,
+    filter: {
+      mode: range.mode,
+      label: range.label,
+      startMs,
+      endMs,
+    },
+    stats: {
+      incomingCount: incomingSnap.size,
+      outgoingCount: outgoingSnap.size,
+      totalMessages: incomingSnap.size + outgoingSnap.size,
+      complaintCount: complaints.length,
+      paymentCount: payments.length,
+    },
+    latestMessages,
+    complaints,
+    payments: payments.slice(0, 50),
+  };
+});
+
 /* ─── Session helpers ─── */
 
 async function getWhatsAppSession(phone) {
@@ -3977,6 +4169,7 @@ async function handleComplaintDetail(input, session) {
     reference: ref,
     status: "open",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAtMs: Date.now(),
   });
 
   const reply = `✅ PLAINTE REÇUE\n\n🎫 Référence: #${ref}\n📂 Catégorie: ${category}\n\nNotre équipe vous contactera sous 24h.\n\nMerci pour votre patience. 🙏\nFondation Gervais\n\n[0] Retour au menu principal`;

@@ -4,31 +4,139 @@
   [path]="'home'"
 ></app-navbar>
 
-<div *ngIf="auth.isAdmin; else noAccess" class="min-h-screen bg-slate-50 px-4 py-6 md:px-8">
+<div
+  *ngIf="auth.isAdmin; else noAccess"
+  class="min-h-screen bg-slate-50 px-4 py-6 md:px-8"
+>
   <div class="mx-auto max-w-7xl space-y-6">
-    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h1 class="text-2xl font-bold text-slate-900">WhatsApp Admin</h1>
-      <p class="mt-1 text-sm text-slate-600">
-        Suivi des messages WhatsApp, plaintes et paiements effectués via WhatsApp.
+    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">WhatsApp Admin</h1>
+          <p class="mt-1 text-sm text-slate-600">
+            Vue de contrôle pour les messages, plaintes et paiements WhatsApp.
+          </p>
+          <p *ngIf="reportLabel" class="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Période: {{ reportLabel }}
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              (click)="setFilterMode('day')"
+              class="rounded-xl px-4 py-2 text-sm font-semibold transition"
+              [ngClass]="
+                filterMode === 'day'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white text-slate-700 border border-slate-200'
+              "
+            >
+              Jour
+            </button>
+            <button
+              type="button"
+              (click)="setFilterMode('month')"
+              class="rounded-xl px-4 py-2 text-sm font-semibold transition"
+              [ngClass]="
+                filterMode === 'month'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white text-slate-700 border border-slate-200'
+              "
+            >
+              Mois
+            </button>
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-end gap-3" *ngIf="filterMode === 'day'">
+            <label class="block text-sm text-slate-700">
+              <span class="mb-1 block font-medium">Date</span>
+              <input
+                type="date"
+                [(ngModel)]="selectedDay"
+                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+              />
+            </label>
+            <button
+              type="button"
+              (click)="loadReport()"
+              class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Charger
+            </button>
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-end gap-3" *ngIf="filterMode === 'month'">
+            <label class="block text-sm text-slate-700">
+              <span class="mb-1 block font-medium">Mois</span>
+              <select
+                [(ngModel)]="selectedMonth"
+                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+              >
+                <option *ngFor="let month of months" [value]="month.value">
+                  {{ month.label }}
+                </option>
+              </select>
+            </label>
+            <label class="block text-sm text-slate-700">
+              <span class="mb-1 block font-medium">Année</span>
+              <select
+                [(ngModel)]="selectedYear"
+                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+              >
+                <option *ngFor="let year of years" [value]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </label>
+            <button
+              type="button"
+              (click)="loadReport()"
+              class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Charger
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <p
+        *ngIf="error"
+        class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      >
+        {{ error }}
       </p>
-    </div>
+    </section>
 
-    <div class="grid gap-4 md:grid-cols-3">
-      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-        <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Messages entrants</div>
-        <div class="mt-2 text-3xl font-extrabold text-emerald-900">{{ incomingCount }}</div>
+    <section *ngIf="loading" class="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+      Chargement du rapport WhatsApp...
+    </section>
+
+    <div *ngIf="!loading" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
+        <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Entrants</div>
+        <div class="mt-2 text-3xl font-extrabold text-emerald-950">{{ stats.incomingCount }}</div>
       </div>
-      <div class="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-        <div class="text-xs font-semibold uppercase tracking-wide text-blue-700">Messages sortants</div>
-        <div class="mt-2 text-3xl font-extrabold text-blue-900">{{ outgoingCount }}</div>
+      <div class="rounded-3xl border border-blue-200 bg-blue-50 p-5">
+        <div class="text-xs font-semibold uppercase tracking-wide text-blue-700">Sortants</div>
+        <div class="mt-2 text-3xl font-extrabold text-blue-950">{{ stats.outgoingCount }}</div>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-slate-100 p-5">
+      <div class="rounded-3xl border border-slate-200 bg-slate-100 p-5">
         <div class="text-xs font-semibold uppercase tracking-wide text-slate-700">Total messages</div>
-        <div class="mt-2 text-3xl font-extrabold text-slate-900">{{ totalMessages }}</div>
+        <div class="mt-2 text-3xl font-extrabold text-slate-950">{{ stats.totalMessages }}</div>
+      </div>
+      <div class="rounded-3xl border border-amber-200 bg-amber-50 p-5">
+        <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">Plaintes</div>
+        <div class="mt-2 text-3xl font-extrabold text-amber-950">{{ stats.complaintCount }}</div>
+      </div>
+      <div class="rounded-3xl border border-fuchsia-200 bg-fuchsia-50 p-5">
+        <div class="text-xs font-semibold uppercase tracking-wide text-fuchsia-700">Paiements</div>
+        <div class="mt-2 text-3xl font-extrabold text-fuchsia-950">{{ stats.paymentCount }}</div>
       </div>
     </div>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="text-lg font-bold text-slate-900">Derniers 10 messages WhatsApp</h2>
       <div class="mt-4 overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -42,7 +150,7 @@
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr *ngFor="let m of latestMessages">
-              <td class="px-3 py-2 text-slate-600">{{ formatDate(m.createdAt || m.createdAtMs) }}</td>
+              <td class="px-3 py-2 text-slate-600">{{ formatDate(m.createdAtMs) }}</td>
               <td class="px-3 py-2">
                 <span
                   class="rounded-full px-2 py-1 text-xs font-semibold"
@@ -55,14 +163,14 @@
               <td class="px-3 py-2 text-slate-800">{{ m.body || '--' }}</td>
             </tr>
             <tr *ngIf="latestMessages.length === 0">
-              <td colspan="4" class="px-3 py-6 text-center text-slate-500">Aucun message WhatsApp trouvé.</td>
+              <td colspan="4" class="px-3 py-6 text-center text-slate-500">Aucun message pour cette période.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="text-lg font-bold text-slate-900">Plaintes WhatsApp</h2>
       <div class="mt-4 overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -78,7 +186,7 @@
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr *ngFor="let c of complaints">
-              <td class="px-3 py-2 text-slate-600">{{ formatDate(c.createdAt || c.createdAtMs) }}</td>
+              <td class="px-3 py-2 text-slate-600">{{ formatDate(c.createdAtMs) }}</td>
               <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ c.reference || '--' }}</td>
               <td class="px-3 py-2 text-slate-800">{{ c.clientName || c.phone || '--' }}</td>
               <td class="px-3 py-2 text-slate-800">{{ c.category || '--' }}</td>
@@ -86,29 +194,16 @@
               <td class="px-3 py-2 text-slate-700">{{ c.status || 'open' }}</td>
             </tr>
             <tr *ngIf="complaints.length === 0">
-              <td colspan="6" class="px-3 py-6 text-center text-slate-500">Aucune plainte WhatsApp trouvée.</td>
+              <td colspan="6" class="px-3 py-6 text-center text-slate-500">Aucune plainte pour cette période.</td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex items-center justify-between gap-3">
-        <h2 class="text-lg font-bold text-slate-900">Paiements WhatsApp (succès)</h2>
-        <button
-          type="button"
-          (click)="loadLatestPayments()"
-          class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-        >
-          Rafraîchir
-        </button>
-      </div>
-
-      <p *ngIf="paymentError" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{{ paymentError }}</p>
-      <p *ngIf="loadingPayments" class="mt-3 text-sm text-slate-500">Chargement des paiements...</p>
-
-      <div class="mt-4 overflow-x-auto" *ngIf="!loadingPayments">
+    <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-bold text-slate-900">Paiements WhatsApp (succès)</h2>
+      <div class="mt-4 overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
           <thead class="bg-slate-50">
             <tr>
@@ -116,17 +211,19 @@
               <th class="px-3 py-2 text-left font-semibold text-slate-700">Client</th>
               <th class="px-3 py-2 text-left font-semibold text-slate-700">Montant</th>
               <th class="px-3 py-2 text-left font-semibold text-slate-700">Référence</th>
+              <th class="px-3 py-2 text-left font-semibold text-slate-700">Téléphone</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             <tr *ngFor="let p of payments">
               <td class="px-3 py-2 text-slate-600">{{ formatDate(p.updatedAtMs) }}</td>
-              <td class="px-3 py-2 text-slate-900 font-semibold">{{ p.clientName }}</td>
+              <td class="px-3 py-2 font-semibold text-slate-900">{{ p.clientName }}</td>
               <td class="px-3 py-2 text-slate-900">{{ formatFC(p.paymentAmount) }}</td>
               <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ p.reference }}</td>
+              <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ p.sourcePhone || '--' }}</td>
             </tr>
             <tr *ngIf="payments.length === 0">
-              <td colspan="4" class="px-3 py-6 text-center text-slate-500">Aucun paiement WhatsApp trouvé.</td>
+              <td colspan="5" class="px-3 py-6 text-center text-slate-500">Aucun paiement WhatsApp pour cette période.</td>
             </tr>
           </tbody>
         </table>
