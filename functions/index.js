@@ -3399,6 +3399,9 @@ const twilioConfig = (functions.config() && functions.config().twilio) || {};
 const TWILIO_ACCOUNT_SID = twilioConfig.account_sid || process.env.TWILIO_ACCOUNT_SID || "";
 const TWILIO_AUTH_TOKEN = twilioConfig.auth_token || process.env.TWILIO_AUTH_TOKEN || "";
 const TWILIO_WHATSAPP_FROM = twilioConfig.whatsapp_from || process.env.TWILIO_WHATSAPP_FROM || "+18444357154";
+const TWILIO_VALIDATE_SIGNATURE = String(
+    twilioConfig.validate_signature || process.env.TWILIO_VALIDATE_SIGNATURE || "true",
+).toLowerCase() !== "false";
 
 let twilioClient = null;
 function getTwilioClient() {
@@ -4023,16 +4026,9 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  if (TWILIO_AUTH_TOKEN) {
-    const signature = req.headers["x-twilio-signature"] || "";
-    const url = `https://${req.headers.host}${req.originalUrl}`;
-    const params = req.body || {};
-    const valid = twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, url, params);
-    if (!valid) {
-      console.warn("Invalid Twilio signature");
-      res.status(403).send("Forbidden");
-      return;
-    }
+  if (TWILIO_VALIDATE_SIGNATURE && TWILIO_AUTH_TOKEN && !isValidTwilioSignature(req)) {
+    res.status(403).send("Forbidden");
+    return;
   }
 
   const from = String((req.body && req.body.From) || "").trim();
@@ -4063,6 +4059,51 @@ function escapeXml(str) {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&apos;");
+}
+
+function buildTwilioSignatureUrlCandidates(req) {
+  const protoHeader = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  const proto = protoHeader || "https";
+  const hostHeader = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
+  const hostNoDefaultPort = hostHeader.replace(/:443$|:80$/, "");
+  const originalUrl = String(req.originalUrl || req.url || "");
+  const pathOnly = originalUrl.split("?")[0];
+
+  const candidates = new Set();
+  for (const p of [proto, "https"]) {
+    for (const h of [hostHeader, hostNoDefaultPort]) {
+      if (!h) continue;
+      candidates.add(`${p}://${h}${originalUrl}`);
+      candidates.add(`${p}://${h}${pathOnly}`);
+    }
+  }
+  return Array.from(candidates);
+}
+
+function isValidTwilioSignature(req) {
+  const signature = String(req.headers["x-twilio-signature"] || "");
+  if (!signature || !TWILIO_AUTH_TOKEN) return false;
+
+  const params = req.body || {};
+  const urlCandidates = buildTwilioSignatureUrlCandidates(req);
+  for (const url of urlCandidates) {
+    try {
+      if (twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, url, params)) {
+        return true;
+      }
+    } catch (err) {
+      console.warn("Twilio signature validation threw for candidate URL:", {
+        url,
+        error: err && err.message ? err.message : String(err),
+      });
+    }
+  }
+  console.warn("Invalid Twilio signature", {
+    host: req.headers.host || "",
+    originalUrl: req.originalUrl || req.url || "",
+    candidates: urlCandidates,
+  });
+  return false;
 }
 
 /* ─── FlexPay callback hook for WhatsApp payment notifications ─── */
