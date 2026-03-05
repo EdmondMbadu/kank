@@ -11,19 +11,18 @@ const twilio = require("twilio");
 admin.initializeApp();
 
 // Retrieve Africa's Talking credentials from environment variables
-const apiKey = functions.config().africastalking.api_key;
-const username = functions.config().africastalking.username;
+const atConfig = (functions.config() && functions.config().africastalking) || {};
+const apiKey = atConfig.api_key || process.env.AFRICASTALKING_API_KEY || "";
+const username = atConfig.username || process.env.AFRICASTALKING_USERNAME || "";
 const db = admin.firestore();
 
-// Initialize Africa's Talking SDK
-// eslint-disable-next-line new-cap
-const africastalking = AfricasTalking({
-  apiKey,
-  username,
-});
-
-// Get the SMS service
-const sms = africastalking.SMS;
+// Initialize Africa's Talking SDK (deferred if credentials are missing in emulator)
+let sms = null;
+if (apiKey && username) {
+  // eslint-disable-next-line new-cap
+  const africastalking = AfricasTalking({apiKey, username});
+  sms = africastalking.SMS;
+}
 
 const KINSHASA_TIME_ZONE = "Africa/Kinshasa";
 const FLEXPAY_CALLBACK_URL_FALLBACK = "https://kank-4bbbc.web.app/";
