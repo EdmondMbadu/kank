@@ -5,6 +5,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const AfricasTalking = require("africastalking");
+const twilio = require("twilio");
 
 // Initialize Firebase Admin
 admin.initializeApp();
@@ -1322,6 +1323,14 @@ exports.flexpayMobileMoneyCallback = functions.https.onRequest(async (req, res) 
       ownerUid,
       message: error && error.message ? error.message : String(error),
     });
+  }
+
+  try {
+    if (finalStatus === "SUCCESS" || finalStatus === "FAILED") {
+      await notifyWhatsAppPaymentResult(reference, ownerUid, finalStatus);
+    }
+  } catch (waErr) {
+    console.error("WhatsApp payment notification error:", waErr);
   }
 
   res.status(200).json({
@@ -3382,3 +3391,756 @@ exports.scheduleExpectedKinshasaProd = functions.pubsub
 //       }
 //       return null;
 //     });
+
+/* ═══════════════════════════════════════════════════════════════════════
+   WHATSAPP CHATBOT  –  Twilio + Firestore state-machine
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const twilioConfig = (functions.config() && functions.config().twilio) || {};
+const TWILIO_ACCOUNT_SID = twilioConfig.account_sid || process.env.TWILIO_ACCOUNT_SID || "";
+const TWILIO_AUTH_TOKEN = twilioConfig.auth_token || process.env.TWILIO_AUTH_TOKEN || "";
+const TWILIO_WHATSAPP_FROM = twilioConfig.whatsapp_from || process.env.TWILIO_WHATSAPP_FROM || "+18444357154";
+
+let twilioClient = null;
+function getTwilioClient() {
+  if (!twilioClient && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
+    twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+  }
+  return twilioClient;
+}
+
+const WHATSAPP_SESSION_COLLECTION = "whatsappSessions";
+const WHATSAPP_PHONE_INDEX_COLLECTION = "whatsappPhoneIndex";
+const WHATSAPP_COMPLAINTS_COLLECTION = "whatsappComplaints";
+const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+const WA_STATES = {
+  MAIN_MENU: "MAIN_MENU",
+  BALANCE: "BALANCE",
+  PAYMENT_AMOUNT: "PAYMENT_AMOUNT",
+  PAYMENT_CUSTOM: "PAYMENT_CUSTOM",
+  PAYMENT_METHOD: "PAYMENT_METHOD",
+  PAYMENT_PENDING: "PAYMENT_PENDING",
+  HISTORY: "HISTORY",
+  COMPLAINT_TYPE: "COMPLAINT_TYPE",
+  COMPLAINT_DETAIL: "COMPLAINT_DETAIL",
+  AGENT: "AGENT",
+};
+
+const COMPLAINT_CATEGORIES = {
+  "1": "Paiement non enregistré",
+  "2": "Montant incorrect",
+  "3": "Problème technique",
+  "4": "Autre",
+};
+
+function normalizeWhatsAppPhone(raw) {
+  return String(raw || "").replace(/[^+\d]/g, "");
+}
+
+function formatFC(amount) {
+  const num = toNumber(amount);
+  return num.toLocaleString("fr-FR") + " FC";
+}
+
+/* ─── Phone Index ─── */
+
+function phoneToIndexKey(phoneNumber) {
+  const digits = String(phoneNumber || "").replace(/\D/g, "");
+  if (digits.startsWith("243") && digits.length === 12) return digits;
+  if (digits.startsWith("0") && digits.length === 10) return "243" + digits.slice(1);
+  if (digits.length === 9) return "243" + digits;
+  if (digits.startsWith("1") && digits.length === 11) return digits;
+  if (digits.length === 10) return "1" + digits;
+  return digits;
+}
+
+exports.syncWhatsAppPhoneIndex = functions.firestore
+    .document("users/{userId}/clients/{clientId}")
+    .onWrite(async (change, context) => {
+      const {userId, clientId} = context.params;
+      const after = change.after.exists ? change.after.data() : null;
+      const before = change.before.exists ? change.before.data() : null;
+
+      if (!after) {
+        if (before && before.phoneNumber) {
+          const key = phoneToIndexKey(before.phoneNumber);
+          if (key) {
+            const existing = await db.doc(`${WHATSAPP_PHONE_INDEX_COLLECTION}/${key}`).get();
+            if (existing.exists && existing.get("clientId") === clientId && existing.get("userId") === userId) {
+              await db.doc(`${WHATSAPP_PHONE_INDEX_COLLECTION}/${key}`).delete();
+            }
+          }
+        }
+        return;
+      }
+
+      const newPhone = after.phoneNumber || "";
+      const oldPhone = (before && before.phoneNumber) || "";
+
+      if (oldPhone && oldPhone !== newPhone) {
+        const oldKey = phoneToIndexKey(oldPhone);
+        if (oldKey) {
+          const existing = await db.doc(`${WHATSAPP_PHONE_INDEX_COLLECTION}/${oldKey}`).get();
+          if (existing.exists && existing.get("clientId") === clientId && existing.get("userId") === userId) {
+            await db.doc(`${WHATSAPP_PHONE_INDEX_COLLECTION}/${oldKey}`).delete();
+          }
+        }
+      }
+
+      if (newPhone) {
+        const key = phoneToIndexKey(newPhone);
+        if (key) {
+          await db.doc(`${WHATSAPP_PHONE_INDEX_COLLECTION}/${key}`).set({
+            userId,
+            clientId,
+            firstName: after.firstName || "",
+            lastName: after.lastName || "",
+            phoneNumber: newPhone,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
+      }
+    });
+
+exports.backfillWhatsAppPhoneIndex = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "Authentication is required.");
+  }
+  const usersSnap = await db.collection("users").get();
+  let indexed = 0;
+  for (const userDoc of usersSnap.docs) {
+    const userId = userDoc.id;
+    const clientsSnap = await db.collection(`users/${userId}/clients`).get();
+    for (const clientDoc of clientsSnap.docs) {
+      const clientData = clientDoc.data() || {};
+      const phone = clientData.phoneNumber || "";
+      if (!phone) continue;
+      const key = phoneToIndexKey(phone);
+      if (!key) continue;
+      await db.doc(`${WHATSAPP_PHONE_INDEX_COLLECTION}/${key}`).set({
+        userId,
+        clientId: clientDoc.id,
+        firstName: clientData.firstName || "",
+        lastName: clientData.lastName || "",
+        phoneNumber: phone,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      indexed++;
+    }
+  }
+  return {ok: true, indexed};
+});
+
+/* ─── Session helpers ─── */
+
+async function getWhatsAppSession(phone) {
+  const snap = await db.doc(`${WHATSAPP_SESSION_COLLECTION}/${phone}`).get();
+  if (!snap.exists) return null;
+  const data = snap.data() || {};
+  if (data.updatedAt && data.updatedAt.toMillis) {
+    const age = Date.now() - data.updatedAt.toMillis();
+    if (age > SESSION_TIMEOUT_MS) return null;
+  }
+  return data;
+}
+
+async function updateWhatsAppSession(phone, fields) {
+  await db.doc(`${WHATSAPP_SESSION_COLLECTION}/${phone}`).set({
+    ...fields,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+}
+
+async function resetWhatsAppSession(phone, fields) {
+  await db.doc(`${WHATSAPP_SESSION_COLLECTION}/${phone}`).set({
+    state: WA_STATES.MAIN_MENU,
+    tempData: {},
+    ...fields,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
+/* ─── Twilio send helper ─── */
+
+async function sendWhatsAppMessage(to, body) {
+  const client = getTwilioClient();
+  if (!client) {
+    console.error("Twilio client not configured");
+    return;
+  }
+  const toNum = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
+  const fromNum = `whatsapp:${TWILIO_WHATSAPP_FROM}`;
+  await client.messages.create({body, from: fromNum, to: toNum});
+}
+
+/* ─── Client lookup ─── */
+
+async function lookupClientByPhone(phone) {
+  const normalized = normalizeWhatsAppPhone(phone);
+  const digits = normalized.replace(/^\+/, "");
+
+  const snap = await db.doc(`${WHATSAPP_PHONE_INDEX_COLLECTION}/${digits}`).get();
+  if (snap.exists) {
+    const idx = snap.data();
+    const clientSnap = await db.doc(`users/${idx.userId}/clients/${idx.clientId}`).get();
+    if (clientSnap.exists) {
+      return {userId: idx.userId, clientId: idx.clientId, client: clientSnap.data()};
+    }
+  }
+  return null;
+}
+
+/* ─── Payment helpers ─── */
+
+function getNextPaymentDate(client) {
+  const payments = client.payments || {};
+  const keys = Object.keys(payments).sort((a, b) => {
+    const da = parseMonthDayYear(a);
+    const db2 = parseMonthDayYear(b);
+    if (!da || !db2) return 0;
+    return db2.getTime() - da.getTime();
+  });
+  if (keys.length > 0) {
+    const lastDate = parseMonthDayYear(keys[0]);
+    if (lastDate) {
+      const period = toNumber(client.paymentPeriodRange || 0);
+      const weeksPerPayment = period === 4 ? 1 : (period === 8 ? 1 : 1);
+      const next = new Date(lastDate);
+      next.setDate(next.getDate() + weeksPerPayment * 7);
+      return next;
+    }
+  }
+  return null;
+}
+
+function formatDateFrench(date) {
+  if (!date) return "N/A";
+  const months = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+  ];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function generateReceiptNumber() {
+  const num = Math.floor(10000 + Math.random() * 90000);
+  return `FG-${num}`;
+}
+
+function generateComplaintRef() {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `PL-${num}`;
+}
+
+/* ─── State handlers ─── */
+
+function buildMainMenu(clientName) {
+  return `🌟 Bienvenue chez Fondation Gervais!\n\nBonjour ${clientName}! Comment pouvons-nous vous aider aujourd'hui?\n\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte\n[5] Parler à un agent\n\nRépondez avec le numéro de votre choix.`;
+}
+
+function buildUnrecognizedInput() {
+  return `❓ Je n'ai pas compris.\n\nRépondez avec un chiffre:\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte\n[5] Parler à un agent`;
+}
+
+async function handleMainMenu(input, session) {
+  const choice = input.trim();
+  const clientInfo = session._clientInfo;
+
+  if (choice === "1") {
+    const balDebtLeft = toNumber(clientInfo.debtLeft || 0);
+    const amountToPay = toNumber(clientInfo.amountToPay || 0);
+    const loanAmount = toNumber(clientInfo.loanAmount || 0);
+    const interestRate = toNumber(clientInfo.interestRate || 0);
+    const interest = Math.round(loanAmount * interestRate / 100);
+    const nextDate = getNextPaymentDate(clientInfo);
+
+    const reply = `💳 VOTRE COMPTE\n\n👤 ${clientInfo.firstName || ""} ${clientInfo.lastName || ""}\n💰 Dette totale: ${formatFC(loanAmount)}\n💵 Montant dû: ${formatFC(amountToPay)}\n📅 Échéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n📊 Intérêt accumulé: ${formatFC(interest)}\n💰 Solde restant: ${formatFC(balDebtLeft)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
+    return {reply, newState: WA_STATES.BALANCE, tempData: {}};
+  }
+
+  if (choice === "2") {
+    const amountToPay = toNumber(clientInfo.amountToPay || 0);
+    const nextDate = getNextPaymentDate(clientInfo);
+    const reply = `💵 PAIEMENT\n\nMontant dû: ${formatFC(amountToPay)}\nÉchéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(amountToPay)} (montant dû)\n[2] Payer un autre montant\n[3] Retour au menu principal`;
+    return {reply, newState: WA_STATES.PAYMENT_AMOUNT, tempData: {suggestedAmount: amountToPay}};
+  }
+
+  if (choice === "3") {
+    const payments = clientInfo.payments || {};
+    const sorted = Object.entries(payments)
+        .map(([key, val]) => ({date: key, amount: toNumber(val)}))
+        .sort((a, b) => {
+          const da = parseMonthDayYear(a.date);
+          const db2 = parseMonthDayYear(b.date);
+          if (!da || !db2) return 0;
+          return db2.getTime() - da.getTime();
+        })
+        .slice(0, 3);
+
+    if (sorted.length === 0) {
+      const reply = `📋 HISTORIQUE\n\nAucun paiement trouvé.\n\n[0] Retour au menu principal`;
+      return {reply, newState: WA_STATES.HISTORY, tempData: {}};
+    }
+
+    const sources = clientInfo.paymentSources || {};
+    let lines = "";
+    for (const p of sorted) {
+      const d = parseMonthDayYear(p.date);
+      const dateStr = d ? formatDateFrench(d) : p.date;
+      const source = (sources[p.date] === "mobile_money") ? "Mobile Money" : "Manuel";
+      lines += `\n✅ ${formatFC(p.amount)} - ${dateStr}\n   ${source} • Reçu #${generateReceiptNumber()}`;
+    }
+
+    const reply = `📋 HISTORIQUE (${sorted.length} derniers)${lines}\n\n[1] Voir plus\n[0] Retour au menu principal`;
+    return {reply, newState: WA_STATES.HISTORY, tempData: {}};
+  }
+
+  if (choice === "4") {
+    const reply = `📝 PLAINTE\n\nQuel type de problème?\n\n[1] Paiement non enregistré\n[2] Montant incorrect\n[3] Problème technique\n[4] Autre`;
+    return {reply, newState: WA_STATES.COMPLAINT_TYPE, tempData: {}};
+  }
+
+  if (choice === "5") {
+    const reply = `👤 AGENT HUMAIN\n\nUn agent va prendre en charge votre conversation.\n\n📞 Ou appelez-nous:\n+243 XX XXX XXXX\n\n🕐 Disponible:\nLun - Ven: 8h00 - 17h00\nSam: 8h00 - 12h00\n\n[0] Retour au menu principal`;
+    return {reply, newState: WA_STATES.AGENT, tempData: {}};
+  }
+
+  return {reply: buildUnrecognizedInput(), newState: WA_STATES.MAIN_MENU, tempData: {}};
+}
+
+async function handleBalance(input, session) {
+  const choice = input.trim();
+  if (choice === "1") {
+    const clientInfo = session._clientInfo;
+    const amountToPay = toNumber(clientInfo.amountToPay || 0);
+    const nextDate = getNextPaymentDate(clientInfo);
+    const reply = `💵 PAIEMENT\n\nMontant dû: ${formatFC(amountToPay)}\nÉchéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(amountToPay)} (montant dû)\n[2] Payer un autre montant\n[3] Retour au menu principal`;
+    return {reply, newState: WA_STATES.PAYMENT_AMOUNT, tempData: {suggestedAmount: amountToPay}};
+  }
+  if (choice === "2" || choice === "0") {
+    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+  return {reply: `❓ Je n'ai pas compris.\n\n[1] Payer maintenant\n[2] Retour au menu principal`, newState: WA_STATES.BALANCE, tempData: session.tempData || {}};
+}
+
+async function handlePaymentAmount(input, session) {
+  const choice = input.trim();
+  if (choice === "1") {
+    const amount = toNumber(session.tempData && session.tempData.suggestedAmount || 0);
+    const reply = `Via quel service?\n\n[1] M-Pesa (Vodacom)\n[2] Airtel Money\n[3] Orange Money\n[4] Annuler`;
+    return {reply, newState: WA_STATES.PAYMENT_METHOD, tempData: {...(session.tempData || {}), paymentAmount: amount}};
+  }
+  if (choice === "2") {
+    const reply = `Entrez le montant que vous souhaitez payer (en FC):`;
+    return {reply, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
+  }
+  if (choice === "3" || choice === "0") {
+    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+  const clientInfo = session._clientInfo;
+  const amountToPay = toNumber(clientInfo.amountToPay || 0);
+  return {reply: `❓ Je n'ai pas compris.\n\n[1] Payer ${formatFC(amountToPay)} (montant dû)\n[2] Payer un autre montant\n[3] Retour au menu principal`, newState: WA_STATES.PAYMENT_AMOUNT, tempData: session.tempData || {}};
+}
+
+async function handlePaymentCustom(input, session) {
+  const cleaned = input.trim().replace(/[^\d]/g, "");
+  const amount = toNumber(cleaned);
+  if (amount <= 0) {
+    return {reply: `❌ Montant invalide. Entrez un montant valide en FC:`, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
+  }
+  const reply = `Via quel service?\n\n[1] M-Pesa (Vodacom)\n[2] Airtel Money\n[3] Orange Money\n[4] Annuler`;
+  return {reply, newState: WA_STATES.PAYMENT_METHOD, tempData: {...(session.tempData || {}), paymentAmount: amount}};
+}
+
+async function handlePaymentMethod(input, session) {
+  const choice = input.trim();
+  if (choice === "4" || choice === "0") {
+    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+
+  const providerNames = {"1": "M-Pesa", "2": "Airtel Money", "3": "Orange Money"};
+  if (!providerNames[choice]) {
+    return {reply: `❓ Je n'ai pas compris.\n\n[1] M-Pesa (Vodacom)\n[2] Airtel Money\n[3] Orange Money\n[4] Annuler`, newState: WA_STATES.PAYMENT_METHOD, tempData: session.tempData || {}};
+  }
+
+  const providerName = providerNames[choice];
+  const paymentAmount = toNumber(session.tempData && session.tempData.paymentAmount || 0);
+  const clientInfo = session._clientInfo;
+  const userId = session.userId;
+  const clientId = session.clientId;
+  const phone = clientInfo.phoneNumber || "";
+
+  let paymentRef = null;
+  let initOk = false;
+
+  try {
+    if (!FLEXPAY_MERCHANT || !FLEXPAY_TOKEN) {
+      throw new Error("FlexPay configuration missing");
+    }
+
+    const phoneNormalized = normalizePhoneForFlexpay(phone);
+    if (!phoneNormalized) {
+      throw new Error("Invalid phone number for FlexPay");
+    }
+
+    const createdAtMs = Date.now();
+    const reference = `KANK-${userId.slice(0, 6)}-${clientId.slice(0, 6)}-${createdAtMs}`;
+    const dayKey = formatMonthDayYear(new Date());
+    const paymentEntryKey = `${dayKey}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`;
+
+    const requestBody = {
+      merchant: FLEXPAY_MERCHANT,
+      type: "1",
+      reference,
+      phone: phoneNormalized,
+      amount: String(paymentAmount),
+      currency: "CDF",
+      callbackUrl: FLEXPAY_CALLBACK_URL,
+    };
+
+    const resp = await fetch(FLEXPAY_PAYMENT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": toFlexpayBearer(FLEXPAY_TOKEN),
+      },
+      body: JSON.stringify(requestBody),
+    });
+    const initJson = await resp.json();
+
+    const code = String((initJson && initJson.code) || "1");
+    const orderNumber = String((initJson && initJson.orderNumber) || "");
+
+    if (code !== "0" || !orderNumber) {
+      throw new Error(`FlexPay rejected: ${initJson && initJson.message || "unknown"}`);
+    }
+
+    await db.doc(`users/${userId}/mobileMoneyTransactions/${reference}`).set({
+      reference,
+      orderNumber,
+      clientUid: clientId,
+      paymentAmount: String(paymentAmount),
+      savingsAmount: "0",
+      currency: "CDF",
+      phoneRaw: phone,
+      phoneNormalized,
+      requestBody,
+      initResponse: initJson,
+      status: "PENDING",
+      createdAtMs,
+      updatedAtMs: Date.now(),
+      ownerUid: userId,
+      dayKey,
+      paymentEntryKey,
+      dbWriteDone: false,
+      whatsappOriginated: true,
+      whatsappPhone: session.phone || "",
+    });
+
+    await upsertMobileMoneyLookup(reference, {
+      ownerUid: userId,
+      clientUid: clientId,
+      orderNumber,
+      status: "PENDING",
+      dbWriteDone: false,
+      createdAtMs,
+      whatsappOriginated: true,
+    });
+
+    paymentRef = reference;
+    initOk = true;
+  } catch (err) {
+    console.error("WhatsApp payment initiation failed:", err);
+  }
+
+  if (initOk) {
+    const reply = `⏳ Demande envoyée à ${providerName}...\n\nVérifiez votre téléphone et confirmez avec votre PIN.\n\nVous recevrez une confirmation ici une fois le paiement traité.`;
+    return {reply, newState: WA_STATES.PAYMENT_PENDING, tempData: {...(session.tempData || {}), provider: providerName, paymentRef}};
+  }
+
+  const reply = `❌ Désolé, une erreur est survenue lors de l'envoi de la demande de paiement. Veuillez réessayer plus tard.\n\n[0] Retour au menu principal`;
+  return {reply, newState: WA_STATES.MAIN_MENU, tempData: {}};
+}
+
+async function handlePaymentPending(input, session) {
+  const choice = input.trim();
+  if (choice === "0") {
+    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+  return {reply: `⏳ Votre paiement est en cours de traitement. Veuillez patienter.\n\n[0] Retour au menu principal`, newState: WA_STATES.PAYMENT_PENDING, tempData: session.tempData || {}};
+}
+
+async function handleHistory(input, session) {
+  const choice = input.trim();
+  if (choice === "0") {
+    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+  if (choice === "1") {
+    const clientInfo = session._clientInfo;
+    const payments = clientInfo.payments || {};
+    const sorted = Object.entries(payments)
+        .map(([key, val]) => ({date: key, amount: toNumber(val)}))
+        .sort((a, b) => {
+          const da = parseMonthDayYear(a.date);
+          const db2 = parseMonthDayYear(b.date);
+          if (!da || !db2) return 0;
+          return db2.getTime() - da.getTime();
+        })
+        .slice(0, 10);
+
+    const sources = clientInfo.paymentSources || {};
+    let lines = "";
+    for (const p of sorted) {
+      const d = parseMonthDayYear(p.date);
+      const dateStr = d ? formatDateFrench(d) : p.date;
+      const source = (sources[p.date] === "mobile_money") ? "Mobile Money" : "Manuel";
+      lines += `\n✅ ${formatFC(p.amount)} - ${dateStr}\n   ${source}`;
+    }
+
+    const reply = `📋 HISTORIQUE COMPLET (${sorted.length})${lines}\n\n[0] Retour au menu principal`;
+    return {reply, newState: WA_STATES.HISTORY, tempData: {}};
+  }
+  return {reply: `❓ Je n'ai pas compris.\n\n[1] Voir plus\n[0] Retour au menu principal`, newState: WA_STATES.HISTORY, tempData: {}};
+}
+
+async function handleComplaintType(input, _session) {
+  const choice = input.trim();
+  const category = COMPLAINT_CATEGORIES[choice];
+  if (!category) {
+    return {reply: `❓ Je n'ai pas compris.\n\n[1] Paiement non enregistré\n[2] Montant incorrect\n[3] Problème technique\n[4] Autre`, newState: WA_STATES.COMPLAINT_TYPE, tempData: {}};
+  }
+  const reply = `Décrivez votre problème en détail.\nNous vous répondrons dans 24h.`;
+  return {reply, newState: WA_STATES.COMPLAINT_DETAIL, tempData: {complaintCategory: category, complaintCategoryId: choice}};
+}
+
+async function handleComplaintDetail(input, session) {
+  const description = input.trim();
+  if (!description || description.length < 3) {
+    return {reply: `Veuillez décrire votre problème en détail:`, newState: WA_STATES.COMPLAINT_DETAIL, tempData: session.tempData || {}};
+  }
+
+  const ref = generateComplaintRef();
+  const category = (session.tempData && session.tempData.complaintCategory) || "Autre";
+
+  await db.collection(WHATSAPP_COMPLAINTS_COLLECTION).add({
+    phone: session.phone || "",
+    clientId: session.clientId || "",
+    userId: session.userId || "",
+    clientName: session.clientName || "",
+    category,
+    categoryId: (session.tempData && session.tempData.complaintCategoryId) || "4",
+    description,
+    reference: ref,
+    status: "open",
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const reply = `✅ PLAINTE REÇUE\n\n🎫 Référence: #${ref}\n📂 Catégorie: ${category}\n\nNotre équipe vous contactera sous 24h.\n\nMerci pour votre patience. 🙏\nFondation Gervais\n\n[0] Retour au menu principal`;
+  return {reply, newState: WA_STATES.MAIN_MENU, tempData: {}};
+}
+
+async function handleAgent(input, session) {
+  const choice = input.trim();
+  if (choice === "0") {
+    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+  return {reply: `👤 Un agent vous contactera bientôt.\n\n📞 Ou appelez: +243 XX XXX XXXX\n\n[0] Retour au menu principal`, newState: WA_STATES.AGENT, tempData: {}};
+}
+
+/* ─── Main dispatcher ─── */
+
+async function handleWhatsAppMessage(from, body) {
+  const phone = normalizeWhatsAppPhone(from);
+  const input = (body || "").trim();
+
+  const clientResult = await lookupClientByPhone(phone);
+  if (!clientResult) {
+    return `Désolé, votre numéro n'est pas enregistré dans notre système.\n\nContactez Fondation Gervais pour vous inscrire.\n📞 +243 XX XXX XXXX`;
+  }
+
+  const {userId, clientId, client} = clientResult;
+  const clientName = client.firstName || "Client";
+
+  let session = await getWhatsAppSession(phone);
+  if (!session) {
+    await resetWhatsAppSession(phone, {
+      userId,
+      clientId,
+      clientName,
+      phone,
+      state: WA_STATES.MAIN_MENU,
+    });
+    return buildMainMenu(clientName);
+  }
+
+  session._clientInfo = client;
+  session.userId = session.userId || userId;
+  session.clientId = session.clientId || clientId;
+  session.clientName = session.clientName || clientName;
+  session.phone = session.phone || phone;
+
+  const state = session.state || WA_STATES.MAIN_MENU;
+
+  const handlers = {
+    [WA_STATES.MAIN_MENU]: handleMainMenu,
+    [WA_STATES.BALANCE]: handleBalance,
+    [WA_STATES.PAYMENT_AMOUNT]: handlePaymentAmount,
+    [WA_STATES.PAYMENT_CUSTOM]: handlePaymentCustom,
+    [WA_STATES.PAYMENT_METHOD]: handlePaymentMethod,
+    [WA_STATES.PAYMENT_PENDING]: handlePaymentPending,
+    [WA_STATES.HISTORY]: handleHistory,
+    [WA_STATES.COMPLAINT_TYPE]: handleComplaintType,
+    [WA_STATES.COMPLAINT_DETAIL]: handleComplaintDetail,
+    [WA_STATES.AGENT]: handleAgent,
+  };
+
+  const handler = handlers[state] || handleMainMenu;
+  let result;
+  try {
+    result = await handler(input, session);
+  } catch (err) {
+    console.error("WhatsApp handler error:", err);
+    result = {reply: buildUnrecognizedInput(), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+
+  await updateWhatsAppSession(phone, {
+    state: result.newState,
+    tempData: result.tempData || {},
+    userId,
+    clientId,
+    clientName,
+    phone,
+  });
+
+  return result.reply;
+}
+
+/* ─── Webhook endpoint ─── */
+
+exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).send("Method Not Allowed");
+    return;
+  }
+
+  if (TWILIO_AUTH_TOKEN) {
+    const signature = req.headers["x-twilio-signature"] || "";
+    const url = `https://${req.headers.host}${req.originalUrl}`;
+    const params = req.body || {};
+    const valid = twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, url, params);
+    if (!valid) {
+      console.warn("Invalid Twilio signature");
+      res.status(403).send("Forbidden");
+      return;
+    }
+  }
+
+  const from = String((req.body && req.body.From) || "").trim();
+  const body = String((req.body && req.body.Body) || "").trim();
+
+  if (!from) {
+    res.status(400).send("Missing From");
+    return;
+  }
+
+  let reply;
+  try {
+    reply = await handleWhatsAppMessage(from, body);
+  } catch (err) {
+    console.error("whatsappWebhook error:", err);
+    reply = "Une erreur est survenue. Veuillez réessayer.";
+  }
+
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(reply)}</Message></Response>`;
+  res.set("Content-Type", "text/xml");
+  res.status(200).send(twiml);
+});
+
+function escapeXml(str) {
+  return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&apos;");
+}
+
+/* ─── FlexPay callback hook for WhatsApp payment notifications ─── */
+
+async function notifyWhatsAppPaymentResult(reference, ownerUid, status) {
+  const txSnap = await db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`).get();
+  if (!txSnap.exists) return;
+
+  const txData = txSnap.data() || {};
+  if (!txData.whatsappOriginated) return;
+
+  const whatsappPhone = txData.whatsappPhone || "";
+  if (!whatsappPhone) return;
+
+  const clientUid = txData.clientUid || "";
+  const paymentAmount = toNumber(txData.paymentAmount || 0);
+
+  if (status === "SUCCESS") {
+    let clientName = "";
+    let debtLeft = 0;
+    let nextDateStr = "N/A";
+    try {
+      const clientSnap = await db.doc(`users/${ownerUid}/clients/${clientUid}`).get();
+      if (clientSnap.exists) {
+        const c = clientSnap.data();
+        clientName = c.firstName || "";
+        debtLeft = toNumber(c.debtLeft || 0);
+        const nd = getNextPaymentDate(c);
+        nextDateStr = nd ? formatDateFrench(nd) : "N/A";
+      }
+    } catch (e) {
+      console.error("Error fetching client for WhatsApp notification:", e);
+    }
+
+    const receipt = generateReceiptNumber();
+    const msg = `✅ PAIEMENT CONFIRMÉ!\n\n💵 ${formatFC(paymentAmount)} reçu via Mobile Money\n🧾 Reçu: #${receipt}\n📅 Prochain paiement: ${nextDateStr}\n💰 Solde restant: ${formatFC(debtLeft)}\n\nMerci ${clientName}! 🙏\nFondation Gervais vous souhaite une bonne journée.\n\n[0] Retour au menu principal`;
+    await sendWhatsAppMessage(whatsappPhone, msg);
+
+    await updateWhatsAppSession(whatsappPhone, {
+      state: WA_STATES.MAIN_MENU,
+      tempData: {},
+    });
+  } else if (status === "FAILED") {
+    const reason = txData.failureReason || txData.callbackMessage || "";
+    const msg = `❌ PAIEMENT ÉCHOUÉ\n\nLe paiement de ${formatFC(paymentAmount)} n'a pas abouti.${reason ? `\nRaison: ${reason}` : ""}\n\nVeuillez réessayer.\n\n[0] Retour au menu principal`;
+    await sendWhatsAppMessage(whatsappPhone, msg);
+
+    await updateWhatsAppSession(whatsappPhone, {
+      state: WA_STATES.MAIN_MENU,
+      tempData: {},
+    });
+  }
+}
+
+/* ─── Session timeout cleanup ─── */
+
+exports.whatsappSessionCleanup = functions.pubsub
+    .schedule("every 10 minutes")
+    .timeZone(KINSHASA_TIME_ZONE)
+    .onRun(async () => {
+      const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - SESSION_TIMEOUT_MS);
+      const expiredSnap = await db.collection(WHATSAPP_SESSION_COLLECTION)
+          .where("updatedAt", "<", cutoff)
+          .where("state", "!=", WA_STATES.MAIN_MENU)
+          .get();
+
+      for (const doc of expiredSnap.docs) {
+        const data = doc.data() || {};
+        const phone = data.phone || doc.id;
+
+        try {
+          await sendWhatsAppMessage(phone, `⏰ Session expirée.\n\nEnvoyez n'importe quel message pour recommencer.\n\nFondation Gervais 🌟`);
+        } catch (e) {
+          console.error("Failed to send timeout message:", e);
+        }
+
+        await db.doc(`${WHATSAPP_SESSION_COLLECTION}/${doc.id}`).delete();
+      }
+      return null;
+    });
