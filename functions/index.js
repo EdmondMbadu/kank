@@ -3604,6 +3604,17 @@ function buildWhatsAppReportRange(data) {
   };
 }
 
+async function listWhatsAppPaymentDocs() {
+  const usersSnap = await db.collection("users").get();
+  const queryJobs = usersSnap.docs.map((userDoc) => (
+    db.collection(`users/${userDoc.id}/mobileMoneyTransactions`)
+        .where("whatsappOriginated", "==", true)
+        .get()
+  ));
+  const querySnaps = await Promise.all(queryJobs);
+  return querySnaps.flatMap((snap) => snap.docs);
+}
+
 exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) => {
   await assertWhatsAppAdminAccess(context);
 
@@ -3619,13 +3630,10 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       .where("createdAtMs", ">=", startMs)
       .where("createdAtMs", "<", endMs)
       .orderBy("createdAtMs", "desc");
-  const paymentsQuery = db.collectionGroup("mobileMoneyTransactions")
-      .where("whatsappOriginated", "==", true);
-
-  const [latestMessagesSnap, complaintsSnap, paymentsSnap] = await Promise.all([
+  const [latestMessagesSnap, complaintsSnap, paymentDocs] = await Promise.all([
     latestMessagesQuery.get(),
     complaintsQuery.get(),
-    paymentsQuery.get(),
+    listWhatsAppPaymentDocs(),
   ]);
 
   const allMessages = latestMessagesSnap.docs.map((doc) => {
@@ -3658,7 +3666,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
   });
 
   const payments = [];
-  for (const doc of paymentsSnap.docs) {
+  for (const doc of paymentDocs) {
     const item = doc.data() || {};
     const updatedAtMs = Number(item.updatedAtMs || item.createdAtMs || 0);
     const status = String(item.status || "").toUpperCase();
