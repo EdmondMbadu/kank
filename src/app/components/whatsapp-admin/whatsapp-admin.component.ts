@@ -106,9 +106,9 @@ export class WhatsappAdminComponent implements OnInit {
   loading = false;
   error = '';
 
-  messagesOpen = true;
-  complaintsOpen = true;
-  paymentsOpen = true;
+  messagesOpen = false;
+  complaintsOpen = false;
+  paymentsOpen = false;
 
   constructor(
     public auth: AuthService,
