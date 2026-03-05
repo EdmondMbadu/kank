@@ -3616,27 +3616,6 @@ function getNextPaymentDate(client) {
   return null;
 }
 
-function getDebtCycleEndDate(client) {
-  const start = parseMonthDayYear(client && client.debtCycleStartDate || "");
-  if (!start) return null;
-  const periodWeeks = toNumber(client && client.paymentPeriodRange || 0);
-  if (periodWeeks <= 0) return null;
-  const end = new Date(start);
-  end.setDate(end.getDate() + periodWeeks * 7);
-  return end;
-}
-
-function isDebtOverdue(client, dueDate) {
-  if (!dueDate) return false;
-  const debtLeft = toNumber(client && client.debtLeft || 0);
-  if (debtLeft <= 0) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  due.setHours(0, 0, 0, 0);
-  return today > due;
-}
-
 function formatDateFrench(date) {
   if (!date) return "N/A";
   const months = [
@@ -3659,11 +3638,11 @@ function generateComplaintRef() {
 /* ─── State handlers ─── */
 
 function buildMainMenu(clientName) {
-  return `🌟 Bienvenue chez Fondation Gervais!\n\nBonjour ${clientName}! Comment pouvons-nous vous aider aujourd'hui?\n\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte\n[5] Parler à un agent\n\nRépondez avec le numéro de votre choix.`;
+  return `🌟 Bienvenue chez Fondation Gervais!\n\nBonjour ${clientName}!\n\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte\n\nRépondez avec le numéro de votre choix.`;
 }
 
 function buildUnrecognizedInput() {
-  return `❓ Je n'ai pas compris.\n\nRépondez avec un chiffre:\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte\n[5] Parler à un agent`;
+  return `❓ Je n'ai pas compris.\n\nRépondez avec un chiffre:\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte`;
 }
 
 async function handleMainMenu(input, session) {
@@ -3673,17 +3652,13 @@ async function handleMainMenu(input, session) {
   if (choice === "1") {
     const remainingDebt = toNumber(clientInfo.debtLeft || 0);
     const savings = toNumber(clientInfo.savings || 0);
-    const dueDate = getDebtCycleEndDate(clientInfo) || getNextPaymentDate(clientInfo);
-    const overdue = isDebtOverdue(clientInfo, dueDate);
     const fullName = [
+      clientInfo.middleName || "",
       clientInfo.firstName || "",
       clientInfo.lastName || "",
-      clientInfo.middleName || "",
     ].filter((x) => x && String(x).trim()).join(" ");
-    const dueLabel = dueDate ? formatDateFrench(dueDate) : "N/A";
-    const dueWithStatus = overdue ? `${dueLabel} — Payer immédiatement` : dueLabel;
 
-    const reply = `💳 VOTRE COMPTE\n\n👤 ${fullName || "Client"}\n📅 Échéance: ${dueWithStatus}\n💰 Dette Restant: ${formatFC(remainingDebt)}\n🏦 Épargne: ${formatFC(savings)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
+    const reply = `💳 VOTRE COMPTE\n\n👤 ${fullName || "Client"}\n💰 *DETTE RESTANT:* ${formatFC(remainingDebt)}\n🏦 Épargne: ${formatFC(savings)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
     return {reply, newState: WA_STATES.BALANCE, tempData: {}};
   }
 
@@ -3727,11 +3702,6 @@ async function handleMainMenu(input, session) {
   if (choice === "4") {
     const reply = `📝 PLAINTE\n\nQuel type de problème?\n\n[1] Paiement non enregistré\n[2] Montant incorrect\n[3] Problème technique\n[4] Autre`;
     return {reply, newState: WA_STATES.COMPLAINT_TYPE, tempData: {}};
-  }
-
-  if (choice === "5") {
-    const reply = `👤 AGENT HUMAIN\n\nUn agent va prendre en charge votre conversation.\n\n📞 Ou appelez-nous:\n+243 XX XXX XXXX\n\n🕐 Disponible:\nLun - Ven: 8h00 - 17h00\nSam: 8h00 - 12h00\n\n[0] Retour au menu principal`;
-    return {reply, newState: WA_STATES.AGENT, tempData: {}};
   }
 
   return {reply: buildUnrecognizedInput(), newState: WA_STATES.MAIN_MENU, tempData: {}};
