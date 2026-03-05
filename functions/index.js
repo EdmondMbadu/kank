@@ -3616,6 +3616,27 @@ function getNextPaymentDate(client) {
   return null;
 }
 
+function getDebtCycleEndDate(client) {
+  const start = parseMonthDayYear(client && client.debtCycleStartDate || "");
+  if (!start) return null;
+  const periodWeeks = toNumber(client && client.paymentPeriodRange || 0);
+  if (periodWeeks <= 0) return null;
+  const end = new Date(start);
+  end.setDate(end.getDate() + periodWeeks * 7);
+  return end;
+}
+
+function isDebtOverdue(client, dueDate) {
+  if (!dueDate) return false;
+  const debtLeft = toNumber(client && client.debtLeft || 0);
+  if (debtLeft <= 0) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate);
+  due.setHours(0, 0, 0, 0);
+  return today > due;
+}
+
 function formatDateFrench(date) {
   if (!date) return "N/A";
   const months = [
@@ -3652,10 +3673,17 @@ async function handleMainMenu(input, session) {
   if (choice === "1") {
     const remainingDebt = toNumber(clientInfo.debtLeft || 0);
     const savings = toNumber(clientInfo.savings || 0);
-    const amountToPay = toNumber(clientInfo.amountToPay || 0);
-    const nextDate = getNextPaymentDate(clientInfo);
+    const dueDate = getDebtCycleEndDate(clientInfo) || getNextPaymentDate(clientInfo);
+    const overdue = isDebtOverdue(clientInfo, dueDate);
+    const fullName = [
+      clientInfo.firstName || "",
+      clientInfo.lastName || "",
+      clientInfo.middleName || "",
+    ].filter((x) => x && String(x).trim()).join(" ");
+    const dueLabel = dueDate ? formatDateFrench(dueDate) : "N/A";
+    const dueWithStatus = overdue ? `${dueLabel} — Payer immédiatement` : dueLabel;
 
-    const reply = `💳 VOTRE COMPTE\n\n👤 ${clientInfo.firstName || ""} ${clientInfo.lastName || ""}\n💵 Montant dû: ${formatFC(amountToPay)}\n📅 Échéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n💰 *Dette:* ${formatFC(remainingDebt)}\n🏦 Épargne: ${formatFC(savings)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
+    const reply = `💳 VOTRE COMPTE\n\n👤 ${fullName || "Client"}\n📅 Échéance: ${dueWithStatus}\n💰 Dette Restant: ${formatFC(remainingDebt)}\n🏦 Épargne: ${formatFC(savings)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
     return {reply, newState: WA_STATES.BALANCE, tempData: {}};
   }
 
