@@ -6,31 +6,45 @@
 
 <div
   *ngIf="auth.isAdmin; else noAccess"
-  class="min-h-screen bg-slate-50 px-4 py-6 md:px-8"
+  class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4 py-8 md:px-8"
 >
-  <div class="mx-auto max-w-7xl space-y-6">
-    <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+  <div class="mx-auto max-w-7xl space-y-8">
+
+    <!-- Header Card -->
+    <section class="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-6 shadow-lg shadow-slate-200/50 md:p-8">
+      <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-blue-500/5"></div>
+      <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">WhatsApp Admin</h1>
-          <p class="mt-1 text-sm text-slate-600">
-            Vue de contrôle pour les messages, plaintes et paiements WhatsApp.
-          </p>
-          <p *ngIf="reportLabel" class="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Période: {{ reportLabel }}
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100">
+              <svg class="h-5 w-5 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">WhatsApp Admin</h1>
+              <p class="mt-0.5 text-sm text-slate-500">
+                Suivi des messages, plaintes et paiements
+              </p>
+            </div>
+          </div>
+          <p *ngIf="reportLabel" class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            {{ reportLabel }}
           </p>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <div class="flex flex-wrap gap-2">
+        <!-- Filters -->
+        <div class="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 backdrop-blur-sm">
+          <div class="flex gap-1 rounded-xl bg-slate-200/60 p-1">
             <button
               type="button"
               (click)="setFilterMode('day')"
-              class="rounded-xl px-4 py-2 text-sm font-semibold transition"
+              class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200"
               [ngClass]="
                 filterMode === 'day'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-white text-slate-700 border border-slate-200'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
               "
             >
               Jour
@@ -38,11 +52,11 @@
             <button
               type="button"
               (click)="setFilterMode('month')"
-              class="rounded-xl px-4 py-2 text-sm font-semibold transition"
+              class="flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200"
               [ngClass]="
                 filterMode === 'month'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-white text-slate-700 border border-slate-200'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
               "
             >
               Mois
@@ -56,13 +70,13 @@
                 type="date"
                 [(ngModel)]="selectedDay"
                 (ngModelChange)="onPeriodFilterChange()"
-                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
               />
             </label>
             <button
               type="button"
               (click)="loadReport(1)"
-              class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+              class="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]"
             >
               Charger
             </button>
@@ -74,7 +88,7 @@
               <select
                 [(ngModel)]="selectedMonth"
                 (ngModelChange)="onPeriodFilterChange()"
-                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
               >
                 <option *ngFor="let month of months" [value]="month.value">
                   {{ month.label }}
@@ -86,7 +100,7 @@
               <select
                 [(ngModel)]="selectedYear"
                 (ngModelChange)="onPeriodFilterChange()"
-                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
               >
                 <option *ngFor="let year of years" [value]="year">
                   {{ year }}
@@ -96,7 +110,7 @@
             <button
               type="button"
               (click)="loadReport(1)"
-              class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+              class="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]"
             >
               Charger
             </button>
@@ -106,131 +120,195 @@
 
       <p
         *ngIf="error"
-        class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        class="mt-5 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
       >
+        <svg class="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/></svg>
         {{ error }}
       </p>
     </section>
 
-    <section *ngIf="loading" class="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-      Chargement du rapport WhatsApp...
-    </section>
+    <!-- Loading State -->
+    <ng-container *ngIf="loading">
+      <!-- Skeleton Stats -->
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div *ngFor="let s of [1,2,3,4,5]" class="animate-pulse rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
+          <div class="h-3 w-16 rounded-full bg-slate-200"></div>
+          <div class="mt-3 h-8 w-20 rounded-lg bg-slate-200"></div>
+        </div>
+      </div>
 
+      <!-- Skeleton Table -->
+      <div class="animate-pulse rounded-3xl border border-slate-200/60 bg-white p-6 shadow-sm">
+        <div class="h-5 w-48 rounded-lg bg-slate-200"></div>
+        <div class="mt-2 h-3 w-64 rounded-full bg-slate-100"></div>
+        <div class="mt-6 space-y-3">
+          <div class="h-10 rounded-xl bg-slate-100"></div>
+          <div *ngFor="let r of [1,2,3,4,5,6]" class="h-12 rounded-xl bg-slate-50"></div>
+        </div>
+      </div>
+
+      <div class="animate-pulse rounded-3xl border border-slate-200/60 bg-white p-6 shadow-sm">
+        <div class="h-5 w-40 rounded-lg bg-slate-200"></div>
+        <div class="mt-6 space-y-3">
+          <div class="h-10 rounded-xl bg-slate-100"></div>
+          <div *ngFor="let r of [1,2,3]" class="h-12 rounded-xl bg-slate-50"></div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Stats Cards -->
     <div *ngIf="!loading" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-      <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
-        <div class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Entrants</div>
-        <div class="mt-2 text-3xl font-extrabold text-emerald-950">{{ stats.incomingCount }}</div>
+      <div class="stat-card group rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-emerald-100">
+        <div class="flex items-center gap-2">
+          <svg class="h-4 w-4 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Entrants</span>
+        </div>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-emerald-950">{{ stats.incomingCount }}</div>
       </div>
-      <div class="rounded-3xl border border-blue-200 bg-blue-50 p-5">
-        <div class="text-xs font-semibold uppercase tracking-wide text-blue-700">Sortants</div>
-        <div class="mt-2 text-3xl font-extrabold text-blue-950">{{ stats.outgoingCount }}</div>
+      <div class="stat-card group rounded-3xl border border-blue-200/60 bg-gradient-to-br from-blue-50 to-blue-100/50 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-blue-100">
+        <div class="flex items-center gap-2">
+          <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+          <span class="text-xs font-semibold uppercase tracking-wider text-blue-600">Sortants</span>
+        </div>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-blue-950">{{ stats.outgoingCount }}</div>
       </div>
-      <div class="rounded-3xl border border-slate-200 bg-slate-100 p-5">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-700">Total messages</div>
-        <div class="mt-2 text-3xl font-extrabold text-slate-950">{{ stats.totalMessages }}</div>
+      <div class="stat-card group rounded-3xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-slate-100/50 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-slate-100">
+        <div class="flex items-center gap-2">
+          <svg class="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-600">Total messages</span>
+        </div>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-slate-950">{{ stats.totalMessages }}</div>
       </div>
-      <div class="rounded-3xl border border-amber-200 bg-amber-50 p-5">
-        <div class="text-xs font-semibold uppercase tracking-wide text-amber-700">Plaintes</div>
-        <div class="mt-2 text-3xl font-extrabold text-amber-950">{{ stats.complaintCount }}</div>
+      <div class="stat-card group rounded-3xl border border-red-200/60 bg-gradient-to-br from-red-50 to-red-100/50 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-red-100">
+        <div class="flex items-center gap-2">
+          <svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span class="text-xs font-semibold uppercase tracking-wider text-red-600">Plaintes</span>
+        </div>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-red-950">{{ stats.complaintCount }}</div>
       </div>
-      <div class="rounded-3xl border border-fuchsia-200 bg-fuchsia-50 p-5">
-        <div class="text-xs font-semibold uppercase tracking-wide text-fuchsia-700">Paiements</div>
-        <div class="mt-2 text-3xl font-extrabold text-fuchsia-950">{{ stats.paymentCount }}</div>
+      <div class="stat-card group rounded-3xl border border-violet-200/60 bg-gradient-to-br from-violet-50 to-violet-100/50 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:shadow-violet-100">
+        <div class="flex items-center gap-2">
+          <svg class="h-4 w-4 text-violet-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="text-xs font-semibold uppercase tracking-wider text-violet-600">Paiements</span>
+        </div>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-violet-950">{{ stats.paymentCount }}</div>
       </div>
     </div>
 
-    <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <!-- Messages Section -->
+    <section *ngIf="!loading" class="rounded-3xl border border-slate-200/60 bg-white p-6 shadow-lg shadow-slate-200/50 md:p-8">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h2 class="text-lg font-bold text-slate-900">Messages WhatsApp</h2>
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <h2 class="text-lg font-bold text-slate-900">Messages WhatsApp</h2>
+          </div>
           <p class="mt-1 text-sm text-slate-500">
-            {{ messagePagination.totalCount }} message(s) pour cette période
-            <span *ngIf="messagePagination.phoneSearch">
-              · filtre téléphone: {{ messagePagination.phoneSearch }}
+            <span class="font-semibold text-slate-700">{{ messagePagination.totalCount }}</span> message(s) pour cette période
+            <span *ngIf="messagePagination.phoneSearch" class="ml-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              {{ messagePagination.phoneSearch }}
             </span>
           </p>
         </div>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
           <label class="block text-sm text-slate-700">
-            <span class="mb-1 block font-medium">Téléphone</span>
-            <input
-              type="text"
-              [(ngModel)]="messagePhoneSearch"
-              placeholder="+243..."
-              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 sm:w-56"
-            />
+            <span class="mb-1 block font-medium">Recherche par téléphone</span>
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input
+                type="text"
+                [(ngModel)]="messagePhoneSearch"
+                placeholder="+243..."
+                class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20 sm:w-56"
+              />
+            </div>
           </label>
           <button
             type="button"
             (click)="applyMessagePhoneSearch()"
-            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+            class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
           >
             Rechercher
           </button>
           <button
             type="button"
             (click)="clearMessagePhoneSearch()"
-            class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-[0.98]"
           >
             Effacer
           </button>
         </div>
       </div>
-      <div class="mt-4 overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Date</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Direction</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Téléphone</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Message</th>
+
+      <!-- Messages Table -->
+      <div class="mt-6 overflow-x-auto rounded-2xl border border-slate-200/80">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50/80">
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Date</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Direction</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Téléphone</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Message</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr *ngFor="let m of latestMessages">
-              <td class="px-3 py-2 text-slate-600">{{ formatDate(m.createdAtMs) }}</td>
-              <td class="px-3 py-2">
+          <tbody>
+            <tr *ngFor="let m of latestMessages; let odd = odd"
+                class="border-b border-slate-100 transition-colors duration-150 hover:bg-emerald-50/40"
+                [ngClass]="{'bg-slate-50/40': odd}">
+              <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ formatDate(m.createdAtMs) }}</td>
+              <td class="px-4 py-3">
                 <span
-                  class="rounded-full px-2 py-1 text-xs font-semibold"
-                  [ngClass]="m.direction === 'incoming' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'"
+                  class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [ngClass]="m.direction === 'incoming'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-blue-100 text-blue-700'"
                 >
+                  <svg *ngIf="m.direction === 'incoming'" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                  <svg *ngIf="m.direction !== 'incoming'" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                   {{ m.direction === 'incoming' ? 'Entrant' : 'Sortant' }}
                 </span>
               </td>
-              <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ m.phone || '--' }}</td>
-              <td class="message-cell px-3 py-2 text-slate-800">{{ m.body || '--' }}</td>
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-600">{{ m.phone || '--' }}</td>
+              <td class="message-cell px-4 py-3 text-slate-800">{{ m.body || '--' }}</td>
             </tr>
             <tr *ngIf="latestMessages.length === 0">
-              <td colspan="4" class="px-3 py-6 text-center text-slate-500">Aucun message pour cette période.</td>
+              <td colspan="4" class="px-4 py-10 text-center">
+                <svg class="mx-auto h-8 w-8 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <p class="mt-2 text-sm text-slate-400">Aucun message pour cette période.</p>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination -->
       <div
         *ngIf="hasMessageResults"
-        class="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between"
+        class="mt-5 flex flex-col items-center gap-4 lg:flex-row lg:justify-between"
       >
         <p class="text-sm text-slate-500">
-          Page {{ messagePagination.page }} sur {{ messagePagination.totalPages }}
+          Page <span class="font-semibold text-slate-700">{{ messagePagination.page }}</span> sur <span class="font-semibold text-slate-700">{{ messagePagination.totalPages }}</span>
         </p>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-1.5">
           <button
             type="button"
             (click)="goToMessagePage(messagePagination.page - 1)"
             [disabled]="messagePagination.page <= 1"
-            class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Précédent
           </button>
           <button
             *ngFor="let page of messagePageNumbers"
             type="button"
             (click)="goToMessagePage(page)"
-            class="rounded-xl px-3 py-2 text-sm font-semibold"
+            class="h-9 w-9 rounded-xl text-sm font-semibold transition-all duration-200"
             [ngClass]="
               page === messagePagination.page
-                ? 'bg-emerald-600 text-white'
-                : 'border border-slate-300 bg-white text-slate-700'
+                ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-200'
+                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
             "
           >
             {{ page }}
@@ -239,73 +317,115 @@
             type="button"
             (click)="goToMessagePage(messagePagination.page + 1)"
             [disabled]="messagePagination.page >= messagePagination.totalPages"
-            class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Suivant
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
       </div>
     </section>
 
-    <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-bold text-slate-900">Plaintes WhatsApp</h2>
-      <div class="mt-4 overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Date</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Référence</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Client</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Catégorie</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Description</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Statut</th>
+    <!-- Complaints Section (RED) -->
+    <section *ngIf="!loading" class="rounded-3xl border border-red-200/60 bg-white p-6 shadow-lg shadow-red-100/30 md:p-8">
+      <div class="flex items-center gap-2">
+        <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-red-100">
+          <svg class="h-4 w-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <h2 class="text-lg font-bold text-red-900">Plaintes WhatsApp</h2>
+        <span *ngIf="complaints.length > 0" class="ml-2 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-red-100 px-2 text-xs font-bold text-red-700">{{ complaints.length }}</span>
+      </div>
+
+      <div class="mt-5 overflow-x-auto rounded-2xl border border-red-200/60">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-red-200/60 bg-red-50/60">
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Date</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Référence</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Client</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Catégorie</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Description</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Statut</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr *ngFor="let c of complaints">
-              <td class="px-3 py-2 text-slate-600">{{ formatDate(c.createdAtMs) }}</td>
-              <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ c.reference || '--' }}</td>
-              <td class="px-3 py-2 text-slate-800">{{ c.clientName || c.phone || '--' }}</td>
-              <td class="px-3 py-2 text-slate-800">{{ c.category || '--' }}</td>
-              <td class="px-3 py-2 text-slate-800">{{ c.description || '--' }}</td>
-              <td class="px-3 py-2 text-slate-700">{{ c.status || 'open' }}</td>
+          <tbody>
+            <tr *ngFor="let c of complaints; let odd = odd"
+                class="border-b border-red-100/60 transition-colors duration-150 hover:bg-red-50/50"
+                [ngClass]="{'bg-red-50/20': odd}">
+              <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ formatDate(c.createdAtMs) }}</td>
+              <td class="px-4 py-3 font-mono text-xs text-slate-600">{{ c.reference || '--' }}</td>
+              <td class="px-4 py-3 font-medium text-slate-800">{{ c.clientName || c.phone || '--' }}</td>
+              <td class="px-4 py-3">
+                <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">{{ c.category || '--' }}</span>
+              </td>
+              <td class="message-cell px-4 py-3 text-slate-700">{{ c.description || '--' }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
+                      [ngClass]="(c.status || 'open') === 'open'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-emerald-100 text-emerald-700'">
+                  <span class="h-1.5 w-1.5 rounded-full"
+                        [ngClass]="(c.status || 'open') === 'open' ? 'bg-red-500' : 'bg-emerald-500'"></span>
+                  {{ c.status || 'open' }}
+                </span>
+              </td>
             </tr>
             <tr *ngIf="complaints.length === 0">
-              <td colspan="6" class="px-3 py-6 text-center text-slate-500">Aucune plainte pour cette période.</td>
+              <td colspan="6" class="px-4 py-10 text-center">
+                <svg class="mx-auto h-8 w-8 text-red-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="mt-2 text-sm text-slate-400">Aucune plainte pour cette période.</p>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-bold text-slate-900">Paiements WhatsApp (succès)</h2>
-      <div class="mt-4 overflow-x-auto">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Date</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Client</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Montant</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Référence</th>
-              <th class="px-3 py-2 text-left font-semibold text-slate-700">Téléphone</th>
+    <!-- Payments Section -->
+    <section *ngIf="!loading" class="rounded-3xl border border-slate-200/60 bg-white p-6 shadow-lg shadow-slate-200/50 md:p-8">
+      <div class="flex items-center gap-2">
+        <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100">
+          <svg class="h-4 w-4 text-violet-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h2 class="text-lg font-bold text-slate-900">Paiements WhatsApp</h2>
+        <span class="ml-1 text-sm text-slate-400">(succès)</span>
+        <span *ngIf="payments.length > 0" class="ml-2 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-violet-100 px-2 text-xs font-bold text-violet-700">{{ payments.length }}</span>
+      </div>
+
+      <div class="mt-5 overflow-x-auto rounded-2xl border border-slate-200/80">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50/80">
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Date</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Client</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Montant</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Référence</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Téléphone</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
-            <tr *ngFor="let p of payments">
-              <td class="px-3 py-2 text-slate-600">{{ formatDate(p.updatedAtMs) }}</td>
-              <td class="px-3 py-2 font-semibold text-slate-900">{{ p.clientName }}</td>
-              <td class="px-3 py-2 text-slate-900">{{ formatFC(p.paymentAmount) }}</td>
-              <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ p.reference }}</td>
-              <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ p.sourcePhone || '--' }}</td>
+          <tbody>
+            <tr *ngFor="let p of payments; let odd = odd"
+                class="border-b border-slate-100 transition-colors duration-150 hover:bg-violet-50/40"
+                [ngClass]="{'bg-slate-50/40': odd}">
+              <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ formatDate(p.updatedAtMs) }}</td>
+              <td class="px-4 py-3 font-semibold text-slate-900">{{ p.clientName }}</td>
+              <td class="px-4 py-3">
+                <span class="font-semibold text-violet-700">{{ formatFC(p.paymentAmount) }}</span>
+              </td>
+              <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ p.reference }}</td>
+              <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ p.sourcePhone || '--' }}</td>
             </tr>
             <tr *ngIf="payments.length === 0">
-              <td colspan="5" class="px-3 py-6 text-center text-slate-500">Aucun paiement WhatsApp pour cette période.</td>
+              <td colspan="5" class="px-4 py-10 text-center">
+                <svg class="mx-auto h-8 w-8 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="mt-2 text-sm text-slate-400">Aucun paiement WhatsApp pour cette période.</p>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
+
   </div>
 </div>
 

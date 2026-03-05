@@ -8,3 +8,28 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* Smooth skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse div {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Stat card subtle lift */
+.stat-card {
+  transform: translateY(0);
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Table row transitions */
+tbody tr {
+  transition: background-color 0.15s ease;
+}
