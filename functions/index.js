@@ -3766,6 +3766,8 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       outgoingCount,
       totalMessages: incomingCount + outgoingCount,
       complaintCount: complaints.length,
+      complaintOpenCount: complaints.filter((item) => String(item.status || "open") !== "closed").length,
+      complaintClosedCount: complaints.filter((item) => String(item.status || "open") === "closed").length,
       paymentCount: payments.length,
     },
     messages: {
@@ -3953,9 +3955,11 @@ function generateReceiptNumber() {
   return `FG-${num}`;
 }
 
-function generateComplaintRef() {
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `PL-${num}`;
+function generateComplaintRef(seed) {
+  const safeSeed = String(seed || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const timePart = Date.now().toString(36).toUpperCase();
+  const seedPart = safeSeed.slice(0, 4).padEnd(4, "X");
+  return `PL-${timePart}-${seedPart}`;
 }
 
 /* ─── State handlers ─── */
@@ -4249,12 +4253,13 @@ async function handleComplaintDetail(input, session) {
     return {reply: `Veuillez décrire votre problème en détail:`, newState: WA_STATES.COMPLAINT_DETAIL, tempData: session.tempData || {}};
   }
 
-  const ref = generateComplaintRef();
+  const complaintRef = db.collection(WHATSAPP_COMPLAINTS_COLLECTION).doc();
+  const ref = generateComplaintRef(complaintRef.id);
   const category = (session.tempData && session.tempData.complaintCategory) || "Autre";
   const clientInfo = session._clientInfo || {};
   const clientFullName = buildWhatsAppClientFullName(clientInfo);
 
-  await db.collection(WHATSAPP_COMPLAINTS_COLLECTION).add({
+  await complaintRef.set({
     phone: session.phone || "",
     clientId: session.clientId || "",
     userId: session.userId || "",

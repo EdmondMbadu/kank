@@ -217,7 +217,14 @@
         class="flex w-full items-center justify-between px-6 py-5 text-left md:px-8">
         <div class="flex items-center gap-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-red-100 text-red-600 font-bold text-sm">!</div>
-          <h2 class="text-lg font-bold text-red-900">Plaintes WhatsApp</h2>
+          <div>
+            <h2 class="text-lg font-bold text-red-900">Plaintes WhatsApp</h2>
+            <p class="mt-0.5 text-xs text-slate-500">
+              <span class="font-semibold text-red-700">{{ stats.complaintOpenCount }}</span> ouverte(s)
+              ·
+              <span class="font-semibold text-emerald-700">{{ stats.complaintClosedCount }}</span> clôturée(s)
+            </p>
+          </div>
           <span *ngIf="complaints.length > 0" class="ml-1 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-red-100 px-2 text-xs font-bold text-red-700">{{ complaints.length }}</span>
         </div>
         <span class="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-400 transition-transform"
@@ -227,6 +234,20 @@
       </button>
 
       <div *ngIf="complaintsOpen" class="border-t border-red-200 px-6 pb-6 pt-4 md:px-8">
+        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <label class="block text-sm text-slate-700">
+            <span class="mb-1 block font-medium">Recherche plainte</span>
+            <input
+              type="text"
+              [(ngModel)]="complaintSearch"
+              placeholder="PL-... ou téléphone"
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-400/20 sm:w-72"
+            />
+          </label>
+          <p class="text-sm text-slate-500">
+            {{ filteredComplaints.length }} résultat(s)
+          </p>
+        </div>
         <div class="overflow-x-auto rounded-2xl border border-red-200">
           <table class="w-full text-sm">
             <thead>
@@ -235,25 +256,26 @@
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Référence</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Client</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Téléphone</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Catégorie</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Description</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Plainte</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Statut</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let c of complaints; let odd = odd"
+              <tr *ngFor="let c of filteredComplaints; let odd = odd"
                   class="border-b border-red-100 hover:bg-red-50/50"
                   [ngClass]="{'bg-red-50/30': odd}">
                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ formatDate(c.createdAtMs) }}</td>
-                <td class="px-4 py-3 font-mono text-xs text-slate-600">{{ c.reference || '--' }}</td>
-                <td class="px-4 py-3 font-medium text-slate-800">{{ c.clientName || c.phone || '--' }}</td>
-                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-600">{{ c.phone || '--' }}</td>
-                <td class="px-4 py-3">
-                  <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">{{ c.category || '--' }}</span>
+                <td class="whitespace-nowrap px-4 py-3 align-top">
+                  <div class="font-mono text-xs text-slate-600">{{ c.reference || '--' }}</div>
+                  <div *ngIf="c.category" class="mt-1 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                    {{ c.category }}
+                  </div>
                 </td>
-                <td class="message-cell px-4 py-3 text-slate-700">{{ c.description || '--' }}</td>
-                <td class="px-4 py-3">
+                <td class="whitespace-nowrap px-4 py-3 align-top font-medium text-slate-800">{{ c.clientName || c.phone || '--' }}</td>
+                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-600">{{ c.phone || '--' }}</td>
+                <td class="complaint-cell px-4 py-3 text-slate-700">{{ c.description || '--' }}</td>
+                <td class="whitespace-nowrap px-4 py-3 align-top">
                   <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
                         [ngClass]="(c.status || 'open') === 'open' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'">
                     <span class="h-1.5 w-1.5 rounded-full"
@@ -261,7 +283,7 @@
                     {{ getComplaintStatusLabel(c.status) }}
                   </span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="whitespace-nowrap px-4 py-3 align-top">
                   <div class="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -282,8 +304,8 @@
                   </div>
                 </td>
               </tr>
-              <tr *ngIf="complaints.length === 0">
-                <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400">Aucune plainte pour cette période.</td>
+              <tr *ngIf="filteredComplaints.length === 0">
+                <td colspan="7" class="px-4 py-10 text-center text-sm text-slate-400">Aucune plainte pour cette période.</td>
               </tr>
             </tbody>
           </table>

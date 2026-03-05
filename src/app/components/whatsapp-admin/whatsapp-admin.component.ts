@@ -9,6 +9,8 @@ interface WhatsAppStats {
   outgoingCount: number;
   totalMessages: number;
   complaintCount: number;
+  complaintOpenCount: number;
+  complaintClosedCount: number;
   paymentCount: number;
 }
 
@@ -62,6 +64,7 @@ export class WhatsappAdminComponent implements OnInit {
   selectedMonth = String(new Date().getMonth() + 1).padStart(2, '0');
   selectedYear = String(new Date().getFullYear());
   messagePhoneSearch = '';
+  complaintSearch = '';
   messagePage = 1;
 
   readonly months = [
@@ -88,6 +91,8 @@ export class WhatsappAdminComponent implements OnInit {
     outgoingCount: 0,
     totalMessages: 0,
     complaintCount: 0,
+    complaintOpenCount: 0,
+    complaintClosedCount: 0,
     paymentCount: 0,
   };
 
@@ -158,6 +163,8 @@ export class WhatsappAdminComponent implements OnInit {
         outgoingCount: this.toNumber(data.stats?.outgoingCount),
         totalMessages: this.toNumber(data.stats?.totalMessages),
         complaintCount: this.toNumber(data.stats?.complaintCount),
+        complaintOpenCount: this.toNumber(data.stats?.complaintOpenCount),
+        complaintClosedCount: this.toNumber(data.stats?.complaintClosedCount),
         paymentCount: this.toNumber(data.stats?.paymentCount),
       };
       this.latestMessages = Array.isArray(data.latestMessages)
@@ -268,6 +275,23 @@ export class WhatsappAdminComponent implements OnInit {
     return this.messagePagination.totalCount > 0;
   }
 
+  get filteredComplaints(): WhatsAppComplaint[] {
+    const search = this.normalizeSearch(this.complaintSearch);
+    if (!search) return this.complaints;
+    return this.complaints.filter((complaint) => {
+      const haystack = [
+        complaint.reference,
+        complaint.phone,
+        complaint.clientName,
+        complaint.category,
+        complaint.description,
+      ]
+        .map((value) => this.normalizeSearch(value))
+        .join(' ');
+      return haystack.includes(search);
+    });
+  }
+
   formatDate(value: any): string {
     if (!value) return '--';
     const date = new Date(Number(value));
@@ -286,6 +310,10 @@ export class WhatsappAdminComponent implements OnInit {
   private toNumber(value: any): number {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
+  }
+
+  private normalizeSearch(value: any): string {
+    return String(value || '').trim().toLowerCase();
   }
 
   private buildTodayIso(): string {

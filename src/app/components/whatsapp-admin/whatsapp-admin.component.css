@@ -8,3 +8,11 @@
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.complaint-cell {
+  min-width: 30rem;
+  max-width: 46rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
