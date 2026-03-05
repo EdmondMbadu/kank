@@ -292,6 +292,15 @@
               id="menu-item-0"
               >Audit Verification</a
             >
+            <a
+              *ngIf="auth.isAdmin"
+              routerLink="/whatsapp-admin"
+              class="block px-6 py-2 text-lg hover:bg-slate-100"
+              role="menuitem"
+              tabindex="-1"
+              id="menu-item-0"
+              >WhatsApp Admin</a
+            >
             <!-- <a
               *ngIf="auth.isAdmninistrator || auth.isDistributoring"
               routerLink="/team-ranking-month"

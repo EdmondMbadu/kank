@@ -3414,6 +3414,8 @@ function getTwilioClient() {
 const WHATSAPP_SESSION_COLLECTION = "whatsappSessions";
 const WHATSAPP_PHONE_INDEX_COLLECTION = "whatsappPhoneIndex";
 const WHATSAPP_COMPLAINTS_COLLECTION = "whatsappComplaints";
+const WHATSAPP_MESSAGES_COLLECTION = "whatsappMessages";
+const WHATSAPP_STATS_COLLECTION = "whatsappStats";
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
 const WA_STATES = {
@@ -3563,6 +3565,31 @@ async function resetWhatsAppSession(phone, fields) {
   });
 }
 
+async function logWhatsAppMessage({direction, phone, body, source, extra}) {
+  try {
+    const normalizedDirection = direction === "incoming" ? "incoming" : "outgoing";
+    const payload = {
+      direction: normalizedDirection,
+      phone: normalizeWhatsAppPhone(phone),
+      body: String(body || "").trim(),
+      source: String(source || "unknown"),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAtMs: Date.now(),
+      ...((extra && typeof extra === "object") ? extra : {}),
+    };
+    await db.collection(WHATSAPP_MESSAGES_COLLECTION).add(payload);
+
+    const counterField = normalizedDirection === "incoming" ? "incomingCount" : "outgoingCount";
+    await db.doc(`${WHATSAPP_STATS_COLLECTION}/global`).set({
+      [counterField]: admin.firestore.FieldValue.increment(1),
+      lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAtMs: Date.now(),
+    }, {merge: true});
+  } catch (err) {
+    console.error("Failed to log WhatsApp message:", err);
+  }
+}
+
 /* ─── Twilio send helper ─── */
 
 async function sendWhatsAppMessage(to, body) {
@@ -3573,7 +3600,17 @@ async function sendWhatsAppMessage(to, body) {
   }
   const toNum = to.startsWith("whatsapp:") ? to : `whatsapp:${to}`;
   const fromNum = `whatsapp:${TWILIO_WHATSAPP_FROM}`;
-  await client.messages.create({body, from: fromNum, to: toNum});
+  const sent = await client.messages.create({body, from: fromNum, to: toNum});
+  await logWhatsAppMessage({
+    direction: "outgoing",
+    phone: toNum,
+    body,
+    source: "twilio_api_send",
+    extra: {
+      providerSid: sent && sent.sid ? sent.sid : null,
+      providerStatus: sent && sent.status ? sent.status : null,
+    },
+  });
 }
 
 /* ─── Client lookup ─── */
@@ -3818,6 +3855,14 @@ async function handlePaymentMethod(input, session) {
       reference,
       orderNumber,
       clientUid: clientId,
+      clientFirstName: clientInfo.firstName || "",
+      clientLastName: clientInfo.lastName || "",
+      clientMiddleName: clientInfo.middleName || "",
+      clientName: [
+        clientInfo.middleName || "",
+        clientInfo.firstName || "",
+        clientInfo.lastName || "",
+      ].filter((x) => x && String(x).trim()).join(" "),
       paymentAmount: String(paymentAmount),
       savingsAmount: "0",
       currency: "CDF",
@@ -4035,6 +4080,13 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     return;
   }
 
+  await logWhatsAppMessage({
+    direction: "incoming",
+    phone: from,
+    body,
+    source: "twilio_webhook_inbound",
+  });
+
   let reply;
   try {
     reply = await handleWhatsAppMessage(from, body);
@@ -4042,6 +4094,13 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     console.error("whatsappWebhook error:", err);
     reply = "Une erreur est survenue. Veuillez réessayer.";
   }
+
+  await logWhatsAppMessage({
+    direction: "outgoing",
+    phone: from,
+    body: reply,
+    source: "twilio_webhook_reply",
+  });
 
   const twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(reply)}</Message></Response>`;
   res.set("Content-Type", "text/xml");

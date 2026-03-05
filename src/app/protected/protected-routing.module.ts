@@ -84,6 +84,7 @@ import { TutorialComponent } from '../components/tutorial/tutorial.component';
 import { ReviewsComponent } from '../components/reviews/reviews.component';
 import { QuestionsComponent } from '../components/questions/questions.component';
 import { InvestigationComponent } from '../components/investigation/investigation.component';
+import { WhatsappAdminComponent } from '../components/whatsapp-admin/whatsapp-admin.component';
 
 const routes: Routes = [
   {
@@ -260,6 +261,7 @@ const routes: Routes = [
   { path: 'reviews', component: ReviewsComponent },
   { path: 'questions', component: QuestionsComponent },
   { path: 'investigation', component: InvestigationComponent },
+  { path: 'whatsapp-admin', component: WhatsappAdminComponent },
   {
     path: 'employee-page',
     loadChildren: () =>
