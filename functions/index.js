@@ -3604,6 +3604,12 @@ function buildWhatsAppReportRange(data) {
   };
 }
 
+function normalizePhoneSearch(value) {
+  return String(value || "")
+      .replace(/[^\d+]/g, "")
+      .trim();
+}
+
 async function listWhatsAppPaymentDocs() {
   const usersSnap = await db.collection("users").get();
   const queryJobs = usersSnap.docs.map((userDoc) => (
@@ -3621,6 +3627,11 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
   const range = buildWhatsAppReportRange(data || {});
   const startMs = range.start.getTime();
   const endMs = range.end.getTime();
+  const requestedPage = Number((data && data.messagesPage) || 1);
+  const pageSize = 20;
+  const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ?
+    requestedPage : 1;
+  const phoneSearch = normalizePhoneSearch(data && data.phoneSearch);
 
   const latestMessagesQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
       .where("createdAtMs", ">=", startMs)
@@ -3649,7 +3660,17 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
   });
   const incomingCount = allMessages.filter((item) => item.direction === "incoming").length;
   const outgoingCount = allMessages.filter((item) => item.direction === "outgoing").length;
-  const latestMessages = allMessages.slice(0, 10);
+  const filteredMessages = phoneSearch ?
+    allMessages.filter((item) => normalizePhoneSearch(item.phone).includes(phoneSearch)) :
+    allMessages;
+  const messageTotalCount = filteredMessages.length;
+  const messageTotalPages = Math.max(1, Math.ceil(messageTotalCount / pageSize));
+  const safePage = Math.min(currentPage, messageTotalPages);
+  const messageStartIndex = (safePage - 1) * pageSize;
+  const latestMessages = filteredMessages.slice(
+      messageStartIndex,
+      messageStartIndex + pageSize,
+  );
 
   const complaints = complaintsSnap.docs.map((doc) => {
     const item = doc.data() || {};
@@ -3721,6 +3742,13 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       totalMessages: incomingCount + outgoingCount,
       complaintCount: complaints.length,
       paymentCount: payments.length,
+    },
+    messages: {
+      page: safePage,
+      pageSize,
+      totalCount: messageTotalCount,
+      totalPages: messageTotalPages,
+      phoneSearch,
     },
     latestMessages,
     complaints,

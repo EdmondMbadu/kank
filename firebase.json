@@ -3,6 +3,7 @@
     "source": "functions"
   },
   "hosting": {
+    "site": "kank-4bbbc",
     "rewrites": [
       {
         "source": "**",

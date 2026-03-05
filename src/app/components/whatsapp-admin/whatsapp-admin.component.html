@@ -60,7 +60,7 @@
             </label>
             <button
               type="button"
-              (click)="loadReport()"
+              (click)="loadReport(1)"
               class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
             >
               Charger
@@ -92,7 +92,7 @@
             </label>
             <button
               type="button"
-              (click)="loadReport()"
+              (click)="loadReport(1)"
               class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
             >
               Charger
@@ -137,7 +137,42 @@
     </div>
 
     <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-bold text-slate-900">Derniers 10 messages WhatsApp</h2>
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Messages WhatsApp</h2>
+          <p class="mt-1 text-sm text-slate-500">
+            {{ messagePagination.totalCount }} message(s) pour cette période
+            <span *ngIf="messagePagination.phoneSearch">
+              · filtre téléphone: {{ messagePagination.phoneSearch }}
+            </span>
+          </p>
+        </div>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <label class="block text-sm text-slate-700">
+            <span class="mb-1 block font-medium">Téléphone</span>
+            <input
+              type="text"
+              [(ngModel)]="messagePhoneSearch"
+              placeholder="+243..."
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 sm:w-56"
+            />
+          </label>
+          <button
+            type="button"
+            (click)="applyMessagePhoneSearch()"
+            class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Rechercher
+          </button>
+          <button
+            type="button"
+            (click)="clearMessagePhoneSearch()"
+            class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+          >
+            Effacer
+          </button>
+        </div>
+      </div>
       <div class="mt-4 overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200 text-sm">
           <thead class="bg-slate-50">
@@ -160,13 +195,52 @@
                 </span>
               </td>
               <td class="px-3 py-2 font-mono text-xs text-slate-700">{{ m.phone || '--' }}</td>
-              <td class="px-3 py-2 text-slate-800">{{ m.body || '--' }}</td>
+              <td class="message-cell px-3 py-2 text-slate-800">{{ m.body || '--' }}</td>
             </tr>
             <tr *ngIf="latestMessages.length === 0">
               <td colspan="4" class="px-3 py-6 text-center text-slate-500">Aucun message pour cette période.</td>
             </tr>
           </tbody>
         </table>
+      </div>
+      <div
+        *ngIf="hasMessageResults"
+        class="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <p class="text-sm text-slate-500">
+          Page {{ messagePagination.page }} sur {{ messagePagination.totalPages }}
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            (click)="goToMessagePage(messagePagination.page - 1)"
+            [disabled]="messagePagination.page <= 1"
+            class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Précédent
+          </button>
+          <button
+            *ngFor="let page of messagePageNumbers"
+            type="button"
+            (click)="goToMessagePage(page)"
+            class="rounded-xl px-3 py-2 text-sm font-semibold"
+            [ngClass]="
+              page === messagePagination.page
+                ? 'bg-emerald-600 text-white'
+                : 'border border-slate-300 bg-white text-slate-700'
+            "
+          >
+            {{ page }}
+          </button>
+          <button
+            type="button"
+            (click)="goToMessagePage(messagePagination.page + 1)"
+            [disabled]="messagePagination.page >= messagePagination.totalPages"
+            class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Suivant
+          </button>
+        </div>
       </div>
     </section>
 

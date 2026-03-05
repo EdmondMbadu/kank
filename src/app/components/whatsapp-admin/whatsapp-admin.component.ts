@@ -12,6 +12,14 @@ interface WhatsAppStats {
   paymentCount: number;
 }
 
+interface WhatsAppMessagePagination {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  phoneSearch: string;
+}
+
 interface WhatsAppMessage {
   id?: string;
   direction?: 'incoming' | 'outgoing';
@@ -48,10 +56,13 @@ interface WhatsAppPayment {
   styleUrls: ['./whatsapp-admin.component.css'],
 })
 export class WhatsappAdminComponent implements OnInit {
+  readonly messagePageSize = 20;
   filterMode: 'day' | 'month' = 'day';
   selectedDay = this.buildTodayIso();
   selectedMonth = String(new Date().getMonth() + 1).padStart(2, '0');
   selectedYear = String(new Date().getFullYear());
+  messagePhoneSearch = '';
+  messagePage = 1;
 
   readonly months = [
     { value: '01', label: 'Janvier' },
@@ -83,6 +94,13 @@ export class WhatsappAdminComponent implements OnInit {
   latestMessages: WhatsAppMessage[] = [];
   complaints: WhatsAppComplaint[] = [];
   payments: WhatsAppPayment[] = [];
+  messagePagination: WhatsAppMessagePagination = {
+    page: 1,
+    pageSize: 20,
+    totalCount: 0,
+    totalPages: 1,
+    phoneSearch: '',
+  };
 
   reportLabel = '';
   loading = false;
@@ -100,12 +118,13 @@ export class WhatsappAdminComponent implements OnInit {
       return;
     }
 
-    this.loadReport();
+    this.loadReport(1);
   }
 
-  async loadReport(): Promise<void> {
+  async loadReport(page: number = this.messagePage): Promise<void> {
     this.loading = true;
     this.error = '';
+    this.messagePage = page;
 
     try {
       const callable = this.fns.httpsCallable('getWhatsAppAdminReport');
@@ -115,10 +134,14 @@ export class WhatsappAdminComponent implements OnInit {
               mode: 'month',
               month: Number(this.selectedMonth),
               year: Number(this.selectedYear),
+              messagesPage: this.messagePage,
+              phoneSearch: this.messagePhoneSearch,
             }
           : {
               mode: 'day',
               day: this.selectedDay,
+              messagesPage: this.messagePage,
+              phoneSearch: this.messagePhoneSearch,
             };
 
       const response: any = await firstValueFrom(callable(payload));
@@ -135,6 +158,14 @@ export class WhatsappAdminComponent implements OnInit {
       this.latestMessages = Array.isArray(data.latestMessages)
         ? data.latestMessages
         : [];
+      this.messagePagination = {
+        page: this.toNumber(data.messages?.page) || 1,
+        pageSize: this.toNumber(data.messages?.pageSize) || this.messagePageSize,
+        totalCount: this.toNumber(data.messages?.totalCount),
+        totalPages: this.toNumber(data.messages?.totalPages) || 1,
+        phoneSearch: String(data.messages?.phoneSearch || ''),
+      };
+      this.messagePage = this.messagePagination.page;
       this.complaints = Array.isArray(data.complaints) ? data.complaints : [];
       this.payments = Array.isArray(data.payments) ? data.payments : [];
     } catch (err: any) {
@@ -148,7 +179,43 @@ export class WhatsappAdminComponent implements OnInit {
   setFilterMode(mode: 'day' | 'month'): void {
     if (this.filterMode === mode) return;
     this.filterMode = mode;
-    this.loadReport();
+    this.loadReport(1);
+  }
+
+  applyMessagePhoneSearch(): void {
+    this.loadReport(1);
+  }
+
+  clearMessagePhoneSearch(): void {
+    if (!this.messagePhoneSearch) return;
+    this.messagePhoneSearch = '';
+    this.loadReport(1);
+  }
+
+  goToMessagePage(page: number): void {
+    if (page < 1 || page > this.messagePagination.totalPages) return;
+    if (page === this.messagePage) return;
+    this.loadReport(page);
+  }
+
+  get messagePageNumbers(): number[] {
+    const total = this.messagePagination.totalPages || 1;
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, index) => index + 1);
+    }
+    const current = this.messagePagination.page || 1;
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + 4);
+    start = Math.max(1, end - 4);
+    const pages: number[] = [];
+    for (let page = start; page <= end; page++) {
+      pages.push(page);
+    }
+    return pages;
+  }
+
+  get hasMessageResults(): boolean {
+    return this.messagePagination.totalCount > 0;
   }
 
   formatDate(value: any): string {
