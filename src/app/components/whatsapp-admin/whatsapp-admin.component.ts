@@ -109,6 +109,7 @@ export class WhatsappAdminComponent implements OnInit {
   messagesOpen = false;
   complaintsOpen = false;
   paymentsOpen = false;
+  complaintActionId = '';
 
   constructor(
     public auth: AuthService,
@@ -200,6 +201,47 @@ export class WhatsappAdminComponent implements OnInit {
     this.loadReport(1);
   }
 
+  async closeComplaint(complaint: WhatsAppComplaint): Promise<void> {
+    const complaintId = String(complaint.id || '').trim();
+    if (!complaintId || (complaint.status || 'open') === 'closed') return;
+
+    this.complaintActionId = complaintId;
+    this.error = '';
+    try {
+      const callable = this.fns.httpsCallable('closeWhatsAppComplaint');
+      await firstValueFrom(callable({ complaintId }));
+      await this.loadReport(this.messagePage);
+    } catch (err: any) {
+      this.error =
+        err?.message || 'Erreur lors de la clôture de la plainte.';
+    } finally {
+      this.complaintActionId = '';
+    }
+  }
+
+  async deleteComplaint(complaint: WhatsAppComplaint): Promise<void> {
+    const complaintId = String(complaint.id || '').trim();
+    if (!complaintId) return;
+
+    const confirmed = window.confirm(
+      `Supprimer la plainte ${complaint.reference || complaintId} ?`
+    );
+    if (!confirmed) return;
+
+    this.complaintActionId = complaintId;
+    this.error = '';
+    try {
+      const callable = this.fns.httpsCallable('deleteWhatsAppComplaint');
+      await firstValueFrom(callable({ complaintId }));
+      await this.loadReport(this.messagePage);
+    } catch (err: any) {
+      this.error =
+        err?.message || 'Erreur lors de la suppression de la plainte.';
+    } finally {
+      this.complaintActionId = '';
+    }
+  }
+
   goToMessagePage(page: number): void {
     if (page < 1 || page > this.messagePagination.totalPages) return;
     if (page === this.messagePage) return;
@@ -235,6 +277,10 @@ export class WhatsappAdminComponent implements OnInit {
 
   formatFC(value: any): string {
     return `${this.toNumber(value).toLocaleString('fr-FR')} FC`;
+  }
+
+  getComplaintStatusLabel(status: string | undefined): string {
+    return (status || 'open') === 'closed' ? 'Clôturée' : 'Ouverte';
   }
 
   private toNumber(value: any): number {

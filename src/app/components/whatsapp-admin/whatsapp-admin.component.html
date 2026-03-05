@@ -234,9 +234,11 @@
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Date</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Référence</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Client</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Téléphone</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Catégorie</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Description</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Statut</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-red-400">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -246,6 +248,7 @@
                 <td class="whitespace-nowrap px-4 py-3 text-slate-600">{{ formatDate(c.createdAtMs) }}</td>
                 <td class="px-4 py-3 font-mono text-xs text-slate-600">{{ c.reference || '--' }}</td>
                 <td class="px-4 py-3 font-medium text-slate-800">{{ c.clientName || c.phone || '--' }}</td>
+                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-600">{{ c.phone || '--' }}</td>
                 <td class="px-4 py-3">
                   <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">{{ c.category || '--' }}</span>
                 </td>
@@ -255,12 +258,32 @@
                         [ngClass]="(c.status || 'open') === 'open' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'">
                     <span class="h-1.5 w-1.5 rounded-full"
                           [ngClass]="(c.status || 'open') === 'open' ? 'bg-red-500' : 'bg-emerald-500'"></span>
-                    {{ c.status || 'open' }}
+                    {{ getComplaintStatusLabel(c.status) }}
                   </span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      (click)="closeComplaint(c)"
+                      [disabled]="complaintActionId === c.id || (c.status || 'open') === 'closed'"
+                      class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {{ complaintActionId === c.id ? '...' : 'Clôturer' }}
+                    </button>
+                    <button
+                      type="button"
+                      (click)="deleteComplaint(c)"
+                      [disabled]="complaintActionId === c.id"
+                      class="rounded-xl border border-red-300 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {{ complaintActionId === c.id ? '...' : 'Supprimer' }}
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr *ngIf="complaints.length === 0">
-                <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-400">Aucune plainte pour cette période.</td>
+                <td colspan="8" class="px-4 py-10 text-center text-sm text-slate-400">Aucune plainte pour cette période.</td>
               </tr>
             </tbody>
           </table>

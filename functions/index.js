@@ -3610,6 +3610,14 @@ function normalizePhoneSearch(value) {
       .trim();
 }
 
+function buildWhatsAppClientFullName(clientData) {
+  return [
+    String((clientData && clientData.middleName) || "").trim(),
+    String((clientData && clientData.firstName) || "").trim(),
+    String((clientData && clientData.lastName) || "").trim(),
+  ].filter(Boolean).join(" ").trim();
+}
+
 async function listWhatsAppPaymentDocs() {
   const usersSnap = await db.collection("users").get();
   const queryJobs = usersSnap.docs.map((userDoc) => (
@@ -3672,19 +3680,36 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       messageStartIndex + pageSize,
   );
 
-  const complaints = complaintsSnap.docs.map((doc) => {
+  const complaints = await Promise.all(complaintsSnap.docs.map(async (doc) => {
     const item = doc.data() || {};
+    let clientName = String(
+        item.clientFullName || item.clientName || "",
+    ).trim();
+    if (!clientName) {
+      try {
+        const ownerUid = String(item.userId || "");
+        const clientId = String(item.clientId || "");
+        if (ownerUid && clientId) {
+          const clientSnap = await db.doc(`users/${ownerUid}/clients/${clientId}`).get();
+          if (clientSnap.exists) {
+            clientName = buildWhatsAppClientFullName(clientSnap.data() || {});
+          }
+        }
+      } catch (err) {
+        console.error("Failed to enrich WhatsApp complaint client name:", err);
+      }
+    }
     return {
       id: doc.id,
       phone: item.phone || "",
-      clientName: item.clientName || "",
+      clientName: clientName || "Client inconnu",
       category: item.category || "",
       description: item.description || "",
       reference: item.reference || "",
       status: item.status || "open",
       createdAtMs: Number(item.createdAtMs || 0),
     };
-  });
+  }));
 
   const payments = [];
   for (const doc of paymentDocs) {
@@ -3754,6 +3779,47 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     complaints,
     payments: payments.slice(0, 50),
   };
+});
+
+exports.closeWhatsAppComplaint = functions.https.onCall(async (data, context) => {
+  await assertWhatsAppAdminAccess(context);
+
+  const complaintId = String((data && data.complaintId) || "").trim();
+  if (!complaintId) {
+    throw new functions.https.HttpsError("invalid-argument", "complaintId is required.");
+  }
+
+  const ref = db.collection(WHATSAPP_COMPLAINTS_COLLECTION).doc(complaintId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new functions.https.HttpsError("not-found", "Complaint not found.");
+  }
+
+  await ref.set({
+    status: "closed",
+    closedAt: admin.firestore.FieldValue.serverTimestamp(),
+    closedAtMs: Date.now(),
+  }, {merge: true});
+
+  return {ok: true};
+});
+
+exports.deleteWhatsAppComplaint = functions.https.onCall(async (data, context) => {
+  await assertWhatsAppAdminAccess(context);
+
+  const complaintId = String((data && data.complaintId) || "").trim();
+  if (!complaintId) {
+    throw new functions.https.HttpsError("invalid-argument", "complaintId is required.");
+  }
+
+  const ref = db.collection(WHATSAPP_COMPLAINTS_COLLECTION).doc(complaintId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new functions.https.HttpsError("not-found", "Complaint not found.");
+  }
+
+  await ref.delete();
+  return {ok: true};
 });
 
 /* ─── Session helpers ─── */
@@ -4185,12 +4251,18 @@ async function handleComplaintDetail(input, session) {
 
   const ref = generateComplaintRef();
   const category = (session.tempData && session.tempData.complaintCategory) || "Autre";
+  const clientInfo = session._clientInfo || {};
+  const clientFullName = buildWhatsAppClientFullName(clientInfo);
 
   await db.collection(WHATSAPP_COMPLAINTS_COLLECTION).add({
     phone: session.phone || "",
     clientId: session.clientId || "",
     userId: session.userId || "",
     clientName: session.clientName || "",
+    clientFirstName: clientInfo.firstName || "",
+    clientLastName: clientInfo.lastName || "",
+    clientMiddleName: clientInfo.middleName || "",
+    clientFullName: clientFullName || session.clientName || "",
     category,
     categoryId: (session.tempData && session.tempData.complaintCategoryId) || "4",
     description,
