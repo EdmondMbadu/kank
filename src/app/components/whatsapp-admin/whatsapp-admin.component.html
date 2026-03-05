@@ -55,6 +55,7 @@
               <input
                 type="date"
                 [(ngModel)]="selectedDay"
+                (ngModelChange)="onPeriodFilterChange()"
                 class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
               />
             </label>
@@ -72,6 +73,7 @@
               <span class="mb-1 block font-medium">Mois</span>
               <select
                 [(ngModel)]="selectedMonth"
+                (ngModelChange)="onPeriodFilterChange()"
                 class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
               >
                 <option *ngFor="let month of months" [value]="month.value">
@@ -83,6 +85,7 @@
               <span class="mb-1 block font-medium">Année</span>
               <select
                 [(ngModel)]="selectedYear"
+                (ngModelChange)="onPeriodFilterChange()"
                 class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
               >
                 <option *ngFor="let year of years" [value]="year">

@@ -182,6 +182,10 @@ export class WhatsappAdminComponent implements OnInit {
     this.loadReport(1);
   }
 
+  onPeriodFilterChange(): void {
+    this.loadReport(1);
+  }
+
   applyMessagePhoneSearch(): void {
     this.loadReport(1);
   }
