@@ -3424,6 +3424,7 @@ const WA_STATES = {
   PAYMENT_AMOUNT: "PAYMENT_AMOUNT",
   PAYMENT_CUSTOM: "PAYMENT_CUSTOM",
   PAYMENT_METHOD: "PAYMENT_METHOD",
+  PAYMENT_PHONE_CUSTOM: "PAYMENT_PHONE_CUSTOM",
   PAYMENT_PENDING: "PAYMENT_PENDING",
   HISTORY: "HISTORY",
   COMPLAINT_TYPE: "COMPLAINT_TYPE",
@@ -3972,6 +3973,119 @@ function buildUnrecognizedInput() {
   return `❓ Je n'ai pas compris.\n\nRépondez avec un chiffre:\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte`;
 }
 
+function formatPaymentPhoneForDisplay(raw) {
+  const digits = sanitizeDigits(raw);
+  if (digits.length === 10 && digits.startsWith("0")) return digits;
+  if (digits.length === 9) return `0${digits}`;
+  if (digits.length === 12 && digits.startsWith("243")) return `0${digits.slice(3)}`;
+  return String(raw || "").trim() || "--";
+}
+
+function buildPaymentAmountMenu(clientInfo) {
+  const remainingDebt = toNumber(clientInfo.debtLeft || 0);
+  const nextDate = getNextPaymentDate(clientInfo);
+  return `💵 PAIEMENT\n\nDette restante: ${formatFC(remainingDebt)}\nÉchéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(remainingDebt)}\n[2] Payer un autre montant\n[3] Retour au menu principal`;
+}
+
+function buildPaymentPhoneMenu(session, paymentAmount) {
+  const clientInfo = session._clientInfo || {};
+  const defaultPhone = clientInfo.phoneNumber || session.phone || "";
+  const displayPhone = formatPaymentPhoneForDisplay(defaultPhone);
+  return `📱 NUMÉRO DE PAIEMENT\n\nMontant à payer: ${formatFC(paymentAmount)}\n\n[1] Payer avec ce numéro: ${displayPhone}\n[2] Payer avec un autre numéro\n[3] Annuler`;
+}
+
+async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPhoneRaw) {
+  const clientInfo = session._clientInfo || {};
+  const userId = session.userId;
+  const clientId = session.clientId;
+  const phone = String(paymentPhoneRaw || "").trim();
+
+  if (!FLEXPAY_MERCHANT || !FLEXPAY_TOKEN) {
+    throw new Error("FlexPay configuration missing");
+  }
+
+  const phoneNormalized = normalizePhoneForFlexpay(phone);
+  if (!phoneNormalized) {
+    throw new Error("Invalid phone number for FlexPay");
+  }
+
+  const createdAtMs = Date.now();
+  const reference = `KANK-${userId.slice(0, 6)}-${clientId.slice(0, 6)}-${createdAtMs}`;
+  const dayKey = formatMonthDayYear(new Date());
+  const paymentEntryKey = `${dayKey}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`;
+
+  const requestBody = {
+    merchant: FLEXPAY_MERCHANT,
+    type: "1",
+    reference,
+    phone: phoneNormalized,
+    amount: String(paymentAmount),
+    currency: "CDF",
+    callbackUrl: FLEXPAY_CALLBACK_URL,
+  };
+
+  const resp = await fetch(FLEXPAY_PAYMENT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": toFlexpayBearer(FLEXPAY_TOKEN),
+    },
+    body: JSON.stringify(requestBody),
+  });
+  const initJson = await resp.json();
+
+  const code = String((initJson && initJson.code) || "1");
+  const orderNumber = String((initJson && initJson.orderNumber) || "");
+  if (code !== "0" || !orderNumber) {
+    throw new Error(`FlexPay rejected: ${initJson && initJson.message || "unknown"}`);
+  }
+
+  await db.doc(`users/${userId}/mobileMoneyTransactions/${reference}`).set({
+    reference,
+    orderNumber,
+    clientUid: clientId,
+    clientFirstName: clientInfo.firstName || "",
+    clientLastName: clientInfo.lastName || "",
+    clientMiddleName: clientInfo.middleName || "",
+    clientName: [
+      clientInfo.middleName || "",
+      clientInfo.firstName || "",
+      clientInfo.lastName || "",
+    ].filter((x) => x && String(x).trim()).join(" "),
+    paymentAmount: String(paymentAmount),
+    savingsAmount: "0",
+    currency: "CDF",
+    phoneRaw: phone,
+    phoneNormalized,
+    requestBody,
+    initResponse: initJson,
+    status: "PENDING",
+    createdAtMs,
+    updatedAtMs: Date.now(),
+    ownerUid: userId,
+    dayKey,
+    paymentEntryKey,
+    dbWriteDone: false,
+    whatsappOriginated: true,
+    whatsappPhone: session.phone || "",
+  });
+
+  await upsertMobileMoneyLookup(reference, {
+    ownerUid: userId,
+    clientUid: clientId,
+    orderNumber,
+    status: "PENDING",
+    dbWriteDone: false,
+    createdAtMs,
+    whatsappOriginated: true,
+  });
+
+  return {
+    paymentRef: reference,
+    phoneDisplay: formatPaymentPhoneForDisplay(phone),
+  };
+}
+
 async function handleMainMenu(input, session) {
   const choice = input.trim();
   const clientInfo = session._clientInfo;
@@ -3990,10 +4104,15 @@ async function handleMainMenu(input, session) {
   }
 
   if (choice === "2") {
-    const amountToPay = toNumber(clientInfo.amountToPay || 0);
-    const nextDate = getNextPaymentDate(clientInfo);
-    const reply = `💵 PAIEMENT\n\nMontant dû: ${formatFC(amountToPay)}\nÉchéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(amountToPay)} (montant dû)\n[2] Payer un autre montant\n[3] Retour au menu principal`;
-    return {reply, newState: WA_STATES.PAYMENT_AMOUNT, tempData: {suggestedAmount: amountToPay}};
+    const remainingDebt = toNumber(clientInfo.debtLeft || 0);
+    if (remainingDebt <= 0) {
+      return {reply: `✅ Aucune dette restante.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+    }
+    return {
+      reply: buildPaymentAmountMenu(clientInfo),
+      newState: WA_STATES.PAYMENT_AMOUNT,
+      tempData: {suggestedAmount: remainingDebt},
+    };
   }
 
   if (choice === "3") {
@@ -4038,10 +4157,15 @@ async function handleBalance(input, session) {
   const choice = input.trim();
   if (choice === "1") {
     const clientInfo = session._clientInfo;
-    const amountToPay = toNumber(clientInfo.amountToPay || 0);
-    const nextDate = getNextPaymentDate(clientInfo);
-    const reply = `💵 PAIEMENT\n\nMontant dû: ${formatFC(amountToPay)}\nÉchéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(amountToPay)} (montant dû)\n[2] Payer un autre montant\n[3] Retour au menu principal`;
-    return {reply, newState: WA_STATES.PAYMENT_AMOUNT, tempData: {suggestedAmount: amountToPay}};
+    const remainingDebt = toNumber(clientInfo.debtLeft || 0);
+    if (remainingDebt <= 0) {
+      return {reply: `✅ Aucune dette restante.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+    }
+    return {
+      reply: buildPaymentAmountMenu(clientInfo),
+      newState: WA_STATES.PAYMENT_AMOUNT,
+      tempData: {suggestedAmount: remainingDebt},
+    };
   }
   if (choice === "2" || choice === "0") {
     return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
@@ -4053,147 +4177,129 @@ async function handlePaymentAmount(input, session) {
   const choice = input.trim();
   if (choice === "1") {
     const amount = toNumber(session.tempData && session.tempData.suggestedAmount || 0);
-    const reply = `Via quel service?\n\n[1] M-Pesa (Vodacom)\n[2] Airtel Money\n[3] Orange Money\n[4] Annuler`;
-    return {reply, newState: WA_STATES.PAYMENT_METHOD, tempData: {...(session.tempData || {}), paymentAmount: amount}};
+    if (amount <= 0) {
+      return {reply: `✅ Aucune dette restante.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+    }
+    return {
+      reply: buildPaymentPhoneMenu(session, amount),
+      newState: WA_STATES.PAYMENT_METHOD,
+      tempData: {...(session.tempData || {}), paymentAmount: amount},
+    };
   }
   if (choice === "2") {
-    const reply = `Entrez le montant que vous souhaitez payer (en FC):`;
+    const reply = `Entrez le montant que vous souhaitez payer en FC.\nChiffres uniquement.`;
     return {reply, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
   }
   if (choice === "3" || choice === "0") {
     return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
   }
   const clientInfo = session._clientInfo;
-  const amountToPay = toNumber(clientInfo.amountToPay || 0);
-  return {reply: `❓ Je n'ai pas compris.\n\n[1] Payer ${formatFC(amountToPay)} (montant dû)\n[2] Payer un autre montant\n[3] Retour au menu principal`, newState: WA_STATES.PAYMENT_AMOUNT, tempData: session.tempData || {}};
+  return {
+    reply: `❓ Je n'ai pas compris.\n\n${buildPaymentAmountMenu(clientInfo).split("\n\n").slice(2).join("\n\n")}`,
+    newState: WA_STATES.PAYMENT_AMOUNT,
+    tempData: session.tempData || {},
+  };
 }
 
 async function handlePaymentCustom(input, session) {
-  const cleaned = input.trim().replace(/[^\d]/g, "");
-  const amount = toNumber(cleaned);
-  if (amount <= 0) {
-    return {reply: `❌ Montant invalide. Entrez un montant valide en FC:`, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
+  const raw = input.trim();
+  if (!/^\d+$/.test(raw)) {
+    return {reply: `❌ Montant invalide. Entrez des chiffres uniquement:`, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
   }
-  const reply = `Via quel service?\n\n[1] M-Pesa (Vodacom)\n[2] Airtel Money\n[3] Orange Money\n[4] Annuler`;
-  return {reply, newState: WA_STATES.PAYMENT_METHOD, tempData: {...(session.tempData || {}), paymentAmount: amount}};
+  const amount = toNumber(raw);
+  const remainingDebt = toNumber((session._clientInfo && session._clientInfo.debtLeft) || 0);
+  if (amount <= 0 || (remainingDebt > 0 && amount > remainingDebt)) {
+    return {
+      reply: `❌ Montant invalide. Entrez un montant entre 1 et ${formatFC(remainingDebt)}.`,
+      newState: WA_STATES.PAYMENT_CUSTOM,
+      tempData: session.tempData || {},
+    };
+  }
+  return {
+    reply: buildPaymentPhoneMenu(session, amount),
+    newState: WA_STATES.PAYMENT_METHOD,
+    tempData: {...(session.tempData || {}), paymentAmount: amount},
+  };
 }
 
 async function handlePaymentMethod(input, session) {
   const choice = input.trim();
-  if (choice === "4" || choice === "0") {
+  if (choice === "3" || choice === "0") {
     return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
   }
 
-  const providerNames = {"1": "M-Pesa", "2": "Airtel Money", "3": "Orange Money"};
-  if (!providerNames[choice]) {
-    return {reply: `❓ Je n'ai pas compris.\n\n[1] M-Pesa (Vodacom)\n[2] Airtel Money\n[3] Orange Money\n[4] Annuler`, newState: WA_STATES.PAYMENT_METHOD, tempData: session.tempData || {}};
+  const paymentAmount = toNumber(session.tempData && session.tempData.paymentAmount || 0);
+  if (paymentAmount <= 0) {
+    return {reply: `❌ Montant invalide.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
   }
 
-  const providerName = providerNames[choice];
-  const paymentAmount = toNumber(session.tempData && session.tempData.paymentAmount || 0);
-  const clientInfo = session._clientInfo;
-  const userId = session.userId;
-  const clientId = session.clientId;
-  const phone = clientInfo.phoneNumber || "";
-
-  let paymentRef = null;
-  let initOk = false;
-
-  try {
-    if (!FLEXPAY_MERCHANT || !FLEXPAY_TOKEN) {
-      throw new Error("FlexPay configuration missing");
-    }
-
-    const phoneNormalized = normalizePhoneForFlexpay(phone);
-    if (!phoneNormalized) {
-      throw new Error("Invalid phone number for FlexPay");
-    }
-
-    const createdAtMs = Date.now();
-    const reference = `KANK-${userId.slice(0, 6)}-${clientId.slice(0, 6)}-${createdAtMs}`;
-    const dayKey = formatMonthDayYear(new Date());
-    const paymentEntryKey = `${dayKey}-${new Date().getHours()}-${new Date().getMinutes()}-${new Date().getSeconds()}`;
-
-    const requestBody = {
-      merchant: FLEXPAY_MERCHANT,
-      type: "1",
-      reference,
-      phone: phoneNormalized,
-      amount: String(paymentAmount),
-      currency: "CDF",
-      callbackUrl: FLEXPAY_CALLBACK_URL,
+  if (choice === "2") {
+    return {
+      reply: `Entrez le numéro à utiliser pour le paiement.\nFormat: 10 chiffres (ex: 0812345678)`,
+      newState: WA_STATES.PAYMENT_PHONE_CUSTOM,
+      tempData: session.tempData || {},
     };
+  }
 
-    const resp = await fetch(FLEXPAY_PAYMENT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": toFlexpayBearer(FLEXPAY_TOKEN),
-      },
-      body: JSON.stringify(requestBody),
-    });
-    const initJson = await resp.json();
+  if (choice !== "1") {
+    return {
+      reply: `❓ Je n'ai pas compris.\n\n${buildPaymentPhoneMenu(session, paymentAmount).split("\n\n").slice(1).join("\n\n")}`,
+      newState: WA_STATES.PAYMENT_METHOD,
+      tempData: session.tempData || {},
+    };
+  }
 
-    const code = String((initJson && initJson.code) || "1");
-    const orderNumber = String((initJson && initJson.orderNumber) || "");
-
-    if (code !== "0" || !orderNumber) {
-      throw new Error(`FlexPay rejected: ${initJson && initJson.message || "unknown"}`);
-    }
-
-    await db.doc(`users/${userId}/mobileMoneyTransactions/${reference}`).set({
-      reference,
-      orderNumber,
-      clientUid: clientId,
-      clientFirstName: clientInfo.firstName || "",
-      clientLastName: clientInfo.lastName || "",
-      clientMiddleName: clientInfo.middleName || "",
-      clientName: [
-        clientInfo.middleName || "",
-        clientInfo.firstName || "",
-        clientInfo.lastName || "",
-      ].filter((x) => x && String(x).trim()).join(" "),
-      paymentAmount: String(paymentAmount),
-      savingsAmount: "0",
-      currency: "CDF",
-      phoneRaw: phone,
-      phoneNormalized,
-      requestBody,
-      initResponse: initJson,
-      status: "PENDING",
-      createdAtMs,
-      updatedAtMs: Date.now(),
-      ownerUid: userId,
-      dayKey,
-      paymentEntryKey,
-      dbWriteDone: false,
-      whatsappOriginated: true,
-      whatsappPhone: session.phone || "",
-    });
-
-    await upsertMobileMoneyLookup(reference, {
-      ownerUid: userId,
-      clientUid: clientId,
-      orderNumber,
-      status: "PENDING",
-      dbWriteDone: false,
-      createdAtMs,
-      whatsappOriginated: true,
-    });
-
-    paymentRef = reference;
-    initOk = true;
+  const clientInfo = session._clientInfo || {};
+  const phone = clientInfo.phoneNumber || session.phone || "";
+  try {
+    const result = await initiateWhatsAppFlexPayPayment(session, paymentAmount, phone);
+    const reply = `⏳ Demande de paiement envoyée au numéro ${result.phoneDisplay}.\n\nVérifiez ce téléphone et confirmez avec le PIN Mobile Money.\n\nVous recevrez une confirmation ici une fois le paiement traité.`;
+    return {
+      reply,
+      newState: WA_STATES.PAYMENT_PENDING,
+      tempData: {...(session.tempData || {}), paymentRef: result.paymentRef, paymentPhoneRaw: phone},
+    };
   } catch (err) {
     console.error("WhatsApp payment initiation failed:", err);
+    return {
+      reply: `❌ Impossible d'initier le paiement avec ce numéro.\n\n[1] Réessayer avec ce numéro\n[2] Utiliser un autre numéro\n[3] Annuler`,
+      newState: WA_STATES.PAYMENT_METHOD,
+      tempData: session.tempData || {},
+    };
+  }
+}
+
+async function handlePaymentPhoneCustom(input, session) {
+  const raw = input.trim();
+  if (!/^\d{10}$/.test(raw) || !raw.startsWith("0")) {
+    return {
+      reply: `❌ Numéro invalide. Entrez 10 chiffres en commençant par 0.\nExemple: 0812345678`,
+      newState: WA_STATES.PAYMENT_PHONE_CUSTOM,
+      tempData: session.tempData || {},
+    };
   }
 
-  if (initOk) {
-    const reply = `⏳ Demande envoyée à ${providerName}...\n\nVérifiez votre téléphone et confirmez avec votre PIN.\n\nVous recevrez une confirmation ici une fois le paiement traité.`;
-    return {reply, newState: WA_STATES.PAYMENT_PENDING, tempData: {...(session.tempData || {}), provider: providerName, paymentRef}};
+  const paymentAmount = toNumber(session.tempData && session.tempData.paymentAmount || 0);
+  if (paymentAmount <= 0) {
+    return {reply: `❌ Montant invalide.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
   }
 
-  const reply = `❌ Désolé, une erreur est survenue lors de l'envoi de la demande de paiement. Veuillez réessayer plus tard.\n\n[0] Retour au menu principal`;
-  return {reply, newState: WA_STATES.MAIN_MENU, tempData: {}};
+  try {
+    const result = await initiateWhatsAppFlexPayPayment(session, paymentAmount, raw);
+    const reply = `⏳ Demande de paiement envoyée au numéro ${result.phoneDisplay}.\n\nVérifiez ce téléphone et confirmez avec le PIN Mobile Money.\n\nVous recevrez une confirmation ici une fois le paiement traité.`;
+    return {
+      reply,
+      newState: WA_STATES.PAYMENT_PENDING,
+      tempData: {...(session.tempData || {}), paymentRef: result.paymentRef, paymentPhoneRaw: raw},
+    };
+  } catch (err) {
+    console.error("WhatsApp payment initiation failed with custom phone:", err);
+    return {
+      reply: `❌ Impossible d'initier le paiement avec ce numéro.\n\nEntrez un autre numéro de 10 chiffres:`,
+      newState: WA_STATES.PAYMENT_PHONE_CUSTOM,
+      tempData: session.tempData || {},
+    };
+  }
 }
 
 async function handlePaymentPending(input, session) {
@@ -4329,6 +4435,7 @@ async function handleWhatsAppMessage(from, body) {
     [WA_STATES.PAYMENT_AMOUNT]: handlePaymentAmount,
     [WA_STATES.PAYMENT_CUSTOM]: handlePaymentCustom,
     [WA_STATES.PAYMENT_METHOD]: handlePaymentMethod,
+    [WA_STATES.PAYMENT_PHONE_CUSTOM]: handlePaymentPhoneCustom,
     [WA_STATES.PAYMENT_PENDING]: handlePaymentPending,
     [WA_STATES.HISTORY]: handleHistory,
     [WA_STATES.COMPLAINT_TYPE]: handleComplaintType,
@@ -4497,7 +4604,7 @@ async function notifyWhatsAppPaymentResult(reference, ownerUid, status) {
     }
 
     const receipt = generateReceiptNumber();
-    const msg = `✅ PAIEMENT CONFIRMÉ!\n\n💵 ${formatFC(paymentAmount)} reçu via Mobile Money\n🧾 Reçu: #${receipt}\n📅 Prochain paiement: ${nextDateStr}\n💰 Solde restant: ${formatFC(debtLeft)}\n\nMerci ${clientName}! 🙏\nFondation Gervais vous souhaite une bonne journée.\n\n[0] Retour au menu principal`;
+    const msg = `✅ PAIEMENT CONFIRMÉ!\n\n💵 ${formatFC(paymentAmount)} reçu via Mobile Money\n🧾 Reçu: #${receipt}\n📅 Prochain paiement: ${nextDateStr}\n💰 Dette restante: ${formatFC(debtLeft)}\n\nMerci ${clientName}! 🙏\nFondation Gervais vous souhaite une bonne journée.\n\n[0] Retour au menu principal`;
     await sendWhatsAppMessage(whatsappPhone, msg);
 
     await updateWhatsAppSession(whatsappPhone, {
