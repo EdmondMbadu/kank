@@ -3560,7 +3560,7 @@ async function assertWhatsAppAdminAccess(context) {
   return {uid, userData, access: "authenticated-fallback"};
 }
 
-function parseIsoDayToDate(day) {
+function parseIsoDayParts(day) {
   const raw = String(day || "").trim();
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
   if (!match) return null;
@@ -3570,21 +3570,53 @@ function parseIsoDayToDate(day) {
   if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(date)) {
     return null;
   }
-  return new Date(year, month - 1, date);
+  return {year, month, day: date};
+}
+
+function formatIsoDayParts(year, month, day) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function getDatePartsInTimeZone(timeZone, date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = fmt.formatToParts(date);
+  const getPart = (type) => (parts.find((part) => part.type === type) || {}).value || "";
+  return {
+    year: Number(getPart("year")),
+    month: Number(getPart("month")),
+    day: Number(getPart("day")),
+  };
+}
+
+function buildTimeZoneBoundary(year, month, day, timeZone) {
+  const isoDay = formatIsoDayParts(year, month, day);
+  const utcMs = zonedTimeToUtcMs(`${isoDay}T00:00`, timeZone);
+  return utcMs == null ? null : new Date(utcMs);
 }
 
 function buildWhatsAppReportRange(data) {
   const mode = String((data && data.mode) || "day").trim().toLowerCase();
   const now = new Date();
+  const today = getDatePartsInTimeZone(KINSHASA_TIME_ZONE, now);
 
   if (mode === "month") {
-    const month = Number((data && data.month) || (now.getMonth() + 1));
-    const year = Number((data && data.year) || now.getFullYear());
+    const month = Number((data && data.month) || today.month);
+    const year = Number((data && data.year) || today.year);
     if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year)) {
       throw new functions.https.HttpsError("invalid-argument", "Invalid month/year.");
     }
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 1);
+    const start = buildTimeZoneBoundary(year, month, 1, KINSHASA_TIME_ZONE);
+    const endYear = month === 12 ? year + 1 : year;
+    const endMonth = month === 12 ? 1 : month + 1;
+    const end = buildTimeZoneBoundary(endYear, endMonth, 1, KINSHASA_TIME_ZONE);
+    if (!start || !end) {
+      throw new functions.https.HttpsError("internal", "Failed to build month range.");
+    }
     return {
       mode: "month",
       start,
@@ -3593,15 +3625,32 @@ function buildWhatsAppReportRange(data) {
     };
   }
 
-  const day = parseIsoDayToDate(data && data.day);
-  const start = day || new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+  const selectedDay = parseIsoDayParts(data && data.day) || today;
+  const start = buildTimeZoneBoundary(
+      selectedDay.year,
+      selectedDay.month,
+      selectedDay.day,
+      KINSHASA_TIME_ZONE,
+  );
+  const nextDay = new Date(selectedDay.year, selectedDay.month - 1, selectedDay.day + 1);
+  const end = buildTimeZoneBoundary(
+      nextDay.getFullYear(),
+      nextDay.getMonth() + 1,
+      nextDay.getDate(),
+      KINSHASA_TIME_ZONE,
+  );
+  if (!start || !end) {
+    throw new functions.https.HttpsError("internal", "Failed to build day range.");
+  }
   return {
     mode: "day",
     start,
     end,
-    label: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`,
+    label: formatIsoDayParts(
+        selectedDay.year,
+        selectedDay.month,
+        selectedDay.day,
+    ),
   };
 }
 

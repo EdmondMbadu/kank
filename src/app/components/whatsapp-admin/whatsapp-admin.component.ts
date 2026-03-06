@@ -59,10 +59,12 @@ interface WhatsAppPayment {
 })
 export class WhatsappAdminComponent implements OnInit {
   readonly messagePageSize = 20;
+  readonly reportTimeZone = 'Africa/Kinshasa';
+  readonly todayParts = this.getTodayParts();
   filterMode: 'day' | 'month' = 'day';
   selectedDay = this.buildTodayIso();
-  selectedMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-  selectedYear = String(new Date().getFullYear());
+  selectedMonth = this.todayParts.month;
+  selectedYear = this.todayParts.year;
   messagePhoneSearch = '';
   complaintSearch = '';
   messagePage = 1;
@@ -83,7 +85,7 @@ export class WhatsappAdminComponent implements OnInit {
   ];
 
   readonly years = Array.from({ length: 6 }, (_, i) =>
-    String(new Date().getFullYear() - i)
+    String(Number(this.todayParts.year) - i)
   );
 
   stats: WhatsAppStats = {
@@ -296,7 +298,9 @@ export class WhatsappAdminComponent implements OnInit {
     if (!value) return '--';
     const date = new Date(Number(value));
     if (isNaN(date.getTime())) return '--';
-    return date.toLocaleString('fr-FR');
+    return date.toLocaleString('fr-FR', {
+      timeZone: this.reportTimeZone,
+    });
   }
 
   formatFC(value: any): string {
@@ -317,10 +321,24 @@ export class WhatsappAdminComponent implements OnInit {
   }
 
   private buildTodayIso(): string {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${this.todayParts.year}-${this.todayParts.month}-${this.todayParts.day}`;
+  }
+
+  private getTodayParts(): { year: string; month: string; day: string } {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.reportTimeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+
+    const getPart = (type: Intl.DateTimeFormatPartTypes): string =>
+      parts.find((part) => part.type === type)?.value || '';
+
+    return {
+      year: getPart('year'),
+      month: getPart('month'),
+      day: getPart('day'),
+    };
   }
 }
