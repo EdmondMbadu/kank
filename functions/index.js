@@ -3983,8 +3983,7 @@ function formatPaymentPhoneForDisplay(raw) {
 
 function buildPaymentAmountMenu(clientInfo) {
   const remainingDebt = toNumber(clientInfo.debtLeft || 0);
-  const nextDate = getNextPaymentDate(clientInfo);
-  return `💵 PAIEMENT\n\nDette restante: ${formatFC(remainingDebt)}\nÉchéance: ${nextDate ? formatDateFrench(nextDate) : "N/A"}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(remainingDebt)}\n[2] Payer un autre montant\n[3] Retour au menu principal`;
+  return `💵 PAIEMENT\n\nDette restante: ${formatFC(remainingDebt)}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(remainingDebt)}\n[2] Payer un autre montant\n[3] Retour au menu principal`;
 }
 
 function buildPaymentPhoneMenu(session, paymentAmount) {
@@ -4589,22 +4588,19 @@ async function notifyWhatsAppPaymentResult(reference, ownerUid, status) {
   if (status === "SUCCESS") {
     let clientName = "";
     let debtLeft = 0;
-    let nextDateStr = "N/A";
     try {
       const clientSnap = await db.doc(`users/${ownerUid}/clients/${clientUid}`).get();
       if (clientSnap.exists) {
         const c = clientSnap.data();
         clientName = c.firstName || "";
         debtLeft = toNumber(c.debtLeft || 0);
-        const nd = getNextPaymentDate(c);
-        nextDateStr = nd ? formatDateFrench(nd) : "N/A";
       }
     } catch (e) {
       console.error("Error fetching client for WhatsApp notification:", e);
     }
 
     const receipt = generateReceiptNumber();
-    const msg = `✅ PAIEMENT CONFIRMÉ!\n\n💵 ${formatFC(paymentAmount)} reçu via Mobile Money\n🧾 Reçu: #${receipt}\n📅 Prochain paiement: ${nextDateStr}\n💰 Dette restante: ${formatFC(debtLeft)}\n\nMerci ${clientName}! 🙏\nFondation Gervais vous souhaite une bonne journée.\n\n[0] Retour au menu principal`;
+    const msg = `✅ PAIEMENT CONFIRMÉ!\n\n💵 ${formatFC(paymentAmount)} reçu via Mobile Money\n🧾 Reçu: #${receipt}\n💰 Dette restante: ${formatFC(debtLeft)}\n\nMerci ${clientName}! 🙏\nFondation Gervais vous souhaite une bonne journée.\n\n[0] Retour au menu principal`;
     await sendWhatsAppMessage(whatsappPhone, msg);
 
     await updateWhatsAppSession(whatsappPhone, {
