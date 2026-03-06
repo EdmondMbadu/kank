@@ -3986,6 +3986,20 @@ function buildPaymentAmountMenu(clientInfo) {
   return `💵 PAIEMENT\n\nDette restante: ${formatFC(remainingDebt)}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(remainingDebt)}\n[2] Payer un autre montant\n[3] Retour au menu principal`;
 }
 
+function getMinimumWhatsAppPaymentAmount(remainingDebt) {
+  const debt = toNumber(remainingDebt || 0);
+  if (debt > 0 && debt < 500) return debt;
+  return 500;
+}
+
+function buildWhatsAppPaymentAmountRangeText(remainingDebt) {
+  const debt = toNumber(remainingDebt || 0);
+  const min = getMinimumWhatsAppPaymentAmount(debt);
+  if (debt <= 0) return "Aucun montant payable.";
+  if (min === debt) return `Le montant doit être exactement ${formatFC(debt)}.`;
+  return `Le montant doit être entre ${formatFC(min)} et ${formatFC(debt)}.`;
+}
+
 function buildPaymentPhoneMenu(session, paymentAmount) {
   const clientInfo = session._clientInfo || {};
   const defaultPhone = clientInfo.phoneNumber || session.phone || "";
@@ -4089,6 +4103,10 @@ async function handleMainMenu(input, session) {
   const choice = input.trim();
   const clientInfo = session._clientInfo;
 
+  if (choice === "0") {
+    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  }
+
   if (choice === "1") {
     const remainingDebt = toNumber(clientInfo.debtLeft || 0);
     const savings = toNumber(clientInfo.savings || 0);
@@ -4186,7 +4204,8 @@ async function handlePaymentAmount(input, session) {
     };
   }
   if (choice === "2") {
-    const reply = `Entrez le montant que vous souhaitez payer en FC.\nChiffres uniquement.`;
+    const remainingDebt = toNumber((session._clientInfo && session._clientInfo.debtLeft) || 0);
+    const reply = `Entrez le montant que vous souhaitez payer en FC.\nChiffres uniquement.\n${buildWhatsAppPaymentAmountRangeText(remainingDebt)}`;
     return {reply, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
   }
   if (choice === "3" || choice === "0") {
@@ -4207,9 +4226,10 @@ async function handlePaymentCustom(input, session) {
   }
   const amount = toNumber(raw);
   const remainingDebt = toNumber((session._clientInfo && session._clientInfo.debtLeft) || 0);
-  if (amount <= 0 || (remainingDebt > 0 && amount > remainingDebt)) {
+  const minAmount = getMinimumWhatsAppPaymentAmount(remainingDebt);
+  if (amount < minAmount || (remainingDebt > 0 && amount > remainingDebt)) {
     return {
-      reply: `❌ Montant invalide. Entrez un montant entre 1 et ${formatFC(remainingDebt)}.`,
+      reply: `❌ Montant invalide. ${buildWhatsAppPaymentAmountRangeText(remainingDebt)}`,
       newState: WA_STATES.PAYMENT_CUSTOM,
       tempData: session.tempData || {},
     };
