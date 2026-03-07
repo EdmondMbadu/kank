@@ -4471,7 +4471,7 @@ async function handleWhatsAppMessage(from, body) {
 
   const clientResult = await lookupClientByPhone(phone);
   if (!clientResult) {
-    return `Désolé, votre numéro n'est pas enregistré dans notre système.\n\nContactez Fondation Gervais pour vous inscrire.\n📞 +243 XX XXX XXXX`;
+    return `Désolé, votre numéro n'est pas enregistré dans notre système.\n\nContactez Fondation Gervais pour vous inscrire.\n📞 +243 825333567 ou envoyez nous un email sur fondationgervais@gmail.com`;
   }
 
   const {userId, clientId, client} = clientResult;
