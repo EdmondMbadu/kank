@@ -16,3 +16,9 @@
   word-break: break-word;
   line-height: 1.5;
 }
+
+.participant-name-cell {
+  min-width: 18rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

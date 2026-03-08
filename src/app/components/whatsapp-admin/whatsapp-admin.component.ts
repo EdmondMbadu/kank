@@ -12,6 +12,8 @@ interface WhatsAppStats {
   complaintOpenCount: number;
   complaintClosedCount: number;
   paymentCount: number;
+  distinctParticipantCount: number;
+  overallDistinctParticipantCount: number;
 }
 
 interface WhatsAppMessagePagination {
@@ -50,6 +52,12 @@ interface WhatsAppPayment {
   status: string;
   updatedAtMs: number;
   sourcePhone: string;
+}
+
+interface WhatsAppParticipant {
+  phone: string;
+  fullName: string;
+  lastInteractionAtMs?: number;
 }
 
 @Component({
@@ -96,11 +104,14 @@ export class WhatsappAdminComponent implements OnInit {
     complaintOpenCount: 0,
     complaintClosedCount: 0,
     paymentCount: 0,
+    distinctParticipantCount: 0,
+    overallDistinctParticipantCount: 0,
   };
 
   latestMessages: WhatsAppMessage[] = [];
   complaints: WhatsAppComplaint[] = [];
   payments: WhatsAppPayment[] = [];
+  participants: WhatsAppParticipant[] = [];
   messagePagination: WhatsAppMessagePagination = {
     page: 1,
     pageSize: 20,
@@ -168,6 +179,12 @@ export class WhatsappAdminComponent implements OnInit {
         complaintOpenCount: this.toNumber(data.stats?.complaintOpenCount),
         complaintClosedCount: this.toNumber(data.stats?.complaintClosedCount),
         paymentCount: this.toNumber(data.stats?.paymentCount),
+        distinctParticipantCount: this.toNumber(
+          data.stats?.distinctParticipantCount
+        ),
+        overallDistinctParticipantCount: this.toNumber(
+          data.stats?.overallDistinctParticipantCount
+        ),
       };
       this.latestMessages = Array.isArray(data.latestMessages)
         ? data.latestMessages
@@ -182,6 +199,9 @@ export class WhatsappAdminComponent implements OnInit {
       this.messagePage = this.messagePagination.page;
       this.complaints = Array.isArray(data.complaints) ? data.complaints : [];
       this.payments = Array.isArray(data.payments) ? data.payments : [];
+      this.participants = Array.isArray(data.participants)
+        ? data.participants
+        : [];
     } catch (err: any) {
       this.error =
         err?.message || 'Erreur lors du chargement des données WhatsApp.';
@@ -275,6 +295,10 @@ export class WhatsappAdminComponent implements OnInit {
 
   get hasMessageResults(): boolean {
     return this.messagePagination.totalCount > 0;
+  }
+
+  get participantPeriodLabel(): string {
+    return this.filterMode === 'day' ? 'jour sélectionné' : 'mois sélectionné';
   }
 
   get filteredComplaints(): WhatsAppComplaint[] {

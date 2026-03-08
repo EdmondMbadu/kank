@@ -3660,6 +3660,58 @@ function normalizePhoneSearch(value) {
       .trim();
 }
 
+function getWhatsAppParticipantKey(phone) {
+  const normalized = normalizeWhatsAppPhone(phone);
+  const indexed = phoneToIndexKey(normalized);
+  if (indexed) return indexed;
+  return normalized.replace(/[^\d]/g, "").trim();
+}
+
+function preferWhatsAppDisplayPhone(currentPhone, candidatePhone) {
+  const current = normalizeWhatsAppPhone(currentPhone);
+  const candidate = normalizeWhatsAppPhone(candidatePhone);
+  if (!candidate) return current || "";
+  if (!current) return candidate;
+  if (candidate.startsWith("+") && !current.startsWith("+")) return candidate;
+  if (candidate.length > current.length) return candidate;
+  return current;
+}
+
+function addWhatsAppParticipant(map, phone, interactionAtMs, fullName = "") {
+  const key = getWhatsAppParticipantKey(phone);
+  if (!key) return;
+  const existing = map.get(key) || {
+    key,
+    phone: "",
+    fullName: "",
+    lastInteractionAtMs: 0,
+  };
+  const resolvedName = String(fullName || "").trim();
+  const safeName = resolvedName.toLowerCase() === "client inconnu" ? "" : resolvedName;
+  map.set(key, {
+    key,
+    phone: preferWhatsAppDisplayPhone(existing.phone, phone) || existing.phone || "",
+    fullName: existing.fullName || safeName,
+    lastInteractionAtMs: Math.max(
+        Number(existing.lastInteractionAtMs || 0),
+        Number(interactionAtMs || 0),
+    ),
+  });
+}
+
+function addWhatsAppParticipantKey(set, phone) {
+  const key = getWhatsAppParticipantKey(phone);
+  if (key) set.add(key);
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
 function buildWhatsAppClientFullName(clientData) {
   return [
     String((clientData && clientData.middleName) || "").trim(),
@@ -3699,15 +3751,23 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       .where("createdAtMs", ">=", startMs)
       .where("createdAtMs", "<", endMs)
       .orderBy("createdAtMs", "desc");
-  const [latestMessagesSnap, complaintsSnap, paymentDocs] = await Promise.all([
+  const globalMessagePhonesQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
+      .select("phone");
+  const globalComplaintPhonesQuery = db.collection(WHATSAPP_COMPLAINTS_COLLECTION)
+      .select("phone");
+  const [latestMessagesSnap, complaintsSnap, paymentDocs, globalMessagePhonesSnap, globalComplaintPhonesSnap] = await Promise.all([
     latestMessagesQuery.get(),
     complaintsQuery.get(),
     listWhatsAppPaymentDocs(),
+    globalMessagePhonesQuery.get(),
+    globalComplaintPhonesQuery.get(),
   ]);
 
+  const periodParticipants = new Map();
+  const overallParticipantKeys = new Set();
   const allMessages = latestMessagesSnap.docs.map((doc) => {
     const item = doc.data() || {};
-    return {
+    const message = {
       id: doc.id,
       direction: item.direction || "",
       phone: item.phone || "",
@@ -3715,6 +3775,15 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       source: item.source || "",
       createdAtMs: Number(item.createdAtMs || 0),
     };
+    addWhatsAppParticipant(
+        periodParticipants,
+        message.phone,
+        message.createdAtMs,
+    );
+    return message;
+  });
+  globalMessagePhonesSnap.docs.forEach((doc) => {
+    addWhatsAppParticipantKey(overallParticipantKeys, doc.get("phone"));
   });
   const incomingCount = allMessages.filter((item) => item.direction === "incoming").length;
   const outgoingCount = allMessages.filter((item) => item.direction === "outgoing").length;
@@ -3749,7 +3818,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
         console.error("Failed to enrich WhatsApp complaint client name:", err);
       }
     }
-    return {
+    const complaint = {
       id: doc.id,
       phone: item.phone || "",
       clientName: clientName || "Client inconnu",
@@ -3759,13 +3828,24 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       status: item.status || "open",
       createdAtMs: Number(item.createdAtMs || 0),
     };
+    addWhatsAppParticipant(
+        periodParticipants,
+        complaint.phone,
+        complaint.createdAtMs,
+        complaint.clientName,
+    );
+    return complaint;
   }));
+  globalComplaintPhonesSnap.docs.forEach((doc) => {
+    addWhatsAppParticipantKey(overallParticipantKeys, doc.get("phone"));
+  });
 
   const payments = [];
   for (const doc of paymentDocs) {
     const item = doc.data() || {};
     const updatedAtMs = Number(item.updatedAtMs || item.createdAtMs || 0);
     const status = String(item.status || "").toUpperCase();
+    addWhatsAppParticipantKey(overallParticipantKeys, item.whatsappPhone || "");
     if (status !== "SUCCESS") continue;
     if (updatedAtMs < startMs || updatedAtMs >= endMs) continue;
 
@@ -3790,7 +3870,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       }
     }
 
-    payments.push({
+    const payment = {
       id: doc.id,
       reference: String(item.reference || doc.id),
       clientName: clientName || "Client inconnu",
@@ -3798,10 +3878,57 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       status,
       updatedAtMs,
       sourcePhone: String(item.whatsappPhone || ""),
-    });
+    };
+    addWhatsAppParticipant(
+        periodParticipants,
+        payment.sourcePhone,
+        payment.updatedAtMs,
+        payment.clientName,
+    );
+    payments.push(payment);
   }
 
   payments.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+
+  const participantKeys = Array.from(periodParticipants.keys());
+  const phoneIndexMap = new Map();
+  for (const keyChunk of chunkArray(participantKeys, 10)) {
+    if (!keyChunk.length) continue;
+    const phoneIndexSnap = await db.collection(WHATSAPP_PHONE_INDEX_COLLECTION)
+        .where(admin.firestore.FieldPath.documentId(), "in", keyChunk)
+        .get();
+    phoneIndexSnap.docs.forEach((doc) => {
+      phoneIndexMap.set(doc.id, doc.data() || {});
+    });
+  }
+
+  const participants = Array.from(periodParticipants.values())
+      .sort((a, b) => {
+        if (b.lastInteractionAtMs !== a.lastInteractionAtMs) {
+          return b.lastInteractionAtMs - a.lastInteractionAtMs;
+        }
+        return String(a.phone || a.key).localeCompare(String(b.phone || b.key));
+      })
+      .map((participant) => {
+        const phoneIndex = phoneIndexMap.get(participant.key) || {};
+        const indexFullName = buildWhatsAppClientFullName({
+          firstName: phoneIndex.firstName || "",
+          lastName: phoneIndex.lastName || "",
+        });
+        const participantFullName = String(participant.fullName || "").trim();
+        const safeParticipantFullName =
+          participantFullName.toLowerCase() === "client inconnu" ?
+            "" :
+            participantFullName;
+        return {
+          phone: preferWhatsAppDisplayPhone(
+              participant.phone,
+              phoneIndex.phoneNumber || participant.key,
+          ) || participant.key || "--",
+          fullName: safeParticipantFullName || indexFullName || "Client inconnu",
+          lastInteractionAtMs: participant.lastInteractionAtMs,
+        };
+      });
 
   return {
     ok: true,
@@ -3819,6 +3946,8 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       complaintOpenCount: complaints.filter((item) => String(item.status || "open") !== "closed").length,
       complaintClosedCount: complaints.filter((item) => String(item.status || "open") === "closed").length,
       paymentCount: payments.length,
+      distinctParticipantCount: participants.length,
+      overallDistinctParticipantCount: overallParticipantKeys.size,
     },
     messages: {
       page: safePage,
@@ -3830,6 +3959,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     latestMessages,
     complaints,
     payments: payments.slice(0, 50),
+    participants,
   };
 });
 

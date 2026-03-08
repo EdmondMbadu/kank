@@ -77,8 +77,8 @@
 
     <!-- Loading Skeleton -->
     <ng-container *ngIf="loading">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div *ngFor="let s of [1,2,3,4,5]" class="animate-pulse rounded-3xl border border-slate-200 bg-white p-5">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
+        <div *ngFor="let s of [1,2,3,4,5,6,7]" class="animate-pulse rounded-3xl border border-slate-200 bg-white p-5">
           <div class="h-3 w-16 rounded-full bg-slate-200"></div>
           <div class="mt-3 h-8 w-20 rounded-lg bg-slate-200"></div>
         </div>
@@ -93,7 +93,7 @@
     </ng-container>
 
     <!-- Stats Cards -->
-    <div *ngIf="!loading" class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div *ngIf="!loading" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
       <div class="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
         <span class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Entrants</span>
         <div class="mt-2 text-3xl font-extrabold tabular-nums text-emerald-950">{{ stats.incomingCount }}</div>
@@ -114,7 +114,70 @@
         <span class="text-xs font-semibold uppercase tracking-wider text-violet-600">Paiements</span>
         <div class="mt-2 text-3xl font-extrabold tabular-nums text-violet-950">{{ stats.paymentCount }}</div>
       </div>
+      <div class="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100/60 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        <span class="text-xs font-semibold uppercase tracking-wider text-amber-700">Téléphones distincts ({{ filterMode === 'day' ? 'jour' : 'mois' }})</span>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-amber-950">{{ stats.distinctParticipantCount }}</div>
+        <p class="mt-2 text-xs text-amber-800/80">1 personne = 1 numéro WhatsApp unique sur la période sélectionnée.</p>
+      </div>
+      <div class="rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-cyan-100/60 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        <span class="text-xs font-semibold uppercase tracking-wider text-cyan-700">Téléphones distincts (global)</span>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-cyan-950">{{ stats.overallDistinctParticipantCount }}</div>
+        <p class="mt-2 text-xs text-cyan-800/80">Total cumulé tous les temps, affiché dans les deux modes.</p>
+      </div>
     </div>
+
+    <!-- Distinct Participants -->
+    <section *ngIf="!loading" class="rounded-3xl border border-amber-200 bg-white shadow-lg overflow-hidden">
+      <div class="flex flex-col gap-4 border-b border-amber-200 bg-gradient-to-r from-amber-50 to-white px-6 py-5 md:flex-row md:items-start md:justify-between md:px-8">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Contacts WhatsApp distincts</h2>
+          <p class="mt-1 text-sm text-slate-600">
+            Liste pour le {{ participantPeriodLabel }}.
+            Chaque ligne correspond à un numéro de téléphone unique ayant eu une activité WhatsApp sur cette période.
+          </p>
+          <p *ngIf="reportLabel" class="mt-2 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+            {{ reportLabel }}
+          </p>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="rounded-2xl border border-amber-200 bg-white px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ participantPeriodLabel }}</p>
+            <p class="mt-1 text-2xl font-extrabold tabular-nums text-amber-950">{{ stats.distinctParticipantCount }}</p>
+          </div>
+          <div class="rounded-2xl border border-cyan-200 bg-white px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-cyan-700">Global</p>
+            <p class="mt-1 text-2xl font-extrabold tabular-nums text-cyan-950">{{ stats.overallDistinctParticipantCount }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 pb-6 pt-4 md:px-8">
+        <div class="overflow-x-auto rounded-2xl border border-amber-200">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-amber-200 bg-amber-50">
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-amber-700">Téléphone</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-amber-700">Nom complet</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let participant of participants; let odd = odd"
+                  class="border-b border-amber-100 hover:bg-amber-50/40"
+                  [ngClass]="{'bg-amber-50/20': odd}">
+                <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-700">{{ participant.phone || '--' }}</td>
+                <td class="participant-name-cell px-4 py-3 text-slate-800">{{ participant.fullName || 'Client inconnu' }}</td>
+              </tr>
+              <tr *ngIf="participants.length === 0">
+                <td colspan="2" class="px-4 py-10 text-center text-sm text-slate-400">
+                  Aucun téléphone distinct trouvé pour le {{ participantPeriodLabel }}.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
     <!-- Messages Section (Collapsible) -->
     <section *ngIf="!loading" class="rounded-3xl border border-slate-200 bg-white shadow-lg overflow-hidden">
