@@ -3712,6 +3712,36 @@ function chunkArray(items, size) {
   return chunks;
 }
 
+function buildWhatsAppParticipantList(participantMap, phoneIndexMap) {
+  return Array.from(participantMap.values())
+      .sort((a, b) => {
+        if (b.lastInteractionAtMs !== a.lastInteractionAtMs) {
+          return b.lastInteractionAtMs - a.lastInteractionAtMs;
+        }
+        return String(a.phone || a.key).localeCompare(String(b.phone || b.key));
+      })
+      .map((participant) => {
+        const phoneIndex = phoneIndexMap.get(participant.key) || {};
+        const indexFullName = buildWhatsAppClientFullName({
+          firstName: phoneIndex.firstName || "",
+          lastName: phoneIndex.lastName || "",
+        });
+        const participantFullName = String(participant.fullName || "").trim();
+        const safeParticipantFullName =
+          participantFullName.toLowerCase() === "client inconnu" ?
+            "" :
+            participantFullName;
+        return {
+          phone: preferWhatsAppDisplayPhone(
+              participant.phone,
+              phoneIndex.phoneNumber || participant.key,
+          ) || participant.key || "--",
+          fullName: safeParticipantFullName || indexFullName || "Client inconnu",
+          lastInteractionAtMs: participant.lastInteractionAtMs,
+        };
+      });
+}
+
 function buildWhatsAppClientFullName(clientData) {
   return [
     String((clientData && clientData.middleName) || "").trim(),
@@ -3752,19 +3782,19 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       .where("createdAtMs", "<", endMs)
       .orderBy("createdAtMs", "desc");
   const globalMessagePhonesQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
-      .select("phone");
-  const globalComplaintPhonesQuery = db.collection(WHATSAPP_COMPLAINTS_COLLECTION)
-      .select("phone");
-  const [latestMessagesSnap, complaintsSnap, paymentDocs, globalMessagePhonesSnap, globalComplaintPhonesSnap] = await Promise.all([
+      .select("phone", "createdAtMs");
+  const globalComplaintParticipantsQuery = db.collection(WHATSAPP_COMPLAINTS_COLLECTION)
+      .select("phone", "clientFullName", "clientName", "createdAtMs");
+  const [latestMessagesSnap, complaintsSnap, paymentDocs, globalMessagePhonesSnap, globalComplaintParticipantsSnap] = await Promise.all([
     latestMessagesQuery.get(),
     complaintsQuery.get(),
     listWhatsAppPaymentDocs(),
     globalMessagePhonesQuery.get(),
-    globalComplaintPhonesQuery.get(),
+    globalComplaintParticipantsQuery.get(),
   ]);
 
   const periodParticipants = new Map();
-  const overallParticipantKeys = new Set();
+  const overallParticipants = new Map();
   const allMessages = latestMessagesSnap.docs.map((doc) => {
     const item = doc.data() || {};
     const message = {
@@ -3783,7 +3813,11 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     return message;
   });
   globalMessagePhonesSnap.docs.forEach((doc) => {
-    addWhatsAppParticipantKey(overallParticipantKeys, doc.get("phone"));
+    addWhatsAppParticipant(
+        overallParticipants,
+        doc.get("phone"),
+        Number(doc.get("createdAtMs") || 0),
+    );
   });
   const incomingCount = allMessages.filter((item) => item.direction === "incoming").length;
   const outgoingCount = allMessages.filter((item) => item.direction === "outgoing").length;
@@ -3836,8 +3870,13 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     );
     return complaint;
   }));
-  globalComplaintPhonesSnap.docs.forEach((doc) => {
-    addWhatsAppParticipantKey(overallParticipantKeys, doc.get("phone"));
+  globalComplaintParticipantsSnap.docs.forEach((doc) => {
+    addWhatsAppParticipant(
+        overallParticipants,
+        doc.get("phone"),
+        Number(doc.get("createdAtMs") || 0),
+        doc.get("clientFullName") || doc.get("clientName") || "",
+    );
   });
 
   const payments = [];
@@ -3845,7 +3884,12 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     const item = doc.data() || {};
     const updatedAtMs = Number(item.updatedAtMs || item.createdAtMs || 0);
     const status = String(item.status || "").toUpperCase();
-    addWhatsAppParticipantKey(overallParticipantKeys, item.whatsappPhone || "");
+    addWhatsAppParticipant(
+        overallParticipants,
+        item.whatsappPhone || "",
+        updatedAtMs,
+        item.clientName || "",
+    );
     if (status !== "SUCCESS") continue;
     if (updatedAtMs < startMs || updatedAtMs >= endMs) continue;
 
@@ -3890,45 +3934,23 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
 
   payments.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
 
-  const participantKeys = Array.from(periodParticipants.keys());
+  const participantKeys = Array.from(new Set([
+    ...Array.from(periodParticipants.keys()),
+    ...Array.from(overallParticipants.keys()),
+  ]));
   const phoneIndexMap = new Map();
   for (const keyChunk of chunkArray(participantKeys, 10)) {
     if (!keyChunk.length) continue;
     const phoneIndexSnap = await db.collection(WHATSAPP_PHONE_INDEX_COLLECTION)
         .where(admin.firestore.FieldPath.documentId(), "in", keyChunk)
         .get();
-    phoneIndexSnap.docs.forEach((doc) => {
-      phoneIndexMap.set(doc.id, doc.data() || {});
-    });
+      phoneIndexSnap.docs.forEach((doc) => {
+        phoneIndexMap.set(doc.id, doc.data() || {});
+      });
   }
 
-  const participants = Array.from(periodParticipants.values())
-      .sort((a, b) => {
-        if (b.lastInteractionAtMs !== a.lastInteractionAtMs) {
-          return b.lastInteractionAtMs - a.lastInteractionAtMs;
-        }
-        return String(a.phone || a.key).localeCompare(String(b.phone || b.key));
-      })
-      .map((participant) => {
-        const phoneIndex = phoneIndexMap.get(participant.key) || {};
-        const indexFullName = buildWhatsAppClientFullName({
-          firstName: phoneIndex.firstName || "",
-          lastName: phoneIndex.lastName || "",
-        });
-        const participantFullName = String(participant.fullName || "").trim();
-        const safeParticipantFullName =
-          participantFullName.toLowerCase() === "client inconnu" ?
-            "" :
-            participantFullName;
-        return {
-          phone: preferWhatsAppDisplayPhone(
-              participant.phone,
-              phoneIndex.phoneNumber || participant.key,
-          ) || participant.key || "--",
-          fullName: safeParticipantFullName || indexFullName || "Client inconnu",
-          lastInteractionAtMs: participant.lastInteractionAtMs,
-        };
-      });
+  const participants = buildWhatsAppParticipantList(periodParticipants, phoneIndexMap);
+  const overallParticipantList = buildWhatsAppParticipantList(overallParticipants, phoneIndexMap);
 
   return {
     ok: true,
@@ -3947,7 +3969,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       complaintClosedCount: complaints.filter((item) => String(item.status || "open") === "closed").length,
       paymentCount: payments.length,
       distinctParticipantCount: participants.length,
-      overallDistinctParticipantCount: overallParticipantKeys.size,
+      overallDistinctParticipantCount: overallParticipantList.length,
     },
     messages: {
       page: safePage,
@@ -3960,6 +3982,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     complaints,
     payments: payments.slice(0, 50),
     participants,
+    overallParticipants: overallParticipantList,
   };
 });
 

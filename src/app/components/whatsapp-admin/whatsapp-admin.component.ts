@@ -112,6 +112,7 @@ export class WhatsappAdminComponent implements OnInit {
   complaints: WhatsAppComplaint[] = [];
   payments: WhatsAppPayment[] = [];
   participants: WhatsAppParticipant[] = [];
+  overallParticipants: WhatsAppParticipant[] = [];
   messagePagination: WhatsAppMessagePagination = {
     page: 1,
     pageSize: 20,
@@ -125,6 +126,8 @@ export class WhatsappAdminComponent implements OnInit {
   error = '';
 
   messagesOpen = false;
+  participantsOpen = false;
+  participantsViewMode: 'period' | 'global' = 'period';
   complaintsOpen = false;
   paymentsOpen = false;
   complaintActionId = '';
@@ -201,6 +204,9 @@ export class WhatsappAdminComponent implements OnInit {
       this.payments = Array.isArray(data.payments) ? data.payments : [];
       this.participants = Array.isArray(data.participants)
         ? data.participants
+        : [];
+      this.overallParticipants = Array.isArray(data.overallParticipants)
+        ? data.overallParticipants
         : [];
     } catch (err: any) {
       this.error =
@@ -299,6 +305,34 @@ export class WhatsappAdminComponent implements OnInit {
 
   get participantPeriodLabel(): string {
     return this.filterMode === 'day' ? 'jour sélectionné' : 'mois sélectionné';
+  }
+
+  get participantPeriodShortLabel(): string {
+    return this.filterMode === 'day' ? 'Jour' : 'Mois';
+  }
+
+  get activeParticipants(): WhatsAppParticipant[] {
+    return this.participantsViewMode === 'global'
+      ? this.overallParticipants
+      : this.participants;
+  }
+
+  get activeParticipantCount(): number {
+    return this.participantsViewMode === 'global'
+      ? this.stats.overallDistinctParticipantCount
+      : this.stats.distinctParticipantCount;
+  }
+
+  get activeParticipantLabel(): string {
+    return this.participantsViewMode === 'global'
+      ? 'vue globale'
+      : this.participantPeriodLabel;
+  }
+
+  get activeParticipantEmptyScopeLabel(): string {
+    return this.participantsViewMode === 'global'
+      ? 'la vue globale'
+      : `le ${this.participantPeriodLabel}`;
   }
 
   get filteredComplaints(): WhatsAppComplaint[] {
