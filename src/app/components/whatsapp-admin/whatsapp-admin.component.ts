@@ -128,6 +128,8 @@ export class WhatsappAdminComponent implements OnInit {
   messagesOpen = false;
   participantsOpen = false;
   participantsViewMode: 'period' | 'global' = 'period';
+  overallParticipantsLoading = false;
+  overallParticipantsLoaded = false;
   complaintsOpen = false;
   paymentsOpen = false;
   complaintActionId = '';
@@ -205,9 +207,15 @@ export class WhatsappAdminComponent implements OnInit {
       this.participants = Array.isArray(data.participants)
         ? data.participants
         : [];
-      this.overallParticipants = Array.isArray(data.overallParticipants)
-        ? data.overallParticipants
-        : [];
+      if (Array.isArray(data.overallParticipants) && data.overallParticipants.length) {
+        this.overallParticipants = data.overallParticipants;
+        this.overallParticipantsLoaded = true;
+      } else if (
+        this.toNumber(data.stats?.overallDistinctParticipantCount) === 0
+      ) {
+        this.overallParticipants = [];
+        this.overallParticipantsLoaded = true;
+      }
     } catch (err: any) {
       this.error =
         err?.message || 'Erreur lors du chargement des données WhatsApp.';
@@ -318,6 +326,9 @@ export class WhatsappAdminComponent implements OnInit {
   }
 
   get activeParticipantCount(): number {
+    if (this.participantsViewMode === 'global' && this.overallParticipantsLoaded) {
+      return this.overallParticipants.length;
+    }
     return this.participantsViewMode === 'global'
       ? this.stats.overallDistinctParticipantCount
       : this.stats.distinctParticipantCount;
@@ -333,6 +344,49 @@ export class WhatsappAdminComponent implements OnInit {
     return this.participantsViewMode === 'global'
       ? 'la vue globale'
       : `le ${this.participantPeriodLabel}`;
+  }
+
+  async setParticipantsViewMode(mode: 'period' | 'global'): Promise<void> {
+    this.participantsViewMode = mode;
+    if (mode === 'global') {
+      await this.ensureOverallParticipantsLoaded();
+    }
+  }
+
+  private async ensureOverallParticipantsLoaded(): Promise<void> {
+    const expectedCount = this.stats.overallDistinctParticipantCount;
+    if (this.overallParticipantsLoading) return;
+    if (
+      this.overallParticipantsLoaded &&
+      (expectedCount === 0 || this.overallParticipants.length >= expectedCount)
+    ) {
+      return;
+    }
+
+    this.overallParticipantsLoading = true;
+    try {
+      const callable = this.fns.httpsCallable(
+        'getWhatsAppAdminOverallParticipants'
+      );
+      const response: any = await firstValueFrom(callable({}));
+      const participants = Array.isArray(response?.participants)
+        ? response.participants
+        : [];
+      this.overallParticipants = participants;
+      this.stats = {
+        ...this.stats,
+        overallDistinctParticipantCount: this.toNumber(
+          response?.count ?? participants.length
+        ),
+      };
+      this.overallParticipantsLoaded = true;
+    } catch (err: any) {
+      this.error =
+        err?.message ||
+        'Erreur lors du chargement global des contacts WhatsApp.';
+    } finally {
+      this.overallParticipantsLoading = false;
+    }
   }
 
   get filteredComplaints(): WhatsAppComplaint[] {

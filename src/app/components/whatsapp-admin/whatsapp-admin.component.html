@@ -152,18 +152,23 @@
             Chaque ligne correspond à un numéro de téléphone unique ayant interagi avec le canal WhatsApp.
           </p>
           <div class="flex gap-1 rounded-xl bg-amber-100 p-1">
-            <button type="button" (click)="participantsViewMode = 'period'"
+            <button type="button" (click)="setParticipantsViewMode('period')"
               class="rounded-lg px-4 py-2 text-sm font-semibold transition-all"
               [ngClass]="participantsViewMode === 'period' ? 'bg-white text-amber-900 shadow-sm' : 'text-amber-700 hover:text-amber-900'">
               {{ participantPeriodShortLabel }}
             </button>
-            <button type="button" (click)="participantsViewMode = 'global'"
+            <button type="button" (click)="setParticipantsViewMode('global')"
               class="rounded-lg px-4 py-2 text-sm font-semibold transition-all"
               [ngClass]="participantsViewMode === 'global' ? 'bg-white text-amber-900 shadow-sm' : 'text-amber-700 hover:text-amber-900'">
               Global
             </button>
           </div>
         </div>
+
+        <p *ngIf="participantsViewMode === 'global' && overallParticipantsLoading"
+           class="mb-4 text-sm text-amber-700">
+          Chargement de la vue globale...
+        </p>
 
         <div class="overflow-x-auto rounded-2xl border border-amber-200">
           <table class="w-full text-sm">

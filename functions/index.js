@@ -3761,6 +3761,73 @@ async function listWhatsAppPaymentDocs() {
   return querySnaps.flatMap((snap) => snap.docs);
 }
 
+async function fetchWhatsAppPhoneIndexMap(participantKeys) {
+  const phoneIndexMap = new Map();
+  for (const keyChunk of chunkArray(participantKeys, 10)) {
+    if (!keyChunk.length) continue;
+    const phoneIndexSnap = await db.collection(WHATSAPP_PHONE_INDEX_COLLECTION)
+        .where(admin.firestore.FieldPath.documentId(), "in", keyChunk)
+        .get();
+    phoneIndexSnap.docs.forEach((doc) => {
+      phoneIndexMap.set(doc.id, doc.data() || {});
+    });
+  }
+  return phoneIndexMap;
+}
+
+async function buildOverallWhatsAppParticipants(paymentDocs = null) {
+  const [globalMessagePhonesSnap, globalComplaintParticipantsSnap, resolvedPaymentDocs] = await Promise.all([
+    db.collection(WHATSAPP_MESSAGES_COLLECTION)
+        .select("phone", "createdAtMs")
+        .get(),
+    db.collection(WHATSAPP_COMPLAINTS_COLLECTION)
+        .select("phone", "clientFullName", "clientName", "createdAtMs")
+        .get(),
+    Array.isArray(paymentDocs) ? Promise.resolve(paymentDocs) : listWhatsAppPaymentDocs(),
+  ]);
+
+  const overallParticipants = new Map();
+  globalMessagePhonesSnap.docs.forEach((doc) => {
+    addWhatsAppParticipant(
+        overallParticipants,
+        doc.get("phone"),
+        Number(doc.get("createdAtMs") || 0),
+    );
+  });
+
+  globalComplaintParticipantsSnap.docs.forEach((doc) => {
+    addWhatsAppParticipant(
+        overallParticipants,
+        doc.get("phone"),
+        Number(doc.get("createdAtMs") || 0),
+        doc.get("clientFullName") || doc.get("clientName") || "",
+    );
+  });
+
+  for (const doc of resolvedPaymentDocs) {
+    const item = doc.data() || {};
+    addWhatsAppParticipant(
+        overallParticipants,
+        item.whatsappPhone || "",
+        Number(item.updatedAtMs || item.createdAtMs || 0),
+        item.clientName || "",
+    );
+  }
+
+  const phoneIndexMap = await fetchWhatsAppPhoneIndexMap(
+      Array.from(overallParticipants.keys()),
+  );
+  const participants = buildWhatsAppParticipantList(
+      overallParticipants,
+      phoneIndexMap,
+  );
+
+  return {
+    participants,
+    count: participants.length,
+  };
+}
+
 exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) => {
   await assertWhatsAppAdminAccess(context);
 
@@ -3781,20 +3848,13 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       .where("createdAtMs", ">=", startMs)
       .where("createdAtMs", "<", endMs)
       .orderBy("createdAtMs", "desc");
-  const globalMessagePhonesQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
-      .select("phone", "createdAtMs");
-  const globalComplaintParticipantsQuery = db.collection(WHATSAPP_COMPLAINTS_COLLECTION)
-      .select("phone", "clientFullName", "clientName", "createdAtMs");
-  const [latestMessagesSnap, complaintsSnap, paymentDocs, globalMessagePhonesSnap, globalComplaintParticipantsSnap] = await Promise.all([
+  const [latestMessagesSnap, complaintsSnap, paymentDocs] = await Promise.all([
     latestMessagesQuery.get(),
     complaintsQuery.get(),
     listWhatsAppPaymentDocs(),
-    globalMessagePhonesQuery.get(),
-    globalComplaintParticipantsQuery.get(),
   ]);
 
   const periodParticipants = new Map();
-  const overallParticipants = new Map();
   const allMessages = latestMessagesSnap.docs.map((doc) => {
     const item = doc.data() || {};
     const message = {
@@ -3811,13 +3871,6 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
         message.createdAtMs,
     );
     return message;
-  });
-  globalMessagePhonesSnap.docs.forEach((doc) => {
-    addWhatsAppParticipant(
-        overallParticipants,
-        doc.get("phone"),
-        Number(doc.get("createdAtMs") || 0),
-    );
   });
   const incomingCount = allMessages.filter((item) => item.direction === "incoming").length;
   const outgoingCount = allMessages.filter((item) => item.direction === "outgoing").length;
@@ -3870,26 +3923,12 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     );
     return complaint;
   }));
-  globalComplaintParticipantsSnap.docs.forEach((doc) => {
-    addWhatsAppParticipant(
-        overallParticipants,
-        doc.get("phone"),
-        Number(doc.get("createdAtMs") || 0),
-        doc.get("clientFullName") || doc.get("clientName") || "",
-    );
-  });
 
   const payments = [];
   for (const doc of paymentDocs) {
     const item = doc.data() || {};
     const updatedAtMs = Number(item.updatedAtMs || item.createdAtMs || 0);
     const status = String(item.status || "").toUpperCase();
-    addWhatsAppParticipant(
-        overallParticipants,
-        item.whatsappPhone || "",
-        updatedAtMs,
-        item.clientName || "",
-    );
     if (status !== "SUCCESS") continue;
     if (updatedAtMs < startMs || updatedAtMs >= endMs) continue;
 
@@ -3934,23 +3973,12 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
 
   payments.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
 
-  const participantKeys = Array.from(new Set([
-    ...Array.from(periodParticipants.keys()),
-    ...Array.from(overallParticipants.keys()),
-  ]));
-  const phoneIndexMap = new Map();
-  for (const keyChunk of chunkArray(participantKeys, 10)) {
-    if (!keyChunk.length) continue;
-    const phoneIndexSnap = await db.collection(WHATSAPP_PHONE_INDEX_COLLECTION)
-        .where(admin.firestore.FieldPath.documentId(), "in", keyChunk)
-        .get();
-      phoneIndexSnap.docs.forEach((doc) => {
-        phoneIndexMap.set(doc.id, doc.data() || {});
-      });
-  }
-
+  const [phoneIndexMap, overallParticipantData] = await Promise.all([
+    fetchWhatsAppPhoneIndexMap(Array.from(periodParticipants.keys())),
+    buildOverallWhatsAppParticipants(paymentDocs),
+  ]);
   const participants = buildWhatsAppParticipantList(periodParticipants, phoneIndexMap);
-  const overallParticipantList = buildWhatsAppParticipantList(overallParticipants, phoneIndexMap);
+  const overallParticipantList = overallParticipantData.participants;
 
   return {
     ok: true,
@@ -3969,7 +3997,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       complaintClosedCount: complaints.filter((item) => String(item.status || "open") === "closed").length,
       paymentCount: payments.length,
       distinctParticipantCount: participants.length,
-      overallDistinctParticipantCount: overallParticipantList.length,
+      overallDistinctParticipantCount: overallParticipantData.count,
     },
     messages: {
       page: safePage,
@@ -3983,6 +4011,17 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     payments: payments.slice(0, 50),
     participants,
     overallParticipants: overallParticipantList,
+  };
+});
+
+exports.getWhatsAppAdminOverallParticipants = functions.https.onCall(async (_data, context) => {
+  await assertWhatsAppAdminAccess(context);
+
+  const overallParticipantData = await buildOverallWhatsAppParticipants();
+  return {
+    ok: true,
+    participants: overallParticipantData.participants,
+    count: overallParticipantData.count,
   };
 });
 
