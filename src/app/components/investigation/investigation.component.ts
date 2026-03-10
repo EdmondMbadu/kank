@@ -839,12 +839,22 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     delete existing[entryId];
 
     try {
-      await this.data.updateClientInvestigationFieldsForUser(targetOwnerId, client.uid, {
+      const clientRef = this.afs.doc(
+        `users/${targetOwnerId}/clients/${client.uid}`
+      );
+      await clientRef.update({
         recoveredAwayDebts: existing,
       });
       client.recoveredAwayDebts = existing;
       if (this.activeClient?.uid === client.uid) {
         this.activeClient.recoveredAwayDebts = existing;
+      }
+      const index = this.allClients.findIndex((c) => c.uid === client.uid);
+      if (index >= 0) {
+        this.allClients[index] = {
+          ...this.allClients[index],
+          recoveredAwayDebts: existing,
+        };
       }
       this.updateRecoveredAwaySummary();
     } catch (err) {
