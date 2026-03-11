@@ -1,432 +1,774 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" [currentNewClient]="true"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-2xl text-center md:text-4xl mr-10">Enregistrer Client</h1>
-    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center mr-4" routerLink="/info-register">Client Info Enregistrer</button>
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+  [currentNewClient]="true"
+></app-navbar>
 
-<div class="flex container justify-center mx-auto">
-
-   
-<div class="border-2 shadow border-green-800 p-12 rounded-lg">
-    <div *ngIf="!url" class="flex container mx-auto justify-center">
-    
-        <input type="file" [id]="'putPicture'" style="display:none" (change)="startUpload($any($event.target).files)">
-        <button (click)="onImageClick('putPicture')" type="button" class="text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Ajouter Photo Du Client</button>
-    </div>
-    <div *ngIf="url" class="flex container mx-auto justify-center">
-        <div *ngIf="url" >
-            <input type="file" [id]="'changePicture'" style="display:none" (change)="startUpload($any($event.target).files)">
-            <a (click)="onImageClick('changePicture')">  <img [src]="url" class="h-64 md:h-80 mb-4" alt="">
-       
-            </a>
-          
+<section class="register-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-7xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_26px_80px_-52px_rgba(5,150,105,0.55)] backdrop-blur sm:px-6"
+    >
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div class="space-y-2">
+          <span class="register-kicker">Enregistrement</span>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            Enregistrer client
+          </h1>
         </div>
-    
-    </div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
-            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" required [(ngModel)]="lastName">
-        </div>
-        <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName" required>
-        </div>   
-         
-    </div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-            <div>
-                <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Prenom</label>
-                <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="firstName" required>
-            </div>   
-           
-       
-            <div>
-                <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
-                <input [disabled]="blockChangeNumber" type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="phoneNumber">
 
+        <a
+          routerLink="/info-register"
+          class="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
+        >
+          Infos clients enregistrés
+        </a>
+      </div>
+    </div>
 
+    <div class="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_340px]">
+      <div class="space-y-5">
+        <div class="register-card p-4 sm:p-6">
+          <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+                Profil du client
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Commencez par la photo et les informations personnelles.
+              </p>
+            </div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Étape 1
+            </span>
+          </div>
+
+          <div class="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <div class="register-photo-panel">
+              <input
+                type="file"
+                [id]="'putPicture'"
+                style="display:none"
+                (change)="startUpload($any($event.target).files)"
+              />
+              <input
+                type="file"
+                [id]="'changePicture'"
+                style="display:none"
+                (change)="startUpload($any($event.target).files)"
+              />
+
+              <div
+                class="mx-auto flex h-44 w-44 items-center justify-center overflow-hidden rounded-[28px] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-inner"
+              >
+                <img
+                  *ngIf="url; else clientAvatarPlaceholder"
+                  [src]="url"
+                  class="h-full w-full object-cover"
+                  alt="Photo du client"
+                />
+                <ng-template #clientAvatarPlaceholder>
+                  <div class="flex h-full w-full flex-col items-center justify-center gap-3 text-emerald-800">
+                    <div class="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-600 text-2xl font-semibold uppercase text-white">
+                      {{ (firstName || lastName || 'CL').slice(0, 2) }}
+                    </div>
+                    <p class="px-4 text-center text-sm font-medium text-slate-500">
+                      Ajouter la photo du client
+                    </p>
+                  </div>
+                </ng-template>
+              </div>
+
+              <button
+                *ngIf="!url"
+                (click)="onImageClick('putPicture')"
+                type="button"
+                class="register-secondary-button mt-4 w-full"
+              >
+                Ajouter la photo du client
+              </button>
+
+              <button
+                *ngIf="url"
+                (click)="onImageClick('changePicture')"
+                type="button"
+                class="register-secondary-button mt-4 w-full"
+              >
+                Changer la photo
+              </button>
             </div>
 
-    </div>
-    <!-- Date de naissance -->
-<div class="mb-6">
-  <label for="birthDate" class="block mb-2 text-sm font-medium text-gray-900">
-    Date&nbsp;de&nbsp;naissance
-  </label>
-  <input
-    type="date"
-    id="birthDate"
-    [(ngModel)]="birthDate"
-    (change)="updateAge()"
-    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-           focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-    required
-  />
-  <p *ngIf="age !== null" class="text-gray-600 mt-1">
-    Âge calculé : <strong>{{ age }}</strong> ans
-  </p>
-</div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="space-y-2">
+                <span class="register-label">Nom</span>
+                <input
+                  type="text"
+                  id="lastName"
+                  class="register-input"
+                  [(ngModel)]="lastName"
+                />
+              </label>
 
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
-            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required [(ngModel)]="profession">
+              <label class="space-y-2">
+                <span class="register-label">Postnom</span>
+                <input
+                  type="text"
+                  id="middleName"
+                  class="register-input"
+                  [(ngModel)]="middleName"
+                />
+              </label>
+
+              <label class="space-y-2">
+                <span class="register-label">Prénom</span>
+                <input
+                  type="text"
+                  id="firstName"
+                  class="register-input"
+                  [(ngModel)]="firstName"
+                />
+              </label>
+
+              <label class="space-y-2">
+                <span class="register-label">Téléphone</span>
+                <input
+                  [disabled]="blockChangeNumber"
+                  type="tel"
+                  id="phone"
+                  class="register-input"
+                  placeholder="0893258653"
+                  [(ngModel)]="phoneNumber"
+                />
+              </label>
+
+              <label class="space-y-2 sm:col-span-2">
+                <span class="register-label">Date de naissance</span>
+                <input
+                  type="date"
+                  id="birthDate"
+                  [(ngModel)]="birthDate"
+                  (change)="updateAge()"
+                  class="register-input"
+                />
+                <p *ngIf="age !== null" class="text-xs font-medium text-slate-500">
+                  Âge calculé : <strong>{{ age }}</strong> ans
+                </p>
+              </label>
+
+              <label class="space-y-2">
+                <span class="register-label">Profession</span>
+                <input
+                  type="text"
+                  id="profession"
+                  class="register-input"
+                  placeholder="Vendeuse"
+                  [(ngModel)]="profession"
+                />
+              </label>
+
+              <label class="space-y-2">
+                <span class="register-label">Capital (FC)</span>
+                <input
+                  type="text"
+                  id="bcapital"
+                  class="register-input"
+                  placeholder="50000"
+                  [(ngModel)]="bussinessCapital"
+                />
+              </label>
+            </div>
+          </div>
         </div>
-        <div>
-            <label for="bcapital" class="block mb-2 text-sm font-medium text-gray-900 ">Capital(FC)</label>
-            <input type="text" id="bcapital" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="50000" required [(ngModel)]="bussinessCapital">
-        </div>   
-         
-    </div>
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Adresse Domicile</label>
-        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="homeAddress">
-    </div> 
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Addresse Business </label>
-        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="businessAddress">
-    </div> 
-    <div class="mb-6">
-        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Depuis combien de temps dirigez-vous votre business ?</label>
-        <select id="applicationFee" [(ngModel)]="timeInBusiness"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
-        <option selected>Choose</option>
-        <option [ngValue]="0">0 - 1ans</option>
-        <option [ngValue]="2">2 - 3 ans</option>
-        <option [ngValue]="4">4+ ans</option>
-   
-        </select>
-    </div>
-    <div class="mb-6"> 
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Quel est votre revenu par jour dans votre business (FC)? </label>
-        <input type="text" id="income" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="20000" required [(ngModel)]="dailyIncome">
-    </div> 
-    <div class="mb-6">
-        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Avez-vous des dettes en cours ?</label>
-        <select id="applicationFee" [(ngModel)]="debtInProcess"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
-        <option selected>Choose</option>
-        <option [ngValue]="0">Aucune Dettes</option>
-        <option [ngValue]="2">1-2 dette</option>
-        <option [ngValue]="4">3+ Dettes</option>
-   
-        </select>
-    </div>
-    <div class="mb-6">
-        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Comment comptez-vous gérer le remboursement pendant les périodes difficiles ?</label>
-        <select id="applicationFee" [(ngModel)]="planToPayDebt"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
-        <option selected>Choose</option>
-        <option [ngValue]="0">Aucun Plan</option>
-        <option [ngValue]="2">Plan partiel</option>
-        <option [ngValue]="4">Plan Clair</option>
-   
-        </select>
-    </div>
-  
-<!-- ── RÉFÉRENCES ─────────────────────────────────────────── -->
-<fieldset class="mb-6">
-  <legend class="block mb-2 text-sm font-medium text-gray-900">
-    Références de confiance (2 à 3 personnes) <span class="text-gray-500">— {{ references.length }}/3</span>
-  </legend>
 
-  <p class="text-xs text-gray-600 mb-3">
-    Ces personnes seront contactées <strong>uniquement</strong> si nous n’arrivons pas à vous joindre.
-    Indiquez le <strong>nom complet</strong> et un <strong>numéro (10 chiffres)</strong>.
-  </p>
+        <div class="register-card p-4 sm:p-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+                Activité et situation
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Adresse, revenus et capacité de remboursement.
+              </p>
+            </div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Étape 2
+            </span>
+          </div>
 
-  <!-- Liste des références ajoutées -->
-  <div *ngIf="references.length" class="space-y-2 mb-3">
-    <div
-      *ngFor="let ref of references; let i = index"
-      class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-3 py-2"
-    >
-      <span class="text-sm font-medium text-gray-900">{{ ref }}</span>
-      <button
-        type="button"
-        (click)="removeReference(i)"
-        class="text-xs text-red-600 hover:underline"
-        aria-label="Retirer la référence"
-      >
-        Retirer
-      </button>
-    </div>
-  </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2 sm:col-span-2">
+              <span class="register-label">Adresse domicile</span>
+              <input
+                type="text"
+                id="address"
+                class="register-input"
+                placeholder="Kimayala 41 Mont-Ngafula"
+                [(ngModel)]="homeAddress"
+              />
+            </label>
 
-  <!-- Saisie + ajout -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-    <!-- Nom -->
-    <div>
-      <label for="newReferenceName" class="sr-only">Nom complet du référent</label>
-      <input
-        id="newReferenceName"
-        type="text"
-        [(ngModel)]="newReferenceName"
-        (keyup.enter)="addReference()"
-        (blur)="tryAutoAdd()"
-        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-        placeholder="Nom complet du référent"
-        [disabled]="references.length >= 3"
-      />
-    </div>
+            <label class="space-y-2 sm:col-span-2">
+              <span class="register-label">Adresse business</span>
+              <input
+                type="text"
+                id="baddress"
+                class="register-input"
+                placeholder="Kimayala 41 Mont-Ngafula"
+                [(ngModel)]="businessAddress"
+              />
+            </label>
 
-    <!-- Téléphone -->
-    <div>
-      <label for="newReferencePhone" class="sr-only">Téléphone</label>
-      <input
-        id="newReferencePhone"
-        type="tel"
-        [(ngModel)]="newReferencePhone"
-        (keyup.enter)="addReference()"
-        (blur)="tryAutoAdd()"
-        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-               focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-        placeholder="Téléphone (ex. 0893258653)"
-        [disabled]="references.length >= 3"
-      />
-      <p *ngIf="newReferencePhone && !phonePattern.test(newReferencePhone.trim())"
-         class="text-xs text-red-600 mt-1">
-        Entrez exactement 10 chiffres (ex. 0893258653).
-      </p>
-    </div>
+            <label class="space-y-2">
+              <span class="register-label">Ancienneté dans le business</span>
+              <select
+                id="timeInBusiness"
+                [(ngModel)]="timeInBusiness"
+                class="register-input"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="0">0 à 1 an</option>
+                <option [ngValue]="2">2 - 3 ans</option>
+                <option [ngValue]="4">4+ ans</option>
+              </select>
+            </label>
 
-    <!-- Bouton Ajouter -->
-    <div>
-      <button
-        type="button"
-        (click)="addReference()"
-        class="w-full px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
-        [disabled]="references.length >= 3 || !canAddRef()"
-      >
-        Ajouter la référence
-      </button>
-      <p class="text-xs text-gray-500 mt-1">Maximum&nbsp;: 3 références</p>
-    </div>
-  </div>
-</fieldset>
+            <label class="space-y-2">
+              <span class="register-label">Revenu par jour (FC)</span>
+              <input
+                type="text"
+                id="income"
+                class="register-input"
+                placeholder="20000"
+                [(ngModel)]="dailyIncome"
+              />
+            </label>
 
-    <div class="mb-6">
-        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Avez-vous des guarantis à offrir aux cas ou vous n'etes pas capable de payer?</label>
-        <select id="applicationFee" [(ngModel)]="collateral"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " >
-        <option selected>Choose</option>
-        <option [ngValue]="0">Aucun</option>
-        <option [ngValue]="1">Guaranti Partiel</option>
-        <option [ngValue]="2">Guaranti Complet</option>
-      
-        </select>
-    </div>
-    
-    
+            <label class="space-y-2">
+              <span class="register-label">Dettes en cours</span>
+              <select
+                id="debtInProcess"
+                [(ngModel)]="debtInProcess"
+                class="register-input"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="0">Aucune dette</option>
+                <option [ngValue]="2">1 à 2 dettes</option>
+                <option [ngValue]="4">3+ dettes</option>
+              </select>
+            </label>
 
-    <div class="mb-6">
-    <label class="block mb-2 text-sm font-medium text-gray-900">
-    Frais de Dossier
-    </label>
-    <input
-    type="text"
-    class="bg-gray-100 border border-gray-300 text-gray-600 text-sm rounded-lg
-            block w-full p-2.5 cursor-not-allowed"
-    [value]="'FC 5 000'"
-    disabled
-    />
-    </div>
+            <label class="space-y-2">
+              <span class="register-label">Plan de remboursement</span>
+              <select
+                id="planToPayDebt"
+                [(ngModel)]="planToPayDebt"
+                class="register-input"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="0">Aucun plan</option>
+                <option [ngValue]="2">Plan partiel</option>
+                <option [ngValue]="4">Plan clair</option>
+              </select>
+            </label>
 
-<div *ngIf="applicationFeeOtherDisplay" class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
-    <input type="text" [(ngModel)]="applicationFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
-</div> 
+            <label class="space-y-2 sm:col-span-2">
+              <span class="register-label">Garanties en cas de non-paiement</span>
+              <select
+                id="collateral"
+                [(ngModel)]="collateral"
+                class="register-input"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="0">Aucun</option>
+                <option [ngValue]="1">Garantie partielle</option>
+                <option [ngValue]="2">Garantie complète</option>
+              </select>
+            </label>
+          </div>
+        </div>
 
-    <div class="mb-6">
-    <label class="block mb-2 text-sm font-medium text-gray-900">
-        Frais d’Adhésion
-    </label>
-    <input
-        type="text"
-        class="bg-gray-100 border border-gray-300 text-gray-600 text-sm rounded-lg
-            block w-full p-2.5 cursor-not-allowed"
-        [value]="'FC 10 000'"
-        disabled
-    />
-    </div>
-<div *ngIf="memberShipFeeOtherDisplay" class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais D'Adhesion Autre Montant</label>
-    <input type="text" [(ngModel)]="memberShipFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
-</div> 
-<div class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
-    <select id="savings"[(ngModel)]="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaySavingsOtherAmount()">
-        <option [ngValue]="0">FC 0 </option>
-        <option [ngValue]="5000">FC 5000</option>
-        <option [ngValue]="10000">FC 10,000</option>
-        <option [ngValue]="20000">FC 20,000</option>
-        <option [ngValue]="30000">FC 30,000</option>
-          <option [ngValue]="60000">FC 60,000</option>
-        <option [ngValue]="">Autre Montant </option>
-    </select>
-</div>
-<div *ngIf="savingsOtherDisplay" class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Epargnes Autre Montant</label>
-    <input type="text" [(ngModel)]="savings"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
-</div> 
-<div class="mb-6">
-    <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant Demandé</label>
-    <select id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
-    <option selected>Choose</option>
-    <option [ngValue]="100000">FC 100,000</option>
-    <option [ngValue]="200000">FC 200,000</option>
-    <option [ngValue]="300000">FC 300,000</option>
-    <option [ngValue]="500000">FC 500,000</option>
-    <option [ngValue]="">Autre Montant </option>
-    </select>
-</div>
-<div *ngIf="loanAmountOtherDisplay" class="mb-6">
-    <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
-    <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required >
-</div> 
-<div class="mb-4">
-    <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900">Date De Donner L'Argent au Client</label>
-    <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023" required>
-  
-</div>
-<div *ngIf="creditworthinessScore !== null" class="border-2 shadow border-green-800 p-12 rounded-lg">
-    <!-- Form inputs here -->
+        <div class="register-card p-4 sm:p-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+                Références
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Deux à trois personnes de confiance à contacter si nécessaire.
+              </p>
+            </div>
+            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              {{ references.length }}/3
+            </span>
+          </div>
 
-    <!-- Interpretation of Creditworthiness -->
-    <div *ngIf="creditworthinessScore !== null" class="mt-3 max-wl-sm">
-        <h2 class="text-lg font-bold">Risque Pour Le Crédit</h2>
-        <p
-            class="text-white p-4 rounded-lg mt-4"
-            [ngClass]="{
-                'bg-green-600': creditworthinessScore >= 90,
-                'bg-blue-500': creditworthinessScore >= 70 && creditworthinessScore < 90,
-                'bg-yellow-400': creditworthinessScore >= 50 && creditworthinessScore < 70,
-                'bg-red-600': creditworthinessScore < 50
-            }"
+          <fieldset>
+            <legend class="sr-only">Références de confiance</legend>
+
+            <p class="mb-4 text-sm leading-6 text-slate-500">
+              Ces personnes seront contactées uniquement si nous n’arrivons pas
+              à joindre le client. Entrez le nom complet et un numéro de 10
+              chiffres.
+            </p>
+
+            <div *ngIf="references.length" class="mb-4 space-y-2">
+              <div
+                *ngFor="let ref of references; let i = index"
+                class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <span class="text-sm font-medium text-slate-800">{{ ref }}</span>
+                <button
+                  type="button"
+                  (click)="removeReference(i)"
+                  class="self-start text-sm font-semibold text-red-600 transition hover:text-red-700"
+                  aria-label="Retirer la référence"
+                >
+                  Retirer
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-3 md:items-start">
+              <div class="space-y-2">
+                <label for="newReferenceName" class="register-label">Nom complet</label>
+                <input
+                  id="newReferenceName"
+                  type="text"
+                  [(ngModel)]="newReferenceName"
+                  (keyup.enter)="addReference()"
+                  (blur)="tryAutoAdd()"
+                  class="register-input"
+                  placeholder="Nom complet du référent"
+                  [disabled]="references.length >= 3"
+                />
+              </div>
+
+              <div class="space-y-2">
+                <label for="newReferencePhone" class="register-label">Téléphone</label>
+                <input
+                  id="newReferencePhone"
+                  type="tel"
+                  [(ngModel)]="newReferencePhone"
+                  (keyup.enter)="addReference()"
+                  (blur)="tryAutoAdd()"
+                  class="register-input"
+                  placeholder="0893258653"
+                  [disabled]="references.length >= 3"
+                />
+                <p
+                  *ngIf="newReferencePhone && !phonePattern.test(newReferencePhone.trim())"
+                  class="text-xs font-medium text-red-600"
+                >
+                  Entrez exactement 10 chiffres.
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <span class="register-label opacity-0">Action</span>
+                <button
+                  type="button"
+                  (click)="addReference()"
+                  class="register-secondary-button w-full"
+                  [disabled]="references.length >= 3 || !canAddRef()"
+                >
+                  Ajouter la référence
+                </button>
+                <p class="text-xs text-slate-500">Maximum : 3 références</p>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="register-card p-4 sm:p-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+                Conditions financières
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Frais, épargne, montant demandé et date prévue.
+              </p>
+            </div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Étape 3
+            </span>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="register-label">Frais de dossier</span>
+              <input
+                type="text"
+                class="register-input register-input-disabled"
+                [value]="'FC 5 000'"
+                disabled
+              />
+            </label>
+
+            <label class="space-y-2">
+              <span class="register-label">Frais d’adhésion</span>
+              <input
+                type="text"
+                class="register-input register-input-disabled"
+                [value]="'FC 10 000'"
+                disabled
+              />
+            </label>
+
+            <label *ngIf="applicationFeeOtherDisplay" class="space-y-2 sm:col-span-2">
+              <span class="register-label">Frais de dossier autre montant</span>
+              <input
+                type="text"
+                [(ngModel)]="applicationFee"
+                id="applicationFeeOther"
+                class="register-input"
+                placeholder="FC 20,000"
+              />
+            </label>
+
+            <label *ngIf="memberShipFeeOtherDisplay" class="space-y-2 sm:col-span-2">
+              <span class="register-label">Frais d’adhésion autre montant</span>
+              <input
+                type="text"
+                [(ngModel)]="memberShipFee"
+                id="memberShipFeeOther"
+                class="register-input"
+                placeholder="FC 20,000"
+              />
+            </label>
+
+            <label class="space-y-2">
+              <span class="register-label">Épargnes</span>
+              <select
+                id="savings"
+                [(ngModel)]="savings"
+                class="register-input"
+                (change)="displaySavingsOtherAmount()"
+              >
+                <option [ngValue]="0">FC 0</option>
+                <option [ngValue]="5000">FC 5000</option>
+                <option [ngValue]="10000">FC 10,000</option>
+                <option [ngValue]="20000">FC 20,000</option>
+                <option [ngValue]="30000">FC 30,000</option>
+                <option [ngValue]="60000">FC 60,000</option>
+                <option [ngValue]="">Autre montant</option>
+              </select>
+            </label>
+
+            <label class="space-y-2">
+              <span class="register-label text-red-700">Montant demandé</span>
+              <select
+                id="loanAmount"
+                [(ngModel)]="loanAmount"
+                class="register-input"
+                (change)="displayLoanOtherAmount()"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="100000">FC 100,000</option>
+                <option [ngValue]="200000">FC 200,000</option>
+                <option [ngValue]="300000">FC 300,000</option>
+                <option [ngValue]="500000">FC 500,000</option>
+                <option [ngValue]="">Autre montant</option>
+              </select>
+            </label>
+
+            <label *ngIf="savingsOtherDisplay" class="space-y-2">
+              <span class="register-label">Épargnes autre montant</span>
+              <input
+                type="text"
+                [(ngModel)]="savings"
+                id="savingsOther"
+                class="register-input"
+                placeholder="FC 20,000"
+              />
+            </label>
+
+            <label *ngIf="loanAmountOtherDisplay" class="space-y-2">
+              <span class="register-label">Montant de prêt autre montant</span>
+              <input
+                type="text"
+                [(ngModel)]="loanAmount"
+                id="loanAmountOther"
+                class="register-input"
+                placeholder="FC 20,000"
+              />
+            </label>
+
+            <label class="space-y-2 sm:col-span-2">
+              <span class="register-label">Date de remise de l'argent au client</span>
+              <input
+                [(ngModel)]="requestDate"
+                type="date"
+                id="requestDate"
+                class="register-input"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div class="register-card p-4 sm:p-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+                Vérification
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Code obligatoire avant la soumission finale.
+              </p>
+            </div>
+            <span class="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+              Critique
+            </span>
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div class="space-y-2">
+              <label for="userEnteredCode" class="register-label">
+                Entrez le code généré
+              </label>
+              <input
+                [(ngModel)]="userEnteredCode"
+                (input)="verifyMyCode()"
+                type="number"
+                id="userEnteredCode"
+                placeholder="Entrez le code généré"
+                class="register-input"
+              />
+
+              <p *ngIf="codeVerificationStatus === 'waiting'" class="text-sm text-slate-500">
+                Entrez au moins 4 chiffres...
+              </p>
+              <p *ngIf="codeVerificationStatus === 'correct'" class="text-sm font-semibold text-emerald-600">
+                Code correct
+              </p>
+              <p *ngIf="codeVerificationStatus === 'incorrect'" class="text-sm font-semibold text-red-600">
+                Code incorrect
+              </p>
+            </div>
+
+            <div class="flex items-end">
+              <button
+                *ngIf="code===''"
+                (click)="sendMyVerificationCode()"
+                class="register-danger-button w-full"
+              >
+                Générer le code
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 rounded-[28px] border border-slate-200 bg-white/95 p-4 shadow-[0_24px_60px_-48px_rgba(15,23,42,0.45)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <p class="text-sm leading-6 text-slate-500 sm:max-w-xl">
+            Vérifiez le dossier, la photo, les références et le code de
+            vérification avant de soumettre.
+          </p>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <a
+              routerLink="/client-info"
+              class="register-cancel-button"
+            >
+              Annuler
+            </a>
+            <button
+              class="register-danger-button"
+              (click)="addNewClient()"
+            >
+              Soumettre
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="space-y-5">
+        <div class="register-summary-panel xl:sticky xl:top-5">
+          <div class="flex flex-col items-center text-center">
+            <div class="flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-white/15 text-2xl font-semibold uppercase tracking-[0.18em] text-white shadow-inner">
+              {{ (firstName || lastName || 'CL').slice(0, 2) }}
+            </div>
+            <h3 class="mt-4 text-lg font-semibold text-white">
+              {{ firstName || 'Prénom' }} {{ middleName || '' }} {{ lastName || '' }}
+            </h3>
+            <p class="mt-1 text-sm text-emerald-50/85">
+              {{ profession || 'Profession à renseigner' }}
+            </p>
+          </div>
+
+          <div class="mt-5 space-y-3">
+            <div class="summary-row">
+              <span class="summary-label">Téléphone</span>
+              <span class="summary-value">{{ phoneNumber || 'Non renseigné' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Date prévue</span>
+              <span class="summary-value">{{ requestDate || 'Non renseignée' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Montant demandé</span>
+              <span class="summary-value">{{ loanAmount || 'Non renseigné' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Épargne</span>
+              <span class="summary-value">{{ savings || '0' }}</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Références</span>
+              <span class="summary-value">{{ references.length }}/3</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="creditworthinessScore !== null"
+          class="register-card p-5"
         >
+          <h2 class="text-base font-semibold text-slate-900">
+            Risque pour le crédit
+          </h2>
+          <p
+            class="mt-4 rounded-2xl p-4 text-sm font-medium text-white"
+            [ngClass]="{
+              'bg-green-600': creditworthinessScore >= 90,
+              'bg-blue-500': creditworthinessScore >= 70 && creditworthinessScore < 90,
+              'bg-yellow-400 text-slate-900': creditworthinessScore >= 50 && creditworthinessScore < 70,
+              'bg-red-600': creditworthinessScore < 50
+            }"
+          >
             <ng-container *ngIf="creditworthinessScore >= 90">
-                <strong>Excellent (90-100%) :</strong> Très solvable, prêt sûr.
+              <strong>Excellent (90-100%) :</strong> Très solvable, prêt sûr.
             </ng-container>
             <ng-container *ngIf="creditworthinessScore >= 70 && creditworthinessScore < 90">
-                <strong>Bon (70-89%) :</strong> Solvable avec un risque gérable.
+              <strong>Bon (70-89%) :</strong> Solvable avec un risque gérable.
             </ng-container>
             <ng-container *ngIf="creditworthinessScore >= 50 && creditworthinessScore < 70">
-                <strong>Moyen (50-69%) :</strong> Risque potentiel ; des vérifications ou des garanties supplémentaires peuvent être nécessaires.
+              <strong>Moyen (50-69%) :</strong> Risque potentiel ; des vérifications
+              ou des garanties supplémentaires peuvent être nécessaires.
             </ng-container>
             <ng-container *ngIf="creditworthinessScore < 50">
-                <strong>Mauvais (moins de 50%) :</strong> Risque élevé ; prêt non conseillé.
+              <strong>Mauvais (moins de 50%) :</strong> Risque élevé ; prêt non
+              conseillé.
             </ng-container>
-        </p>
-    </div>
-  
-
-</div>
-  <!-- Display Max Allowed Lending Amount -->
-  <div *ngIf="creditworthinessScore !== null" class="border-2 shadow border-blue-600 p-6 rounded-lg mt-6">
-    <h2 class="text-lg font-bold text-blue-700">Montant Maximum de Prêt Autorisé</h2>
-    <p class="text-gray-900 font-medium text-xl mt-2">
-        {{ maxLendAmount| number }} FC
-    </p>
-</div>
-
-
-<div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 max-w-sm mx-auto mb-3">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Generer le Code</h2>
-    <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">vertification: <strong></strong></p>
-    <input [(ngModel)]="userEnteredCode" [(ngModel)]="userEnteredCode" (input)="verifyMyCode()" type="number" placeholder="Entrez le code généré" 
-      class="w-full p-2.5 border rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
-      <p *ngIf="codeVerificationStatus === 'waiting'" class="text-gray-500 dark:text-gray-400 mt-2">
-        🔢 Entrez au moins 4 chiffres...
-      </p>
-      <p *ngIf="codeVerificationStatus === 'correct'" class="text-green-600 dark:text-green-400 mt-2">
-        ✅ Code correct
-      </p>
-      <p *ngIf="codeVerificationStatus === 'incorrect'" class="text-red-600 dark:text-red-400 mt-2">
-        ❌ Code incorrect
-      </p>
-    <button *ngIf="code===''" (click)="sendMyVerificationCode()" 
-      class="w-full mt-2 py-2.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm">
-      Generer le Code
-    </button>
-  </div>
-
-   
-<button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>
-    <button class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="addNewClient()">Soumettre</button>
-</div>
-
-
-</div>
-
-
-
-
-
-<div *ngIf="isLoading" class="fixed inset-0 flex items-center justify-center z-50 bg-opacity-50 bg-gray-800">
-    <div role="status" class="flex flex-col items-center">
-      <svg aria-hidden="true" class="w-12 h-12 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-      </svg>
-      <span class="sr-only">Chargement...</span>
-      <div class="mt-2 text-white">Traitement de votre demande...</div>
-    </div>
-  </div>
-
-
-
-  <div *ngIf="showConfirmation" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md md:max-w-lg text-sm p-6">
-      
-      <h2 class="text-lg font-semibold text-red-700 mb-4 text-center">
-        ⚠️ Confirmation d'Enregistrement
-      </h2>
-  
-      <p class="mb-4 text-gray-700">
-        Vous allez enregistré <strong>{{ firstName }} {{ lastName }}</strong> pour un nouveau cycle. Voulez-vous quand même continuer ?
-      </p>
-  
-      <div class="mb-4">
-        <p class="text-red-600 font-semibold mb-2">Avant de continuer, veuillez confirmer que :</p>
-        <ul class="list-disc list-inside space-y-2 text-gray-800">
-          <li>
-            <strong>L'identité du client est réelle</strong> : Pas de faux noms, numéros ou photos.
-          </li>
-          <li>
-            Aucun montant supplémentaire n’a été demandé au client pour les frais d’adhésion, d’épargne ou autre.
-          </li>
-          <li>
-            L'argent du client a été entré dans le système <strong>le jour même</strong>, sans aucun retard.
-          </li>
-          <li>
-            <strong>Le client n’est pas un membre de votre famille ou un proche :</strong>
-            Il est strictement interdit d'enregistrer des personnes avec lesquelles vous avez un lien personnel.
-          </li>
-        </ul>
-        <p class="mt-4 text-sm text-red-600 font-medium">
-            Toute violation de ces règles peut entraîner des sanctions graves, y compris des poursuites judiciaires et une peine de prison.
           </p>
-      </div>
-  
-      <div class="mt-4 mb-2 flex items-center">
-        <input [(ngModel)]="isConfirmed" type="checkbox" id="confirmCheck" class="mr-2 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
-        <label for="confirmCheck" class="text-gray-800 text-sm">
-          Je confirme avoir respecté toutes les règles ci-dessus.
-        </label>
-      </div>
-  
-      <div class="mt-4 flex justify-between">
-        <button (click)="toggle('showConfirmation')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">
-          Annuler
-        </button>
-        <!-- <button [disabled]="!isConfirmed" (click)="submitRegistration()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
-          Continuer
-        </button> -->
-        <button
-          class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50"
-          [disabled]="isLoading || !isConfirmed"
-          (click)="submitRegistration()">
-          {{ isLoading ? 'Enregistrement…' : 'Enregistrer le nouveau cycle' }}
-        </button>
-      </div>
-  
+        </div>
+
+        <div
+          *ngIf="creditworthinessScore !== null"
+          class="register-card p-5"
+        >
+          <h2 class="text-base font-semibold text-slate-900">
+            Montant maximum autorisé
+          </h2>
+          <p class="mt-3 text-2xl font-semibold text-blue-700">
+            {{ maxLendAmount | number }} FC
+          </p>
+        </div>
+      </aside>
     </div>
   </div>
+</section>
+
+<div
+  *ngIf="isLoading"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-4 backdrop-blur-sm"
+>
+  <div
+    role="status"
+    class="flex min-w-[220px] flex-col items-center rounded-[28px] border border-white/10 bg-slate-900/90 px-8 py-7 text-center shadow-2xl"
+  >
+    <svg
+      aria-hidden="true"
+      class="h-12 w-12 animate-spin text-slate-300 fill-emerald-500"
+      viewBox="0 0 100 101"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+        fill="currentColor"
+      />
+      <path
+        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+        fill="currentFill"
+      />
+    </svg>
+    <span class="sr-only">Chargement...</span>
+    <div class="mt-3 text-sm font-medium text-white">
+      Traitement de votre demande...
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="showConfirmation"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+>
+  <div
+    class="w-full max-w-md rounded-[30px] border border-white/70 bg-white p-6 shadow-2xl md:max-w-lg"
+  >
+    <h2 class="text-center text-lg font-semibold text-red-700">
+      Confirmation d’enregistrement
+    </h2>
+
+    <p class="mt-4 text-sm leading-6 text-slate-700">
+      Vous allez enregistrer <strong>{{ firstName }} {{ lastName }}</strong>
+      pour un nouveau cycle. Voulez-vous quand même continuer ?
+    </p>
+
+    <div class="mt-5 rounded-2xl border border-red-100 bg-red-50/70 p-4">
+      <p class="mb-3 text-sm font-semibold text-red-700">
+        Avant de continuer, veuillez confirmer que :
+      </p>
+      <ul class="space-y-2 text-sm leading-6 text-slate-700">
+        <li>
+          L’identité du client est réelle : pas de faux noms, numéros ou
+          photos.
+        </li>
+        <li>
+          Aucun montant supplémentaire n’a été demandé au client pour les
+          frais d’adhésion, d’épargne ou autre.
+        </li>
+        <li>
+          L’argent du client a été entré dans le système le jour même, sans
+          retard.
+        </li>
+        <li>
+          Le client n’est pas un membre de votre famille ou un proche.
+        </li>
+      </ul>
+      <p class="mt-4 text-sm font-medium text-red-700">
+        Toute violation de ces règles peut entraîner des sanctions graves.
+      </p>
+    </div>
+
+    <label class="mt-5 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <input
+        [(ngModel)]="isConfirmed"
+        type="checkbox"
+        id="confirmCheck"
+        class="mt-0.5 h-5 w-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+      />
+      <span class="text-sm leading-6 text-slate-700">
+        Je confirme avoir respecté toutes les règles ci-dessus.
+      </span>
+    </label>
+
+    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-between">
+      <button
+        (click)="toggle('showConfirmation')"
+        class="register-cancel-button justify-center"
+      >
+        Annuler
+      </button>
+      <button
+        class="register-primary-button justify-center disabled:cursor-not-allowed disabled:opacity-50"
+        [disabled]="isLoading || !isConfirmed"
+        (click)="submitRegistration()"
+      >
+        {{ isLoading ? 'Enregistrement…' : 'Enregistrer le nouveau cycle' }}
+      </button>
+    </div>
+  </div>
+</div>

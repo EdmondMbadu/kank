@@ -1,0 +1,209 @@
+:host {
+  display: block;
+  overflow-x: hidden;
+}
+
+.register-shell {
+  min-height: calc(100vh - 72px);
+  background:
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.12), transparent 32%),
+    linear-gradient(180deg, #f4fdf8 0%, #edf5f2 100%);
+}
+
+.register-kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  padding: 0.32rem 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #047857;
+}
+
+.register-card {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 30px 90px -56px rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(12px);
+}
+
+.register-photo-panel {
+  border: 1px solid #d1fae5;
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.95), rgba(255, 255, 255, 0.9));
+  padding: 1.25rem;
+}
+
+.register-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.register-input {
+  width: 100%;
+  border: 1px solid #dbe4e9;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 0.88rem 0.95rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.register-input::placeholder {
+  color: #94a3b8;
+}
+
+.register-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+  transform: translateY(-1px);
+}
+
+.register-input:disabled,
+.register-input-disabled {
+  cursor: not-allowed;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  color: #64748b;
+}
+
+.register-primary-button,
+.register-secondary-button,
+.register-danger-button,
+.register-cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.8rem 1.15rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.register-primary-button {
+  background: #047857;
+  color: #fff;
+  box-shadow: 0 18px 30px -20px rgba(4, 120, 87, 0.95);
+}
+
+.register-primary-button:hover {
+  background: #065f46;
+}
+
+.register-secondary-button {
+  border: 1px solid #a7f3d0;
+  background: #fff;
+  color: #065f46;
+}
+
+.register-secondary-button:hover {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.register-danger-button {
+  background: #b91c1c;
+  color: #fff;
+  box-shadow: 0 18px 30px -20px rgba(185, 28, 28, 0.9);
+}
+
+.register-danger-button:hover {
+  background: #991b1b;
+}
+
+.register-cancel-button {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.register-cancel-button:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.register-summary-panel {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 30px;
+  background: linear-gradient(145deg, #059669 0%, #0f766e 100%);
+  padding: 1.5rem;
+  box-shadow: 0 32px 90px -52px rgba(5, 150, 105, 0.95);
+}
+
+.summary-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding-top: 0.85rem;
+}
+
+.summary-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.summary-label {
+  color: rgba(236, 253, 245, 0.76);
+}
+
+.summary-value {
+  max-width: 62%;
+  text-align: right;
+  font-weight: 600;
+  color: #fff;
+}
+
+@media (max-width: 1024px) {
+  .register-summary-panel {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .register-shell {
+    padding-bottom: 2rem;
+  }
+
+  .register-card,
+  .register-summary-panel,
+  .register-photo-panel {
+    border-radius: 24px;
+  }
+
+  .register-input {
+    border-radius: 16px;
+    padding: 0.82rem 0.9rem;
+  }
+
+  .summary-row {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .summary-value {
+    max-width: 100%;
+    text-align: left;
+  }
+}
