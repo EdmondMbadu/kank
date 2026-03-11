@@ -32,12 +32,6 @@
 
         <div class="flex flex-wrap gap-3">
           <a
-            routerLink="/client-info-card"
-            class="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-50"
-          >
-            Client info carte
-          </a>
-          <a
             routerLink="/client-info"
             class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
           >
@@ -210,28 +204,6 @@
             <div class="preview-row">
               <span class="preview-label">Adresse business</span>
               <span class="preview-value">{{ businessAddress || 'Non renseignee' }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="rounded-[26px] border border-slate-200 bg-white/95 p-5 shadow-[0_24px_60px_-52px_rgba(15,23,42,0.8)]"
-        >
-          <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Rappel
-          </h3>
-          <div class="mt-4 space-y-3 text-sm text-slate-600">
-            <div class="flex items-start gap-3">
-              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-              <p>Le montant minimum doit etre un nombre superieur a zero.</p>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-              <p>Le client sera redirige vers la fiche carte apres creation.</p>
-            </div>
-            <div class="flex items-start gap-3">
-              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-              <p>Le premier versement du jour reprend le montant minimum saisi.</p>
             </div>
           </div>
         </div>
