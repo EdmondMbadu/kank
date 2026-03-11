@@ -5,7 +5,7 @@
 ></app-navbar>
 
 <section class="bg-white">
-  <div class="py-8 px-4 mx-auto max-w-screen-xl lg:px-6">
+  <div class="py-8 px-4 mx-auto max-w-screen-xl overflow-x-hidden lg:px-6">
     <!-- Header -->
     <div
       class="container mx-auto lg:mb-12 flex flex-col items-center text-center"
@@ -131,8 +131,8 @@
       </div>
     </div>
     <!-- Mode switch -->
-    <div *ngIf="true" class="flex justify-center mb-6">
-      <div class="inline-flex rounded-full bg-gray-100 p-1 shadow-inner">
+    <div *ngIf="true" class="mb-6 flex justify-center">
+      <div class="flex max-w-full flex-wrap justify-center gap-1 rounded-3xl bg-gray-100 p-1 shadow-inner">
         <button
           (click)="setRankingMode('performance')"
           class="px-4 py-2 text-sm font-medium rounded-full transition"
@@ -258,7 +258,7 @@
 
     <!-- Filters -->
     <div
-      class="flex container mx-auto justify-center text-center space-x-8 mb-6"
+      class="container mx-auto mb-6 flex flex-wrap items-center justify-center gap-4 text-center"
     >
       <div class="mb-1">
         <select
@@ -1957,9 +1957,10 @@
 
         <!-- Collapsible body -->
         <div class="px-4 pb-4" [class.hidden]="!collapse.payroll">
-          <table
-            class="w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
-          >
+          <div class="w-full overflow-x-auto">
+            <table
+              class="min-w-[420px] w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
+            >
             <thead
               class="select-none text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
             >
@@ -2010,7 +2011,8 @@
                 </td>
               </tr>
             </tfoot>
-          </table>
+            </table>
+          </div>
 
           <!-- Subsection: Maisons Loyer (own toggle, optional) -->
           <div class="mt-6">
@@ -2044,7 +2046,8 @@
             </div>
 
             <div [class.hidden]="!collapse.loyer">
-              <table class="w-full table-auto text-[13px]">
+              <div class="w-full overflow-x-auto">
+                <table class="min-w-[420px] w-full table-auto text-[13px]">
                 <thead
                   class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
                 >
@@ -2112,7 +2115,8 @@
                     </td>
                   </tr>
                 </tfoot>
-              </table>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -2155,9 +2159,10 @@
         </header>
 
         <div class="px-4 pb-4" [class.hidden]="!collapse.bonus">
-          <table
-            class="w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
-          >
+          <div class="w-full overflow-x-auto">
+            <table
+              class="min-w-[420px] w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
+            >
             <thead
               class="select-none text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
             >
@@ -2208,7 +2213,8 @@
                 </td>
               </tr>
             </tfoot>
-          </table>
+            </table>
+          </div>
         </div>
       </div>
     </section>
