@@ -2929,8 +2929,11 @@ export class DataService {
   }
 
   findTotalDebtLeft(clients: Client[]) {
+    if (!Array.isArray(clients)) {
+      return '0';
+    }
     // just to make sure we will filter again
-    clients = clients!.filter((data) => {
+    clients = clients.filter((data) => {
       const isAlive =
         data.vitalStatus === undefined ||
         data.vitalStatus.toLowerCase() === '' ||
@@ -2946,8 +2949,11 @@ export class DataService {
   }
 
   findTotalClientSavings(clients: Client[]) {
+    if (!Array.isArray(clients)) {
+      return '0';
+    }
     // just to make sure we will filter again
-    clients = clients!.filter((data) => {
+    clients = clients.filter((data) => {
       const isAlive =
         data.vitalStatus === undefined ||
         data.vitalStatus.toLowerCase() === '' ||

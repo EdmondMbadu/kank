@@ -1411,30 +1411,36 @@ export class AuthService {
   }
 
   private matchingRole(alloweedRoles: string[]): boolean {
-    if (!this.currentUser || this.currentUser.roles === undefined) return false;
+    if (this.isAdmninistrator) return true;
+    const roles = Array.isArray(this.currentUser?.roles)
+      ? this.currentUser.roles
+      : [];
     return alloweedRoles.some(
       (element) =>
-        this.currentUser.roles.includes(element) ||
-        this.isAdmninistrator ||
+        roles.includes(element) ||
         (this.currentUser.admin && this.currentUser.admin === 'true')
     );
   }
   private matchingRoleDistributor(alloweedRoles: string[]): boolean {
-    if (!this.currentUser || this.currentUser.roles === undefined) return false;
+    if (this.isDistributoring) return true;
+    const roles = Array.isArray(this.currentUser?.roles)
+      ? this.currentUser.roles
+      : [];
     return alloweedRoles.some(
       (element) =>
-        this.currentUser.roles.includes(element) ||
-        this.isDistributoring ||
+        roles.includes(element) ||
         (this.currentUser.distributor &&
           this.currentUser.distributor === 'true')
     );
   }
   private matchingRoleInvestigator(alloweedRoles: string[]): boolean {
-    if (!this.currentUser || this.currentUser.roles === undefined) return false;
+    if (this.isInvestigating) return true;
+    const roles = Array.isArray(this.currentUser?.roles)
+      ? this.currentUser.roles
+      : [];
     return alloweedRoles.some(
       (element) =>
-        this.currentUser.roles.includes(element) ||
-        this.isInvestigating ||
+        roles.includes(element) ||
         (this.currentUser as any).investigator === 'true'
     );
   }

@@ -265,7 +265,7 @@ export class InvestementsSummaryComponent implements OnInit {
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = data;
+      this.clients = Array.isArray(data) ? data : [];
       this.initalizeInputs();
     });
   }
