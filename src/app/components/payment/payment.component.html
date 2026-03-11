@@ -1,116 +1,186 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl mr-4">Paiement Par {{client.firstName}} {{client.lastName}}</h1>
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<div class="flex container justify-center mx-auto">
-
-<div class=" border-2 border-green-800 rounded-lg p-12">
-<div class="mb-6">
-    <label for="paymentMethod" class="block mb-2 text-sm font-medium text-gray-900">Mode de Paiement</label>
-    <select
-      id="paymentMethod"
-      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-      [(ngModel)]="paymentMethod"
-      (change)="onPaymentMethodChange()"
+<section class="payment-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-4xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_26px_80px_-52px_rgba(5,150,105,0.55)] backdrop-blur sm:px-6"
     >
-      <option value="manual">Paiement Manuel</option>
-      <option value="mobile">Payer par Mobile Money</option>
-    </select>
-</div>
+      <div class="space-y-2 text-center">
+        <span class="payment-kicker">Paiement</span>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Paiement par {{ client.firstName }} {{ client.lastName }}
+        </h1>
+      </div>
+    </div>
 
-<div class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
-    <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="savingsAmount" (change)="displaySavingsOtherAmount()"selected>
-        <option [ngValue]="0">FC 0</option>
-        <option [ngValue]="5000">FC 5000</option>
-    <option [ngValue]="10000">FC 10,000</option>
-    <option [ngValue]="20000">FC 20,000</option>
-    <option [ngValue]="30000">FC 30,000</option>
-    <option [ngValue]="" >Autre Montant</option>
-    </select>
-</div>
-<div *ngIf="savingsOtherAmount" class="mb-6">
-    <label for="savingsOther" class="block mb-2 text-sm font-medium text-gray-900 "> Epargnes Autre Amount</label>
-    <input [(ngModel)]="savingsAmount" type="text" id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
-</div> 
+    <div class="payment-card p-4 sm:p-6">
+      <div class="mb-5 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+            Détails du paiement
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Choisissez le mode, les montants et validez le paiement.
+          </p>
+        </div>
+        <span class="payment-step">Formulaire</span>
+      </div>
 
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="space-y-2 sm:col-span-2">
+          <span class="payment-label">Mode de paiement</span>
+          <select
+            id="paymentMethod"
+            class="payment-input"
+            [(ngModel)]="paymentMethod"
+            (change)="onPaymentMethodChange()"
+          >
+            <option value="manual">Paiement manuel</option>
+            <option value="mobile">Payer par Mobile Money</option>
+          </select>
+        </label>
 
+        <label class="space-y-2">
+          <span class="payment-label">Épargnes</span>
+          <select
+            id="savings"
+            class="payment-input"
+            [(ngModel)]="savingsAmount"
+            (change)="displaySavingsOtherAmount()"
+          >
+            <option [ngValue]="0">FC 0</option>
+            <option [ngValue]="5000">FC 5000</option>
+            <option [ngValue]="10000">FC 10,000</option>
+            <option [ngValue]="20000">FC 20,000</option>
+            <option [ngValue]="30000">FC 30,000</option>
+            <option [ngValue]="'Autre Montant'">Autre montant</option>
+          </select>
+        </label>
 
-<div class="mb-6">
-    <label for="payment" class="block mb-2 text-sm font-medium text-red-700">Montant De Paiement</label>
-    <select id="payment" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="paymentAmount"(change)="displayPaymentOtherAmount()"selected>
-    <option [ngValue]=minPayment>FC {{minPayment}}</option>
+        <label class="space-y-2">
+          <span class="payment-label text-red-700">Montant du paiement</span>
+          <select
+            id="payment"
+            class="payment-input"
+            [(ngModel)]="paymentAmount"
+            (change)="displayPaymentOtherAmount()"
+          >
+            <option [ngValue]="minPayment">FC {{ minPayment }}</option>
+            <option [ngValue]="'Autre Montant'">Autre montant</option>
+          </select>
+        </label>
 
-    <option [ngValue]="">Autre Montant </option>
-    </select>
-</div>
-<div *ngIf="paymentOtherAmount" class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Payment Autre Montant</label>
-    <input type="text" [(ngModel)]="paymentAmount"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
-</div> 
+        <label *ngIf="savingsOtherAmount" class="space-y-2">
+          <span class="payment-label">Épargnes autre montant</span>
+          <input
+            [(ngModel)]="savingsAmount"
+            type="text"
+            id="savingsOther"
+            class="payment-input"
+            placeholder="FC 20,000"
+          />
+        </label>
 
-<div *ngIf="paymentMethod === 'mobile'" class="mb-6">
-    <label for="mobileMoneyPhone" class="block mb-2 text-sm font-medium text-gray-900">Téléphone Mobile Money (10 chiffres)</label>
-    <input
-      id="mobileMoneyPhone"
-      type="tel"
-      inputmode="numeric"
-      maxlength="10"
-      [(ngModel)]="mobileMoneyPhone"
-      class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-      placeholder="0893258653"
-    />
-    <p class="mt-1 text-xs text-gray-500">
-      Numéro du client par défaut, modifiable si nécessaire.
-    </p>
-</div>
+        <label *ngIf="paymentOtherAmount" class="space-y-2">
+          <span class="payment-label">Paiement autre montant</span>
+          <input
+            type="text"
+            [(ngModel)]="paymentAmount"
+            id="paymentOther"
+            class="payment-input"
+            placeholder="FC 20,000"
+          />
+        </label>
 
-<div *ngIf="paymentMethod === 'mobile' && mobileMoneyOrderNumber" class="mb-3 text-xs text-gray-600">
-  Référence FlexPay: {{ mobileMoneyReference }} | Order: {{ mobileMoneyOrderNumber }}
-</div>
+        <label *ngIf="paymentMethod === 'mobile'" class="space-y-2 sm:col-span-2">
+          <span class="payment-label">Téléphone Mobile Money (10 chiffres)</span>
+          <input
+            id="mobileMoneyPhone"
+            type="tel"
+            inputmode="numeric"
+            maxlength="10"
+            [(ngModel)]="mobileMoneyPhone"
+            class="payment-input"
+            placeholder="0893258653"
+          />
+          <p class="text-xs text-slate-500">
+            Numéro du client par défaut, modifiable si nécessaire.
+          </p>
+        </label>
+      </div>
 
-<div *ngIf="mobileMoneyStatus" class="mb-3 rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700">
-  {{ mobileMoneyStatus }}
-</div>
+      <div
+        *ngIf="paymentMethod === 'mobile' && mobileMoneyOrderNumber"
+        class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+      >
+        Référence FlexPay : {{ mobileMoneyReference }} | Order : {{ mobileMoneyOrderNumber }}
+      </div>
 
-<div *ngIf="mobileMoneyError" class="mb-3 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-  {{ mobileMoneyError }}
-</div>
+      <div
+        *ngIf="mobileMoneyStatus"
+        class="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
+      >
+        {{ mobileMoneyStatus }}
+      </div>
 
+      <div
+        *ngIf="mobileMoneyError"
+        class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      >
+        {{ mobileMoneyError }}
+      </div>
 
-   
-
-<button class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
-   <button
-  (click)="submitPayment()"
-  [disabled]="isSubmitting"
-  class="relative text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center disabled:opacity-60 disabled:cursor-not-allowed"
->
-  <span *ngIf="!isSubmitting; else loadingBtn">Soumettre</span>
-  <ng-template #loadingBtn>
-    <span class="inline-flex items-center gap-2">
-      Traitement…
-      <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle>
-        <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.9"></path>
-      </svg>
-    </span>
-  </ng-template>
-</button>
-
-<!-- Blocking overlay while submitting -->
-<div *ngIf="isSubmitting"
-     class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-  <div class="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-xl text-center max-w-xs">
-    <div class="mx-auto mb-3 h-10 w-10 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
-    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium">Enregistrement du paiement…</p>
-    <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">Veuillez patienter, ne fermez pas la page.</p>
+      <div class="payment-actions mt-6">
+        <p class="text-sm leading-6 text-slate-500 sm:max-w-xl">
+          Vérifiez les montants avant de soumettre. Le paiement manuel et le
+          paiement Mobile Money utilisent le même contrôle de validation.
+        </p>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <a
+            [routerLink]="['/client-portal', id]"
+            class="payment-cancel-button"
+          >
+            Annuler
+          </a>
+          <button
+            (click)="submitPayment()"
+            [disabled]="isSubmitting"
+            class="payment-primary-button disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span *ngIf="!isSubmitting; else loadingBtn">Soumettre</span>
+            <ng-template #loadingBtn>
+              <span class="inline-flex items-center gap-2">
+                Traitement…
+                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle>
+                  <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.9"></path>
+                </svg>
+              </span>
+            </ng-template>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 
-   
-</div>
-
-
+<div
+  *ngIf="isSubmitting"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-4 backdrop-blur-sm"
+>
+  <div
+    class="w-full max-w-xs rounded-[28px] border border-white/10 bg-white p-6 text-center shadow-2xl dark:bg-slate-800"
+  >
+    <div class="mx-auto mb-3 h-10 w-10 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
+    <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+      Enregistrement du paiement…
+    </p>
+    <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+      Veuillez patienter, ne fermez pas la page.
+    </p>
+  </div>
 </div>
