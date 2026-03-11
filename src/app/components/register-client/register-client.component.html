@@ -61,7 +61,10 @@
               />
 
               <div
-                class="mx-auto flex h-44 w-44 items-center justify-center overflow-hidden rounded-[28px] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-inner"
+                class="mx-auto flex h-44 w-44 cursor-pointer items-center justify-center overflow-hidden rounded-[28px] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-inner transition hover:border-emerald-300 hover:shadow-md"
+                (click)="onImageClick(url ? 'changePicture' : 'putPicture')"
+                role="button"
+                tabindex="0"
               >
                 <img
                   *ngIf="url; else clientAvatarPlaceholder"
