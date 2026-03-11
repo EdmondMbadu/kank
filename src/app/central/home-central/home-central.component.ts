@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
-import { Client } from 'src/app/models/client';
+import { Client, Comment } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -142,6 +142,15 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   // master list search
   searchControl = new FormControl('');
   filteredItems: Client[] = [];
+  activeClient: Client | null = null;
+  showClientModal = false;
+  phoneEditValue = '';
+  phoneEditOpen = false;
+  phoneEditSaving = false;
+  showPhoneHistory = false;
+  showRecentPaymentsExpanded = false;
+  showRecentSavingsExpanded = false;
+  showClientCommentsExpanded = false;
   birthdayFilterMode: 'all' | 'today' | 'tomorrow' | 'custom' = 'all';
   customBirthdayInput = '';
   private birthdayTarget: { month: number; day: number } | null = null;
@@ -2472,8 +2481,253 @@ Merci pour ta confiance !`;
       ? this.personalizeMessage(this.generalBulkModal.message, first)
       : '—';
   }
+  openClientModal(client: Client) {
+    this.activeClient = client;
+    this.phoneEditValue = client.phoneNumber ?? '';
+    this.phoneEditOpen = false;
+    this.phoneEditSaving = false;
+    this.showPhoneHistory = false;
+    this.showRecentPaymentsExpanded = false;
+    this.showRecentSavingsExpanded = false;
+    this.showClientCommentsExpanded = false;
+    this.showClientModal = true;
+  }
+  closeClientModal() {
+    this.showClientModal = false;
+    this.activeClient = null;
+    this.phoneEditOpen = false;
+    this.phoneEditSaving = false;
+    this.showPhoneHistory = false;
+    this.showRecentPaymentsExpanded = false;
+    this.showRecentSavingsExpanded = false;
+    this.showClientCommentsExpanded = false;
+  }
+  openActiveClientPortal() {
+    const trackingId = this.activeClient?.trackingId;
+    if (!trackingId) return;
+    this.closeClientModal();
+    this.router.navigate(['/client-portal', trackingId]);
+  }
   private formatFc(n: number | string): string {
     return Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+  }
+  formatAmount(value?: string | number | null): string {
+    const num = Number(value ?? 0);
+    if (!Number.isFinite(num)) return '0';
+    return num.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+  }
+  displayPhone(value?: string | null): string {
+    return this.formatDisplayPhone(value) || 'numero indisponible';
+  }
+  clientInitials(client?: Client | null): string {
+    const first = (client?.firstName ?? '').trim();
+    const last = (client?.lastName ?? '').trim();
+    const initials = `${first[0] || ''}${last[0] || ''}`.trim();
+    return (initials || 'CL').toUpperCase();
+  }
+  isClientQuitte(client?: Client | null): boolean {
+    return (client?.vitalStatus || '').trim() === 'Quitté';
+  }
+  get allActivePhones(): string[] {
+    const raw = [
+      this.activeClient?.phoneNumber || '',
+      ...(this.activeClient?.previousPhoneNumbers || []),
+    ].filter(Boolean);
+
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const phone of raw) {
+      const normalized = this.normalizePhoneDigits(phone);
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      unique.push(phone);
+    }
+    return unique;
+  }
+  startPhoneEdit() {
+    if (!this.auth.isAdmin || !this.activeClient) return;
+    this.phoneEditValue = this.activeClient.phoneNumber ?? '';
+    this.phoneEditOpen = !this.phoneEditOpen;
+  }
+  togglePhoneHistory() {
+    if (this.allActivePhones.length <= 1) return;
+    this.showPhoneHistory = !this.showPhoneHistory;
+  }
+  async updateClientPhoneNumber() {
+    if (!this.auth.isAdmin || !this.activeClient?.uid) return;
+
+    const newPhone = this.phoneEditValue.trim();
+    const currentPhone = (this.activeClient.phoneNumber ?? '').trim();
+    const ownerId = this.activeClient.locationOwnerId;
+
+    if (!newPhone) {
+      alert('Veuillez saisir un numéro de téléphone.');
+      return;
+    }
+
+    if (newPhone === currentPhone) {
+      alert('Aucun changement détecté.');
+      return;
+    }
+
+    if (!ownerId) {
+      alert('Le site du client est introuvable. Mise à jour impossible.');
+      return;
+    }
+
+    const previousPhoneNumbers = this.buildPreviousPhoneNumbers(
+      this.activeClient.previousPhoneNumbers,
+      currentPhone,
+      newPhone
+    );
+
+    const shouldContinue = confirm(
+      `Confirmer la mise à jour du numéro ?\nAncien: ${
+        currentPhone || 'indisponible'
+      }\nNouveau: ${newPhone}`
+    );
+    if (!shouldContinue) return;
+
+    this.phoneEditSaving = true;
+    try {
+      await this.data.updateClientInvestigationFieldsForUser(ownerId, this.activeClient.uid, {
+        phoneNumber: newPhone,
+        previousPhoneNumbers,
+      });
+      this.applyClientPhoneNumberLocal(
+        this.activeClient.uid,
+        ownerId,
+        newPhone,
+        previousPhoneNumbers
+      );
+      this.phoneEditValue = newPhone;
+      this.buildDuplicatePhoneIndex();
+      this.refreshTomorrowBirthdayGroups();
+      this.applyClientFilters();
+      this.applyFinishedFilters();
+    } catch (error) {
+      console.error('Failed to update client phone number', error);
+      alert('Impossible de mettre à jour le numéro.');
+    } finally {
+      this.phoneEditSaving = false;
+    }
+  }
+  recentClientPayments(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const payments = client?.payments || {};
+    const entries = Object.entries(payments)
+      .map(([key, value]) => ({
+        key,
+        amount: Number(value ?? 0),
+        label: this.formatClientPaymentDate(key),
+      }))
+      .filter((entry) => Number.isFinite(entry.amount) && entry.amount > 0);
+
+    entries.sort(
+      (a, b) => this.paymentKeyToTimestamp(b.key) - this.paymentKeyToTimestamp(a.key)
+    );
+    return entries;
+  }
+  visibleRecentPayments(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const all = this.recentClientPayments(client);
+    return this.showRecentPaymentsExpanded ? all : all.slice(0, 3);
+  }
+  hasMoreRecentPayments(client?: Client | null): boolean {
+    return this.recentClientPayments(client).length > 3;
+  }
+  toggleRecentPayments() {
+    this.showRecentPaymentsExpanded = !this.showRecentPaymentsExpanded;
+  }
+  recentClientSavings(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const savings = client?.savingsPayments || {};
+    const entries = Object.entries(savings)
+      .map(([key, value]) => ({
+        key,
+        amount: Number(value ?? 0),
+        label: this.formatClientPaymentDate(key),
+      }))
+      .filter((entry) => Number.isFinite(entry.amount) && entry.amount !== 0);
+
+    entries.sort(
+      (a, b) => this.paymentKeyToTimestamp(b.key) - this.paymentKeyToTimestamp(a.key)
+    );
+    return entries;
+  }
+  visibleRecentSavings(
+    client?: Client | null
+  ): Array<{ key: string; amount: number; label: string }> {
+    const all = this.recentClientSavings(client);
+    return this.showRecentSavingsExpanded ? all : all.slice(0, 3);
+  }
+  hasMoreRecentSavings(client?: Client | null): boolean {
+    return this.recentClientSavings(client).length > 3;
+  }
+  toggleRecentSavings() {
+    this.showRecentSavingsExpanded = !this.showRecentSavingsExpanded;
+  }
+  clientReferences(client?: Client | null): Array<{
+    name: string;
+    phone: string;
+    tel: string;
+    raw: string;
+  }> {
+    const refs = Array.isArray(client?.references) ? client?.references ?? [] : [];
+    return refs
+      .map((entry) => this.parseReferenceEntry(entry))
+      .filter((entry) => entry.name || entry.phone || entry.raw);
+  }
+  getClientComments(client?: Client | null): Comment[] {
+    const comments = Array.isArray(client?.comments) ? client?.comments ?? [] : [];
+    return [...comments].sort((a, b) => {
+      const dateA = this.paymentKeyToTimestamp(a?.time || '');
+      const dateB = this.paymentKeyToTimestamp(b?.time || '');
+      return dateB - dateA;
+    });
+  }
+  visibleClientComments(client?: Client | null): Comment[] {
+    const comments = this.getClientComments(client);
+    return this.showClientCommentsExpanded ? comments : comments.slice(0, 3);
+  }
+  hasMoreClientComments(client?: Client | null): boolean {
+    return this.getClientComments(client).length > 3;
+  }
+  toggleClientComments() {
+    this.showClientCommentsExpanded = !this.showClientCommentsExpanded;
+  }
+  commentPreview(comment?: Comment | null): string {
+    const text = (comment?.comment ?? '').trim();
+    if (text) return text;
+    if (comment?.audioUrl) return 'Audio joint';
+    if (Array.isArray(comment?.attachments) && comment!.attachments!.length > 0) {
+      return 'Média joint';
+    }
+    return 'Commentaire vide';
+  }
+  commentTime(comment?: Comment | null): string {
+    if (comment?.timeFormatted) return comment.timeFormatted;
+    if (!comment?.time) return '-';
+    return this.time.convertDateToDesiredFormat(comment.time);
+  }
+  formatDebtDate(value?: string | null): string {
+    const raw = (value ?? '').trim();
+    if (!raw) return '-';
+    if (raw.includes('/')) return raw;
+    const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+      const [, year, month, day] = isoMatch;
+      return `${day}/${month}/${year}`;
+    }
+    const parts = raw.split('-');
+    if (parts.length >= 3) {
+      const [month, day, year] = parts;
+      if (month && day && year) return `${day}/${month}/${year}`;
+    }
+    return raw;
   }
   fcToUsdDisplay(value: number | string | null | undefined): string {
     const num = Number(value ?? 0);
@@ -2483,6 +2737,108 @@ Merci pour ta confiance !`;
     );
     if (!Number.isFinite(usdRaw) || usdRaw <= 0) return '0';
     return usdRaw.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+  private applyClientPhoneNumberLocal(
+    clientId: string,
+    ownerId: string,
+    phoneNumber: string,
+    previousPhoneNumbers: string[]
+  ) {
+    const updateList = (list?: Client[] | null) => {
+      (list || []).forEach((client) => {
+        if (client.uid !== clientId) return;
+        if (client.locationOwnerId && client.locationOwnerId !== ownerId) return;
+        client.phoneNumber = phoneNumber;
+        client.previousPhoneNumbers = [...previousPhoneNumbers];
+      });
+    };
+
+    updateList(this.allClients);
+    updateList(this.filteredItems);
+    updateList(this.finishedAll);
+    updateList(this.finishedFiltered);
+    updateList(this.allcurrentClientsWithDebts);
+    updateList(this.allCurrentClients ?? []);
+    updateList(this.allCurrentClientsWithDebtsScheduledToPayToday);
+
+    if (this.activeClient?.uid === clientId) {
+      this.activeClient.phoneNumber = phoneNumber;
+      this.activeClient.previousPhoneNumbers = [...previousPhoneNumbers];
+    }
+  }
+  private buildPreviousPhoneNumbers(
+    existing: string[] | undefined,
+    oldPhone: string,
+    newPhone: string
+  ): string[] {
+    const oldNorm = this.normalizePhoneDigits(oldPhone);
+    const newNorm = this.normalizePhoneDigits(newPhone);
+    const list = Array.isArray(existing) ? [...existing] : [];
+
+    if (!oldNorm || !newNorm || oldNorm === newNorm) {
+      return list;
+    }
+
+    const alreadyInList = list.some(
+      (phone) => this.normalizePhoneDigits(phone) === oldNorm
+    );
+    if (!alreadyInList && oldPhone) {
+      list.push(oldPhone);
+    }
+
+    return list;
+  }
+  private parseReferenceEntry(entry: unknown): {
+    name: string;
+    phone: string;
+    tel: string;
+    raw: string;
+  } {
+    const raw = (entry ?? '').toString().trim();
+    if (!raw) {
+      return { name: '', phone: '', tel: '', raw: '' };
+    }
+
+    const parts = raw.split(' - ');
+    const name = (parts[0] || '').trim();
+    const phone = (parts.slice(1).join(' - ') || '').trim();
+    const tel = phone.replace(/[^\d+]/g, '');
+
+    return {
+      name: name || raw,
+      phone,
+      tel,
+      raw,
+    };
+  }
+  private formatClientPaymentDate(key: string): string {
+    const parts = key.split('-');
+    if (parts.length >= 6) {
+      return this.time.convertTimeFormat(key);
+    }
+    if (parts.length >= 3) {
+      return this.time.convertDateToDayMonthYear(parts.slice(0, 3).join('-'));
+    }
+    return key;
+  }
+  private paymentKeyToTimestamp(key: string): number {
+    const parts = key.split('-').map((value) => Number(value));
+    if (
+      parts.length >= 6 &&
+      parts.slice(0, 6).every((value) => Number.isFinite(value))
+    ) {
+      const [month, day, year, hour, minute, second] = parts;
+      return new Date(year, month - 1, day, hour, minute, second).getTime();
+    }
+    if (
+      parts.length >= 3 &&
+      parts.slice(0, 3).every((value) => Number.isFinite(value))
+    ) {
+      const [month, day, year] = parts;
+      return new Date(year, month - 1, day).getTime();
+    }
+    const fallback = new Date(key).getTime();
+    return Number.isNaN(fallback) ? 0 : fallback;
   }
   private maxAmountFor(c: Client): number | null {
     const score = Number(c.creditScore);

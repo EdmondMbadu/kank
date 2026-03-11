@@ -765,65 +765,67 @@
         role="list"
         class="mt-6 max-h-[22rem] space-y-2 overflow-y-auto pr-1"
       >
-        <li
-          *ngFor="let c of filteredItems"
-          class="group cursor-pointer rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 transition hover:-translate-y-[2px] hover:border-emerald-300 hover:bg-emerald-50/70 dark:border-slate-700 dark:bg-slate-900/70 dark:hover:border-emerald-600/60 dark:hover:bg-slate-800/90"
-          [routerLink]="['/client-portal', c.trackingId]"
-        >
-          <div class="flex items-center gap-4">
-            <div
-              class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold uppercase text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200"
-            >
-              {{ c.firstName?.slice(0, 2) }}
-            </div>
-
-            <div class="min-w-0 flex-1">
-              <p
-                class="truncate text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2"
+        <li *ngFor="let c of filteredItems">
+          <button
+            type="button"
+            class="group w-full rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-left transition hover:-translate-y-[2px] hover:border-emerald-300 hover:bg-emerald-50/70 focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-slate-700 dark:bg-slate-900/70 dark:hover:border-emerald-600/60 dark:hover:bg-slate-800/90"
+            (click)="openClientModal(c)"
+          >
+            <div class="flex items-center gap-4">
+              <div
+                class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold uppercase text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200"
               >
-                <span>{{ c.firstName }} {{ c.lastName }} {{ c.middleName }}</span>
-                <span
-                  *ngIf="getStarsCount(c) > 0"
-                  class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                  title="Étoiles: {{ getStarsCount(c) }}"
+                {{ c.firstName?.slice(0, 2) }}
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <p
+                  class="truncate text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
+                  <span>{{ c.firstName }} {{ c.lastName }} {{ c.middleName }}</span>
+                  <span
+                    *ngIf="getStarsCount(c) > 0"
+                    class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                    title="Étoiles: {{ getStarsCount(c) }}"
                   >
-                    <path
-                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                    />
-                  </svg>
-                  <span>{{ getStarsCount(c) }}</span>
-                </span>
-                <span
-                  *ngIf="isDuplicatePhoneClient(c)"
-                  class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
-                  title="Numéro en doublon"
-                >
-                  Doublon × {{ getDuplicatePhoneCount(c) }}
-                </span>
-              </p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">
-                {{ formatDisplayPhone(c.phoneNumber) }}
-              </p>
-            </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3.5 w-3.5 text-amber-500 dark:text-amber-400"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                      />
+                    </svg>
+                    <span>{{ getStarsCount(c) }}</span>
+                  </span>
+                  <span
+                    *ngIf="isDuplicatePhoneClient(c)"
+                    class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
+                    title="Numéro en doublon"
+                  >
+                    Doublon × {{ getDuplicatePhoneCount(c) }}
+                  </span>
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  {{ formatDisplayPhone(c.phoneNumber) }}
+                </p>
+              </div>
 
-            <div
-              class="min-w-fit text-xs font-medium text-emerald-600 dark:text-emerald-300"
-            >
-              {{ c.locationName }}
-            </div>
+              <div
+                class="min-w-fit text-xs font-medium text-emerald-600 dark:text-emerald-300"
+              >
+                {{ c.locationName }}
+              </div>
 
-            <div
-              class="min-w-fit text-sm font-semibold text-slate-900 dark:text-slate-100"
-            >
-              FC {{ c.debtLeft | number : "1.0-0" }}
+              <div
+                class="min-w-fit text-sm font-semibold text-slate-900 dark:text-slate-100"
+              >
+                FC {{ c.debtLeft | number : "1.0-0" }}
+              </div>
             </div>
-          </div>
+          </button>
         </li>
       </ul>
       <ng-template #noClientsFound>
@@ -2547,6 +2549,395 @@
     </div>
   </div>
 </section>
+
+<!-- ==== CLIENT QUICK VIEW MODAL ==== -->
+<div
+  *ngIf="showClientModal && activeClient"
+  class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4"
+  aria-modal="true"
+  role="dialog"
+  (click)="closeClientModal()"
+>
+  <div
+    class="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-4">
+          <ng-container *ngIf="activeClient.profilePicture?.downloadURL; else modalClientInitials">
+            <img
+              [src]="activeClient.profilePicture?.downloadURL"
+              alt="Photo client"
+              class="h-16 w-16 rounded-full object-cover ring-4 ring-emerald-200"
+            />
+          </ng-container>
+          <ng-template #modalClientInitials>
+            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-lg font-semibold text-emerald-700 ring-4 ring-emerald-200">
+              {{ clientInitials(activeClient) }}
+            </div>
+          </ng-template>
+
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="truncate text-xl font-semibold text-slate-900 dark:text-slate-100">
+                {{ activeClient.firstName }} {{ activeClient.lastName }} {{ activeClient.middleName }}
+              </h3>
+              <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                {{ activeClient.locationName || "Site" }}
+              </span>
+              <span
+                *ngIf="isClientQuitte(activeClient)"
+                class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800"
+              >
+                À l'écart
+              </span>
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <ng-container *ngIf="auth.isAdmin; else clientPhoneReadonly">
+                <button
+                  type="button"
+                  class="rounded-full border border-slate-200 px-3 py-1 text-left hover:border-emerald-300 hover:text-emerald-700 dark:border-slate-700 dark:hover:border-emerald-500"
+                  (click)="startPhoneEdit()"
+                >
+                  {{ displayPhone(activeClient.phoneNumber) }}
+                </button>
+              </ng-container>
+              <ng-template #clientPhoneReadonly>
+                <span>{{ displayPhone(activeClient.phoneNumber) }}</span>
+              </ng-template>
+              <span
+                *ngIf="activeClient.creditScore != null"
+                class="rounded-full px-2 py-1 text-[11px] font-semibold shadow-sm"
+                [ngStyle]="creditBadgeStyle(activeClient.creditScore)"
+              >
+                Score {{ activeClient.creditScore }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-2">
+          <button
+            *ngIf="activeClient.trackingId"
+            type="button"
+            class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+            (click)="openActiveClientPortal()"
+          >
+            Ouvrir le portail
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            (click)="closeClientModal()"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+
+      <div
+        *ngIf="auth.isAdmin && phoneEditOpen"
+        class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center"
+      >
+        <input
+          [(ngModel)]="phoneEditValue"
+          type="text"
+          placeholder="Nouveau numéro"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        />
+        <button
+          type="button"
+          class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-300"
+          [disabled]="phoneEditSaving"
+          (click)="updateClientPhoneNumber()"
+        >
+          {{ phoneEditSaving ? "Mise à jour..." : "Mettre à jour" }}
+        </button>
+      </div>
+
+      <div *ngIf="allActivePhones.length > 1" class="mt-3">
+        <button
+          type="button"
+          class="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+          (click)="togglePhoneHistory()"
+        >
+          Numéros précédents ({{ allActivePhones.length }})
+        </button>
+        <div
+          *ngIf="showPhoneHistory"
+          class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        >
+          <ul class="space-y-1">
+            <li *ngFor="let phone of allActivePhones; let i = index" class="flex items-center gap-2">
+              <a [href]="'tel:' + phone" class="font-mono hover:underline">
+                {{ displayPhone(phone) }}
+              </a>
+              <span
+                *ngIf="i === 0"
+                class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
+              >
+                Actuel
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6 px-5 py-5">
+      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/70">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Dette empruntée</p>
+          <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            {{ formatAmount(activeClient.loanAmount) }} FC
+          </p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/70">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Montant à payer</p>
+          <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            {{ formatAmount(activeClient.amountToPay) }} FC
+          </p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/70">
+          <p class="text-xs uppercase tracking-wide text-slate-500">Montant perçu</p>
+          <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
+            {{ formatAmount(activeClient.amountPaid) }} FC
+          </p>
+        </div>
+        <div class="rounded-2xl border-2 border-rose-300 bg-rose-50 p-4 dark:border-rose-700 dark:bg-rose-950/30">
+          <p class="text-xs uppercase tracking-wide text-rose-700 dark:text-rose-300">Dette restante</p>
+          <p class="mt-2 text-xl font-extrabold text-rose-800 dark:text-rose-200">
+            {{ formatAmount(activeClient.debtLeft) }} FC
+          </p>
+        </div>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
+          <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Informations client
+          </h4>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Épargne</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ formatAmount(activeClient.savings) }} FC
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Jour de paiement</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ activeClient.paymentDay ? displayPaymentDay(activeClient.paymentDay) : "-" }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Date début dette</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ formatDebtDate(activeClient.debtCycleStartDate) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Date fin dette</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ formatDebtDate(activeClient.debtCycleEndDate) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Profession</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ activeClient.profession || "-" }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-wide text-slate-500">Date d'inscription</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ formatDebtDate(activeClient.dateJoined) }}
+              </p>
+            </div>
+            <div class="sm:col-span-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500">Adresse domicile</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ activeClient.homeAddress || "-" }}
+              </p>
+            </div>
+            <div class="sm:col-span-2">
+              <p class="text-xs uppercase tracking-wide text-slate-500">Adresse business</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ activeClient.businessAddress || "-" }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
+          <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Références à contacter
+          </h4>
+          <div *ngIf="clientReferences(activeClient).length; else noClientReferences" class="mt-4 space-y-3">
+            <div
+              *ngFor="let ref of clientReferences(activeClient)"
+              class="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/30"
+            >
+              <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ ref.name || "Référence" }}
+              </p>
+              <a
+                *ngIf="ref.tel; else referenceRawPhone"
+                [href]="'tel:' + ref.tel"
+                class="mt-1 block text-sm text-indigo-700 hover:underline dark:text-indigo-300"
+              >
+                {{ ref.phone || ref.raw }}
+              </a>
+              <ng-template #referenceRawPhone>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  {{ ref.phone || ref.raw || "-" }}
+                </p>
+              </ng-template>
+            </div>
+          </div>
+          <ng-template #noClientReferences>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Aucune référence enregistrée pour ce client.
+            </p>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="grid gap-4 xl:grid-cols-2">
+        <div class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-900 dark:bg-emerald-950/20">
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+              Paiements récents
+            </h4>
+            <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+              {{ recentClientPayments(activeClient).length }} entrée(s)
+            </span>
+          </div>
+          <div *ngIf="recentClientPayments(activeClient).length; else noRecentPayments" class="mt-4 space-y-3">
+            <div
+              *ngFor="let payment of visibleRecentPayments(activeClient); let i = index"
+              class="rounded-2xl border border-emerald-100 bg-white px-4 py-3 dark:border-emerald-900 dark:bg-slate-900/80"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    {{ i === 0 ? "Dernier paiement" : "Paiement récent" }}
+                  </p>
+                  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {{ payment.label }}
+                  </p>
+                </div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  FC {{ payment.amount | number : "1.0-0" }}
+                </p>
+              </div>
+            </div>
+            <button
+              *ngIf="hasMoreRecentPayments(activeClient)"
+              type="button"
+              class="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-700 hover:border-emerald-300 hover:text-emerald-800"
+              (click)="toggleRecentPayments()"
+            >
+              {{ showRecentPaymentsExpanded ? "Voir moins" : "Voir plus" }}
+            </button>
+          </div>
+          <ng-template #noRecentPayments>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Aucun paiement enregistré.
+            </p>
+          </ng-template>
+        </div>
+
+        <div class="rounded-3xl border border-sky-200 bg-sky-50/60 p-5 dark:border-sky-900 dark:bg-sky-950/20">
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-sm font-semibold text-sky-900 dark:text-slate-100">
+              Épargnes récentes
+            </h4>
+            <span class="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+              {{ recentClientSavings(activeClient).length }} entrée(s)
+            </span>
+          </div>
+          <div *ngIf="recentClientSavings(activeClient).length; else noRecentSavings" class="mt-4 space-y-3">
+            <div
+              *ngFor="let saving of visibleRecentSavings(activeClient); let i = index"
+              class="rounded-2xl border border-sky-100 bg-white px-4 py-3 dark:border-sky-900 dark:bg-slate-900/80"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                    {{ i === 0 ? "Dernière épargne" : "Épargne récente" }}
+                  </p>
+                  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {{ saving.label }}
+                  </p>
+                </div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  FC {{ saving.amount | number : "1.0-0" }}
+                </p>
+              </div>
+            </div>
+            <button
+              *ngIf="hasMoreRecentSavings(activeClient)"
+              type="button"
+              class="rounded-full border border-sky-200 bg-white px-4 py-2 text-xs font-semibold text-sky-700 hover:border-sky-300 hover:text-sky-800"
+              (click)="toggleRecentSavings()"
+            >
+              {{ showRecentSavingsExpanded ? "Voir moins" : "Voir plus" }}
+            </button>
+          </div>
+          <ng-template #noRecentSavings>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Aucune épargne enregistrée.
+            </p>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
+        <div class="flex items-center justify-between gap-2">
+          <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Commentaires récents
+          </h4>
+          <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            {{ getClientComments(activeClient).length }} commentaire(s)
+          </span>
+        </div>
+        <div *ngIf="getClientComments(activeClient).length; else noClientComments" class="mt-4 space-y-3">
+          <div
+            *ngFor="let comment of visibleClientComments(activeClient)"
+            class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/70"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ comment.name || "Auteur non précisé" }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ commentTime(comment) }}
+              </p>
+            </div>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              {{ commentPreview(comment) }}
+            </p>
+          </div>
+          <button
+            *ngIf="hasMoreClientComments(activeClient)"
+            type="button"
+            class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            (click)="toggleClientComments()"
+          >
+            {{ showClientCommentsExpanded ? "Voir moins" : "Voir plus" }}
+          </button>
+        </div>
+        <ng-template #noClientComments>
+          <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Aucun commentaire enregistré pour ce client.
+          </p>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ==== CONTACT SMS MODAL (single) ==== -->
 <div
