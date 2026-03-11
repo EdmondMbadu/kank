@@ -1,46 +1,140 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl text-center md:text-3xl mr-4"> {{client.firstName}} {{client.lastName}} {{withdrawalLabel}}</h1>
-    <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "  routerLink="/client-portal">Client Portal</button> -->
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<div class="flex container justify-center mx-auto">
+<section class="withdraw-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-4xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_26px_80px_-52px_rgba(5,150,105,0.55)] backdrop-blur sm:px-6"
+    >
+      <div class="space-y-2 text-center">
+        <span
+          class="mx-auto inline-flex w-fit items-center justify-center rounded-full bg-emerald-50 px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.24em] text-emerald-700"
+        >
+          Épargne
+        </span>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          {{ client.firstName }} {{ client.lastName }}
+        </h1>
+        <p class="mx-auto max-w-2xl text-sm text-slate-500 sm:text-base">
+          {{ withdrawalLabel }}
+        </p>
+      </div>
+    </div>
 
-<div class=" border-2 border-green-800 rounded-lg p-12">
-  
-    
-    <div class="mb-6">
-        <h1 for="savingsOther" class=" block mb-2 text-sm font-medium text-gray-900 "> Compte Epargne Courant </h1>
-        <h1 class="text-red-500 ml-6"> FC {{client.savings | number:'1.0-0'}}</h1>
-       
-    </div> 
+    <div
+      class="rounded-[30px] border border-white/70 bg-white/95 p-4 shadow-[0_30px_90px_-56px_rgba(15,23,42,0.38)] backdrop-blur sm:p-6"
+    >
+      <div class="mb-5 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+            Détails du retrait
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Choisissez le montant à retirer ou à transférer, puis validez.
+          </p>
+        </div>
+        <span
+          class="inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold"
+          [ngClass]="
+            isTransferToPayment
+              ? 'bg-amber-50 text-amber-700'
+              : 'bg-emerald-50 text-emerald-700'
+          "
+        >
+          {{ isTransferToPayment ? 'Transfert vers paiement' : 'Retrait direct' }}
+        </span>
+      </div>
 
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+            Épargne disponible
+          </p>
+          <p class="mt-2 text-2xl font-semibold text-emerald-950">
+            FC {{ client.savings | number:'1.0-0' }}
+          </p>
+        </div>
 
-<div class="mb-6">
-    <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Montant De Retrait</label>
-    <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="savingsWithdrawn" (change)="displaySavingsOtherAmount()"selected>
-        <option [ngValue]="0">FC 0</option>
-        <option [ngValue]="5000">FC 5000</option>
-    <option [ngValue]="10000">FC 10,000</option>
-    <option [ngValue]="" >Autre Montant</option>
-    </select>
-</div>
-<div *ngIf="savingsOtherAmount" class="mb-6">
-    <label for="savingsOther" class="block mb-2 text-sm font-medium text-gray-900 "> Retrait Autre Montant</label>
-    <input [(ngModel)]="savingsWithdrawn" type="text" id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="20000" required>
-</div> 
+        <div
+          class="rounded-2xl border px-4 py-4"
+          [ngClass]="
+            isTransferToPayment
+              ? 'border-amber-100 bg-amber-50/80'
+              : 'border-slate-200 bg-slate-50/80'
+          "
+        >
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.18em]"
+            [ngClass]="isTransferToPayment ? 'text-amber-700' : 'text-slate-500'"
+          >
+            {{ isTransferToPayment ? 'Dette restante' : 'Type d’opération' }}
+          </p>
+          <p
+            class="mt-2 text-2xl font-semibold"
+            [ngClass]="isTransferToPayment ? 'text-amber-950' : 'text-slate-900'"
+          >
+            {{
+              isTransferToPayment
+                ? ('FC ' + (client.debtLeft | number:'1.0-0'))
+                : 'Retrait d’épargne'
+            }}
+          </p>
+        </div>
 
+        <label class="space-y-2 sm:col-span-2">
+          <span class="block text-[0.74rem] font-bold uppercase tracking-[0.16em] text-slate-500">
+            Montant du retrait
+          </span>
+          <select
+            id="withdrawAmount"
+            class="block w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            [(ngModel)]="savingsWithdrawn"
+            (change)="displaySavingsOtherAmount()"
+          >
+            <option [ngValue]="0">FC 0</option>
+            <option [ngValue]="5000">FC 5,000</option>
+            <option [ngValue]="10000">FC 10,000</option>
+            <option [ngValue]="'Autre Montant'">Autre montant</option>
+          </select>
+        </label>
 
+        <label *ngIf="savingsOtherAmount" class="space-y-2 sm:col-span-2">
+          <span class="block text-[0.74rem] font-bold uppercase tracking-[0.16em] text-slate-500">
+            Autre montant
+          </span>
+          <input
+            [(ngModel)]="savingsWithdrawn"
+            type="text"
+            id="savingsOther"
+            class="block w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            placeholder="FC 20,000"
+          />
+        </label>
+      </div>
 
+      <div class="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm leading-6 text-slate-500 sm:max-w-xl">
+          Confirmez uniquement après avoir vérifié le montant saisi.
+        </p>
 
-
-
-   
-
-<button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
-    <button  (click)="withDrawSavings()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumetrre</button>
-   
-</div>
-
-
-</div>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <a
+            [routerLink]="['/client-portal', id]"
+            class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100"
+          >
+            Annuler
+          </a>
+          <button
+            (click)="withDrawSavings()"
+            class="inline-flex items-center justify-center rounded-full bg-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_30px_-20px_rgba(4,120,87,0.95)] transition hover:bg-emerald-800"
+          >
+            Soumettre
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
