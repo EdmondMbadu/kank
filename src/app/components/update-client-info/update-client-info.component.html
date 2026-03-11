@@ -1,99 +1,197 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl mr-4 text-center">Mettre à Jour L'information de {{client.firstName}} {{client.lastName}}</h1>
-</div>
+<section class="update-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_26px_80px_-52px_rgba(5,150,105,0.55)] backdrop-blur sm:px-6"
+    >
+      <div class="space-y-2 text-center">
+        <span class="update-kicker">Mise à jour</span>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Mettre à jour les informations de {{ client.firstName }} {{ client.lastName }}
+        </h1>
+      </div>
+    </div>
 
-
-
-<div class="flex container justify-center mx-auto ">
-
-    <div class=" border-2 border-green-800 rounded-lg p-12">
-      
-        
-        <div  class="mb-6">
-            <label for="firstName" class="block mb-2 text-sm font-medium text-gray-900 "> Nom</label>
-            <input  [disabled]="!this.auth.isAdmin" [(ngModel)]="client.firstName" type="text" id="telelphone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.firstName}}" required>
+    <div class="update-card p-4 sm:p-6">
+      <div class="mb-5 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+            Informations du client
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Modifiez uniquement les champs nécessaires.
+          </p>
         </div>
-        <div  class="mb-6">
-            <label for="lasttName" class="block mb-2 text-sm font-medium text-gray-900 "> Postnom</label>
-            <input  [disabled]="!this.auth.isAdmin"[(ngModel)]="client.lastName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.lastName}}" required>
+        <span class="update-step">Édition</span>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="space-y-2">
+          <span class="update-label">Nom</span>
+          <input
+            [disabled]="!auth.isAdmin"
+            [(ngModel)]="client.firstName"
+            type="text"
+            id="firstName"
+            class="update-input"
+            [placeholder]="client.firstName"
+          />
+        </label>
+
+        <label class="space-y-2">
+          <span class="update-label">Postnom</span>
+          <input
+            [disabled]="!auth.isAdmin"
+            [(ngModel)]="client.lastName"
+            type="text"
+            id="lastName"
+            class="update-input"
+            [placeholder]="client.lastName"
+          />
+        </label>
+
+        <label class="space-y-2" *ngIf="client.middleName !== undefined">
+          <span class="update-label">Prénom</span>
+          <input
+            [disabled]="!auth.isAdmin"
+            [(ngModel)]="client.middleName"
+            type="text"
+            id="middleName"
+            class="update-input"
+            [placeholder]="client.middleName"
+          />
+        </label>
+
+        <label class="space-y-2" *ngIf="client.middleName === undefined">
+          <span class="update-label">Prénom</span>
+          <input
+            [disabled]="!auth.isAdmin"
+            [(ngModel)]="middleName"
+            type="text"
+            id="middleNameFallback"
+            class="update-input"
+            [placeholder]="middleName"
+          />
+        </label>
+
+        <label class="space-y-2">
+          <span class="update-label">Numéro de téléphone</span>
+          <input
+            [disabled]="!auth.isAdmin"
+            [(ngModel)]="client.phoneNumber"
+            type="text"
+            id="phoneNumber"
+            class="update-input"
+            [placeholder]="client.phoneNumber"
+          />
+        </label>
+
+        <label class="space-y-2 sm:col-span-2">
+          <span class="update-label">Adresse du business</span>
+          <input
+            [(ngModel)]="client.businessAddress"
+            type="text"
+            id="businessAddress"
+            class="update-input"
+            [placeholder]="client.businessAddress"
+          />
+        </label>
+
+        <label class="space-y-2 sm:col-span-2">
+          <span class="update-label">Adresse domicile</span>
+          <input
+            [(ngModel)]="client.homeAddress"
+            type="text"
+            id="homeAddress"
+            class="update-input"
+            [placeholder]="client.homeAddress"
+          />
+        </label>
+
+        <label class="space-y-2">
+          <span class="update-label">Profession</span>
+          <input
+            [(ngModel)]="client.profession"
+            type="text"
+            id="profession"
+            class="update-input"
+            [placeholder]="client.profession"
+          />
+        </label>
+
+        <label class="space-y-2">
+          <span class="update-label text-red-700">Jour de paiement</span>
+          <select
+            [disabled]="!auth.isAdmin"
+            id="paymentDay"
+            [(ngModel)]="client.paymentDay"
+            class="update-input"
+          >
+            <option selected>Choisir</option>
+            <option [ngValue]="'Monday'">Lundi</option>
+            <option [ngValue]="'Tuesday'">Mardi</option>
+            <option [ngValue]="'Wednesday'">Mercredi</option>
+            <option [ngValue]="'Thursday'">Jeudi</option>
+            <option [ngValue]="'Friday'">Vendredi</option>
+            <option [ngValue]="'Saturday'">Samedi</option>
+          </select>
+        </label>
+
+        <label *ngIf="auth.isAdmin" class="space-y-2">
+          <span class="update-label text-red-700">État vital</span>
+          <select
+            [disabled]="!auth.isAdmin"
+            id="vitalStatus"
+            [(ngModel)]="client.vitalStatus"
+            class="update-input"
+          >
+            <option selected>Choisir</option>
+            <option [ngValue]="'Mort'">Mort</option>
+            <option [ngValue]="'Vivant'">Vivant</option>
+            <option [ngValue]="'Quitté'">Quitté</option>
+          </select>
+        </label>
+
+        <label class="space-y-2" [class.sm:col-span-2]="!auth.isAdmin">
+          <span class="update-label text-red-700">Agent</span>
+          <select
+            [disabled]="!auth.isAdmin"
+            id="agent"
+            [(ngModel)]="client.agent"
+            class="update-input"
+          >
+            <option selected>Choisir</option>
+            <option *ngFor="let em of employees" [ngValue]="em.uid">
+              {{ em.firstName }} {{ em.middleName }} {{ em.lastName }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="update-actions mt-6">
+        <p class="text-sm leading-6 text-slate-500 sm:max-w-xl">
+          Vérifiez les champs modifiés avant d’enregistrer.
+        </p>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <a
+            [routerLink]="['/client-portal', id]"
+            class="update-cancel-button"
+          >
+            Annuler
+          </a>
+          <button
+            (click)="updateClientInfo()"
+            class="update-primary-button"
+          >
+            Soumettre
+          </button>
         </div>
-
-        <div class="mb-6" *ngIf="client.middleName!==undefined">
-            <label for="lasttName" class="block mb-2 text-sm font-medium text-gray-900 "> Prenom</label>
-            <input [disabled]="!this.auth.isAdmin" [(ngModel)]="client.middleName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.middleName}}" required>
-        </div>
-        <div class="mb-6" *ngIf="client.middleName ===undefined">
-            <label for="lasttName" class="block mb-2 text-sm font-medium text-gray-900 "> Prenom</label>
-            <input  [disabled]="!this.auth.isAdmin" [(ngModel)]="middleName" type="text" id="lastName" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{middleName}}" required>
-        </div>
-        <div  class="mb-6" >
-            <label for="phoneNumber" class="block mb-2 text-sm font-medium text-gray-900 "> Numero de Telephone</label>
-            <input [disabled]="!this.auth.isAdmin" [(ngModel)]="client.phoneNumber" type="text" id="telelphone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.phoneNumber}}" required>
-        </div>
-       
-    
-
-    <div  class="mb-6">
-        <label for="businessAddress" class="block mb-2 text-sm font-medium text-gray-900 "> Address du Business</label>
-        <input [(ngModel)]="client.businessAddress" type="text" id="homeAddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.businessAddress}}" required>
+      </div>
     </div>
-    
-
-    <div  class="mb-6">
-        <label for="homeAddress" class="block mb-2 text-sm font-medium text-gray-900 "> Address Domicile</label>
-        <input [(ngModel)]="client.homeAddress" type="text" id="businessAddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.homeAddress}}" required>
-    </div>
-
-
-    <div  class="mb-6">
-        <label for="profession" class="block mb-2 text-sm font-medium text-gray-900 "> Profession</label>
-        <input [(ngModel)]="client.profession" type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="{{client.profession}}" required>
-    </div>
-    <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
-        <select [disabled]="!this.auth.isAdmin"  id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-        <option [ngValue]="'Monday'">Lundi</option>
-        <option [ngValue]="'Tuesday'">Mardi</option>
-        <option [ngValue]="'Wednesday'">Mercredi</option>
-        <option [ngValue]="'Thursday'">Jeudi</option>
-        <option [ngValue]="'Friday'">Vendredi </option>
-        <option [ngValue]="'Saturday'">Samedi </option>
-        </select>
-    </div>
-    <div *ngIf="this.auth.isAdmin" class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Etat vital</label>
-        <select [disabled]="!this.auth.isAdmin"  id="countries"[(ngModel)]="client.vitalStatus"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-        <option [ngValue]="'Mort'">Mort</option>
-        <option [ngValue]="'Vivant'">Vivant</option>
-        <option [ngValue]="'Quitté'">Quitté</option>
-        
-       
-        </select>
-    </div>
-    <div class="mb-6">
-        <label class="block mb-2 text-sm font-medium text-red-700">Agent</label>
-        <select [disabled]="!this.auth.isAdmin"   id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-            <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
-     
-       
-        </select>
-    </div>
-    
-    
- 
-    
-    
-       
-    
-    <button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal',id ]">Annuler</button>
-        <button (click)="updateClientInfo()"   class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumettre</button>
-       
-    </div>
-    
-    
-    </div>
+  </div>
+</section>
