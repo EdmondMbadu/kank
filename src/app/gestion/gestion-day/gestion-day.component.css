@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+:host ::ng-deep plotly-plot.gestion-day-plot {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+:host ::ng-deep plotly-plot.gestion-day-plot > div,
+:host ::ng-deep plotly-plot.gestion-day-plot .js-plotly-plot,
+:host ::ng-deep plotly-plot.gestion-day-plot .plot-container,
+:host ::ng-deep plotly-plot.gestion-day-plot .svg-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}

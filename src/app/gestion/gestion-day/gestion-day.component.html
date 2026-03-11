@@ -264,11 +264,11 @@
   </div>
 </div>
 <div
-  class="container dark:text-white mx-auto flex flex-wrap items-start justify-center gap-6 md:flex-row"
+  class="container mx-auto px-4 dark:text-white"
 >
   <!-- ===================== SUMMARY VERIFICATION ===================== -->
   <div
-    class="w-full max-w-5xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 shadow-xl p-5"
+    class="w-full rounded-2xl border border-indigo-100 bg-white/70 p-5 shadow-xl dark:border-slate-700 dark:bg-slate-800/70"
   >
     <div
       class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
@@ -293,7 +293,7 @@
           "
         >
           <span
-            class="inline-flex items-center gap-2 rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-sm font-semibold"
+            class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700"
           >
             <svg
               class="h-4 w-4"
@@ -313,7 +313,7 @@
         </ng-container>
         <ng-template #mismatchBadge>
           <span
-            class="inline-flex items-center gap-2 rounded-full bg-red-100 text-red-700 px-3 py-1 text-sm font-semibold"
+            class="inline-flex items-center gap-2 rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700"
           >
             <svg
               class="h-4 w-4"
@@ -334,9 +334,8 @@
       </div>
     </div>
 
-    <!-- KPI strip -->
     <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-4">
+      <div class="rounded-xl bg-indigo-50 p-4 dark:bg-slate-700/60">
         <div
           class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300"
         >
@@ -347,7 +346,7 @@
           {{ +inputDOllars || 0 | number : "1.0-0" }} $
         </div>
       </div>
-      <div class="rounded-xl bg-indigo-50 dark:bg-slate-700/60 p-4">
+      <div class="rounded-xl bg-indigo-50 p-4 dark:bg-slate-700/60">
         <div
           class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300"
         >
@@ -397,210 +396,215 @@
     </div>
   </div>
 
-  <!-- ===================== RESTANT À SERVIR AUJOURD’HUI ===================== -->
-  <div
-    class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800"
-  >
-    <h1
-      class="text-xl md:text-2xl font-bold text-center mx-4 my-4 underline decoration-indigo-400/60"
-    >
-      Restant à servir aujourd’hui — {{ frenchDate }}
-    </h1>
-
-    <table
-      class="w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
-    >
-      <thead
-        class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
-      >
-        <tr>
-          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-          <th scope="col" class="py-3 px-6 text-right">Restant</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr
-          *ngFor="let s of userServeTodayTotals; let i = index"
-          class="bg-white dark:bg-gray-800/40"
-        >
-          <th
-            scope="row"
-            class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap"
-          >
-            {{ i + 1 }}.&nbsp;{{ s.firstName }}
-          </th>
-          <td class="px-6 py-4 text-right">
-            <div class="flex flex-col items-end">
-              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
-              </span>
-              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {{ +s.total || 0 | number : "1.0-0" }} FC
-              </span>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-
-      <tfoot>
-        <tr class="font-semibold">
-          <th scope="row" class="px-6 py-3 text-base">
-            Total restant à servir
-          </th>
-          <td class="px-6 py-3 text-right">
-            <div class="flex flex-col items-end">
-              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                ${{ +overallTotalTodayInDollars || 0 | number : "1.0-0" }}
-              </span>
-              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {{ +overallTotalToday || 0 | number : "1.0-0" }} FC
-              </span>
-            </div>
-          </td>
-        </tr>
-
-        <tr class="font-semibold">
-          <th scope="row" class="px-6 py-3 text-base">
-            Entrée du jour (reçue)
-          </th>
-          <td class="px-6 py-3 text-right">
-            <div class="flex flex-col items-end">
-              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                ${{ +inputDOllars || 0 | number : "1.0-0" }}
-              </span>
-              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {{ +input || 0 | number : "1.0-0" }} FC
-              </span>
-            </div>
-          </td>
-        </tr>
-
-        <tr
-          class="font-semibold"
-          [ngClass]="{
-            'bg-emerald-50 dark:bg-emerald-900/30':
-              +input === +plannedToServeToday &&
-              +inputDOllars === +plannedToServeTodayDollars,
-            'bg-red-50 dark:bg-red-900/30':
-              +input !== +plannedToServeToday ||
-              +inputDOllars !== +plannedToServeTodayDollars
-          }"
-        >
-          <th scope="row" class="px-6 py-3 text-base">
-            À servir aujourd'hui (prévu)
-          </th>
-          <td class="px-6 py-3 text-right">
-            <div class="flex flex-col items-end">
-              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                ${{ +plannedToServeTodayDollars || 0 | number : "1.0-0" }}
-                <span
-                  *ngIf="+inputDOllars !== +plannedToServeTodayDollars"
-                  class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"
-                >
-                  Δ
-                  {{
-                    (+inputDOllars || 0) - (+plannedToServeTodayDollars || 0)
-                      | number : "1.0-0"
-                  }}$
-                </span>
-              </span>
-              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {{ +plannedToServeToday || 0 | number : "1.0-0" }} FC
-                <span
-                  *ngIf="+input !== +plannedToServeToday"
-                  class="ml-2 inline-block rounded-full bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5"
-                >
-                  Δ
-                  {{
-                    (+input || 0) - (+plannedToServeToday || 0) | number : "1.0-0"
-                  }}FC
-                </span>
-              </span>
-            </div>
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-
-    <!-- Legend -->
+  <div class="mt-6 grid w-full gap-6 xl:grid-cols-2">
+    <!-- ===================== RESTANT À SERVIR AUJOURD’HUI ===================== -->
     <div
-      class="px-6 py-3 text-xs text-slate-500 dark:text-slate-400 flex gap-3"
+      class="relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800"
     >
-      <span class="inline-flex items-center gap-1"
-        ><span class="h-3 w-3 rounded-sm bg-emerald-400/60"></span> OK</span
+      <h1
+        class="mx-4 my-4 text-center text-xl font-bold underline decoration-indigo-400/60 md:text-2xl"
       >
-      <span class="inline-flex items-center gap-1"
-        ><span class="h-3 w-3 rounded-sm bg-red-400/60"></span> Écart</span
-      >
-    </div>
-  </div>
+        Restant à servir aujourd’hui — {{ frenchDate }}
+      </h1>
 
-  <!-- ===================== ARGENT DEMANDÉ DEMAIN ===================== -->
-  <div
-    class="mx-4 relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800"
-  >
-    <h1
-      class="text-xl md:text-2xl font-bold text-center mx-4 my-4 underline decoration-indigo-400/60"
-    >
-      Argent demandé{{ tomorrowLabel ? ' ' + tomorrowLabel : '' }} ({{ dayNameForRequests }}) — {{ displayDateForRequests }}
-    </h1>
-
-    <table
-      class="w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
-    >
-      <thead
-        class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
-      >
-        <tr>
-          <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
-          <th scope="col" class="py-3 px-6 text-right">Demande</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          *ngFor="let s of userRequestTotals; let i = index"
-          class="bg-white dark:bg-gray-800/40"
+      <div class="w-full overflow-x-auto">
+        <table
+          class="min-w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
         >
-          <th
-            scope="row"
-            class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap"
+          <thead
+            class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
           >
-            {{ i + 1 }}.&nbsp;{{ s.firstName }}
-          </th>
-          <td class="px-6 py-4 text-right">
-            <div class="flex flex-col items-end">
-              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
-              </span>
-              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {{ +s.total || 0 | number : "1.0-0" }} FC
-              </span>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr class="font-semibold">
-          <th scope="row" class="px-6 py-3 text-base">Total</th>
-          <td class="px-6 py-3 text-right">
-            <div class="flex flex-col items-end">
-              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                ${{ +overallTotalInDollars || 0 | number : "1.0-0" }}
-              </span>
-              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
-                {{ +overallTotal || 0 | number : "1.0-0" }} FC
-              </span>
-            </div>
-          </td>
-        </tr>
-      </tfoot>
-    </table>
+            <tr>
+              <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+              <th scope="col" class="px-6 py-3 text-right">Restant</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              *ngFor="let s of userServeTodayTotals; let i = index"
+              class="bg-white dark:bg-gray-800/40"
+            >
+              <th
+                scope="row"
+                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap"
+              >
+                {{ i + 1 }}.&nbsp;{{ s.firstName }}
+              </th>
+              <td class="px-6 py-4 text-right">
+                <div class="flex flex-col items-end">
+                  <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +s.total || 0 | number : "1.0-0" }} FC
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+
+          <tfoot>
+            <tr class="font-semibold">
+              <th scope="row" class="px-6 py-3 text-base">
+                Total restant à servir
+              </th>
+              <td class="px-6 py-3 text-right">
+                <div class="flex flex-col items-end">
+                  <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ +overallTotalTodayInDollars || 0 | number : "1.0-0" }}
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +overallTotalToday || 0 | number : "1.0-0" }} FC
+                  </span>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="font-semibold">
+              <th scope="row" class="px-6 py-3 text-base">
+                Entrée du jour (reçue)
+              </th>
+              <td class="px-6 py-3 text-right">
+                <div class="flex flex-col items-end">
+                  <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ +inputDOllars || 0 | number : "1.0-0" }}
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +input || 0 | number : "1.0-0" }} FC
+                  </span>
+                </div>
+              </td>
+            </tr>
+
+            <tr
+              class="font-semibold"
+              [ngClass]="{
+                'bg-emerald-50 dark:bg-emerald-900/30':
+                  +input === +plannedToServeToday &&
+                  +inputDOllars === +plannedToServeTodayDollars,
+                'bg-red-50 dark:bg-red-900/30':
+                  +input !== +plannedToServeToday ||
+                  +inputDOllars !== +plannedToServeTodayDollars
+              }"
+            >
+              <th scope="row" class="px-6 py-3 text-base">
+                À servir aujourd'hui (prévu)
+              </th>
+              <td class="px-6 py-3 text-right">
+                <div class="flex flex-col items-end">
+                  <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ +plannedToServeTodayDollars || 0 | number : "1.0-0" }}
+                    <span
+                      *ngIf="+inputDOllars !== +plannedToServeTodayDollars"
+                      class="ml-2 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700"
+                    >
+                      Δ
+                      {{
+                        (+inputDOllars || 0) - (+plannedToServeTodayDollars || 0)
+                          | number : "1.0-0"
+                      }}$
+                    </span>
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +plannedToServeToday || 0 | number : "1.0-0" }} FC
+                    <span
+                      *ngIf="+input !== +plannedToServeToday"
+                      class="ml-2 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700"
+                    >
+                      Δ
+                      {{
+                        (+input || 0) - (+plannedToServeToday || 0) | number : "1.0-0"
+                      }}FC
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div
+        class="flex flex-wrap gap-3 px-6 py-3 text-xs text-slate-500 dark:text-slate-400"
+      >
+        <span class="inline-flex items-center gap-1"
+          ><span class="h-3 w-3 rounded-sm bg-emerald-400/60"></span> OK</span
+        >
+        <span class="inline-flex items-center gap-1"
+          ><span class="h-3 w-3 rounded-sm bg-red-400/60"></span> Écart</span
+        >
+      </div>
+    </div>
+
+    <!-- ===================== ARGENT DEMANDÉ DEMAIN ===================== -->
+    <div
+      class="relative flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800"
+    >
+      <h1
+        class="mx-4 my-4 text-center text-xl font-bold underline decoration-indigo-400/60 md:text-2xl"
+      >
+        Argent demandé{{ tomorrowLabel ? ' ' + tomorrowLabel : '' }} ({{ dayNameForRequests }}) — {{ displayDateForRequests }}
+      </h1>
+
+      <div class="w-full overflow-x-auto">
+        <table
+          class="min-w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
+        >
+          <thead
+            class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
+          >
+            <tr>
+              <th scope="col" class="px-6 py-3 rounded-s-lg">Équipe</th>
+              <th scope="col" class="px-6 py-3 text-right">Demande</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let s of userRequestTotals; let i = index"
+              class="bg-white dark:bg-gray-800/40"
+            >
+              <th
+                scope="row"
+                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap"
+              >
+                {{ i + 1 }}.&nbsp;{{ s.firstName }}
+              </th>
+              <td class="px-6 py-4 text-right">
+                <div class="flex flex-col items-end">
+                  <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ +s.totalInDollar || 0 | number : "1.0-0" }}
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +s.total || 0 | number : "1.0-0" }} FC
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="font-semibold">
+              <th scope="row" class="px-6 py-3 text-base">Total</th>
+              <td class="px-6 py-3 text-right">
+                <div class="flex flex-col items-end">
+                  <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ +overallTotalInDollars || 0 | number : "1.0-0" }}
+                  </span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ +overallTotal || 0 | number : "1.0-0" }} FC
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- ===================== RÉSERVE ATTENDUE AUJOURD’HUI ===================== -->
   <div
-    class="mx-4 dark:text-white relative min-w-md flex flex-col overflow-x-auto mb-6 shadow-xl rounded-2xl border border-indigo-100 dark:border-slate-700 bg-white dark:bg-slate-800"
+    class="relative mt-6 flex w-full min-w-0 max-w-screen-2xl flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:text-white"
   >
     <h1
       class="text-xl md:text-2xl font-bold text-center mx-4 my-4 underline decoration-indigo-400/60"
@@ -608,9 +612,10 @@
       Réserve attendue aujourd’hui
     </h1>
 
-    <table
-      class="w-full text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
-    >
+    <div class="w-full overflow-x-auto">
+      <table
+        class="min-w-[1080px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 xl:min-w-full"
+      >
       <thead
         class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
       >
@@ -872,7 +877,8 @@
           </td>
         </tr>
       </tfoot>
-    </table>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -905,9 +911,10 @@
       </div>
     </div>
 
-    <table
-      class="w-full mt-4 text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
-    >
+    <div class="mt-4 w-full overflow-x-auto">
+      <table
+        class="min-w-[640px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 lg:min-w-full"
+      >
       <thead
         class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
       >
@@ -1004,20 +1011,21 @@
           </td>
         </tr>
       </tfoot>
-    </table>
+      </table>
+    </div>
   </div>
 </div>
 
 <div
   *ngIf="auth.isAdmin"
-  class="container lg:block flex mx-auto shadow-xl flex-col md:justify-center md:flex-row"
+  class="container mx-auto mb-8 flex min-w-0 flex-col gap-6 px-4 lg:grid lg:grid-cols-3"
 >
   <!-- COMBINED CHART -->
-  <div class="flex flex-col">
-    <h1 class="text-3xl m-12 md:text-4xl text-center">
+  <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+    <h1 class="mb-6 text-center text-2xl md:text-3xl">
       Reserve & Argent A Servir Par Jour
     </h1>
-    <div class="inline-flex rounded-md shadow-sm mx-auto" role="group">
+    <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
       <button
         (click)="updateCombinedGraphics(compute.week)"
         type="button"
@@ -1049,16 +1057,17 @@
     </div>
 
     <plotly-plot
+      class="gestion-day-plot"
       [data]="graphCombined.data"
       [layout]="graphCombined.layout"
     ></plotly-plot>
   </div>
 
-  <div class="flex flex-col">
-    <h1 class="text-3xl m-12 md:text-4xl text-center">
+  <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+    <h1 class="mb-6 text-center text-2xl md:text-3xl">
       Reserve Total Par Jour
     </h1>
-    <div class="inline-flex rounded-md shadow-sm mx-auto" role="group">
+    <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
       <button
         (click)="updateReserveGraphics(compute.week)"
         type="button"
@@ -1088,14 +1097,17 @@
         Max
       </button>
     </div>
-    =
-    <plotly-plot [data]="graph.data" [layout]="graph.layout"></plotly-plot>
+    <plotly-plot
+      class="gestion-day-plot"
+      [data]="graph.data"
+      [layout]="graph.layout"
+    ></plotly-plot>
   </div>
-  <div class="flex flex-col">
-    <h1 class="text-3xl m-12 md:text-4xl text-center">
+  <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+    <h1 class="mb-6 text-center text-2xl md:text-3xl">
       Argent A Servir Par Jour
     </h1>
-    <div class="inline-flex rounded-md shadow-sm mx-auto" role="group">
+    <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
       <button
         (click)="updateServeGraphics(compute.week)"
         type="button"
@@ -1126,6 +1138,7 @@
       </button>
     </div>
     <plotly-plot
+      class="gestion-day-plot"
       [data]="graphServe.data"
       [layout]="graphServe.layout"
     ></plotly-plot>
