@@ -19,7 +19,7 @@ export class GestionMonthComponent {
   ) {}
   ngOnInit() {
     this.auth.getManagementInfo().subscribe((data) => {
-      this.managementInfo = data[0];
+      this.managementInfo = data?.[0] || {};
       this.initalizeInputs();
       // Calculate forecast if a model is already selected
       if (this.selectedForecastModel !== 'none') {
@@ -401,7 +401,7 @@ export class GestionMonthComponent {
   }
 
   sortKeysAndValuesReserve(time: number): [string[], string[]] {
-    const dailyReimbursement = this.auth.managementInfo.reserve;
+    const dailyReimbursement = this.managementInfo?.reserve || {};
 
     // Aggregating values by month (MM-YYYY)
     const aggregatedData: { [key: string]: number } = {};
