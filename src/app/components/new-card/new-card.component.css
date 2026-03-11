@@ -45,31 +45,6 @@
   transform: translateY(-1px);
 }
 
-.preview-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-  padding-top: 0.85rem;
-}
-
-.preview-row:first-of-type {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.preview-label {
-  color: rgba(236, 253, 245, 0.76);
-}
-
-.preview-value {
-  max-width: 65%;
-  text-align: right;
-  font-weight: 600;
-  color: #ffffff;
-}
-
 @media (max-width: 640px) {
   .new-card-shell {
     padding-bottom: 2rem;
@@ -78,15 +53,5 @@
   .field-input {
     border-radius: 16px;
     padding: 0.78rem 0.9rem;
-  }
-
-  .preview-row {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .preview-value {
-    max-width: 100%;
-    text-align: left;
   }
 }
