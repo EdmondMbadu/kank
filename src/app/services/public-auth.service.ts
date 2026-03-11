@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { Router } from '@angular/router';
 import type { FirebaseApp } from 'firebase/app';
 import { environment } from '../../../environments/environments';
@@ -12,7 +13,8 @@ export class PublicAuthService {
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private afs: AngularFirestore
   ) {}
 
   async SignOn(email: string, password: string, word: string): Promise<void> {
@@ -96,11 +98,6 @@ export class PublicAuthService {
       return;
     }
 
-    const app = await this.ensureFirebaseApp();
-    const { getFirestore, doc, setDoc } = await import('firebase/firestore');
-    const firestore = getFirestore(app);
-    const userRef = doc(firestore, `users/${user.uid}`);
-
     const data = {
       uid: user.uid,
       email: user.email,
@@ -141,7 +138,7 @@ export class PublicAuthService {
       monthBudgetPending: '0',
     };
 
-    await setDoc(userRef, data, { merge: true });
+    await this.afs.doc(`users/${user.uid}`).set(data, { merge: true });
   }
 
   private ensureFirebaseApp(): Promise<FirebaseApp> {

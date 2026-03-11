@@ -1612,7 +1612,7 @@ export class AuthService {
       this.rolePasswordsState
     );
     if (!storedSignature || storedSignature !== currentSignature) {
-      this.clearRoleFlags();
+      localStorage.setItem(ROLE_PASSWORDS_SIGNATURE_KEY, currentSignature);
     }
   }
 
