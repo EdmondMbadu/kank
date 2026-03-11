@@ -604,7 +604,12 @@
 
   <!-- ===================== RÉSERVE ATTENDUE AUJOURD’HUI ===================== -->
   <div
-    class="relative mt-6 flex w-full min-w-0 max-w-screen-2xl flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+    class="relative mt-6 flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+    [ngClass]="
+      auth.isAdmin
+        ? 'w-full max-w-screen-2xl'
+        : 'mx-auto w-full max-w-2xl xl:max-w-3xl'
+    "
   >
     <h1
       class="text-xl md:text-2xl font-bold text-center mx-4 my-4 underline decoration-indigo-400/60"
@@ -614,7 +619,12 @@
 
     <div class="w-full overflow-x-auto">
       <table
-        class="min-w-[1080px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 xl:min-w-full"
+        class="text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300"
+        [ngClass]="
+          auth.isAdmin
+            ? 'min-w-[1080px] xl:min-w-full'
+            : 'min-w-full'
+        "
       >
       <thead
         class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
