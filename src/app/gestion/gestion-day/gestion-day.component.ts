@@ -33,7 +33,7 @@ export class GestionDayComponent implements OnInit {
   ) {}
   ngOnInit(): void {
     this.auth.getManagementInfo().subscribe((data) => {
-      this.managementInfo = data[0];
+      this.managementInfo = data?.[0] || {};
       this.initalizeInputs();
       this.updateReserveGraphics(this.graphicsRange);
       this.updateServeGraphics(this.graphicsRangeServe);
@@ -837,8 +837,7 @@ export class GestionDayComponent implements OnInit {
       )
       .toString();
 
-    if (this.auth.managementInfo.reserve !== undefined)
-      this.maxRange = this.auth.managementInfo.reserve.length;
+    this.maxRange = Object.keys(this.managementInfo?.reserve || {}).length;
 
     this.dailyBankFranc =
       this.dailyBankFranc === undefined ? '0' : this.dailyBankFranc;
@@ -1392,7 +1391,7 @@ export class GestionDayComponent implements OnInit {
     };
   }
   sortKeysAndValuesReserve(time: number): [string[], string[]] {
-    const dailyReimbursement = this.auth.managementInfo.reserve;
+    const dailyReimbursement = this.managementInfo?.reserve || {};
 
     // Aggregating values by day
     const aggregatedData: { [key: string]: number } = {};
@@ -1422,7 +1421,7 @@ export class GestionDayComponent implements OnInit {
   }
 
   sortKeysAndValuesServe(time: number) {
-    const dailyReimbursement = this.auth.managementInfo.moneyGiven;
+    const dailyReimbursement = this.managementInfo?.moneyGiven || {};
 
     // Aggregating values by day
     const aggregatedData: { [key: string]: number } = {};
