@@ -1,252 +1,392 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex flex-col sm:flex-row items-center justify-center text-center container mx-auto m-12">
-    <h1 class="text-2xl md:text-4xl mb-4 sm:mb-0 sm:mr-10">Transformez en Client Complet</h1>
-    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center" routerLink="/info-register">
-        Info Client Enregistrer
-    </button>
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<div class="flex container justify-center mx-auto">
-
-<div class="border-2 shadow border-green-800 p-12 rounded-lg">
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-     
-        <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Nom</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" [(ngModel)]="client.lastName" required>
-        </div>   
-        <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="client.middleName" required>
-        </div> 
-         
-    </div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Prenom</label>
-            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required [(ngModel)]="client.firstName">
-        </div>
-   
-       
-   
-        <div>
-            <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
-            <input  [disabled]="!this.auth.isAdmin" type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="client.phoneNumber">
-
-
+<section class="transform-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_26px_80px_-52px_rgba(5,150,105,0.55)] backdrop-blur sm:px-6"
+    >
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div class="space-y-2">
+          <span class="transform-kicker">Client complet</span>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            Transformer en client complet
+          </h1>
         </div>
 
-</div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
-            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required [(ngModel)]="client.profession">
+        <a
+          routerLink="/info-register"
+          class="transform-secondary-button"
+        >
+          Infos clients enregistrés
+        </a>
+      </div>
+    </div>
+
+    <div class="mx-auto w-full max-w-4xl space-y-5">
+        <div class="transform-card p-4 sm:p-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+                Informations du client
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Vérifiez les données principales avant l’activation.
+              </p>
+            </div>
+            <span class="transform-step">Profil</span>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="transform-label">Nom</span>
+              <input
+                type="text"
+                id="lastName"
+                class="transform-input"
+                placeholder="Nkokori"
+                [(ngModel)]="client.lastName"
+              />
+            </label>
+
+            <label class="space-y-2">
+              <span class="transform-label">Postnom</span>
+              <input
+                type="text"
+                id="middleName"
+                class="transform-input"
+                [(ngModel)]="client.middleName"
+              />
+            </label>
+
+            <label class="space-y-2">
+              <span class="transform-label">Prénom</span>
+              <input
+                type="text"
+                id="firstName"
+                class="transform-input"
+                placeholder="Rebecca"
+                [(ngModel)]="client.firstName"
+              />
+            </label>
+
+            <label class="space-y-2">
+              <span class="transform-label">Téléphone</span>
+              <input
+                [disabled]="!auth.isAdmin"
+                type="tel"
+                id="phone"
+                class="transform-input"
+                placeholder="0893258653"
+                [(ngModel)]="client.phoneNumber"
+              />
+            </label>
+
+            <label class="space-y-2">
+              <span class="transform-label">Profession</span>
+              <input
+                type="text"
+                id="profession"
+                class="transform-input"
+                placeholder="Vendeuse"
+                [(ngModel)]="client.profession"
+              />
+            </label>
+
+            <label class="space-y-2">
+              <span class="transform-label">Capital (FC)</span>
+              <input
+                type="text"
+                id="bcapital"
+                class="transform-input"
+                placeholder="50000"
+                [(ngModel)]="client.businessCapital"
+              />
+            </label>
+
+            <label class="space-y-2 sm:col-span-2">
+              <span class="transform-label">Adresse domicile</span>
+              <input
+                type="text"
+                id="address"
+                class="transform-input"
+                placeholder="Kimayala 41 Mont-Ngafula"
+                [(ngModel)]="client.homeAddress"
+              />
+            </label>
+
+            <label class="space-y-2 sm:col-span-2">
+              <span class="transform-label">Adresse business</span>
+              <input
+                type="text"
+                id="baddress"
+                class="transform-input"
+                placeholder="Kimayala 41 Mont-Ngafula"
+                [(ngModel)]="client.businessAddress"
+              />
+            </label>
+          </div>
         </div>
-        <div>
-            <label for="bcapital" class="block mb-2 text-sm font-medium text-gray-900 "> Captial (FC)</label>
-            <input type="text" id="bcapital" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="50000" required [(ngModel)]="client.businessCapital">
-        </div>   
-         
-    </div>
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 "> Addresse Domicile</label>
-        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.homeAddress">
-    </div> 
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Address Business</label>
-        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.businessAddress">
-    </div> 
 
-   
-    
+        <div class="transform-card p-4 sm:p-6">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+                Paramètres du cycle
+              </h2>
+              <p class="mt-1 text-sm text-slate-500">
+                Définissez le jour de paiement, l’agent et les montants.
+              </p>
+            </div>
+            <span class="transform-step">Cycle</span>
+          </div>
 
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="transform-label text-red-700">Jour de paiement</span>
+              <select
+                id="paymentDay"
+                [(ngModel)]="client.paymentDay"
+                class="transform-input"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="'Monday'">Lundi</option>
+                <option [ngValue]="'Tuesday'">Mardi</option>
+                <option [ngValue]="'Wednesday'">Mercredi</option>
+                <option [ngValue]="'Thursday'">Jeudi</option>
+                <option [ngValue]="'Friday'">Vendredi</option>
+                <option [ngValue]="'Saturday'">Samedi</option>
+              </select>
+            </label>
 
-    <!-- <div class="mb-6">
-        <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
-        <select id="applicationFee" [(ngModel)]="client.applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " disabled >
-        <option selected>Choose</option>
-        <option [ngValue]="0">FC 0</option>
-        <option [ngValue]="5000">FC 5000</option>
-        <option [ngValue]="10000">FC 10,000</option>
-        <option [ngValue]="20000">FC 20,000</option>
-        <option [ngValue]="30000">FC 30,000</option>
-        <option [ngValue]="">Autre Montant </option>
-        </select>
-    </div> -->
+            <label class="space-y-2">
+              <span class="transform-label text-red-700">Agent</span>
+              <select
+                [disabled]="client.debtCycle !== '1' && !auth.isAdmin"
+                id="agent"
+                [(ngModel)]="client.agent"
+                class="transform-input"
+              >
+                <option selected>Choisir</option>
+                <option *ngFor="let em of employees" [ngValue]="em.uid">
+                  {{ em.firstName }} {{ em.middleName }} {{ em.lastName }}
+                </option>
+              </select>
+            </label>
 
-    <!-- <div class="mb-6">
-        <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
-        <select id="memberFee" [(ngModel)]="client.membershipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " disabled>
-        <option selected>Choose</option>
-        <option [ngValue]="0">FC 0</option>
-        <option [ngValue]="5000">FC 5000</option>
-        <option [ngValue]="10000">FC 10,000</option>
-        <option [ngValue]="20000">FC 20,000</option>
-        <option [ngValue]="30000">FC 30,000</option>
-        <option [ngValue]="">Autre Montant </option>
-        </select>
-    </div> -->
-<!--   
-    <div class="mb-6">
-        <label for="savings" class="block mb-2 text-sm font-medium text-gray-900">Epargnes</label>
-        <select id="savings"[(ngModel)]="client.savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "disabled>
-            <option [ngValue]="0">FC 0 </option>
-            <option [ngValue]="5000">FC 5000</option>
-            <option [ngValue]="10000">FC 10,000</option>
-            <option [ngValue]="20000">FC 20,000</option>
-            <option [ngValue]="30000">FC 30,000</option>
-            <option [ngValue]="">Autre Montant </option>
-        </select>
-    </div> -->
+            <label class="space-y-2">
+              <span class="transform-label text-red-700">Montant du prêt</span>
+              <select
+                [disabled]="!auth.isAdmin"
+                id="loanAmount"
+                [(ngModel)]="loanAmount"
+                class="transform-input"
+                (change)="displayLoanOtherAmount()"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="100000">FC 100,000</option>
+                <option [ngValue]="200000">FC 200,000</option>
+                <option [ngValue]="300000">FC 300,000</option>
+                <option [ngValue]="500000">FC 500,000</option>
+                <option [ngValue]="">Autre montant</option>
+              </select>
+            </label>
 
-    <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Jour De Paiment</label>
-        <select id="countries"[(ngModel)]="client.paymentDay"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-        <option [ngValue]="'Monday'">Lundi</option>
-        <option [ngValue]="'Tuesday'">Mardi</option>
-        <option [ngValue]="'Wednesday'">Mercredi</option>
-        <option [ngValue]="'Thursday'">Jeudi</option>
-        <option [ngValue]="'Friday'">Vendredi</option>
-        <option [ngValue]="'Saturday'">Samedi</option>
-        </select>
-    </div>
+            <label class="space-y-2">
+              <span class="transform-label">Cycle de paiement</span>
+              <select
+                id="payRange"
+                [(ngModel)]="payRange"
+                class="transform-input"
+                (change)="displayRate()"
+              >
+                <option selected>Choisir</option>
+                <option [ngValue]="4">4 semaines (1 mois)</option>
+                <option [ngValue]="8">8 semaines (2 mois)</option>
+              </select>
+            </label>
 
-    <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Agent</label>
-        <select [disabled]="client.debtCycle!=='1' && !this.auth.isAdmin"  id="countries"[(ngModel)]="client.agent"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  ">
-        <option selected>Choose</option>
-            <option *ngFor="let em of employees" [ngValue]="em.uid">{{em.firstName}} {{em.middleName}} {{em.lastName}} </option>
-     
-       
-        </select>
-    </div>
-    
-    <div class="mb-6">
-        <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant De Prêt</label>
-        <select [disabled]="!this.auth.isAdmin" id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
-        <option selected>Choose</option>
-        <option [ngValue]="100000">FC 100,000</option>
-        <option [ngValue]="200000">FC 200,000</option>
-        <option [ngValue]="300000">FC 300,000</option>
-        <option [ngValue]="500000">FC 500,000</option>
-        <option [ngValue]="">Autre Montant </option>
-        </select>
-    </div>
-    <div *ngIf="loanAmountOtherDisplay" class="mb-6">
-        <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
-        <input type="text"  [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
-    </div> 
+            <label *ngIf="loanAmountOtherDisplay" class="space-y-2 sm:col-span-2">
+              <span class="transform-label">Montant du prêt autre montant</span>
+              <input
+                type="text"
+                [(ngModel)]="loanAmount"
+                id="loanAmountOther"
+                class="transform-input"
+                placeholder="FC 20,000"
+              />
+            </label>
 
-<div class="mb-6">
-    <label for="payRange" class="block mb-2 text-sm font-medium text-gray-700">Cycle De Paiment</label> 
-    <select id="payRange"[(ngModel)]="payRange"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayRate()">
-    <option selected>Choose</option>
-    <option [ngValue]="4">4 Semains (1 mois) </option>
-    <option [ngValue]="8">8 Semaines ( 2 mois)</option>
+            <label *ngIf="rateDisplay" class="space-y-2">
+              <span class="transform-label text-red-700">Taux d'intérêt</span>
+              <input
+                [disabled]="!auth.isAdmin"
+                type="text"
+                id="rate"
+                class="transform-input"
+                placeholder="Taux"
+                [(ngModel)]="interestRate"
+              />
+            </label>
 
-    </select>
-</div>
+            <label *ngIf="amountToPayDisplay" class="space-y-2">
+              <span class="transform-label text-red-700">Montant à payer</span>
+              <input
+                [disabled]="!auth.isAdmin"
+                type="text"
+                id="amountToPay"
+                class="transform-input"
+                placeholder="FC"
+                [(ngModel)]="amountToPay"
+              />
+            </label>
 
-<div  *ngIf="rateDisplay" class="mb-6">
-    <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Taux D'interet</label> 
-    <input [disabled]="!this.auth.isAdmin" type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="interestRate" required  [(ngModel)]="interestRate">
+            <label *ngIf="debtCycleDisplay" class="space-y-2 sm:col-span-2">
+              <span class="transform-label text-red-700">Période du cycle</span>
+              <input
+                [disabled]="!auth.isAdmin"
+                type="text"
+                id="debtCycle"
+                class="transform-input"
+                [(ngModel)]="debtCycleStartDate+' to '+debtCycleEndDate"
+              />
+            </label>
+          </div>
+        </div>
 
-  
-</div>
-<div  *ngIf="amountToPayDisplay" class="mb-6">
-    <label for="rate" class="block mb-2 text-sm font-medium text-red-700">Montant A Payer</label> 
-    <input [disabled]="!this.auth.isAdmin" type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="amountToPay">  
-</div>
-<div  *ngIf="debtCycleDisplay" class="mb-6">
-    <label for="debtCycle" class="block mb-2 text-sm font-medium text-red-700">Period De Cycle De Paiment</label> 
-    <input [disabled]="!this.auth.isAdmin" type="text" id="rate" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder=" FC amountToPay" required  [(ngModel)]="debtCycleStartDate+' to '+debtCycleEndDate">  
-</div>
-
-  <!-- Display Max Allowed Lending Amount -->
-  <div  class="border-2 shadow border-blue-600 p-6 rounded-lg my-6">
-    <h2 class="text-lg font-bold text-blue-700">Montant Maximum de Prêt Autorisé</h2>
-    <p class="text-gray-900 font-medium text-xl mt-2">
-        {{ maxLoanAmount| number }} FC
-    </p>
-</div>
-
-<div class="flex flex-col md:flex-row lg:space-y-0 space-y-4 lg:space-x-4 space-x-0">
-    <button  class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center" routerLink="/info-register">Annuler</button>
-    <button class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="initiateClientNewDebtCycle()">Soumettre</button>
-</div>
-
-</div>
-
-
-</div>
-
-
-
-
-
-<div *ngIf="showConfirmation" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-lg w-full max-w-md md:max-w-lg text-sm p-6">
-      
-      <h2 class="text-lg font-semibold text-red-700 mb-4 text-center">
-        ⚠️ Confirmation d'Enregistrement
-      </h2>
-  
-      <p class="mb-4 text-gray-700">
-        Vous allez emprunté {{this.loanAmount}} FC a {{this.client.firstName}} {{this.client.middleName}} {{this.client.lastName}}. Voulez-vous quand même continuer ?
-      </p>
-  
-      <div class="mb-4">
-        <p class="text-red-600 font-semibold mb-2">Avant de continuer, veuillez confirmer que :</p>
-        <ul class="list-disc list-inside space-y-2 text-gray-800">
-          <li>
-            <strong>L'identité du client est réelle, et bien connu</strong> : Pas de faux noms, numéros ou photos.L’agent confirme connaître le domicile et le lieu de travail du client.
-          </li>
-          <li><strong>Le montant donné au client est exact</strong> et correspond à celui enregistré dans le système.</li>
-        
-        
-          <li>
-            <strong>Le client n’est pas un membre de votre famille ou un proche :</strong>
-            Il est strictement interdit d'enregistrer des personnes avec lesquelles vous avez un lien personnel.
-          </li>
-          <li>
-            <strong>En cas de non-remboursement prolongé:</strong>
-            Le client pourra être arrêté par la police jusqu’à l’acquittement total de sa dette.
-          </li>
-         
-        </ul>
-        <p class="mt-4 text-sm text-red-600 font-medium">
-            Toute violation de ces règles peut entraîner des sanctions graves, y compris des poursuites judiciaires et une peine de prison.
+        <div class="transform-actions">
+          <p class="text-sm leading-6 text-slate-500 sm:max-w-xl">
+            Vérifiez le profil, l’agent et les montants avant la transformation.
           </p>
-      </div>
-  
-      <div class="mt-4 mb-2 flex items-center">
-        <input [(ngModel)]="isConfirmed" type="checkbox" id="confirmCheck" class="mr-2 w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
-        <label for="confirmCheck" class="text-gray-800 text-sm">
-          Je confirme avoir respecté toutes les règles ci-dessus.
-        </label>
-      </div>
-  
-      <div class="mt-4 flex justify-between">
-        <button (click)="toggle('showConfirmation')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded">
-          Annuler
-        </button>
-        <button [disabled]="!isConfirmed" (click)="submitFullClient()"  class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50">
-          Continuer
-        </button>
-      </div>
-  
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <a
+              routerLink="/info-register"
+              class="transform-cancel-button"
+            >
+              Annuler
+            </a>
+            <button
+              class="transform-danger-button"
+              (click)="initiateClientNewDebtCycle()"
+            >
+              Soumettre
+            </button>
+          </div>
+        </div>
+        <div class="transform-card p-5">
+          <h2 class="text-base font-semibold text-slate-900">
+            Montant maximum autorisé
+          </h2>
+          <p class="mt-3 text-2xl font-semibold text-blue-700">
+            {{ maxLoanAmount | number }} FC
+          </p>
+        </div>
     </div>
   </div>
-  
+</section>
 
-  <div *ngIf="isLoading" class="fixed inset-0 flex items-center justify-center z-50 bg-opacity-50 bg-gray-800">
-    <div role="status" class="flex flex-col items-center">
-      <svg aria-hidden="true" class="w-12 h-12 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-      </svg>
-      <span class="sr-only">Chargement...</span>
-      <div class="mt-2 text-white">Traitement de votre demande...</div>
+<div
+  *ngIf="showConfirmation"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+>
+  <div
+    class="w-full max-w-md rounded-[30px] border border-white/70 bg-white p-6 shadow-2xl md:max-w-lg"
+  >
+    <h2 class="text-center text-lg font-semibold text-red-700">
+      Confirmation d'enregistrement
+    </h2>
+
+    <p class="mt-4 text-sm leading-6 text-slate-700">
+      Vous allez prêter <strong>{{ loanAmount }}</strong> FC à
+      <strong>{{ client.firstName }} {{ client.middleName }} {{ client.lastName }}</strong>.
+      Voulez-vous quand même continuer ?
+    </p>
+
+    <div class="mt-5 rounded-2xl border border-red-100 bg-red-50/70 p-4">
+      <p class="mb-3 text-sm font-semibold text-red-700">
+        Avant de continuer, veuillez confirmer que :
+      </p>
+      <ul class="space-y-2 text-sm leading-6 text-slate-700">
+        <li>
+          L'identité du client est réelle et bien connue.
+        </li>
+        <li>
+          Le montant donné au client est exact et correspond à celui enregistré dans le système.
+        </li>
+        <li>
+          Le client n’est pas un membre de votre famille ou un proche.
+        </li>
+        <li>
+          En cas de non-remboursement prolongé, le client pourra être arrêté par la police jusqu’à l’acquittement total de sa dette.
+        </li>
+      </ul>
+      <p class="mt-4 text-sm font-medium text-red-700">
+        Toute violation de ces règles peut entraîner des sanctions graves.
+      </p>
+    </div>
+
+    <label class="mt-5 flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <input
+        [(ngModel)]="isConfirmed"
+        type="checkbox"
+        id="confirmCheck"
+        class="mt-0.5 h-5 w-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+      />
+      <span class="text-sm leading-6 text-slate-700">
+        Je confirme avoir respecté toutes les règles ci-dessus.
+      </span>
+    </label>
+
+    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-between">
+      <button
+        (click)="toggle('showConfirmation')"
+        class="transform-cancel-button justify-center"
+      >
+        Annuler
+      </button>
+      <button
+        [disabled]="!isConfirmed"
+        (click)="submitFullClient()"
+        class="transform-primary-button justify-center disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Continuer
+      </button>
     </div>
   </div>
+</div>
+
+<div
+  *ngIf="isLoading"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 px-4 backdrop-blur-sm"
+>
+  <div
+    role="status"
+    class="flex min-w-[220px] flex-col items-center rounded-[28px] border border-white/10 bg-slate-900/90 px-8 py-7 text-center shadow-2xl"
+  >
+    <svg
+      aria-hidden="true"
+      class="h-12 w-12 animate-spin text-slate-300 fill-emerald-500"
+      viewBox="0 0 100 101"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+        fill="currentColor"
+      />
+      <path
+        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+        fill="currentFill"
+      />
+    </svg>
+    <span class="sr-only">Chargement...</span>
+    <div class="mt-3 text-sm font-medium text-white">
+      Traitement de votre demande...
+    </div>
+  </div>
+</div>
