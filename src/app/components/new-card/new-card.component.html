@@ -1,75 +1,241 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" [currentNewClientCard]="true"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-2xl md:text-4xl mr-10">Nouveau Client Carte</h1>
-    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info-card">Client Info Carte</button>
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+  [currentNewClientCard]="true"
+></app-navbar>
 
-<div class="flex container justify-center mx-auto">
-
-<div class="border-2 shadow border-green-800 p-12 rounded-lg">
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
-            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" required [(ngModel)]="lastName">
+<section class="new-card-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-6xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_24px_80px_-48px_rgba(5,150,105,0.65)] backdrop-blur sm:px-6"
+    >
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div class="space-y-2">
+          <span
+            class="inline-flex w-fit items-center rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700"
+          >
+            Carte client
+          </span>
+          <div class="space-y-1">
+            <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              Nouveau client carte
+            </h1>
+            <p class="max-w-2xl text-sm leading-6 text-slate-600">
+              Renseignez les informations essentielles. La fiche reste compacte
+              sur téléphone et garde une lecture nette sur grand écran.
+            </p>
+          </div>
         </div>
-        <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName" required>
-        </div>   
-         
+
+        <div class="flex flex-wrap gap-3">
+          <a
+            routerLink="/client-info-card"
+            class="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-50"
+          >
+            Client info carte
+          </a>
+          <a
+            routerLink="/client-info"
+            class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+          >
+            Annuler
+          </a>
+        </div>
+      </div>
     </div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-            <div>
-                <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Prenom</label>
-                <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="firstName" required>
-            </div>   
-           
-       
-            <div>
-                <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
-                <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="phoneNumber">
 
+    <div class="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_320px]">
+      <div
+        class="rounded-[30px] border border-white/70 bg-white/95 p-4 shadow-[0_30px_90px_-56px_rgba(15,23,42,0.45)] backdrop-blur sm:p-6"
+      >
+        <div class="mb-5 flex items-start justify-between gap-3">
+          <div class="space-y-1">
+            <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+              Informations du client
+            </h2>
+            <p class="text-sm text-slate-500">
+              Les champs ci-dessous servent a creer la nouvelle carte client.
+            </p>
+          </div>
+          <span
+            class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"
+          >
+            Formulaire
+          </span>
+        </div>
 
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="space-y-2">
+            <span class="field-label">Nom</span>
+            <input
+              type="text"
+              id="first_name"
+              class="field-input"
+              [(ngModel)]="lastName"
+            />
+          </label>
+
+          <label class="space-y-2">
+            <span class="field-label">Postnom</span>
+            <input
+              type="text"
+              id="last_name"
+              class="field-input"
+              [(ngModel)]="middleName"
+            />
+          </label>
+
+          <label class="space-y-2">
+            <span class="field-label">Prenom</span>
+            <input
+              type="text"
+              id="firstName"
+              class="field-input"
+              [(ngModel)]="firstName"
+            />
+          </label>
+
+          <label class="space-y-2">
+            <span class="field-label">Telephone</span>
+            <input
+              type="tel"
+              id="phone"
+              class="field-input"
+              placeholder="0990000000"
+              [(ngModel)]="phoneNumber"
+            />
+          </label>
+
+          <label class="space-y-2 sm:col-span-2">
+            <span class="field-label">Profession</span>
+            <input
+              type="text"
+              id="profession"
+              class="field-input"
+              placeholder="Vendeuse"
+              [(ngModel)]="profession"
+            />
+          </label>
+
+          <label class="space-y-2 sm:col-span-2">
+            <span class="field-label">Adresse domicile</span>
+            <input
+              type="text"
+              id="address"
+              class="field-input"
+              placeholder="Kimayala 41 Mont-Ngafula"
+              [(ngModel)]="homeAddress"
+            />
+          </label>
+
+          <label class="space-y-2 sm:col-span-2">
+            <span class="field-label">Adresse business</span>
+            <input
+              type="text"
+              id="baddress"
+              class="field-input"
+              placeholder="Kimayala 41 Mont-Ngafula"
+              [(ngModel)]="businessAddress"
+            />
+          </label>
+
+          <label class="space-y-2 sm:col-span-2">
+            <span class="field-label">Montant minimum a payer</span>
+            <input
+              type="text"
+              id="amountToPay"
+              class="field-input"
+              placeholder="10000"
+              [(ngModel)]="amountToPay"
+            />
+          </label>
+        </div>
+
+        <div
+          class="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p class="text-xs leading-5 text-slate-500 sm:max-w-sm">
+            Verifiez le nom, le telephone et le montant minimum avant la
+            creation de la carte.
+          </p>
+
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <a
+              routerLink="/client-info"
+              class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              Annuler
+            </a>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_30px_-20px_rgba(4,120,87,0.9)] transition hover:bg-emerald-800"
+              (click)="addNewCardClient()"
+            >
+              Soumettre
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="space-y-4">
+        <div
+          class="rounded-[30px] border border-white/70 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 px-5 py-6 text-white shadow-[0_30px_90px_-52px_rgba(4,120,87,0.95)]"
+        >
+          <div class="flex flex-col items-center text-center">
+            <div
+              class="flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-white/12 text-2xl font-semibold uppercase tracking-[0.2em]"
+            >
+              {{ clientInitials }}
             </div>
+            <div class="mt-4 space-y-1">
+              <h3 class="text-lg font-semibold">{{ clientDisplayName }}</h3>
+              <p class="text-sm text-emerald-50/85">
+                {{ profession || 'Profession a renseigner' }}
+              </p>
+            </div>
+          </div>
 
-    </div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
-            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required [(ngModel)]="profession">
+          <div class="mt-5 grid gap-3 text-sm">
+            <div class="preview-row">
+              <span class="preview-label">Telephone</span>
+              <span class="preview-value">{{ phoneNumber || 'Non renseigne' }}</span>
+            </div>
+            <div class="preview-row">
+              <span class="preview-label">Montant minimum</span>
+              <span class="preview-value">{{ amountPreview }}</span>
+            </div>
+            <div class="preview-row">
+              <span class="preview-label">Adresse business</span>
+              <span class="preview-value">{{ businessAddress || 'Non renseignee' }}</span>
+            </div>
+          </div>
         </div>
-       
-         
+
+        <div
+          class="rounded-[26px] border border-slate-200 bg-white/95 p-5 shadow-[0_24px_60px_-52px_rgba(15,23,42,0.8)]"
+        >
+          <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Rappel
+          </h3>
+          <div class="mt-4 space-y-3 text-sm text-slate-600">
+            <div class="flex items-start gap-3">
+              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+              <p>Le montant minimum doit etre un nombre superieur a zero.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+              <p>Le client sera redirige vers la fiche carte apres creation.</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+              <p>Le premier versement du jour reprend le montant minimum saisi.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Adresse Domicile</label>
-        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="homeAddress">
-    </div> 
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Addresse Business </label>
-        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="businessAddress">
-    </div> 
-
-    
-   
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Montant A Payer </label>
-        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="10000" required [(ngModel)]="amountToPay">
-    </div> 
-
-
-
-
-
-
-
-
-   
-<button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info">Annuler</button>
-    <button class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="addNewCardClient()">Soumettre</button>
-</div>
-
-
-</div>
-
-
+  </div>
+</section>

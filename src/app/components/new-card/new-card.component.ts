@@ -35,6 +35,35 @@ export class NewCardComponent implements OnInit {
 
   amountToPay: string = '';
 
+  get clientDisplayName(): string {
+    const parts = [this.firstName, this.middleName, this.lastName]
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return parts.length ? parts.join(' ') : 'Client a creer';
+  }
+
+  get clientInitials(): string {
+    const parts = [this.firstName, this.middleName, this.lastName]
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (!parts.length) {
+      return 'NC';
+    }
+
+    return parts
+      .slice(0, 2)
+      .map((value) => value.charAt(0))
+      .join('')
+      .toUpperCase();
+  }
+
+  get amountPreview(): string {
+    const amount = this.amountToPay.trim();
+    return amount ? `${amount} FC` : 'Non renseigne';
+  }
+
   ngOnInit(): void {}
 
   addNewCardClient() {
