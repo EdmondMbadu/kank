@@ -1,0 +1,12 @@
+:host {
+  display: block;
+  overflow-x: hidden;
+}
+
+.request-withdraw-shell {
+  min-height: calc(100vh - 72px);
+  background:
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.16), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.1), transparent 34%),
+    linear-gradient(180deg, #f4fdf8 0%, #edf5f2 100%);
+}
