@@ -1,36 +1,67 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl md:mr-4 text-center">Retrait D'Argent De Carte Par {{clientCard.firstName}} {{clientCard.middleName}} {{clientCard.lastName}}</h1>
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+></app-navbar>
 
-<div class="flex container justify-center mx-auto">
+<section class="return-card-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-4xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_26px_80px_-52px_rgba(5,150,105,0.55)] backdrop-blur sm:px-6"
+    >
+      <div class="space-y-2 text-center">
+        <span class="return-card-kicker">Restitution carte</span>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          Retrait d'argent de carte par {{ clientCard.firstName }} {{ clientCard.middleName }} {{ clientCard.lastName }}
+        </h1>
+      </div>
+    </div>
 
-<div class=" border-2 border-green-800 rounded-lg p-12">
-  
-    
+    <div class="return-card-panel p-4 sm:p-6">
+      <div class="mb-5 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+            Détails de la restitution
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Vérifiez le montant à restituer avant de confirmer.
+          </p>
+        </div>
+        <span class="return-card-step">Carte</span>
+      </div>
 
+      <div class="grid gap-4">
+        <label class="space-y-2">
+          <span class="return-card-label text-red-700">Montant à restituer</span>
+          <select
+            id="payment"
+            class="return-card-input"
+            [(ngModel)]="amountToReturnToClient"
+          >
+            <option [ngValue]="amountToReturnToClient">FC {{ amountToReturnToClient }}</option>
+          </select>
+        </label>
+      </div>
 
-
-
-
-
-<div class="mb-6">
-    <label for="payment" class="block mb-2 text-sm font-medium text-red-700">Montant à Restituer</label>
-    <select id="payment" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " [(ngModel)]="amountToReturnToClient"selected>
-    <option [ngValue]=amountToReturnToClient>FC {{amountToReturnToClient}}</option>
-
-    <!-- <option [ngValue]="">Autre Montant </option> -->
-    </select>
-</div>
-
-
-
-   
-
-<button class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal-card',id ]">Annuler</button>
-    <button  (click)="returnCLientCardMoney()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Soumettre</button>
-   
-</div>
-
-
-</div>
+      <div class="return-card-actions mt-6">
+        <p class="text-sm leading-6 text-slate-500 sm:max-w-xl">
+          Le remboursement mettra fin au cycle de la carte et enregistrera la restitution.
+        </p>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <a
+            [routerLink]="['/client-portal-card', id]"
+            class="return-card-cancel-button"
+          >
+            Annuler
+          </a>
+          <button
+            (click)="returnCLientCardMoney()"
+            class="return-card-primary-button"
+          >
+            Soumettre
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

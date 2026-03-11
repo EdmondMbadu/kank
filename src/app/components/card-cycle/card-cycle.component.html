@@ -1,71 +1,153 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'" [currentNewClientCard]="true"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-    <h1 class="text-2xl md:text-4xl mr-10">Nouveau Client Carte</h1>
-    <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/client-info-card/all">Client Info Carte</button>
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+  [currentNewClientCard]="true"
+></app-navbar>
 
-<div class="flex container justify-center mx-auto">
-
-<div class="border-2 shadow border-green-800 p-12 rounded-lg">
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-        <div>
-            <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Nom</label>
-            <input type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" required [(ngModel)]="clientCard.lastName">
+<section class="card-cycle-shell px-4 py-5 sm:px-6 lg:px-8">
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    <div
+      class="rounded-[28px] border border-emerald-100 bg-white/95 px-4 py-5 shadow-[0_26px_80px_-52px_rgba(5,150,105,0.55)] backdrop-blur sm:px-6"
+    >
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div class="space-y-2">
+          <span class="card-cycle-kicker">Nouveau cycle carte</span>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            Nouveau client carte
+          </h1>
         </div>
-        <div>
-            <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
-            <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="clientCard.middleName" required>
-        </div>   
-         
+
+        <a
+          routerLink="/client-info-card/all"
+          class="card-cycle-secondary-button"
+        >
+          Infos clients carte
+        </a>
+      </div>
     </div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
-            <div>
-                <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Prenom</label>
-                <input type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="clientCard.firstName" required>
-            </div>   
-           
-       
-            <div>
-                <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
-                <input type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="clientCard.phoneNumber">
 
-
-            </div>
-
-    </div>
-    <div class="grid gap-6 mb-6 md:grid-cols-2">
+    <div class="card-cycle-panel p-4 sm:p-6">
+      <div class="mb-5 flex items-center justify-between">
         <div>
-            <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
-            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required [(ngModel)]="clientCard.profession">
+          <h2 class="text-lg font-semibold text-slate-900 sm:text-xl">
+            Informations de la carte
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Vérifiez les données et définissez le montant du nouveau cycle.
+          </p>
         </div>
-       
-         
+        <span class="card-cycle-step">Cycle</span>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="space-y-2">
+          <span class="card-cycle-label">Nom</span>
+          <input
+            type="text"
+            id="first_name"
+            class="card-cycle-input"
+            [(ngModel)]="clientCard.lastName"
+          />
+        </label>
+
+        <label class="space-y-2">
+          <span class="card-cycle-label">Postnom</span>
+          <input
+            type="text"
+            id="last_name"
+            class="card-cycle-input"
+            [(ngModel)]="clientCard.middleName"
+          />
+        </label>
+
+        <label class="space-y-2">
+          <span class="card-cycle-label">Prénom</span>
+          <input
+            type="text"
+            id="first_name_given"
+            class="card-cycle-input"
+            [(ngModel)]="clientCard.firstName"
+          />
+        </label>
+
+        <label class="space-y-2">
+          <span class="card-cycle-label">Téléphone</span>
+          <input
+            type="tel"
+            id="phone"
+            class="card-cycle-input"
+            placeholder="0893258653"
+            [(ngModel)]="clientCard.phoneNumber"
+          />
+        </label>
+
+        <label class="space-y-2 sm:col-span-2">
+          <span class="card-cycle-label">Profession</span>
+          <input
+            type="text"
+            id="profession"
+            class="card-cycle-input"
+            placeholder="Vendeuse"
+            [(ngModel)]="clientCard.profession"
+          />
+        </label>
+
+        <label class="space-y-2 sm:col-span-2">
+          <span class="card-cycle-label">Adresse domicile</span>
+          <input
+            type="text"
+            id="address"
+            class="card-cycle-input"
+            placeholder="Kimayala 41 Mont-Ngafula"
+            [(ngModel)]="clientCard.homeAddress"
+          />
+        </label>
+
+        <label class="space-y-2 sm:col-span-2">
+          <span class="card-cycle-label">Adresse business</span>
+          <input
+            type="text"
+            id="baddress"
+            class="card-cycle-input"
+            placeholder="Kimayala 41 Mont-Ngafula"
+            [(ngModel)]="clientCard.businessAddress"
+          />
+        </label>
+
+        <label class="space-y-2 sm:col-span-2">
+          <span class="card-cycle-label">Montant à payer</span>
+          <input
+            type="text"
+            id="amountToPay"
+            class="card-cycle-input"
+            placeholder="10000"
+            [(ngModel)]="amountToPay"
+          />
+        </label>
+      </div>
+
+      <div class="card-cycle-actions mt-6">
+        <p class="text-sm leading-6 text-slate-500 sm:max-w-xl">
+          Vérifiez les informations du client et le montant minimum avant de lancer le nouveau cycle.
+        </p>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <a
+            [routerLink]="['/client-portal-card/', id]"
+            class="card-cycle-cancel-button"
+          >
+            Annuler
+          </a>
+          <button
+            class="card-cycle-primary-button"
+            (click)="addNewCardClient()"
+          >
+            Soumettre
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Adresse Domicile</label>
-        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="clientCard.homeAddress">
-    </div> 
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Addresse Business </label>
-        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="clientCard.businessAddress">
-    </div> 
-
-    
-   
-    <div class="mb-6">
-        <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Montant A Payer </label>
-        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="10000" required [(ngModel)]="amountToPay">
-    </div> 
-
-
-
-
-
-   
-<button  class="text-white m-4  bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " [routerLink]="['/client-portal-card/',id ]">Annuler</button>
-    <button class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "(click)="addNewCardClient()">Soumettre</button>
-</div>
-
-
-</div>
-
+  </div>
+</section>

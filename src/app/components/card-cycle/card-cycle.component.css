@@ -1,0 +1,154 @@
+:host {
+  display: block;
+  overflow-x: hidden;
+}
+
+.card-cycle-shell {
+  min-height: calc(100vh - 72px);
+  background:
+    radial-gradient(circle at top left, rgba(16, 185, 129, 0.16), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.1), transparent 34%),
+    linear-gradient(180deg, #f4fdf8 0%, #edf5f2 100%);
+}
+
+.card-cycle-kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  padding: 0.32rem 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #047857;
+}
+
+.card-cycle-panel {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 30px 90px -56px rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(12px);
+}
+
+.card-cycle-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.card-cycle-input {
+  width: 100%;
+  border: 1px solid #dbe4e9;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 0.88rem 0.95rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.card-cycle-input::placeholder {
+  color: #94a3b8;
+}
+
+.card-cycle-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+  transform: translateY(-1px);
+}
+
+.card-cycle-step {
+  border-radius: 9999px;
+  background: #f1f5f9;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.card-cycle-primary-button,
+.card-cycle-secondary-button,
+.card-cycle-cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.8rem 1.15rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card-cycle-primary-button {
+  background: #047857;
+  color: #fff;
+  box-shadow: 0 18px 30px -20px rgba(4, 120, 87, 0.95);
+}
+
+.card-cycle-primary-button:hover {
+  background: #065f46;
+}
+
+.card-cycle-secondary-button {
+  border: 1px solid #a7f3d0;
+  background: #fff;
+  color: #065f46;
+}
+
+.card-cycle-secondary-button:hover {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.card-cycle-cancel-button {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.card-cycle-cancel-button:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.card-cycle-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .card-cycle-actions {
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 640px) {
+  .card-cycle-panel {
+    border-radius: 24px;
+  }
+
+  .card-cycle-input {
+    border-radius: 16px;
+    padding: 0.82rem 0.9rem;
+  }
+}
