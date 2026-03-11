@@ -2553,82 +2553,99 @@
 <!-- ==== CLIENT QUICK VIEW MODAL ==== -->
 <div
   *ngIf="showClientModal && activeClient"
-  class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4"
+  class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 sm:p-6"
   aria-modal="true"
   role="dialog"
   (click)="closeClientModal()"
 >
   <div
-    class="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900"
+    class="relative w-full max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-[0_32px_80px_-28px_rgba(15,23,42,0.65)] dark:bg-slate-900"
     (click)="$event.stopPropagation()"
   >
-    <div class="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95">
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex min-w-0 items-center gap-4">
-          <ng-container *ngIf="activeClient.profilePicture?.downloadURL; else modalClientInitials">
-            <img
-              [src]="activeClient.profilePicture?.downloadURL"
-              alt="Photo client"
-              class="h-16 w-16 rounded-full object-cover ring-4 ring-emerald-200"
-            />
-          </ng-container>
-          <ng-template #modalClientInitials>
-            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-lg font-semibold text-emerald-700 ring-4 ring-emerald-200">
-              {{ clientInitials(activeClient) }}
-            </div>
-          </ng-template>
+    <button
+      type="button"
+      class="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm ring-1 ring-slate-200 transition hover:text-slate-800 dark:bg-slate-800/90 dark:text-slate-300 dark:ring-slate-700 dark:hover:text-white"
+      (click)="closeClientModal()"
+      aria-label="Fermer"
+    >
+      ✕
+    </button>
 
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <h3 class="truncate text-xl font-semibold text-slate-900 dark:text-slate-100">
-                {{ activeClient.firstName }} {{ activeClient.lastName }} {{ activeClient.middleName }}
-              </h3>
-              <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                {{ activeClient.locationName || "Site" }}
-              </span>
-              <span
-                *ngIf="isClientQuitte(activeClient)"
-                class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800"
-              >
-                À l'écart
-              </span>
-            </div>
-            <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <ng-container *ngIf="auth.isAdmin; else clientPhoneReadonly">
-                <button
-                  type="button"
-                  class="rounded-full border border-slate-200 px-3 py-1 text-left hover:border-emerald-300 hover:text-emerald-700 dark:border-slate-700 dark:hover:border-emerald-500"
-                  (click)="startPhoneEdit()"
-                >
-                  {{ displayPhone(activeClient.phoneNumber) }}
-                </button>
-              </ng-container>
-              <ng-template #clientPhoneReadonly>
-                <span>{{ displayPhone(activeClient.phoneNumber) }}</span>
-              </ng-template>
-              <span
-                *ngIf="activeClient.creditScore != null"
-                class="rounded-full px-2 py-1 text-[11px] font-semibold shadow-sm"
-                [ngStyle]="creditBadgeStyle(activeClient.creditScore)"
-              >
-                Score {{ activeClient.creditScore }}
-              </span>
-            </div>
-          </div>
+    <div class="bg-gradient-to-b from-emerald-50 via-white to-white px-5 pb-4 pt-5 text-center dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 sm:px-6 sm:pt-4">
+      <ng-container *ngIf="activeClient.profilePicture?.downloadURL; else modalClientInitials">
+        <img
+          [src]="activeClient.profilePicture?.downloadURL"
+          alt="Photo client"
+          class="mx-auto h-20 w-20 rounded-full object-cover ring-4 ring-white shadow-xl sm:h-24 sm:w-24"
+        />
+      </ng-container>
+      <ng-template #modalClientInitials>
+        <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-xl font-semibold text-emerald-700 ring-4 ring-white shadow-xl sm:h-24 sm:w-24">
+          {{ clientInitials(activeClient) }}
+        </div>
+      </ng-template>
+
+      <div class="mt-3 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            {{ activeClient.locationName || "Site" }}
+          </span>
+          <span
+            *ngIf="isClientQuitte(activeClient)"
+            class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800"
+          >
+            À l'écart
+          </span>
+          <span
+            *ngIf="activeClient.creditScore != null"
+            class="rounded-full px-3 py-1 text-[11px] font-semibold shadow-sm"
+            [ngStyle]="creditBadgeStyle(activeClient.creditScore)"
+          >
+            Score {{ activeClient.creditScore }}
+          </span>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2">
+        <div>
+          <h3 class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
+            {{ activeClient.firstName }} {{ activeClient.lastName }}
+          </h3>
+          <p
+            *ngIf="activeClient.middleName"
+            class="mt-0.5 text-sm text-slate-500 dark:text-slate-400"
+          >
+            {{ activeClient.middleName }}
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <ng-container *ngIf="auth.isAdmin; else clientPhoneReadonly">
+            <button
+              type="button"
+              class="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-500"
+              (click)="startPhoneEdit()"
+            >
+              {{ displayPhone(activeClient.phoneNumber) }}
+            </button>
+          </ng-container>
+          <ng-template #clientPhoneReadonly>
+            <span class="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              {{ displayPhone(activeClient.phoneNumber) }}
+            </span>
+          </ng-template>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-2 pt-0.5">
           <button
             *ngIf="activeClient.trackingId"
             type="button"
-            class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+            class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
             (click)="openActiveClientPortal()"
           >
             Ouvrir le portail
           </button>
           <button
             type="button"
-            class="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
             (click)="closeClientModal()"
           >
             Fermer
@@ -2638,38 +2655,40 @@
 
       <div
         *ngIf="auth.isAdmin && phoneEditOpen"
-        class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center"
+        class="mx-auto mt-3 max-w-md rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm dark:border-slate-700 dark:bg-slate-800"
       >
-        <input
-          [(ngModel)]="phoneEditValue"
-          type="text"
-          placeholder="Nouveau numéro"
-          class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-        />
-        <button
-          type="button"
-          class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-300"
-          [disabled]="phoneEditSaving"
-          (click)="updateClientPhoneNumber()"
-        >
-          {{ phoneEditSaving ? "Mise à jour..." : "Mettre à jour" }}
-        </button>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            [(ngModel)]="phoneEditValue"
+            type="text"
+            placeholder="Nouveau numéro"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          />
+          <button
+            type="button"
+            class="rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-300"
+            [disabled]="phoneEditSaving"
+            (click)="updateClientPhoneNumber()"
+          >
+            {{ phoneEditSaving ? "Mise à jour..." : "Mettre à jour" }}
+          </button>
+        </div>
       </div>
 
-      <div *ngIf="allActivePhones.length > 1" class="mt-3">
+      <div *ngIf="allActivePhones.length > 1" class="mt-4">
         <button
           type="button"
           class="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
           (click)="togglePhoneHistory()"
         >
-          Numéros précédents ({{ allActivePhones.length }})
+          Voir les anciens numéros ({{ allActivePhones.length }})
         </button>
         <div
           *ngIf="showPhoneHistory"
-          class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+          class="mx-auto mt-2 max-w-md rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-xs text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
         >
-          <ul class="space-y-1">
-            <li *ngFor="let phone of allActivePhones; let i = index" class="flex items-center gap-2">
+          <ul class="space-y-2">
+            <li *ngFor="let phone of allActivePhones; let i = index" class="flex items-center justify-between gap-3">
               <a [href]="'tel:' + phone" class="font-mono hover:underline">
                 {{ displayPhone(phone) }}
               </a>
@@ -2685,85 +2704,85 @@
       </div>
     </div>
 
-    <div class="space-y-6 px-5 py-5">
+    <div class="space-y-4 px-5 pb-5 sm:px-6 sm:pb-6">
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/70">
-          <p class="text-xs uppercase tracking-wide text-slate-500">Dette empruntée</p>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Dette empruntée</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
             {{ formatAmount(activeClient.loanAmount) }} FC
           </p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/70">
-          <p class="text-xs uppercase tracking-wide text-slate-500">Montant à payer</p>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Montant à payer</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
             {{ formatAmount(activeClient.amountToPay) }} FC
           </p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/70">
-          <p class="text-xs uppercase tracking-wide text-slate-500">Montant perçu</p>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Montant perçu</p>
           <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
             {{ formatAmount(activeClient.amountPaid) }} FC
           </p>
         </div>
         <div class="rounded-2xl border-2 border-rose-300 bg-rose-50 p-4 dark:border-rose-700 dark:bg-rose-950/30">
-          <p class="text-xs uppercase tracking-wide text-rose-700 dark:text-rose-300">Dette restante</p>
+          <p class="text-[11px] uppercase tracking-[0.24em] text-rose-700 dark:text-rose-300">Dette restante</p>
           <p class="mt-2 text-xl font-extrabold text-rose-800 dark:text-rose-200">
             {{ formatAmount(activeClient.debtLeft) }} FC
           </p>
         </div>
       </div>
 
-      <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <div class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
-          <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">
             Informations client
           </h4>
-          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <div class="mt-4 grid gap-x-5 gap-y-4 sm:grid-cols-2">
             <div>
-              <p class="text-xs uppercase tracking-wide text-slate-500">Épargne</p>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Épargne</p>
               <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ formatAmount(activeClient.savings) }} FC
               </p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-wide text-slate-500">Jour de paiement</p>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Jour de paiement</p>
               <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ activeClient.paymentDay ? displayPaymentDay(activeClient.paymentDay) : "-" }}
               </p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-wide text-slate-500">Date début dette</p>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Début dette</p>
               <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ formatDebtDate(activeClient.debtCycleStartDate) }}
               </p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-wide text-slate-500">Date fin dette</p>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Fin dette</p>
               <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ formatDebtDate(activeClient.debtCycleEndDate) }}
               </p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-wide text-slate-500">Profession</p>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Profession</p>
               <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ activeClient.profession || "-" }}
               </p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-wide text-slate-500">Date d'inscription</p>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Inscription</p>
               <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ formatDebtDate(activeClient.dateJoined) }}
               </p>
             </div>
             <div class="sm:col-span-2">
-              <p class="text-xs uppercase tracking-wide text-slate-500">Adresse domicile</p>
-              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Adresse domicile</p>
+              <p class="mt-1 text-sm font-semibold leading-6 text-slate-900 dark:text-slate-100">
                 {{ activeClient.homeAddress || "-" }}
               </p>
             </div>
             <div class="sm:col-span-2">
-              <p class="text-xs uppercase tracking-wide text-slate-500">Adresse business</p>
-              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Adresse business</p>
+              <p class="mt-1 text-sm font-semibold leading-6 text-slate-900 dark:text-slate-100">
                 {{ activeClient.businessAddress || "-" }}
               </p>
             </div>
@@ -2771,13 +2790,13 @@
         </div>
 
         <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
-          <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Références à contacter
+          <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">
+            Références
           </h4>
           <div *ngIf="clientReferences(activeClient).length; else noClientReferences" class="mt-4 space-y-3">
             <div
               *ngFor="let ref of clientReferences(activeClient)"
-              class="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 dark:border-indigo-900 dark:bg-indigo-950/30"
+              class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/70"
             >
               <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {{ ref.name || "Référence" }}
@@ -2785,7 +2804,7 @@
               <a
                 *ngIf="ref.tel; else referenceRawPhone"
                 [href]="'tel:' + ref.tel"
-                class="mt-1 block text-sm text-indigo-700 hover:underline dark:text-indigo-300"
+                class="mt-1 block text-sm text-emerald-700 hover:underline dark:text-emerald-300"
               >
                 {{ ref.phone || ref.raw }}
               </a>
@@ -2805,23 +2824,23 @@
       </div>
 
       <div class="grid gap-4 xl:grid-cols-2">
-        <div class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-900 dark:bg-emerald-950/20">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
           <div class="flex items-center justify-between gap-2">
-            <h4 class="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+            <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">
               Paiements récents
             </h4>
-            <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               {{ recentClientPayments(activeClient).length }} entrée(s)
             </span>
           </div>
           <div *ngIf="recentClientPayments(activeClient).length; else noRecentPayments" class="mt-4 space-y-3">
             <div
               *ngFor="let payment of visibleRecentPayments(activeClient); let i = index"
-              class="rounded-2xl border border-emerald-100 bg-white px-4 py-3 dark:border-emerald-900 dark:bg-slate-900/80"
+              class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/70"
             >
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                     {{ i === 0 ? "Dernier paiement" : "Paiement récent" }}
                   </p>
                   <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -2836,7 +2855,7 @@
             <button
               *ngIf="hasMoreRecentPayments(activeClient)"
               type="button"
-              class="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-700 hover:border-emerald-300 hover:text-emerald-800"
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               (click)="toggleRecentPayments()"
             >
               {{ showRecentPaymentsExpanded ? "Voir moins" : "Voir plus" }}
@@ -2849,23 +2868,23 @@
           </ng-template>
         </div>
 
-        <div class="rounded-3xl border border-sky-200 bg-sky-50/60 p-5 dark:border-sky-900 dark:bg-sky-950/20">
+        <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
           <div class="flex items-center justify-between gap-2">
-            <h4 class="text-sm font-semibold text-sky-900 dark:text-slate-100">
+            <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">
               Épargnes récentes
             </h4>
-            <span class="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               {{ recentClientSavings(activeClient).length }} entrée(s)
             </span>
           </div>
           <div *ngIf="recentClientSavings(activeClient).length; else noRecentSavings" class="mt-4 space-y-3">
             <div
               *ngFor="let saving of visibleRecentSavings(activeClient); let i = index"
-              class="rounded-2xl border border-sky-100 bg-white px-4 py-3 dark:border-sky-900 dark:bg-slate-900/80"
+              class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/70"
             >
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                     {{ i === 0 ? "Dernière épargne" : "Épargne récente" }}
                   </p>
                   <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -2880,7 +2899,7 @@
             <button
               *ngIf="hasMoreRecentSavings(activeClient)"
               type="button"
-              class="rounded-full border border-sky-200 bg-white px-4 py-2 text-xs font-semibold text-sky-700 hover:border-sky-300 hover:text-sky-800"
+              class="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               (click)="toggleRecentSavings()"
             >
               {{ showRecentSavingsExpanded ? "Voir moins" : "Voir plus" }}
@@ -2896,7 +2915,7 @@
 
       <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
         <div class="flex items-center justify-between gap-2">
-          <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">
             Commentaires récents
           </h4>
           <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
