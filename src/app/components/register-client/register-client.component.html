@@ -29,8 +29,7 @@
       </div>
     </div>
 
-    <div class="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_340px]">
-      <div class="space-y-5">
+    <div class="mx-auto w-full max-w-5xl space-y-5">
         <div class="register-card p-4 sm:p-6">
           <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -581,46 +580,6 @@
             </button>
           </div>
         </div>
-      </div>
-
-      <aside class="space-y-5">
-        <div class="register-summary-panel xl:sticky xl:top-5">
-          <div class="flex flex-col items-center text-center">
-            <div class="flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-white/15 text-2xl font-semibold uppercase tracking-[0.18em] text-white shadow-inner">
-              {{ (firstName || lastName || 'CL').slice(0, 2) }}
-            </div>
-            <h3 class="mt-4 text-lg font-semibold text-white">
-              {{ firstName || 'Prénom' }} {{ middleName || '' }} {{ lastName || '' }}
-            </h3>
-            <p class="mt-1 text-sm text-emerald-50/85">
-              {{ profession || 'Profession à renseigner' }}
-            </p>
-          </div>
-
-          <div class="mt-5 space-y-3">
-            <div class="summary-row">
-              <span class="summary-label">Téléphone</span>
-              <span class="summary-value">{{ phoneNumber || 'Non renseigné' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Date prévue</span>
-              <span class="summary-value">{{ requestDate || 'Non renseignée' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Montant demandé</span>
-              <span class="summary-value">{{ loanAmount || 'Non renseigné' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Épargne</span>
-              <span class="summary-value">{{ savings || '0' }}</span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-label">Références</span>
-              <span class="summary-value">{{ references.length }}/3</span>
-            </div>
-          </div>
-        </div>
-
         <div
           *ngIf="creditworthinessScore !== null"
           class="register-card p-5"
@@ -665,7 +624,6 @@
             {{ maxLendAmount | number }} FC
           </p>
         </div>
-      </aside>
     </div>
   </div>
 </section>

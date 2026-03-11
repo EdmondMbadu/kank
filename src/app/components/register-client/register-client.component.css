@@ -142,52 +142,12 @@
   border-color: #94a3b8;
 }
 
-.register-summary-panel {
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 30px;
-  background: linear-gradient(145deg, #059669 0%, #0f766e 100%);
-  padding: 1.5rem;
-  box-shadow: 0 32px 90px -52px rgba(5, 150, 105, 0.95);
-}
-
-.summary-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
-  padding-top: 0.85rem;
-}
-
-.summary-row:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.summary-label {
-  color: rgba(236, 253, 245, 0.76);
-}
-
-.summary-value {
-  max-width: 62%;
-  text-align: right;
-  font-weight: 600;
-  color: #fff;
-}
-
-@media (max-width: 1024px) {
-  .register-summary-panel {
-    padding: 1.25rem;
-  }
-}
-
 @media (max-width: 640px) {
   .register-shell {
     padding-bottom: 2rem;
   }
 
   .register-card,
-  .register-summary-panel,
   .register-photo-panel {
     border-radius: 24px;
   }
@@ -195,15 +155,5 @@
   .register-input {
     border-radius: 16px;
     padding: 0.82rem 0.9rem;
-  }
-
-  .summary-row {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .summary-value {
-    max-width: 100%;
-    text-align: left;
   }
 }
