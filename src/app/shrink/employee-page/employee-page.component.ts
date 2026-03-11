@@ -1885,6 +1885,36 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       (_, i) => i
     );
   }
+
+  get paymentAccessGranted(): boolean {
+    return (
+      (this.code || '').trim() === (this.paymentCode || '').trim() ||
+      (this.auth.isAdmin && this.viewAsMode === 'admin')
+    );
+  }
+
+  get viewedEmployeeInitials(): string {
+    const first = (this.employee?.firstName || '').trim().charAt(0);
+    const last = (this.employee?.lastName || '').trim().charAt(0);
+    return `${first}${last}`.toUpperCase() || 'EM';
+  }
+
+  paymentEntryIndex(displayIndex: number): number {
+    return this.paymentAmounts.length - 1 - displayIndex;
+  }
+
+  paymentInvoiceUrl(displayIndex: number): string {
+    return this.employee?.paymentsPicturePath?.[this.paymentEntryIndex(displayIndex)] || '';
+  }
+
+  paymentReceiptUrl(displayIndex: number): string {
+    return this.employee?.receipts?.[this.paymentEntryIndex(displayIndex)] || '';
+  }
+
+  hasPaymentReceipt(displayIndex: number): boolean {
+    return !!this.paymentReceiptUrl(displayIndex);
+  }
+
   togglePaymentCheckVisible() {
     this.paymentCheckVisible =
       this.paymentCheckVisible === 'true' ? 'false' : 'true';
