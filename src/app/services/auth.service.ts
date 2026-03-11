@@ -245,9 +245,15 @@ export class AuthService {
     return this.afs.collection<Client>(`users/${userId}/cards/`).valueChanges();
   }
   getManagementInfoData() {
-    this.getManagementInfo().subscribe((data) => {
-      this.managementInfo = data[0];
-    });
+    this.fireauth.authState
+      .pipe(
+        switchMap((user) =>
+          user ? this.getManagementInfo() : of([])
+        )
+      )
+      .subscribe((data: any) => {
+        this.managementInfo = data?.[0] ?? {};
+      });
   }
   getAllEmployees(): Observable<Employee> {
     return this.employeesRef$;
@@ -1611,11 +1617,27 @@ export class AuthService {
   }
 
   private loadRolePasswords(): void {
-    this.afs
-      .collection('management')
-      .snapshotChanges()
-      .subscribe((actions) => {
-        if (!actions.length) return;
+    this.fireauth.authState
+      .pipe(
+        switchMap((user) =>
+          user ? this.afs.collection('management').snapshotChanges() : of([])
+        )
+      )
+      .subscribe((actions: any) => {
+        if (!actions.length) {
+          this.managementDocId = '';
+          this.rolePasswordsState = { ...this.defaultRolePasswords };
+          this.rolePasswordsSubject.next(this.rolePasswordsState);
+          this.weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
+          this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+          this.weeklyPaymentProjectionState = {
+            ...this.defaultWeeklyPaymentProjection,
+          };
+          this.weeklyPaymentProjectionSubject.next(
+            this.weeklyPaymentProjectionState
+          );
+          return;
+        }
         const action = actions[0];
         const data: any = action.payload.doc.data() || {};
         this.managementDocId = action.payload.doc.id;
