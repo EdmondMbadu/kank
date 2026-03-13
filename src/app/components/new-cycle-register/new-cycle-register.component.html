@@ -482,10 +482,10 @@
 
 <div
   *ngIf="showConfirmation"
-  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+  class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm sm:flex sm:items-center sm:justify-center"
 >
   <div
-    class="w-full max-w-md rounded-[30px] border border-white/70 bg-white p-6 shadow-2xl md:max-w-lg"
+    class="my-4 max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto rounded-[30px] border border-white/70 bg-white p-6 shadow-2xl sm:my-8 md:max-w-lg"
   >
     <h2 class="text-center text-lg font-semibold text-red-700">
       Confirmation d’enregistrement
@@ -523,7 +523,7 @@
       </span>
     </label>
 
-    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-between">
+    <div class="sticky bottom-0 mt-5 flex flex-col gap-3 border-t border-slate-100 bg-white pt-4 sm:flex-row sm:justify-between">
       <button
         (click)="toggle('showConfirmation')"
         class="cycle-cancel-button justify-center"
