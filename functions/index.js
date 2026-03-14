@@ -2085,7 +2085,7 @@ exports.sendClientRegistrationSMS = functions.firestore
       const message = `${fullName},
 Osengi niongo ya ${montant} FC. Niongo okozua yango le ${requestDate}.
 Ofuti mobongo ya frais nionso ${frais} FC. Epargnes na yo otie ezali ${savings} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850.
+En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
 Merci pona confiance na FONDATION GERVAIS`;
 
       console.log("Registration SMS message:", message);
@@ -2443,7 +2443,7 @@ exports.scheduledSendReminders = functions.pubsub
             message += `Ozali na retard makasi Mpenza. Kende Kofuta niongo.\n`;
           }
 
-          message += `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850.`+
+          message += `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.`+
           `Merci pona confiance na FONDATION GERVAIS.`;
 
           try {
@@ -2647,7 +2647,7 @@ exports.scheduledSendRemindersTesting = functions.pubsub
             message += `Ozali na retard makasi Mpenza. Kende Kofuta niongo.\n`;
           }
 
-          message += `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850.`+
+          message += `En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.`+
           `Merci pona confiance na FONDATION GERVAIS.`;
 
           try {
@@ -2790,7 +2790,7 @@ exports.sendPaymentOrSavingsUpdateSMS = functions.firestore
       // Merci pona confiance na Fondation Gervais.
         message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850.
+En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
 Merci pona confiance na FONDATION GERVAIS.`;
       }
 
@@ -2801,14 +2801,14 @@ Merci pona confiance na FONDATION GERVAIS.`;
         // {firstname}{lastname}, Obakisi epargnes na yo ya {savingsAdded} FC
           message = `${fullName}, Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850.
+En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
 Merci pona confiance na FONDATION GERVAIS.`;
         } else {
         // CASE 3: savings removed
         // {firstname}{lastname}, Olongoli epargnes na yo ya {savingsRemoved} FC
           message = `${fullName}, Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850.
+En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
 Merci pona confiance na FONDATION GERVAIS.`;
         }
       }
@@ -2822,14 +2822,14 @@ Merci pona confiance na FONDATION GERVAIS.`;
         // "Ofuti mombongo ya {paymentJustpaid} FC. Obakisi epargnes na yo ya {savingsAdded} FC"
           message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Obakisi epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850.
+En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154.
 Merci pona confiance na FONDATION GERVAIS.`;
         } else {
         // If you need a "removal" version, do:
         // "Ofuti mombongo ya {paymentJustPaid} FC. Olongoli epargnes na yo ya {savingsRemoved} FC"
           message = `${fullName}, Ofuti mombongo ya ${paymentJustPaid} FC. Olongoli epargnes na yo ya ${absoluteSavingsDiff} FC.
 Otikali na Niongo ya ${debtLeft} FC. Epargnes na yo ezali ${savingsAfter} FC.
-En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. 
+En cas de probleme ou d'erreurs benga 0825333567 to 0899401993 to 0975849850. Soki olingi koyeba efuteli nayo: kende na WhatsApp na numéro oyo +18444357154. 
 Merci pona confiance na FONDATION GERVAIS.`;
         }
       }
