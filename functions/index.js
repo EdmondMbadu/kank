@@ -3432,11 +3432,28 @@ const WA_STATES = {
   AGENT: "AGENT",
 };
 
+const WA_LANGUAGES = {
+  LINGALA: "ln",
+  FRENCH: "fr",
+};
+
 const COMPLAINT_CATEGORIES = {
-  "1": "Paiement non enregistré",
-  "2": "Montant incorrect",
-  "3": "Problème technique",
-  "4": "Autre",
+  "1": {
+    ln: "Paiement ekomama te",
+    fr: "Paiement non enregistré",
+  },
+  "2": {
+    ln: "Montant ezali malamu te",
+    fr: "Montant incorrect",
+  },
+  "3": {
+    ln: "Problème technique",
+    fr: "Problème technique",
+  },
+  "4": {
+    ln: "Mosusu",
+    fr: "Autre",
+  },
 };
 
 function normalizeWhatsAppPhone(raw) {
@@ -3446,6 +3463,262 @@ function normalizeWhatsAppPhone(raw) {
 function formatFC(amount) {
   const num = toNumber(amount);
   return num.toLocaleString("fr-FR") + " FC";
+}
+
+function normalizeWhatsAppLanguage(language) {
+  return language === WA_LANGUAGES.FRENCH ? WA_LANGUAGES.FRENCH : WA_LANGUAGES.LINGALA;
+}
+
+function getWhatsAppLanguage(session) {
+  return normalizeWhatsAppLanguage(session && session.language);
+}
+
+function fillWhatsAppTemplate(template, values = {}) {
+  return String(template).replace(/\{(\w+)\}/g, (match, key) => (
+    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match
+  ));
+}
+
+const WHATSAPP_COPY = {
+  ln: {
+    welcomeTitle: "🌟 Boyei malamu na Fondation Gervais!",
+    greeting: "Mbote {clientName}!",
+    chooseNumber: "Pona numéro oyo olingi.",
+    replyWithDigit: "Yanola na chiffre moko:",
+    unrecognized: "❓ Nasosoli te.",
+    unregistered:
+      "Bolimbisi, numéro na yo ezali enregistrer te na système na biso.\n\n" +
+      "Benga Fondation Gervais pona komikomisa.\n" +
+      "📞 +243 825333567 to tindela biso email na fondationgervais@gmail.com",
+    accountTitle: "💳 KONTO NA YO",
+    debtLine: "💰 *NIONGO OYO ETIKALI:* {remainingDebtFc}",
+    savingsLine: "🏦 Epargnes: {savingsFc}",
+    whatToDo: "Olingi kosala nini?",
+    noDebt: "✅ Niongo etikali lisusu te.",
+    returnMainMenu: "[0] Zonga na menu principal",
+    paymentTitle: "💵 KOFUTA",
+    remainingDebt: "Niongo oyo etikali: {remainingDebtFc}",
+    paymentQuestion: "Olingi kofuta mbongo boni?",
+    payFullAmount: "[1] Futa {remainingDebtFc}",
+    payOtherAmount: "[2] Futa montant mosusu",
+    returnMainMenuOption: "[3] Zonga na menu principal",
+    enterPaymentAmount: "Koma montant oyo olingi kofuta na FC.\nChiffres kaka.",
+    noPayableAmount: "Montant ya kofuta ezali te.",
+    exactAmount: "Montant esengeli ezala kaka {amountFc}.",
+    amountBetween: "Montant esengeli ezala kati na {minFc} mpe {maxFc}.",
+    invalidAmountDigits: "❌ Montant ezali malamu te. Koma ba chiffres kaka:",
+    invalidAmount: "❌ Montant ezali malamu te.",
+    paymentPhoneTitle: "📱 NUMÉRO YA KOFUTA",
+    amountToPay: "Montant ya kofuta: {amountFc}",
+    payWithThisPhone: "[1] Futa na numéro oyo: {displayPhone}",
+    payWithOtherPhone: "[2] Futa na numéro mosusu",
+    cancel: "[3] Tika",
+    enterPaymentPhone:
+      "Koma numéro oyo okosalela pona kofuta.\n" +
+      "Format: 10 chiffres (ndakisa: 0812345678)",
+    invalidPaymentPhone:
+      "❌ Numéro ezali malamu te. Koma 10 chiffres kobanda na 0.\n" +
+      "Ndakisa: 0812345678",
+    paymentRequestSent:
+      "⏳ Demande ya kofuta etindami na numéro {displayPhone}.\n\n" +
+      "Tala téléphone wana mpe confirmer na PIN ya Mobile Money.\n\n" +
+      "Okoyamba confirmation awa soki paiement esili kosalema.",
+    paymentStartFailed: "❌ Tokoki kobanda paiement te na numéro oyo.",
+    retryThisPhone: "[1] Meka lisusu na numéro oyo",
+    useOtherPhone: "[2] Salela numéro mosusu",
+    enterAnotherPhone: "Koma numéro mosusu ya 10 chiffres:",
+    paymentPending: "⏳ Paiement na yo ezali kosalema. Zela malembe.",
+    historyTitle: "📋 HISTORIQUE",
+    noPaymentsFound: "Paiement moko te emonani.",
+    recentHistoryTitle: "📋 HISTORIQUE (ya suka {count})",
+    fullHistoryTitle: "📋 HISTORIQUE MOBIMBA ({count})",
+    seeMore: "[1] Tala lisusu",
+    complaintTitle: "📝 LIKAMBO",
+    complaintTypeQuestion: "Likambo nini ezali?",
+    complaintOptions:
+      "[1] Paiement ekomama te\n" +
+      "[2] Montant ezali malamu te\n" +
+      "[3] Problème technique\n" +
+      "[4] Mosusu",
+    complaintDetailsPrompt:
+      "Limbola likambo na yo malamu.\n" +
+      "Tokopesa yo eyano na kati ya 24h.",
+    complaintDetailsRetry: "Svp limbola likambo na yo malamu:",
+    complaintReceived:
+      "✅ TONDIMI LIKAMBO NA YO\n\n" +
+      "🎫 Référence: #{complaintRef}\n" +
+      "📂 Catégorie: {category}\n\n" +
+      "Equipe na biso ekobenga yo na kati ya 24h.\n\n" +
+      "Matondi pona motema molai na yo. 🙏\n" +
+      "Fondation Gervais\n\n" +
+      "[0] Zonga na menu principal",
+    agentWillContact:
+      "👤 Agent moko akobenga yo kala mingi te.\n\n" +
+      "📞 To benga: +243 XX XXX XXXX\n\n" +
+      "[0] Zonga na menu principal",
+    switchToFrench: "[5] Français",
+    switchToLingala: "[5] Lingala",
+    switchedToFrench: "🇫🇷 Français ezali sikoyo activé.",
+    switchedToLingala: "🇱🇳 Lingala ezali sikoyo activé.",
+    historyLineWithReceipt: "✅ {amountFc} - {date}\n   {source} • Reçu #{receipt}",
+    historyLineWithoutReceipt: "✅ {amountFc} - {date}\n   {source}",
+    sourceMobileMoney: "Mobile Money",
+    sourceManual: "Na maboko",
+    paymentConfirmed:
+      "✅ PAIEMENT ENDIMAMI!\n\n" +
+      "💵 {amountFc} eyambami na Mobile Money\n" +
+      "🧾 Reçu: #{receipt}\n" +
+      "💰 Niongo oyo etikali: {remainingDebtFc}\n\n" +
+      "Matondi {clientName}! 🙏\n" +
+      "Fondation Gervais ezali kolulela yo mokolo malamu.\n\n" +
+      "[0] Zonga na menu principal",
+    paymentFailed:
+      "❌ PAIEMENT EBEBI\n\n" +
+      "Paiement ya {amountFc} elongi te.{reasonLine}\n\n" +
+      "Meka lisusu.\n\n" +
+      "[0] Zonga na menu principal",
+    failureReasonLine: "\nNtina: {reason}",
+    sessionExpired:
+      "⏰ Session esili.\n\n" +
+      "Tinda message nionso pona kobanda lisusu.\n\n" +
+      "Fondation Gervais 🌟",
+    internalError: "Likambo moko esalemi. Meka lisusu.",
+    menuViewBalance: "[1] Tala compte na ngai",
+    menuMakePayment: "[2] Futa niongo",
+    menuHistory: "[3] Historique ya paiement",
+    menuComplaint: "[4] Tinda plainte",
+    balancePayNow: "[1] Futa sikoyo",
+    balanceReturnMain: "[2] Zonga na menu principal",
+  },
+  fr: {
+    welcomeTitle: "🌟 Bienvenue chez Fondation Gervais!",
+    greeting: "Bonjour {clientName}!",
+    chooseNumber: "Répondez avec le numéro de votre choix.",
+    replyWithDigit: "Répondez avec un chiffre:",
+    unrecognized: "❓ Je n'ai pas compris.",
+    unregistered:
+      "Désolé, votre numéro n'est pas enregistré dans notre système.\n\n" +
+      "Contactez Fondation Gervais pour vous inscrire.\n" +
+      "📞 +243 825333567 ou envoyez nous un email sur fondationgervais@gmail.com",
+    accountTitle: "💳 VOTRE COMPTE",
+    debtLine: "💰 *DETTE RESTANT:* {remainingDebtFc}",
+    savingsLine: "🏦 Épargne: {savingsFc}",
+    whatToDo: "Que voulez-vous faire?",
+    noDebt: "✅ Aucune dette restante.",
+    returnMainMenu: "[0] Retour au menu principal",
+    paymentTitle: "💵 PAIEMENT",
+    remainingDebt: "Dette restante: {remainingDebtFc}",
+    paymentQuestion: "Quel montant voulez-vous payer?",
+    payFullAmount: "[1] Payer {remainingDebtFc}",
+    payOtherAmount: "[2] Payer un autre montant",
+    returnMainMenuOption: "[3] Retour au menu principal",
+    enterPaymentAmount: "Entrez le montant que vous souhaitez payer en FC.\nChiffres uniquement.",
+    noPayableAmount: "Aucun montant payable.",
+    exactAmount: "Le montant doit être exactement {amountFc}.",
+    amountBetween: "Le montant doit être entre {minFc} et {maxFc}.",
+    invalidAmountDigits: "❌ Montant invalide. Entrez des chiffres uniquement:",
+    invalidAmount: "❌ Montant invalide.",
+    paymentPhoneTitle: "📱 NUMÉRO DE PAIEMENT",
+    amountToPay: "Montant à payer: {amountFc}",
+    payWithThisPhone: "[1] Payer avec ce numéro: {displayPhone}",
+    payWithOtherPhone: "[2] Payer avec un autre numéro",
+    cancel: "[3] Annuler",
+    enterPaymentPhone:
+      "Entrez le numéro à utiliser pour le paiement.\n" +
+      "Format: 10 chiffres (ex: 0812345678)",
+    invalidPaymentPhone:
+      "❌ Numéro invalide. Entrez 10 chiffres en commençant par 0.\n" +
+      "Exemple: 0812345678",
+    paymentRequestSent:
+      "⏳ Demande de paiement envoyée au numéro {displayPhone}.\n\n" +
+      "Vérifiez ce téléphone et confirmez avec le PIN Mobile Money.\n\n" +
+      "Vous recevrez une confirmation ici une fois le paiement traité.",
+    paymentStartFailed: "❌ Impossible d'initier le paiement avec ce numéro.",
+    retryThisPhone: "[1] Réessayer avec ce numéro",
+    useOtherPhone: "[2] Utiliser un autre numéro",
+    enterAnotherPhone: "Entrez un autre numéro de 10 chiffres:",
+    paymentPending: "⏳ Votre paiement est en cours de traitement. Veuillez patienter.",
+    historyTitle: "📋 HISTORIQUE",
+    noPaymentsFound: "Aucun paiement trouvé.",
+    recentHistoryTitle: "📋 HISTORIQUE ({count} derniers)",
+    fullHistoryTitle: "📋 HISTORIQUE COMPLET ({count})",
+    seeMore: "[1] Voir plus",
+    complaintTitle: "📝 PLAINTE",
+    complaintTypeQuestion: "Quel type de problème?",
+    complaintOptions:
+      "[1] Paiement non enregistré\n" +
+      "[2] Montant incorrect\n" +
+      "[3] Problème technique\n" +
+      "[4] Autre",
+    complaintDetailsPrompt:
+      "Décrivez votre problème en détail.\n" +
+      "Nous vous répondrons dans 24h.",
+    complaintDetailsRetry: "Veuillez décrire votre problème en détail:",
+    complaintReceived:
+      "✅ PLAINTE REÇUE\n\n" +
+      "🎫 Référence: #{complaintRef}\n" +
+      "📂 Catégorie: {category}\n\n" +
+      "Notre équipe vous contactera sous 24h.\n\n" +
+      "Merci pour votre patience. 🙏\n" +
+      "Fondation Gervais\n\n" +
+      "[0] Retour au menu principal",
+    agentWillContact:
+      "👤 Un agent vous contactera bientôt.\n\n" +
+      "📞 Ou appelez: +243 XX XXX XXXX\n\n" +
+      "[0] Retour au menu principal",
+    switchToFrench: "[5] Français",
+    switchToLingala: "[5] Lingala",
+    switchedToFrench: "🇫🇷 Le français est maintenant activé.",
+    switchedToLingala: "🇱🇳 Le lingala est maintenant activé.",
+    historyLineWithReceipt: "✅ {amountFc} - {date}\n   {source} • Reçu #{receipt}",
+    historyLineWithoutReceipt: "✅ {amountFc} - {date}\n   {source}",
+    sourceMobileMoney: "Mobile Money",
+    sourceManual: "Manuel",
+    paymentConfirmed:
+      "✅ PAIEMENT CONFIRMÉ!\n\n" +
+      "💵 {amountFc} reçu via Mobile Money\n" +
+      "🧾 Reçu: #{receipt}\n" +
+      "💰 Dette restante: {remainingDebtFc}\n\n" +
+      "Merci {clientName}! 🙏\n" +
+      "Fondation Gervais vous souhaite une bonne journée.\n\n" +
+      "[0] Retour au menu principal",
+    paymentFailed:
+      "❌ PAIEMENT ÉCHOUÉ\n\n" +
+      "Le paiement de {amountFc} n'a pas abouti.{reasonLine}\n\n" +
+      "Veuillez réessayer.\n\n" +
+      "[0] Retour au menu principal",
+    failureReasonLine: "\nRaison: {reason}",
+    sessionExpired:
+      "⏰ Session expirée.\n\n" +
+      "Envoyez n'importe quel message pour recommencer.\n\n" +
+      "Fondation Gervais 🌟",
+    internalError: "Une erreur est survenue. Veuillez réessayer.",
+    menuViewBalance: "[1] Voir mon solde",
+    menuMakePayment: "[2] Faire un paiement",
+    menuHistory: "[3] Historique des paiements",
+    menuComplaint: "[4] Soumettre une plainte",
+    balancePayNow: "[1] Payer maintenant",
+    balanceReturnMain: "[2] Retour au menu principal",
+  },
+};
+
+function getWhatsAppCopy(lang, key, values = {}) {
+  const normalizedLang = normalizeWhatsAppLanguage(lang);
+  const pack = WHATSAPP_COPY[normalizedLang] || WHATSAPP_COPY[WA_LANGUAGES.LINGALA];
+  const template = pack[key];
+  return fillWhatsAppTemplate(template, values);
+}
+
+function getComplaintCategoryLabel(choice, lang) {
+  const normalizedLang = normalizeWhatsAppLanguage(lang);
+  const labelSet = COMPLAINT_CATEGORIES[String(choice || "")];
+  if (!labelSet) return "";
+  return labelSet[normalizedLang] || labelSet[WA_LANGUAGES.FRENCH] || "";
+}
+
+function getHistorySourceLabel(sourceKey, lang) {
+  if (sourceKey === "mobile_money") return getWhatsAppCopy(lang, "sourceMobileMoney");
+  return getWhatsAppCopy(lang, "sourceManual");
 }
 
 /* ─── Phone Index ─── */
@@ -4206,12 +4479,53 @@ function generateComplaintRef(seed) {
 
 /* ─── State handlers ─── */
 
-function buildMainMenu(clientName) {
-  return `🌟 Bienvenue chez Fondation Gervais!\n\nBonjour ${clientName}!\n\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte\n\nRépondez avec le numéro de votre choix.`;
+function getLanguageSwitchTarget(lang) {
+  return normalizeWhatsAppLanguage(lang) === WA_LANGUAGES.FRENCH ?
+    WA_LANGUAGES.LINGALA :
+    WA_LANGUAGES.FRENCH;
 }
 
-function buildUnrecognizedInput() {
-  return `❓ Je n'ai pas compris.\n\nRépondez avec un chiffre:\n[1] Voir mon solde\n[2] Faire un paiement\n[3] Historique des paiements\n[4] Soumettre une plainte`;
+function buildLanguageSwitchOption(lang) {
+  return normalizeWhatsAppLanguage(lang) === WA_LANGUAGES.FRENCH ?
+    getWhatsAppCopy(lang, "switchToLingala") :
+    getWhatsAppCopy(lang, "switchToFrench");
+}
+
+function buildLanguageSwitchedMessage(lang) {
+  return normalizeWhatsAppLanguage(lang) === WA_LANGUAGES.FRENCH ?
+    getWhatsAppCopy(lang, "switchedToFrench") :
+    getWhatsAppCopy(lang, "switchedToLingala");
+}
+
+function buildMainMenu(clientName, lang = WA_LANGUAGES.LINGALA) {
+  const normalizedLang = normalizeWhatsAppLanguage(lang);
+  return [
+    getWhatsAppCopy(normalizedLang, "welcomeTitle"),
+    getWhatsAppCopy(normalizedLang, "greeting", {clientName}),
+    [
+      getWhatsAppCopy(normalizedLang, "menuViewBalance"),
+      getWhatsAppCopy(normalizedLang, "menuMakePayment"),
+      getWhatsAppCopy(normalizedLang, "menuHistory"),
+      getWhatsAppCopy(normalizedLang, "menuComplaint"),
+      buildLanguageSwitchOption(normalizedLang),
+    ].join("\n"),
+    getWhatsAppCopy(normalizedLang, "chooseNumber"),
+  ].join("\n\n");
+}
+
+function buildUnrecognizedInput(lang = WA_LANGUAGES.LINGALA) {
+  const normalizedLang = normalizeWhatsAppLanguage(lang);
+  return [
+    getWhatsAppCopy(normalizedLang, "unrecognized"),
+    [
+      getWhatsAppCopy(normalizedLang, "replyWithDigit"),
+      getWhatsAppCopy(normalizedLang, "menuViewBalance"),
+      getWhatsAppCopy(normalizedLang, "menuMakePayment"),
+      getWhatsAppCopy(normalizedLang, "menuHistory"),
+      getWhatsAppCopy(normalizedLang, "menuComplaint"),
+      buildLanguageSwitchOption(normalizedLang),
+    ].join("\n"),
+  ].join("\n\n");
 }
 
 function formatPaymentPhoneForDisplay(raw) {
@@ -4222,9 +4536,23 @@ function formatPaymentPhoneForDisplay(raw) {
   return String(raw || "").trim() || "--";
 }
 
-function buildPaymentAmountMenu(clientInfo) {
+function buildPaymentAmountMenu(clientInfo, lang = WA_LANGUAGES.LINGALA) {
+  const normalizedLang = normalizeWhatsAppLanguage(lang);
   const remainingDebt = toNumber(clientInfo.debtLeft || 0);
-  return `💵 PAIEMENT\n\nDette restante: ${formatFC(remainingDebt)}\n\nQuel montant voulez-vous payer?\n[1] Payer ${formatFC(remainingDebt)}\n[2] Payer un autre montant\n[3] Retour au menu principal`;
+  return [
+    getWhatsAppCopy(normalizedLang, "paymentTitle"),
+    getWhatsAppCopy(normalizedLang, "remainingDebt", {
+      remainingDebtFc: formatFC(remainingDebt),
+    }),
+    [
+      getWhatsAppCopy(normalizedLang, "paymentQuestion"),
+      getWhatsAppCopy(normalizedLang, "payFullAmount", {
+        remainingDebtFc: formatFC(remainingDebt),
+      }),
+      getWhatsAppCopy(normalizedLang, "payOtherAmount"),
+      getWhatsAppCopy(normalizedLang, "returnMainMenuOption"),
+    ].join("\n"),
+  ].join("\n\n");
 }
 
 function getMinimumWhatsAppPaymentAmount(remainingDebt) {
@@ -4233,19 +4561,38 @@ function getMinimumWhatsAppPaymentAmount(remainingDebt) {
   return 500;
 }
 
-function buildWhatsAppPaymentAmountRangeText(remainingDebt) {
+function buildWhatsAppPaymentAmountRangeText(remainingDebt, lang = WA_LANGUAGES.LINGALA) {
+  const normalizedLang = normalizeWhatsAppLanguage(lang);
   const debt = toNumber(remainingDebt || 0);
   const min = getMinimumWhatsAppPaymentAmount(debt);
-  if (debt <= 0) return "Aucun montant payable.";
-  if (min === debt) return `Le montant doit être exactement ${formatFC(debt)}.`;
-  return `Le montant doit être entre ${formatFC(min)} et ${formatFC(debt)}.`;
+  if (debt <= 0) return getWhatsAppCopy(normalizedLang, "noPayableAmount");
+  if (min === debt) {
+    return getWhatsAppCopy(normalizedLang, "exactAmount", {
+      amountFc: formatFC(debt),
+    });
+  }
+  return getWhatsAppCopy(normalizedLang, "amountBetween", {
+    minFc: formatFC(min),
+    maxFc: formatFC(debt),
+  });
 }
 
-function buildPaymentPhoneMenu(session, paymentAmount) {
+function buildPaymentPhoneMenu(session, paymentAmount, lang = WA_LANGUAGES.LINGALA) {
+  const normalizedLang = normalizeWhatsAppLanguage(lang);
   const clientInfo = session._clientInfo || {};
   const defaultPhone = clientInfo.phoneNumber || session.phone || "";
   const displayPhone = formatPaymentPhoneForDisplay(defaultPhone);
-  return `📱 NUMÉRO DE PAIEMENT\n\nMontant à payer: ${formatFC(paymentAmount)}\n\n[1] Payer avec ce numéro: ${displayPhone}\n[2] Payer avec un autre numéro\n[3] Annuler`;
+  return [
+    getWhatsAppCopy(normalizedLang, "paymentPhoneTitle"),
+    getWhatsAppCopy(normalizedLang, "amountToPay", {
+      amountFc: formatFC(paymentAmount),
+    }),
+    [
+      getWhatsAppCopy(normalizedLang, "payWithThisPhone", {displayPhone}),
+      getWhatsAppCopy(normalizedLang, "payWithOtherPhone"),
+      getWhatsAppCopy(normalizedLang, "cancel"),
+    ].join("\n"),
+  ].join("\n\n");
 }
 
 async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPhoneRaw) {
@@ -4253,6 +4600,7 @@ async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPho
   const userId = session.userId;
   const clientId = session.clientId;
   const phone = String(paymentPhoneRaw || "").trim();
+  const language = getWhatsAppLanguage(session);
 
   if (!FLEXPAY_MERCHANT || !FLEXPAY_TOKEN) {
     throw new Error("FlexPay configuration missing");
@@ -4322,6 +4670,7 @@ async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPho
     dbWriteDone: false,
     whatsappOriginated: true,
     whatsappPhone: session.phone || "",
+    language,
   });
 
   await upsertMobileMoneyLookup(reference, {
@@ -4343,9 +4692,14 @@ async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPho
 async function handleMainMenu(input, session) {
   const choice = input.trim();
   const clientInfo = session._clientInfo;
+  const lang = getWhatsAppLanguage(session);
 
   if (choice === "0") {
-    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: buildMainMenu(session.clientName, lang),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
 
   if (choice === "1") {
@@ -4357,17 +4711,33 @@ async function handleMainMenu(input, session) {
       clientInfo.lastName || "",
     ].filter((x) => x && String(x).trim()).join(" ");
 
-    const reply = `💳 VOTRE COMPTE\n\n👤 ${fullName || "Client"}\n💰 *DETTE RESTANT:* ${formatFC(remainingDebt)}\n🏦 Épargne: ${formatFC(savings)}\n\nQue voulez-vous faire?\n[1] Payer maintenant\n[2] Retour au menu principal`;
+    const reply = [
+      getWhatsAppCopy(lang, "accountTitle"),
+      [
+        `👤 ${fullName || "Client"}`,
+        getWhatsAppCopy(lang, "debtLine", {remainingDebtFc: formatFC(remainingDebt)}),
+        getWhatsAppCopy(lang, "savingsLine", {savingsFc: formatFC(savings)}),
+      ].join("\n"),
+      [
+        getWhatsAppCopy(lang, "whatToDo"),
+        getWhatsAppCopy(lang, "balancePayNow"),
+        getWhatsAppCopy(lang, "balanceReturnMain"),
+      ].join("\n"),
+    ].join("\n\n");
     return {reply, newState: WA_STATES.BALANCE, tempData: {}};
   }
 
   if (choice === "2") {
     const remainingDebt = toNumber(clientInfo.debtLeft || 0);
     if (remainingDebt <= 0) {
-      return {reply: `✅ Aucune dette restante.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+      return {
+        reply: `${getWhatsAppCopy(lang, "noDebt")}\n\n${getWhatsAppCopy(lang, "returnMainMenu")}`,
+        newState: WA_STATES.MAIN_MENU,
+        tempData: {},
+      };
     }
     return {
-      reply: buildPaymentAmountMenu(clientInfo),
+      reply: buildPaymentAmountMenu(clientInfo, lang),
       newState: WA_STATES.PAYMENT_AMOUNT,
       tempData: {suggestedAmount: remainingDebt},
     };
@@ -4386,7 +4756,11 @@ async function handleMainMenu(input, session) {
         .slice(0, 3);
 
     if (sorted.length === 0) {
-      const reply = `📋 HISTORIQUE\n\nAucun paiement trouvé.\n\n[0] Retour au menu principal`;
+      const reply = [
+        getWhatsAppCopy(lang, "historyTitle"),
+        getWhatsAppCopy(lang, "noPaymentsFound"),
+        getWhatsAppCopy(lang, "returnMainMenu"),
+      ].join("\n\n");
       return {reply, newState: WA_STATES.HISTORY, tempData: {}};
     }
 
@@ -4395,66 +4769,120 @@ async function handleMainMenu(input, session) {
     for (const p of sorted) {
       const d = parseMonthDayYear(p.date);
       const dateStr = d ? formatDateFrench(d) : p.date;
-      const source = (sources[p.date] === "mobile_money") ? "Mobile Money" : "Manuel";
-      lines += `\n✅ ${formatFC(p.amount)} - ${dateStr}\n   ${source} • Reçu #${generateReceiptNumber()}`;
+      const source = getHistorySourceLabel(sources[p.date], lang);
+      lines += `\n${getWhatsAppCopy(lang, "historyLineWithReceipt", {
+        amountFc: formatFC(p.amount),
+        date: dateStr,
+        source,
+        receipt: generateReceiptNumber(),
+      })}`;
     }
 
-    const reply = `📋 HISTORIQUE (${sorted.length} derniers)${lines}\n\n[1] Voir plus\n[0] Retour au menu principal`;
+    const reply = [
+      getWhatsAppCopy(lang, "recentHistoryTitle", {count: sorted.length}),
+      lines.trimStart(),
+      [
+        getWhatsAppCopy(lang, "seeMore"),
+        getWhatsAppCopy(lang, "returnMainMenu"),
+      ].join("\n"),
+    ].join("\n\n");
     return {reply, newState: WA_STATES.HISTORY, tempData: {}};
   }
 
   if (choice === "4") {
-    const reply = `📝 PLAINTE\n\nQuel type de problème?\n\n[1] Paiement non enregistré\n[2] Montant incorrect\n[3] Problème technique\n[4] Autre`;
+    const reply = [
+      getWhatsAppCopy(lang, "complaintTitle"),
+      getWhatsAppCopy(lang, "complaintTypeQuestion"),
+      getWhatsAppCopy(lang, "complaintOptions"),
+    ].join("\n\n");
     return {reply, newState: WA_STATES.COMPLAINT_TYPE, tempData: {}};
   }
 
-  return {reply: buildUnrecognizedInput(), newState: WA_STATES.MAIN_MENU, tempData: {}};
+  if (choice === "5") {
+    const nextLang = getLanguageSwitchTarget(lang);
+    const reply = `${buildLanguageSwitchedMessage(nextLang)}\n\n${buildMainMenu(session.clientName, nextLang)}`;
+    return {reply, newState: WA_STATES.MAIN_MENU, tempData: {}, language: nextLang};
+  }
+
+  return {
+    reply: buildUnrecognizedInput(lang),
+    newState: WA_STATES.MAIN_MENU,
+    tempData: {},
+  };
 }
 
 async function handleBalance(input, session) {
   const choice = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (choice === "1") {
     const clientInfo = session._clientInfo;
     const remainingDebt = toNumber(clientInfo.debtLeft || 0);
     if (remainingDebt <= 0) {
-      return {reply: `✅ Aucune dette restante.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+      return {
+        reply: `${getWhatsAppCopy(lang, "noDebt")}\n\n${getWhatsAppCopy(lang, "returnMainMenu")}`,
+        newState: WA_STATES.MAIN_MENU,
+        tempData: {},
+      };
     }
     return {
-      reply: buildPaymentAmountMenu(clientInfo),
+      reply: buildPaymentAmountMenu(clientInfo, lang),
       newState: WA_STATES.PAYMENT_AMOUNT,
       tempData: {suggestedAmount: remainingDebt},
     };
   }
   if (choice === "2" || choice === "0") {
-    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: buildMainMenu(session.clientName, lang),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
-  return {reply: `❓ Je n'ai pas compris.\n\n[1] Payer maintenant\n[2] Retour au menu principal`, newState: WA_STATES.BALANCE, tempData: session.tempData || {}};
+  return {
+    reply: [
+      getWhatsAppCopy(lang, "unrecognized"),
+      [
+        getWhatsAppCopy(lang, "balancePayNow"),
+        getWhatsAppCopy(lang, "balanceReturnMain"),
+      ].join("\n"),
+    ].join("\n\n"),
+    newState: WA_STATES.BALANCE,
+    tempData: session.tempData || {},
+  };
 }
 
 async function handlePaymentAmount(input, session) {
   const choice = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (choice === "1") {
     const amount = toNumber(session.tempData && session.tempData.suggestedAmount || 0);
     if (amount <= 0) {
-      return {reply: `✅ Aucune dette restante.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+      return {
+        reply: `${getWhatsAppCopy(lang, "noDebt")}\n\n${getWhatsAppCopy(lang, "returnMainMenu")}`,
+        newState: WA_STATES.MAIN_MENU,
+        tempData: {},
+      };
     }
     return {
-      reply: buildPaymentPhoneMenu(session, amount),
+      reply: buildPaymentPhoneMenu(session, amount, lang),
       newState: WA_STATES.PAYMENT_METHOD,
       tempData: {...(session.tempData || {}), paymentAmount: amount},
     };
   }
   if (choice === "2") {
     const remainingDebt = toNumber((session._clientInfo && session._clientInfo.debtLeft) || 0);
-    const reply = `Entrez le montant que vous souhaitez payer en FC.\nChiffres uniquement.\n${buildWhatsAppPaymentAmountRangeText(remainingDebt)}`;
+    const reply = `${getWhatsAppCopy(lang, "enterPaymentAmount")}\n${buildWhatsAppPaymentAmountRangeText(remainingDebt, lang)}`;
     return {reply, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
   }
   if (choice === "3" || choice === "0") {
-    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: buildMainMenu(session.clientName, lang),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
   const clientInfo = session._clientInfo;
   return {
-    reply: `❓ Je n'ai pas compris.\n\n${buildPaymentAmountMenu(clientInfo).split("\n\n").slice(2).join("\n\n")}`,
+    reply: `${getWhatsAppCopy(lang, "unrecognized")}\n\n${buildPaymentAmountMenu(clientInfo, lang).split("\n\n").slice(2).join("\n\n")}`,
     newState: WA_STATES.PAYMENT_AMOUNT,
     tempData: session.tempData || {},
   };
@@ -4462,21 +4890,26 @@ async function handlePaymentAmount(input, session) {
 
 async function handlePaymentCustom(input, session) {
   const raw = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (!/^\d+$/.test(raw)) {
-    return {reply: `❌ Montant invalide. Entrez des chiffres uniquement:`, newState: WA_STATES.PAYMENT_CUSTOM, tempData: session.tempData || {}};
+    return {
+      reply: getWhatsAppCopy(lang, "invalidAmountDigits"),
+      newState: WA_STATES.PAYMENT_CUSTOM,
+      tempData: session.tempData || {},
+    };
   }
   const amount = toNumber(raw);
   const remainingDebt = toNumber((session._clientInfo && session._clientInfo.debtLeft) || 0);
   const minAmount = getMinimumWhatsAppPaymentAmount(remainingDebt);
   if (amount < minAmount || (remainingDebt > 0 && amount > remainingDebt)) {
     return {
-      reply: `❌ Montant invalide. ${buildWhatsAppPaymentAmountRangeText(remainingDebt)}`,
+      reply: `${getWhatsAppCopy(lang, "invalidAmount")} ${buildWhatsAppPaymentAmountRangeText(remainingDebt, lang)}`,
       newState: WA_STATES.PAYMENT_CUSTOM,
       tempData: session.tempData || {},
     };
   }
   return {
-    reply: buildPaymentPhoneMenu(session, amount),
+    reply: buildPaymentPhoneMenu(session, amount, lang),
     newState: WA_STATES.PAYMENT_METHOD,
     tempData: {...(session.tempData || {}), paymentAmount: amount},
   };
@@ -4484,18 +4917,27 @@ async function handlePaymentCustom(input, session) {
 
 async function handlePaymentMethod(input, session) {
   const choice = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (choice === "3" || choice === "0") {
-    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: buildMainMenu(session.clientName, lang),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
 
   const paymentAmount = toNumber(session.tempData && session.tempData.paymentAmount || 0);
   if (paymentAmount <= 0) {
-    return {reply: `❌ Montant invalide.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: `${getWhatsAppCopy(lang, "invalidAmount")}\n\n${getWhatsAppCopy(lang, "returnMainMenu")}`,
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
 
   if (choice === "2") {
     return {
-      reply: `Entrez le numéro à utiliser pour le paiement.\nFormat: 10 chiffres (ex: 0812345678)`,
+      reply: getWhatsAppCopy(lang, "enterPaymentPhone"),
       newState: WA_STATES.PAYMENT_PHONE_CUSTOM,
       tempData: session.tempData || {},
     };
@@ -4503,7 +4945,7 @@ async function handlePaymentMethod(input, session) {
 
   if (choice !== "1") {
     return {
-      reply: `❓ Je n'ai pas compris.\n\n${buildPaymentPhoneMenu(session, paymentAmount).split("\n\n").slice(1).join("\n\n")}`,
+      reply: `${getWhatsAppCopy(lang, "unrecognized")}\n\n${buildPaymentPhoneMenu(session, paymentAmount, lang).split("\n\n").slice(1).join("\n\n")}`,
       newState: WA_STATES.PAYMENT_METHOD,
       tempData: session.tempData || {},
     };
@@ -4513,7 +4955,9 @@ async function handlePaymentMethod(input, session) {
   const phone = clientInfo.phoneNumber || session.phone || "";
   try {
     const result = await initiateWhatsAppFlexPayPayment(session, paymentAmount, phone);
-    const reply = `⏳ Demande de paiement envoyée au numéro ${result.phoneDisplay}.\n\nVérifiez ce téléphone et confirmez avec le PIN Mobile Money.\n\nVous recevrez une confirmation ici une fois le paiement traité.`;
+    const reply = getWhatsAppCopy(lang, "paymentRequestSent", {
+      displayPhone: result.phoneDisplay,
+    });
     return {
       reply,
       newState: WA_STATES.PAYMENT_PENDING,
@@ -4522,7 +4966,14 @@ async function handlePaymentMethod(input, session) {
   } catch (err) {
     console.error("WhatsApp payment initiation failed:", err);
     return {
-      reply: `❌ Impossible d'initier le paiement avec ce numéro.\n\n[1] Réessayer avec ce numéro\n[2] Utiliser un autre numéro\n[3] Annuler`,
+      reply: [
+        getWhatsAppCopy(lang, "paymentStartFailed"),
+        [
+          getWhatsAppCopy(lang, "retryThisPhone"),
+          getWhatsAppCopy(lang, "useOtherPhone"),
+          getWhatsAppCopy(lang, "cancel"),
+        ].join("\n"),
+      ].join("\n\n"),
       newState: WA_STATES.PAYMENT_METHOD,
       tempData: session.tempData || {},
     };
@@ -4531,9 +4982,10 @@ async function handlePaymentMethod(input, session) {
 
 async function handlePaymentPhoneCustom(input, session) {
   const raw = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (!/^\d{10}$/.test(raw) || !raw.startsWith("0")) {
     return {
-      reply: `❌ Numéro invalide. Entrez 10 chiffres en commençant par 0.\nExemple: 0812345678`,
+      reply: getWhatsAppCopy(lang, "invalidPaymentPhone"),
       newState: WA_STATES.PAYMENT_PHONE_CUSTOM,
       tempData: session.tempData || {},
     };
@@ -4541,12 +4993,18 @@ async function handlePaymentPhoneCustom(input, session) {
 
   const paymentAmount = toNumber(session.tempData && session.tempData.paymentAmount || 0);
   if (paymentAmount <= 0) {
-    return {reply: `❌ Montant invalide.\n\n[0] Retour au menu principal`, newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: `${getWhatsAppCopy(lang, "invalidAmount")}\n\n${getWhatsAppCopy(lang, "returnMainMenu")}`,
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
 
   try {
     const result = await initiateWhatsAppFlexPayPayment(session, paymentAmount, raw);
-    const reply = `⏳ Demande de paiement envoyée au numéro ${result.phoneDisplay}.\n\nVérifiez ce téléphone et confirmez avec le PIN Mobile Money.\n\nVous recevrez une confirmation ici une fois le paiement traité.`;
+    const reply = getWhatsAppCopy(lang, "paymentRequestSent", {
+      displayPhone: result.phoneDisplay,
+    });
     return {
       reply,
       newState: WA_STATES.PAYMENT_PENDING,
@@ -4555,7 +5013,7 @@ async function handlePaymentPhoneCustom(input, session) {
   } catch (err) {
     console.error("WhatsApp payment initiation failed with custom phone:", err);
     return {
-      reply: `❌ Impossible d'initier le paiement avec ce numéro.\n\nEntrez un autre numéro de 10 chiffres:`,
+      reply: `${getWhatsAppCopy(lang, "paymentStartFailed")}\n\n${getWhatsAppCopy(lang, "enterAnotherPhone")}`,
       newState: WA_STATES.PAYMENT_PHONE_CUSTOM,
       tempData: session.tempData || {},
     };
@@ -4564,16 +5022,30 @@ async function handlePaymentPhoneCustom(input, session) {
 
 async function handlePaymentPending(input, session) {
   const choice = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (choice === "0") {
-    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: buildMainMenu(session.clientName, lang),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
-  return {reply: `⏳ Votre paiement est en cours de traitement. Veuillez patienter.\n\n[0] Retour au menu principal`, newState: WA_STATES.PAYMENT_PENDING, tempData: session.tempData || {}};
+  return {
+    reply: `${getWhatsAppCopy(lang, "paymentPending")}\n\n${getWhatsAppCopy(lang, "returnMainMenu")}`,
+    newState: WA_STATES.PAYMENT_PENDING,
+    tempData: session.tempData || {},
+  };
 }
 
 async function handleHistory(input, session) {
   const choice = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (choice === "0") {
-    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: buildMainMenu(session.clientName, lang),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
   if (choice === "1") {
     const clientInfo = session._clientInfo;
@@ -4593,30 +5065,61 @@ async function handleHistory(input, session) {
     for (const p of sorted) {
       const d = parseMonthDayYear(p.date);
       const dateStr = d ? formatDateFrench(d) : p.date;
-      const source = (sources[p.date] === "mobile_money") ? "Mobile Money" : "Manuel";
-      lines += `\n✅ ${formatFC(p.amount)} - ${dateStr}\n   ${source}`;
+      const source = getHistorySourceLabel(sources[p.date], lang);
+      lines += `\n${getWhatsAppCopy(lang, "historyLineWithoutReceipt", {
+        amountFc: formatFC(p.amount),
+        date: dateStr,
+        source,
+      })}`;
     }
 
-    const reply = `📋 HISTORIQUE COMPLET (${sorted.length})${lines}\n\n[0] Retour au menu principal`;
+    const reply = [
+      getWhatsAppCopy(lang, "fullHistoryTitle", {count: sorted.length}),
+      lines.trimStart(),
+      getWhatsAppCopy(lang, "returnMainMenu"),
+    ].join("\n\n");
     return {reply, newState: WA_STATES.HISTORY, tempData: {}};
   }
-  return {reply: `❓ Je n'ai pas compris.\n\n[1] Voir plus\n[0] Retour au menu principal`, newState: WA_STATES.HISTORY, tempData: {}};
+  return {
+    reply: [
+      getWhatsAppCopy(lang, "unrecognized"),
+      [
+        getWhatsAppCopy(lang, "seeMore"),
+        getWhatsAppCopy(lang, "returnMainMenu"),
+      ].join("\n"),
+    ].join("\n\n"),
+    newState: WA_STATES.HISTORY,
+    tempData: {},
+  };
 }
 
-async function handleComplaintType(input, _session) {
+async function handleComplaintType(input, session) {
   const choice = input.trim();
-  const category = COMPLAINT_CATEGORIES[choice];
+  const lang = getWhatsAppLanguage(session);
+  const category = getComplaintCategoryLabel(choice, lang);
   if (!category) {
-    return {reply: `❓ Je n'ai pas compris.\n\n[1] Paiement non enregistré\n[2] Montant incorrect\n[3] Problème technique\n[4] Autre`, newState: WA_STATES.COMPLAINT_TYPE, tempData: {}};
+    return {
+      reply: [
+        getWhatsAppCopy(lang, "unrecognized"),
+        getWhatsAppCopy(lang, "complaintOptions"),
+      ].join("\n\n"),
+      newState: WA_STATES.COMPLAINT_TYPE,
+      tempData: {},
+    };
   }
-  const reply = `Décrivez votre problème en détail.\nNous vous répondrons dans 24h.`;
+  const reply = getWhatsAppCopy(lang, "complaintDetailsPrompt");
   return {reply, newState: WA_STATES.COMPLAINT_DETAIL, tempData: {complaintCategory: category, complaintCategoryId: choice}};
 }
 
 async function handleComplaintDetail(input, session) {
   const description = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (!description || description.length < 3) {
-    return {reply: `Veuillez décrire votre problème en détail:`, newState: WA_STATES.COMPLAINT_DETAIL, tempData: session.tempData || {}};
+    return {
+      reply: getWhatsAppCopy(lang, "complaintDetailsRetry"),
+      newState: WA_STATES.COMPLAINT_DETAIL,
+      tempData: session.tempData || {},
+    };
   }
 
   const complaintRef = db.collection(WHATSAPP_COMPLAINTS_COLLECTION).doc();
@@ -4643,16 +5146,28 @@ async function handleComplaintDetail(input, session) {
     createdAtMs: Date.now(),
   });
 
-  const reply = `✅ PLAINTE REÇUE\n\n🎫 Référence: #${ref}\n📂 Catégorie: ${category}\n\nNotre équipe vous contactera sous 24h.\n\nMerci pour votre patience. 🙏\nFondation Gervais\n\n[0] Retour au menu principal`;
+  const reply = getWhatsAppCopy(lang, "complaintReceived", {
+    complaintRef: ref,
+    category,
+  });
   return {reply, newState: WA_STATES.MAIN_MENU, tempData: {}};
 }
 
 async function handleAgent(input, session) {
   const choice = input.trim();
+  const lang = getWhatsAppLanguage(session);
   if (choice === "0") {
-    return {reply: buildMainMenu(session.clientName), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    return {
+      reply: buildMainMenu(session.clientName, lang),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+    };
   }
-  return {reply: `👤 Un agent vous contactera bientôt.\n\n📞 Ou appelez: +243 XX XXX XXXX\n\n[0] Retour au menu principal`, newState: WA_STATES.AGENT, tempData: {}};
+  return {
+    reply: getWhatsAppCopy(lang, "agentWillContact"),
+    newState: WA_STATES.AGENT,
+    tempData: {},
+  };
 }
 
 /* ─── Main dispatcher ─── */
@@ -4663,7 +5178,7 @@ async function handleWhatsAppMessage(from, body) {
 
   const clientResult = await lookupClientByPhone(phone);
   if (!clientResult) {
-    return `Désolé, votre numéro n'est pas enregistré dans notre système.\n\nContactez Fondation Gervais pour vous inscrire.\n📞 +243 825333567 ou envoyez nous un email sur fondationgervais@gmail.com`;
+    return getWhatsAppCopy(WA_LANGUAGES.LINGALA, "unregistered");
   }
 
   const {userId, clientId, client} = clientResult;
@@ -4676,9 +5191,10 @@ async function handleWhatsAppMessage(from, body) {
       clientId,
       clientName,
       phone,
+      language: WA_LANGUAGES.LINGALA,
       state: WA_STATES.MAIN_MENU,
     });
-    return buildMainMenu(clientName);
+    return buildMainMenu(clientName, WA_LANGUAGES.LINGALA);
   }
 
   session._clientInfo = client;
@@ -4686,6 +5202,7 @@ async function handleWhatsAppMessage(from, body) {
   session.clientId = session.clientId || clientId;
   session.clientName = session.clientName || clientName;
   session.phone = session.phone || phone;
+  session.language = getWhatsAppLanguage(session);
 
   const state = session.state || WA_STATES.MAIN_MENU;
 
@@ -4709,9 +5226,15 @@ async function handleWhatsAppMessage(from, body) {
     result = await handler(input, session);
   } catch (err) {
     console.error("WhatsApp handler error:", err);
-    result = {reply: buildUnrecognizedInput(), newState: WA_STATES.MAIN_MENU, tempData: {}};
+    result = {
+      reply: buildUnrecognizedInput(session.language),
+      newState: WA_STATES.MAIN_MENU,
+      tempData: {},
+      language: session.language,
+    };
   }
 
+  const nextLanguage = normalizeWhatsAppLanguage(result.language || session.language);
   await updateWhatsAppSession(phone, {
     state: result.newState,
     tempData: result.tempData || {},
@@ -4719,6 +5242,7 @@ async function handleWhatsAppMessage(from, body) {
     clientId,
     clientName,
     phone,
+    language: nextLanguage,
   });
 
   return result.reply;
@@ -4757,7 +5281,8 @@ exports.whatsappWebhook = functions.https.onRequest(async (req, res) => {
     reply = await handleWhatsAppMessage(from, body);
   } catch (err) {
     console.error("whatsappWebhook error:", err);
-    reply = "Une erreur est survenue. Veuillez réessayer.";
+    const existingSession = await getWhatsAppSession(normalizeWhatsAppPhone(from));
+    reply = getWhatsAppCopy(getWhatsAppLanguage(existingSession), "internalError");
   }
 
   await logWhatsAppMessage({
@@ -4845,6 +5370,10 @@ async function notifyWhatsAppPaymentResult(reference, ownerUid, status) {
 
   const clientUid = txData.clientUid || "";
   const paymentAmount = toNumber(txData.paymentAmount || 0);
+  const session = await getWhatsAppSession(whatsappPhone);
+  const language = normalizeWhatsAppLanguage(
+      txData.language || (session && session.language),
+  );
 
   if (status === "SUCCESS") {
     let clientName = "";
@@ -4861,21 +5390,32 @@ async function notifyWhatsAppPaymentResult(reference, ownerUid, status) {
     }
 
     const receipt = generateReceiptNumber();
-    const msg = `✅ PAIEMENT CONFIRMÉ!\n\n💵 ${formatFC(paymentAmount)} reçu via Mobile Money\n🧾 Reçu: #${receipt}\n💰 Dette restante: ${formatFC(debtLeft)}\n\nMerci ${clientName}! 🙏\nFondation Gervais vous souhaite une bonne journée.\n\n[0] Retour au menu principal`;
+    const msg = getWhatsAppCopy(language, "paymentConfirmed", {
+      amountFc: formatFC(paymentAmount),
+      receipt,
+      remainingDebtFc: formatFC(debtLeft),
+      clientName,
+    });
     await sendWhatsAppMessage(whatsappPhone, msg);
 
     await updateWhatsAppSession(whatsappPhone, {
       state: WA_STATES.MAIN_MENU,
       tempData: {},
+      language,
     });
   } else if (status === "FAILED") {
     const reason = txData.failureReason || txData.callbackMessage || "";
-    const msg = `❌ PAIEMENT ÉCHOUÉ\n\nLe paiement de ${formatFC(paymentAmount)} n'a pas abouti.${reason ? `\nRaison: ${reason}` : ""}\n\nVeuillez réessayer.\n\n[0] Retour au menu principal`;
+    const reasonLine = reason ? getWhatsAppCopy(language, "failureReasonLine", {reason}) : "";
+    const msg = getWhatsAppCopy(language, "paymentFailed", {
+      amountFc: formatFC(paymentAmount),
+      reasonLine,
+    });
     await sendWhatsAppMessage(whatsappPhone, msg);
 
     await updateWhatsAppSession(whatsappPhone, {
       state: WA_STATES.MAIN_MENU,
       tempData: {},
+      language,
     });
   }
 }
@@ -4895,9 +5435,10 @@ exports.whatsappSessionCleanup = functions.pubsub
       for (const doc of expiredSnap.docs) {
         const data = doc.data() || {};
         const phone = data.phone || doc.id;
+        const language = getWhatsAppLanguage(data);
 
         try {
-          await sendWhatsAppMessage(phone, `⏰ Session expirée.\n\nEnvoyez n'importe quel message pour recommencer.\n\nFondation Gervais 🌟`);
+          await sendWhatsAppMessage(phone, getWhatsAppCopy(language, "sessionExpired"));
         } catch (e) {
           console.error("Failed to send timeout message:", e);
         }
