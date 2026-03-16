@@ -3491,13 +3491,13 @@ const WHATSAPP_COPY = {
       "Benga Fondation Gervais pona komikomisa.\n" +
       "📞 +243 825333567 to tindela biso email na fondationgervais@gmail.com",
     accountTitle: "💳 KONTO NA YO",
-    debtLine: "💰 *NIONGO OYO ETIKALI:* {remainingDebtFc}",
+    debtLine: "💰 *NIONGO ETIKALI:* {remainingDebtFc}",
     savingsLine: "🏦 Epargnes: {savingsFc}",
     whatToDo: "Olingi kosala nini?",
     noDebt: "✅ Niongo etikali lisusu te.",
     returnMainMenu: "[0] Zonga na menu principal",
     paymentTitle: "💵 KOFUTA",
-    remainingDebt: "Niongo oyo etikali: {remainingDebtFc}",
+    remainingDebt: "Niongo etikali: {remainingDebtFc}",
     paymentQuestion: "Olingi kofuta mbongo boni?",
     payFullAmount: "[1] Futa {remainingDebtFc}",
     payOtherAmount: "[2] Futa montant mosusu",
@@ -3568,7 +3568,7 @@ const WHATSAPP_COPY = {
       "✅ PAIEMENT ENDIMAMI!\n\n" +
       "💵 {amountFc} eyambami na Mobile Money\n" +
       "🧾 Reçu: #{receipt}\n" +
-      "💰 Niongo oyo etikali: {remainingDebtFc}\n\n" +
+      "💰 Niongo etikali: {remainingDebtFc}\n\n" +
       "Matondi {clientName}! 🙏\n" +
       "Fondation Gervais ezali kolulela yo mokolo malamu.\n\n" +
       "[0] Zonga na menu principal",
