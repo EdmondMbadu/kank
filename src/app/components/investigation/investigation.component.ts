@@ -320,6 +320,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.ensureDefaultLocation();
       this.applyInvestigatorLocationFromSchedule();
       this.updateTaskForceLocations();
+      this.loadFeedbackForAccessibleLocations();
       this.loadAllEmployeesForLocations();
       this.loadAllProblematicClients();
     });
@@ -421,7 +422,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   private initFeedbackDocForLocation(userId: string): void {
     this.feedbackDoc = this.getFeedbackDocRef(userId);
-    this.loadFeedbackForLocation(userId);
+    this.loadFeedbackForAccessibleLocations();
   }
 
   private getDayDocRef(userId?: string) {
@@ -444,30 +445,67 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     );
   }
 
-  private loadFeedbackForLocation(userId: string): void {
+  private loadFeedbackForAccessibleLocations(): void {
     if (this.feedbackDocSub) {
       this.feedbackDocSub.unsubscribe();
     }
 
-    this.feedbackDocSub = this.afs
-      .collection<ClientFeedbackDayDoc>(
-        `users/${userId}/clientFeedbackDays`
-      )
-      .valueChanges()
-      .subscribe((docs) => {
-        const merged: ClientFeedbackEntry[] = [];
-        (docs || []).forEach((doc) => {
-          const entries = Array.isArray(doc?.entries) ? doc!.entries! : [];
+    if (!this.locations.length) {
+      this.allClientFeedbackEntries = [];
+      this.clientFeedbackEntries = [];
+      this.feedbackSummary = this.buildFeedbackSummary([]);
+      this.feedbackSummaryAll = this.buildFeedbackSummary([]);
+      return;
+    }
+
+    const sources = this.locations
+      .filter((loc) => !!loc?.uid)
+      .map((loc) =>
+        this.afs
+          .collection<ClientFeedbackDayDoc>(`users/${loc.uid}/clientFeedbackDays`)
+          .valueChanges()
+          .pipe(
+            map((docs) => ({
+              ownerId: loc.uid,
+              locationName: loc.firstName || loc.email || 'Site',
+              docs: Array.isArray(docs) ? docs : [],
+            }))
+          )
+      );
+
+    if (!sources.length) {
+      this.allClientFeedbackEntries = [];
+      this.clientFeedbackEntries = [];
+      this.feedbackSummary = this.buildFeedbackSummary([]);
+      this.feedbackSummaryAll = this.buildFeedbackSummary([]);
+      return;
+    }
+
+    this.feedbackDocSub = combineLatest(sources).subscribe((results) => {
+      const merged: ClientFeedbackEntry[] = [];
+
+      results.forEach(({ ownerId, locationName, docs }) => {
+        docs.forEach((doc) => {
+          const entries = Array.isArray(doc?.entries) ? doc.entries : [];
           entries.forEach((entry) => {
-            merged.push({ ...entry, dayKey: entry.dayKey || doc?.dateKey });
+            merged.push({
+              ...entry,
+              dayKey: entry.dayKey || doc?.dateKey,
+              clientLocationOwnerId:
+                entry.clientLocationOwnerId || ownerId,
+              clientLocationName:
+                entry.clientLocationName || locationName,
+            });
           });
         });
-        this.allClientFeedbackEntries = this.sortFeedbackEntries(merged);
-        this.feedbackSummaryAll = this.buildFeedbackSummary(
-          this.allClientFeedbackEntries
-        );
-        this.applyFeedbackFilter();
       });
+
+      this.allClientFeedbackEntries = this.sortFeedbackEntries(merged);
+      this.feedbackSummaryAll = this.buildFeedbackSummary(
+        this.allClientFeedbackEntries
+      );
+      this.applyFeedbackFilter();
+    });
 
     this.subs.add(this.feedbackDocSub);
   }
