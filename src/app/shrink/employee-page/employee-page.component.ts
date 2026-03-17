@@ -2449,6 +2449,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return !this.hasConfirmedPresenceForDay(target);
   }
 
+  get currentAttendanceAttachment(): any | null {
+    const target = this.attendanceTargetDate || new Date();
+    return this.findAttachmentForDay(this.dateToMonthDayYear(target));
+  }
+
   private openAttendanceModal(mode: 'today' | 'yesterday') {
     this.attendanceMode = mode;
     this.attendanceTargetDate = this.resolveAttendanceTargetDate(mode);
@@ -3355,6 +3360,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           attMeta
         );
 
+        await this.data.updateEmployeeAttendanceAttachment(
+          employee.uid!,
+          this.auth.currentUser.uid,
+          label,
+          attMeta
+        );
+
+        employee.attendanceAttachments = {
+          ...(employee.attendanceAttachments ?? {}),
+          [label]: attMeta,
+        };
+
         employee._uploading = false;
         this.clearAttachment(employee);
       }
@@ -4099,12 +4116,56 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return ua?.platform || '';
   }
 
+  public attachmentUrl(att: any): string {
+    return (
+      att?.url ||
+      att?.downloadURL ||
+      att?.downloadUrl ||
+      att?.secureUrl ||
+      ''
+    )
+      .toString()
+      .trim();
+  }
+
+  public attachmentKind(att: any): 'image' | 'video' | '' {
+    const contentType = (
+      att?.contentType ||
+      att?.type ||
+      att?.mimeType ||
+      att?.metadata?.contentType ||
+      ''
+    )
+      .toString()
+      .toLowerCase();
+
+    if (contentType.startsWith('image/')) return 'image';
+    if (contentType.startsWith('video/')) return 'video';
+
+    const url = this.attachmentUrl(att).toLowerCase();
+    if (/\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)(\?|$)/.test(url)) {
+      return 'image';
+    }
+    if (/\.(mp4|mov|webm|ogg|m4v)(\?|$)/.test(url)) {
+      return 'video';
+    }
+
+    return '';
+  }
+
+  public viewAttendanceAttachment(att: any, dateLabel?: string) {
+    if (!att) return;
+    this.openAttachmentViewer(
+      att,
+      dateLabel || this.dateToMonthDayYear(this.attendanceTargetDate)
+    );
+  }
+
   // 🔧 REPLACE your current method with this:
   private openAttachmentViewer(att: any, dateLabel: string) {
-    const ct = (att?.contentType || '').toString();
-    const isImage = ct.startsWith('image/');
-    const isVideo = ct.startsWith('video/');
-    if (!isImage && !isVideo) return;
+    const kind = this.attachmentKind(att);
+    const url = this.attachmentUrl(att);
+    if (!kind || !url) return;
 
     const takenAtDate =
       this.coerceToDate(att?.takenAt) ||
@@ -4134,8 +4195,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     this.attachmentViewer = {
       open: true,
-      url: att.url,
-      kind: isImage ? 'image' : 'video',
+      url,
+      kind,
       dateLabel,
       takenAt: takenAtDate,
       takenAtSource: normalizedSource as
@@ -4269,13 +4330,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   private findAttachmentForDay(dateLabel: string) {
+    const normalizedDate = this.normalizeLabel(dateLabel);
+
     // 1) subcollection cache
-    const list = this.monthAttachmentsByLabel[dateLabel];
+    const list =
+      this.monthAttachmentsByLabel[normalizedDate] ||
+      this.monthAttachmentsByLabel[dateLabel];
     if (list?.length) return this.pickLatestAttachment(list);
 
     // 2) legacy fallback (your existing code below) ...
     const legacy = (this.employee as any)?.attendanceAttachments || {};
-    const keys = Object.keys(legacy).filter((k) => k.startsWith(dateLabel));
+    const keys = Object.keys(legacy).filter(
+      (k) =>
+        k.startsWith(dateLabel) || this.normalizeLabel(k) === normalizedDate
+    );
     if (!keys.length) return null;
     const bestKey = keys.reduce((p, c) => {
       const P = p.split('-'),

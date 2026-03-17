@@ -2400,6 +2400,44 @@
           {{ employee._attachmentError }}
         </p>
 
+        <div
+          *ngIf="currentAttendanceAttachment as savedAttachment"
+          class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-medium text-emerald-900">
+                Photo enregistrée pour {{ attendanceModalDateLabel }}
+              </p>
+              <p class="text-xs text-emerald-700">
+                Vous pouvez l’ouvrir à nouveau ici.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              (click)="viewAttendanceAttachment(savedAttachment)"
+              class="rounded-full bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+            >
+              Voir
+            </button>
+          </div>
+
+          <img
+            *ngIf="attachmentKind(savedAttachment) === 'image'"
+            [src]="attachmentUrl(savedAttachment)"
+            alt="Photo de présence enregistrée"
+            class="mt-3 max-h-48 rounded-lg border border-emerald-200 object-contain"
+          />
+
+          <video
+            *ngIf="attachmentKind(savedAttachment) === 'video'"
+            [src]="attachmentUrl(savedAttachment)"
+            controls
+            class="mt-3 w-full max-h-64 rounded-lg border border-emerald-200"
+          ></video>
+        </div>
+
         <div *ngIf="employee._attachmentPreview" class="mt-3">
           <img
             *ngIf="employee._attachmentType?.startsWith('image/')"
