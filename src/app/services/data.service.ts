@@ -1498,6 +1498,17 @@ export class DataService {
 
     return managementRef.set(data, { merge: true });
   }
+
+  updateManagementReserveRevealTimeKinshasa(timeValue: string) {
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+
+    return managementRef.set(
+      { reserveRevealTimeKinshasa: timeValue },
+      { merge: true }
+    );
+  }
   updateManagementInfoToAddMoneyInTheBank(
     amountFrancs: string,
     amountDollars: string,

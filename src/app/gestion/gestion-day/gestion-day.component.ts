@@ -23,6 +23,8 @@ export class GestionDayComponent implements OnInit {
   avgPerf = 0; // 0..100
   gradId = 'perfGrad-' + Math.random().toString(36).slice(2);
   managementInfo?: Management = {};
+  reserveRevealTimeInput = '22:30';
+  isSavingReserveRevealTime = false;
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -34,6 +36,9 @@ export class GestionDayComponent implements OnInit {
   ngOnInit(): void {
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data?.[0] || {};
+      this.reserveRevealTimeInput = this.normalizeRevealTime(
+        this.managementInfo?.reserveRevealTimeKinshasa
+      );
       this.initalizeInputs();
       this.updateReserveGraphics(this.graphicsRange);
       this.updateServeGraphics(this.graphicsRangeServe);
@@ -211,6 +216,7 @@ export class GestionDayComponent implements OnInit {
     totalInDollar: number;
     actual?: number;
     actualInDollar?: number;
+    hasActualSubmission?: boolean;
     trackingId: string;
     // NEW
     missingReasons?: number; // # comments still absent
@@ -243,6 +249,55 @@ export class GestionDayComponent implements OnInit {
   }> = [];
   overallWeeklyPaymentTotal: number = 0;
   overallWeeklyPaymentTotalDollar: number = 0;
+
+  get reserveRevealTimeLabel(): string {
+    return this.normalizeRevealTime(this.managementInfo?.reserveRevealTimeKinshasa);
+  }
+
+  get shouldHideReserveGivenAmounts(): boolean {
+    if (this.auth.isAdmin) return false;
+
+    const selected = this.parseMonthDayYearLabel(this.requestDateCorrectFormat);
+    const now = this.kinshasaNowParts();
+    if (!selected) return true;
+
+    const selectedStamp = selected.y * 10_000 + selected.m * 100 + selected.d;
+    const todayStamp = now.y * 10_000 + now.m * 100 + now.d;
+
+    if (selectedStamp < todayStamp) return false;
+    if (selectedStamp > todayStamp) return true;
+
+    const currentMinutes = now.hh * 60 + now.mm;
+    const { hour, minute } = this.parseRevealTime(
+      this.managementInfo?.reserveRevealTimeKinshasa
+    );
+    const revealMinutes = hour * 60 + minute;
+    return currentMinutes < revealMinutes;
+  }
+
+  get reserveSubmittedCount(): number {
+    return this.reserveTotals.filter((row) => row.hasActualSubmission).length;
+  }
+
+  async saveReserveRevealTime(): Promise<void> {
+    if (!this.auth.isAdmin || this.isSavingReserveRevealTime) return;
+
+    const normalized = this.normalizeRevealTime(this.reserveRevealTimeInput);
+    this.isSavingReserveRevealTime = true;
+    try {
+      await this.data.updateManagementReserveRevealTimeKinshasa(normalized);
+      this.reserveRevealTimeInput = normalized;
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        reserveRevealTimeKinshasa: normalized,
+      };
+    } catch (error) {
+      console.error('Unable to update reserve reveal time', error);
+      alert("Impossible d'enregistrer l'heure de révélation.");
+    } finally {
+      this.isSavingReserveRevealTime = false;
+    }
+  }
   getAllClients() {
     if (this.isFetchingClients) return;
     this.isFetchingClients = true;
@@ -482,6 +537,7 @@ export class GestionDayComponent implements OnInit {
                 ),
               0
             ),
+            hasActualSubmission: todayKeys.length > 0,
             trackingId: user.uid!,
             /* NEW */
             missingReasons,
@@ -1721,6 +1777,84 @@ export class GestionDayComponent implements OnInit {
       ev.stopPropagation();
       this.openBudgetModal();
     }
+  }
+
+  private normalizeRevealTime(value?: string | null): string {
+    const fallback = '22:30';
+    const raw = (value || '').trim();
+    if (!/^\d{1,2}:\d{2}$/.test(raw)) return fallback;
+
+    const [hourStr, minuteStr] = raw.split(':');
+    const hour = Number(hourStr);
+    const minute = Number(minuteStr);
+
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return fallback;
+    }
+
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+
+  private parseRevealTime(value?: string | null): {
+    hour: number;
+    minute: number;
+  } {
+    const normalized = this.normalizeRevealTime(value);
+    const [hour, minute] = normalized.split(':').map(Number);
+    return { hour, minute };
+  }
+
+  private parseMonthDayYearLabel(label: string): {
+    m: number;
+    d: number;
+    y: number;
+  } | null {
+    if (!label) return null;
+    const parts = label.split('-').map(Number);
+    if (parts.length < 3 || parts.some((part) => !Number.isFinite(part))) {
+      return null;
+    }
+    return { m: parts[0], d: parts[1], y: parts[2] };
+  }
+
+  private kinshasaNowParts(): {
+    y: number;
+    m: number;
+    d: number;
+    hh: number;
+    mm: number;
+  } {
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Kinshasa',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    const bag: Record<string, string> = {};
+    for (const part of formatter.formatToParts(new Date())) {
+      if (part.type !== 'literal') {
+        bag[part.type] = part.value;
+      }
+    }
+
+    return {
+      y: Number(bag['year']),
+      m: Number(bag['month']),
+      d: Number(bag['day']),
+      hh: Number(bag['hour']),
+      mm: Number(bag['minute']),
+    };
   }
 
   get center(): number {

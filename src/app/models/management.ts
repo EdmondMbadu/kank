@@ -14,6 +14,7 @@ export class Management {
   bankDepositFrancs?: { [key: string]: string } = {};
   budgetedExpenses?: { [date: string]: string };
   moneyInHandsTracking?: { [key: string]: string } = {};
+  reserveRevealTimeKinshasa?: string;
 }
 
 export class Audit {
