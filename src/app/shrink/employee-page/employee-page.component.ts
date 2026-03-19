@@ -4117,11 +4117,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return /\.(png|jpe?g|gif|webp|bmp|svg|heic)(\?|$)/i.test(url);
   }
 
-  auditReasonLabel(reason?: string): string {
-    const value = (reason || '').trim();
-    return value || 'Aucune raison précisée';
-  }
-
   private async checkGeoPermission() {
     try {
       const nav: any = navigator as any;
