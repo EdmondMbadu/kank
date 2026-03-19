@@ -121,8 +121,10 @@
       </div>
       <div class="rounded-3xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-cyan-100/60 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
         <span class="text-xs font-semibold uppercase tracking-wider text-cyan-700">Clients distincts</span>
-        <div class="mt-2 text-3xl font-extrabold tabular-nums text-cyan-950">{{ stats.overallDistinctParticipantCount }}</div>
-        <p class="mt-2 text-xs font-medium text-cyan-800/80">Global</p>
+        <div class="mt-2 text-3xl font-extrabold tabular-nums text-cyan-950">{{ overallDistinctParticipantCountDisplay }}</div>
+        <p class="mt-2 text-xs font-medium text-cyan-800/80">
+          {{ overallParticipantStatsReady ? 'Global' : 'Global · à la demande' }}
+        </p>
       </div>
     </div>
 
@@ -133,7 +135,11 @@
         <div>
           <h2 class="text-lg font-bold text-slate-900">Contacts WhatsApp distincts</h2>
           <p class="mt-0.5 text-sm text-slate-500">
-            <span class="font-semibold text-slate-700">{{ activeParticipantCount }}</span> contact(s)
+            <span class="font-semibold text-slate-700">{{
+              participantsViewMode === 'global' && !overallParticipantStatsReady
+                ? '...'
+                : activeParticipantCount
+            }}</span> contact(s)
             · {{ activeParticipantLabel }}
           </p>
           <p *ngIf="reportLabel && participantsViewMode === 'period'" class="mt-2 inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">

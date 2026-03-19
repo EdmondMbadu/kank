@@ -13,7 +13,7 @@ interface WhatsAppStats {
   complaintClosedCount: number;
   paymentCount: number;
   distinctParticipantCount: number;
-  overallDistinctParticipantCount: number;
+  overallDistinctParticipantCount: number | null;
 }
 
 interface WhatsAppMessagePagination {
@@ -105,7 +105,7 @@ export class WhatsappAdminComponent implements OnInit {
     complaintClosedCount: 0,
     paymentCount: 0,
     distinctParticipantCount: 0,
-    overallDistinctParticipantCount: 0,
+    overallDistinctParticipantCount: null,
   };
 
   latestMessages: WhatsAppMessage[] = [];
@@ -124,6 +124,7 @@ export class WhatsappAdminComponent implements OnInit {
   reportLabel = '';
   loading = false;
   error = '';
+  overallParticipantStatsReady = false;
 
   messagesOpen = false;
   participantsOpen = false;
@@ -187,9 +188,10 @@ export class WhatsappAdminComponent implements OnInit {
         distinctParticipantCount: this.toNumber(
           data.stats?.distinctParticipantCount
         ),
-        overallDistinctParticipantCount: this.toNumber(
-          data.stats?.overallDistinctParticipantCount
-        ),
+        overallDistinctParticipantCount:
+          data.stats?.overallDistinctParticipantCount == null
+            ? null
+            : this.toNumber(data.stats?.overallDistinctParticipantCount),
       };
       this.latestMessages = Array.isArray(data.latestMessages)
         ? data.latestMessages
@@ -207,18 +209,28 @@ export class WhatsappAdminComponent implements OnInit {
       this.participants = Array.isArray(data.participants)
         ? data.participants
         : [];
-      if (Array.isArray(data.overallParticipants) && data.overallParticipants.length) {
+      this.overallParticipantStatsReady =
+        this.overallParticipantsLoaded ||
+        data.stats?.overallDistinctParticipantCount != null;
+      if (
+        Array.isArray(data.overallParticipants) &&
+        data.overallParticipants.length
+      ) {
         this.overallParticipants = data.overallParticipants;
         this.overallParticipantsLoaded = true;
+        this.overallParticipantStatsReady = true;
       } else if (
-        this.toNumber(data.stats?.overallDistinctParticipantCount) === 0
+        data.stats?.overallDistinctParticipantCount === 0
       ) {
         this.overallParticipants = [];
         this.overallParticipantsLoaded = true;
+        this.overallParticipantStatsReady = true;
       }
     } catch (err: any) {
+      console.error('WhatsApp admin load failed', err);
       this.error =
-        err?.message || 'Erreur lors du chargement des données WhatsApp.';
+        err?.message ||
+        'Erreur lors du chargement des données WhatsApp. Vérifiez aussi les logs Firebase Functions.';
     } finally {
       this.loading = false;
     }
@@ -255,6 +267,7 @@ export class WhatsappAdminComponent implements OnInit {
       await firstValueFrom(callable({ complaintId }));
       await this.loadReport(this.messagePage);
     } catch (err: any) {
+      console.error('WhatsApp complaint close failed', err);
       this.error =
         err?.message || 'Erreur lors de la clôture de la plainte.';
     } finally {
@@ -278,6 +291,7 @@ export class WhatsappAdminComponent implements OnInit {
       await firstValueFrom(callable({ complaintId }));
       await this.loadReport(this.messagePage);
     } catch (err: any) {
+      console.error('WhatsApp complaint delete failed', err);
       this.error =
         err?.message || 'Erreur lors de la suppression de la plainte.';
     } finally {
@@ -330,7 +344,7 @@ export class WhatsappAdminComponent implements OnInit {
       return this.overallParticipants.length;
     }
     return this.participantsViewMode === 'global'
-      ? this.stats.overallDistinctParticipantCount
+      ? this.toNumber(this.stats.overallDistinctParticipantCount)
       : this.stats.distinctParticipantCount;
   }
 
@@ -358,7 +372,9 @@ export class WhatsappAdminComponent implements OnInit {
     if (this.overallParticipantsLoading) return;
     if (
       this.overallParticipantsLoaded &&
-      (expectedCount === 0 || this.overallParticipants.length >= expectedCount)
+      (expectedCount == null ||
+        expectedCount === 0 ||
+        this.overallParticipants.length >= expectedCount)
     ) {
       return;
     }
@@ -380,7 +396,9 @@ export class WhatsappAdminComponent implements OnInit {
         ),
       };
       this.overallParticipantsLoaded = true;
+      this.overallParticipantStatsReady = true;
     } catch (err: any) {
+      console.error('WhatsApp global participants load failed', err);
       this.error =
         err?.message ||
         'Erreur lors du chargement global des contacts WhatsApp.';
@@ -417,6 +435,11 @@ export class WhatsappAdminComponent implements OnInit {
 
   formatFC(value: any): string {
     return `${this.toNumber(value).toLocaleString('fr-FR')} FC`;
+  }
+
+  get overallDistinctParticipantCountDisplay(): string {
+    if (!this.overallParticipantStatsReady) return '...';
+    return String(this.toNumber(this.stats.overallDistinctParticipantCount));
   }
 
   getComplaintStatusLabel(status: string | undefined): string {

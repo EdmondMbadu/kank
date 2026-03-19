@@ -2,6 +2,9 @@
   "functions": {
     "source": "functions"
   },
+  "firestore": {
+    "indexes": "firestore.indexes.json"
+  },
   "hosting": {
     "site": "kank-4bbbc",
     "rewrites": [

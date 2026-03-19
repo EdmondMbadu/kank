@@ -1,0 +1,34 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "mobileMoneyTransactionLookup",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "whatsappOriginated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updatedAtMs",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "mobileMoneyTransactions",
+      "fieldPath": "whatsappOriginated",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        },
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
+  ]
+}

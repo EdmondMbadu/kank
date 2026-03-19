@@ -1211,6 +1211,11 @@ async function checkMobileMoneyPaymentInternal(ownerUid, reference) {
     checkCode: code,
     providerStatus,
     capturedPendingSinceMs: status === "CAPTURED_PENDING" ? capturedPendingSinceMs : null,
+    whatsappOriginated: Boolean(txData.whatsappOriginated),
+    whatsappPhone: txData.whatsappPhone || "",
+    clientName: txData.clientName || "",
+    paymentAmount: txData.paymentAmount || "",
+    clientUid: txData.clientUid || "",
   });
 
   return {
@@ -4024,14 +4029,92 @@ function buildWhatsAppClientFullName(clientData) {
 }
 
 async function listWhatsAppPaymentDocs() {
-  const usersSnap = await db.collection("users").get();
-  const queryJobs = usersSnap.docs.map((userDoc) => (
-    db.collection(`users/${userDoc.id}/mobileMoneyTransactions`)
+  const projection = [
+    "whatsappOriginated",
+    "whatsappPhone",
+    "updatedAtMs",
+    "createdAtMs",
+    "clientName",
+    "paymentAmount",
+    "status",
+    "reference",
+    "ownerUid",
+    "clientUid",
+  ];
+  const snap = await db.collection(MOBILE_MONEY_LOOKUP_COLLECTION)
+      .where("whatsappOriginated", "==", true)
+      .select(...projection)
+      .get();
+  return snap.docs;
+}
+
+async function listWhatsAppPaymentDocsForRange(startMs, endMs) {
+  const projection = [
+    "whatsappOriginated",
+    "whatsappPhone",
+    "updatedAtMs",
+    "createdAtMs",
+    "clientName",
+    "paymentAmount",
+    "status",
+    "reference",
+    "ownerUid",
+    "clientUid",
+  ];
+
+  try {
+    const snap = await db.collection(MOBILE_MONEY_LOOKUP_COLLECTION)
         .where("whatsappOriginated", "==", true)
-        .get()
-  ));
-  const querySnaps = await Promise.all(queryJobs);
-  return querySnaps.flatMap((snap) => snap.docs);
+        .where("updatedAtMs", ">=", startMs)
+        .where("updatedAtMs", "<", endMs)
+        .orderBy("updatedAtMs", "desc")
+        .select(...projection)
+        .get();
+    return snap.docs;
+  } catch (error) {
+    if (Number(error && error.code) !== 9) {
+      throw error;
+    }
+    console.warn(
+        "WhatsApp payment range query unavailable on lookup collection; falling back to full WhatsApp lookup scan.",
+        error,
+    );
+    const docs = await listWhatsAppPaymentDocs();
+    return docs.filter((doc) => {
+      const updatedAtMs = Number(doc.get("updatedAtMs") || doc.get("createdAtMs") || 0);
+      return updatedAtMs >= startMs && updatedAtMs < endMs;
+    });
+  }
+}
+
+async function hydrateWhatsAppPaymentDocData(item) {
+  const base = {...(item || {})};
+  const hasEnoughData =
+    String(base.whatsappPhone || "").trim() &&
+    String(base.clientName || "").trim() &&
+    String(base.paymentAmount || "").trim();
+  if (hasEnoughData) return base;
+
+  const ownerUid = String(base.ownerUid || "").trim();
+  const reference = String(base.reference || "").trim();
+  if (!ownerUid || !reference) return base;
+
+  try {
+    const txSnap = await db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`).get();
+    if (!txSnap.exists) return base;
+    return {
+      ...txSnap.data(),
+      ...base,
+      reference: reference || txSnap.id,
+    };
+  } catch (error) {
+    console.warn("Failed to hydrate WhatsApp payment lookup doc", {
+      ownerUid,
+      reference,
+      error,
+    });
+    return base;
+  }
 }
 
 async function fetchWhatsAppPhoneIndexMap(participantKeys) {
@@ -4078,7 +4161,7 @@ async function buildOverallWhatsAppParticipants(paymentDocs = null) {
   });
 
   for (const doc of resolvedPaymentDocs) {
-    const item = doc.data() || {};
+    const item = await hydrateWhatsAppPaymentDocData(doc.data() || {});
     addWhatsAppParticipant(
         overallParticipants,
         item.whatsappPhone || "",
@@ -4104,6 +4187,7 @@ async function buildOverallWhatsAppParticipants(paymentDocs = null) {
 exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) => {
   await assertWhatsAppAdminAccess(context);
 
+  const perfStartedAt = Date.now();
   const range = buildWhatsAppReportRange(data || {});
   const startMs = range.start.getTime();
   const endMs = range.end.getTime();
@@ -4112,6 +4196,9 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
   const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ?
     requestedPage : 1;
   const phoneSearch = normalizePhoneSearch(data && data.phoneSearch);
+  const includeOverallParticipants = Boolean(
+      data && data.includeOverallParticipants,
+  );
 
   const latestMessagesQuery = db.collection(WHATSAPP_MESSAGES_COLLECTION)
       .where("createdAtMs", ">=", startMs)
@@ -4124,8 +4211,9 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
   const [latestMessagesSnap, complaintsSnap, paymentDocs] = await Promise.all([
     latestMessagesQuery.get(),
     complaintsQuery.get(),
-    listWhatsAppPaymentDocs(),
+    listWhatsAppPaymentDocsForRange(startMs, endMs),
   ]);
+  const afterBaseQueriesAt = Date.now();
 
   const periodParticipants = new Map();
   const allMessages = latestMessagesSnap.docs.map((doc) => {
@@ -4196,10 +4284,11 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     );
     return complaint;
   }));
+  const afterComplaintsAt = Date.now();
 
   const payments = [];
   for (const doc of paymentDocs) {
-    const item = doc.data() || {};
+    const item = await hydrateWhatsAppPaymentDocData(doc.data() || {});
     const updatedAtMs = Number(item.updatedAtMs || item.createdAtMs || 0);
     const status = String(item.status || "").toUpperCase();
     if (status !== "SUCCESS") continue;
@@ -4245,13 +4334,33 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
   }
 
   payments.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+  const afterPaymentsAt = Date.now();
 
-  const [phoneIndexMap, overallParticipantData] = await Promise.all([
-    fetchWhatsAppPhoneIndexMap(Array.from(periodParticipants.keys())),
-    buildOverallWhatsAppParticipants(paymentDocs),
-  ]);
+  const phoneIndexMap = await fetchWhatsAppPhoneIndexMap(
+      Array.from(periodParticipants.keys()),
+  );
   const participants = buildWhatsAppParticipantList(periodParticipants, phoneIndexMap);
-  const overallParticipantList = overallParticipantData.participants;
+  const afterParticipantsAt = Date.now();
+  let overallParticipantData = null;
+  if (includeOverallParticipants) {
+    overallParticipantData = await buildOverallWhatsAppParticipants(paymentDocs);
+  }
+  const afterOverallParticipantsAt = Date.now();
+
+  console.log("WhatsApp admin report timings", {
+    mode: range.mode,
+    label: range.label,
+    includeOverallParticipants,
+    messagesQueried: latestMessagesSnap.size,
+    complaintsQueried: complaintsSnap.size,
+    paymentDocsQueried: paymentDocs.length,
+    baseQueriesMs: afterBaseQueriesAt - perfStartedAt,
+    complaintEnrichmentMs: afterComplaintsAt - afterBaseQueriesAt,
+    paymentProcessingMs: afterPaymentsAt - afterComplaintsAt,
+    participantsMs: afterParticipantsAt - afterPaymentsAt,
+    overallParticipantsMs: afterOverallParticipantsAt - afterParticipantsAt,
+    totalMs: afterOverallParticipantsAt - perfStartedAt,
+  });
 
   return {
     ok: true,
@@ -4270,7 +4379,9 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       complaintClosedCount: complaints.filter((item) => String(item.status || "open") === "closed").length,
       paymentCount: payments.length,
       distinctParticipantCount: participants.length,
-      overallDistinctParticipantCount: overallParticipantData.count,
+      overallDistinctParticipantCount: overallParticipantData ?
+        overallParticipantData.count :
+        null,
     },
     messages: {
       page: safePage,
@@ -4283,7 +4394,10 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
     complaints,
     payments: payments.slice(0, 50),
     participants,
-    overallParticipants: overallParticipantList,
+    overallParticipants: overallParticipantData ?
+      overallParticipantData.participants :
+      [],
+    overallParticipantsIncluded: includeOverallParticipants,
   };
 });
 
@@ -4681,6 +4795,13 @@ async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPho
     dbWriteDone: false,
     createdAtMs,
     whatsappOriginated: true,
+    whatsappPhone: session.phone || "",
+    clientName: [
+      clientInfo.middleName || "",
+      clientInfo.firstName || "",
+      clientInfo.lastName || "",
+    ].filter((x) => x && String(x).trim()).join(" "),
+    paymentAmount: String(paymentAmount),
   });
 
   return {
