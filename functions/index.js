@@ -3418,6 +3418,7 @@ function getTwilioClient() {
 
 const WHATSAPP_SESSION_COLLECTION = "whatsappSessions";
 const WHATSAPP_PHONE_INDEX_COLLECTION = "whatsappPhoneIndex";
+const WHATSAPP_PARTICIPANTS_COLLECTION = "whatsappParticipants";
 const WHATSAPP_COMPLAINTS_COLLECTION = "whatsappComplaints";
 const WHATSAPP_MESSAGES_COLLECTION = "whatsappMessages";
 const WHATSAPP_STATS_COLLECTION = "whatsappStats";
@@ -3977,6 +3978,38 @@ function addWhatsAppParticipant(map, phone, interactionAtMs, fullName = "") {
   });
 }
 
+async function upsertTrackedWhatsAppParticipant({
+  phone,
+  fullName = "",
+  interactionAtMs = Date.now(),
+}) {
+  const key = getWhatsAppParticipantKey(phone);
+  if (!key) return;
+
+  const ref = db.doc(`${WHATSAPP_PARTICIPANTS_COLLECTION}/${key}`);
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const existing = snap.exists ? (snap.data() || {}) : {};
+    const resolvedName = String(fullName || "").trim();
+    const safeName =
+      resolvedName.toLowerCase() === "client inconnu" ? "" : resolvedName;
+
+    transaction.set(ref, {
+      key,
+      phone: preferWhatsAppDisplayPhone(existing.phone || "", phone) ||
+        existing.phone ||
+        normalizeWhatsAppPhone(phone) ||
+        key,
+      fullName: String(existing.fullName || "").trim() || safeName,
+      lastInteractionAtMs: Math.max(
+          Number(existing.lastInteractionAtMs || 0),
+          Number(interactionAtMs || 0),
+      ),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, {merge: true});
+  });
+}
+
 function addWhatsAppParticipantKey(set, phone) {
   const key = getWhatsAppParticipantKey(phone);
   if (key) set.add(key);
@@ -4131,7 +4164,87 @@ async function fetchWhatsAppPhoneIndexMap(participantKeys) {
   return phoneIndexMap;
 }
 
+function timestampToMillis(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === "function") {
+    return Number(value.toMillis() || 0);
+  }
+  return Number(value || 0);
+}
+
+async function listTrackedWhatsAppParticipants() {
+  const snap = await db.collection(WHATSAPP_PARTICIPANTS_COLLECTION)
+      .select("phone", "fullName", "lastInteractionAtMs")
+      .get();
+
+  const participantMap = new Map();
+  snap.docs.forEach((doc) => {
+    const item = doc.data() || {};
+    addWhatsAppParticipant(
+        participantMap,
+        item.phone || doc.id,
+        Number(item.lastInteractionAtMs || 0),
+        item.fullName || "",
+    );
+  });
+
+  const phoneIndexMap = await fetchWhatsAppPhoneIndexMap(
+      Array.from(participantMap.keys()),
+  );
+  const participants = buildWhatsAppParticipantList(
+      participantMap,
+      phoneIndexMap,
+  );
+
+  return {
+    participants,
+    count: participants.length,
+  };
+}
+
+async function getTrackedWhatsAppParticipantCount() {
+  try {
+    const aggregateSnap = await db.collection(WHATSAPP_PARTICIPANTS_COLLECTION)
+        .count()
+        .get();
+    const count = Number(aggregateSnap.data().count || 0);
+    return count > 0 ? count : null;
+  } catch (error) {
+    console.warn("Failed to count WhatsApp tracked participants", error);
+    return null;
+  }
+}
+
+async function syncTrackedWhatsAppParticipants(participantMap) {
+  const participants = Array.from(participantMap.values());
+  for (const participantChunk of chunkArray(participants, 400)) {
+    const batch = db.batch();
+    participantChunk.forEach((participant) => {
+      if (!participant || !participant.key) return;
+      const ref = db.doc(
+          `${WHATSAPP_PARTICIPANTS_COLLECTION}/${participant.key}`,
+      );
+      batch.set(ref, {
+        key: participant.key,
+        phone: participant.phone || participant.key || "",
+        fullName: participant.fullName || "",
+        lastInteractionAtMs: Number(participant.lastInteractionAtMs || 0),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+    });
+    await batch.commit();
+  }
+}
+
 async function buildOverallWhatsAppParticipants(paymentDocs = null) {
+  const trackedParticipantData = await listTrackedWhatsAppParticipants();
+  if (trackedParticipantData.count > 0) {
+    console.log("WhatsApp overall participants served from tracked index", {
+      count: trackedParticipantData.count,
+    });
+    return trackedParticipantData;
+  }
+
   const [globalMessagePhonesSnap, globalComplaintParticipantsSnap, resolvedPaymentDocs] = await Promise.all([
     db.collection(WHATSAPP_MESSAGES_COLLECTION)
         .select("phone", "createdAtMs")
@@ -4177,6 +4290,14 @@ async function buildOverallWhatsAppParticipants(paymentDocs = null) {
       overallParticipants,
       phoneIndexMap,
   );
+  await syncTrackedWhatsAppParticipants(overallParticipants);
+
+  console.log("WhatsApp overall participants rebuilt from raw sources", {
+    messageDocs: globalMessagePhonesSnap.size,
+    complaintDocs: globalComplaintParticipantsSnap.size,
+    paymentDocs: resolvedPaymentDocs.length,
+    count: participants.length,
+  });
 
   return {
     participants,
@@ -4342,8 +4463,10 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
   const participants = buildWhatsAppParticipantList(periodParticipants, phoneIndexMap);
   const afterParticipantsAt = Date.now();
   let overallParticipantData = null;
+  let overallDistinctParticipantCount = await getTrackedWhatsAppParticipantCount();
   if (includeOverallParticipants) {
     overallParticipantData = await buildOverallWhatsAppParticipants(paymentDocs);
+    overallDistinctParticipantCount = overallParticipantData.count;
   }
   const afterOverallParticipantsAt = Date.now();
 
@@ -4379,9 +4502,7 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       complaintClosedCount: complaints.filter((item) => String(item.status || "open") === "closed").length,
       paymentCount: payments.length,
       distinctParticipantCount: participants.length,
-      overallDistinctParticipantCount: overallParticipantData ?
-        overallParticipantData.count :
-        null,
+      overallDistinctParticipantCount,
     },
     messages: {
       page: safePage,
@@ -4502,6 +4623,12 @@ async function logWhatsAppMessage({direction, phone, body, source, extra}) {
       lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAtMs: Date.now(),
     }, {merge: true});
+    await upsertTrackedWhatsAppParticipant({
+      phone: payload.phone,
+      fullName:
+        (extra && (extra.clientFullName || extra.clientName)) || "",
+      interactionAtMs: payload.createdAtMs,
+    });
   } catch (err) {
     console.error("Failed to log WhatsApp message:", err);
   }
@@ -4715,6 +4842,11 @@ async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPho
   const clientId = session.clientId;
   const phone = String(paymentPhoneRaw || "").trim();
   const language = getWhatsAppLanguage(session);
+  const clientDisplayName = [
+    clientInfo.middleName || "",
+    clientInfo.firstName || "",
+    clientInfo.lastName || "",
+  ].filter((x) => x && String(x).trim()).join(" ");
 
   if (!FLEXPAY_MERCHANT || !FLEXPAY_TOKEN) {
     throw new Error("FlexPay configuration missing");
@@ -4763,11 +4895,7 @@ async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPho
     clientFirstName: clientInfo.firstName || "",
     clientLastName: clientInfo.lastName || "",
     clientMiddleName: clientInfo.middleName || "",
-    clientName: [
-      clientInfo.middleName || "",
-      clientInfo.firstName || "",
-      clientInfo.lastName || "",
-    ].filter((x) => x && String(x).trim()).join(" "),
+    clientName: clientDisplayName,
     paymentAmount: String(paymentAmount),
     savingsAmount: "0",
     currency: "CDF",
@@ -4796,12 +4924,14 @@ async function initiateWhatsAppFlexPayPayment(session, paymentAmount, paymentPho
     createdAtMs,
     whatsappOriginated: true,
     whatsappPhone: session.phone || "",
-    clientName: [
-      clientInfo.middleName || "",
-      clientInfo.firstName || "",
-      clientInfo.lastName || "",
-    ].filter((x) => x && String(x).trim()).join(" "),
+    clientName: clientDisplayName,
     paymentAmount: String(paymentAmount),
+  });
+
+  await upsertTrackedWhatsAppParticipant({
+    phone: session.phone || "",
+    fullName: clientDisplayName || session.clientName || "",
+    interactionAtMs: createdAtMs,
   });
 
   return {
@@ -5248,6 +5378,7 @@ async function handleComplaintDetail(input, session) {
   const category = (session.tempData && session.tempData.complaintCategory) || "Autre";
   const clientInfo = session._clientInfo || {};
   const clientFullName = buildWhatsAppClientFullName(clientInfo);
+  const createdAtMs = Date.now();
 
   await complaintRef.set({
     phone: session.phone || "",
@@ -5264,7 +5395,13 @@ async function handleComplaintDetail(input, session) {
     reference: ref,
     status: "open",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    createdAtMs: Date.now(),
+    createdAtMs,
+  });
+
+  await upsertTrackedWhatsAppParticipant({
+    phone: session.phone || "",
+    fullName: clientFullName || session.clientName || "",
+    interactionAtMs: createdAtMs,
   });
 
   const reply = getWhatsAppCopy(lang, "complaintReceived", {
