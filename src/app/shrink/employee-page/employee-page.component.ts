@@ -1315,14 +1315,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const deductions: WeeklyObjectiveDeduction[] = [];
 
     for (let day = 1; day <= lastDay.getDate(); day += 1) {
-      const start = new Date(year, month - 1, day);
-      if (start.getDay() !== 1) continue; // Monday only
+      const end = new Date(year, month - 1, day);
+      if (end.getDay() !== 0) continue; // Sunday only
+      if (today <= end) continue; // current/future week isn't deducted yet
 
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      if (end.getMonth() !== month - 1) continue; // skip weeks crossing months
-      if (start > today) continue; // skip future weeks
-      if (today <= end) continue; // current week isn't deducted yet
+      const start = new Date(end);
+      start.setDate(end.getDate() - 6);
 
       const totalFc = this.computeWeeklyPaymentTotalForLocation(
         this.formatDateKey(start)
@@ -1383,8 +1381,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       .map((d) => this.normalizeObjectiveDeduction(d))
       .filter((d) => {
         if (!d?.start) return false;
-        const start = this.parseIsoDate(d.start);
-        return start.getMonth() + 1 === month && start.getFullYear() === year;
+        const end = this.parseIsoDate(d.end);
+        return end.getMonth() + 1 === month && end.getFullYear() === year;
       });
   }
 

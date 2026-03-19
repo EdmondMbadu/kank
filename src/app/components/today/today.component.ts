@@ -493,20 +493,33 @@ export class TodayComponent {
   private formatWeekShortLabel(start: Date, end: Date): string {
     const months = [
       'Janvier',
-      'Fevrier',
+      'Février',
       'Mars',
       'Avril',
       'Mai',
       'Juin',
       'Juillet',
-      'Aout',
+      'Août',
       'Septembre',
       'Octobre',
       'Novembre',
-      'Decembre',
+      'Décembre',
     ];
-    const monthName = months[start.getMonth()];
-    return `${start.getDate()}-${end.getDate()} ${monthName} ${start.getFullYear()}`;
+    const startMonthName = months[start.getMonth()];
+    const endMonthName = months[end.getMonth()];
+
+    if (
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth()
+    ) {
+      return `${start.getDate()}-${end.getDate()} ${startMonthName} ${start.getFullYear()}`;
+    }
+
+    if (start.getFullYear() === end.getFullYear()) {
+      return `${start.getDate()} ${startMonthName} - ${end.getDate()} ${endMonthName} ${end.getFullYear()}`;
+    }
+
+    return `${start.getDate()} ${startMonthName} ${start.getFullYear()} - ${end.getDate()} ${endMonthName} ${end.getFullYear()}`;
   }
 
   private computeMonthlyWeeklyShortfalls() {
@@ -517,13 +530,12 @@ export class TodayComponent {
     const shortfalls: WeeklyShortfall[] = [];
 
     for (let day = 1; day <= lastDay.getDate(); day += 1) {
-      const start = new Date(year, month, day);
-      if (start.getDay() !== 1) continue; // Monday only
+      const end = new Date(year, month, day);
+      if (end.getDay() !== 0) continue; // Sunday only
+      if (today <= end) continue; // current/future week isn't deducted yet
 
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      if (end.getMonth() !== month) continue; // skip weeks crossing months
-      if (start > today) continue; // skip future weeks
+      const start = new Date(end);
+      start.setDate(end.getDate() - 6);
 
       const totalFc = this.computeWeeklyPaymentTotal(
         this.formatDateKey(start)
@@ -534,7 +546,6 @@ export class TodayComponent {
         this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
       );
       const isComplete = today > end;
-      if (!isComplete) continue; // current week isn't deducted yet
 
       shortfalls.push({
         start,
