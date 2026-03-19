@@ -1,85 +1,367 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex  container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl mr-4"> Reserve Total</h1>
-    <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "  routerLink="/client-portal">Client Portal</button> -->
-    
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'"
+>
+</app-navbar>
 
+<div class="mx-auto max-w-5xl px-4 pt-8 pb-20">
+  <div class="mb-8 flex items-center justify-between">
+    <div class="relative">
+      <h1 class="text-2xl font-extrabold tracking-tight md:text-3xl">
+        Reserve Total
+      </h1>
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute -top-6 -left-6 h-16 w-16 rounded-full bg-emerald-400/10 blur-2xl"
+      ></div>
+    </div>
 
-<div class="flex container justify-center mx-auto">
-
-    <div class=" border-2 border-green-800 rounded-lg p-12">
-    
-    
-  
-        <div *ngIf="true" class="mb-6">
-            <label for="reserve" class="block mb-2 text-sm font-medium text-gray-900 "> Montant A Ajouter (FC)</label>
-            <input type="text" [(ngModel)]="reserveAmount" id="savings" [disabled]="isLoading" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:cursor-not-allowed disabled:opacity-50" placeholder="20000" required>
-        </div> 
-
-
-
-        <button type="submit" [disabled]="isLoading" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center disabled:cursor-not-allowed disabled:opacity-50" routerLink="/gestion-today">Anuler</button>
-            <button  (click)="addToReserve()" [disabled]="isLoading" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center disabled:cursor-not-allowed disabled:opacity-50">
-              <span *ngIf="!isLoading">Ajouter</span>
-              <span *ngIf="isLoading" class="flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Traitement...
-              </span>
-            </button>
-        
+    <div
+      class="hidden items-center gap-3 rounded-2xl border border-emerald-200 bg-white px-4 py-2 shadow-sm ring-1 ring-black/5 dark:border-emerald-700/40 dark:bg-slate-800 sm:flex"
+    >
+      <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+      <div class="text-sm text-slate-500 dark:text-slate-100">
+        <div>En caisse</div>
+        <div class="font-semibold">
+          FC {{ managementInfo?.moneyInHands || 0 | number : "1.0-0" }}
         </div>
-       
+        <div class="text-xs">
+          $ {{ toUsd(managementInfo?.moneyInHands || 0) | number : "1.0-0" }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section
+    class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800"
+  >
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute -top-16 -right-16 h-44 w-44 rounded-full bg-emerald-400/15 blur-3xl"
+    ></div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div class="md:col-span-2">
+        <label
+          for="reserve"
+          class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200"
+        >
+          Montant a ajouter a la reserve (FC)
+        </label>
+
+        <div class="relative">
+          <span
+            class="absolute inset-y-0 left-3 flex items-center text-sm text-slate-400 select-none"
+          >
+            FC
+          </span>
+          <input
+            id="reserve"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            [(ngModel)]="reserveAmount"
+            [disabled]="isLoading"
+            class="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-3 text-slate-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            placeholder="20000"
+          />
+        </div>
+
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          Ajoutez un montant a la reserve globale puis retrouvez rapidement les
+          entrees par mois ou par annee.
+        </p>
+      </div>
+
+      <div class="flex items-stretch justify-end gap-3 md:flex-col md:justify-start">
+        <button
+          type="button"
+          routerLink="/gestion-today"
+          [disabled]="isLoading"
+          class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium hover:bg-slate-50 active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
+        >
+          Annuler
+        </button>
+
+        <button
+          type="button"
+          (click)="addToReserve()"
+          [disabled]="isLoading || !canSubmit()"
+          class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span *ngIf="!isLoading">Ajouter</span>
+          <span *ngIf="isLoading" class="flex items-center gap-2">
+            <svg
+              class="h-4 w-4 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Traitement...
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-10">
+    <div
+      class="rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 via-white to-emerald-50 shadow-sm"
+    >
+      <button
+        type="button"
+        (click)="showPeriodPanel = !showPeriodPanel"
+        class="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-green-50/70"
+      >
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">
+            Vue Periodique
+          </p>
+          <p class="mt-1 text-sm font-medium text-gray-700 dark:text-slate-200">
+            {{ showPeriodPanel ? "Masquer les details" : "Afficher les details" }}
+          </p>
+        </div>
+        <svg
+          [class.rotate-180]="showPeriodPanel"
+          class="h-5 w-5 text-green-700 transition-transform duration-200"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </button>
+
+      <div *ngIf="showPeriodPanel" class="border-t border-green-200 p-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+              Analyse des entrees de reserve
+            </h2>
+            <p class="mt-1 text-sm text-gray-600 dark:text-slate-300">
+              Vue mensuelle par defaut, avec bascule annuelle et resume de la
+              periode.
+            </p>
+          </div>
+
+          <div
+            class="inline-flex rounded-xl border border-green-200 bg-white p-1 dark:border-slate-600 dark:bg-slate-800"
+          >
+            <button
+              type="button"
+              (click)="setPeriodMode('month')"
+              [class.bg-green-700]="periodMode === 'month'"
+              [class.text-white]="periodMode === 'month'"
+              class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              Mois
+            </button>
+            <button
+              type="button"
+              (click)="setPeriodMode('year')"
+              [class.bg-green-700]="periodMode === 'year'"
+              [class.text-white]="periodMode === 'year'"
+              class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              Annee
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-4">
+          <div *ngIf="periodMode === 'month'" class="md:col-span-2">
+            <label
+              for="reserveMonthSelect"
+              class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
+            >
+              Mois
+            </label>
+            <select
+              id="reserveMonthSelect"
+              [ngModel]="selectedMonth"
+              (ngModelChange)="onMonthChange($event)"
+              class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+                {{ month }}
+              </option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label
+              for="reserveYearSelect"
+              class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-slate-300"
+            >
+              Annee
+            </label>
+            <select
+              id="reserveYearSelect"
+              [ngModel]="selectedYear"
+              (ngModelChange)="onYearChange($event)"
+              class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+            >
+              <option *ngFor="let year of availableYears" [ngValue]="year">
+                {{ year }}
+              </option>
+            </select>
+          </div>
+
+          <div
+            class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800"
+          >
+            <p
+              class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300"
+            >
+              Total periode
+            </p>
+            <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+              FC {{ periodTotal | number : "1.0-0" }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-slate-300">
+              $ {{ toUsd(periodTotal) | number : "1.0-0" }}
+            </p>
+          </div>
+
+          <div
+            class="rounded-xl border border-green-200 bg-white px-4 py-3 dark:border-slate-600 dark:bg-slate-800"
+          >
+            <p
+              class="text-xs font-semibold uppercase tracking-wide text-green-700 dark:text-emerald-300"
+            >
+              Transactions
+            </p>
+            <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+              {{ filteredRecords.length }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-10">
+    <div
+      class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ring-1 ring-black/5 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+    >
+      <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-lg font-bold md:text-xl">
+            Reserve · {{ periodLabel }}
+          </h2>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+            {{ periodMode === 'month' ? 'Mois selectionne' : 'Annee selectionnee' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="flow-root">
+        <ul role="list" class="divide-y divide-slate-200 dark:divide-slate-700">
+          <li
+            *ngFor="let record of visibleRecords; trackBy: trackByDateKey"
+            routerLink="/gestion-today"
+            class="group cursor-pointer py-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40 sm:py-5"
+          >
+            <div class="flex items-start gap-4">
+              <div
+                class="relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 ring-1 ring-emerald-600/20 dark:from-emerald-700/30 dark:to-emerald-600/30"
+              >
+                <span class="font-semibold text-emerald-800 dark:text-emerald-100">
+                  {{ auth.currentUser.firstName?.substring(0, 2) }}
+                </span>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-medium text-slate-900 dark:text-white">
+                    {{ record.dateLabel }}
+                  </p>
+                  <span
+                    class="hidden h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-500 sm:inline-block"
+                  ></span>
+                  <span class="text-xs text-slate-500 dark:text-slate-300">
+                    Reserve enregistree
+                  </span>
+                </div>
+
+                <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <div>
+                    <div class="text-base font-semibold text-slate-900 dark:text-white">
+                      FC {{ record.amount | number : "1.0-0" }}
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-300">
+                      $ {{ toUsd(record.amount) | number : "1.0-0" }}
+                    </div>
+                  </div>
+
+                  <span
+                    class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 ring-1 ring-emerald-500/20 dark:bg-emerald-900/30 dark:text-emerald-200"
+                  >
+                    Reserve
+                  </span>
+                </div>
+              </div>
+
+              <svg
+                class="h-5 w-5 text-slate-300 transition-colors group-hover:text-emerald-500"
+                viewBox="0 0 20 20"
+                fill="none"
+              >
+                <path
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="m7 5 6 5-6 5"
+                />
+              </svg>
+            </div>
+          </li>
+
+          <li *ngIf="filteredRecords.length === 0" class="py-12">
+            <div class="flex flex-col items-center justify-center text-center">
+              <div
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-700 dark:ring-slate-600"
+              >
+                <div class="h-2 w-2 rounded-full bg-slate-400"></div>
+              </div>
+              <p class="mt-4 text-sm text-slate-500 dark:text-slate-300">
+                Aucune entree pour {{ periodLabel }}.
+              </p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="hasMoreRecords()" class="mt-4 text-center">
+        <button
+          type="button"
+          (click)="showAllRecords = !showAllRecords"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800"
+        >
+          {{ showAllRecords ? "Moins" : "Plus" }}
+        </button>
+      </div>
+    </div>
+  </section>
 </div>
-
-
-<div class=" mt-6 flex container mx-auto  justify-center">
-
-   <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-       <div class="flex items-center justify-between mb-4">
-           <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Chronologie</h5>
-           <form class="flex items-center">   
-               <label for="simple-search" class="sr-only">Chercher</label>
-               <div class="relative w-full">
-                   <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                       <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-                       </svg>
-                   </div>
-                   <input type="text" id="simple-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Chercher Le Montant..." required>
-               </div>
-               <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                   <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                   </svg>
-                   <span class="sr-only">Chercher</span>
-               </button>
-           </form>
-   </div>
-   <div class="flow-root">
-           <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let item of (reserve | keyvalue| slice:0:(this.auth.isAdmninistrator ? reserve.length : 10)); let i=index"  routerLink="/gestion-today">
-                   <div class="flex items-center space-x-4">
-                    <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                        <span class="font-medium text-gray-600 dark:text-gray-300">{{this.auth.currentUser.firstName?.substring(0,2)}}</span>
-                    </div>
-                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                            {{reserveDates[i]}}
-                        </p>
-                        <!-- <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                        {{paymentDates[i].replaceAll('-','/').substring(0,9)}}
-                        </p> -->
-                    </div>
-                 
-                       <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                        FC {{reserveAmounts[i] | number:'1.0-0'}}
-                       </div>
-                   </div>
-               </li>
-           </ul>
-   </div>
-   </div>
