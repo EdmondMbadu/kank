@@ -1509,6 +1509,19 @@ export class DataService {
       { merge: true }
     );
   }
+
+  setManagementMoneyInHands(amount: string) {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${managementId}`
+    );
+
+    return managementRef.set({ moneyInHands: amount }, { merge: true });
+  }
   updateManagementInfoToAddMoneyInTheBank(
     amountFrancs: string,
     amountDollars: string,

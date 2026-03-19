@@ -1728,8 +1728,53 @@ export class GestionDayComponent implements OnInit {
   }
 
   // ─── modal state ───────────────────────────────────────────────
+  showMoneyInHandsModal = false;
+  moneyInHandsModalInput: string | number = '0';
+  isSavingMoneyInHandsModal = false;
   showBudgetModal = false;
   budgetInput: number | null = null;
+
+  openMoneyInHandsModal() {
+    if (!this.auth.isAdmin) return;
+
+    this.moneyInHandsModalInput = this.moneyInHands || '0';
+    this.showMoneyInHandsModal = true;
+  }
+
+  closeMoneyInHandsModal() {
+    if (this.isSavingMoneyInHandsModal) return;
+
+    this.showMoneyInHandsModal = false;
+  }
+
+  async saveMoneyInHands(): Promise<void> {
+    if (!this.auth.isAdmin || this.isSavingMoneyInHandsModal) return;
+
+    const normalized = this.normalizeMoneyInHandsInput(
+      this.moneyInHandsModalInput
+    );
+    if (normalized === null) {
+      alert('Entrez un montant entier valide en FC.');
+      return;
+    }
+
+    this.isSavingMoneyInHandsModal = true;
+    try {
+      await this.data.setManagementMoneyInHands(normalized);
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        moneyInHands: normalized,
+      };
+      this.moneyInHands = normalized;
+      this.showMoneyInHandsModal = false;
+      this.initalizeInputs();
+    } catch (error) {
+      console.error('Unable to update moneyInHands directly', error);
+      alert("Impossible d'enregistrer Argent en main.");
+    } finally {
+      this.isSavingMoneyInHandsModal = false;
+    }
+  }
 
   openBudgetModal() {
     this.budgetInput = null;
@@ -1772,11 +1817,33 @@ export class GestionDayComponent implements OnInit {
 
   /* ───── click handler for card ───────── */
   onCardClick(i: number, ev: Event) {
+    if (i === 2) {
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      if (this.auth.isAdmin) {
+        this.openMoneyInHandsModal();
+      }
+      return;
+    }
+
     if (i === 4) {
       ev.preventDefault();
       ev.stopPropagation();
       this.openBudgetModal();
     }
+  }
+
+  private normalizeMoneyInHandsInput(value: string | number): string | null {
+    const raw = String(value ?? '').trim();
+    if (raw === '') return null;
+
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || !Number.isInteger(amount)) {
+      return null;
+    }
+
+    return amount.toString();
   }
 
   private normalizeRevealTime(value?: string | null): string {
