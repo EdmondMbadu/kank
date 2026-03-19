@@ -1638,7 +1638,7 @@
             />
           </svg>
           <h5 class="text-sm sm:text-base font-semibold tracking-wide">
-            Crédits & Transports
+            Credit Transports & Autres
           </h5>
         </div>
 
@@ -1655,47 +1655,46 @@
           <input
             type="text"
             [(ngModel)]="auditSearch"
-            placeholder="Filtrer par date…"
+            placeholder="Filtrer par date ou motif…"
             class="pl-8 pr-3 py-1.5 rounded-lg text-sm bg-white/15 placeholder-white/70 text-white ring-1 ring-white/40 focus:ring-2 focus:ring-white/70 outline-none"
           />
         </div>
       </div>
 
       <div class="p-4">
-        <div *ngIf="auth.isAdmin" class="mb-4 flex items-center gap-3">
-          <label
-            class="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700"
+        <div
+          *ngIf="auth.isAdmin"
+          class="mb-4 flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/80 p-4 dark:border-emerald-900/40 dark:bg-emerald-900/10 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p class="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+              Ajouter une entrée claire et complète
+            </p>
+            <p class="mt-1 text-xs text-emerald-700/90 dark:text-emerald-300/80">
+              Montant, motif et reçu dans une seule fenêtre.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="openAuditEntryModal('create')"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
           >
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
               <path
-                d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+                d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1z"
               />
             </svg>
-            Joindre un reçu
-            <input
-              type="file"
-              accept="image/*,application/pdf"
-              hidden
-              (change)="auditUpload($any($event.target).files)"
-            />
-          </label>
-
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            [(ngModel)]="auditNewAmount"
-            placeholder="Montant"
-            class="w-28 p-2 rounded-lg text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
-          />
+            Nouvelle entrée
+          </button>
         </div>
 
+        <ng-container *ngIf="auditFiltered().length > 0; else emptyAuditEntries">
         <ul class="divide-y divide-slate-200 dark:divide-slate-700">
           <li
             *ngFor="let a of auditFiltered()"
-            class="py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60 rounded-lg"
+            class="rounded-2xl py-3 sm:py-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/60"
           >
-            <div class="flex items-center gap-4 px-1">
+            <div class="flex items-start gap-4 px-1">
               <div class="flex-shrink-0">
                 <div
                   class="h-10 w-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10"
@@ -1713,44 +1712,56 @@
                 >
                   {{ a.frenchDate }}
                 </p>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Reçu</p>
+                <p class="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                  Motif
+                </p>
+                <p class="text-sm text-slate-600 dark:text-slate-300">
+                  {{ auditReasonLabel(a.reason) }}
+                </p>
               </div>
 
-              <ng-container *ngIf="!auth.isAdmin; else editAmt">
+              <div class="flex shrink-0 flex-col items-end gap-2">
                 <span
-                  class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800"
                 >
-                  {{ a.amount | number : "1.0-2" }} $
+                  {{ a.amount | number : "1.0-2" }} $
                 </span>
-              </ng-container>
-              <ng-template #editAmt>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  [(ngModel)]="a.amount"
-                  (blur)="auditUpdateAmount(a)"
-                  class="w-24 p-1.5 text-xs rounded border bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-slate-900 dark:text-slate-100"
-                />
-              </ng-template>
+                <div class="flex items-center gap-2">
+                  <a
+                    [href]="a.url"
+                    target="_blank"
+                    class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <img
+                      src="../../../assets/img/validating-ticket.png"
+                      class="h-8 w-8 rounded-md border border-slate-200 bg-white object-cover dark:border-slate-700"
+                      alt=""
+                    />
+                    Voir
+                  </a>
 
-              <a [href]="a.url" target="_blank" class="flex-shrink-0">
-                <img
-                  src="../../../assets/img/validating-ticket.png"
-                  class="w-11 h-11 object-cover rounded-md border border-slate-200 dark:border-slate-700 bg-white"
-                />
-              </a>
-
-              <button
-                *ngIf="auth.isAdmin"
-                class="ml-1 px-2.5 py-1.5 text-xs font-medium text-white rounded-lg bg-blue-600 hover:bg-blue-700"
-                (click)="auditPrepareReplace(a)"
-              >
-                Changer
-              </button>
+                  <button
+                    *ngIf="auth.isAdmin"
+                    type="button"
+                    class="rounded-xl bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-700"
+                    (click)="openAuditEntryModal('edit', a)"
+                  >
+                    Modifier
+                  </button>
+                </div>
+              </div>
             </div>
           </li>
         </ul>
+        </ng-container>
+
+        <ng-template #emptyAuditEntries>
+          <div
+            class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-400"
+          >
+            Aucune entrée enregistrée pour le moment.
+          </div>
+        </ng-template>
 
         <!-- See more button for admin -->
         <div *ngIf="auth.isAdmin && auditReceipts.length > 2 && !showAllAuditReceipts" class="mt-4 flex justify-center">
@@ -1771,14 +1782,150 @@
             Voir moins
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        <input
-          type="file"
-          #auditFileInput
-          hidden
-          accept="image/*,application/pdf"
-          (change)="auditReplace($any($event.target).files)"
+<div
+  *ngIf="showAuditEntryModal"
+  class="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 sm:items-center sm:p-6"
+  role="dialog"
+  aria-modal="true"
+>
+  <div
+    class="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+  >
+    <div class="border-b border-slate-200 bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-white dark:border-slate-700">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-semibold">{{ auditModalTitle }}</h3>
+          <p class="mt-1 text-sm text-white/85">
+            Renseignez le montant, le motif et le reçu dans une seule action.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="closeAuditEntryModal()"
+          class="rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25"
+        >
+          <span class="sr-only">Fermer</span>
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="space-y-5 p-5 sm:p-6">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Montant ($)
+          </label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="auditEntryAmount"
+            class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+            placeholder="Ex: 35"
+          />
+        </div>
+
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Reçu
+          </label>
+          <label
+            class="mt-2 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-700 dark:hover:bg-slate-800"
+          >
+            <input
+              type="file"
+              hidden
+              accept="image/*,application/pdf"
+              (change)="onAuditEntryFileSelected($any($event.target).files); $any($event.target).value = ''"
+            />
+            {{ auditEntryFileName || (auditEntryMode === 'edit' ? 'Choisir un nouveau reçu' : 'Choisir un reçu') }}
+          </label>
+          <div class="mt-2 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span *ngIf="auditEntryMode === 'create'">Image ou PDF requis</span>
+            <span *ngIf="auditEntryMode === 'edit'">Laisser vide pour garder le reçu actuel</span>
+            <button
+              *ngIf="auditEntryFileName"
+              type="button"
+              (click)="clearAuditEntrySelectedFile()"
+              class="rounded-full bg-slate-200 px-2 py-0.5 font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100"
+            >
+              Retirer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Motif
+        </label>
+        <textarea
+          rows="4"
+          [(ngModel)]="auditEntryReason"
+          class="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          placeholder="Ex: transport terrain, avance mission, achat ponctuel, correction"
+        ></textarea>
+      </div>
+
+      <div
+        *ngIf="auditEntryFileName || auditEditingReceiptUrl"
+        class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80"
+      >
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Aperçu du reçu
+            </p>
+            <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">
+              {{ auditEntryFileName || 'Reçu actuel' }}
+            </p>
+          </div>
+          <a
+            *ngIf="auditEditingReceiptUrl"
+            [href]="auditEditingReceiptUrl"
+            target="_blank"
+            class="text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-300"
+          >
+            Ouvrir le reçu actuel
+          </a>
+        </div>
+
+        <img
+          *ngIf="hasAuditDisplayPreview"
+          [src]="auditDisplayPreviewUrl"
+          alt="Aperçu du reçu"
+          class="mt-3 max-h-64 w-full rounded-2xl border border-slate-200 bg-white object-contain dark:border-slate-700 dark:bg-slate-900"
         />
+      </div>
+
+      <div class="flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 dark:border-slate-700 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          (click)="closeAuditEntryModal()"
+          class="rounded-2xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          (click)="submitAuditEntryModal()"
+          [disabled]="auditEntrySubmitting"
+          class="rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {{ auditModalSubmitLabel }}
+        </button>
       </div>
     </div>
   </div>

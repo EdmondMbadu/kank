@@ -38,6 +38,7 @@ interface AuditReceipt {
   ts: number;
   frenchDate: string;
   amount?: number;
+  reason?: string;
   docPath: string;
   storagePath: string;
   source: 'scoped' | 'legacy';
@@ -291,13 +292,19 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   private auditReceiptsScoped: AuditReceipt[] = [];
   private auditReceiptsLegacy: AuditReceipt[] = [];
   auditSearch = '';
-  auditNewAmount: number | null = null;
-  private auditSelReceipt: AuditReceipt | null = null;
   private auditScopedSub?: Subscription;
   private auditLegacySub?: Subscription;
   showAllAuditReceipts = false; // For admin to expand and see all receipts
   showAllPayments = false; // For admin to expand and see all payments
-  @ViewChild('auditFileInput') auditFileInput!: ElementRef<HTMLInputElement>;
+  showAuditEntryModal = false;
+  auditEntryMode: 'create' | 'edit' = 'create';
+  auditEntryAmount: number | null = null;
+  auditEntryReason = '';
+  auditEntryFile: File | null = null;
+  auditEntryFileName = '';
+  auditEntryPreviewUrl = '';
+  auditEntrySubmitting = false;
+  private auditEditingReceipt: AuditReceipt | null = null;
 
   requestDate: string = '';
 
@@ -527,7 +534,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     [...this.auditReceiptsScoped, ...this.auditReceiptsLegacy]
       .sort((a, b) => b.ts - a.ts)
       .forEach((r) => {
-        const key = `${r.url}|${r.ts}|${Number(r.amount ?? 0)}`;
+        const key = `${r.url}|${r.ts}|${Number(r.amount ?? 0)}|${(r.reason || '').trim()}`;
         if (!dedup.has(key)) {
           dedup.set(key, r);
         }
@@ -569,6 +576,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               ts: d.ts,
               frenchDate: this.time.formatEpochLongFr(d.ts),
               amount: d.amount ?? 0,
+              reason: (d.reason || '').toString(),
               docPath: `${scope.collectionPath}/${docId}`,
               storagePath: `users/${scope.ownerUid}/employees/${scope.employeeUid}/auditReceipts/${docId}`,
               source: 'scoped' as const,
@@ -605,6 +613,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
               ts: d.ts,
               frenchDate: this.time.formatEpochLongFr(d.ts),
               amount: d.amount ?? 0,
+              reason: (d.reason || '').toString(),
               docPath: `${legacyCollectionPath}/${docId}`,
               storagePath: `auditReceipts/${scope.employeeUid}/${docId}`,
               source: 'legacy' as const,
@@ -1432,7 +1441,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.auditReceipts = [];
     this.auditReceiptsScoped = [];
     this.auditReceiptsLegacy = [];
-    this.auditSelReceipt = null;
+    this.closeAuditEntryModal();
     this.employee = {};
     this.employees = [];
     this.paymentCodeLoaded = false;
@@ -3866,7 +3875,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const list = this.auditReceipts.filter(
       (r) =>
         !this.auditSearch ||
-        r.frenchDate.toLowerCase().includes(this.auditSearch.toLowerCase())
+        r.frenchDate.toLowerCase().includes(this.auditSearch.toLowerCase()) ||
+        (r.reason || '').toLowerCase().includes(this.auditSearch.toLowerCase())
     );
     // Non-admin always sees only 2
     if (!this.auth.isAdmin) {
@@ -3876,155 +3886,240 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return this.showAllAuditReceipts ? list : list.slice(0, 2);
   }
 
-  /* ─── upload new receipt ───────────────────────── */
-  async auditUpload(files: FileList | null) {
-    if (!this.auth.isAdmin || !files?.length) return;
-    if (!this.auditNewAmount || this.auditNewAmount <= 0) {
+  openAuditEntryModal(mode: 'create' | 'edit', receipt?: AuditReceipt) {
+    if (!this.auth.isAdmin) return;
+    this.closeAuditEntryModal();
+    this.auditEntryMode = mode;
+    this.showAuditEntryModal = true;
+
+    if (mode === 'edit' && receipt) {
+      this.auditEditingReceipt = receipt;
+      this.auditEntryAmount = Number(receipt.amount ?? 0) || null;
+      this.auditEntryReason = (receipt.reason || '').trim();
+    }
+  }
+
+  closeAuditEntryModal() {
+    this.showAuditEntryModal = false;
+    this.auditEntrySubmitting = false;
+    this.auditEditingReceipt = null;
+    this.auditEntryAmount = null;
+    this.auditEntryReason = '';
+    this.clearAuditEntrySelectedFile();
+  }
+
+  async onAuditEntryFileSelected(files: FileList | null) {
+    const file = files?.item(0);
+    if (!file) return;
+
+    const prepared = await this.prepareAuditUploadFile(file);
+    if (!prepared) {
+      return;
+    }
+
+    this.clearAuditEntrySelectedFile();
+    this.auditEntryFile = prepared;
+    this.auditEntryFileName = prepared.name;
+
+    if (prepared.type.startsWith('image/')) {
+      this.auditEntryPreviewUrl = URL.createObjectURL(prepared);
+    }
+  }
+
+  clearAuditEntrySelectedFile() {
+    if (this.auditEntryPreviewUrl) {
+      URL.revokeObjectURL(this.auditEntryPreviewUrl);
+    }
+    this.auditEntryPreviewUrl = '';
+    this.auditEntryFile = null;
+    this.auditEntryFileName = '';
+  }
+
+  async submitAuditEntryModal() {
+    if (!this.auth.isAdmin || this.auditEntrySubmitting) return;
+
+    const amount = Number(this.auditEntryAmount);
+    const reason = (this.auditEntryReason || '').trim();
+
+    if (!Number.isFinite(amount) || amount <= 0) {
       alert('Entrez un montant valide');
       return;
     }
 
+    if (!reason) {
+      alert('Entrez une raison');
+      return;
+    }
+
+    if (this.auditEntryMode === 'create' && !this.auditEntryFile) {
+      alert('Ajoutez un reçu');
+      return;
+    }
+
+    this.auditEntrySubmitting = true;
+
+    if (this.auditEntryMode === 'create') {
+      await this.createAuditReceipt(amount, reason);
+    } else {
+      await this.updateAuditReceipt(amount, reason);
+    }
+  }
+
+  private async createAuditReceipt(amount: number, reason: string) {
     const scope = this.getAuditScope();
     if (!scope) {
+      this.auditEntrySubmitting = false;
       alert('❌ Échec de l’envoi');
       return;
     }
 
-    const file = files.item(0)!;
     const id = this.afs.createId();
     const storagePath = this.getAuditStoragePath(id);
-    if (!storagePath) {
+    if (!storagePath || !this.auditEntryFile) {
+      this.auditEntrySubmitting = false;
       alert('❌ Échec de l’envoi');
       return;
     }
     const docPath = `${scope.collectionPath}/${id}`;
 
     try {
-      let url = '';
-      try {
-        const up = await this.storage.upload(storagePath, file);
-        url = await up.ref.getDownloadURL();
-      } catch (err: any) {
-        const fb = this.formatFirebaseError(err);
-        console.error('[AuditReceipt] Upload failed', {
-          stage: 'storage.upload',
-          storagePath,
-          ...fb,
-          err,
-        });
-        throw err;
-      }
+      const up = await this.storage.upload(storagePath, this.auditEntryFile);
+      const url = await up.ref.getDownloadURL();
 
-      try {
-        await this.afs
-          .doc(docPath)
-          .set({ url, ts: Date.now(), amount: Number(this.auditNewAmount) });
-      } catch (err: any) {
-        const fb = this.formatFirebaseError(err);
-        console.error('[AuditReceipt] Save metadata failed', {
-          stage: 'firestore.set',
-          docPath,
-          ...fb,
-          err,
-        });
-        throw err;
-      }
+      await this.afs.doc(docPath).set({
+        url,
+        ts: Date.now(),
+        amount,
+        reason,
+      });
 
-      this.auditNewAmount = null;
-      alert('✅ Reçu ajouté'); // ← success toast
-    } catch (err) {
-      console.error('[AuditReceipt] Upload flow failed', {
+      this.closeAuditEntryModal();
+      alert('✅ Entrée ajoutée');
+    } catch (err: any) {
+      const fb = this.formatFirebaseError(err);
+      console.error('[AuditReceipt] Create flow failed', {
+        stage: 'create',
         storagePath,
         docPath,
+        amount,
+        reason,
+        ...fb,
         err,
       });
+      this.auditEntrySubmitting = false;
       alert('❌ Échec de l’envoi');
     }
   }
 
-  /* ─── prepare file-replace ─────────────────────── */
-  auditPrepareReplace(r: AuditReceipt) {
-    this.auditSelReceipt = r;
-    this.auditFileInput.nativeElement.click();
-  }
-
-  /* ─── replace existing receipt ─────────────────── */
-  async auditReplace(files: FileList | null) {
-    if (!files?.length || !this.auditSelReceipt) return;
-    const selected = this.auditSelReceipt;
-    if (!selected.docPath || !selected.storagePath) {
-      alert('❌ Impossible de remplacer');
-      return;
-    }
-    const file = files.item(0)!;
-    const storagePath = selected.storagePath;
-    const docPath = selected.docPath;
-    try {
-      let url = '';
-      try {
-        const up = await this.storage.upload(storagePath, file);
-        url = await up.ref.getDownloadURL();
-      } catch (err: any) {
-        const fb = this.formatFirebaseError(err);
-        console.error('[AuditReceipt] Replace upload failed', {
-          stage: 'storage.upload',
-          storagePath,
-          ...fb,
-          err,
-        });
-        throw err;
-      }
-
-      try {
-        await this.afs.doc(docPath).update({ url });
-      } catch (err: any) {
-        const fb = this.formatFirebaseError(err);
-        console.error('[AuditReceipt] Replace metadata update failed', {
-          stage: 'firestore.update',
-          docPath,
-          ...fb,
-          err,
-        });
-        throw err;
-      }
-
-      alert('✅ Reçu mis à jour'); // ← success toast
-    } catch (err) {
-      console.error('[AuditReceipt] Replace flow failed', {
-        storagePath,
-        docPath,
-        err,
-      });
-      alert('❌ Impossible de remplacer');
-    }
-    this.auditSelReceipt = null;
-    this.auditFileInput.nativeElement.value = '';
-  }
-
-  /* ─── inline amount edit ───────────────────────── */
-  async auditUpdateAmount(r: AuditReceipt) {
-    if (!r.amount || r.amount <= 0) {
-      alert('Montant invalide');
-      return;
-    }
-    if (!r.docPath) {
+  private async updateAuditReceipt(amount: number, reason: string) {
+    const selected = this.auditEditingReceipt;
+    if (!selected?.docPath || !selected.storagePath) {
+      this.auditEntrySubmitting = false;
       alert('❌ Impossible de mettre à jour');
       return;
     }
-    const docPath = r.docPath;
+
+    const docPath = selected.docPath;
+    const updatePayload: any = { amount, reason };
+
     try {
-      await this.afs.doc(docPath).update({ amount: Number(r.amount) });
-      alert('✅ Montant mis à jour'); // ← success toast
+      if (this.auditEntryFile) {
+        const up = await this.storage.upload(
+          selected.storagePath,
+          this.auditEntryFile
+        );
+        updatePayload.url = await up.ref.getDownloadURL();
+      }
+
+      await this.afs.doc(docPath).update(updatePayload);
+      this.closeAuditEntryModal();
+      alert('✅ Entrée mise à jour');
     } catch (err: any) {
       const fb = this.formatFirebaseError(err);
-      console.error('[AuditReceipt] Amount update failed', {
-        stage: 'firestore.update',
+      console.error('[AuditReceipt] Update flow failed', {
+        stage: 'update',
+        storagePath: selected.storagePath,
         docPath,
+        amount,
+        reason,
         ...fb,
         err,
       });
+      this.auditEntrySubmitting = false;
       alert('❌ Impossible de mettre à jour');
     }
+  }
+
+  private async prepareAuditUploadFile(file: File): Promise<File | null> {
+    if (
+      !['image', 'application/pdf'].includes(file.type.split('/')[0]) &&
+      file.type !== 'application/pdf'
+    ) {
+      alert('Seuls les fichiers image ou PDF sont acceptés');
+      return null;
+    }
+
+    if (file.size >= 5_000_000) {
+      alert('Le fichier est trop grand (max 5MB).');
+      return null;
+    }
+
+    if (file.type !== 'image/heic') {
+      return file;
+    }
+
+    try {
+      const heic2any = (await import('heic2any')).default;
+      const convertedBlob: any = await heic2any({
+        blob: file,
+        toType: 'image/png',
+        quality: 0.7,
+      });
+      return new File([convertedBlob], `${file.name}.png`, {
+        type: 'image/png',
+      });
+    } catch (error) {
+      console.error('Erreur de conversion HEIC -> PNG :', error);
+      alert('Impossible de convertir cette image HEIC.');
+      return null;
+    }
+  }
+
+  get auditModalTitle(): string {
+    return this.auditEntryMode === 'create'
+      ? 'Ajouter une entrée'
+      : 'Modifier l’entrée';
+  }
+
+  get auditModalSubmitLabel(): string {
+    if (this.auditEntrySubmitting) {
+      return this.auditEntryMode === 'create' ? 'Envoi...' : 'Mise à jour...';
+    }
+    return this.auditEntryMode === 'create' ? 'Enregistrer' : 'Mettre à jour';
+  }
+
+  get auditEditingReceiptUrl(): string {
+    return this.auditEditingReceipt?.url || '';
+  }
+
+  get auditDisplayPreviewUrl(): string {
+    if (this.auditEntryFile) {
+      return this.auditEntryPreviewUrl;
+    }
+    return this.auditEditingReceiptUrl;
+  }
+
+  get hasAuditDisplayPreview(): boolean {
+    return !!this.auditDisplayPreviewUrl && this.isAuditImageUrl(this.auditDisplayPreviewUrl);
+  }
+
+  private isAuditImageUrl(url: string): boolean {
+    return /\.(png|jpe?g|gif|webp|bmp|svg|heic)(\?|$)/i.test(url);
+  }
+
+  auditReasonLabel(reason?: string): string {
+    const value = (reason || '').trim();
+    return value || 'Aucune raison précisée';
   }
 
   private async checkGeoPermission() {
