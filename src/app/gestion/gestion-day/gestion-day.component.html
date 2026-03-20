@@ -1112,39 +1112,122 @@
 
 <div
   *ngIf="auth.isAdmin"
-  class="container mx-auto mb-8 flex min-w-0 flex-col gap-6 px-4 lg:grid lg:grid-cols-3"
+  class="container mx-auto mb-8 min-w-0 px-4"
 >
-  <!-- COMBINED CHART -->
-  <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
-    <h1 class="mb-6 text-center text-2xl md:text-3xl">
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+      <h1 class="mb-6 text-center text-2xl text-slate-900 dark:text-slate-100 md:text-3xl">
+        Reserve Total Par Jour
+      </h1>
+      <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
+        <button
+          (click)="updateReserveGraphics(compute.week)"
+          type="button"
+          class="rounded-s-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          1S
+        </button>
+        <button
+          (click)="updateReserveGraphics(compute.month)"
+          type="button"
+          class="border-y border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          1M
+        </button>
+        <button
+          (click)="updateReserveGraphics(compute.year)"
+          type="button"
+          class="border-y border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          1A
+        </button>
+        <button
+          (click)="updateReserveGraphics(maxRange)"
+          type="button"
+          class="rounded-e-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          Max
+        </button>
+      </div>
+      <plotly-plot
+        class="gestion-day-plot"
+        [data]="graph.data"
+        [layout]="graph.layout"
+      ></plotly-plot>
+    </div>
+
+    <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+      <h1 class="mb-6 text-center text-2xl text-slate-900 dark:text-slate-100 md:text-3xl">
+        Argent A Servir Par Jour
+      </h1>
+      <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
+        <button
+          (click)="updateServeGraphics(compute.week)"
+          type="button"
+          class="rounded-s-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          1S
+        </button>
+        <button
+          (click)="updateServeGraphics(compute.month)"
+          type="button"
+          class="border-y border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          1M
+        </button>
+        <button
+          (click)="updateServeGraphics(compute.year)"
+          type="button"
+          class="border-y border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          1A
+        </button>
+        <button
+          (click)="updateServeGraphics(maxRange)"
+          type="button"
+          class="rounded-e-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
+        >
+          Max
+        </button>
+      </div>
+      <plotly-plot
+        class="gestion-day-plot"
+        [data]="graphServe.data"
+        [layout]="graphServe.layout"
+      ></plotly-plot>
+    </div>
+  </div>
+
+  <div class="mt-6 flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
+    <h1 class="mb-6 text-center text-2xl text-slate-900 dark:text-slate-100 md:text-3xl">
       Reserve & Argent A Servir Par Jour
     </h1>
     <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
       <button
         (click)="updateCombinedGraphics(compute.week)"
         type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700"
+        class="rounded-s-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
       >
         1S
       </button>
       <button
         (click)="updateCombinedGraphics(compute.month)"
         type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700"
+        class="border-y border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
       >
         1M
       </button>
       <button
         (click)="updateCombinedGraphics(compute.year)"
         type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700"
+        class="border-y border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
       >
         1A
       </button>
       <button
         (click)="updateCombinedGraphics(maxRange)"
         type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700"
+        class="rounded-e-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-indigo-500 focus:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white dark:focus:text-white"
       >
         Max
       </button>
@@ -1154,87 +1237,6 @@
       class="gestion-day-plot"
       [data]="graphCombined.data"
       [layout]="graphCombined.layout"
-    ></plotly-plot>
-  </div>
-
-  <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
-    <h1 class="mb-6 text-center text-2xl md:text-3xl">
-      Reserve Total Par Jour
-    </h1>
-    <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
-      <button
-        (click)="updateReserveGraphics(compute.week)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        1S
-      </button>
-      <button
-        (click)="updateReserveGraphics(compute.month)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        1M
-      </button>
-      <button
-        (click)="updateReserveGraphics(compute.year)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        1A
-      </button>
-      <button
-        (click)="updateReserveGraphics(maxRange)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        Max
-      </button>
-    </div>
-    <plotly-plot
-      class="gestion-day-plot"
-      [data]="graph.data"
-      [layout]="graph.layout"
-    ></plotly-plot>
-  </div>
-  <div class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-indigo-100 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-800">
-    <h1 class="mb-6 text-center text-2xl md:text-3xl">
-      Argent A Servir Par Jour
-    </h1>
-    <div class="mx-auto flex flex-wrap justify-center rounded-md shadow-sm" role="group">
-      <button
-        (click)="updateServeGraphics(compute.week)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-s-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        1S
-      </button>
-      <button
-        (click)="updateServeGraphics(compute.month)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        1M
-      </button>
-      <button
-        (click)="updateServeGraphics(compute.year)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        1A
-      </button>
-      <button
-        (click)="updateServeGraphics(maxRange)"
-        type="button"
-        class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-e-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:ring-blue-500 dark:focus:text-white"
-      >
-        Max
-      </button>
-    </div>
-    <plotly-plot
-      class="gestion-day-plot"
-      [data]="graphServe.data"
-      [layout]="graphServe.layout"
     ></plotly-plot>
   </div>
 </div>

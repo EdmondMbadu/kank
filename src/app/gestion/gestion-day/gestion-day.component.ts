@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { take } from 'rxjs/operators';
@@ -17,7 +17,7 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
   templateUrl: './gestion-day.component.html',
   styleUrls: ['./gestion-day.component.css'],
 })
-export class GestionDayComponent implements OnInit {
+export class GestionDayComponent implements OnInit, OnDestroy {
   size = 220;
   strokeWidth = 16;
   avgPerf = 0; // 0..100
@@ -25,6 +25,7 @@ export class GestionDayComponent implements OnInit {
   managementInfo?: Management = {};
   reserveRevealTimeInput = '22:30';
   isSavingReserveRevealTime = false;
+  private darkModeObserver?: MutationObserver;
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -34,6 +35,7 @@ export class GestionDayComponent implements OnInit {
     private afs: AngularFirestore
   ) {}
   ngOnInit(): void {
+    this.observeDarkModeChanges();
     this.auth.getManagementInfo().subscribe((data) => {
       this.managementInfo = data?.[0] || {};
       this.reserveRevealTimeInput = this.normalizeRevealTime(
@@ -42,7 +44,7 @@ export class GestionDayComponent implements OnInit {
       this.initalizeInputs();
       this.updateReserveGraphics(this.graphicsRange);
       this.updateServeGraphics(this.graphicsRangeServe);
-      this.updateCombinedGraphics(this.graphicsRange);
+      this.updateCombinedGraphics(this.graphicsRangeCombined);
     });
     // get all clients to find what is needed for tomorrow
     this.auth.getAllUsersInfo().subscribe((data) => {
@@ -57,6 +59,9 @@ export class GestionDayComponent implements OnInit {
       }
     });
   }
+  ngOnDestroy(): void {
+    this.darkModeObserver?.disconnect();
+  }
   percentage: string = '0';
   week: number = 5;
   month: number = 20;
@@ -64,6 +69,7 @@ export class GestionDayComponent implements OnInit {
   theDay: string = new Date().toLocaleString('en-US', { weekday: 'long' });
   graphicsRange: number = this.week;
   graphicsRangeServe: number = this.week;
+  graphicsRangeCombined: number = this.week;
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
@@ -1166,6 +1172,7 @@ export class GestionDayComponent implements OnInit {
   }
 
   updateReserveGraphics(time: number) {
+    this.graphicsRange = time;
     let sorted = this.sortKeysAndValuesReserve(time);
     this.recentReserveDates = sorted[0];
     this.recentReserveAmounts = this.compute.convertToDollarsArray(sorted[1]);
@@ -1187,7 +1194,6 @@ export class GestionDayComponent implements OnInit {
     const changePercent = firstValue > 0 
       ? ((change / firstValue) * 100).toFixed(2)
       : '0.00';
-    const changeSign = change >= 0 ? '+' : '';
 
     // Format dates for display - include year if spanning multiple years
     const firstDate = this.recentReserveDates[0] ? this.recentReserveDates[0].split('-').map(Number) : null;
@@ -1229,75 +1235,16 @@ export class GestionDayComponent implements OnInit {
           hovertemplate: '<b>%{x}</b><br>Réserve: <b>$%{y:,.2f}</b><extra></extra>',
         },
       ],
-      layout: {
-        title: {
-          text: 'Reserve en $',
-          font: { 
-            size: 20, 
-            color: '#1a1a1a',
-            family: 'system-ui, -apple-system, sans-serif'
-          },
-          x: 0.02,
-          y: 0.95,
-          xanchor: 'left',
-          yanchor: 'top',
-        },
+      layout: this.buildStockChartLayout('Reserve en $', {
         annotations: [
-          {
-            xref: 'paper',
-            yref: 'paper',
-            x: 0.02,
-            y: 0.85,
-            xanchor: 'left',
-            yanchor: 'top',
-            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
-            showarrow: false,
-            align: 'left',
-            bgcolor: 'rgba(255, 255, 255, 0.8)',
-            bordercolor: 'transparent',
-            borderpad: 8,
-          }
+          this.buildStockSummaryAnnotation(
+            lastValue,
+            change,
+            changePercent,
+            lineColor
+          ),
         ],
-        xaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-          tickfont: {
-            size: 11,
-            color: '#666'
-          },
-          title: {
-            text: '',
-            font: { size: 12, color: '#666' }
-          },
-        },
-        yaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-          side: 'right',
-          tickfont: {
-            size: 11,
-            color: '#666'
-          },
-          tickformat: '$,.0f',
-          title: {
-            text: '',
-            font: { size: 12, color: '#666' }
-          },
-        },
-        height: 450,
-        margin: { t: 100, r: 20, l: 20, b: 40 },
-        plot_bgcolor: '#ffffff',
-        paper_bgcolor: '#ffffff',
-        hovermode: 'x unified',
-        showlegend: false,
-        autosize: true,
-      },
+      }),
       config: { 
         responsive: true, 
         displayModeBar: false,
@@ -1307,6 +1254,7 @@ export class GestionDayComponent implements OnInit {
   }
 
   updateServeGraphics(time: number) {
+    this.graphicsRangeServe = time;
     let sorted = this.sortKeysAndValuesServe(time);
     this.recentServeDates = sorted[0];
     this.recentServeAmounts = this.compute.convertToDollarsArray(sorted[1]);
@@ -1328,7 +1276,6 @@ export class GestionDayComponent implements OnInit {
     const changePercent = firstValue > 0 
       ? ((change / firstValue) * 100).toFixed(2)
       : '0.00';
-    const changeSign = change >= 0 ? '+' : '';
 
     // Format dates for display - include year if spanning multiple years
     const firstDate = this.recentServeDates[0] ? this.recentServeDates[0].split('-').map(Number) : null;
@@ -1370,75 +1317,16 @@ export class GestionDayComponent implements OnInit {
           hovertemplate: '<b>%{x}</b><br>À servir: <b>$%{y:,.2f}</b><extra></extra>',
         },
       ],
-      layout: {
-        title: {
-          text: 'Argent A Servir en $',
-          font: { 
-            size: 20, 
-            color: '#1a1a1a',
-            family: 'system-ui, -apple-system, sans-serif'
-          },
-          x: 0.02,
-          y: 0.95,
-          xanchor: 'left',
-          yanchor: 'top',
-        },
+      layout: this.buildStockChartLayout('Argent A Servir en $', {
         annotations: [
-          {
-            xref: 'paper',
-            yref: 'paper',
-            x: 0.02,
-            y: 0.85,
-            xanchor: 'left',
-            yanchor: 'top',
-            text: `<span style="font-size: 28px; font-weight: 600; color: #1a1a1a;">$${lastValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
-            showarrow: false,
-            align: 'left',
-            bgcolor: 'rgba(255, 255, 255, 0.8)',
-            bordercolor: 'transparent',
-            borderpad: 8,
-          }
+          this.buildStockSummaryAnnotation(
+            lastValue,
+            change,
+            changePercent,
+            lineColor
+          ),
         ],
-        xaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-          tickfont: {
-            size: 11,
-            color: '#666'
-          },
-          title: {
-            text: '',
-            font: { size: 12, color: '#666' }
-          },
-        },
-        yaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-          side: 'right',
-          tickfont: {
-            size: 11,
-            color: '#666'
-          },
-          tickformat: '$,.0f',
-          title: {
-            text: '',
-            font: { size: 12, color: '#666' }
-          },
-        },
-        height: 450,
-        margin: { t: 100, r: 20, l: 20, b: 40 },
-        plot_bgcolor: '#ffffff',
-        paper_bgcolor: '#ffffff',
-        hovermode: 'x unified',
-        showlegend: false,
-        autosize: true,
-      },
+      }),
       config: { 
         responsive: true, 
         displayModeBar: false,
@@ -1529,6 +1417,7 @@ export class GestionDayComponent implements OnInit {
   }
 
   updateCombinedGraphics(time: number) {
+    this.graphicsRangeCombined = time;
     // Get Reserve data
     let [reserveDates, reserveVals] = this.sortKeysAndValuesReserve(time);
     let [serveDates, serveVals] = this.sortKeysAndValuesServe(time);
@@ -1614,67 +1503,9 @@ export class GestionDayComponent implements OnInit {
           hovertemplate: '<b>%{x}</b><br>À servir: <b>$%{y:,.2f}</b><extra></extra>',
         },
       ],
-      layout: {
-        title: {
-          text: 'Reserve & Argent A Servir (en $)',
-          font: { 
-            size: 20, 
-            color: '#1a1a1a',
-            family: 'system-ui, -apple-system, sans-serif'
-          },
-          x: 0.02,
-          y: 0.95,
-          xanchor: 'left',
-          yanchor: 'top',
-        },
-        xaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-          tickfont: {
-            size: 11,
-            color: '#666'
-          },
-          title: {
-            text: '',
-            font: { size: 12, color: '#666' }
-          },
-        },
-        yaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-          side: 'right',
-          tickfont: {
-            size: 11,
-            color: '#666'
-          },
-          tickformat: '$,.0f',
-          title: {
-            text: '',
-            font: { size: 12, color: '#666' }
-          },
-        },
-        height: 450,
-        margin: { t: 100, r: 20, l: 20, b: 40 },
-        plot_bgcolor: '#ffffff',
-        paper_bgcolor: '#ffffff',
-        hovermode: 'x unified',
-        showlegend: true,
-        legend: {
-          x: 0.02,
-          y: 0.85,
-          xanchor: 'left',
-          yanchor: 'top',
-          bgcolor: 'rgba(255, 255, 255, 0.8)',
-          bordercolor: 'transparent',
-        },
-        autosize: true,
-      },
+      layout: this.buildStockChartLayout('Reserve & Argent A Servir (en $)', {
+        showLegend: true,
+      }),
       config: { 
         responsive: true, 
         displayModeBar: false,
@@ -1686,44 +1517,186 @@ export class GestionDayComponent implements OnInit {
   private createEmptyStockGraph(title: string) {
     return {
       data: [],
-      layout: {
-        title: {
-          text: title,
-          font: { 
-            size: 20, 
-            color: '#1a1a1a',
-            family: 'system-ui, -apple-system, sans-serif'
-          },
-        },
-        xaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-        },
-        yaxis: {
-          showgrid: true,
-          gridcolor: 'rgba(0, 0, 0, 0.05)',
-          gridwidth: 1,
-          showline: false,
-          zeroline: false,
-          side: 'right',
-          tickformat: '$,.0f',
-        },
-        height: 450,
-        margin: { t: 100, r: 20, l: 20, b: 40 },
-        plot_bgcolor: '#ffffff',
-        paper_bgcolor: '#ffffff',
-        hovermode: 'x unified',
-        showlegend: false,
-        autosize: true,
-      },
+      layout: this.buildStockChartLayout(title),
       config: { 
         responsive: true, 
         displayModeBar: false,
         staticPlot: false,
       },
+    };
+  }
+
+  private observeDarkModeChanges() {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
+      return;
+    }
+
+    const root = document.documentElement;
+    this.darkModeObserver = new MutationObserver((mutations) => {
+      if (mutations.some((mutation) => mutation.attributeName === 'class')) {
+        this.refreshChartVisuals();
+      }
+    });
+    this.darkModeObserver.observe(root, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+  }
+
+  private refreshChartVisuals() {
+    this.setGraphics();
+    this.updateReserveGraphics(this.graphicsRange);
+    this.updateServeGraphics(this.graphicsRangeServe);
+    this.updateCombinedGraphics(this.graphicsRangeCombined);
+  }
+
+  private isDarkModeEnabled(): boolean {
+    if (typeof document === 'undefined') {
+      return false;
+    }
+
+    return (
+      document.documentElement.classList.contains('dark') ||
+      document.body.classList.contains('dark')
+    );
+  }
+
+  private getStockChartTheme() {
+    if (this.isDarkModeEnabled()) {
+      return {
+        titleColor: '#f8fafc',
+        textColor: '#e2e8f0',
+        mutedColor: '#cbd5e1',
+        gridColor: 'rgba(148, 163, 184, 0.16)',
+        paperBg: 'rgba(15, 23, 42, 0)',
+        plotBg: 'rgba(15, 23, 42, 0)',
+        panelBg: 'rgba(15, 23, 42, 0.82)',
+        borderColor: 'rgba(148, 163, 184, 0.18)',
+        hoverBg: '#0f172a',
+      };
+    }
+
+    return {
+      titleColor: '#1a1a1a',
+      textColor: '#334155',
+      mutedColor: '#64748b',
+      gridColor: 'rgba(0, 0, 0, 0.05)',
+      paperBg: '#ffffff',
+      plotBg: '#ffffff',
+      panelBg: 'rgba(255, 255, 255, 0.88)',
+      borderColor: 'rgba(226, 232, 240, 0.9)',
+      hoverBg: '#ffffff',
+    };
+  }
+
+  private buildStockChartLayout(
+    title: string,
+    options: { annotations?: any[]; showLegend?: boolean } = {}
+  ) {
+    const theme = this.getStockChartTheme();
+
+    return {
+      title: {
+        text: title,
+        font: {
+          size: 20,
+          color: theme.titleColor,
+          family: 'system-ui, -apple-system, sans-serif',
+        },
+        x: 0.02,
+        y: 0.95,
+        xanchor: 'left',
+        yanchor: 'top',
+      },
+      font: {
+        color: theme.textColor,
+        family: 'system-ui, -apple-system, sans-serif',
+      },
+      annotations: options.annotations || [],
+      xaxis: {
+        showgrid: true,
+        gridcolor: theme.gridColor,
+        gridwidth: 1,
+        showline: false,
+        zeroline: false,
+        tickfont: {
+          size: 11,
+          color: theme.mutedColor,
+        },
+        title: {
+          text: '',
+          font: { size: 12, color: theme.mutedColor },
+        },
+      },
+      yaxis: {
+        showgrid: true,
+        gridcolor: theme.gridColor,
+        gridwidth: 1,
+        showline: false,
+        zeroline: false,
+        side: 'right',
+        tickfont: {
+          size: 11,
+          color: theme.mutedColor,
+        },
+        tickformat: '$,.0f',
+        title: {
+          text: '',
+          font: { size: 12, color: theme.mutedColor },
+        },
+      },
+      height: 450,
+      margin: { t: 100, r: 20, l: 20, b: 40 },
+      plot_bgcolor: theme.plotBg,
+      paper_bgcolor: theme.paperBg,
+      hovermode: 'x unified',
+      hoverlabel: {
+        bgcolor: theme.hoverBg,
+        bordercolor: theme.borderColor,
+        font: {
+          color: theme.titleColor,
+        },
+      },
+      showlegend: options.showLegend ?? false,
+      legend: {
+        x: 0.02,
+        y: 0.85,
+        xanchor: 'left',
+        yanchor: 'top',
+        bgcolor: theme.panelBg,
+        bordercolor: theme.borderColor,
+        borderwidth: 1,
+        font: {
+          color: theme.textColor,
+        },
+      },
+      autosize: true,
+    };
+  }
+
+  private buildStockSummaryAnnotation(
+    lastValue: number,
+    change: number,
+    changePercent: string,
+    lineColor: string
+  ) {
+    const theme = this.getStockChartTheme();
+    const changeSign = change >= 0 ? '+' : '';
+
+    return {
+      xref: 'paper',
+      yref: 'paper',
+      x: 0.02,
+      y: 0.85,
+      xanchor: 'left',
+      yanchor: 'top',
+      text: `<span style="font-size: 28px; font-weight: 600; color: ${theme.titleColor};">$${lastValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span><br><span style="font-size: 14px; color: ${lineColor};">${changeSign}$${change.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${changePercent}%)</span>`,
+      showarrow: false,
+      align: 'left',
+      bgcolor: theme.panelBg,
+      bordercolor: theme.borderColor,
+      borderwidth: 1,
+      borderpad: 8,
     };
   }
 
