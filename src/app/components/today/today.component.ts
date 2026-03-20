@@ -536,6 +536,7 @@ export class TodayComponent {
 
       const start = new Date(end);
       start.setDate(end.getDate() - 6);
+      if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
 
       const totalFc = this.computeWeeklyPaymentTotal(
         this.formatDateKey(start)
@@ -558,6 +559,15 @@ export class TodayComponent {
     }
 
     this.weeklyShortfalls = shortfalls;
+  }
+
+  private isSundayOnlyCarryoverWeek(start: Date, end: Date): boolean {
+    return (
+      start.getFullYear() !== end.getFullYear() ||
+      start.getMonth() !== end.getMonth()
+    )
+      ? end.getDate() === 1
+      : false;
   }
 
   onShortfallMonthChange(): void {
