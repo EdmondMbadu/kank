@@ -1692,7 +1692,12 @@ export class AuthService {
     const docRef = this.afs.doc(`management/${this.managementDocId}`);
     return docRef
       .set({ weeklyPaymentTargetFc: targetFc }, { merge: true })
-      .then(() => {});
+      .then(() => {
+        this.weeklyPaymentTargetState = this.normalizeWeeklyPaymentTarget(
+          targetFc
+        );
+        this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+      });
   }
 
   updateWeeklyPaymentProjectionGlobal(

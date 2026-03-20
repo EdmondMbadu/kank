@@ -1,16 +1,21 @@
-import { PercentPipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
-import { TimeService } from 'src/app/services/time.service';
+import { Subscription } from 'rxjs';
+
+interface WeeklyDeductionGuideRow {
+  label: string;
+  deductionUsd: number;
+  tone: 'success' | 'warning' | 'danger';
+  note?: string;
+}
 
 @Component({
   selector: 'app-tutorial',
   templateUrl: './tutorial.component.html',
   styleUrls: ['./tutorial.component.css'],
 })
-export class TutorialComponent implements OnInit {
+export class TutorialComponent implements OnInit, OnDestroy {
   showFirst: boolean = false;
   system: boolean = false;
   payment: boolean = false;
@@ -21,6 +26,7 @@ export class TutorialComponent implements OnInit {
   intro: boolean = false;
   register: boolean = false;
   best: boolean = false;
+  weeklyDeduction: boolean = false;
   agentRole: string = 'Manager';
   clientPayment: boolean = false;
   card: boolean = false;
@@ -40,16 +46,26 @@ export class TutorialComponent implements OnInit {
   result: string = '';
 
   bonus: number = 0;
+  weeklyMinimumFc: number = 600000;
+  weeklyMinimumInput: string = '';
+  weeklyDeductionGuide: WeeklyDeductionGuideRow[] = [];
+  weeklyMinimumSaving = false;
+  private weeklyTargetSub?: Subscription;
 
   constructor(
-    private router: Router,
     public auth: AuthService,
-    private time: TimeService,
     public compute: ComputationService
   ) {}
   ngOnInit() {
     this.startingBudget = Number(this.auth.currentUser?.startingBudget ?? 0);
     console.log('budget ', this.startingBudget);
+    this.syncWeeklyMinimum(this.auth.weeklyPaymentTargetFc || 600000);
+    this.weeklyTargetSub = this.auth.weeklyPaymentTarget$.subscribe((targetFc) => {
+      this.syncWeeklyMinimum(targetFc || 600000);
+    });
+  }
+  ngOnDestroy() {
+    this.weeklyTargetSub?.unsubscribe();
   }
   /* === Calcul frais prêt === */
   isNewClient: boolean = true; // Nouveau = true, Ancien = false
@@ -99,6 +115,7 @@ export class TutorialComponent implements OnInit {
       | 'performance'
       | 'intro'
       | 'register'
+      | 'weeklyDeduction'
       | 'clientPayment'
       | 'card'
       | 'cardReturn'
@@ -142,5 +159,89 @@ export class TutorialComponent implements OnInit {
 
     if (agentRole !== 'Manager') base -= 10;
     return base;
+  }
+
+  async saveWeeklyMinimum(): Promise<void> {
+    if (!this.auth.isAdmin || this.weeklyMinimumSaving) {
+      return;
+    }
+
+    const value = Number(this.weeklyMinimumInput);
+    if (!Number.isFinite(value) || value < 600000 || value % 100000 !== 0) {
+      alert('Entrez un minimum valide en tranche de 100 000 FC (minimum 600 000 FC).');
+      return;
+    }
+
+    this.weeklyMinimumSaving = true;
+    try {
+      await this.auth.updateWeeklyPaymentTargetGlobal(value);
+      this.syncWeeklyMinimum(value);
+      alert('Minimum hebdomadaire mis à jour.');
+    } catch (error) {
+      alert('Erreur lors de la mise à jour du minimum hebdomadaire.');
+    } finally {
+      this.weeklyMinimumSaving = false;
+    }
+  }
+
+  toneClass(row: WeeklyDeductionGuideRow): string {
+    if (row.tone === 'success') {
+      return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200';
+    }
+    if (row.tone === 'danger') {
+      return 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-900/20 dark:text-rose-200';
+    }
+    return 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200';
+  }
+
+  private syncWeeklyMinimum(targetFc: number): void {
+    const normalizedTarget =
+      Number.isFinite(Number(targetFc)) && Number(targetFc) >= 600000
+        ? Number(targetFc)
+        : 600000;
+    this.weeklyMinimumFc = normalizedTarget;
+    this.weeklyMinimumInput = normalizedTarget.toString();
+    this.weeklyDeductionGuide = this.buildWeeklyDeductionGuide(normalizedTarget);
+  }
+
+  private buildWeeklyDeductionGuide(targetFc: number): WeeklyDeductionGuideRow[] {
+    const rows: WeeklyDeductionGuideRow[] = [
+      {
+        label: `${this.formatFc(targetFc)} FC ou plus`,
+        deductionUsd: 0,
+        tone: 'success',
+        note: 'Aucune retenue',
+      },
+    ];
+
+    for (let lowerBound = targetFc - 100000; lowerBound >= 600000; lowerBound -= 100000) {
+      const upperBound = Math.min(targetFc - 1, lowerBound + 99999);
+      const deductionUsd = this.compute.computeWeeklyObjectiveDeductionUsd(
+        lowerBound,
+        targetFc
+      );
+      if (deductionUsd <= 0) {
+        continue;
+      }
+
+      rows.push({
+        label: `${this.formatFc(lowerBound)} - ${this.formatFc(upperBound)} FC`,
+        deductionUsd,
+        tone: 'warning',
+      });
+    }
+
+    rows.push({
+      label: `Moins de ${this.formatFc(600000)} FC`,
+      deductionUsd: this.compute.computeWeeklyObjectiveDeductionUsd(599999, targetFc),
+      tone: 'danger',
+      note: targetFc >= 1200000 ? 'Retenue renforcée' : 'Retenue maximale',
+    });
+
+    return rows;
+  }
+
+  private formatFc(value: number): string {
+    return new Intl.NumberFormat('fr-FR').format(value);
   }
 }

@@ -1311,6 +1311,120 @@
       </div>
     </div>
 
+    <h2 id="accordion-collapse-heading-weekly-deduction">
+      <button
+        (click)="toggle('weeklyDeduction')"
+        type="button"
+        class="flex items-center justify-between w-full p-5 font-medium rtl:text-right text-gray-500 border border-gray-200 focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 gap-3"
+        data-accordion-target="#accordion-collapse-body-weekly-deduction"
+        aria-expanded="false"
+        aria-controls="accordion-collapse-body-weekly-deduction"
+      >
+        <span>Retenue Objectif Semaine</span>
+        <svg
+          data-accordion-icon
+          class="w-3 h-3 rotate-180 shrink-0"
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 10 6"
+        >
+          <path
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5 5 1 1 5"
+          />
+        </svg>
+      </button>
+    </h2>
+    <div
+      *ngIf="weeklyDeduction"
+      id="accordion-collapse-body-weekly-deduction"
+      aria-labelledby="accordion-collapse-heading-weekly-deduction"
+    >
+      <div class="p-5 border border-gray-200 dark:border-gray-700">
+        <div
+          class="rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-5 shadow-sm dark:border-rose-900/60 dark:from-slate-900 dark:via-slate-950 dark:to-rose-950/30"
+        >
+          <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">
+                Retenue si l’objectif semaine n’est pas atteint
+              </h3>
+              <p class="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                Minimum actuel de la semaine :
+                <span class="font-extrabold text-rose-700 dark:text-rose-300">
+                  {{ weeklyMinimumFc | number : "1.0-0" }} FC
+                </span>
+              </p>
+              <p class="mt-1 max-w-2xl text-xs text-slate-500 dark:text-slate-400">
+                La retenue augmente par tranche de 100 000 FC manquants. En dessous de 600 000 FC, la retenue maximale du barème s’applique.
+              </p>
+            </div>
+
+            <div *ngIf="auth.isAdmin" class="w-full max-w-xs rounded-xl border border-slate-200 bg-white/90 p-3 dark:border-slate-700 dark:bg-slate-900/70">
+              <label
+                for="tutorialWeeklyMinimum"
+                class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+              >
+                Minimum de la semaine
+              </label>
+              <div class="mt-2 flex items-center gap-2">
+                <input
+                  id="tutorialWeeklyMinimum"
+                  type="number"
+                  min="600000"
+                  step="100000"
+                  [(ngModel)]="weeklyMinimumInput"
+                  class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200 dark:border-slate-600 dark:bg-slate-950 dark:text-white dark:focus:ring-rose-900"
+                />
+                <button
+                  type="button"
+                  (click)="saveWeeklyMinimum()"
+                  [disabled]="weeklyMinimumSaving"
+                  class="rounded-xl bg-rose-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {{ weeklyMinimumSaving ? '...' : 'Mettre' }}
+                </button>
+              </div>
+              <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                Utilisez des tranches de 100 000 FC, à partir de 600 000 FC.
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div
+              *ngFor="let row of weeklyDeductionGuide"
+              class="rounded-xl border px-4 py-3 shadow-sm"
+              [ngClass]="toneClass(row)"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="text-sm font-extrabold">
+                    {{ row.label }}
+                  </div>
+                  <div *ngIf="row.note" class="mt-1 text-[11px] opacity-80">
+                    {{ row.note }}
+                  </div>
+                </div>
+                <div class="shrink-0 text-right">
+                  <div class="text-xs font-semibold uppercase tracking-wide opacity-70">
+                    Retenue
+                  </div>
+                  <div class="text-lg font-extrabold">
+                    $ {{ row.deductionUsd | number : "1.0-0" }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <h2 id="accordion-collapse-heading-2">
       <button
         (click)="toggle('best')"
