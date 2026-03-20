@@ -182,6 +182,8 @@
               <tr class="border-b border-amber-200 bg-amber-50">
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-amber-700">Téléphone</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-amber-700">Nom complet</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-amber-700">Location</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-amber-700">Dernière question WhatsApp</th>
               </tr>
             </thead>
             <tbody>
@@ -190,9 +192,11 @@
                   [ngClass]="{'bg-amber-50/20': odd}">
                 <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-700">{{ participant.phone || '--' }}</td>
                 <td class="participant-name-cell px-4 py-3 text-slate-800">{{ participant.fullName || 'Client inconnu' }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-slate-700">{{ formatParticipantLocation(participant) }}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-slate-700">{{ formatParticipantLastQuestion(participant) }}</td>
               </tr>
               <tr *ngIf="activeParticipants.length === 0">
-                <td colspan="2" class="px-4 py-10 text-center text-sm text-slate-400">
+                <td colspan="4" class="px-4 py-10 text-center text-sm text-slate-400">
                   Aucun téléphone distinct trouvé pour {{ activeParticipantEmptyScopeLabel }}.
                 </td>
               </tr>

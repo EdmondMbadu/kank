@@ -57,7 +57,10 @@ interface WhatsAppPayment {
 interface WhatsAppParticipant {
   phone: string;
   fullName: string;
+  locationName?: string;
   lastInteractionAtMs?: number;
+  lastQuestionAtMs?: number;
+  isKnownClient?: boolean;
 }
 
 @Component({
@@ -447,6 +450,17 @@ export class WhatsappAdminComponent implements OnInit {
 
   formatFC(value: any): string {
     return `${this.toNumber(value).toLocaleString('fr-FR')} FC`;
+  }
+
+  formatParticipantLocation(participant: WhatsAppParticipant): string {
+    return String(participant.locationName || '').trim() || '-';
+  }
+
+  formatParticipantLastQuestion(participant: WhatsAppParticipant): string {
+    if (!participant.isKnownClient || !participant.lastQuestionAtMs) {
+      return '-';
+    }
+    return this.formatDate(participant.lastQuestionAtMs);
   }
 
   get overallDistinctParticipantCountDisplay(): string {
