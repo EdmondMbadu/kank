@@ -14,6 +14,10 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
   providedIn: 'root',
 })
 export class ComputationService {
+  private readonly weeklyObjectiveBandFc = 100000;
+  private readonly weeklyObjectiveFloorFc = 600000;
+  private readonly weeklyObjectiveBasePenaltyUsd = 5;
+
   constructor(
     private time: TimeService,
     private storage: AngularFireStorage,
@@ -178,6 +182,30 @@ export class ComputationService {
     let dollars = Math.floor(input * this.rateDollar);
 
     return dollars;
+  }
+
+  computeWeeklyObjectiveDeductionUsd(
+    weeklyTotalFc: number,
+    weeklyTargetFc: number
+  ): number {
+    const total = Number(weeklyTotalFc) || 0;
+    const target = Number(weeklyTargetFc) || 0;
+
+    if (!Number.isFinite(target) || target <= 0 || total >= target) {
+      return 0;
+    }
+
+    if (total >= this.weeklyObjectiveFloorFc) {
+      return Math.max(
+        1,
+        Math.ceil((target - total) / this.weeklyObjectiveBandFc)
+      );
+    }
+
+    return (
+      Math.max(1, Math.floor(target / this.weeklyObjectiveFloorFc)) *
+      this.weeklyObjectiveBasePenaltyUsd
+    );
   }
   salaries: any[] = [
     [

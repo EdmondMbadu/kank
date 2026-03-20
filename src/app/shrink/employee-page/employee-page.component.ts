@@ -402,7 +402,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weekObjectiveStartDate: string = '';
   weekObjectiveEndDate: string = '';
   weekObjectiveEndLabel: string = '';
-  weekObjectiveAmount: number = 5;
+  weekObjectiveAmount: number = 0;
 
   averagePointsMonth: string = '';
   performancePercentageMonth: string = '';
@@ -1080,6 +1080,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (!this.weekObjectiveStartDate) {
       this.weekObjectiveEndDate = '';
       this.weekObjectiveEndLabel = '';
+      this.weekObjectiveAmount = 0;
       return;
     }
     const startDate = this.parseIsoDate(this.weekObjectiveStartDate);
@@ -1087,6 +1088,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     endDate.setDate(startDate.getDate() + 6);
     this.weekObjectiveEndDate = this.formatIsoDate(endDate);
     this.weekObjectiveEndLabel = this.formatWeekDate(endDate);
+    const totalFc = this.computeWeeklyPaymentTotalForLocation(
+      this.formatDateKey(startDate)
+    );
+    this.weekObjectiveAmount = this.compute.computeWeeklyObjectiveDeductionUsd(
+      totalFc,
+      this.resolveWeeklyTargetFc()
+    );
   }
 
   onWeeklyPaymentDateChange(): void {
@@ -1335,11 +1343,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.formatDateKey(start)
       );
       if (totalFc >= weeklyTargetFc) continue;
+      const amount = this.compute.computeWeeklyObjectiveDeductionUsd(
+        totalFc,
+        weeklyTargetFc
+      );
+      if (amount <= 0) continue;
 
       deductions.push({
         start: this.formatIsoDate(start),
         end: this.formatIsoDate(end),
-        amount: Number(this.weekObjectiveAmount) || 0,
+        amount,
       });
     }
 
@@ -2726,7 +2739,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             bullets: [
               `Base mensuelle : ${baseSalary}`,
               'Être présent chaque jour au travail et confirmer sa présence par une photo claire prise sur le lieu de travail (logo ou élément visible du site). Toute photo floue ou non claire est considérée comme absence.',
-              "Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas 600 000 FC de paiements collectés sur la semaine, une retenue de 5 $ par employé est appliquée pour chaque semaine où l’objectif n’est pas atteint. Ce montant peut être réajusté au cours de l’année selon l’évolution des activités.",
+              "Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas l’objectif hebdomadaire de paiements collectés, une retenue progressive par employé est appliquée selon l’écart par tranche de 100 000 FC, avec une retenue renforcée lorsque la collecte reste en dessous de 600 000 FC. Ce barème peut être réajusté au cours de l’année selon l’évolution des activités.",
               'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
               'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
               'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois et les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',
@@ -2917,7 +2930,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           bullets: [
             `Base mensuelle : ${baseSalary}`,
             'Être présent chaque jour au travail et confirmer sa présence par une photo claire prise sur le lieu de travail (logo ou élément visible du site). Toute photo floue ou non claire est considérée comme absence.',
-            "Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas 600 000 FC de paiements collectés sur la semaine, une retenue de 5 $ par employé est appliquée pour chaque semaine où l’objectif n’est pas atteint. Ce montant peut être réajusté au cours de l’année selon l’évolution des activités.",
+            "Respecter les règles de travail : absence ou néant = –3 $ / jour, retard = –1 $ / jour. De plus, si l’équipe d’un site n’atteint pas l’objectif hebdomadaire de paiements collectés, une retenue progressive par employé est appliquée selon l’écart par tranche de 100 000 FC, avec une retenue renforcée lorsque la collecte reste en dessous de 600 000 FC. Ce barème peut être réajusté au cours de l’année selon l’évolution des activités.",
             'Primes de performance (%) 30+ clients : À 50 %, la prime est de 10 $. Elle augmente de 10 $ à chaque palier supplémentaire de performance (ex. : 60–69 % = 20 $, 70–79 % = 30 $, etc.).',
             'Il y a aussi des primes des montants arbitraires si vous êtes membre de la meilleure équipe, ou parmi les 3 meilleurs employés du mois.',
             'Les paiements sont effectués dans un compte bancaire (RAWBANK, EQUITY) le 1er de chaque mois, les primes le 15 de chaque mois (ou la veille si le 1er ou le 15 tombe un week-end) et une augmentation de salaire de 10$ chaque année que vous demeurez dans la fondation.',

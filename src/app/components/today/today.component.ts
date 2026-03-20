@@ -26,6 +26,7 @@ interface WeeklyShortfall {
   label: string;
   totalFc: number;
   totalUsd: number;
+  deductionUsd: number;
   isComplete: boolean;
 }
 @Component({
@@ -120,7 +121,6 @@ export class TodayComponent {
   weeklyPaymentTotalN: number = 0;
   weeklyPaymentTotalDollars: string = '0';
   weeklyTargetFc: number = 600000;
-  weeklyShortfallDeductionUsd: number = 5;
   projectedWeeklyTargetFc: number | null = null;
   projectedWeeklyTargetEffectiveDate = '';
   weeklyTargetInput: string = '';
@@ -547,6 +547,10 @@ export class TodayComponent {
       const totalUsd = Number(
         this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
       );
+      const deductionUsd = this.compute.computeWeeklyObjectiveDeductionUsd(
+        totalFc,
+        this.weeklyTargetFc
+      );
       const isComplete = today > end;
 
       shortfalls.push({
@@ -555,6 +559,7 @@ export class TodayComponent {
         label: this.formatWeekShortLabel(start, end),
         totalFc,
         totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
+        deductionUsd,
         isComplete,
       });
     }
