@@ -749,14 +749,13 @@
                   Objectif: {{ weeklyTargetFc | number : "1.0-0" }} FC
                 </div>
                 <div
-                  *ngIf="hasProjectedWeeklyTarget"
-                  class="mt-1 inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200"
+                  class="mt-1 inline-flex items-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2 py-0.5 text-[10px] font-extrabold text-rose-800 dark:border-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
                 >
                   <span
-                    class="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-600 text-[9px] font-black text-white"
-                    >↑</span
+                    class="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-600 text-[9px] font-black text-white"
+                    >-</span
                   >
-                  Nouveau minimum bientôt: {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
+                  Retenue: $ {{ weeklyShortfallDeductionUsd | number : "1.0-0" }} / employé
                 </div>
               </div>
             </div>

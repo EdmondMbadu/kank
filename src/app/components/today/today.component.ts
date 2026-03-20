@@ -120,6 +120,7 @@ export class TodayComponent {
   weeklyPaymentTotalN: number = 0;
   weeklyPaymentTotalDollars: string = '0';
   weeklyTargetFc: number = 600000;
+  weeklyShortfallDeductionUsd: number = 5;
   projectedWeeklyTargetFc: number | null = null;
   projectedWeeklyTargetEffectiveDate = '';
   weeklyTargetInput: string = '';
