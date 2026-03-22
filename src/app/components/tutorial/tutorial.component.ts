@@ -10,6 +10,14 @@ interface WeeklyDeductionGuideRow {
   note?: string;
 }
 
+interface TeamWeeklyBonusGuideRow {
+  totalFc: number;
+  bonusUsd: number;
+  progressPercent: number;
+  rowClass: string;
+  bonusClass: string;
+}
+
 @Component({
   selector: 'app-tutorial',
   templateUrl: './tutorial.component.html',
@@ -50,7 +58,12 @@ export class TutorialComponent implements OnInit, OnDestroy {
   weeklyMinimumInput: string = '';
   weeklyDeductionGuide: WeeklyDeductionGuideRow[] = [];
   weeklyMinimumSaving = false;
+  teamWeeklyBonusThresholdFc = 1500000;
+  teamWeeklyBonusThresholdInput = '';
+  teamWeeklyBonusGuide: TeamWeeklyBonusGuideRow[] = [];
+  teamWeeklyBonusSaving = false;
   private weeklyTargetSub?: Subscription;
+  private teamWeeklyBonusSub?: Subscription;
 
   constructor(
     public auth: AuthService,
@@ -63,9 +76,18 @@ export class TutorialComponent implements OnInit, OnDestroy {
     this.weeklyTargetSub = this.auth.weeklyPaymentTarget$.subscribe((targetFc) => {
       this.syncWeeklyMinimum(targetFc || 600000);
     });
+    this.syncTeamWeeklyBonusThreshold(
+      this.auth.teamWeeklyBonusThresholdFc || 1500000
+    );
+    this.teamWeeklyBonusSub = this.auth.teamWeeklyBonusConfig$.subscribe(
+      (config) => {
+        this.syncTeamWeeklyBonusThreshold(config?.thresholdFc || 1500000);
+      }
+    );
   }
   ngOnDestroy() {
     this.weeklyTargetSub?.unsubscribe();
+    this.teamWeeklyBonusSub?.unsubscribe();
   }
   /* === Calcul frais prêt === */
   isNewClient: boolean = true; // Nouveau = true, Ancien = false
@@ -184,6 +206,31 @@ export class TutorialComponent implements OnInit, OnDestroy {
     }
   }
 
+  async saveTeamWeeklyBonusThreshold(): Promise<void> {
+    if (!this.auth.isAdmin || this.teamWeeklyBonusSaving) {
+      return;
+    }
+
+    const value = Number(this.teamWeeklyBonusThresholdInput);
+    if (!Number.isFinite(value) || value < 100000 || value % 100000 !== 0) {
+      alert(
+        'Entrez un seuil valide en tranche de 100 000 FC (minimum 100 000 FC).'
+      );
+      return;
+    }
+
+    this.teamWeeklyBonusSaving = true;
+    try {
+      await this.auth.updateTeamWeeklyBonusThresholdGlobal(value);
+      this.syncTeamWeeklyBonusThreshold(value);
+      alert("Seuil du bonus hebdomadaire d'équipe mis à jour.");
+    } catch (error) {
+      alert("Erreur lors de la mise à jour du seuil du bonus d'équipe.");
+    } finally {
+      this.teamWeeklyBonusSaving = false;
+    }
+  }
+
   toneClass(row: WeeklyDeductionGuideRow): string {
     if (row.tone === 'success') {
       return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200';
@@ -243,5 +290,72 @@ export class TutorialComponent implements OnInit, OnDestroy {
 
   private formatFc(value: number): string {
     return new Intl.NumberFormat('fr-FR').format(value);
+  }
+
+  get teamWeeklyBonusThresholdShortLabel(): string {
+    return this.formatCompactFc(this.teamWeeklyBonusThresholdFc);
+  }
+
+  get teamWeeklyBonusStepFc(): number {
+    return 100000;
+  }
+
+  get teamWeeklyBonusStepUsd(): number {
+    return 5;
+  }
+
+  private syncTeamWeeklyBonusThreshold(thresholdFc: number): void {
+    const normalizedThreshold =
+      Number.isFinite(Number(thresholdFc)) &&
+      Number(thresholdFc) >= 100000 &&
+      Number(thresholdFc) % 100000 === 0
+        ? Number(thresholdFc)
+        : 1500000;
+
+    this.teamWeeklyBonusThresholdFc = normalizedThreshold;
+    this.teamWeeklyBonusThresholdInput = normalizedThreshold.toString();
+    this.teamWeeklyBonusGuide =
+      this.buildTeamWeeklyBonusGuide(normalizedThreshold);
+  }
+
+  private buildTeamWeeklyBonusGuide(
+    thresholdFc: number
+  ): TeamWeeklyBonusGuideRow[] {
+    const rowClasses = [
+      'bg-green-50 dark:bg-green-900 border-b hover:bg-green-700',
+      'bg-green-100 dark:bg-green-900 border-b hover:bg-green-700',
+      'bg-green-200 dark:bg-green-900 border-b hover:bg-green-700',
+      'bg-green-300 dark:bg-green-900 border-b hover:bg-green-700',
+      'bg-green-400 dark:bg-green-900 border-b hover:bg-green-700',
+      'bg-green-500 dark:bg-green-800 hover:bg-green-600 text-white',
+    ];
+    const bonusClasses = [
+      'font-semibold text-green-700 dark:text-green-300 flex items-center gap-1',
+      'font-semibold text-green-700 dark:text-green-300 flex items-center gap-1',
+      'font-semibold text-green-700 dark:text-green-300 flex items-center gap-1',
+      'font-semibold text-green-800 dark:text-green-200 flex items-center gap-1',
+      'font-semibold text-green-900 dark:text-green-100 flex items-center gap-1',
+      'font-bold flex items-center gap-1',
+    ];
+
+    return Array.from({ length: 6 }, (_, index) => {
+      const totalFc = thresholdFc + index * this.teamWeeklyBonusStepFc;
+      const bonusUsd = (index + 1) * this.teamWeeklyBonusStepUsd;
+      const progressPercent = 50 + index * 10;
+
+      return {
+        totalFc,
+        bonusUsd,
+        progressPercent,
+        rowClass: rowClasses[index],
+        bonusClass: bonusClasses[index],
+      };
+    });
+  }
+
+  private formatCompactFc(value: number): string {
+    const compact = value / 1000000;
+    const fractionDigits = Number.isInteger(compact) ? 0 : 1;
+    return `${compact.toFixed(fractionDigits)}M`;
   }
 }

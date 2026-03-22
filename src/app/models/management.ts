@@ -15,6 +15,15 @@ export class Management {
   budgetedExpenses?: { [date: string]: string };
   moneyInHandsTracking?: { [key: string]: string } = {};
   reserveRevealTimeKinshasa?: string;
+  weeklyPaymentTargetFc?: number;
+  teamWeeklyBonusThresholdFc?: number;
+  projectedWeeklyPaymentTargetFc?: number;
+  projectedWeeklyPaymentEffectiveDate?: string;
+  rolePasswords?: {
+    admin?: string;
+    gestion?: string;
+    investigator?: string;
+  };
 }
 
 export class Audit {

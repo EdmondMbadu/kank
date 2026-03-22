@@ -38,6 +38,10 @@ export type WeeklyPaymentProjection = {
   projectedTargetFc: number | null;
   effectiveDateIso: string;
 };
+
+export type TeamWeeklyBonusConfig = {
+  thresholdFc: number;
+};
 @Injectable({
   providedIn: 'root',
 })
@@ -72,6 +76,9 @@ export class AuthService {
     projectedTargetFc: null,
     effectiveDateIso: '',
   };
+  private readonly defaultTeamWeeklyBonusConfig: TeamWeeklyBonusConfig = {
+    thresholdFc: 1500000,
+  };
   private weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
   private weeklyPaymentTargetSubject = new BehaviorSubject<number>(
     this.weeklyPaymentTargetState
@@ -86,6 +93,14 @@ export class AuthService {
     );
   weeklyPaymentProjection$ =
     this.weeklyPaymentProjectionSubject.asObservable();
+  private teamWeeklyBonusConfigState: TeamWeeklyBonusConfig = {
+    ...this.defaultTeamWeeklyBonusConfig,
+  };
+  private teamWeeklyBonusConfigSubject =
+    new BehaviorSubject<TeamWeeklyBonusConfig>(
+      this.teamWeeklyBonusConfigState
+    );
+  teamWeeklyBonusConfig$ = this.teamWeeklyBonusConfigSubject.asObservable();
   private managementDocId: string = '';
   private lastRoleWord = '';
 
@@ -1520,11 +1535,24 @@ export class AuthService {
     return this.weeklyPaymentTargetState;
   }
 
+  public get teamWeeklyBonusThresholdFc(): number {
+    return this.teamWeeklyBonusConfigState.thresholdFc;
+  }
+
   private normalizeWeeklyPaymentTarget(value: any): number {
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed > 0
       ? parsed
       : this.defaultWeeklyPaymentTargetFc;
+  }
+
+  private normalizeTeamWeeklyBonusThreshold(value: any): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) &&
+      parsed >= 100000 &&
+      parsed % 100000 === 0
+      ? parsed
+      : this.defaultTeamWeeklyBonusConfig.thresholdFc;
   }
 
   private normalizeWeeklyPaymentProjection(
@@ -1630,6 +1658,12 @@ export class AuthService {
           this.rolePasswordsSubject.next(this.rolePasswordsState);
           this.weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
           this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+          this.teamWeeklyBonusConfigState = {
+            ...this.defaultTeamWeeklyBonusConfig,
+          };
+          this.teamWeeklyBonusConfigSubject.next(
+            this.teamWeeklyBonusConfigState
+          );
           this.weeklyPaymentProjectionState = {
             ...this.defaultWeeklyPaymentProjection,
           };
@@ -1651,6 +1685,12 @@ export class AuthService {
           data.weeklyPaymentTargetFc
         );
         this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+        this.teamWeeklyBonusConfigState = {
+          thresholdFc: this.normalizeTeamWeeklyBonusThreshold(
+            data.teamWeeklyBonusThresholdFc
+          ),
+        };
+        this.teamWeeklyBonusConfigSubject.next(this.teamWeeklyBonusConfigState);
         this.weeklyPaymentProjectionState =
           this.normalizeWeeklyPaymentProjection(
             data.projectedWeeklyPaymentTargetFc,
@@ -1697,6 +1737,23 @@ export class AuthService {
           targetFc
         );
         this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+      });
+  }
+
+  updateTeamWeeklyBonusThresholdGlobal(thresholdFc: number): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const normalizedThreshold =
+      this.normalizeTeamWeeklyBonusThreshold(thresholdFc);
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set({ teamWeeklyBonusThresholdFc: normalizedThreshold }, { merge: true })
+      .then(() => {
+        this.teamWeeklyBonusConfigState = {
+          thresholdFc: normalizedThreshold,
+        };
+        this.teamWeeklyBonusConfigSubject.next(this.teamWeeklyBonusConfigState);
       });
   }
 

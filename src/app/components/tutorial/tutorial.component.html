@@ -1011,12 +1011,49 @@
         <!-- ░░░ FIN STRUCTURE ░░░ -->
 
         <!-- ░░░ BONUS HEBDOMADAIRE D'ÉQUIPE ░░░ -->
-        <h2
-          class="text-lg font-semibold text-gray-800 mb-4 text-center mx-auto"
-        >
-          Bonus hebdomadaire d’équipe : « Plus l’équipe dépasse 1.5M, plus
-          chacun gagne »
-        </h2>
+        <div class="mb-4 flex flex-col gap-4">
+          <h2
+            class="text-lg font-semibold text-gray-800 text-center mx-auto"
+          >
+            Bonus hebdomadaire d’équipe : « Plus l’équipe dépasse
+            {{ teamWeeklyBonusThresholdShortLabel }}, plus chacun gagne »
+          </h2>
+
+          <div
+            *ngIf="auth.isAdmin"
+            class="mx-auto w-full max-w-md rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/20"
+          >
+            <label
+              for="teamWeeklyBonusThreshold"
+              class="text-xs font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
+            >
+              Seuil de départ du bonus d’équipe
+            </label>
+            <div class="mt-2 flex items-center gap-2">
+              <input
+                id="teamWeeklyBonusThreshold"
+                type="number"
+                min="100000"
+                step="100000"
+                [(ngModel)]="teamWeeklyBonusThresholdInput"
+                class="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-emerald-700 dark:bg-slate-950 dark:text-white dark:focus:ring-emerald-900"
+              />
+              <button
+                type="button"
+                (click)="saveTeamWeeklyBonusThreshold()"
+                [disabled]="teamWeeklyBonusSaving"
+                class="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ teamWeeklyBonusSaving ? '...' : 'Mettre' }}
+              </button>
+            </div>
+            <p class="mt-2 text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
+              Le bonus démarre à ce seuil, puis chaque
+              {{ teamWeeklyBonusStepFc | number : "1.0-0" }} FC ajoutent
+              {{ teamWeeklyBonusStepUsd }} $ par membre.
+            </p>
+          </div>
+        </div>
 
         <div class="overflow-x-auto mb-6 max-w-2xl mx-auto">
           <table
@@ -1031,161 +1068,23 @@
                 <th class="px-4 py-3">Bonus / membre</th>
               </tr>
             </thead>
-
             <tr
-              class="bg-green-50 dark:bg-green-900 border-b hover:bg-green-700"
+              *ngFor="let row of teamWeeklyBonusGuide"
+              [class]="row.rowClass"
             >
-              <td class="px-4 py-3 font-medium">1,500,000 FC</td>
-              <td class="px-4 py-3">
-                <div class="w-44 h-2 bg-green-200 rounded">
-                  <div
-                    class="h-full bg-green-500 rounded"
-                    style="width: 50%"
-                  ></div>
-                </div>
+              <td class="px-4 py-3 font-medium">
+                {{ row.totalFc | number : "1.0-0" }} FC
               </td>
-              <td
-                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
-              >
-                5 $
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 fill-current"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
-                  />
-                </svg>
-              </td>
-            </tr>
-
-            <tr
-              class="bg-green-100 dark:bg-green-900 border-b hover:bg-green-7000"
-            >
-              <td class="px-4 py-3 font-medium">1,600,000 FC</td>
-              <td class="px-4 py-3">
-                <div class="w-44 h-2 bg-green-200 rounded">
-                  <div
-                    class="h-full bg-green-500 rounded"
-                    style="width: 60%"
-                  ></div>
-                </div>
-              </td>
-              <td
-                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
-              >
-                10 $
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 fill-current"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
-                  />
-                </svg>
-              </td>
-            </tr>
-
-            <tr
-              class="bg-green-200 dark:bg-green-900 border-b hover:bg-green-700"
-            >
-              <td class="px-4 py-3 font-medium">1,700,000 FC</td>
-              <td class="px-4 py-3">
-                <div class="w-44 h-2 bg-green-200 rounded">
-                  <div
-                    class="h-full bg-green-500 rounded"
-                    style="width: 70%"
-                  ></div>
-                </div>
-              </td>
-              <td
-                class="px-4 py-3 font-semibold text-green-700 dark:text-green-300 flex items-center gap-1"
-              >
-                15 $
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 fill-current"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
-                  />
-                </svg>
-              </td>
-            </tr>
-
-            <tr
-              class="bg-green-300 dark:bg-green-900 border-b hover:bg-green-700"
-            >
-              <td class="px-4 py-3 font-medium">1,800,000 FC</td>
-              <td class="px-4 py-3">
-                <div class="w-44 h-2 bg-green-200 rounded">
-                  <div
-                    class="h-full bg-green-500 rounded"
-                    style="width: 80%"
-                  ></div>
-                </div>
-              </td>
-              <td
-                class="px-4 py-3 font-semibold text-green-800 dark:text-green-200 flex items-center gap-1"
-              >
-                20 $
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 fill-current"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
-                  />
-                </svg>
-              </td>
-            </tr>
-
-            <tr
-              class="bg-green-400 dark:bg-green-900 border-b hover:bg-green-700"
-            >
-              <td class="px-4 py-3 font-medium">1,900,000 FC</td>
               <td class="px-4 py-3">
                 <div class="w-44 h-2 bg-green-200 rounded">
                   <div
                     class="h-full bg-green-600 rounded"
-                    style="width: 90%"
+                    [style.width.%]="row.progressPercent"
                   ></div>
                 </div>
               </td>
-              <td
-                class="px-4 py-3 font-semibold text-green-900 dark:text-green-100 flex items-center gap-1"
-              >
-                25 $
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 fill-current"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M12 4l5.657 5.657-1.414 1.414L13 8.485V20h-2V8.485l-3.243 3.586-1.414-1.414z"
-                  />
-                </svg>
-              </td>
-            </tr>
-
-            <tr
-              class="bg-green-500 dark:bg-green-800 hover:bg-green-600 text-white"
-            >
-              <td class="px-4 py-3 font-medium">2,000,000 FC</td>
-              <td class="px-4 py-3">
-                <div class="w-44 h-2 bg-green-200 rounded">
-                  <div
-                    class="h-full bg-green-700 rounded"
-                    style="width: 100%"
-                  ></div>
-                </div>
-              </td>
-              <td class="px-4 py-3 font-bold flex items-center gap-1">
-                30 $
+              <td class="px-4 py-3" [class]="row.bonusClass">
+                {{ row.bonusUsd }} $
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   class="h-4 w-4 fill-current"
@@ -1201,11 +1100,14 @@
         </div>
 
         <p class="mb-8 max-w-2xl mx-auto text-center text-sm text-gray-600 dark:text-gray-300">
-          À partir de <strong>1,500,000 FC</strong> sur la semaine, chaque
-          membre de l’équipe reçoit <strong>5 $</strong>. Ensuite, chaque
-          <strong>100,000 FC</strong> supplémentaires ajoutent
-          <strong>5 $ de plus par membre</strong> pour cette même semaine, et
-          cela continue.
+          À partir de
+          <strong>{{ teamWeeklyBonusThresholdFc | number : "1.0-0" }} FC</strong>
+          sur la semaine, chaque membre de l’équipe reçoit
+          <strong>{{ teamWeeklyBonusStepUsd }} $</strong>. Ensuite, chaque
+          <strong>{{ teamWeeklyBonusStepFc | number : "1.0-0" }} FC</strong>
+          supplémentaires ajoutent
+          <strong>{{ teamWeeklyBonusStepUsd }} $ de plus par membre</strong>
+          pour cette même semaine, et cela continue.
         </p>
 
         <!-- ░░░ FIN BONUS ░░░ -->

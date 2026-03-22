@@ -33,6 +33,10 @@ export class TrackingCentralComponent {
   weeklyPaymentTargetInput = '';
   weeklyPaymentTargetSaving = false;
   weeklyPaymentTargetSaved = false;
+  teamWeeklyBonusThresholdFc = 1500000;
+  teamWeeklyBonusThresholdInput = '';
+  teamWeeklyBonusThresholdSaving = false;
+  teamWeeklyBonusThresholdSaved = false;
   projectedWeeklyPaymentTargetFc: number | null = null;
   projectedWeeklyPaymentEffectiveDate = '';
   projectedWeeklyPaymentTargetInput = '';
@@ -59,6 +63,9 @@ export class TrackingCentralComponent {
     }
     this.auth.weeklyPaymentTarget$.subscribe((value) => {
       this.weeklyPaymentTargetFc = value;
+    });
+    this.auth.teamWeeklyBonusConfig$.subscribe((config) => {
+      this.teamWeeklyBonusThresholdFc = config.thresholdFc;
     });
     this.auth.weeklyPaymentProjection$.subscribe(
       (projection: WeeklyPaymentProjection) => {
@@ -210,6 +217,34 @@ export class TrackingCentralComponent {
       })
       .finally(() => {
         this.weeklyPaymentTargetSaving = false;
+      });
+  }
+
+  saveTeamWeeklyBonusThresholdGlobal(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.teamWeeklyBonusThresholdSaving) return;
+    const value = Number(this.teamWeeklyBonusThresholdInput);
+    if (!Number.isFinite(value) || value < 100000 || value % 100000 !== 0) {
+      alert(
+        'Entrez un seuil valide par tranche de 100 000 FC (minimum 100 000 FC).'
+      );
+      return;
+    }
+
+    this.teamWeeklyBonusThresholdSaving = true;
+    this.teamWeeklyBonusThresholdSaved = false;
+    this.auth
+      .updateTeamWeeklyBonusThresholdGlobal(value)
+      .then(() => {
+        this.teamWeeklyBonusThresholdSaved = true;
+        this.teamWeeklyBonusThresholdInput = '';
+      })
+      .catch((err) => {
+        console.error('Failed to update team weekly bonus threshold:', err);
+        alert("Impossible d'enregistrer le seuil du bonus d'équipe.");
+      })
+      .finally(() => {
+        this.teamWeeklyBonusThresholdSaving = false;
       });
   }
 
