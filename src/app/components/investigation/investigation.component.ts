@@ -41,6 +41,12 @@ type ClientFeedbackAnswer = {
   answer: string;
 };
 
+type ClientFeedbackQuestion = {
+  id: string;
+  text: string;
+  options: string[];
+};
+
 type ClientFeedbackEntry = {
   id: string;
   dayKey?: string;
@@ -1405,7 +1411,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       : this.clientFeedbackEntries.slice(0, 3);
   }
 
-  readonly clientFeedbackQuestions = [
+  readonly clientFeedbackQuestions: ClientFeedbackQuestion[] = [
     {
       id: 'satisfaction_service',
       text: 'Êtes-vous satisfait(e) du service reçu à la Fondation Gervais ?',
@@ -1417,6 +1423,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       options: ['Oui', 'Moyennement', 'Non'],
     },
     {
+      id: 'recommandation',
+      text: 'Recommanderiez-vous la Fondation Gervais à une autre personne ?',
+      options: ['Oui', 'Peut-être', 'Non'],
+    },
+  ];
+
+  readonly legacyClientFeedbackQuestions: ClientFeedbackQuestion[] = [
+    {
       id: 'delai_traitement',
       text: 'Votre demande a-t-elle été traitée dans un délai raisonnable ?',
       options: ['Oui', 'Acceptable', 'Trop lent'],
@@ -1425,11 +1439,6 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       id: 'ecoute_serieuse',
       text: 'Vous êtes-vous senti(e) écouté(e) et pris(e) au sérieux ?',
       options: ['Oui', 'Pas totalement', 'Non'],
-    },
-    {
-      id: 'recommandation',
-      text: 'Recommanderiez-vous la Fondation Gervais à une autre personne ?',
-      options: ['Oui', 'Peut-être', 'Non'],
     },
   ];
 
@@ -2176,7 +2185,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   private buildFeedbackSummary(
     entries: ClientFeedbackEntry[]
   ): ClientFeedbackSummaryItem[] {
-    return this.clientFeedbackQuestions.map((question) => {
+    return this.getFeedbackSummaryQuestions(entries).map((question) => {
       const counts = new Map<string, number>();
       question.options.forEach((opt) => counts.set(opt, 0));
 
@@ -2198,6 +2207,18 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
       return { question: question.text, total, options };
     });
+  }
+
+  private getFeedbackSummaryQuestions(
+    entries: ClientFeedbackEntry[]
+  ): ClientFeedbackQuestion[] {
+    const legacyQuestions = this.legacyClientFeedbackQuestions.filter((question) =>
+      entries.some((entry) =>
+        entry.responses?.some((response) => response.id === question.id)
+      )
+    );
+
+    return [...this.clientFeedbackQuestions, ...legacyQuestions];
   }
 
   private uploadCommentMediaAndPost(): void {
