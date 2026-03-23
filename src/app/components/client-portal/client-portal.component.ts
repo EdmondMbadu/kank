@@ -101,6 +101,7 @@ export class ClientPortalComponent {
   showBonusHistory = false;
   showStarsExplanation = false;
   showPreviousCycles = false;
+  showRegistrationConversation = false;
   isSilver: boolean = false;
   isGold: boolean = false;
   isPlatinum: boolean = false;

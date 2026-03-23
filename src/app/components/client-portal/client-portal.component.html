@@ -804,7 +804,6 @@
       *ngIf="clientCycles.length > 0"
       class="col-span-full rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden"
     >
-      <!-- Header - Clickable to toggle -->
       <button
         type="button"
         (click)="showPreviousCycles = !showPreviousCycles"
@@ -849,7 +848,6 @@
         </svg>
       </button>
 
-      <!-- Collapsible Content -->
       <div
         *ngIf="showPreviousCycles"
         class="px-6 pb-6 border-t border-slate-200 dark:border-slate-700"
@@ -926,109 +924,107 @@
       class="col-span-full"
     >
       <section
-        class="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/70 shadow-sm dark:border-emerald-900/40 dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900"
+        class="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-sm dark:border-emerald-900/40 dark:from-emerald-950/40 dark:to-slate-900"
       >
-        <div class="border-b border-emerald-100 px-5 py-4 dark:border-emerald-900/30">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-300">
-                Vérification d'inscription
-              </p>
-              <h3 class="mt-1 text-lg font-semibold text-emerald-950 dark:text-emerald-100">
+        <button
+          type="button"
+          (click)="showRegistrationConversation = !showRegistrationConversation"
+          class="w-full flex items-center justify-between px-6 py-4 hover:bg-emerald-100/40 dark:hover:bg-emerald-900/10 transition-colors"
+        >
+          <div class="flex items-center gap-3">
+            <svg
+              class="w-5 h-5 text-emerald-700 dark:text-emerald-300"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 18v3m-6-3a6 6 0 0012 0v-2a6 6 0 10-12 0v2zm6-16a3 3 0 00-3 3v5a3 3 0 006 0V5a3 3 0 00-3-3z"
+              />
+            </svg>
+            <div class="flex items-center gap-3">
+              <dt class="text-lg font-semibold text-emerald-950 dark:text-emerald-100">
                 Conversation avec le client
-              </h3>
-              <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
-                Enregistrement audio de l’échange mené pendant la validation du dossier.
-              </p>
+              </dt>
+              <span
+                class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+              >
+                Audio
+              </span>
             </div>
-            <div class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
-              Admin / Audit
+          </div>
+          <svg
+            class="w-5 h-5 text-emerald-700 dark:text-emerald-300 transition-transform duration-200"
+            [ngClass]="showRegistrationConversation ? 'rotate-180' : ''"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        <div
+          *ngIf="showRegistrationConversation"
+          class="px-6 pb-6 border-t border-emerald-100 dark:border-emerald-900/30"
+        >
+          <p class="text-sm text-emerald-700 dark:text-emerald-300 mb-4 mt-4">
+            Vérification d'inscription: écoutez l’échange entre l’audit et le client.
+          </p>
+          <div class="rounded-xl bg-white/80 p-4 shadow-sm dark:bg-slate-900/60">
+            <div class="grid gap-2 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2">
+              <div>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Fichier
+                </p>
+                <p class="mt-1 font-medium">
+                  {{ client.auditConversationAudioName || "Audio de conversation" }}
+                </p>
+              </div>
+              <div>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Ajouté par
+                </p>
+                <p class="mt-1 font-medium">
+                  {{ client.auditConversationAudioUploadedBy || "Audit" }}
+                </p>
+              </div>
+              <div *ngIf="client.auditConversationAudioUploadedAt">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Date d'ajout
+                </p>
+                <p class="mt-1 font-medium">
+                  {{ client.auditConversationAudioUploadedAt }}
+                </p>
+              </div>
+              <div *ngIf="client.auditConversationAudioMimeType">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Format
+                </p>
+                <p class="mt-1 font-medium">
+                  {{ client.auditConversationAudioMimeType }}
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+              <audio
+                [src]="client.auditConversationAudioUrl"
+                controls
+                preload="metadata"
+                class="w-full rounded-xl bg-white shadow-sm dark:bg-slate-800"
+              ></audio>
             </div>
           </div>
         </div>
-
-        <details class="group">
-          <summary
-            class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-left hover:bg-emerald-100/40 dark:hover:bg-emerald-900/10"
-          >
-            <div>
-              <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Ouvrir la conversation d'inscription
-              </p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">
-                {{ client.auditConversationAudioName || "Audio de conversation" }}
-              </p>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="hidden text-xs text-emerald-700 dark:text-emerald-300 sm:inline">
-                Cliquer pour afficher l'audio
-              </span>
-              <svg
-                class="h-5 w-5 text-emerald-600 transition-transform group-open:rotate-180 dark:text-emerald-300"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.7a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </div>
-          </summary>
-
-          <div class="border-t border-emerald-100 px-5 py-4 dark:border-emerald-900/30">
-            <div class="grid gap-3 rounded-xl bg-white/80 p-4 shadow-sm dark:bg-slate-900/60">
-              <div class="grid gap-2 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2">
-                <div>
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Fichier
-                  </p>
-                  <p class="mt-1 font-medium">
-                    {{ client.auditConversationAudioName || "Audio de conversation" }}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Ajouté par
-                  </p>
-                  <p class="mt-1 font-medium">
-                    {{ client.auditConversationAudioUploadedBy || "Audit" }}
-                  </p>
-                </div>
-                <div *ngIf="client.auditConversationAudioUploadedAt">
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Date d'ajout
-                  </p>
-                  <p class="mt-1 font-medium">
-                    {{ client.auditConversationAudioUploadedAt }}
-                  </p>
-                </div>
-                <div *ngIf="client.auditConversationAudioMimeType">
-                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Format
-                  </p>
-                  <p class="mt-1 font-medium">
-                    {{ client.auditConversationAudioMimeType }}
-                  </p>
-                </div>
-              </div>
-
-              <div class="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-emerald-900/30 dark:bg-emerald-950/20">
-                <p class="mb-2 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                  Lecture audio
-                </p>
-                <audio
-                  [src]="client.auditConversationAudioUrl"
-                  controls
-                  preload="metadata"
-                  class="w-full rounded-xl bg-white shadow-sm dark:bg-slate-800"
-                ></audio>
-              </div>
-            </div>
-          </div>
-        </details>
       </section>
     </div>
   </dl>
