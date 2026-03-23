@@ -15,6 +15,25 @@ import { Audit } from 'src/app/models/management';
   styleUrls: ['./register-portal.component.css'],
 })
 export class RegiserPortalComponent {
+  readonly auditAudioAccept =
+    '.m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,.3gpp2,.mp4,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*';
+  private readonly supportedAudioExtensions = new Set([
+    'm4a',
+    'mp3',
+    'wav',
+    'aac',
+    'caf',
+    'aif',
+    'aiff',
+    'amr',
+    'flac',
+    'ogg',
+    'webm',
+    '3gp',
+    '3gpp',
+    '3gpp2',
+    'mp4',
+  ]);
   // === Performance Ring shared state ===
   size = 260;
   strokeWidth = 16;
@@ -228,6 +247,10 @@ export class RegiserPortalComponent {
   recordedBlob?: Blob; // Final audio blob
   recordedAudioURL?: string; // Local blob URL for playback in the UI
   commentAudioUrl: string = ''; // Final upload URL from Firebase
+  selectedAuditAudioFile?: File;
+  selectedAuditAudioPreviewUrl?: string;
+  auditAudioUploading = false;
+  auditVerificationSaving = false;
 
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
@@ -373,7 +396,13 @@ export class RegiserPortalComponent {
     this[property] = !this[property];
   }
   confirmAudit() {
-    this.toggle('showAuditConfirmation');
+    this.showAuditConfirmation = true;
+    this.isConfirmed = false;
+  }
+
+  closeAuditConfirmation(): void {
+    this.showAuditConfirmation = false;
+    this.isConfirmed = false;
   }
   async cancelRegistration() {
     let total =
@@ -551,29 +580,46 @@ export class RegiserPortalComponent {
     }
   }
   async setClientFieldAgent(field: string, value: any) {
-    if (field === '') {
+    if (!field || !String(value ?? '').trim()) {
       alert("Entrer un nom d'agent valide");
+      return;
+    }
+    if (!this.client.uid || this.auditVerificationSaving) {
       return;
     }
 
     try {
-      const loA = await this.data.setClientField(
-        field,
-        value,
-        this.client.uid!
-      );
-      const lo = await this.data.setClientField(
-        'agentSubmittedVerification',
-        'true',
-        this.client.uid!
-      );
+      this.auditVerificationSaving = true;
+      let audioFields: Partial<Client> = {};
+
+      if (this.selectedAuditAudioFile) {
+        this.auditAudioUploading = true;
+        audioFields = await this.uploadAuditConversationAudio(
+          this.selectedAuditAudioFile
+        );
+      }
+
+      await this.data.setClientFields(this.client.uid, {
+        [field]: String(value).trim(),
+        agentSubmittedVerification: 'true',
+        ...audioFields,
+      });
+
+      this.client.agentVerifyingName = String(value).trim();
+      this.client.agentSubmittedVerification = 'true';
+      Object.assign(this.client, audioFields);
       this.agentSubmmittedVerification = 'true';
+      this.agentVerifyingName = String(value).trim();
       alert('Confirmer avec succès');
-      this.toggle('showAuditConfirmation');
-      this.toggle('isConfirmed');
+      this.closeAuditConfirmation();
+      this.clearSelectedAuditAudio();
       await this.removeClientFromPending();
     } catch (err) {
+      console.error('Failed to confirm audit with optional audio:', err);
       alert("Une erreur s'est produite lors du placement du budget, Réessayez");
+    } finally {
+      this.auditAudioUploading = false;
+      this.auditVerificationSaving = false;
     }
   }
 
@@ -771,5 +817,159 @@ export class RegiserPortalComponent {
     }
     // Fallback: group by 3s from the end
     return d.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  onAuditAudioSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+
+    if (!this.isSupportedAudioFile(file)) {
+      this.resetFileInput('auditConversationAudio');
+      alert('Veuillez sélectionner un audio valide.');
+      return;
+    }
+
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      this.resetFileInput('auditConversationAudio');
+      alert("L'audio dépasse la limite de 20MB.");
+      return;
+    }
+
+    const normalizedFile = this.normalizeAudioFile(file);
+    this.clearSelectedAuditAudio();
+    this.selectedAuditAudioFile = normalizedFile;
+    this.selectedAuditAudioPreviewUrl = URL.createObjectURL(normalizedFile);
+    this.resetFileInput('auditConversationAudio');
+  }
+
+  clearSelectedAuditAudio(): void {
+    this.selectedAuditAudioFile = undefined;
+    if (this.selectedAuditAudioPreviewUrl) {
+      URL.revokeObjectURL(this.selectedAuditAudioPreviewUrl);
+    }
+    this.selectedAuditAudioPreviewUrl = undefined;
+    this.resetFileInput('auditConversationAudio');
+  }
+
+  get auditConversationAudioLabel(): string {
+    return (
+      this.selectedAuditAudioFile?.name ||
+      this.client.auditConversationAudioName ||
+      ''
+    );
+  }
+
+  private async uploadAuditConversationAudio(
+    file: File
+  ): Promise<Partial<Client>> {
+    const normalizedFile = this.normalizeAudioFile(file);
+    const fileName = `${Date.now()}-${normalizedFile.name}`;
+    const path = `audit-conversations/${this.client.uid}/${fileName}`;
+    const mimeType =
+      normalizedFile.type || this.inferAudioMimeType(normalizedFile) || 'audio/mp4';
+
+    const uploadTask = await this.storage.upload(path, normalizedFile, {
+      customMetadata: {
+        fileName: normalizedFile.name,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: this.auditActorName(),
+        mimeType,
+      },
+      contentType: mimeType,
+    });
+    const url = await uploadTask.ref.getDownloadURL();
+
+    return {
+      auditConversationAudioUrl: url,
+      auditConversationAudioName: normalizedFile.name,
+      auditConversationAudioMimeType: mimeType,
+      auditConversationAudioUploadedAt: this.time.todaysDate(),
+      auditConversationAudioUploadedBy: this.auditActorName(),
+    };
+  }
+
+  private auditActorName(): string {
+    const firstName = this.auth.currentUser?.firstName || '';
+    const lastName = this.auth.currentUser?.lastName || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    return (
+      fullName ||
+      this.agentVerifyingName ||
+      this.auth.currentUser?.email ||
+      'Audit'
+    );
+  }
+
+  private isSupportedAudioFile(file: File): boolean {
+    const mimeType = (file.type || '').toLowerCase();
+    if (mimeType.startsWith('audio/')) return true;
+    if (mimeType === 'video/3gpp' || mimeType === 'video/3gpp2') return true;
+
+    const extension = this.fileExtension(file.name);
+    return !!extension && this.supportedAudioExtensions.has(extension);
+  }
+
+  private normalizeAudioFile(file: File): File {
+    const inferredMimeType = this.inferAudioMimeType(file);
+    if (!inferredMimeType || file.type === inferredMimeType) {
+      return file;
+    }
+
+    return new File([file], file.name, {
+      type: inferredMimeType,
+      lastModified: file.lastModified,
+    });
+  }
+
+  private inferAudioMimeType(file: File): string {
+    const mimeType = (file.type || '').toLowerCase();
+    if (mimeType.startsWith('audio/')) return mimeType;
+
+    switch (this.fileExtension(file.name)) {
+      case 'm4a':
+      case 'mp4':
+        return 'audio/mp4';
+      case 'mp3':
+        return 'audio/mpeg';
+      case 'wav':
+        return 'audio/wav';
+      case 'aac':
+        return 'audio/aac';
+      case 'caf':
+        return 'audio/x-caf';
+      case 'aif':
+      case 'aiff':
+        return 'audio/aiff';
+      case 'amr':
+        return 'audio/amr';
+      case 'flac':
+        return 'audio/flac';
+      case 'ogg':
+        return 'audio/ogg';
+      case 'webm':
+        return 'audio/webm';
+      case '3gp':
+      case '3gpp':
+        return 'audio/3gpp';
+      case '3gpp2':
+        return 'audio/3gpp2';
+      default:
+        return mimeType;
+    }
+  }
+
+  private fileExtension(fileName?: string): string {
+    const normalized = (fileName || '').trim().toLowerCase();
+    const lastDot = normalized.lastIndexOf('.');
+    if (lastDot < 0 || lastDot === normalized.length - 1) return '';
+    return normalized.slice(lastDot + 1);
+  }
+
+  private resetFileInput(inputId: string): void {
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
   }
 }

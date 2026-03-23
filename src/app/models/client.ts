@@ -74,6 +74,11 @@ export class Client {
   isPhoneCorrect?: string;
   agentVerifyingName?: string;
   agentSubmittedVerification?: string;
+  auditConversationAudioUrl?: string;
+  auditConversationAudioName?: string;
+  auditConversationAudioMimeType?: string;
+  auditConversationAudioUploadedAt?: string;
+  auditConversationAudioUploadedBy?: string;
   birthDate?: string;
   age?: string;
   locationName?: string;
