@@ -1079,7 +1079,7 @@
                 <input
                   id="feedbackAudio"
                   type="file"
-                  accept="audio/*"
+                  [accept]="audioFileAccept"
                   (change)="onFeedbackAudioSelected($any($event.target).files)"
                   class="hidden"
                 />
@@ -2256,7 +2256,7 @@
               <input
                 id="investigationAudio"
                 type="file"
-                accept="audio/*"
+                [accept]="audioFileAccept"
                 (change)="onCommentAudioSelected($any($event.target).files)"
                 class="hidden"
               />

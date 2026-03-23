@@ -126,6 +126,25 @@ type TFCell = { iso: string; entries?: TFEntry[] };
   styleUrls: ['./investigation.component.css'],
 })
 export class InvestigationComponent implements OnInit, OnDestroy {
+  readonly audioFileAccept =
+    '.m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,.3gpp2,.mp4,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*';
+  private readonly supportedAudioExtensions = new Set([
+    'm4a',
+    'mp3',
+    'wav',
+    'aac',
+    'caf',
+    'aif',
+    'aiff',
+    'amr',
+    'flac',
+    'ogg',
+    'webm',
+    '3gp',
+    '3gpp',
+    '3gpp2',
+    'mp4',
+  ]);
   clients: Client[] = [];
   allClients: Client[] = [];
   shouldPayToday: Client[] = [];
@@ -1840,17 +1859,21 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   onCommentAudioSelected(fileList: FileList | null): void {
     if (!fileList || fileList.length === 0) return;
     const file = fileList[0];
-    if (!file.type.startsWith('audio/')) {
+    if (!this.isSupportedAudioFile(file)) {
+      this.resetFileInput('investigationAudio');
       alert('Veuillez sélectionner un audio.');
       return;
     }
     const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
+      this.resetFileInput('investigationAudio');
       alert("L'audio dépasse la limite de 20MB.");
       return;
     }
-    this.selectedCommentAudioFile = file;
-    this.selectedCommentAudioPreview = URL.createObjectURL(file);
+    const normalizedFile = this.normalizeAudioFile(file);
+    this.selectedCommentAudioFile = normalizedFile;
+    this.selectedCommentAudioPreview = URL.createObjectURL(normalizedFile);
+    this.resetFileInput('investigationAudio');
   }
 
   clearCommentImage(): void {
@@ -1912,17 +1935,21 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   onFeedbackAudioSelected(fileList: FileList | null): void {
     if (!fileList || fileList.length === 0) return;
     const file = fileList[0];
-    if (!file.type.startsWith('audio/')) {
+    if (!this.isSupportedAudioFile(file)) {
+      this.resetFileInput('feedbackAudio');
       alert('Veuillez sélectionner un audio.');
       return;
     }
     const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
+      this.resetFileInput('feedbackAudio');
       alert("L'audio dépasse la limite de 20MB.");
       return;
     }
-    this.selectedFeedbackAudioFile = file;
-    this.selectedFeedbackAudioPreview = URL.createObjectURL(file);
+    const normalizedFile = this.normalizeAudioFile(file);
+    this.selectedFeedbackAudioFile = normalizedFile;
+    this.selectedFeedbackAudioPreview = URL.createObjectURL(normalizedFile);
+    this.resetFileInput('feedbackAudio');
   }
 
   clearFeedbackImage(): void {
@@ -2219,6 +2246,79 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     );
 
     return [...this.clientFeedbackQuestions, ...legacyQuestions];
+  }
+
+  private isSupportedAudioFile(file: File): boolean {
+    const mimeType = (file.type || '').toLowerCase();
+    if (mimeType.startsWith('audio/')) return true;
+    if (mimeType === 'video/3gpp' || mimeType === 'video/3gpp2') return true;
+
+    const extension = this.fileExtension(file.name);
+    return !!extension && this.supportedAudioExtensions.has(extension);
+  }
+
+  private normalizeAudioFile(file: File): File {
+    const inferredMimeType = this.inferAudioMimeType(file);
+    if (!inferredMimeType || file.type === inferredMimeType) {
+      return file;
+    }
+
+    return new File([file], file.name, {
+      type: inferredMimeType,
+      lastModified: file.lastModified,
+    });
+  }
+
+  private inferAudioMimeType(file: File): string {
+    const mimeType = (file.type || '').toLowerCase();
+    if (mimeType.startsWith('audio/')) return mimeType;
+
+    const extension = this.fileExtension(file.name);
+    switch (extension) {
+      case 'm4a':
+      case 'mp4':
+        return 'audio/mp4';
+      case 'mp3':
+        return 'audio/mpeg';
+      case 'wav':
+        return 'audio/wav';
+      case 'aac':
+        return 'audio/aac';
+      case 'caf':
+        return 'audio/x-caf';
+      case 'aif':
+      case 'aiff':
+        return 'audio/aiff';
+      case 'amr':
+        return 'audio/amr';
+      case 'flac':
+        return 'audio/flac';
+      case 'ogg':
+        return 'audio/ogg';
+      case 'webm':
+        return 'audio/webm';
+      case '3gp':
+      case '3gpp':
+        return 'audio/3gpp';
+      case '3gpp2':
+        return 'audio/3gpp2';
+      default:
+        return mimeType;
+    }
+  }
+
+  private fileExtension(fileName?: string): string {
+    const normalized = (fileName || '').trim().toLowerCase();
+    const lastDot = normalized.lastIndexOf('.');
+    if (lastDot < 0 || lastDot === normalized.length - 1) return '';
+    return normalized.slice(lastDot + 1);
+  }
+
+  private resetFileInput(inputId: string): void {
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
   }
 
   private uploadCommentMediaAndPost(): void {
