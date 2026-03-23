@@ -365,6 +365,12 @@ export class ClientPortalComponent {
     }
   }
 
+  get auditConversationAudioUploadedAtFormatted(): string {
+    const raw = this.client.auditConversationAudioUploadedAt;
+    if (!raw) return '';
+    return this.time.convertDateToDesiredFormat(raw);
+  }
+
   get bonusAmountValue(): number {
     const value = Number(this.client?.bonus ?? 0);
     return Number.isFinite(value) ? value : 0;
