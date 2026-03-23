@@ -1419,7 +1419,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     },
     {
       id: 'explication_claire',
-      text: 'Notre agent vous a-t-il expliqué les choses clairement et avec respect ?',
+      text: 'Notre agent vous a-t-il clairement expliqué comment vous devez rembourser (montant, fréquence, échéances) ?',
       options: ['Oui', 'Moyennement', 'Non'],
     },
     {
