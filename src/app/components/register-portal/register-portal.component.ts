@@ -868,6 +868,10 @@ export class RegiserPortalComponent {
     return this.time.convertDateToDesiredFormat(raw);
   }
 
+  get auditConversationAudioRecordedAtFormatted(): string {
+    return this.formatISOToDRC(this.client.auditConversationAudioRecordedAt);
+  }
+
   async saveAuditConversationAudioOnly(): Promise<void> {
     if (
       !this.client.uid ||
@@ -906,6 +910,8 @@ export class RegiserPortalComponent {
     const path = `audit-conversations/${this.client.uid}/${fileName}`;
     const mimeType =
       normalizedFile.type || this.inferAudioMimeType(normalizedFile) || 'audio/mp4';
+    const recordedAt = this.detectAuditAudioRecordedAt(normalizedFile);
+    const recordedAtSource = recordedAt ? 'fileLastModified' : 'uploadTime';
 
     const uploadTask = await this.storage.upload(path, normalizedFile, {
       customMetadata: {
@@ -913,6 +919,8 @@ export class RegiserPortalComponent {
         uploadedAt: new Date().toISOString(),
         uploadedBy: this.auditActorName(),
         mimeType,
+        recordedAt: recordedAt || '',
+        recordedAtSource,
       },
       contentType: mimeType,
     });
@@ -922,6 +930,8 @@ export class RegiserPortalComponent {
       auditConversationAudioUrl: url,
       auditConversationAudioName: normalizedFile.name,
       auditConversationAudioMimeType: mimeType,
+      auditConversationAudioRecordedAt: recordedAt || undefined,
+      auditConversationAudioRecordedAtSource: recordedAtSource,
       auditConversationAudioUploadedAt: this.time.todaysDate(),
       auditConversationAudioUploadedBy: this.auditActorName(),
     };
@@ -1002,6 +1012,41 @@ export class RegiserPortalComponent {
     const lastDot = normalized.lastIndexOf('.');
     if (lastDot < 0 || lastDot === normalized.length - 1) return '';
     return normalized.slice(lastDot + 1);
+  }
+
+  private detectAuditAudioRecordedAt(file: File): string | undefined {
+    if (!file.lastModified) return undefined;
+
+    const recordedAt = new Date(file.lastModified);
+    if (Number.isNaN(recordedAt.getTime())) {
+      return undefined;
+    }
+
+    return recordedAt.toISOString();
+  }
+
+  private formatISOToDRC(iso?: string): string {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      const fmt = new Intl.DateTimeFormat('fr-CD', {
+        timeZone: 'Africa/Kinshasa',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      const parts = fmt.formatToParts(d).reduce((acc: any, p) => {
+        acc[p.type] = p.value;
+        return acc;
+      }, {});
+      return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}:${parts.second}`;
+    } catch {
+      return iso;
+    }
   }
 
   private resetAuditConversationInputs(): void {

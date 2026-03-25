@@ -997,6 +997,14 @@
                   {{ client.auditConversationAudioUploadedBy || "Audit" }}
                 </p>
               </div>
+              <div *ngIf="client.auditConversationAudioRecordedAt">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Date d'enregistrement
+                </p>
+                <p class="mt-1 font-medium">
+                  {{ auditConversationAudioRecordedAtFormatted }}
+                </p>
+              </div>
               <div *ngIf="client.auditConversationAudioUploadedAt">
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Date d'ajout

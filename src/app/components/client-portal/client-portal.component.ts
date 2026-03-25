@@ -371,6 +371,10 @@ export class ClientPortalComponent {
     return this.time.convertDateToDesiredFormat(raw);
   }
 
+  get auditConversationAudioRecordedAtFormatted(): string {
+    return this.formatISOToDRC(this.client.auditConversationAudioRecordedAt);
+  }
+
   get bonusAmountValue(): number {
     const value = Number(this.client?.bonus ?? 0);
     return Number.isFinite(value) ? value : 0;

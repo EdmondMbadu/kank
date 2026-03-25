@@ -77,6 +77,8 @@ export class Client {
   auditConversationAudioUrl?: string;
   auditConversationAudioName?: string;
   auditConversationAudioMimeType?: string;
+  auditConversationAudioRecordedAt?: string;
+  auditConversationAudioRecordedAtSource?: string;
   auditConversationAudioUploadedAt?: string;
   auditConversationAudioUploadedBy?: string;
   birthDate?: string;
