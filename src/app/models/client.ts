@@ -8,6 +8,16 @@ export interface ClientBonusEvent {
   note?: string;
 }
 
+export interface AuditConversationAudioAttachment {
+  url: string;
+  name?: string;
+  mimeType?: string;
+  recordedAt?: string;
+  recordedAtSource?: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
+}
+
 export class Client {
   uid?: string;
   trackingId?: string;
@@ -74,6 +84,7 @@ export class Client {
   isPhoneCorrect?: string;
   agentVerifyingName?: string;
   agentSubmittedVerification?: string;
+  auditConversationAudios?: AuditConversationAudioAttachment[];
   auditConversationAudioUrl?: string;
   auditConversationAudioName?: string;
   auditConversationAudioMimeType?: string;

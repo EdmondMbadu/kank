@@ -1,6 +1,10 @@
 import { Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Client, Comment } from 'src/app/models/client';
+import {
+  AuditConversationAudioAttachment,
+  Client,
+  Comment,
+} from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -253,6 +257,7 @@ export class RegiserPortalComponent {
   selectedAuditAudioFile?: File;
   selectedAuditAudioPreviewUrl?: string;
   auditAudioUploading = false;
+  auditAudioDeletingIndex: number | null = null;
   auditVerificationSaving = false;
 
   retrieveClient(): void {
@@ -600,9 +605,13 @@ export class RegiserPortalComponent {
         !this.hasPersistedAuditConversationAudio
       ) {
         this.auditAudioUploading = true;
-        audioFields = await this.uploadAuditConversationAudio(
+        const attachment = await this.uploadAuditConversationAudio(
           this.selectedAuditAudioFile
         );
+        audioFields = this.buildAuditConversationAudioFields([
+          ...this.auditConversationAudioAttachments,
+          attachment,
+        ]);
       }
 
       await this.data.setClientFields(this.client.uid, {
@@ -858,19 +867,45 @@ export class RegiserPortalComponent {
     this.resetAuditConversationInputs();
   }
 
-  get hasPersistedAuditConversationAudio(): boolean {
-    return !!this.client.auditConversationAudioUrl;
+  get auditConversationAudioAttachments(): AuditConversationAudioAttachment[] {
+    if (this.client.auditConversationAudios !== undefined) {
+      return this.client.auditConversationAudios;
+    }
+
+    if (!this.client.auditConversationAudioUrl) {
+      return [];
+    }
+
+    return [
+      {
+        url: this.client.auditConversationAudioUrl,
+        name: this.client.auditConversationAudioName,
+        mimeType: this.client.auditConversationAudioMimeType,
+        recordedAt: this.client.auditConversationAudioRecordedAt,
+        recordedAtSource: this.client.auditConversationAudioRecordedAtSource,
+        uploadedAt: this.client.auditConversationAudioUploadedAt,
+        uploadedBy: this.client.auditConversationAudioUploadedBy,
+      },
+    ];
   }
 
-  get auditConversationAudioUploadedAtFormatted(): string {
-    const raw = this.client.auditConversationAudioUploadedAt;
+  get hasPersistedAuditConversationAudio(): boolean {
+    return this.auditConversationAudioAttachments.length > 0;
+  }
+
+  auditConversationAudioUploadedAtFormatted(
+    audio: AuditConversationAudioAttachment
+  ): string {
+    const raw = audio.uploadedAt;
     if (!raw) return '';
     return this.time.convertDateToDesiredFormat(raw);
   }
 
-  get auditConversationAudioRecordedAtFormatted(): string {
+  auditConversationAudioRecordedAtFormatted(
+    audio: AuditConversationAudioAttachment
+  ): string {
     return this.time.formatISOToDesiredDateTime(
-      this.client.auditConversationAudioRecordedAt
+      audio.recordedAt
     );
   }
 
@@ -887,9 +922,13 @@ export class RegiserPortalComponent {
 
     try {
       this.auditAudioUploading = true;
-      const audioFields = await this.uploadAuditConversationAudio(
+      const attachment = await this.uploadAuditConversationAudio(
         this.selectedAuditAudioFile
       );
+      const audioFields = this.buildAuditConversationAudioFields([
+        ...this.auditConversationAudioAttachments,
+        attachment,
+      ]);
 
       await this.data.setClientFields(this.client.uid, audioFields);
       Object.assign(this.client, audioFields);
@@ -904,9 +943,47 @@ export class RegiserPortalComponent {
     }
   }
 
+  async deleteAuditConversationAudio(index: number): Promise<void> {
+    if (!this.auth.isAdmin || !this.client.uid || this.auditAudioDeletingIndex !== null) {
+      return;
+    }
+
+    const attachments = this.auditConversationAudioAttachments;
+    const target = attachments[index];
+    if (!target) return;
+
+    if (!confirm('Supprimer cet audio de conversation ?')) {
+      return;
+    }
+
+    try {
+      this.auditAudioDeletingIndex = index;
+      if (target.url) {
+        try {
+          await this.storage.storage.refFromURL(target.url).delete();
+        } catch (storageError) {
+          console.warn(
+            "Impossible de supprimer le fichier audio du storage, poursuite de la suppression de la référence.",
+            storageError
+          );
+        }
+      }
+
+      const remaining = attachments.filter((_, i) => i !== index);
+      const audioFields = this.buildAuditConversationAudioFields(remaining);
+      await this.data.setClientFields(this.client.uid, audioFields);
+      Object.assign(this.client, audioFields);
+    } catch (err) {
+      console.error('Failed to delete audit conversation audio:', err);
+      alert("Une erreur s'est produite lors de la suppression de l'audio.");
+    } finally {
+      this.auditAudioDeletingIndex = null;
+    }
+  }
+
   private async uploadAuditConversationAudio(
     file: File
-  ): Promise<Partial<Client>> {
+  ): Promise<AuditConversationAudioAttachment> {
     const normalizedFile = this.normalizeAudioFile(file);
     const fileName = `${Date.now()}-${normalizedFile.name}`;
     const path = `audit-conversations/${this.client.uid}/${fileName}`;
@@ -929,13 +1006,30 @@ export class RegiserPortalComponent {
     const url = await uploadTask.ref.getDownloadURL();
 
     return {
-      auditConversationAudioUrl: url,
-      auditConversationAudioName: normalizedFile.name,
-      auditConversationAudioMimeType: mimeType,
-      auditConversationAudioRecordedAt: recordedAt || undefined,
-      auditConversationAudioRecordedAtSource: recordedAtSource,
-      auditConversationAudioUploadedAt: this.time.todaysDate(),
-      auditConversationAudioUploadedBy: this.auditActorName(),
+      url,
+      name: normalizedFile.name,
+      mimeType,
+      recordedAt: recordedAt || undefined,
+      recordedAtSource,
+      uploadedAt: this.time.todaysDate(),
+      uploadedBy: this.auditActorName(),
+    };
+  }
+
+  private buildAuditConversationAudioFields(
+    attachments: AuditConversationAudioAttachment[]
+  ): Partial<Client> {
+    const latest = attachments[attachments.length - 1];
+
+    return {
+      auditConversationAudios: attachments,
+      auditConversationAudioUrl: latest?.url || '',
+      auditConversationAudioName: latest?.name || '',
+      auditConversationAudioMimeType: latest?.mimeType || '',
+      auditConversationAudioRecordedAt: latest?.recordedAt || '',
+      auditConversationAudioRecordedAtSource: latest?.recordedAtSource || '',
+      auditConversationAudioUploadedAt: latest?.uploadedAt || '',
+      auditConversationAudioUploadedBy: latest?.uploadedBy || '',
     };
   }
 

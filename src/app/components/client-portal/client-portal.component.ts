@@ -6,7 +6,12 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Client, Comment, ClientBonusEvent } from 'src/app/models/client';
+import {
+  AuditConversationAudioAttachment,
+  Client,
+  Comment,
+  ClientBonusEvent,
+} from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
@@ -112,6 +117,7 @@ export class ClientPortalComponent {
   dateJoined: string = '';
 
   isPosting = false;
+  auditAudioDeletingIndex: number | null = null;
   // === Performance Ring state ===
   avgPerf: number = 0; // Will mirror client.creditScore (0–100)
 
@@ -371,10 +377,91 @@ export class ClientPortalComponent {
     return this.time.convertDateToDesiredFormat(raw);
   }
 
-  get auditConversationAudioRecordedAtFormatted(): string {
+  get auditConversationAudioAttachments(): AuditConversationAudioAttachment[] {
+    if (this.client.auditConversationAudios !== undefined) {
+      return this.client.auditConversationAudios;
+    }
+
+    if (!this.client.auditConversationAudioUrl) {
+      return [];
+    }
+
+    return [
+      {
+        url: this.client.auditConversationAudioUrl,
+        name: this.client.auditConversationAudioName,
+        mimeType: this.client.auditConversationAudioMimeType,
+        recordedAt: this.client.auditConversationAudioRecordedAt,
+        recordedAtSource: this.client.auditConversationAudioRecordedAtSource,
+        uploadedAt: this.client.auditConversationAudioUploadedAt,
+        uploadedBy: this.client.auditConversationAudioUploadedBy,
+      },
+    ];
+  }
+
+  auditConversationAudioUploadedAtFor(
+    audio: AuditConversationAudioAttachment
+  ): string {
+    const raw = audio.uploadedAt;
+    if (!raw) return '';
+    return this.time.convertDateToDesiredFormat(raw);
+  }
+
+  auditConversationAudioRecordedAtFormatted(
+    audio: AuditConversationAudioAttachment
+  ): string {
     return this.time.formatISOToDesiredDateTime(
-      this.client.auditConversationAudioRecordedAt
+      audio.recordedAt
     );
+  }
+
+  async deleteAuditConversationAudio(index: number): Promise<void> {
+    if (!this.auth.isAdmin || !this.client.uid || this.auditAudioDeletingIndex !== null) {
+      return;
+    }
+
+    const attachments = this.auditConversationAudioAttachments;
+    const target = attachments[index];
+    if (!target) return;
+
+    if (!confirm('Supprimer cet audio de conversation ?')) {
+      return;
+    }
+
+    try {
+      this.auditAudioDeletingIndex = index;
+      if (target.url) {
+        try {
+          await this.storage.storage.refFromURL(target.url).delete();
+        } catch (storageError) {
+          console.warn(
+            "Impossible de supprimer le fichier audio du storage, poursuite de la suppression de la référence.",
+            storageError
+          );
+        }
+      }
+
+      const remaining = attachments.filter((_, i) => i !== index);
+      const latest = remaining[remaining.length - 1];
+      const payload: Partial<Client> = {
+        auditConversationAudios: remaining,
+        auditConversationAudioUrl: latest?.url || '',
+        auditConversationAudioName: latest?.name || '',
+        auditConversationAudioMimeType: latest?.mimeType || '',
+        auditConversationAudioRecordedAt: latest?.recordedAt || '',
+        auditConversationAudioRecordedAtSource: latest?.recordedAtSource || '',
+        auditConversationAudioUploadedAt: latest?.uploadedAt || '',
+        auditConversationAudioUploadedBy: latest?.uploadedBy || '',
+      };
+
+      await this.data.setClientFields(this.client.uid, payload);
+      Object.assign(this.client, payload);
+    } catch (err) {
+      console.error('Failed to delete audit conversation audio:', err);
+      alert("Une erreur s'est produite lors de la suppression de l'audio.");
+    } finally {
+      this.auditAudioDeletingIndex = null;
+    }
   }
 
   get bonusAmountValue(): number {
