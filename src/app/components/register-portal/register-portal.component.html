@@ -490,6 +490,220 @@
   *ngIf="auth.isAdmin || auth.isDistributor"
   class="mx-auto my-8 max-w-7xl px-4"
 >
+  <section
+    class="mb-6 overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white shadow-sm dark:border-emerald-900/40 dark:from-emerald-950/40 dark:to-slate-900"
+  >
+    <button
+      type="button"
+      (click)="showAuditConversation = !showAuditConversation"
+      class="flex w-full items-center justify-between px-6 py-4 transition-colors hover:bg-emerald-100/40 dark:hover:bg-emerald-900/10"
+    >
+      <div class="flex items-center gap-3">
+        <svg
+          class="h-5 w-5 text-emerald-700 dark:text-emerald-300"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 18v3m-6-3a6 6 0 0012 0v-2a6 6 0 10-12 0v2zm6-16a3 3 0 00-3 3v5a3 3 0 006 0V5a3 3 0 00-3-3z"
+          />
+        </svg>
+        <div class="flex items-center gap-3">
+          <dt class="text-lg font-semibold text-emerald-950 dark:text-emerald-100">
+            Conversation avec le client
+          </dt>
+          <span
+            class="inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+            [ngClass]="
+              hasPersistedAuditConversationAudio
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+            "
+          >
+            {{ hasPersistedAuditConversationAudio ? "Audio joint" : "Audio à joindre" }}
+          </span>
+        </div>
+      </div>
+      <svg
+        class="h-5 w-5 text-emerald-700 transition-transform duration-200 dark:text-emerald-300"
+        [ngClass]="showAuditConversation ? 'rotate-180' : ''"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+    </button>
+
+    <div
+      *ngIf="showAuditConversation"
+      class="border-t border-emerald-100 px-6 pb-6 dark:border-emerald-900/30"
+    >
+      <p
+        *ngIf="hasPersistedAuditConversationAudio"
+        class="mb-4 mt-4 text-sm text-emerald-700 dark:text-emerald-300"
+      >
+        Vérification d'inscription: écoutez l’échange entre l’audit et le client.
+      </p>
+
+      <div
+        *ngIf="hasPersistedAuditConversationAudio; else auditConversationUploadState"
+        class="rounded-xl bg-white/80 p-4 shadow-sm dark:bg-slate-900/60"
+      >
+        <div
+          class="grid gap-2 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2"
+        >
+          <div>
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+            >
+              Fichier
+            </p>
+            <p class="mt-1 font-medium">
+              {{ client.auditConversationAudioName || "Audio de conversation" }}
+            </p>
+          </div>
+          <div>
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+            >
+              Ajouté par
+            </p>
+            <p class="mt-1 font-medium">
+              {{ client.auditConversationAudioUploadedBy || "Audit" }}
+            </p>
+          </div>
+          <div *ngIf="client.auditConversationAudioUploadedAt">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+            >
+              Date d'ajout
+            </p>
+            <p class="mt-1 font-medium">
+              {{ auditConversationAudioUploadedAtFormatted }}
+            </p>
+          </div>
+          <div *ngIf="client.auditConversationAudioMimeType">
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+            >
+              Format
+            </p>
+            <p class="mt-1 font-medium">
+              {{ client.auditConversationAudioMimeType }}
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-emerald-900/30 dark:bg-emerald-950/20"
+        >
+          <audio
+            [src]="client.auditConversationAudioUrl"
+            controls
+            preload="metadata"
+            class="w-full rounded-xl bg-white shadow-sm dark:bg-slate-800"
+          ></audio>
+        </div>
+      </div>
+
+      <ng-template #auditConversationUploadState>
+        <p class="mb-4 mt-4 text-sm text-slate-600 dark:text-slate-300">
+          Si l’audit a déjà parlé au client mais ne valide pas encore le dossier,
+          l’audio peut être joint ici sans passer par la confirmation.
+        </p>
+
+        <div
+          *ngIf="selectedAuditAudioPreviewUrl; else auditConversationEmptyState"
+          class="rounded-xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-900/30 dark:bg-slate-900/60"
+        >
+          <div
+            class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ selectedAuditAudioFile?.name }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                Prêt à être joint au dossier sans confirmation d’audit.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                (click)="saveAuditConversationAudioOnly()"
+                [disabled]="auditAudioUploading || auditVerificationSaving"
+                class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{
+                  auditAudioUploading
+                    ? "Envoi..."
+                    : "Joindre sans confirmer"
+                }}
+              </button>
+              <button
+                type="button"
+                (click)="clearSelectedAuditAudio()"
+                [disabled]="auditAudioUploading || auditVerificationSaving"
+                class="rounded-full border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-red-300 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Retirer
+              </button>
+            </div>
+          </div>
+
+          <audio
+            [src]="selectedAuditAudioPreviewUrl"
+            controls
+            class="mt-4 w-full rounded-lg"
+          ></audio>
+        </div>
+
+        <ng-template #auditConversationEmptyState>
+          <div
+            class="rounded-xl border border-dashed border-emerald-300 bg-white/80 p-5 dark:border-emerald-900/40 dark:bg-slate-900/60"
+          >
+            <div
+              class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                  Aucun audio de conversation n’est encore joint.
+                </p>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Formats mobiles supportés : M4A, MP3, WAV, AMR, 3GP et similaires.
+                </p>
+              </div>
+              <label
+                [attr.for]="auditConversationInlineInputId"
+                class="inline-flex cursor-pointer items-center justify-center rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-500 hover:bg-emerald-100"
+              >
+                Ajouter un audio
+              </label>
+            </div>
+
+            <input
+              [id]="auditConversationInlineInputId"
+              type="file"
+              [accept]="auditAudioAccept"
+              (change)="onAuditAudioSelected($any($event.target).files)"
+              class="hidden"
+            />
+          </div>
+        </ng-template>
+      </ng-template>
+    </div>
+  </section>
+
   <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
     <!-- Savings -->
     <div
@@ -523,29 +737,6 @@
       <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
         Nom actuel : <strong>{{ agentVerifyingName }}</strong>
       </p>
-      <div
-        *ngIf="client.auditConversationAudioUrl"
-        class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4"
-      >
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm font-semibold text-emerald-900">
-              Audio de conversation client
-            </p>
-            <p class="text-xs text-emerald-700">
-              {{ client.auditConversationAudioName || "Audio joint" }}
-              <span *ngIf="client.auditConversationAudioUploadedBy">
-                · ajouté par {{ client.auditConversationAudioUploadedBy }}
-              </span>
-            </p>
-          </div>
-        </div>
-        <audio
-          [src]="client.auditConversationAudioUrl"
-          controls
-          class="mt-3 w-full rounded-lg"
-        ></audio>
-      </div>
       <input
         [disabled]="!auth.isAdmin"
         [(ngModel)]="agentVerifyingName"
@@ -555,12 +746,14 @@
       <button
         *ngIf="!agentSubmmittedVerification || auth.isAdmin"
         (click)="confirmAudit()"
-        class="mt-3 w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700"
+        [disabled]="auditVerificationSaving || auditAudioUploading"
+        class="mt-3 w-full rounded-lg bg-green-600 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         Confirmer
       </button>
     </div>
   </div>
+
 </div>
 
 <!-- === ACTIONS: UPDATE / CANCEL / REFUND === -->
@@ -987,7 +1180,10 @@
       />Je confirme avoir respecté toutes les règles ci-dessus.</label
     >
     <div
-      *ngIf="auth.isAdmin || auth.isDistributor"
+      *ngIf="
+        (auth.isAdmin || auth.isDistributor) &&
+        !hasPersistedAuditConversationAudio
+      "
       class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4"
     >
       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -996,12 +1192,12 @@
             Audio de la conversation avec le client
           </p>
           <p class="text-xs text-emerald-700">
-            Optionnel pour l’instant. Formats mobiles supportés : M4A, MP3, WAV,
-            AMR, 3GP et similaires.
+            Optionnel pour la confirmation. Ajoutez-le ici seulement s’il n’a pas
+            encore été joint depuis la fiche.
           </p>
         </div>
         <label
-          for="auditConversationAudio"
+          [attr.for]="auditConversationModalInputId"
           class="inline-flex cursor-pointer items-center justify-center rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-500 hover:bg-emerald-100"
         >
           Ajouter un audio
@@ -1009,7 +1205,7 @@
       </div>
 
       <input
-        id="auditConversationAudio"
+        [id]="auditConversationModalInputId"
         type="file"
         [accept]="auditAudioAccept"
         (change)="onAuditAudioSelected($any($event.target).files)"
@@ -1036,23 +1232,6 @@
         </div>
         <audio
           [src]="selectedAuditAudioPreviewUrl"
-          controls
-          class="mt-3 w-full rounded-lg"
-        ></audio>
-      </div>
-
-      <div
-        *ngIf="!selectedAuditAudioPreviewUrl && client.auditConversationAudioUrl"
-        class="mt-4 rounded-xl border border-emerald-200 bg-white p-3"
-      >
-        <p class="text-sm font-semibold text-gray-900">
-          Audio déjà enregistré
-        </p>
-        <p class="text-xs text-gray-500">
-          {{ auditConversationAudioLabel }}
-        </p>
-        <audio
-          [src]="client.auditConversationAudioUrl"
           controls
           class="mt-3 w-full rounded-lg"
         ></audio>

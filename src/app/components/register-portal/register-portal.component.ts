@@ -17,6 +17,8 @@ import { Audit } from 'src/app/models/management';
 export class RegiserPortalComponent {
   readonly auditAudioAccept =
     '.m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,.3gpp2,.mp4,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*';
+  readonly auditConversationInlineInputId = 'auditConversationAudioInline';
+  readonly auditConversationModalInputId = 'auditConversationAudioModal';
   private readonly supportedAudioExtensions = new Set([
     'm4a',
     'mp3',
@@ -106,6 +108,7 @@ export class RegiserPortalComponent {
   @ViewChild('phoneHistory', { static: false }) phoneHistoryRef?: ElementRef;
 
   showAuditConfirmation: boolean = false;
+  showAuditConversation = false;
   isConfirmed: boolean = false;
   audits: Audit[] = [];
   suspiciousReason = '';
@@ -592,7 +595,10 @@ export class RegiserPortalComponent {
       this.auditVerificationSaving = true;
       let audioFields: Partial<Client> = {};
 
-      if (this.selectedAuditAudioFile) {
+      if (
+        this.selectedAuditAudioFile &&
+        !this.hasPersistedAuditConversationAudio
+      ) {
         this.auditAudioUploading = true;
         audioFields = await this.uploadAuditConversationAudio(
           this.selectedAuditAudioFile
@@ -824,14 +830,14 @@ export class RegiserPortalComponent {
     const file = fileList[0];
 
     if (!this.isSupportedAudioFile(file)) {
-      this.resetFileInput('auditConversationAudio');
+      this.resetAuditConversationInputs();
       alert('Veuillez sélectionner un audio valide.');
       return;
     }
 
     const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
-      this.resetFileInput('auditConversationAudio');
+      this.resetAuditConversationInputs();
       alert("L'audio dépasse la limite de 20MB.");
       return;
     }
@@ -840,7 +846,7 @@ export class RegiserPortalComponent {
     this.clearSelectedAuditAudio();
     this.selectedAuditAudioFile = normalizedFile;
     this.selectedAuditAudioPreviewUrl = URL.createObjectURL(normalizedFile);
-    this.resetFileInput('auditConversationAudio');
+    this.resetAuditConversationInputs();
   }
 
   clearSelectedAuditAudio(): void {
@@ -849,15 +855,47 @@ export class RegiserPortalComponent {
       URL.revokeObjectURL(this.selectedAuditAudioPreviewUrl);
     }
     this.selectedAuditAudioPreviewUrl = undefined;
-    this.resetFileInput('auditConversationAudio');
+    this.resetAuditConversationInputs();
   }
 
-  get auditConversationAudioLabel(): string {
-    return (
-      this.selectedAuditAudioFile?.name ||
-      this.client.auditConversationAudioName ||
-      ''
-    );
+  get hasPersistedAuditConversationAudio(): boolean {
+    return !!this.client.auditConversationAudioUrl;
+  }
+
+  get auditConversationAudioUploadedAtFormatted(): string {
+    const raw = this.client.auditConversationAudioUploadedAt;
+    if (!raw) return '';
+    return this.time.convertDateToDesiredFormat(raw);
+  }
+
+  async saveAuditConversationAudioOnly(): Promise<void> {
+    if (
+      !this.client.uid ||
+      !this.selectedAuditAudioFile ||
+      this.auditAudioUploading ||
+      this.auditVerificationSaving ||
+      this.hasPersistedAuditConversationAudio
+    ) {
+      return;
+    }
+
+    try {
+      this.auditAudioUploading = true;
+      const audioFields = await this.uploadAuditConversationAudio(
+        this.selectedAuditAudioFile
+      );
+
+      await this.data.setClientFields(this.client.uid, audioFields);
+      Object.assign(this.client, audioFields);
+      this.clearSelectedAuditAudio();
+      this.showAuditConversation = true;
+      alert('Audio joint avec succès');
+    } catch (err) {
+      console.error('Failed to attach audit audio without confirmation:', err);
+      alert("Une erreur s'est produite lors de l'ajout de l'audio, Réessayez");
+    } finally {
+      this.auditAudioUploading = false;
+    }
   }
 
   private async uploadAuditConversationAudio(
@@ -964,6 +1002,11 @@ export class RegiserPortalComponent {
     const lastDot = normalized.lastIndexOf('.');
     if (lastDot < 0 || lastDot === normalized.length - 1) return '';
     return normalized.slice(lastDot + 1);
+  }
+
+  private resetAuditConversationInputs(): void {
+    this.resetFileInput(this.auditConversationInlineInputId);
+    this.resetFileInput(this.auditConversationModalInputId);
   }
 
   private resetFileInput(inputId: string): void {
