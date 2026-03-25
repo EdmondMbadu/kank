@@ -372,7 +372,9 @@ export class ClientPortalComponent {
   }
 
   get auditConversationAudioRecordedAtFormatted(): string {
-    return this.formatISOToDRC(this.client.auditConversationAudioRecordedAt);
+    return this.time.formatISOToDesiredDateTime(
+      this.client.auditConversationAudioRecordedAt
+    );
   }
 
   get bonusAmountValue(): number {

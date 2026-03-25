@@ -882,4 +882,67 @@ export class TimeService {
     // Return localized format: jj/mm/aaaa
     return parsed.toLocaleDateString('fr-FR');
   }
+
+  formatISOToDesiredDateTime(
+    iso: string | undefined | null,
+    timeZone: string = 'Africa/Kinshasa'
+  ): string {
+    if (!iso) return '';
+
+    try {
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return iso;
+
+      const dayNames = [
+        'Dimanche',
+        'Lundi',
+        'Mardi',
+        'Mercredi',
+        'Jeudi',
+        'Vendredi',
+        'Samedi',
+      ];
+      const monthNames = [
+        'Janvier',
+        'Février',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juillet',
+        'Août',
+        'Septembre',
+        'Octobre',
+        'Novembre',
+        'Décembre',
+      ];
+
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        weekday: 'short',
+      }).formatToParts(date);
+
+      const map = parts.reduce((acc: Record<string, string>, part) => {
+        acc[part.type] = part.value;
+        return acc;
+      }, {});
+
+      const year = Number(map['year']);
+      const month = Number(map['month']);
+      const day = Number(map['day']);
+      const hour = map['hour'] || '00';
+      const minute = map['minute'] || '00';
+      const weekday = new Date(year, month - 1, day).getDay();
+
+      return `${dayNames[weekday]} ${day} ${monthNames[month - 1]} ${year} à ${hour}:${minute}`;
+    } catch {
+      return iso;
+    }
+  }
 }

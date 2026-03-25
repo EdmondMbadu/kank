@@ -869,7 +869,9 @@ export class RegiserPortalComponent {
   }
 
   get auditConversationAudioRecordedAtFormatted(): string {
-    return this.formatISOToDRC(this.client.auditConversationAudioRecordedAt);
+    return this.time.formatISOToDesiredDateTime(
+      this.client.auditConversationAudioRecordedAt
+    );
   }
 
   async saveAuditConversationAudioOnly(): Promise<void> {
@@ -1023,30 +1025,6 @@ export class RegiserPortalComponent {
     }
 
     return recordedAt.toISOString();
-  }
-
-  private formatISOToDRC(iso?: string): string {
-    if (!iso) return '';
-    try {
-      const d = new Date(iso);
-      const fmt = new Intl.DateTimeFormat('fr-CD', {
-        timeZone: 'Africa/Kinshasa',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      });
-      const parts = fmt.formatToParts(d).reduce((acc: any, p) => {
-        acc[p.type] = p.value;
-        return acc;
-      }, {});
-      return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}:${parts.second}`;
-    } catch {
-      return iso;
-    }
   }
 
   private resetAuditConversationInputs(): void {
