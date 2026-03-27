@@ -29,6 +29,12 @@ interface WeeklyShortfall {
   deductionUsd: number;
   isComplete: boolean;
 }
+type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
+interface WeeklyProgressMarker {
+  amountFc: number;
+  label: string;
+  percent: number;
+}
 @Component({
   selector: 'app-today',
   templateUrl: './today.component.html',
@@ -126,6 +132,9 @@ export class TodayComponent {
   weeklyTargetInput: string = '';
   weeklyProgressPercent: number = 0;
   weeklyTargetReached: boolean = false;
+  weeklyProgressTone: WeeklyProgressTone = 'red';
+  weeklyProgressStatusLabel = 'À faire';
+  weeklyProgressMarkers: WeeklyProgressMarker[] = [];
   weeklyRangeLabel: string = '';
   weekPickerStartDate: string = '';
   weekPickerRangeLabel: string = '';
@@ -135,6 +144,9 @@ export class TodayComponent {
   weekPickerTotalDollars: string = '0';
   weekPickerTargetReached: boolean = false;
   weekPickerProgressPercent: number = 0;
+  weekPickerProgressTone: WeeklyProgressTone = 'red';
+  weekPickerProgressStatusLabel = 'À faire';
+  weekPickerProgressMarkers: WeeklyProgressMarker[] = [];
   weeklyShortfalls: WeeklyShortfall[] = [];
   selectedShortfallMonth = '';
   dailyFees: string = '0';
@@ -218,6 +230,8 @@ export class TodayComponent {
   today = this.time.todaysDateMonthDayYear();
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   frenchDate = this.time.convertDateToDayMonthYear(this.today);
+  private readonly weeklyFloorMilestoneFc = 600000;
+  private readonly weeklyStretchMilestoneFc = 900000;
   requestDate: string = this.time.getTodaysDateYearMonthDay();
   requestDateCorrectFormat = this.today;
   day: string = new Date().toLocaleString('en-US', { weekday: 'long' });
@@ -441,6 +455,14 @@ export class TodayComponent {
       this.weeklyTargetFc === 0
         ? 0
         : Math.min(100, (this.weekPickerTotalN / this.weeklyTargetFc) * 100);
+    const weekPickerProgressState = this.resolveWeeklyProgressState(
+      this.weekPickerTotalN,
+      this.weeklyTargetFc
+    );
+    this.weekPickerProgressTone = weekPickerProgressState.tone;
+    this.weekPickerProgressStatusLabel = weekPickerProgressState.statusLabel;
+    this.weekPickerProgressMarkers =
+      this.buildWeeklyProgressMarkers(this.weeklyTargetFc);
   }
 
   private getWeekBounds(dateKey: string): { start: Date; end: Date } {
@@ -754,6 +776,65 @@ export class TodayComponent {
     return 600000;
   }
 
+  private resolveWeeklyProgressState(
+    totalFc: number,
+    targetFc: number
+  ): { tone: WeeklyProgressTone; statusLabel: string } {
+    const total = Number(totalFc) || 0;
+    const target = Number(targetFc) || 0;
+
+    if (!Number.isFinite(target) || target <= 0) {
+      return { tone: 'red', statusLabel: 'À faire' };
+    }
+
+    if (total >= target) {
+      return { tone: 'green', statusLabel: 'Atteint' };
+    }
+
+    if (
+      target > this.weeklyStretchMilestoneFc &&
+      total >= this.weeklyStretchMilestoneFc
+    ) {
+      return { tone: 'orange', statusLabel: 'Palier 900K' };
+    }
+
+    if (
+      target > this.weeklyFloorMilestoneFc &&
+      total >= this.weeklyFloorMilestoneFc
+    ) {
+      return { tone: 'yellow', statusLabel: 'Palier 600K' };
+    }
+
+    return { tone: 'red', statusLabel: 'À faire' };
+  }
+
+  private buildWeeklyProgressMarkers(targetFc: number): WeeklyProgressMarker[] {
+    const target = Number(targetFc) || 0;
+
+    if (!Number.isFinite(target) || target <= 0) {
+      return [];
+    }
+
+    return [
+      {
+        amountFc: this.weeklyFloorMilestoneFc,
+        label: 'Palier 600K',
+        percent: (this.weeklyFloorMilestoneFc / target) * 100,
+      },
+      {
+        amountFc: this.weeklyStretchMilestoneFc,
+        label: 'Palier 900K',
+        percent: (this.weeklyStretchMilestoneFc / target) * 100,
+      },
+    ].filter(
+      (marker) =>
+        marker.amountFc < target &&
+        Number.isFinite(marker.percent) &&
+        marker.percent > 0 &&
+        marker.percent < 100
+    );
+  }
+
   private syncWeeklyTargetFc() {
     this.weeklyTargetFc = this.resolveWeeklyTargetFc();
     this.weeklyTargetReached = this.weeklyPaymentTotalN >= this.weeklyTargetFc;
@@ -764,6 +845,14 @@ export class TodayComponent {
             100,
             (this.weeklyPaymentTotalN / this.weeklyTargetFc) * 100
           );
+    const weeklyProgressState = this.resolveWeeklyProgressState(
+      this.weeklyPaymentTotalN,
+      this.weeklyTargetFc
+    );
+    this.weeklyProgressTone = weeklyProgressState.tone;
+    this.weeklyProgressStatusLabel = weeklyProgressState.statusLabel;
+    this.weeklyProgressMarkers =
+      this.buildWeeklyProgressMarkers(this.weeklyTargetFc);
     this.updateWeekPickerTotals();
     this.computeMonthlyWeeklyShortfalls();
   }

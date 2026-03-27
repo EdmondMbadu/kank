@@ -633,11 +633,14 @@
           </span>
         </span>
         <span
-          [ngClass]="
-            weekPickerTargetReached ? 'text-emerald-600' : 'text-red-600'
-          "
+          [ngClass]="{
+            'text-red-600': weekPickerProgressTone === 'red',
+            'text-amber-600': weekPickerProgressTone === 'yellow',
+            'text-orange-600': weekPickerProgressTone === 'orange',
+            'text-emerald-600': weekPickerProgressTone === 'green'
+          }"
         >
-          {{ weekPickerTargetReached ? 'Atteint' : 'À faire' }}
+          {{ weekPickerProgressStatusLabel }}
         </span>
       </div>
       <div
@@ -663,15 +666,48 @@
         </div>
       </div>
       <div
-        class="mt-1 h-2 w-full rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
+        class="relative mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
       >
+        <ng-container *ngFor="let marker of weekPickerProgressMarkers">
+          <div
+            class="pointer-events-none absolute inset-y-0 z-10 w-px bg-white/90 dark:bg-slate-900/80"
+            [style.left.%]="marker.percent"
+          ></div>
+        </ng-container>
         <div
           class="h-2 rounded-full transition-all duration-300"
-          [ngClass]="
-            weekPickerTargetReached ? 'bg-emerald-500' : 'bg-red-500'
-          "
+          [ngClass]="{
+            'bg-red-500': weekPickerProgressTone === 'red',
+            'bg-amber-400': weekPickerProgressTone === 'yellow',
+            'bg-orange-500': weekPickerProgressTone === 'orange',
+            'bg-emerald-500': weekPickerProgressTone === 'green'
+          }"
           [style.width.%]="weekPickerProgressPercent"
         ></div>
+      </div>
+      <div
+        *ngIf="weekPickerProgressMarkers.length > 0"
+        class="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold"
+      >
+        <span
+          *ngFor="let marker of weekPickerProgressMarkers"
+          class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5"
+          [ngClass]="{
+            'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-200':
+              marker.amountFc === 600000,
+            'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-700/40 dark:bg-orange-900/20 dark:text-orange-200':
+              marker.amountFc === 900000
+          }"
+        >
+          <span
+            class="inline-flex h-2 w-2 rounded-full"
+            [ngClass]="{
+              'bg-amber-400': marker.amountFc === 600000,
+              'bg-orange-500': marker.amountFc === 900000
+            }"
+          ></span>
+          {{ marker.label }}
+        </span>
       </div>
       <div class="mt-1 text-center text-[11px] text-slate-500">
         {{ weekPickerProgressPercent | number : "1.0-0" }}% atteint
@@ -1273,12 +1309,20 @@
         <div class="mt-4">
           <div class="flex items-center justify-between text-[11px] font-semibold">
             <span class="text-slate-500 dark:text-slate-400">
-              <strong>Minimum</strong>&nbsp;{{ weeklyTargetFc | number : "1.0-0" }} FC
+              <strong>Minimum</strong>&nbsp;{{
+                weeklyTargetFc | number : "1.0-0"
+              }}
+              FC
             </span>
             <span
-              [ngClass]="weeklyTargetReached ? 'text-emerald-600' : 'text-red-600'"
+              [ngClass]="{
+                'text-red-600': weeklyProgressTone === 'red',
+                'text-amber-600': weeklyProgressTone === 'yellow',
+                'text-orange-600': weeklyProgressTone === 'orange',
+                'text-emerald-600': weeklyProgressTone === 'green'
+              }"
             >
-              {{ weeklyTargetReached ? 'Atteint' : 'À faire' }}
+              {{ weeklyProgressStatusLabel }}
             </span>
           </div>
           <div
@@ -1305,13 +1349,48 @@
           </div>
 
           <div
-            class="mt-1 h-2 w-full rounded-full bg-red-100 dark:bg-red-900/30 overflow-hidden"
+            class="relative mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
           >
+            <ng-container *ngFor="let marker of weeklyProgressMarkers">
+              <div
+                class="pointer-events-none absolute inset-y-0 z-10 w-px bg-white/90 dark:bg-slate-900/80"
+                [style.left.%]="marker.percent"
+              ></div>
+            </ng-container>
             <div
               class="h-2 rounded-full transition-all duration-300"
-              [ngClass]="weeklyTargetReached ? 'bg-emerald-500' : 'bg-red-500'"
+              [ngClass]="{
+                'bg-red-500': weeklyProgressTone === 'red',
+                'bg-amber-400': weeklyProgressTone === 'yellow',
+                'bg-orange-500': weeklyProgressTone === 'orange',
+                'bg-emerald-500': weeklyProgressTone === 'green'
+              }"
               [style.width.%]="weeklyProgressPercent"
             ></div>
+          </div>
+          <div
+            *ngIf="weeklyProgressMarkers.length > 0"
+            class="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold"
+          >
+            <span
+              *ngFor="let marker of weeklyProgressMarkers"
+              class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5"
+              [ngClass]="{
+                'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-200':
+                  marker.amountFc === 600000,
+                'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-700/40 dark:bg-orange-900/20 dark:text-orange-200':
+                  marker.amountFc === 900000
+              }"
+            >
+              <span
+                class="inline-flex h-2 w-2 rounded-full"
+                [ngClass]="{
+                  'bg-amber-400': marker.amountFc === 600000,
+                  'bg-orange-500': marker.amountFc === 900000
+                }"
+              ></span>
+              {{ marker.label }}
+            </span>
           </div>
 
           <div class="mt-1 text-center text-[11px] text-slate-500">
