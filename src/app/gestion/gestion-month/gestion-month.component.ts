@@ -224,7 +224,8 @@ export class GestionMonthComponent {
       Number(this.givenMonthTotalInvestmentAmount) -
       Number(this.givenMonthTotalExpenseAmount) -
       Number(this.givenMonthTotalBudgetedExpenseAmount) -
-      Number(totalLoss)
+      Number(totalLoss) -
+      Number(this.givenMonthTotalFraudAmount)
     ).toString();
     this.summaryContent = [
       `${this.lossRatio}`,
