@@ -1338,6 +1338,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
       const start = new Date(end);
       start.setDate(end.getDate() - 6);
+      if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
 
       const totalFc = this.computeWeeklyPaymentTotalForLocation(
         this.formatDateKey(start)
@@ -1357,6 +1358,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
 
     return deductions;
+  }
+
+  private isSundayOnlyCarryoverWeek(start: Date, end: Date): boolean {
+    return (
+      start.getFullYear() !== end.getFullYear() ||
+      start.getMonth() !== end.getMonth()
+    )
+      ? end.getDate() === 1
+      : false;
   }
 
   private computeWeeklyPaymentTotalForLocation(dateKey: string): number {
@@ -1403,7 +1413,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       .map((d) => this.normalizeObjectiveDeduction(d))
       .filter((d) => {
         if (!d?.start) return false;
+        const start = this.parseIsoDate(d.start);
         const end = this.parseIsoDate(d.end);
+        if (this.isSundayOnlyCarryoverWeek(start, end)) return false;
         return end.getMonth() + 1 === month && end.getFullYear() === year;
       });
   }
