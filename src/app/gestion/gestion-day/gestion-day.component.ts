@@ -100,7 +100,6 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   total: string = '';
   totalCard: string = '';
   track: number = 0;
-  isAddOperation = false;
   budgetReason = '';
 
   userServeTodayTotals: Array<{
@@ -1830,7 +1829,6 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   openBudgetModal() {
     this.budgetInput = null;
     this.budgetReason = '';
-    this.isAddOperation = false;
     this.showBudgetModal = true;
   }
 

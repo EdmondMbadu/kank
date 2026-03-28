@@ -121,6 +121,12 @@
           <h3 class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
             {{ s }}
           </h3>
+          <p
+            *ngIf="i === 10"
+            class="mt-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400"
+          >
+            Réserve - Argent servi - Investissement - Dépenses - Dépenses planifiées - Perte
+          </p>
           <div class="mt-4 space-y-1">
             <ng-container *ngIf="i === 0; else fraudOrMonetaryBlock">
               <p
