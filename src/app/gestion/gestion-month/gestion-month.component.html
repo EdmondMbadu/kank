@@ -153,10 +153,24 @@
             </ng-template>
 
             <ng-template #monetaryBlock>
-              <p class="text-2xl font-semibold text-emerald-600 dark:text-emerald-300">
+              <p
+                class="text-2xl font-semibold"
+                [ngClass]="
+                  i === 10 && isNegativeAmount(summaryContent[i])
+                    ? 'text-rose-600 dark:text-rose-300'
+                    : 'text-emerald-600 dark:text-emerald-300'
+                "
+              >
                 FC {{ summaryContent[i] | number : "1.0-0" }}
               </p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
+              <p
+                class="text-sm"
+                [ngClass]="
+                  i === 10 && isNegativeAmount(summaryContent[i])
+                    ? 'text-rose-500 dark:text-rose-300'
+                    : 'text-slate-500 dark:text-slate-400'
+                "
+              >
                 ≈ $ {{ valuesConvertedToDollars[i] | number : "1.0-0" }}
               </p>
             </ng-template>

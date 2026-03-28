@@ -71,6 +71,7 @@ export class GestionMonthComponent {
   monthYear = `${this.month} ${this.year}`;
   totalPerfomance: number = 0;
   linkPaths: string[] = [
+    '/gestion-loss',
     '/gestion-reserve',
     '/gestion-today',
     '/gestion-expenses',
@@ -129,6 +130,11 @@ export class GestionMonthComponent {
   today = this.time.todaysDateMonthDayYear();
   summaryContent: string[] = [];
   lossRatio: number = 0;
+
+  isNegativeAmount(value: string): boolean {
+    return Number(value) < 0;
+  }
+
   initalizeInputs() {
     this.givenMonthTotalReserveAmount = this.compute.findTotalGiventMonth(
       this.managementInfo?.reserve!,
@@ -215,9 +221,10 @@ export class GestionMonthComponent {
     this.givenMonthRealGain = (
       Number(this.givenMonthTotalReserveAmount) -
       Number(this.givenMonthTotalServedAmount) -
+      Number(this.givenMonthTotalInvestmentAmount) -
       Number(this.givenMonthTotalExpenseAmount) -
       Number(this.givenMonthTotalBudgetedExpenseAmount) -
-      Number(this.givenMonthTotalLossAmount)
+      Number(totalLoss)
     ).toString();
     this.summaryContent = [
       `${this.lossRatio}`,

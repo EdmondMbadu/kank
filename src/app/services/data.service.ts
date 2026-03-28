@@ -1683,6 +1683,34 @@ export class DataService {
     });
   }
 
+  async deleteManagementBudgetedExpenseEntry(entryKey: string): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef = this.afs.doc<Management>(
+      `management/${managementId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as Management;
+      const nextBudgetedExpenses = { ...(current.budgetedExpenses || {}) } as {
+        [key: string]: string;
+      };
+      if (nextBudgetedExpenses[entryKey] === undefined) return;
+
+      delete nextBudgetedExpenses[entryKey];
+
+      tx.update(managementRef, {
+        budgetedExpenses: nextBudgetedExpenses,
+      });
+    });
+  }
+
   /**
    * Add a fraud tracking entry without changing moneyInHands or any other totals.
    * Stored as "amount:reason:location" so runtime totals can keep using numeric prefix parsing.

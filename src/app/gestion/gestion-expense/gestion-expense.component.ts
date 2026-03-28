@@ -19,6 +19,14 @@ interface ExpenseEntry {
   timestamp: number;
 }
 
+interface PlannedExpenseEntry {
+  key: string;
+  rawValue: string;
+  amount: number;
+  reason: string;
+  dateLabel: string;
+}
+
 @Component({
   selector: 'app-gestion-expense',
   templateUrl: './gestion-expense.component.html',
@@ -63,10 +71,19 @@ export class GestionExpenseComponent {
     reason: string;
     dateLabel: string;
   } | null = null;
+  deletingPlannedExpenseKey: string | null = null;
+  showDeletePlannedExpenseModal = false;
+  pendingDeletePlannedExpense: {
+    key: string;
+    amount: number;
+    reason: string;
+    dateLabel: string;
+  } | null = null;
   feedbackMessage = '';
   feedbackType: 'success' | 'error' = 'success';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   budgetCurrent: [string, string][] = [];
+  plannedExpenseEntries: PlannedExpenseEntry[] = [];
   budgetAmounts: string[] = [];
   budgetReasons: string[] = [];
   budgetDates: string[] = [];
@@ -167,6 +184,16 @@ export class GestionExpenseComponent {
     this.budgetDates = this.budgetCurrent.map((entry) =>
       this.time.convertTimeFormat(entry[0])
     );
+    this.plannedExpenseEntries = this.budgetCurrent.map(([key, value], index) => {
+      const parsed = this.parseExpenseValue(value);
+      return {
+        key,
+        rawValue: value,
+        amount: parsed.amount,
+        reason: parsed.reason || 'Sans raison',
+        dateLabel: this.budgetDates[index],
+      };
+    });
   }
 
   setPeriodMode(mode: PeriodMode): void {
@@ -329,6 +356,57 @@ export class GestionExpenseComponent {
     } finally {
       this.deletingExpenseKey = null;
       this.closeDeleteExpenseModal();
+    }
+  }
+
+  openDeletePlannedExpenseModal(entryKey: string, event: Event): void {
+    event.stopPropagation();
+    if (!this.auth.isAdmin) return;
+    if (this.deletingPlannedExpenseKey) return;
+
+    const entry = this.plannedExpenseEntries.find((item) => item.key === entryKey);
+    if (!entry) return;
+
+    this.pendingDeletePlannedExpense = {
+      key: entry.key,
+      amount: entry.amount,
+      reason: entry.reason,
+      dateLabel: entry.dateLabel,
+    };
+    this.showDeletePlannedExpenseModal = true;
+  }
+
+  closeDeletePlannedExpenseModal(): void {
+    if (this.deletingPlannedExpenseKey) return;
+    this.showDeletePlannedExpenseModal = false;
+    this.pendingDeletePlannedExpense = null;
+  }
+
+  async confirmDeletePlannedExpense(): Promise<void> {
+    const pending = this.pendingDeletePlannedExpense;
+    if (!pending) return;
+
+    try {
+      this.deletingPlannedExpenseKey = pending.key;
+      await this.data.deleteManagementBudgetedExpenseEntry(pending.key);
+      const nextBudgetedExpenses = {
+        ...(this.managementInfo?.budgetedExpenses || {}),
+      };
+      delete nextBudgetedExpenses[pending.key];
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        budgetedExpenses: nextBudgetedExpenses,
+      };
+      this.getPlannedExpense();
+      this.showFeedback('Dépense planifiée supprimée.', 'success');
+    } catch (err: any) {
+      this.showFeedback(
+        `La suppression de la dépense planifiée a échoué: ${err?.message || 'Erreur inconnue'}`,
+        'error'
+      );
+    } finally {
+      this.deletingPlannedExpenseKey = null;
+      this.closeDeletePlannedExpenseModal();
     }
   }
 }

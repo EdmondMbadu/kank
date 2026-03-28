@@ -92,20 +92,42 @@
       </button>
 
       <div *ngIf="showPlanned" class="border-t border-green-200 px-5 py-4">
-        <ul role="list" class="divide-y divide-gray-200" *ngIf="budgetCurrent.length; else emptyPlanned">
-          <li *ngFor="let item of budgetCurrent; let i = index" class="flex items-center gap-3 py-3">
+        <ul role="list" class="divide-y divide-gray-200" *ngIf="plannedExpenseEntries.length; else emptyPlanned">
+          <li *ngFor="let entry of plannedExpenseEntries" class="flex items-center gap-3 py-3">
             <div
               class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-medium text-green-700">
               {{ currentUser.firstName?.substring(0, 2) }}
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-gray-900">{{ budgetReasons[i] }}</p>
-              <p class="text-xs text-gray-500">{{ budgetDates[i] }}</p>
+              <p class="truncate text-sm font-medium text-gray-900">{{ entry.reason }}</p>
+              <p class="text-xs text-gray-500">{{ entry.dateLabel }}</p>
             </div>
             <div class="text-right">
-              <p class="text-sm font-semibold text-gray-900">FC {{ budgetAmounts[i] | number : '1.0-0' }}</p>
-              <p class="text-xs text-gray-500">$ {{ toUsd(budgetAmounts[i]) | number : '1.0-0' }}</p>
+              <p class="text-sm font-semibold text-gray-900">FC {{ entry.amount | number : '1.0-0' }}</p>
+              <p class="text-xs text-gray-500">$ {{ toUsd(entry.amount) | number : '1.0-0' }}</p>
             </div>
+            <button
+              *ngIf="auth.isAdmin"
+              type="button"
+              (click)="openDeletePlannedExpenseModal(entry.key, $event)"
+              [disabled]="deletingPlannedExpenseKey === entry.key"
+              class="ml-1 rounded p-1 text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Supprimer la dépense planifiée">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" y1="11" x2="10" y2="17" />
+                <line x1="14" y1="11" x2="14" y2="17" />
+              </svg>
+            </button>
           </li>
         </ul>
 
@@ -307,6 +329,46 @@
         [disabled]="!!deletingExpenseKey"
         class="rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50">
         Supprimer + déduire
+      </button>
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="showDeletePlannedExpenseModal && pendingDeletePlannedExpense"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+  <div class="w-full max-w-lg rounded-2xl border border-green-200 bg-white p-6 shadow-xl">
+    <h3 class="text-lg font-semibold text-gray-900">Supprimer cette dépense planifiée</h3>
+    <p class="mt-2 text-sm text-gray-600">
+      <span class="font-medium">{{ pendingDeletePlannedExpense.reason }}</span>
+      <span class="mx-1">·</span>
+      <span>{{ pendingDeletePlannedExpense.dateLabel }}</span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600">
+      Montant: <span class="font-semibold text-gray-900">FC {{ pendingDeletePlannedExpense.amount | number : '1.0-0' }}</span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600">
+      USD: <span class="font-semibold text-gray-900">$ {{ toUsd(pendingDeletePlannedExpense.amount) | number : '1.0-0' }}</span>
+    </p>
+    <p class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+      Cette suppression retire uniquement l’entrée de
+      <span class="font-semibold">dépenses planifiées</span>.
+    </p>
+
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeDeletePlannedExpenseModal()"
+        [disabled]="!!deletingPlannedExpenseKey"
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">
+        Annuler
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeletePlannedExpense()"
+        [disabled]="!!deletingPlannedExpenseKey"
+        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+        Supprimer
       </button>
     </div>
   </div>
