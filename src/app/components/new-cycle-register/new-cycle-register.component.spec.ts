@@ -74,7 +74,7 @@ describe('NewCycleRegisterComponent', () => {
 
   beforeEach(async () => {
     const clients = Array.from({ length: 29 }, () => new Client());
-    clients[28] = cycleClient;
+    clients[28] = Object.assign(new Client(), cycleClient);
 
     await TestBed.configureTestingModule({
       declarations: [NewCycleRegisterComponent],
@@ -129,7 +129,7 @@ describe('NewCycleRegisterComponent', () => {
         {
           provide: ComputationService,
           useValue: {
-            getMaxLendAmount: () => 350000,
+            getMaxLendAmount: (score: number) => (score <= 0 ? 0 : 350000),
           },
         },
         {
@@ -206,6 +206,26 @@ describe('NewCycleRegisterComponent', () => {
 
     expect(component.loanAmountOtherDisplay).toBeFalse();
     expect(fixture.nativeElement.querySelector('#loanAmount')).toBeNull();
+  });
+
+  it('shows the next eligible credit date when score is zero and the six-month wait is still active', () => {
+    const lastPayment = new Date();
+    lastPayment.setMonth(lastPayment.getMonth() - 2);
+
+    component.client.creditScore = '0';
+    component.client.payments = {
+      [`${lastPayment.getMonth() + 1}-${lastPayment.getDate()}-${lastPayment.getFullYear()}-10-00-00`]:
+        '10000',
+    };
+
+    component.retrieveClient();
+    fixture.detectChanges();
+
+    expect(component.shouldShowCreditEligibilityDate).toBeTrue();
+    expect(normalizedText()).toContain('Ce client peut demander un nouveau crédit à partir du');
+    expect(normalizedText()).toContain(component.nextEligibleCreditDateLabel);
+    expect(normalizedText()).toContain(component.lastPaymentDateLabel);
+    expect(normalizedText()).toContain('Disponible à partir du');
   });
 
   it('keeps the references action disabled until the inputs are valid, then renders the added reference', () => {

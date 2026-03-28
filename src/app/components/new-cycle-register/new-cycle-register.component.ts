@@ -30,6 +30,8 @@ export class NewCycleRegisterComponent implements OnInit {
   middleName: string = '';
   requestDate: string = '';
   maxLoanAmount: number = 0;
+  lastPaymentDate: Date | null = null;
+  nextEligibleCreditDate: Date | null = null;
   allClients: Client[] = [];
   private readonly FIXED_APPLICATION_FEE = '5000'; // 5 000 FC
   private readonly FIXED_MEMBERSHIP_FEE = '0'; // 0 FC
@@ -109,8 +111,10 @@ export class NewCycleRegisterComponent implements OnInit {
       )
         ? Number(this.auth.currentUser.maxNumberOfDaysToLend)
         : this.data.generalMaxNumberOfDaysToLend;
+      this.syncCreditEligibilityState();
       // ✅ NEW: six-month grace reset for score ≤ 0
       this.maybeResetCreditScoreFromDormancy();
+      this.syncCreditEligibilityState();
       // get credit score to find maxLoanAmount
       if (this.client && this.client.creditScore !== undefined) {
         this.maxLoanAmount = this.compute.getMaxLendAmount(
@@ -287,6 +291,12 @@ export class NewCycleRegisterComponent implements OnInit {
       );
       return;
     } else if (this.maxLoanAmount < Number(this.loanAmount)) {
+      if (this.shouldShowCreditEligibilityDate) {
+        alert(
+          `Ce client ne peut pas encore demander un nouveau crédit. Il pourra faire une demande à partir du ${this.nextEligibleCreditDateLabel}. Dernier paiement enregistré : ${this.lastPaymentDateLabel}.`
+        );
+        return;
+      }
       alert(
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLoanAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
@@ -584,9 +594,57 @@ export class NewCycleRegisterComponent implements OnInit {
 
   /** Returns true if at least 6 calendar months have passed since `since` */
   private sixMonthsHavePassed(since: Date): boolean {
-    const plus6 = new Date(since);
-    plus6.setMonth(plus6.getMonth() + 6);
+    const plus6 = this.addMonths(since, 6);
     return new Date() >= plus6;
+  }
+
+  private addMonths(baseDate: Date, months: number): Date {
+    const next = new Date(baseDate);
+    next.setMonth(next.getMonth() + months);
+    return next;
+  }
+
+  private syncCreditEligibilityState(): void {
+    this.lastPaymentDate = this.getLastPaymentDate(this.client?.payments);
+    this.nextEligibleCreditDate = this.lastPaymentDate
+      ? this.addMonths(this.lastPaymentDate, 6)
+      : null;
+  }
+
+  get shouldShowCreditEligibilityDate(): boolean {
+    return (
+      Number(this.client?.creditScore ?? 0) <= 0 &&
+      this.maxLoanAmount === 0 &&
+      !!this.nextEligibleCreditDate
+    );
+  }
+
+  get nextEligibleCreditDateLabel(): string {
+    if (!this.nextEligibleCreditDate) {
+      return 'date inconnue';
+    }
+
+    return this.nextEligibleCreditDate.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  get dormantRecoveryLoanAmount(): number {
+    return this.compute.getMaxLendAmount(50);
+  }
+
+  get lastPaymentDateLabel(): string {
+    if (!this.lastPaymentDate) {
+      return 'Aucun paiement enregistré';
+    }
+
+    return this.lastPaymentDate.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
   /**
