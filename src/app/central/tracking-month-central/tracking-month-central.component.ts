@@ -1,10 +1,17 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Employee } from 'src/app/models/employee';
 import { User, UserDailyField } from 'src/app/models/user';
 
 type RangeKey = '3M' | '6M' | '9M' | '1A' | 'MAX';
+type TrackingMonthCentralCard = {
+  title: string;
+  value: string;
+  valueUsd: string;
+  imagePath: string;
+  subtitle?: string;
+  isNegative?: boolean;
+};
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
@@ -16,7 +23,6 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class TrackingMonthCentralComponent {
   constructor(
-    private router: Router,
     public auth: AuthService,
     public time: TimeService,
     private compute: ComputationService
@@ -44,31 +50,6 @@ export class TrackingMonthCentralComponent {
   monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   monthYear = `${this.month} ${this.year}`;
   totalPerfomance: number = 0;
-  linkPaths: string[] = [
-    '/paid-date',
-    '/lending-date',
-    '/client-info-current',
-    '/add-expense',
-    '/add-reserve',
-    '/add-invest',
-    '/',
-    '/',
-  ];
-  summary: string[] = [
-    'Paiment Du Mois ',
-    'Paiement Mobile Money Du Mois',
-    'Emprunts Du Mois',
-    'Benefice Du Mois ',
-    'Depense Du Mois',
-    'Reserve Du Mois',
-    'Frais De Membre Du Mois',
-    'Investissement Du Mois',
-    'Epargne Du Mois',
-    'Retrait Epargne Du Mois',
-    'Perte Du Mois',
-    'Budget Emprunts Du Mois',
-  ];
-  valuesConvertedToDollars: string[] = [];
   rankingMode: 'month' | 'year' | 'all' = 'month';
   rankingYear: number = this.year;
   rankingComparisonYear: number = this.year - 1;
@@ -117,20 +98,7 @@ export class TrackingMonthCentralComponent {
   workingDaysInMonth: number = 0;
   givenMonthTotalLoss: string = '';
   previousMonthTotalReserve: string = '';
-  imagePaths: string[] = [
-    '../../../assets/img/audit.png',
-    '../../../assets/img/daily-reimbursement.png',
-    '../../../assets/img/lending-date.png',
-    '../../../assets/img/benefit.svg',
-    '../../../assets/img/expense.svg',
-    '../../../assets/img/reserve.svg',
-    '../../../assets/img/member.svg',
-    '../../../assets/img/invest.svg',
-    '../../../assets/img/saving.svg',
-    '../../../assets/img/saving.svg',
-    '../../../assets/img/loss.png',
-    '../../../assets/img/budget.png',
-  ];
+  monthlyCards: TrackingMonthCentralCard[] = [];
   sortedReserveMonth: {
     firstName: string;
     totalReserve: number;
@@ -157,7 +125,6 @@ export class TrackingMonthCentralComponent {
     growthRate: string;
   }[] = [];
   today = this.time.todaysDateMonthDayYear();
-  summaryContent: string[] = [];
   reserveGrowthRateTotal: string = '';
   paymentGrowthRateTotal: string = '';
   reserveCurrentMonth!: number;
@@ -295,55 +262,118 @@ export class TrackingMonthCentralComponent {
       .convertCongoleseFrancToUsDollars(this.givenMonthTotalPaymentAmount)
       .toString();
 
-    this.summaryContent = [
-      `${this.givenMonthTotalPaymentAmount}`,
-      `${this.givenMonthTotalMobileMoneyAmount}`,
-      `${this.givenMonthTotalLendingAmount}`,
-      `${this.givenMonthTotalBenefitAmount}`,
-      `${this.givenMonthTotalExpenseAmount}`,
-      `${this.givenMonthTotalReserveAmount}`,
-      `${this.givenMonthTotalFeesAmount}`,
-      `${this.givenMonthTotalInvestmentAmount}`,
-      `${this.givenMonthTotalSavingAmount}`,
-      `${this.givenMonthTotalSavingReturnsAmount}`,
-      `${this.givenMonthTotalLoss}`,
-      `${this.givenMonthBudget}`,
-    ];
-    this.valuesConvertedToDollars = [
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalPaymentAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalMobileMoneyAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalLendingAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalBenefitAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalExpenseAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalReserveAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalFeesAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalInvestmentAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalSavingAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalSavingReturnsAmount
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(
-        this.givenMonthTotalLoss
-      )}`,
-      `${this.compute.convertCongoleseFrancToUsDollars(this.givenMonthBudget)}`,
+    const entryExitAmount = (
+      Number(this.givenMonthTotalReserveAmount) -
+      Number(this.givenMonthTotalInvestmentAmount)
+    ).toString();
+
+    this.monthlyCards = [
+      {
+        title: 'Paiment Du Mois ',
+        value: this.givenMonthTotalPaymentAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalPaymentAmount
+        )}`,
+        imagePath: '../../../assets/img/audit.png',
+      },
+      {
+        title: 'Paiement Mobile Money Du Mois',
+        value: this.givenMonthTotalMobileMoneyAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalMobileMoneyAmount
+        )}`,
+        imagePath: '../../../assets/img/daily-reimbursement.png',
+      },
+      {
+        title: 'Emprunts Du Mois',
+        value: this.givenMonthTotalLendingAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalLendingAmount
+        )}`,
+        imagePath: '../../../assets/img/lending-date.png',
+      },
+      {
+        title: 'Benefice Du Mois ',
+        value: this.givenMonthTotalBenefitAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalBenefitAmount
+        )}`,
+        imagePath: '../../../assets/img/benefit.svg',
+      },
+      {
+        title: 'Depense Du Mois',
+        value: this.givenMonthTotalExpenseAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalExpenseAmount
+        )}`,
+        imagePath: '../../../assets/img/expense.svg',
+      },
+      {
+        title: 'Reserve Du Mois',
+        value: this.givenMonthTotalReserveAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalReserveAmount
+        )}`,
+        imagePath: '../../../assets/img/reserve.svg',
+      },
+      {
+        title: 'Frais De Membre Du Mois',
+        value: this.givenMonthTotalFeesAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalFeesAmount
+        )}`,
+        imagePath: '../../../assets/img/member.svg',
+      },
+      {
+        title: 'Investissement Du Mois',
+        value: this.givenMonthTotalInvestmentAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalInvestmentAmount
+        )}`,
+        imagePath: '../../../assets/img/invest.svg',
+      },
+      {
+        title: 'Epargne Du Mois',
+        value: this.givenMonthTotalSavingAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalSavingAmount
+        )}`,
+        imagePath: '../../../assets/img/saving.svg',
+      },
+      {
+        title: 'Retrait Epargne Du Mois',
+        value: this.givenMonthTotalSavingReturnsAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalSavingReturnsAmount
+        )}`,
+        imagePath: '../../../assets/img/saving.svg',
+      },
+      {
+        title: 'Perte Du Mois',
+        value: this.givenMonthTotalLoss,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthTotalLoss
+        )}`,
+        imagePath: '../../../assets/img/loss.png',
+      },
+      {
+        title: 'Budget Emprunts Du Mois',
+        value: this.givenMonthBudget,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          this.givenMonthBudget
+        )}`,
+        imagePath: '../../../assets/img/budget.png',
+      },
+      {
+        title: 'Entrées / Sorties',
+        subtitle: 'Reserve Du Mois - Investissement Du Mois',
+        value: entryExitAmount,
+        valueUsd: `${this.compute.convertCongoleseFrancToUsDollars(
+          entryExitAmount
+        )}`,
+        imagePath: '../../../assets/img/reserve.svg',
+        isNegative: Number(entryExitAmount) < 0,
+      },
     ];
 
     this.reserveCurrentMonth = this.givenMonth;
