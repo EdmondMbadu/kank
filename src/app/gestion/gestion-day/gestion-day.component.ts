@@ -12,6 +12,13 @@ import { Card } from 'src/app/models/card';
 import { DataService } from 'src/app/services/data.service';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 
+type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
+interface WeeklyProgressMarker {
+  amountFc: number;
+  label: string;
+  percent: number;
+}
+
 @Component({
   selector: 'app-gestion-day',
   templateUrl: './gestion-day.component.html',
@@ -251,10 +258,15 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     weeklyTargetFc: number;
     weeklyProgressPercent: number;
     weeklyTargetReached: boolean;
+    weeklyProgressTone: WeeklyProgressTone;
+    weeklyProgressStatusLabel: string;
+    weeklyProgressMarkers: WeeklyProgressMarker[];
     trackingId: string;
   }> = [];
   overallWeeklyPaymentTotal: number = 0;
   overallWeeklyPaymentTotalDollar: number = 0;
+  private readonly weeklyFloorMilestoneFc = 600000;
+  private readonly weeklyStretchMilestoneFc = 900000;
 
   get reserveRevealTimeLabel(): string {
     return this.normalizeRevealTime(this.managementInfo?.reserveRevealTimeKinshasa);
@@ -1037,6 +1049,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       const weeklyTargetReached = total >= weeklyTargetFc;
       const weeklyProgressPercent =
         weeklyTargetFc === 0 ? 0 : Math.min(100, (total / weeklyTargetFc) * 100);
+      const weeklyProgressState = this.resolveWeeklyProgressState(
+        total,
+        weeklyTargetFc
+      );
 
       this.overallWeeklyPaymentTotal += total;
 
@@ -1047,6 +1063,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         weeklyTargetFc,
         weeklyProgressPercent,
         weeklyTargetReached,
+        weeklyProgressTone: weeklyProgressState.tone,
+        weeklyProgressStatusLabel: weeklyProgressState.statusLabel,
+        weeklyProgressMarkers: this.buildWeeklyProgressMarkers(weeklyTargetFc),
         trackingId: user.uid!,
       };
     });
@@ -1089,6 +1108,65 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
 
     return 600000;
+  }
+
+  private resolveWeeklyProgressState(
+    totalFc: number,
+    targetFc: number
+  ): { tone: WeeklyProgressTone; statusLabel: string } {
+    const total = Number(totalFc) || 0;
+    const target = Number(targetFc) || 0;
+
+    if (!Number.isFinite(target) || target <= 0) {
+      return { tone: 'red', statusLabel: 'À faire' };
+    }
+
+    if (total >= target) {
+      return { tone: 'green', statusLabel: 'Atteint' };
+    }
+
+    if (
+      target > this.weeklyStretchMilestoneFc &&
+      total >= this.weeklyStretchMilestoneFc
+    ) {
+      return { tone: 'orange', statusLabel: 'Palier 900K' };
+    }
+
+    if (
+      target > this.weeklyFloorMilestoneFc &&
+      total >= this.weeklyFloorMilestoneFc
+    ) {
+      return { tone: 'yellow', statusLabel: 'Palier 600K' };
+    }
+
+    return { tone: 'red', statusLabel: 'À faire' };
+  }
+
+  private buildWeeklyProgressMarkers(targetFc: number): WeeklyProgressMarker[] {
+    const target = Number(targetFc) || 0;
+
+    if (!Number.isFinite(target) || target <= 0) {
+      return [];
+    }
+
+    return [
+      {
+        amountFc: this.weeklyFloorMilestoneFc,
+        label: 'Palier 600K',
+        percent: (this.weeklyFloorMilestoneFc / target) * 100,
+      },
+      {
+        amountFc: this.weeklyStretchMilestoneFc,
+        label: 'Palier 900K',
+        percent: (this.weeklyStretchMilestoneFc / target) * 100,
+      },
+    ].filter(
+      (marker) =>
+        marker.amountFc < target &&
+        Number.isFinite(marker.percent) &&
+        marker.percent > 0 &&
+        marker.percent < 100
+    );
   }
 
   private computeWeeklyRangeLabel(dateKey: string): string {
