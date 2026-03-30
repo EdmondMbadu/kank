@@ -38,6 +38,8 @@ export class TodayCentralComponent {
   dailyReserve: string = '0';
   dailyReserveDollars: string = '0';
   dailyInvestement: string = '0';
+  dailyEntrySortie: string = '0';
+  dailyEntrySortieDollars: string = '0';
   dailySaving: string = '0';
   dailySavingReturns = '0';
   dailyRequest: string = '0';
@@ -65,6 +67,11 @@ export class TodayCentralComponent {
     firstName: string;
     totalReserve: number;
     totalReserveInDollars: string;
+  }[] = [];
+  sortedEntrySortieToday: {
+    firstName: string;
+    totalEntrySortie: number;
+    totalEntrySortieInDollars: string;
   }[] = [];
   totalPerfomance: number = 0;
   linkPaths: Array<string | null> = [
@@ -241,6 +248,12 @@ export class TodayCentralComponent {
     this.dailyReserveDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyReserve)
       .toString();
+    this.dailyEntrySortie = (
+      Number(this.dailyReserve) - Number(this.dailyInvestement)
+    ).toString();
+    this.dailyEntrySortieDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.dailyEntrySortie)
+      .toString();
     this.dailyPaymentDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyPayment)
       .toString();
@@ -275,6 +288,9 @@ export class TodayCentralComponent {
         this.allUsers,
         'dailyMoneyRequests'
       );
+    this.sortedEntrySortieToday = this.buildEntrySortieTodayRanking(
+      this.requestDateCorrectFormat
+    );
     this.summaryContent = [
       ` ${this.dailyPayment}`,
       ` ${this.dailyMobileMoneyPayment}`,
@@ -543,6 +559,14 @@ export class TodayCentralComponent {
     const b = this.toNum(basis) || 1;
     return Math.max(0, (v / b) * 100);
   }
+  absPercentOf(value: any, basis: any): number {
+    const v = Math.abs(this.toNum(value));
+    const b = Math.abs(this.toNum(basis)) || 1;
+    return Math.max(0, (v / b) * 100);
+  }
+  isNegativeValue(value: any): boolean {
+    return this.toNum(value) < 0;
+  }
 
   private buildMonthPickerValue(date: Date): string {
     const year = date.getFullYear();
@@ -636,6 +660,61 @@ export class TodayCentralComponent {
     return total;
   }
 
+  private collectUserDailyFieldValue(
+    user: User | undefined,
+    field: 'reserve' | 'dailyReimbursement' | 'investments',
+    dateStr: string
+  ): number {
+    if (!user || !user[field]) {
+      return 0;
+    }
+
+    let total = 0;
+    Object.entries(user[field] as Record<string, string>).forEach(
+      ([dateKey, amount]) => {
+        const normalizedDate = dateKey.split('-').slice(0, 3).join('-');
+        if (normalizedDate === dateStr) {
+          const numericAmount = String(amount).split(':')[0];
+          total += parseInt(numericAmount, 10) || 0;
+        }
+      }
+    );
+    return total;
+  }
+
+  private buildEntrySortieTodayRanking(
+    requestDate: string
+  ): {
+    firstName: string;
+    totalEntrySortie: number;
+    totalEntrySortieInDollars: string;
+  }[] {
+    return this.allUsers
+      .map((user) => {
+        const reserve = this.collectUserDailyFieldValue(
+          user,
+          'reserve',
+          requestDate
+        );
+        const investment = this.collectUserDailyFieldValue(
+          user,
+          'investments',
+          requestDate
+        );
+        const totalEntrySortie = reserve - investment;
+
+        return {
+          firstName: user.firstName || '',
+          totalEntrySortie,
+          totalEntrySortieInDollars: `${this.compute.convertCongoleseFrancToUsDollars(
+            totalEntrySortie.toString()
+          ) || '0'}`,
+        };
+      })
+      .filter((row) => row.firstName && row.totalEntrySortie !== 0)
+      .sort((a, b) => b.totalEntrySortie - a.totalEntrySortie);
+  }
+
   private getFirstDefinedValue(series: (number | null)[]): number {
     for (const value of series) {
       if (value !== null && value !== undefined) {
@@ -709,6 +788,13 @@ export class TodayCentralComponent {
           'amountUsd'
         )
       )
+    );
+    return Math.max(1, ...vals, 1);
+  }
+  get entrySortieTodayUSDMax(): number {
+    const list = this.sortedEntrySortieToday ?? [];
+    const vals = list.map((s) =>
+      Math.abs(this.toNum(s.totalEntrySortieInDollars))
     );
     return Math.max(1, ...vals, 1);
   }
