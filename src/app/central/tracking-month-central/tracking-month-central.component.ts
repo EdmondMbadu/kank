@@ -113,6 +113,11 @@ export class TrackingMonthCentralComponent {
     averagePayment: number;
     averagePaymentUsd: number;
   }[] = [];
+  sortedEntrySortieMonth: {
+    firstName: string;
+    totalEntrySortie: number;
+    totalEntrySortieInDollars: string;
+  }[] = [];
   sortedReservePreviousMonth: {
     firstName: string;
     totalReserve: number;
@@ -137,6 +142,8 @@ export class TrackingMonthCentralComponent {
   paymentComparisonYear!: number;
   reserveCurrentTotalAmount: string = '0';
   reserveCurrentTotalAmountDollars: string = '0';
+  entrySortieCurrentTotalAmount: string = '0';
+  entrySortieCurrentTotalAmountDollars: string = '0';
   paymentCurrentTotalAmount: string = '0';
   paymentCurrentTotalAmountDollars: string = '0';
   copyPaymentsMessage: string | null = null;
@@ -427,8 +434,11 @@ export class TrackingMonthCentralComponent {
       this.sortedReserveMonth = [];
       this.sortedReservePreviousMonth = [];
       this.sortedGrowthRateMonth = [];
+      this.sortedEntrySortieMonth = [];
       this.reserveCurrentTotalAmount = '0';
       this.reserveCurrentTotalAmountDollars = '0';
+      this.entrySortieCurrentTotalAmount = '0';
+      this.entrySortieCurrentTotalAmountDollars = '0';
       this.reserveGrowthRateTotal = '0';
       this.updateMiniGraphs();
       return;
@@ -577,7 +587,9 @@ export class TrackingMonthCentralComponent {
         : currTotalNum > 0
         ? '100'
         : '0';
-    
+
+    this.updateEntrySortieTableData(isYearMode, isAllMode);
+
     // Update mini graphs after table data is updated
     this.updateMiniGraphs();
   }
@@ -745,6 +757,85 @@ export class TrackingMonthCentralComponent {
     
     // Update mini graphs after table data is updated
     this.updateMiniGraphs();
+  }
+
+  private updateEntrySortieTableData(
+    isYearMode: boolean = this.rankingMode === 'year',
+    isAllMode: boolean = this.rankingMode === 'all'
+  ): void {
+    const rows = this.allUsers
+      .map((user) => {
+        const reserveTotal = this.sumUserFieldForRankingPeriod(user, 'reserve');
+        const investmentTotal = this.sumUserFieldForRankingPeriod(
+          user,
+          'investments'
+        );
+        const totalEntrySortie = reserveTotal - investmentTotal;
+
+        return {
+          firstName: user.firstName || '',
+          totalEntrySortie,
+          totalEntrySortieInDollars: `${this.compute.convertCongoleseFrancToUsDollars(
+            totalEntrySortie.toString()
+          ) || '0'}`,
+        };
+      })
+      .filter((row) => row.firstName && row.totalEntrySortie !== 0)
+      .sort((a, b) => b.totalEntrySortie - a.totalEntrySortie);
+
+    this.sortedEntrySortieMonth = rows;
+
+    const reserveCurrentTotal = this.toNum(this.reserveCurrentTotalAmount);
+    const investmentCurrentTotal = isAllMode
+      ? this.toNum(
+          this.compute.findTotalAllTimeForAllUsers(this.allUsers, 'investments')
+        )
+      : isYearMode
+      ? this.toNum(
+          this.compute.findTotalGivenYearForAllUsers(
+            this.allUsers,
+            'investments',
+            this.rankingYear
+          )
+        )
+      : this.toNum(
+          this.compute.findTotalGivenMonthForAllUsers(
+            this.allUsers,
+            'investments',
+            this.reserveCurrentMonth,
+            this.reserveCurrentYear
+          )
+        );
+
+    const currentTotal = reserveCurrentTotal - investmentCurrentTotal;
+    this.entrySortieCurrentTotalAmount = `${currentTotal}`;
+    this.entrySortieCurrentTotalAmountDollars = `${this.compute.convertCongoleseFrancToUsDollars(
+      this.entrySortieCurrentTotalAmount
+    ) || '0'}`;
+  }
+
+  private sumUserFieldForRankingPeriod(
+    user: User,
+    field: 'reserve' | 'investments'
+  ): number {
+    const values = user[field] || {};
+
+    return Object.entries(values).reduce((sum, [date, amount]) => {
+      const [month, , year] = date.split('-').map(Number);
+      const numericAmount = parseInt(String(amount).split(':')[0], 10) || 0;
+
+      if (this.rankingMode === 'all') {
+        return sum + numericAmount;
+      }
+
+      if (this.rankingMode === 'year') {
+        return year === this.rankingYear ? sum + numericAmount : sum;
+      }
+
+      return month === this.reserveCurrentMonth && year === this.reserveCurrentYear
+        ? sum + numericAmount
+        : sum;
+    }, 0);
   }
 
   setReserveRange(key: RangeKey): void {
@@ -1154,6 +1245,16 @@ export class TrackingMonthCentralComponent {
     return Math.max(0, (v / b) * 100);
   }
 
+  absPercentOf(value: any, basis: any): number {
+    const v = Math.abs(this.toNum(value));
+    const b = Math.abs(this.toNum(basis)) || 1;
+    return Math.max(0, (v / b) * 100);
+  }
+
+  isNegativeValue(value: any): boolean {
+    return this.toNum(value) < 0;
+  }
+
   nonNegColor(rate: any): string {
     const r = this.toNum(rate);
     return r >= 0
@@ -1172,6 +1273,13 @@ export class TrackingMonthCentralComponent {
   get maxPaymentUSD(): number {
     const arr = (this.sortedPaymentMonth ?? []).map((s) =>
       this.toNum(s?.totalPaymentInDollars)
+    );
+    return Math.max(1, ...arr, 1);
+  }
+
+  get maxEntrySortieUSD(): number {
+    const arr = (this.sortedEntrySortieMonth ?? []).map((s) =>
+      Math.abs(this.toNum(s?.totalEntrySortieInDollars))
     );
     return Math.max(1, ...arr, 1);
   }
