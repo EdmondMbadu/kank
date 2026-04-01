@@ -259,11 +259,11 @@ export class TeamPageComponent implements OnInit {
   formatEmployeeStartDate(rawDate?: string | null): string {
     if (!rawDate) return 'Date inconnue';
 
-    const parts = rawDate.split(/[-/]/);
+    const dateParts = rawDate.split(/[-/]/);
     let normalized = rawDate.trim();
 
-    if (parts.length === 3 && parts[0].length !== 4) {
-      const [month, day, year] = parts;
+    if (dateParts.length === 3 && dateParts[0].length !== 4) {
+      const [month, day, year] = dateParts;
       normalized = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
 
@@ -272,29 +272,53 @@ export class TeamPageComponent implements OnInit {
       return rawDate;
     }
 
-    const formattedDate = parsed.toLocaleDateString('fr-FR', {
+    return parsed.toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     }).replace(/^\d+\s+([a-zà-ÿ])/i, (match, initial) =>
       match.replace(initial, initial.toUpperCase())
     );
+  }
 
-    const today = new Date();
-    let years = today.getFullYear() - parsed.getFullYear();
-    const hasReachedAnniversary =
-      today.getMonth() > parsed.getMonth() ||
-      (today.getMonth() === parsed.getMonth() &&
-        today.getDate() >= parsed.getDate());
+  formatEmployeeTenure(rawDate?: string | null): string {
+    if (!rawDate) return '';
 
-    if (!hasReachedAnniversary) {
-      years -= 1;
+    const dateParts = rawDate.split(/[-/]/);
+    let normalized = rawDate.trim();
+
+    if (dateParts.length === 3 && dateParts[0].length !== 4) {
+      const [month, day, year] = dateParts;
+      normalized = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     }
 
-    const safeYears = Math.max(0, years);
-    const yearLabel = safeYears > 1 ? 'ans' : 'an';
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      return '';
+    }
 
-    return `${formattedDate} (${safeYears} ${yearLabel})`;
+    const today = new Date();
+    let totalMonths =
+      (today.getFullYear() - parsed.getFullYear()) * 12 +
+      (today.getMonth() - parsed.getMonth());
+
+    if (today.getDate() < parsed.getDate()) {
+      totalMonths -= 1;
+    }
+
+    const safeTotalMonths = Math.max(0, totalMonths);
+    const years = Math.floor(safeTotalMonths / 12);
+    const months = safeTotalMonths % 12;
+    const durationParts: string[] = [];
+
+    if (years > 0) {
+      durationParts.push(`${years} ${years > 1 ? 'ans' : 'an'}`);
+    }
+    if (months > 0 || durationParts.length === 0) {
+      durationParts.push(`${months} mois`);
+    }
+
+    return durationParts.join(' ');
   }
 
   private isVerifierRole(role?: string): boolean {

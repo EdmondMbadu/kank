@@ -259,7 +259,12 @@
             Sexe : {{ em.sex }}
           </p>
           <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            Début : {{ formatEmployeeStartDate(em.dateJoined) }}
+            Début :
+            {{ formatEmployeeStartDate(em.dateJoined) }}
+          </p>
+          <p class="mt-1 text-sm text-gray-500 dark:text-white">
+            Ancienneté :
+            {{ formatEmployeeTenure(em.dateJoined) }}
           </p>
           <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Téléphone : {{ em.phoneNumber }}
