@@ -122,6 +122,9 @@ export class Comment {
   starsNumber?: number;
   audioUrl?: string;
   source?: string;
+  createdById?: string;
+  createdByName?: string;
+  investigationDayKey?: string;
 
   visible?: boolean; // false par défaut
 

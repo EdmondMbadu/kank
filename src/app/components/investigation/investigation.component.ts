@@ -152,6 +152,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   locations: User[] = [];
   selectedLocationId = '';
   selectedLocationLabel = '';
+  scheduledInvestigatorLocationId = '';
+  scheduledInvestigatorLocationLabel = '';
   private currentUserId = '';
 
   activeClient?: Client;
@@ -578,9 +580,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return new Date();
   }
 
-  private applyInvestigatorLocationFromSchedule(): void {
-    if (!this.auth.isInvestigator || this.auth.isAdmin) return;
-    if (!this.currentUserId || !this.locations.length) return;
+  private resolveInvestigatorScheduledLocationForSelectedDate(): User | null {
+    this.scheduledInvestigatorLocationId = '';
+    this.scheduledInvestigatorLocationLabel = '';
+
+    if (!this.auth.isInvestigator || this.auth.isAdmin) return null;
+    if (!this.currentUserId || !this.locations.length) return null;
 
     const date = this.selectedDateAsLocalDate();
     const month = date.getMonth() + 1;
@@ -589,25 +594,38 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.month = month;
       this.year = year;
       this.loadTaskForceMonth();
-      return;
+      return null;
     }
 
     const iso = this.ymd(date);
     const cell = this.tfCellByIso.get(iso);
-    if (!cell?.entries?.length) return;
+    if (!cell?.entries?.length) return null;
 
     const directMatch = cell.entries.find((entry) =>
       (entry.employees || []).includes(this.currentUserId)
     );
     const targetLoc =
       directMatch?.loc || (cell.entries.length === 1 ? cell.entries[0].loc : '');
-    if (!targetLoc) return;
+    if (!targetLoc) return null;
 
     const targetSlug = this.slugLocation(targetLoc);
-    const user = this.locations.find((loc) => {
-      const label = (loc.firstName || loc.email || 'Site').trim();
-      return this.slugLocation(label) === targetSlug;
-    });
+    const user =
+      this.locations.find((loc) => {
+        const label = (loc.firstName || loc.email || 'Site').trim();
+        return this.slugLocation(label) === targetSlug;
+      }) || null;
+
+    if (!user?.uid) return null;
+
+    this.scheduledInvestigatorLocationId = user.uid;
+    this.scheduledInvestigatorLocationLabel =
+      (user.firstName || user.email || 'Site').trim() || 'Site';
+
+    return user;
+  }
+
+  private applyInvestigatorLocationFromSchedule(): void {
+    const user = this.resolveInvestigatorScheduledLocationForSelectedDate();
     if (!user || user.uid === this.selectedLocationId) return;
 
     this.applyLocation(user);
@@ -1297,6 +1315,54 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       (comment) => comment && comment.source === 'investigation'
     );
     return this.sortClientComments(filtered);
+  }
+
+  private getDailyVerificationComments(client?: Client | null): Comment[] {
+    if (!client) return [];
+    return this.getClientComments(client);
+  }
+
+  private commentMatchesSelectedDay(comment?: Comment | null): boolean {
+    if (!comment) return false;
+
+    const explicitDayKey = (comment.investigationDayKey ?? '').trim();
+    if (explicitDayKey) {
+      return explicitDayKey === this.dayKey;
+    }
+
+    const rawTime = (comment.time ?? '').trim();
+    if (!rawTime) return false;
+
+    const parsed = this.time.parseFlexibleDateTime(rawTime);
+    if (Number.isNaN(parsed.getTime())) return false;
+
+    return this.formatLocalMonthDayYear(parsed) === this.dayKey;
+  }
+
+  private formatLocalMonthDayYear(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+  }
+
+  hasMissingScheduledInvestigationComment(client?: Client | null): boolean {
+    if (!client?.uid) return false;
+    if (!this.auth.isInvestigator || this.auth.isAdmin) return false;
+    if (!this.scheduledInvestigatorLocationId) return false;
+    if ((client.locationOwnerId || this.selectedLocationId) !== this.scheduledInvestigatorLocationId) {
+      return false;
+    }
+
+    return !this.getDailyVerificationComments(client).some(
+      (comment) => this.commentMatchesSelectedDay(comment)
+    );
+  }
+
+  missingScheduledInvestigationCommentCount(): number {
+    if (!this.auth.isInvestigator || this.auth.isAdmin) return 0;
+    if (!this.scheduledInvestigatorLocationId) return 0;
+
+    return (this.shouldPayToday || []).filter((client) =>
+      this.hasMissingScheduledInvestigationComment(client)
+    ).length;
   }
 
   latestInvestigationComment(client?: Client | null): Comment | null {
@@ -2405,6 +2471,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       time,
       timeFormatted: this.time.convertDateToDesiredFormat(time),
       source: 'investigation',
+      createdById: this.currentUserId,
+      createdByName: `${this.auth.currentUser?.firstName || ''} ${
+        this.auth.currentUser?.lastName || ''
+      }`.trim(),
+      investigationDayKey: this.dayKey,
       ...(attachments.length ? { attachments } : {}),
       ...(this.commentAudioUploadUrl
         ? { audioUrl: this.commentAudioUploadUrl }
