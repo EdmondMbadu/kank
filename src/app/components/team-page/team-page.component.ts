@@ -256,6 +256,31 @@ export class TeamPageComponent implements OnInit {
     }
   }
 
+  formatEmployeeStartDate(rawDate?: string | null): string {
+    if (!rawDate) return 'Date inconnue';
+
+    const parts = rawDate.split(/[-/]/);
+    let normalized = rawDate.trim();
+
+    if (parts.length === 3 && parts[0].length !== 4) {
+      const [month, day, year] = parts;
+      normalized = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      return rawDate;
+    }
+
+    return parsed.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).replace(/^\d+\s+([a-zà-ÿ])/i, (match, initial) =>
+      match.replace(initial, initial.toUpperCase())
+    );
+  }
+
   private isVerifierRole(role?: string): boolean {
     if (!role) return false;
     const normalized = this.normalizeRoleName(role);
