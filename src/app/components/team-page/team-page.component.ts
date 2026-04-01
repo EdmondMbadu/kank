@@ -272,13 +272,29 @@ export class TeamPageComponent implements OnInit {
       return rawDate;
     }
 
-    return parsed.toLocaleDateString('fr-FR', {
+    const formattedDate = parsed.toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     }).replace(/^\d+\s+([a-zà-ÿ])/i, (match, initial) =>
       match.replace(initial, initial.toUpperCase())
     );
+
+    const today = new Date();
+    let years = today.getFullYear() - parsed.getFullYear();
+    const hasReachedAnniversary =
+      today.getMonth() > parsed.getMonth() ||
+      (today.getMonth() === parsed.getMonth() &&
+        today.getDate() >= parsed.getDate());
+
+    if (!hasReachedAnniversary) {
+      years -= 1;
+    }
+
+    const safeYears = Math.max(0, years);
+    const yearLabel = safeYears > 1 ? 'ans' : 'an';
+
+    return `${formattedDate} (${safeYears} ${yearLabel})`;
   }
 
   private isVerifierRole(role?: string): boolean {
