@@ -921,14 +921,14 @@ export class TrackingMonthCentralComponent {
 
   private buildPaymentCopyDateLabel(): string {
     if (this.rankingMode === 'all') {
-      return 'Paiement - Tout le temps';
+      return 'Resultats Tout le temps';
     }
     if (this.rankingMode === 'year') {
-      return `Paiement - Année ${this.rankingYear}`;
+      return `Resultats Année ${this.rankingYear}`;
     }
     const monthName =
       this.time.monthFrenchNames[this.paymentCurrentMonth - 1] ?? '';
-    return `Paiement - ${monthName} ${this.paymentCurrentYear}`;
+    return `Resultats ${monthName} ${this.paymentCurrentYear}`;
   }
 
   private async buildWinnerMembersLines(
