@@ -392,21 +392,37 @@
     </div>
     <div
       *ngIf="auth.isAdmin && rankingMode === 'monthlyPayments'"
-      class="flex flex-col items-center mb-8"
+      class="mb-8 flex flex-col items-center"
     >
-      <button
-        type="button"
-        (click)="toggleMonthlyAmounts()"
-        class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-50"
-      >
-        <span
-          class="h-2 w-2 rounded-full"
-          [ngClass]="showMonthlyAmounts ? 'bg-emerald-500' : 'bg-slate-300'"
-        ></span>
-        {{
-          showMonthlyAmounts ? "Masquer les montants" : "Afficher les montants"
-        }}
-      </button>
+      <div class="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:items-center">
+        <button
+          type="button"
+          (click)="toggleMonthlyAmounts()"
+          class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+        >
+          <span
+            class="h-2 w-2 rounded-full"
+            [ngClass]="showMonthlyAmounts ? 'bg-emerald-500' : 'bg-slate-300'"
+          ></span>
+          {{
+            showMonthlyAmounts ? "Masquer les montants" : "Afficher les montants"
+          }}
+        </button>
+        <button
+          type="button"
+          (click)="copyMonthlyPaymentsRanking()"
+          [disabled]="isCopyingMonthlyRanking || paidEmployeesMonth.length === 0"
+          class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{
+            isCopyingMonthlyRanking
+              ? "Copie..."
+              : copyMonthlyRankingMessage === "Classement copié"
+              ? "Copié"
+              : "Copier le classement"
+          }}
+        </button>
+      </div>
       <div *ngIf="showMonthlyAmounts" class="mt-3 text-center">
         <div class="text-lg font-bold text-gray-900">
           Total: FC {{ totalMonthlyAmount | number : "1.0-0" }}
@@ -418,6 +434,15 @@
           ≈ ${{ totalMonthlyAmountUsd | number : "1.0-0" }}
         </div>
       </div>
+      <p
+        *ngIf="
+          copyMonthlyRankingMessage &&
+          copyMonthlyRankingMessage !== 'Classement copié'
+        "
+        class="mt-2 text-xs font-medium text-red-600"
+      >
+        {{ copyMonthlyRankingMessage }}
+      </p>
     </div>
     <div
       *ngIf="auth.isAdmin && rankingMode === 'dailyPayments'"

@@ -112,6 +112,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   showMonthlyAmounts = false;
   showDailyAmounts = false;
   showWeeklyAmounts = false;
+  isCopyingMonthlyRanking = false;
+  copyMonthlyRankingMessage: string | null = null;
   performanceEmployees: Employee[] = [];
 
   // state: all closed initially
@@ -425,6 +427,71 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const total = this.totalWeeklyAmount;
     const usd = this.compute.convertCongoleseFrancToUsDollars(String(total));
     return usd === '' ? 0 : usd;
+  }
+
+  async copyMonthlyPaymentsRanking(): Promise<void> {
+    if (
+      !this.auth.isAdmin ||
+      this.isCopyingMonthlyRanking ||
+      !this.paidEmployeesMonth.length
+    ) {
+      return;
+    }
+
+    this.isCopyingMonthlyRanking = true;
+    this.copyMonthlyRankingMessage = null;
+
+    try {
+      const monthName = this.time.monthFrenchNames[this.givenMonth - 1] ?? '';
+      const lines: string[] = [
+        `Classement Individiuel ${monthName} ${this.givenYear}`,
+        '=============================================',
+        '',
+      ];
+
+      this.paidEmployeesMonth.forEach((employee, index) => {
+        lines.push(`${index + 1}. ${this.formatRankingEmployeeName(employee)}`);
+      });
+
+      await this.copyToClipboard(lines.join('\n'));
+      this.copyMonthlyRankingMessage = 'Classement copié';
+    } catch (error) {
+      console.error('Failed to copy monthly payment ranking', error);
+      this.copyMonthlyRankingMessage = 'Impossible de copier le classement.';
+    } finally {
+      this.isCopyingMonthlyRanking = false;
+      if (this.copyMonthlyRankingMessage) {
+        setTimeout(() => (this.copyMonthlyRankingMessage = null), 2200);
+      }
+    }
+  }
+
+  private formatRankingEmployeeName(employee?: Employee | null): string {
+    if (!employee) return '';
+    const parts = [employee.firstName, employee.lastName]
+      .map((value) => (value || '').trim())
+      .filter(Boolean);
+    return parts.join(' ') || employee.middleName || 'Employé';
+  }
+
+  private async copyToClipboard(text: string): Promise<void> {
+    if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    if (typeof document === 'undefined') {
+      throw new Error('Clipboard API not available');
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
   }
 
   formatIdeaDate(idea: IdeaSubmission): string {
