@@ -21,6 +21,9 @@ import { Audit } from 'src/app/models/management';
 export class RegiserPortalComponent {
   readonly auditAudioAccept =
     '.m4a,.mp3,.wav,.aac,.caf,.aif,.aiff,.amr,.flac,.ogg,.webm,.3gp,.3gpp,.3gpp2,.mp4,audio/mp4,audio/x-m4a,audio/aac,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/3gpp,audio/3gpp2,audio/amr,audio/flac,audio/ogg,audio/webm,audio/*';
+  readonly auditAudioMaxSizeMb = 40;
+  readonly auditAudioMaxSizeBytes =
+    this.auditAudioMaxSizeMb * 1024 * 1024;
   readonly auditConversationInlineInputId = 'auditConversationAudioInline';
   readonly auditConversationModalInputId = 'auditConversationAudioModal';
   private readonly supportedAudioExtensions = new Set([
@@ -844,10 +847,11 @@ export class RegiserPortalComponent {
       return;
     }
 
-    const maxSize = 20 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > this.auditAudioMaxSizeBytes) {
       this.resetAuditConversationInputs();
-      alert("L'audio dépasse la limite de 20MB.");
+      alert(
+        `L'audio dépasse la limite de ${this.auditAudioMaxSizeMb}MB.`
+      );
       return;
     }
 
