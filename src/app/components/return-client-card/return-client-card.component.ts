@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Card } from 'src/app/models/card';
+import { Card, CardTotalWithdrawalSnapshot } from 'src/app/models/card';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
@@ -57,6 +57,8 @@ export class ReturnClientCardComponent {
       if (!conf) {
         return;
       }
+      this.clientCard.totalWithdrawalSnapshot =
+        this.buildRetraitTotalSnapshot();
       this.clientCard.amountPaid = '0';
 
       this.clientCard.withdrawal = {
@@ -79,6 +81,24 @@ export class ReturnClientCardComponent {
       alert("Une erreur s'est produite lors d'un paiement, Réessayez");
       return;
     }
+  }
+
+  private buildRetraitTotalSnapshot(): CardTotalWithdrawalSnapshot {
+    return {
+      amountPaid: this.clientCard.amountPaid ?? '0',
+      numberOfPaymentsMade: this.clientCard.numberOfPaymentsMade ?? '0',
+      payments: { ...(this.clientCard.payments ?? {}) },
+      withdrawal: { ...(this.clientCard.withdrawal ?? {}) },
+      clientCardStatus: this.clientCard.clientCardStatus ?? '',
+      requestAmount: this.clientCard.requestAmount ?? '',
+      requestStatus: this.clientCard.requestStatus ?? '',
+      requestType: this.clientCard.requestType ?? '',
+      requestDate: this.clientCard.requestDate ?? '',
+      dateOfRequest: this.clientCard.dateOfRequest ?? '',
+      returnedAmount: this.amountToReturnToClient,
+      returnDayKey: this.time.todaysDateMonthDayYear(),
+      capturedAt: this.time.todaysDate(),
+    };
   }
 
   howManyTimesPaidToday() {

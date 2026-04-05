@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Card } from 'src/app/models/card';
+import { Card, CardTotalWithdrawalSnapshot } from 'src/app/models/card';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
@@ -122,9 +122,7 @@ export class ClientPortalCardComponent {
     this.auth.getAllClientsCard().subscribe((data: any) => {
       this.clientCard = data[Number(this.id)];
       this.dateJoined = this.time.formatDateForDRC(this.clientCard.dateJoined);
-      this.status = !!this.clientCard.clientCardStatus
-        ? 'Terminé'
-        : this.status;
+      this.status = this.clientCard.clientCardStatus ? 'Terminé' : 'En Cours';
       this.computeAmountToGiveClient();
 
       // (Re)build or patch the form with fresh data
@@ -166,6 +164,22 @@ export class ClientPortalCardComponent {
       this.router.navigate(['/request-client-card/' + this.id]);
     }
   }
+
+  get canUndoRetraitTotal(): boolean {
+    return (
+      this.auth.isAdmin &&
+      this.status === 'Terminé' &&
+      !!this.retraitTotalSnapshot
+    );
+  }
+
+  private get retraitTotalSnapshot(): CardTotalWithdrawalSnapshot | null {
+    const snapshot = this.clientCard?.totalWithdrawalSnapshot;
+    if (!snapshot?.returnDayKey || !snapshot?.returnedAmount) {
+      return null;
+    }
+    return snapshot;
+  }
   addMoney() {
     if (this.status !== 'En Cours') {
       alert(`Ce cycle est terminé, commencez un nouveau cycle.`);
@@ -197,6 +211,41 @@ export class ClientPortalCardComponent {
       return;
     } else {
       this.router.navigate(['/remove-card/' + this.id]);
+    }
+  }
+
+  async undoRetraitTotal() {
+    if (!this.auth.isAdmin) {
+      alert('Action réservée à l’administrateur.');
+      return;
+    }
+    const snapshot = this.retraitTotalSnapshot;
+    if (!snapshot) {
+      alert("Aucun état précédent n'est disponible pour cette carte.");
+      return;
+    }
+
+    const clientName = [
+      this.clientCard.firstName,
+      this.clientCard.middleName,
+      this.clientCard.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const conf = confirm(
+      `Restaurer la carte de ${clientName} à l'état avant le retrait total de ${snapshot.returnedAmount} FC ?`
+    );
+    if (!conf) {
+      return;
+    }
+
+    try {
+      await this.data.undoClientCardReturnMoney(this.clientCard);
+      alert('Retrait total annulé ✅');
+      this.retrieveClientCard();
+    } catch (error) {
+      console.error('Erreur restauration retrait total:', error);
+      alert("Impossible de restaurer l'état précédent de cette carte.");
     }
   }
 

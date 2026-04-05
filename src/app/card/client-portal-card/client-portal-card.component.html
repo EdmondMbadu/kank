@@ -194,6 +194,24 @@
           </button>
 
           <button
+            *ngIf="canUndoRetraitTotal"
+            (click)="undoRetraitTotal()"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-sky-700
+                   focus:outline-none focus:ring-4 focus:ring-sky-300
+                   dark:bg-sky-500 dark:hover:bg-sky-600
+                   dark:focus:ring-sky-700 sm:col-span-2 lg:col-span-2">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7"/>
+              <path d="M3 4v6h6"/>
+            </svg>
+            Restaurer avant retrait total
+          </button>
+
+          <button
             *ngIf="auth.isAdmin"
             (click)="removeFromCard()"
             class="inline-flex items-center justify-center gap-2 rounded-full

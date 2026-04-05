@@ -1,3 +1,19 @@
+export interface CardTotalWithdrawalSnapshot {
+  amountPaid?: string;
+  numberOfPaymentsMade?: string;
+  payments?: { [key: string]: string };
+  withdrawal?: { [key: string]: string };
+  clientCardStatus?: string;
+  requestAmount?: string;
+  requestStatus?: string;
+  requestType?: string;
+  requestDate?: string;
+  dateOfRequest?: string;
+  returnedAmount?: string;
+  returnDayKey?: string;
+  capturedAt?: string;
+}
+
 export class Card {
   uid?: string;
   name?: string;
@@ -27,4 +43,5 @@ export class Card {
   cardCycleStartDate?: string;
   clientCardStatus?: string;
   cardCycleEndDate?: string;
+  totalWithdrawalSnapshot?: CardTotalWithdrawalSnapshot;
 }

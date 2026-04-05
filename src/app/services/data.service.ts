@@ -17,7 +17,7 @@ import {
   Employee,
 } from '../models/employee';
 import { ComputationService } from '../shrink/services/computation.service';
-import { Card } from '../models/card';
+import { Card, CardTotalWithdrawalSnapshot } from '../models/card';
 import { doc, increment, writeBatch } from 'firebase/firestore';
 import { Audit, Management } from '../models/management';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
@@ -350,7 +350,7 @@ export class DataService {
     const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
     );
-    const data = {
+    const data: any = {
       amountPaid: clientCard.amountPaid,
       withdrawal: clientCard.withdrawal,
       clientCardStatus: 'ended',
@@ -360,7 +360,93 @@ export class DataService {
       requestDate: '',
       payments: {},
     };
+    if (clientCard.totalWithdrawalSnapshot) {
+      data.totalWithdrawalSnapshot = clientCard.totalWithdrawalSnapshot;
+    }
     return clientCardRef.set(data, { merge: true });
+  }
+
+  async undoClientCardReturnMoney(clientCard: Card) {
+    const ownerUid = this.auth.currentUser?.uid;
+    const snapshot = clientCard.totalWithdrawalSnapshot;
+
+    if (!ownerUid) {
+      throw new Error("Impossible d'identifier le propriétaire de la carte.");
+    }
+    if (!clientCard.uid) {
+      throw new Error('Carte introuvable.');
+    }
+    if (!snapshot) {
+      throw new Error('Aucun état précédent à restaurer.');
+    }
+
+    const returnedAmount = Number(snapshot.returnedAmount ?? 0);
+    if (!Number.isFinite(returnedAmount) || returnedAmount <= 0) {
+      throw new Error('Montant du retrait total invalide.');
+    }
+
+    const returnDayKey =
+      snapshot.returnDayKey ?? this.time.todaysDateMonthDayYear();
+    const cardRef = this.afs.doc<Card>(`users/${ownerUid}/cards/${clientCard.uid}`)
+      .ref;
+    const userRef = this.afs.doc<User>(`users/${ownerUid}`).ref;
+
+    let nextCardsMoney = '0';
+    let nextDayReturns = '0';
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef);
+      const userData = (userSnap.data() || {}) as User;
+      const currentCardsMoney = Number(userData.cardsMoney || 0);
+      const currentDayReturns = Number(
+        userData.dailyCardReturns?.[returnDayKey] || 0
+      );
+      const restoredDayReturns = Math.max(0, currentDayReturns - returnedAmount);
+
+      nextCardsMoney = (currentCardsMoney + returnedAmount).toString();
+      nextDayReturns = restoredDayReturns.toString();
+
+      tx.set(
+        cardRef,
+        this.buildCardReturnUndoPayload(snapshot),
+        { merge: true }
+      );
+      tx.set(
+        userRef,
+        {
+          cardsMoney: nextCardsMoney,
+          dailyCardReturns: {
+            [returnDayKey]: nextDayReturns,
+          },
+        },
+        { merge: true }
+      );
+    });
+
+    this.auth.currentUser = {
+      ...(this.auth.currentUser || {}),
+      cardsMoney: nextCardsMoney,
+      dailyCardReturns: {
+        ...(this.auth.currentUser?.dailyCardReturns || {}),
+        [returnDayKey]: nextDayReturns,
+      },
+    };
+  }
+
+  private buildCardReturnUndoPayload(snapshot: CardTotalWithdrawalSnapshot): any {
+    return {
+      amountPaid: snapshot.amountPaid ?? '0',
+      numberOfPaymentsMade: snapshot.numberOfPaymentsMade ?? '0',
+      payments: snapshot.payments ?? {},
+      withdrawal: snapshot.withdrawal ?? {},
+      clientCardStatus: snapshot.clientCardStatus ?? '',
+      requestAmount: snapshot.requestAmount ?? '',
+      requestStatus: snapshot.requestStatus ?? '',
+      requestType: snapshot.requestType ?? '',
+      requestDate: snapshot.requestDate ?? '',
+      dateOfRequest: snapshot.dateOfRequest ?? '',
+      totalWithdrawalSnapshot: null,
+    };
   }
   clientCardRequestReturnMoney(clientCard: Card) {
     const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
