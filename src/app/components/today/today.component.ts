@@ -30,6 +30,7 @@ interface WeeklyShortfall {
   start: Date;
   end: Date;
   label: string;
+  targetFc: number;
   totalFc: number;
   totalUsd: number;
   deductionUsd: number;
@@ -612,6 +613,7 @@ export class TodayComponent {
         start,
         end,
         label: this.formatWeekShortLabel(start, end),
+        targetFc: weeklyTargetFc,
         totalFc,
         totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
         deductionUsd,

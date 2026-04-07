@@ -81,6 +81,15 @@ describe('TodayComponent', () => {
     return { component, auth };
   }
 
+  beforeEach(() => {
+    jasmine.clock().install();
+    jasmine.clock().mockDate(new Date(2026, 3, 20));
+  });
+
+  afterEach(() => {
+    jasmine.clock().uninstall();
+  });
+
   it('uses the target active on the monday of the selected week in the summary card', () => {
     const { component, auth } = createComponent({
       currentUser: {
@@ -157,5 +166,40 @@ describe('TodayComponent', () => {
     expect(component.weeklyTargetPeriodEndDateInput).toBe('');
     expect(component.weeklyTargetPeriodAmountInput).toBe('');
     expect(window.alert).toHaveBeenCalledWith('Période spécifique enregistrée');
+  });
+
+  it('stores the historical weekly target on each deduction entry', () => {
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        teamCode: '',
+        dailyReimbursement: {
+          '3-30-2026': 180000,
+          '3-31-2026': 0,
+          '4-1-2026': 0,
+          '4-2-2026': 0,
+          '4-3-2026': 0,
+          '4-4-2026': 0,
+          '4-5-2026': 0,
+        },
+        weeklyPaymentTargetPeriods: [],
+      },
+      weeklyPaymentTargetFc: 900000,
+      weeklyPaymentTargetPeriods: [
+        {
+          startDateIso: '2026-01-01',
+          endDateIso: '2026-03-31',
+          targetFc: 600000,
+        },
+      ],
+    });
+
+    component.selectedShortfallMonth = '2026-04';
+
+    (component as any).computeMonthlyWeeklyShortfalls();
+
+    expect(component.weeklyShortfalls.length).toBeGreaterThan(0);
+    expect(component.weeklyShortfalls[0].label).toContain('30 Mars - 5 Avril 2026');
+    expect(component.weeklyShortfalls[0].targetFc).toBe(600000);
   });
 });
