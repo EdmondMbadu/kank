@@ -480,6 +480,12 @@
             {{ maxLoanAmount | number }} FC
           </p>
         </ng-template>
+        <p class="mt-2 text-sm leading-6 text-slate-500">
+          Pour ouvrir ce nouveau cycle, l'épargne totale doit être au moins de
+          <strong>{{ minimumSavingsRequiredForRequestedLoan | number : "1.0-0" }} FC</strong>
+          ({{ getRequiredSavingsPercent() }}% du montant demandé). Au-delà de ce
+          minimum, un montant plus élevé est autorisé.
+        </p>
       </div>
 
       <div class="cycle-actions">

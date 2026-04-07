@@ -366,7 +366,12 @@ export class NewCycleRegisterComponent implements OnInit {
     return true;
   }
 
-  private getRequiredSavingsPercent(): number {
+  get minimumSavingsRequiredForRequestedLoan(): number {
+    const loanAmount = Number(this.loanAmount || 0);
+    return Math.round(loanAmount * (this.getRequiredSavingsPercent() / 100));
+  }
+
+  getRequiredSavingsPercent(): number {
     const raw = Number(this.auth.currentUser?.savingsRequiredPercent);
     return Number.isFinite(raw) && raw > 0 ? raw : 30;
   }

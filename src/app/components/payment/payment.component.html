@@ -40,7 +40,9 @@
             (change)="onPaymentMethodChange()"
           >
             <option value="manual">Paiement manuel</option>
-            <option value="mobile">Payer par Mobile Money</option>
+            <option *ngIf="!hasClearedDebt" value="mobile">
+              Payer par Mobile Money
+            </option>
           </select>
         </label>
 
@@ -69,8 +71,13 @@
             [(ngModel)]="paymentAmount"
             (change)="displayPaymentOtherAmount()"
           >
-            <option [ngValue]="minPayment">FC {{ minPayment }}</option>
-            <option [ngValue]="'Autre Montant'">Autre montant</option>
+            <option [ngValue]="0" *ngIf="hasClearedDebt">FC 0</option>
+            <option [ngValue]="minPayment" *ngIf="!hasClearedDebt">
+              FC {{ minPayment }}
+            </option>
+            <option [ngValue]="'Autre Montant'" *ngIf="!hasClearedDebt">
+              Autre montant
+            </option>
           </select>
         </label>
 
@@ -85,7 +92,7 @@
           />
         </label>
 
-        <label *ngIf="paymentOtherAmount" class="space-y-2">
+        <label *ngIf="paymentOtherAmount && !hasClearedDebt" class="space-y-2">
           <span class="payment-label">Paiement autre montant</span>
           <input
             type="text"
@@ -111,6 +118,28 @@
             Numéro du client par défaut, modifiable si nécessaire.
           </p>
         </label>
+      </div>
+
+      <div
+        *ngIf="hasClearedDebt"
+        class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      >
+        <p class="font-semibold">
+          Plafond d'épargne autorisé :
+          {{ maxSavingsTotal | number : "1.0-0" }} FC
+          ({{ savingsLimitPercent }}% de
+          {{ maxLoanAmount | number : "1.0-0" }} FC).
+        </p>
+        <p class="mt-1">
+          Épargne actuelle :
+          {{ currentSavingsTotal | number : "1.0-0" }} FC.
+          Reste autorisé :
+          {{ remainingSavingsCapacity | number : "1.0-0" }} FC.
+        </p>
+        <p class="mt-1">
+          La dette est soldée. Le paiement doit rester à 0 FC; seul le dépôt
+          d'épargne est autorisé.
+        </p>
       </div>
 
       <div
@@ -177,7 +206,7 @@
   >
     <div class="mx-auto mb-3 h-10 w-10 rounded-full border-4 border-emerald-600 border-t-transparent animate-spin"></div>
     <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-      Enregistrement du paiement…
+      Enregistrement de l'opération…
     </p>
     <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
       Veuillez patienter, ne fermez pas la page.

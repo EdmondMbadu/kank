@@ -61,7 +61,62 @@ export class PaymentComponent {
       this.minPayment = this.compute.minimumPayment(this.client);
       this.numberOfPaymentToday = this.howManyTimesPaidToday();
       this.mobileMoneyPhone = this.normalizePhoneInput(this.client.phoneNumber || '');
+      this.savingsAmount = this.savingsAmount || '0';
+
+      if (this.hasClearedDebt) {
+        this.paymentAmount = '0';
+        if (this.paymentMethod === 'mobile') {
+          this.paymentMethod = 'manual';
+        }
+      } else if (!this.paymentAmount || this.paymentAmount === '0') {
+        this.paymentAmount = this.minPayment || '0';
+      }
     });
+  }
+
+  get hasClearedDebt(): boolean {
+    return Number(this.client?.debtLeft || 0) <= 0;
+  }
+
+  get savingsLimitPercent(): number {
+    const raw = Number(this.auth.currentUser?.savingsRequiredPercent);
+    return Number.isFinite(raw) && raw > 0 ? raw : 30;
+  }
+
+  get maxLoanAmount(): number {
+    return this.compute.getMaxLendAmount(Number(this.client?.creditScore || 0));
+  }
+
+  get maxSavingsTotal(): number {
+    return Math.round(this.maxLoanAmount * (this.savingsLimitPercent / 100));
+  }
+
+  get currentSavingsTotal(): number {
+    return Number(this.client?.savings || 0);
+  }
+
+  get remainingSavingsCapacity(): number {
+    return Math.max(0, this.maxSavingsTotal - this.currentSavingsTotal);
+  }
+
+  private savingsCapExceeded(additionalSavings: number): boolean {
+    if (!(additionalSavings > 0)) {
+      return false;
+    }
+
+    const totalAfterDeposit = this.currentSavingsTotal + additionalSavings;
+    if (totalAfterDeposit <= this.maxSavingsTotal) {
+      return false;
+    }
+
+    const remaining = this.remainingSavingsCapacity;
+    alert(
+      `Le total d'épargne ne peut pas dépasser ${this.savingsLimitPercent}% du montant maximum empruntable (${this.maxLoanAmount} FC), soit ${this.maxSavingsTotal} FC.\n\n` +
+        `Épargne actuelle : ${this.currentSavingsTotal} FC.\n` +
+        `Montant restant autorisé : ${remaining} FC.\n` +
+        `Total saisi : ${totalAfterDeposit} FC.`
+    );
+    return true;
   }
   displaySavingsOtherAmount() {
     if (this.savingsAmount === 'Autre Montant') {
@@ -88,6 +143,20 @@ export class PaymentComponent {
   }
 
   submitPayment() {
+    const paymentNum = Number(this.paymentAmount || 0);
+    const savingsNum = Number(this.savingsAmount || 0);
+
+    if (this.hasClearedDebt && paymentNum <= 0 && savingsNum > 0) {
+      if (this.paymentMethod === 'mobile') {
+        this.mobileMoneyStatus = '';
+        this.mobileMoneyError =
+          "Quand la dette est soldée, utilisez le mode manuel pour enregistrer uniquement l'épargne.";
+        return;
+      }
+      this.makeSavingsOnlyDeposit();
+      return;
+    }
+
     if (this.paymentMethod === 'mobile') {
       this.makeMobileMoneyPayment();
       return;
@@ -120,17 +189,71 @@ export class PaymentComponent {
       return false;
     } else if (
       !this.auth.isAdmninistrator &&
-      Number(this.client.debtLeft) <= 0
+      this.hasClearedDebt &&
+      Number(this.paymentAmount) > 0
     ) {
-      alert('Vous avez tout payé. Plus besoin de paiements!');
+      alert(
+        "Vous avez déjà tout payé. Laissez le montant du paiement à 0 FC et ajoutez seulement l'épargne si nécessaire."
+      );
+      return false;
+    } else if (
+      !this.auth.isAdmninistrator &&
+      this.hasClearedDebt &&
+      Number(this.savingsAmount) <= 0
+    ) {
+      alert(
+        "Vous avez déjà tout payé. Ajoutez un montant d'épargne supérieur à 0 FC."
+      );
       return false;
     } else if (Number(this.paymentAmount) > Number(this.client.debtLeft)) {
       alert(
         'Votre paiement dépassera le montant nécessaire. Ajuster le montant'
       );
       return false;
+    } else if (
+      this.hasClearedDebt &&
+      this.savingsCapExceeded(Number(this.savingsAmount))
+    ) {
+      return false;
     }
     return true;
+  }
+
+  private makeSavingsOnlyDeposit() {
+    if (this.isSubmitting) return;
+    if (!this.validateBasePaymentInputs()) {
+      return;
+    }
+
+    const conf = confirm(
+      `Vous allez ajouter ${this.savingsAmount} FC d'épargne sans paiement de dette. Voulez-vous quand même continuer ?`
+    );
+    if (!conf) {
+      return;
+    }
+
+    this.client.savings = (
+      Number(this.client.savings) + Number(this.savingsAmount)
+    ).toString();
+    this.client.savingsPayments = {
+      [this.time.todaysDate()]: this.savingsAmount,
+    };
+
+    const date = this.time.todaysDateMonthDayYear();
+    this.isSubmitting = true;
+    Promise.resolve(
+      this.data.clientDeposit(this.client, this.savingsAmount, date)
+    )
+      .then(() => {
+        this.router.navigate(['/client-portal', this.id]);
+      })
+      .catch((err) => {
+        console.error('Failed to write savings-only deposit', err);
+        alert("L'épargne n'a pas pu être enregistrée. Réessayez.");
+      })
+      .finally(() => {
+        this.isSubmitting = false;
+      });
   }
 
   makePayment() {

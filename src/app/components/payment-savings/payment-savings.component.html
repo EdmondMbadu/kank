@@ -6,8 +6,19 @@
 <div class="flex container justify-center mx-auto">
 
 <div class=" border-2 border-green-800 rounded-lg p-12">
-  
-    
+    <div
+      *ngIf="hasClearedDebt"
+      class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+    >
+      <p class="font-semibold">
+        Plafond d'épargne autorisé : {{ maxSavingsTotal | number:'1.0-0' }} FC
+        ({{ savingsLimitPercent }}% de {{ maxLoanAmount | number:'1.0-0' }} FC).
+      </p>
+      <p class="mt-1">
+        Épargne actuelle : {{ currentSavingsTotal | number:'1.0-0' }} FC.
+        Reste autorisé : {{ remainingSavingsCapacity | number:'1.0-0' }} FC.
+      </p>
+    </div>
 
 
 <div class="mb-6">
@@ -39,5 +50,3 @@
 
 
 </div>
-
-

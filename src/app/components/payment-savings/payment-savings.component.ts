@@ -40,7 +40,53 @@ export class PaymentSavingsComponent {
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       this.client = data[Number(this.id)];
+      this.savingsAmount = this.savingsAmount || '0';
     });
+  }
+
+  get savingsLimitPercent(): number {
+    const raw = Number(this.auth.currentUser?.savingsRequiredPercent);
+    return Number.isFinite(raw) && raw > 0 ? raw : 30;
+  }
+
+  get hasClearedDebt(): boolean {
+    return Number(this.client?.debtLeft || 0) <= 0;
+  }
+
+  get maxLoanAmount(): number {
+    return this.compute.getMaxLendAmount(Number(this.client?.creditScore || 0));
+  }
+
+  get maxSavingsTotal(): number {
+    return Math.round(this.maxLoanAmount * (this.savingsLimitPercent / 100));
+  }
+
+  get currentSavingsTotal(): number {
+    return Number(this.client?.savings || 0);
+  }
+
+  get remainingSavingsCapacity(): number {
+    return Math.max(0, this.maxSavingsTotal - this.currentSavingsTotal);
+  }
+
+  private savingsCapExceeded(additionalSavings: number): boolean {
+    if (!(additionalSavings > 0)) {
+      return false;
+    }
+
+    const totalAfterDeposit = this.currentSavingsTotal + additionalSavings;
+    if (totalAfterDeposit <= this.maxSavingsTotal) {
+      return false;
+    }
+
+    const remaining = this.remainingSavingsCapacity;
+    alert(
+      `Le total d'épargne ne peut pas dépasser ${this.savingsLimitPercent}% du montant maximum empruntable (${this.maxLoanAmount} FC), soit ${this.maxSavingsTotal} FC.\n\n` +
+        `Épargne actuelle : ${this.currentSavingsTotal} FC.\n` +
+        `Montant restant autorisé : ${remaining} FC.\n` +
+        `Total saisi : ${totalAfterDeposit} FC.`
+    );
+    return true;
   }
   displaySavingsOtherAmount() {
     if (this.savingsAmount === 'Autre Montant') {
@@ -60,6 +106,11 @@ export class PaymentSavingsComponent {
       return;
     } else if (Number(this.savingsAmount) <= 0) {
       alert('Le montant du dépôt doit etre plus grand que 0.');
+      return;
+    } else if (
+      this.hasClearedDebt &&
+      this.savingsCapExceeded(Number(this.savingsAmount))
+    ) {
       return;
     } else {
       let conf = confirm(
