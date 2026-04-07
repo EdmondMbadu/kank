@@ -8,6 +8,12 @@ import {
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
 import { coerceToNumber } from 'src/app/utils/number-utils';
+import { WeeklyPaymentTargetPeriod } from 'src/app/models/weekly-payment-target';
+import {
+  hasOverlappingWeeklyPaymentTargetPeriods,
+  normalizeWeeklyPaymentTargetPeriods,
+  parseWeeklyPaymentTargetDate,
+} from 'src/app/utils/weekly-payment-target.util';
 
 @Component({
   selector: 'app-tracking-central',
@@ -33,6 +39,12 @@ export class TrackingCentralComponent {
   weeklyPaymentTargetInput = '';
   weeklyPaymentTargetSaving = false;
   weeklyPaymentTargetSaved = false;
+  weeklyPaymentTargetPeriods: WeeklyPaymentTargetPeriod[] = [];
+  weeklyPaymentTargetPeriodStartDateInput = '';
+  weeklyPaymentTargetPeriodEndDateInput = '';
+  weeklyPaymentTargetPeriodAmountInput = '';
+  weeklyPaymentTargetPeriodsSaving = false;
+  weeklyPaymentTargetPeriodsSaved = false;
   teamWeeklyBonusThresholdFc = 1500000;
   teamWeeklyBonusThresholdInput = '';
   teamWeeklyBonusThresholdSaving = false;
@@ -63,6 +75,9 @@ export class TrackingCentralComponent {
     }
     this.auth.weeklyPaymentTarget$.subscribe((value) => {
       this.weeklyPaymentTargetFc = value;
+    });
+    this.auth.weeklyPaymentTargetPeriods$.subscribe((periods) => {
+      this.weeklyPaymentTargetPeriods = periods;
     });
     this.auth.teamWeeklyBonusConfig$.subscribe((config) => {
       this.teamWeeklyBonusThresholdFc = config.thresholdFc;
@@ -218,6 +233,105 @@ export class TrackingCentralComponent {
       .finally(() => {
         this.weeklyPaymentTargetSaving = false;
       });
+  }
+
+  saveWeeklyPaymentTargetPeriodGlobal(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.weeklyPaymentTargetPeriodsSaving) return;
+
+    const amount = Number(this.weeklyPaymentTargetPeriodAmountInput);
+    const start = parseWeeklyPaymentTargetDate(
+      this.weeklyPaymentTargetPeriodStartDateInput
+    );
+    const end = parseWeeklyPaymentTargetDate(
+      this.weeklyPaymentTargetPeriodEndDateInput
+    );
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Entrez un montant valide pour la période.');
+      return;
+    }
+    if (!start || !end) {
+      alert('Renseignez une date de début et une date de fin valides.');
+      return;
+    }
+    if (end < start) {
+      alert('La date de fin doit être postérieure ou égale à la date de début.');
+      return;
+    }
+
+    const nextPeriods = normalizeWeeklyPaymentTargetPeriods([
+      ...this.weeklyPaymentTargetPeriods,
+      {
+        startDateIso: this.weeklyPaymentTargetPeriodStartDateInput,
+        endDateIso: this.weeklyPaymentTargetPeriodEndDateInput,
+        targetFc: amount,
+      },
+    ]);
+
+    if (hasOverlappingWeeklyPaymentTargetPeriods(nextPeriods)) {
+      alert(
+        'Ces périodes se chevauchent. Corrigez les dates pour garder des intervalles distincts.'
+      );
+      return;
+    }
+
+    this.weeklyPaymentTargetPeriodsSaving = true;
+    this.weeklyPaymentTargetPeriodsSaved = false;
+    this.auth
+      .updateWeeklyPaymentTargetPeriodsGlobal(nextPeriods)
+      .then(() => {
+        this.weeklyPaymentTargetPeriodsSaved = true;
+        this.weeklyPaymentTargetPeriodStartDateInput = '';
+        this.weeklyPaymentTargetPeriodEndDateInput = '';
+        this.weeklyPaymentTargetPeriodAmountInput = '';
+      })
+      .catch((err) => {
+        console.error('Failed to update weekly payment target periods:', err);
+        alert("Impossible d'enregistrer cette période.");
+      })
+      .finally(() => {
+        this.weeklyPaymentTargetPeriodsSaving = false;
+      });
+  }
+
+  removeWeeklyPaymentTargetPeriodGlobal(index: number): void {
+    if (!this.auth.isAdmin) return;
+    if (this.weeklyPaymentTargetPeriodsSaving) return;
+
+    const nextPeriods = this.weeklyPaymentTargetPeriods.filter(
+      (_period, periodIndex) => periodIndex !== index
+    );
+
+    this.weeklyPaymentTargetPeriodsSaving = true;
+    this.weeklyPaymentTargetPeriodsSaved = false;
+    this.auth
+      .updateWeeklyPaymentTargetPeriodsGlobal(nextPeriods)
+      .then(() => {
+        this.weeklyPaymentTargetPeriodsSaved = true;
+      })
+      .catch((err) => {
+        console.error('Failed to remove weekly payment target period:', err);
+        alert("Impossible de supprimer cette période.");
+      })
+      .finally(() => {
+        this.weeklyPaymentTargetPeriodsSaving = false;
+      });
+  }
+
+  formatWeeklyTargetPeriodLabel(period: WeeklyPaymentTargetPeriod): string {
+    const start = parseWeeklyPaymentTargetDate(period.startDateIso);
+    const end = parseWeeklyPaymentTargetDate(period.endDateIso);
+    if (!start || !end) {
+      return `${period.startDateIso} - ${period.endDateIso}`;
+    }
+    const fmt = (date: Date) =>
+      date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+    return `${fmt(start)} - ${fmt(end)}`;
   }
 
   saveTeamWeeklyBonusThresholdGlobal(): void {

@@ -22,6 +22,11 @@ import { ComputationService } from '../shrink/services/computation.service';
 import { Employee } from '../models/employee';
 import { Card } from '../models/card';
 import { Audit, Management } from '../models/management';
+import { WeeklyPaymentTargetPeriod } from '../models/weekly-payment-target';
+import {
+  normalizeWeeklyPaymentTargetPeriods,
+  resolveWeeklyPaymentTargetForDate as resolveWeeklyPaymentTargetForDateUtil,
+} from '../utils/weekly-payment-target.util';
 
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
@@ -72,6 +77,7 @@ export class AuthService {
   );
   rolePasswords$ = this.rolePasswordsSubject.asObservable();
   private readonly defaultWeeklyPaymentTargetFc = 600000;
+  private weeklyPaymentTargetBaseState = this.defaultWeeklyPaymentTargetFc;
   private readonly defaultWeeklyPaymentProjection: WeeklyPaymentProjection = {
     projectedTargetFc: null,
     effectiveDateIso: '',
@@ -84,6 +90,12 @@ export class AuthService {
     this.weeklyPaymentTargetState
   );
   weeklyPaymentTarget$ = this.weeklyPaymentTargetSubject.asObservable();
+  private weeklyPaymentTargetPeriodsState: WeeklyPaymentTargetPeriod[] = [];
+  private weeklyPaymentTargetPeriodsSubject = new BehaviorSubject<
+    WeeklyPaymentTargetPeriod[]
+  >(this.weeklyPaymentTargetPeriodsState);
+  weeklyPaymentTargetPeriods$ =
+    this.weeklyPaymentTargetPeriodsSubject.asObservable();
   private weeklyPaymentProjectionState: WeeklyPaymentProjection = {
     ...this.defaultWeeklyPaymentProjection,
   };
@@ -1535,6 +1547,10 @@ export class AuthService {
     return this.weeklyPaymentTargetState;
   }
 
+  public get weeklyPaymentTargetPeriods(): WeeklyPaymentTargetPeriod[] {
+    return this.weeklyPaymentTargetPeriodsState;
+  }
+
   public get teamWeeklyBonusThresholdFc(): number {
     return this.teamWeeklyBonusConfigState.thresholdFc;
   }
@@ -1544,6 +1560,12 @@ export class AuthService {
     return Number.isFinite(parsed) && parsed > 0
       ? parsed
       : this.defaultWeeklyPaymentTargetFc;
+  }
+
+  private normalizeWeeklyPaymentTargetPeriods(
+    value: any
+  ): WeeklyPaymentTargetPeriod[] {
+    return normalizeWeeklyPaymentTargetPeriods(value);
   }
 
   private normalizeTeamWeeklyBonusThreshold(value: any): number {
@@ -1568,6 +1590,30 @@ export class AuthService {
       projectedTargetFc: normalizedTarget,
       effectiveDateIso: normalizedDate,
     };
+  }
+
+  private syncCurrentGlobalWeeklyPaymentTargetState(): void {
+    this.weeklyPaymentTargetState = resolveWeeklyPaymentTargetForDateUtil({
+      dateInput: new Date(),
+      globalPeriods: this.weeklyPaymentTargetPeriodsState,
+      globalFallbackTargetFc: this.weeklyPaymentTargetBaseState,
+      defaultTargetFc: this.defaultWeeklyPaymentTargetFc,
+    });
+    this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+  }
+
+  public resolveWeeklyPaymentTargetForDate(
+    dateInput: string | Date | null | undefined,
+    user?: Partial<User> | null
+  ): number {
+    return resolveWeeklyPaymentTargetForDateUtil({
+      dateInput,
+      userPeriods: user?.weeklyPaymentTargetPeriods,
+      userFallbackTargetFc: user?.weeklyPaymentTargetFc,
+      globalPeriods: this.weeklyPaymentTargetPeriodsState,
+      globalFallbackTargetFc: this.weeklyPaymentTargetBaseState,
+      defaultTargetFc: this.defaultWeeklyPaymentTargetFc,
+    });
   }
 
   public applyRoleWord(word: string): void {
@@ -1656,8 +1702,12 @@ export class AuthService {
           this.managementDocId = '';
           this.rolePasswordsState = { ...this.defaultRolePasswords };
           this.rolePasswordsSubject.next(this.rolePasswordsState);
-          this.weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
-          this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+          this.weeklyPaymentTargetBaseState = this.defaultWeeklyPaymentTargetFc;
+          this.weeklyPaymentTargetPeriodsState = [];
+          this.weeklyPaymentTargetPeriodsSubject.next(
+            this.weeklyPaymentTargetPeriodsState
+          );
+          this.syncCurrentGlobalWeeklyPaymentTargetState();
           this.teamWeeklyBonusConfigState = {
             ...this.defaultTeamWeeklyBonusConfig,
           };
@@ -1681,10 +1731,17 @@ export class AuthService {
           ...stored,
         };
         this.rolePasswordsSubject.next(this.rolePasswordsState);
-        this.weeklyPaymentTargetState = this.normalizeWeeklyPaymentTarget(
+        this.weeklyPaymentTargetBaseState = this.normalizeWeeklyPaymentTarget(
           data.weeklyPaymentTargetFc
         );
-        this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+        this.weeklyPaymentTargetPeriodsState =
+          this.normalizeWeeklyPaymentTargetPeriods(
+            data.weeklyPaymentTargetPeriods
+          );
+        this.weeklyPaymentTargetPeriodsSubject.next(
+          this.weeklyPaymentTargetPeriodsState
+        );
+        this.syncCurrentGlobalWeeklyPaymentTargetState();
         this.teamWeeklyBonusConfigState = {
           thresholdFc: this.normalizeTeamWeeklyBonusThreshold(
             data.teamWeeklyBonusThresholdFc
@@ -1733,10 +1790,50 @@ export class AuthService {
     return docRef
       .set({ weeklyPaymentTargetFc: targetFc }, { merge: true })
       .then(() => {
-        this.weeklyPaymentTargetState = this.normalizeWeeklyPaymentTarget(
+        this.weeklyPaymentTargetBaseState = this.normalizeWeeklyPaymentTarget(
           targetFc
         );
-        this.weeklyPaymentTargetSubject.next(this.weeklyPaymentTargetState);
+        this.syncCurrentGlobalWeeklyPaymentTargetState();
+      });
+  }
+
+  updateWeeklyPaymentTargetPeriodsGlobal(
+    periods: WeeklyPaymentTargetPeriod[]
+  ): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const normalizedPeriods =
+      this.normalizeWeeklyPaymentTargetPeriods(periods);
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set({ weeklyPaymentTargetPeriods: normalizedPeriods }, { merge: true })
+      .then(() => {
+        this.weeklyPaymentTargetPeriodsState = normalizedPeriods;
+        this.weeklyPaymentTargetPeriodsSubject.next(
+          this.weeklyPaymentTargetPeriodsState
+        );
+        this.syncCurrentGlobalWeeklyPaymentTargetState();
+      });
+  }
+
+  updateWeeklyPaymentTargetPeriodsForCurrentUser(
+    periods: WeeklyPaymentTargetPeriod[]
+  ): Promise<void> {
+    const userUid = this.currentUser?.uid;
+    if (!userUid) {
+      return Promise.reject("Aucun utilisateur connecté trouvé.");
+    }
+    const normalizedPeriods =
+      this.normalizeWeeklyPaymentTargetPeriods(periods);
+    const docRef = this.afs.doc(`users/${userUid}`);
+    return docRef
+      .set({ weeklyPaymentTargetPeriods: normalizedPeriods }, { merge: true })
+      .then(() => {
+        this.currentUser = {
+          ...(this.currentUser || {}),
+          weeklyPaymentTargetPeriods: normalizedPeriods,
+        };
       });
   }
 

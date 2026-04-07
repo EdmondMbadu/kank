@@ -1,4 +1,5 @@
 import { Comment } from './client';
+import { WeeklyPaymentTargetPeriod } from './weekly-payment-target';
 
 export class User {
   uid?: string;
@@ -53,6 +54,7 @@ export class User {
   startingBudget?: string;
   savingsRequiredPercent?: string;
   weeklyPaymentTargetFc?: string;
+  weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
 }
 export class LocationCoordinates {
   longitude?: string;

@@ -1037,7 +1037,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
     this.overallWeeklyPaymentTotal = 0;
     this.weeklyPaymentTotals = this.allUsers.map((user) => {
-      const weeklyTargetFc = this.resolveWeeklyTargetFcForUser(user);
+      const weeklyTargetFc = this.resolveWeeklyTargetFcForUser(
+        user,
+        this.weeklyPaymentDateCorrectFormat
+      );
       const total = this.computeWeeklyPaymentTotalForUser(
         user,
         this.weeklyPaymentDateCorrectFormat
@@ -1095,18 +1098,12 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     return total;
   }
 
-  private resolveWeeklyTargetFcForUser(user: User): number {
-    const userOverride = Number(user.weeklyPaymentTargetFc);
-    if (Number.isFinite(userOverride) && userOverride > 0) {
-      return userOverride;
-    }
-
-    const globalTarget = Number(this.auth.weeklyPaymentTargetFc);
-    if (Number.isFinite(globalTarget) && globalTarget > 0) {
-      return globalTarget;
-    }
-
-    return 600000;
+  private resolveWeeklyTargetFcForUser(user: User, dateKey: string): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyPaymentTargetForDate(
+      this.formatDateKey(start),
+      user
+    );
   }
 
   private resolveWeeklyProgressState(

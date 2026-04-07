@@ -13,6 +13,12 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ElementRef } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Card } from 'src/app/models/card';
+import { WeeklyPaymentTargetPeriod } from 'src/app/models/weekly-payment-target';
+import {
+  hasOverlappingWeeklyPaymentTargetPeriods,
+  normalizeWeeklyPaymentTargetPeriods,
+  parseWeeklyPaymentTargetDate,
+} from 'src/app/utils/weekly-payment-target.util';
 interface Receipt {
   docId: string;
   url: string;
@@ -130,6 +136,10 @@ export class TodayComponent {
   projectedWeeklyTargetFc: number | null = null;
   projectedWeeklyTargetEffectiveDate = '';
   weeklyTargetInput: string = '';
+  weeklyTargetPeriodStartDateInput = '';
+  weeklyTargetPeriodEndDateInput = '';
+  weeklyTargetPeriodAmountInput = '';
+  weeklyTargetPeriodSaving = false;
   weeklyProgressPercent: number = 0;
   weeklyTargetReached: boolean = false;
   weeklyProgressTone: WeeklyProgressTone = 'red';
@@ -142,6 +152,7 @@ export class TodayComponent {
   weekPickerEndLabel: string = '';
   weekPickerTotalN: number = 0;
   weekPickerTotalDollars: string = '0';
+  weekPickerTargetFc: number = 600000;
   weekPickerTargetReached: boolean = false;
   weekPickerProgressPercent: number = 0;
   weekPickerProgressTone: WeeklyProgressTone = 'red';
@@ -438,6 +449,20 @@ export class TodayComponent {
     return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
   }
 
+  get currentUserWeeklyTargetPeriods(): WeeklyPaymentTargetPeriod[] {
+    return normalizeWeeklyPaymentTargetPeriods(
+      this.auth.currentUser?.weeklyPaymentTargetPeriods || []
+    );
+  }
+
+  private resolveWeeklyTargetFcForDate(dateKey: string): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyPaymentTargetForDate(
+      this.formatDateKey(start),
+      this.auth.currentUser
+    );
+  }
+
   updateWeekPickerTotals() {
     const baseIsoDate = this.weekPickerStartDate || this.requestDate;
     const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
@@ -449,20 +474,24 @@ export class TodayComponent {
     this.weekPickerTotalDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.weekPickerTotalN.toString())
       .toString();
+    this.weekPickerTargetFc = this.resolveWeeklyTargetFcForDate(dateKey);
     this.weekPickerTargetReached =
-      this.weekPickerTotalN >= this.weeklyTargetFc;
+      this.weekPickerTotalN >= this.weekPickerTargetFc;
     this.weekPickerProgressPercent =
-      this.weeklyTargetFc === 0
+      this.weekPickerTargetFc === 0
         ? 0
-        : Math.min(100, (this.weekPickerTotalN / this.weeklyTargetFc) * 100);
+        : Math.min(
+            100,
+            (this.weekPickerTotalN / this.weekPickerTargetFc) * 100
+          );
     const weekPickerProgressState = this.resolveWeeklyProgressState(
       this.weekPickerTotalN,
-      this.weeklyTargetFc
+      this.weekPickerTargetFc
     );
     this.weekPickerProgressTone = weekPickerProgressState.tone;
     this.weekPickerProgressStatusLabel = weekPickerProgressState.statusLabel;
     this.weekPickerProgressMarkers =
-      this.buildWeeklyProgressMarkers(this.weeklyTargetFc);
+      this.buildWeeklyProgressMarkers(this.weekPickerTargetFc);
   }
 
   private getWeekBounds(dateKey: string): { start: Date; end: Date } {
@@ -561,17 +590,21 @@ export class TodayComponent {
       start.setDate(end.getDate() - 6);
       if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
 
+      const weeklyTargetFc = this.auth.resolveWeeklyPaymentTargetForDate(
+        this.formatDateKey(start),
+        this.auth.currentUser
+      );
       const totalFc = this.computeWeeklyPaymentTotal(
         this.formatDateKey(start)
       );
-      if (totalFc >= this.weeklyTargetFc) continue;
+      if (totalFc >= weeklyTargetFc) continue;
 
       const totalUsd = Number(
         this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
       );
       const deductionUsd = this.compute.computeWeeklyObjectiveDeductionUsd(
         totalFc,
-        this.weeklyTargetFc
+        weeklyTargetFc
       );
       const isComplete = today > end;
 
@@ -762,20 +795,6 @@ export class TodayComponent {
     });
   }
 
-  private resolveWeeklyTargetFc(): number {
-    const userOverride = Number(this.auth.currentUser?.weeklyPaymentTargetFc);
-    if (Number.isFinite(userOverride) && userOverride > 0) {
-      return userOverride;
-    }
-
-    const globalTarget = Number(this.auth.weeklyPaymentTargetFc);
-    if (Number.isFinite(globalTarget) && globalTarget > 0) {
-      return globalTarget;
-    }
-
-    return 600000;
-  }
-
   private resolveWeeklyProgressState(
     totalFc: number,
     targetFc: number
@@ -836,7 +855,9 @@ export class TodayComponent {
   }
 
   private syncWeeklyTargetFc() {
-    this.weeklyTargetFc = this.resolveWeeklyTargetFc();
+    this.weeklyTargetFc = this.resolveWeeklyTargetFcForDate(
+      this.requestDateCorrectFormat
+    );
     this.weeklyTargetReached = this.weeklyPaymentTotalN >= this.weeklyTargetFc;
     this.weeklyProgressPercent =
       this.weeklyTargetFc === 0
@@ -874,6 +895,95 @@ export class TodayComponent {
     } catch (err) {
       alert('Erreur lors de la mise à jour, réessayez');
     }
+  }
+
+  async saveWeeklyTargetPeriodForUser(): Promise<void> {
+    if (!this.auth.isAdmin) return;
+    if (this.weeklyTargetPeriodSaving) return;
+
+    const amount = Number(this.weeklyTargetPeriodAmountInput);
+    const start = parseWeeklyPaymentTargetDate(
+      this.weeklyTargetPeriodStartDateInput
+    );
+    const end = parseWeeklyPaymentTargetDate(this.weeklyTargetPeriodEndDateInput);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Entrez un montant valide pour la période.');
+      return;
+    }
+    if (!start || !end) {
+      alert('Renseignez une date de début et une date de fin valides.');
+      return;
+    }
+    if (end < start) {
+      alert('La date de fin doit être postérieure ou égale à la date de début.');
+      return;
+    }
+
+    const nextPeriods = normalizeWeeklyPaymentTargetPeriods([
+      ...this.currentUserWeeklyTargetPeriods,
+      {
+        startDateIso: this.weeklyTargetPeriodStartDateInput,
+        endDateIso: this.weeklyTargetPeriodEndDateInput,
+        targetFc: amount,
+      },
+    ]);
+
+    if (hasOverlappingWeeklyPaymentTargetPeriods(nextPeriods)) {
+      alert(
+        'Ces périodes se chevauchent. Corrigez les dates pour garder des intervalles distincts.'
+      );
+      return;
+    }
+
+    this.weeklyTargetPeriodSaving = true;
+    try {
+      await this.auth.updateWeeklyPaymentTargetPeriodsForCurrentUser(nextPeriods);
+      this.weeklyTargetPeriodStartDateInput = '';
+      this.weeklyTargetPeriodEndDateInput = '';
+      this.weeklyTargetPeriodAmountInput = '';
+      this.syncWeeklyTargetFc();
+      alert('Période spécifique enregistrée');
+    } catch (err) {
+      alert('Erreur lors de la mise à jour, réessayez');
+    } finally {
+      this.weeklyTargetPeriodSaving = false;
+    }
+  }
+
+  async removeWeeklyTargetPeriodForUser(index: number): Promise<void> {
+    if (!this.auth.isAdmin) return;
+    if (this.weeklyTargetPeriodSaving) return;
+
+    const nextPeriods = this.currentUserWeeklyTargetPeriods.filter(
+      (_period, periodIndex) => periodIndex !== index
+    );
+
+    this.weeklyTargetPeriodSaving = true;
+    try {
+      await this.auth.updateWeeklyPaymentTargetPeriodsForCurrentUser(nextPeriods);
+      this.syncWeeklyTargetFc();
+      alert('Période supprimée');
+    } catch (err) {
+      alert('Erreur lors de la suppression, réessayez');
+    } finally {
+      this.weeklyTargetPeriodSaving = false;
+    }
+  }
+
+  formatWeeklyTargetPeriodLabel(period: WeeklyPaymentTargetPeriod): string {
+    const start = parseWeeklyPaymentTargetDate(period.startDateIso);
+    const end = parseWeeklyPaymentTargetDate(period.endDateIso);
+    if (!start || !end) {
+      return `${period.startDateIso} - ${period.endDateIso}`;
+    }
+    const fmt = (date: Date) =>
+      date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      });
+    return `${fmt(start)} - ${fmt(end)}`;
   }
 
   // ③  snapshotChanges to capture docId

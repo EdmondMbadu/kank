@@ -1,4 +1,5 @@
 import { Client } from './client';
+import { WeeklyPaymentTargetPeriod } from './weekly-payment-target';
 
 export class Management {
   id?: string;
@@ -16,6 +17,7 @@ export class Management {
   moneyInHandsTracking?: { [key: string]: string } = {};
   reserveRevealTimeKinshasa?: string;
   weeklyPaymentTargetFc?: number;
+  weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
   teamWeeklyBonusThresholdFc?: number;
   projectedWeeklyPaymentTargetFc?: number;
   projectedWeeklyPaymentEffectiveDate?: string;

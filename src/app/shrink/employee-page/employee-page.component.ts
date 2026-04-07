@@ -1093,7 +1093,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
     this.weekObjectiveAmount = this.compute.computeWeeklyObjectiveDeductionUsd(
       totalFc,
-      this.resolveWeeklyTargetFc()
+      this.resolveWeeklyTargetFcForDate(this.formatDateKey(startDate))
     );
   }
 
@@ -1113,11 +1113,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.weeklyPaymentTargetFc = this.resolveWeeklyTargetFc() / 2;
     const baseIsoDate =
       this.weeklyPaymentStartDate || this.time.getTodaysDateYearMonthDay();
     const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
     const { start, end } = this.getWeekBounds(dateKey);
+    this.weeklyPaymentTargetFc =
+      this.resolveWeeklyTargetFcForDate(this.formatDateKey(start)) / 2;
     this.weeklyPaymentStartLabel = this.formatWeekDate(start);
     this.weeklyPaymentEndLabel = this.formatWeekDate(end);
     this.weeklyPaymentRangeLabel = `${this.weeklyPaymentStartLabel} - ${this.weeklyPaymentEndLabel}`;
@@ -1150,18 +1151,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         : Math.min(100, (total / this.weeklyPaymentTargetFc) * 100);
   }
 
-  private resolveWeeklyTargetFc(): number {
-    const userOverride = Number(this.auth.currentUser?.weeklyPaymentTargetFc);
-    if (Number.isFinite(userOverride) && userOverride > 0) {
-      return userOverride;
-    }
-
-    const globalTarget = Number(this.auth.weeklyPaymentTargetFc);
-    if (Number.isFinite(globalTarget) && globalTarget > 0) {
-      return globalTarget;
-    }
-
-    return 600000;
+  private resolveWeeklyTargetFcForDate(dateKey: string): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyPaymentTargetForDate(
+      this.formatDateKey(start),
+      this.auth.currentUser
+    );
   }
 
   private weekKeysForDate(dateKey: string): string[] {
@@ -1325,7 +1320,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     month: number,
     year: number
   ): WeeklyObjectiveDeduction[] {
-    const weeklyTargetFc = this.resolveWeeklyTargetFc();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const lastDay = new Date(year, month, 0);
@@ -1340,6 +1334,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       start.setDate(end.getDate() - 6);
       if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
 
+      const weeklyTargetFc = this.resolveWeeklyTargetFcForDate(
+        this.formatDateKey(start)
+      );
       const totalFc = this.computeWeeklyPaymentTotalForLocation(
         this.formatDateKey(start)
       );
