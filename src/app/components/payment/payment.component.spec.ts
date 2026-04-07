@@ -1,6 +1,6 @@
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
@@ -21,6 +21,9 @@ describe('PaymentComponent', () => {
     currentUser: Record<string, string>;
     isAdmninistrator: boolean;
     getAllClients: jasmine.Spy;
+  };
+  let dataService: {
+    clientDeposit: jasmine.Spy;
   };
 
   const paymentClient = Object.assign(new Client(), {
@@ -70,9 +73,16 @@ describe('PaymentComponent', () => {
       currentUser: {
         email: 'agent@kank.test',
         firstName: 'Agent',
+        savingsRequiredPercent: '30',
       },
       isAdmninistrator: false,
-      getAllClients: jasmine.createSpy('getAllClients').and.returnValue(of([paymentClient])),
+      getAllClients: jasmine
+        .createSpy('getAllClients')
+        .and.returnValue(of([Object.assign(new Client(), paymentClient)])),
+    };
+
+    dataService = {
+      clientDeposit: jasmine.createSpy('clientDeposit').and.returnValue(Promise.resolve()),
     };
 
     await TestBed.configureTestingModule({
@@ -89,7 +99,7 @@ describe('PaymentComponent', () => {
           }),
         },
         { provide: AuthService, useValue: authService },
-        { provide: DataService, useValue: {} },
+        { provide: DataService, useValue: dataService },
         {
           provide: TimeService,
           useValue: {
@@ -106,6 +116,7 @@ describe('PaymentComponent', () => {
           provide: ComputationService,
           useValue: {
             minimumPayment: () => '5000',
+            getMaxLendAmount: () => 350000,
           },
         },
         {
@@ -216,7 +227,55 @@ describe('PaymentComponent', () => {
     const submitButton = query<HTMLButtonElement>('button.payment-primary-button');
     expect(submitButton.disabled).toBeTrue();
     expect(textContent()).toContain('Traitement');
-    expect(textContent()).toContain('Enregistrement du paiement');
+    expect(textContent()).toContain("Enregistrement de l'opération");
     expect(textContent()).toContain('Veuillez patienter, ne fermez pas la page.');
   });
+
+  it('allows high savings during a normal debt payment without applying the debt-cleared cap', () => {
+    createComponent();
+
+    component.paymentAmount = '5000';
+    component.savingsAmount = '200000';
+
+    const makePaymentSpy = spyOn<any>(component, 'makePayment');
+    component.submitPayment();
+
+    expect(makePaymentSpy).toHaveBeenCalled();
+  });
+
+  it('blocks savings-only deposits above the cap after the debt is cleared', () => {
+    createComponent();
+
+    component.client.debtLeft = '0';
+    component.client.amountPaid = component.client.amountToPay;
+    component.paymentAmount = '0';
+    component.savingsAmount = '96000';
+
+    const alertSpy = spyOn(window, 'alert');
+    component.submitPayment();
+
+    expect(alertSpy).toHaveBeenCalled();
+    expect(alertSpy.calls.mostRecent().args[0]).toContain(
+      "Le total d'épargne ne peut pas dépasser 30%"
+    );
+    expect(dataService.clientDeposit).not.toHaveBeenCalled();
+  });
+
+  it('records a manual savings-only deposit within the cap after the debt is cleared', fakeAsync(() => {
+    createComponent();
+
+    component.client.debtLeft = '0';
+    component.client.amountPaid = component.client.amountToPay;
+    component.paymentAmount = '0';
+    component.savingsAmount = '90000';
+
+    spyOn(window, 'confirm').and.returnValue(true);
+    const navigateSpy = TestBed.inject(Router).navigate as jasmine.Spy;
+
+    component.submitPayment();
+    tick();
+
+    expect(dataService.clientDeposit).toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith(['/client-portal', '0']);
+  }));
 });

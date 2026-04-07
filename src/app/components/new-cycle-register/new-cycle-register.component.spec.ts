@@ -225,7 +225,19 @@ describe('NewCycleRegisterComponent', () => {
     expect(normalizedText()).toContain('Ce client peut demander un nouveau crédit à partir du');
     expect(normalizedText()).toContain(component.nextEligibleCreditDateLabel);
     expect(normalizedText()).toContain(component.lastPaymentDateLabel);
-    expect(normalizedText()).toContain('Disponible à partir du');
+    expect(normalizedText()).toContain('accessible à partir du');
+  });
+
+  it('keeps only the minimum savings rule on a new cycle and allows higher savings', () => {
+    component.loanAmount = '100000';
+    component.savings = '40000';
+    fixture.detectChanges();
+
+    expect(component.minimumSavingsRequiredForRequestedLoan).toBe(30000);
+    expect(component.savingsPaidAtleast30PercentOfLoanAmount()).toBeTrue();
+    expect(normalizedText()).toContain(
+      "Au-delà de ce minimum, un montant plus élevé est autorisé."
+    );
   });
 
   it('keeps the references action disabled until the inputs are valid, then renders the added reference', () => {
