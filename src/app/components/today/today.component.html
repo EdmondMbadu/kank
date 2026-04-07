@@ -1714,8 +1714,11 @@
         </button>
       </div>
     </ng-container>
+  </div>
+
+  <div class="mt-6">
     <div
-      class="flex flex-col rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800"
+      class="rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-800"
     >
       <h3 class="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
         Périodes spécifiques du minimum
@@ -1727,7 +1730,7 @@
         En dehors de ces périodes, la valeur actuelle ci-dessus reste utilisée.
       </p>
 
-      <div class="grid gap-3">
+      <div class="grid gap-3 lg:grid-cols-3">
         <input
           [(ngModel)]="weeklyTargetPeriodStartDateInput"
           type="date"
@@ -1749,14 +1752,14 @@
       <button
         (click)="saveWeeklyTargetPeriodForUser()"
         [disabled]="weeklyTargetPeriodSaving"
-        class="mt-4 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+        class="mt-4 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-70 lg:w-auto lg:px-6"
       >
         {{ weeklyTargetPeriodSaving ? 'Sauvegarde...' : 'Ajouter la période' }}
       </button>
 
       <div
         *ngIf="currentUserWeeklyTargetPeriods.length > 0; else noUserWeeklyTargetPeriods"
-        class="mt-4 space-y-3"
+        class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3"
       >
         <div
           *ngFor="let period of currentUserWeeklyTargetPeriods; let i = index"
