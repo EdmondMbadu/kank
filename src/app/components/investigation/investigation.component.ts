@@ -148,7 +148,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   clients: Client[] = [];
   allClients: Client[] = [];
   shouldPayToday: Client[] = [];
+  policeNotifiedClients: Client[] = [];
   problematicClients: Client[] = [];
+  policeNotifiedSectionOpen = false;
   locations: User[] = [];
   selectedLocationId = '';
   selectedLocationLabel = '';
@@ -263,6 +265,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   recoveredAwayBonusInput = '10';
   recoveredAwayBonusAmount = 0;
   recoveredAwayBonusSaving = false;
+  policeNotificationSavingMap: Record<string, boolean> = {};
   resolvingDebtRecognizedMap: Record<string, boolean> = {};
   private recoveredAwayBonusSub?: Subscription;
 
@@ -396,37 +399,40 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     if (!this.locations.length) {
       this.allClients = [];
-      this.refreshProblematic();
+      this.refreshGlobalClientSections();
       return;
     }
 
-    let tempClients: Client[] = [];
-    let completedRequests = 0;
-    const total = this.locations.length;
+    const sources = this.locations
+      .filter((loc) => !!loc?.uid)
+      .map((loc) =>
+        this.auth.getClientsOfAUser(loc.uid!).pipe(
+          map((clients) =>
+            Array.isArray(clients)
+              ? (clients.filter(Boolean) as Client[]).map((client) => ({
+                  ...client,
+                  locationName: loc.firstName || loc.email || 'Site',
+                  locationOwnerId: loc.uid,
+                }))
+              : []
+          )
+        )
+      );
 
-    this.locations.forEach((loc) => {
-      if (!loc?.uid) {
-        completedRequests++;
-        return;
-      }
-      const sub = this.auth.getClientsOfAUser(loc.uid).subscribe((clients) => {
-        const tagged = Array.isArray(clients)
-          ? clients.map((c) => ({
-              ...c,
-              locationName: loc.firstName || loc.email || 'Site',
-              locationOwnerId: loc.uid,
-            }))
-          : [];
-        tempClients = tempClients.concat(tagged);
-        completedRequests++;
-        if (completedRequests === total) {
-          this.allClients = tempClients.filter(Boolean) as Client[];
-          this.refreshProblematic();
-          this.updateRecoveredAwaySummary();
-        }
-      });
-      this.allClientsSub.add(sub);
+    if (!sources.length) {
+      this.allClients = [];
+      this.refreshGlobalClientSections();
+      this.updateRecoveredAwaySummary();
+      return;
+    }
+
+    const sub = combineLatest(sources).subscribe((lists) => {
+      this.allClients = lists.flat();
+      this.refreshGlobalClientSections();
+      this.updateRecoveredAwaySummary();
     });
+
+    this.allClientsSub.add(sub);
 
     this.subs.add(this.allClientsSub);
   }
@@ -762,6 +768,31 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     );
   }
 
+  private refreshPoliceNotified(): void {
+    const previousCount = this.policeNotifiedClients.length;
+    this.policeNotifiedClients = [...this.allClients]
+      .filter((client) => this.isPoliceNotified(client))
+      .sort((a, b) => {
+        const nameA = `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim().toLowerCase();
+        const nameB = `${b.firstName ?? ''} ${b.lastName ?? ''}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+    if (this.policeNotifiedClients.length === 0) {
+      this.policeNotifiedSectionOpen = false;
+      return;
+    }
+
+    if (previousCount === 0) {
+      this.policeNotifiedSectionOpen = true;
+    }
+  }
+
+  private refreshGlobalClientSections(): void {
+    this.refreshPoliceNotified();
+    this.refreshProblematic();
+  }
+
   setQuitteStatusFilter(mode: 'active' | 'quitte' | 'all'): void {
     if (this.quitteStatusFilter === mode) return;
     this.quitteStatusFilter = mode;
@@ -826,6 +857,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const recognized = Number(recognizedRaw);
     if (Number.isNaN(recognized)) return false;
     return recognized !== debt;
+  }
+
+  isPoliceNotified(client?: Client | null): boolean {
+    return !!client?.notifiedForPolice;
+  }
+
+  onPoliceNotifiedSectionToggle(isOpen: boolean): void {
+    this.policeNotifiedSectionOpen = !!isOpen;
   }
 
   recoveredAwayEntries(client?: Client): RecoveredAwayEntry[] {
@@ -1648,6 +1687,70 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     updateList(this.clients);
     updateList(this.allClients);
+  }
+
+  togglePoliceNotified(client: Client): void {
+    if (!client?.uid) return;
+
+    const clientId = client.uid;
+    if (this.policeNotificationSavingMap[clientId]) return;
+
+    const notifiedForPolice = !this.isPoliceNotified(client);
+    const ownerId =
+      client.locationOwnerId ||
+      this.selectedLocationId ||
+      this.currentUserId;
+    const update = ownerId
+      ? this.data.updateClientInvestigationFieldsForUser(ownerId, clientId, {
+          notifiedForPolice,
+        })
+      : this.data.updateClientInvestigationFields(clientId, {
+          notifiedForPolice,
+        });
+
+    this.policeNotificationSavingMap[clientId] = true;
+    update
+      .then(() => {
+        this.applyPoliceNotifiedLocal(clientId, notifiedForPolice, ownerId);
+      })
+      .catch((err) => {
+        console.error('Failed to update police notification status:', err);
+        alert("Impossible de mettre à jour le signalement à la police.");
+      })
+      .finally(() => {
+        this.policeNotificationSavingMap[clientId] = false;
+      });
+  }
+
+  private applyPoliceNotifiedLocal(
+    clientId: string,
+    notifiedForPolice: boolean,
+    ownerId: string
+  ): void {
+    const updateList = (list: Client[]) => {
+      list.forEach((client) => {
+        if (
+          client.uid === clientId &&
+          (client.locationOwnerId ? client.locationOwnerId === ownerId : true)
+        ) {
+          client.notifiedForPolice = notifiedForPolice;
+        }
+      });
+    };
+
+    updateList(this.clients);
+    updateList(this.allClients);
+
+    if (
+      this.activeClient?.uid === clientId &&
+      (this.activeClient.locationOwnerId
+        ? this.activeClient.locationOwnerId === ownerId
+        : true)
+    ) {
+      this.activeClient.notifiedForPolice = notifiedForPolice;
+    }
+
+    this.refreshPoliceNotified();
   }
 
   openClientModal(client: Client): void {

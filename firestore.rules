@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isPortalClient() {
+      return signedIn() &&
+        ('portalClient' in request.auth.token) &&
+        request.auth.token.portalClient == true;
+    }
+
+    function portalOwnerUid() {
+      return isPortalClient() &&
+        ('ownerUid' in request.auth.token) ?
+        request.auth.token.ownerUid :
+        null;
+    }
+
+    function portalClientUid() {
+      return isPortalClient() &&
+        ('clientUid' in request.auth.token) ?
+        request.auth.token.clientUid :
+        null;
+    }
+
+    function isRestrictedTopCollection(topCollection) {
+      return topCollection == 'users' ||
+        topCollection == 'clientLoginOtps' ||
+        topCollection == 'clientPortalSessions' ||
+        topCollection == 'mobileMoneyTransactionLookup';
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
+      allow create, update, delete: if isOwner(userId);
+
+      match /clients/{clientId} {
+        allow read: if isOwner(userId) ||
+          (signedIn() && !isPortalClient()) ||
+          (isPortalClient() &&
+            portalOwnerUid() == userId &&
+            portalClientUid() == clientId);
+        allow update: if signedIn() &&
+          !isPortalClient() &&
+          resource != null &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'comments',
+            'recoveredAwayDebts',
+            'debtRecognized',
+            'notifiedForPolice'
+          ]) &&
+          (!('comments' in request.resource.data) ||
+            request.resource.data.comments is list) &&
+          (!('debtRecognized' in request.resource.data) ||
+            request.resource.data.debtRecognized is string) &&
+          (!('notifiedForPolice' in request.resource.data) ||
+            request.resource.data.notifiedForPolice is bool);
+      }
+
+      match /investigationDays/{dayKey} {
+        allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
+
+        allow create, update: if signedIn() &&
+          !isPortalClient() &&
+          request.resource.data.keys().hasOnly([
+            'dateKey',
+            'summary',
+            'comments',
+            'updatedAt'
+          ]) &&
+          (!('summary' in request.resource.data) ||
+            request.resource.data.summary is string) &&
+          (!('comments' in request.resource.data) ||
+            request.resource.data.comments is list);
+      }
+
+      match /clientFeedbackDays/{dayKey} {
+        allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
+
+        allow create, update: if signedIn() &&
+          !isPortalClient() &&
+          request.resource.data.keys().hasOnly([
+            'dateKey',
+            'entries',
+            'updatedAt'
+          ]) &&
+          (!('dateKey' in request.resource.data) ||
+            request.resource.data.dateKey is string) &&
+          (!('entries' in request.resource.data) ||
+            request.resource.data.entries is list) &&
+          (!('updatedAt' in request.resource.data) ||
+            request.resource.data.updatedAt is string);
+      }
+
+      match /{document=**} {
+        allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
+        allow write: if isOwner(userId);
+      }
+    }
+
+    match /clientLoginOtps/{docId} {
+      allow read, write: if false;
+    }
+
+    match /clientPortalSessions/{docId} {
+      allow read, write: if false;
+    }
+
+    match /mobileMoneyTransactionLookup/{docId} {
+      allow read, write: if false;
+    }
+
+    match /{topCollection}/{docId} {
+      allow read, write: if signedIn() &&
+        !isPortalClient() &&
+        !isRestrictedTopCollection(topCollection);
+
+      match /{subPath=**} {
+        allow read, write: if signedIn() &&
+          !isPortalClient() &&
+          !isRestrictedTopCollection(topCollection);
+      }
+    }
+  }
+}

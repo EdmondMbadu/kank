@@ -45,6 +45,7 @@ export class Client {
   amountPaid?: string;
   debtLeft?: string;
   debtRecognized?: string;
+  notifiedForPolice?: boolean;
   dateJoined?: string;
   numberOfPaymentsMissed?: string;
   numberOfPaymentsMade?: string;
