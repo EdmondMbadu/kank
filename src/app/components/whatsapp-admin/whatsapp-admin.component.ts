@@ -230,9 +230,6 @@ export class WhatsappAdminComponent implements OnInit {
         this.overallParticipantStatsReady = true;
       }
 
-      if (!this.overallParticipantStatsReady && !this.overallParticipantsLoading) {
-        void this.preloadOverallParticipantStats();
-      }
     } catch (err: any) {
       console.error('WhatsApp admin load failed', err);
       this.error =
@@ -371,14 +368,6 @@ export class WhatsappAdminComponent implements OnInit {
     this.participantsViewMode = mode;
     if (mode === 'global') {
       await this.ensureOverallParticipantsLoaded();
-    }
-  }
-
-  private async preloadOverallParticipantStats(): Promise<void> {
-    try {
-      await this.ensureOverallParticipantsLoaded();
-    } catch (err) {
-      console.error('WhatsApp overall participant preload failed', err);
     }
   }
 

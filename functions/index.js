@@ -4027,17 +4027,37 @@ async function upsertTrackedWhatsAppParticipant({
   });
 }
 
-function addWhatsAppParticipantKey(set, phone) {
-  const key = getWhatsAppParticipantKey(phone);
-  if (key) set.add(key);
-}
-
 function chunkArray(items, size) {
   const chunks = [];
   for (let index = 0; index < items.length; index += size) {
     chunks.push(items.slice(index, index + size));
   }
   return chunks;
+}
+
+async function fetchDocumentsByPath(paths = [], chunkSize = 200) {
+  const uniquePaths = Array.from(new Set(
+      (Array.isArray(paths) ? paths : [])
+          .map((path) => String(path || "").trim())
+          .filter(Boolean),
+  ));
+  const docsByPath = new Map();
+  if (!uniquePaths.length) return docsByPath;
+
+  const pathChunks = chunkArray(uniquePaths, chunkSize);
+  const chunkResults = await Promise.all(pathChunks.map((pathChunk) => (
+    db.getAll(...pathChunk.map((path) => db.doc(path)))
+  )));
+
+  chunkResults.forEach((snapshots, chunkIndex) => {
+    const pathChunk = pathChunks[chunkIndex];
+    snapshots.forEach((snap, snapshotIndex) => {
+      if (!snap || !snap.exists) return;
+      docsByPath.set(pathChunk[snapshotIndex], snap.data() || {});
+    });
+  });
+
+  return docsByPath;
 }
 
 function buildWhatsAppParticipantList(
@@ -4151,47 +4171,53 @@ async function listWhatsAppPaymentDocsForRange(startMs, endMs) {
   }
 }
 
-async function hydrateWhatsAppPaymentDocData(item) {
-  const base = {...(item || {})};
-  const hasEnoughData =
-    String(base.whatsappPhone || "").trim() &&
-    String(base.clientName || "").trim() &&
-    String(base.paymentAmount || "").trim();
-  if (hasEnoughData) return base;
+async function hydrateWhatsAppPaymentDocDatas(items = []) {
+  const baseItems = Array.isArray(items) ? items.map((item) => ({...(item || {})})) : [];
+  const transactionPaths = baseItems
+      .filter((item) => {
+        const hasEnoughData =
+          String(item.whatsappPhone || "").trim() &&
+          String(item.clientName || "").trim() &&
+          String(item.paymentAmount || "").trim();
+        return !hasEnoughData &&
+          String(item.ownerUid || "").trim() &&
+          String(item.reference || "").trim();
+      })
+      .map((item) => (
+        `users/${String(item.ownerUid).trim()}/mobileMoneyTransactions/${String(item.reference).trim()}`
+      ));
+  const transactionDocsByPath = await fetchDocumentsByPath(transactionPaths);
 
-  const ownerUid = String(base.ownerUid || "").trim();
-  const reference = String(base.reference || "").trim();
-  if (!ownerUid || !reference) return base;
+  return baseItems.map((item) => {
+    const ownerUid = String(item.ownerUid || "").trim();
+    const reference = String(item.reference || "").trim();
+    if (!ownerUid || !reference) return item;
 
-  try {
-    const txSnap = await db.doc(`users/${ownerUid}/mobileMoneyTransactions/${reference}`).get();
-    if (!txSnap.exists) return base;
+    const txPath = `users/${ownerUid}/mobileMoneyTransactions/${reference}`;
+    const txData = transactionDocsByPath.get(txPath);
+    if (!txData) return item;
+
     return {
-      ...txSnap.data(),
-      ...base,
-      reference: reference || txSnap.id,
+      ...txData,
+      ...item,
+      reference: reference || txPath.split("/").pop() || "",
     };
-  } catch (error) {
-    console.warn("Failed to hydrate WhatsApp payment lookup doc", {
-      ownerUid,
-      reference,
-      error,
-    });
-    return base;
-  }
+  });
 }
 
 async function fetchWhatsAppPhoneIndexMap(participantKeys) {
   const phoneIndexMap = new Map();
-  for (const keyChunk of chunkArray(participantKeys, 10)) {
-    if (!keyChunk.length) continue;
-    const phoneIndexSnap = await db.collection(WHATSAPP_PHONE_INDEX_COLLECTION)
+  const keyChunks = chunkArray(participantKeys, 10).filter(Boolean);
+  const snapshots = await Promise.all(keyChunks.map((keyChunk) => (
+    db.collection(WHATSAPP_PHONE_INDEX_COLLECTION)
         .where(admin.firestore.FieldPath.documentId(), "in", keyChunk)
-        .get();
+        .get()
+  )));
+  snapshots.forEach((phoneIndexSnap) => {
     phoneIndexSnap.docs.forEach((doc) => {
       phoneIndexMap.set(doc.id, doc.data() || {});
     });
-  }
+  });
   return phoneIndexMap;
 }
 
@@ -4202,12 +4228,14 @@ async function fetchWhatsAppOwnerLocationMap(phoneIndexMap) {
           .filter(Boolean),
   ));
   const ownerLocationMap = new Map();
-  for (const userIdChunk of chunkArray(userIds, 10)) {
-    if (!userIdChunk.length) continue;
-    const usersSnap = await db.collection("users")
+  const userIdChunks = chunkArray(userIds, 10).filter(Boolean);
+  const snapshots = await Promise.all(userIdChunks.map((userIdChunk) => (
+    db.collection("users")
         .where(admin.firestore.FieldPath.documentId(), "in", userIdChunk)
         .select("firstName", "email")
-        .get();
+        .get()
+  )));
+  snapshots.forEach((usersSnap) => {
     usersSnap.docs.forEach((doc) => {
       const item = doc.data() || {};
       ownerLocationMap.set(
@@ -4216,42 +4244,8 @@ async function fetchWhatsAppOwnerLocationMap(phoneIndexMap) {
             String(item.email || "").trim(),
       );
     });
-  }
-  return ownerLocationMap;
-}
-
-async function fetchWhatsAppQuestionTimestamps(participantKeys = []) {
-  const targetKeys = Array.isArray(participantKeys) && participantKeys.length ?
-    new Set(participantKeys) :
-    null;
-  const questionTimestampMap = new Map();
-  const snap = await db.collection(WHATSAPP_MESSAGES_COLLECTION)
-      .where("direction", "==", "incoming")
-      .select("phone", "createdAtMs")
-      .get();
-
-  snap.docs.forEach((doc) => {
-    const key = getWhatsAppParticipantKey(doc.get("phone"));
-    if (!key) return;
-    if (targetKeys && !targetKeys.has(key)) return;
-    questionTimestampMap.set(
-        key,
-        Math.max(
-            Number(questionTimestampMap.get(key) || 0),
-            Number(doc.get("createdAtMs") || 0),
-        ),
-    );
   });
-
-  return questionTimestampMap;
-}
-
-function timestampToMillis(value) {
-  if (!value) return 0;
-  if (typeof value.toMillis === "function") {
-    return Number(value.toMillis() || 0);
-  }
-  return Number(value || 0);
+  return ownerLocationMap;
 }
 
 async function listTrackedWhatsAppParticipants() {
@@ -4269,21 +4263,6 @@ async function listTrackedWhatsAppParticipants() {
         item.fullName || "",
         {lastQuestionAtMs: Number(item.lastQuestionAtMs || 0)},
     );
-  });
-
-  const questionTimestampMap = await fetchWhatsAppQuestionTimestamps(
-      Array.from(participantMap.keys()),
-  );
-  questionTimestampMap.forEach((lastQuestionAtMs, key) => {
-    const existing = participantMap.get(key);
-    if (!existing) return;
-    participantMap.set(key, {
-      ...existing,
-      lastQuestionAtMs: Math.max(
-          Number(existing.lastQuestionAtMs || 0),
-          Number(lastQuestionAtMs || 0),
-      ),
-    });
   });
 
   const phoneIndexMap = await fetchWhatsAppPhoneIndexMap(
@@ -4381,8 +4360,10 @@ async function buildOverallWhatsAppParticipants(paymentDocs = null) {
     );
   });
 
-  for (const doc of resolvedPaymentDocs) {
-    const item = await hydrateWhatsAppPaymentDocData(doc.data() || {});
+  const hydratedPaymentItems = await hydrateWhatsAppPaymentDocDatas(
+      resolvedPaymentDocs.map((doc) => doc.data() || {}),
+  );
+  for (const item of hydratedPaymentItems) {
     addWhatsAppParticipant(
         overallParticipants,
         item.whatsappPhone || "",
@@ -4483,23 +4464,35 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
       messageStartIndex + pageSize,
   );
 
-  const complaints = await Promise.all(complaintsSnap.docs.map(async (doc) => {
+  const complaintClientPaths = complaintsSnap.docs
+      .map((doc) => {
+        const item = doc.data() || {};
+        const clientName = String(
+            item.clientFullName || item.clientName || "",
+        ).trim();
+        const ownerUid = String(item.userId || "").trim();
+        const clientId = String(item.clientId || "").trim();
+        if (clientName || !ownerUid || !clientId) return "";
+        return `users/${ownerUid}/clients/${clientId}`;
+      })
+      .filter(Boolean);
+  const complaintClientDocsByPath = await fetchDocumentsByPath(complaintClientPaths);
+
+  const complaints = complaintsSnap.docs.map((doc) => {
     const item = doc.data() || {};
     let clientName = String(
         item.clientFullName || item.clientName || "",
     ).trim();
     if (!clientName) {
-      try {
-        const ownerUid = String(item.userId || "");
-        const clientId = String(item.clientId || "");
-        if (ownerUid && clientId) {
-          const clientSnap = await db.doc(`users/${ownerUid}/clients/${clientId}`).get();
-          if (clientSnap.exists) {
-            clientName = buildWhatsAppClientFullName(clientSnap.data() || {});
-          }
-        }
-      } catch (err) {
-        console.error("Failed to enrich WhatsApp complaint client name:", err);
+      const ownerUid = String(item.userId || "").trim();
+      const clientId = String(item.clientId || "").trim();
+      const clientPath = ownerUid && clientId ?
+        `users/${ownerUid}/clients/${clientId}` :
+        "";
+      if (clientPath) {
+        clientName = buildWhatsAppClientFullName(
+            complaintClientDocsByPath.get(clientPath) || {},
+        );
       }
     }
     const complaint = {
@@ -4519,12 +4512,27 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
         complaint.clientName,
     );
     return complaint;
-  }));
+  });
   const afterComplaintsAt = Date.now();
 
+  const hydratedPaymentItems = await hydrateWhatsAppPaymentDocDatas(
+      paymentDocs.map((doc) => doc.data() || {}),
+  );
+  const paymentClientPaths = hydratedPaymentItems
+      .map((item) => {
+        const clientName = String(item.clientName || "").trim();
+        const ownerUid = String(item.ownerUid || "").trim();
+        const clientUid = String(item.clientUid || "").trim();
+        if (clientName || !ownerUid || !clientUid) return "";
+        return `users/${ownerUid}/clients/${clientUid}`;
+      })
+      .filter(Boolean);
+  const paymentClientDocsByPath = await fetchDocumentsByPath(paymentClientPaths);
+
   const payments = [];
-  for (const doc of paymentDocs) {
-    const item = await hydrateWhatsAppPaymentDocData(doc.data() || {});
+  for (let index = 0; index < hydratedPaymentItems.length; index++) {
+    const item = hydratedPaymentItems[index];
+    const doc = paymentDocs[index];
     const updatedAtMs = Number(item.updatedAtMs || item.createdAtMs || 0);
     const status = String(item.status || "").toUpperCase();
     if (status !== "SUCCESS") continue;
@@ -4532,22 +4540,15 @@ exports.getWhatsAppAdminReport = functions.https.onCall(async (data, context) =>
 
     let clientName = String(item.clientName || "").trim();
     if (!clientName) {
-      try {
-        const ownerUid = String(item.ownerUid || "");
-        const clientUid = String(item.clientUid || "");
-        if (ownerUid && clientUid) {
-          const clientSnap = await db.doc(`users/${ownerUid}/clients/${clientUid}`).get();
-          if (clientSnap.exists) {
-            const clientData = clientSnap.data() || {};
-            clientName = [
-              String(clientData.middleName || "").trim(),
-              String(clientData.firstName || "").trim(),
-              String(clientData.lastName || "").trim(),
-            ].filter(Boolean).join(" ");
-          }
-        }
-      } catch (err) {
-        console.error("Failed to enrich WhatsApp payment client name:", err);
+      const ownerUid = String(item.ownerUid || "").trim();
+      const clientUid = String(item.clientUid || "").trim();
+      const clientPath = ownerUid && clientUid ?
+        `users/${ownerUid}/clients/${clientUid}` :
+        "";
+      if (clientPath) {
+        clientName = buildWhatsAppClientFullName(
+            paymentClientDocsByPath.get(clientPath) || {},
+        );
       }
     }
 
@@ -4791,29 +4792,6 @@ async function lookupClientByPhone(phone) {
     const clientSnap = await db.doc(`users/${idx.userId}/clients/${idx.clientId}`).get();
     if (clientSnap.exists) {
       return {userId: idx.userId, clientId: idx.clientId, client: clientSnap.data()};
-    }
-  }
-  return null;
-}
-
-/* ─── Payment helpers ─── */
-
-function getNextPaymentDate(client) {
-  const payments = client.payments || {};
-  const keys = Object.keys(payments).sort((a, b) => {
-    const da = parseMonthDayYear(a);
-    const db2 = parseMonthDayYear(b);
-    if (!da || !db2) return 0;
-    return db2.getTime() - da.getTime();
-  });
-  if (keys.length > 0) {
-    const lastDate = parseMonthDayYear(keys[0]);
-    if (lastDate) {
-      const period = toNumber(client.paymentPeriodRange || 0);
-      const weeksPerPayment = period === 4 ? 1 : (period === 8 ? 1 : 1);
-      const next = new Date(lastDate);
-      next.setDate(next.getDate() + weeksPerPayment * 7);
-      return next;
     }
   }
   return null;
@@ -5564,7 +5542,7 @@ async function handleWhatsAppMessage(from, body) {
   const {userId, clientId, client} = clientResult;
   const clientName = client.firstName || "Client";
 
-  let session = await getWhatsAppSession(phone);
+  const session = await getWhatsAppSession(phone);
   if (!session) {
     await resetWhatsAppSession(phone, {
       userId,
