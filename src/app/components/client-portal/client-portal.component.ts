@@ -70,6 +70,7 @@ export class ClientPortalComponent {
   clientCycles: Client[] = [];
   selectedClientCycleIds = new Set<string>();
   clientGeneratedBenefit = 0;
+  clientGeneratedBenefitUsd: number | string = 0;
   finishedClientCyclesCount = 0;
   minPay = '';
   employees: Employee[] = [];
@@ -297,6 +298,9 @@ export class ClientPortalComponent {
     });
 
     this.clientGeneratedBenefit = totalBenefit;
+    this.clientGeneratedBenefitUsd =
+      this.compute.convertCongoleseFrancToUsDollars(totalBenefit.toString()) ||
+      0;
     this.finishedClientCyclesCount = finishedCyclesCount;
   }
 

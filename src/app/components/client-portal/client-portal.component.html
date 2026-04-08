@@ -871,6 +871,9 @@
               {{ clientGeneratedBenefit | number : "1.0-0" }} FC
             </p>
             <p class="text-xs text-slate-500 dark:text-slate-400">
+              ~ {{ clientGeneratedBenefitUsd | number : "1.0-0" }} $
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
               {{ finishedClientCyclesCount }} cycle{{
                 finishedClientCyclesCount > 1 ? 's' : ''
               }} sélectionné{{

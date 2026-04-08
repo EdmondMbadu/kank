@@ -64,6 +64,7 @@ describe('ClientPortalComponent', () => {
 
     expect(component.selectedClientCycleIds.size).toBe(2);
     expect(component.clientGeneratedBenefit).toBe(900);
+    expect(component.clientGeneratedBenefitUsd).toBe(1);
     expect(component.finishedClientCyclesCount).toBe(2);
   });
 
@@ -90,6 +91,7 @@ describe('ClientPortalComponent', () => {
     component.toggleClientCycleSelection(component.clientCycles[0] as any);
 
     expect(component.clientGeneratedBenefit).toBe(300);
+    expect(component.clientGeneratedBenefitUsd).toBe(1);
     expect(component.finishedClientCyclesCount).toBe(1);
     expect(component.isCycleSelected(component.clientCycles[0] as any)).toBeFalse();
     expect(component.isCycleSelected(component.clientCycles[1] as any)).toBeTrue();
@@ -124,6 +126,7 @@ describe('ClientPortalComponent', () => {
     (component as any).recalculateClientGeneratedBenefit();
 
     expect(component.clientGeneratedBenefit).toBe(2200);
+    expect(component.clientGeneratedBenefitUsd).toBe(1);
     expect(component.finishedClientCyclesCount).toBe(2);
   });
 });
