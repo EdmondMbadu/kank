@@ -8,6 +8,13 @@ export interface ClientBonusEvent {
   note?: string;
 }
 
+export interface ClientTrophyAward {
+  awardedOn: string;
+  cycle: string;
+  amountUsd: string;
+  createdAt: string;
+}
+
 export interface AuditConversationAudioAttachment {
   url: string;
   name?: string;
@@ -100,6 +107,7 @@ export class Client {
   archivedAt?: string;
   bonus?: string;
   bonusHistory?: { [key: string]: ClientBonusEvent } = {};
+  trophyAwards?: { [key: string]: ClientTrophyAward } = {};
   stars?: string;
   requestNotTosend?: string;
   transferStatus?: 'pending' | 'accepted';

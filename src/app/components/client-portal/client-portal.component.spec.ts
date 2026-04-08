@@ -28,6 +28,8 @@ describe('ClientPortalComponent', () => {
       {} as DataService,
       {
         getGradientColor: () => '#16a34a',
+        convertCongoleseFrancToUsDollars: (value: string) =>
+          Math.ceil(Number(value) * 0.00034),
       } as unknown as ComputationService,
       {} as AngularFireStorage,
       {} as ChangeDetectorRef
@@ -128,5 +130,32 @@ describe('ClientPortalComponent', () => {
     expect(component.clientGeneratedBenefit).toBe(2200);
     expect(component.clientGeneratedBenefitUsd).toBe(1);
     expect(component.finishedClientCyclesCount).toBe(2);
+  });
+
+  it('should expose trophy awards sorted by awarded date descending', () => {
+    const component = createComponent();
+
+    component.client.trophyAwards = {
+      a: {
+        awardedOn: '2026-04-01',
+        cycle: '6',
+        amountUsd: '50',
+        createdAt: '2026-04-01T10:00:00.000Z',
+      },
+      b: {
+        awardedOn: '2026-04-05',
+        cycle: '7',
+        amountUsd: '100',
+        createdAt: '2026-04-05T10:00:00.000Z',
+      },
+    };
+
+    expect(component.trophyAwardList.map((award) => award.id)).toEqual([
+      'b',
+      'a',
+    ]);
+    expect(component.trophyAwardAmountValue(component.trophyAwardList[0])).toBe(
+      100
+    );
   });
 });

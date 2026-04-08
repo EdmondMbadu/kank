@@ -11,6 +11,7 @@ import {
   Client,
   Comment,
   ClientBonusEvent,
+  ClientTrophyAward,
 } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { User } from 'src/app/models/user';
@@ -59,6 +60,7 @@ type AudioMeta = {
 };
 
 type MediaAttachment = ImageAttachment | VideoAttachment;
+type ClientTrophyAwardRecord = ClientTrophyAward & { id: string };
 
 @Component({
   selector: 'app-client-portal',
@@ -172,6 +174,11 @@ export class ClientPortalComponent {
   debtEnd = '';
   isDebtOverdue = false;
   savingsText: string = 'Transfer Epargne vers Paiement';
+  trophyAwardDate = '';
+  trophyAwardCycle = '';
+  trophyAwardAmountUsd = '';
+  isTrophyAwardSubmitting = false;
+  trophyAwardDeletingId: string | null = null;
 
   // Image selection
   selectedImageFile?: File;
@@ -500,6 +507,9 @@ export class ClientPortalComponent {
     if (!this.client.bonusHistory) {
       this.client.bonusHistory = {};
     }
+    if (!this.client.trophyAwards) {
+      this.client.trophyAwards = {};
+    }
   }
 
   get auditConversationAudioUploadedAtFormatted(): string {
@@ -826,6 +836,136 @@ export class ClientPortalComponent {
         return 'Réduction de bonus';
       default:
         return 'Bonus';
+    }
+  }
+
+  get trophyAwardList(): ClientTrophyAwardRecord[] {
+    this.ensureBonusState();
+    const awards = this.client?.trophyAwards;
+    if (!awards) {
+      return [];
+    }
+
+    return Object.entries(awards)
+      .map(([id, award]) => ({
+        id,
+        ...award,
+      }))
+      .filter(
+        (award) =>
+          !!award &&
+          (!!award.awardedOn || !!award.cycle || !!award.amountUsd)
+      )
+      .sort((a, b) => {
+        const dateCompare = (b.awardedOn ?? '').localeCompare(a.awardedOn ?? '');
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+        return (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+      });
+  }
+
+  trophyAwardAmountValue(award: ClientTrophyAward): number {
+    const value = Number(award?.amountUsd ?? 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  formatTrophyAwardDate(date: string | undefined): string {
+    if (!date) {
+      return '';
+    }
+
+    const parsed = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+      return date;
+    }
+
+    return parsed.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  async addTrophyAward(): Promise<void> {
+    this.ensureBonusState();
+    if (!this.client?.uid) {
+      alert('Client introuvable.');
+      return;
+    }
+
+    const awardedOn = String(this.trophyAwardDate ?? '').trim();
+    const cycle = String(this.trophyAwardCycle ?? '').trim();
+    const amountUsd = String(this.trophyAwardAmountUsd ?? '').trim();
+    const parsedAmount = Number(amountUsd);
+
+    if (!awardedOn || !cycle || !amountUsd) {
+      alert('Complétez la date, le cycle et le montant en dollars.');
+      return;
+    }
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      alert('Entrez un montant en dollars valide.');
+      return;
+    }
+
+    this.isTrophyAwardSubmitting = true;
+    try {
+      const createdAt = new Date().toISOString();
+      this.client.trophyAwards![createdAt] = {
+        awardedOn,
+        cycle,
+        amountUsd: parsedAmount.toString(),
+        createdAt,
+      };
+
+      await this.data.setClientField(
+        'trophyAwards',
+        this.client.trophyAwards,
+        this.client.uid
+      );
+
+      this.trophyAwardDate = '';
+      this.trophyAwardCycle = '';
+      this.trophyAwardAmountUsd = '';
+      alert('Entrée de trophée enregistrée.');
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement du trophée", error);
+      alert("Impossible d'enregistrer l'entrée de trophée.");
+    } finally {
+      this.isTrophyAwardSubmitting = false;
+    }
+  }
+
+  async deleteTrophyAward(id: string): Promise<void> {
+    this.ensureBonusState();
+    if (!this.client?.uid || !id || this.trophyAwardDeletingId) {
+      return;
+    }
+
+    const shouldDelete = confirm('Supprimer cette entrée de trophée ?');
+    if (!shouldDelete) {
+      return;
+    }
+
+    this.trophyAwardDeletingId = id;
+    try {
+      const nextAwards = { ...(this.client.trophyAwards || {}) };
+      delete nextAwards[id];
+      this.client.trophyAwards = nextAwards;
+
+      await this.data.setClientField(
+        'trophyAwards',
+        this.client.trophyAwards,
+        this.client.uid
+      );
+
+      alert('Entrée de trophée supprimée.');
+    } catch (error) {
+      console.error("Erreur lors de la suppression du trophée", error);
+      alert("Impossible de supprimer l'entrée de trophée.");
+    } finally {
+      this.trophyAwardDeletingId = null;
     }
   }
 
