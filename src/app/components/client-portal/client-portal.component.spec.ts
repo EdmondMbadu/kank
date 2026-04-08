@@ -40,58 +40,74 @@ describe('ClientPortalComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should sum generated benefit only across finished cycles', () => {
+  it('should select all previous cycles by default and sum their benefits', () => {
     const component = createComponent();
 
-    component.client = {
-      loanAmount: '500',
-      amountPaid: '700',
-      debtLeft: '0',
-      amountToPay: '700',
-    } as any;
     component.clientCycles = [
       {
+        cycleId: 'cycle-4',
         loanAmount: '1000',
         amountPaid: '1300',
         debtLeft: '0',
         amountToPay: '1300',
       },
       {
+        cycleId: 'cycle-5',
         loanAmount: '2500',
         amountPaid: '3100',
         amountToPay: '3100',
       },
-      {
-        loanAmount: '4000',
-        amountPaid: '1800',
-        debtLeft: '2200',
-        amountToPay: '4000',
-      },
     ] as any;
 
+    (component as any).syncSelectedClientCycles(component.clientCycles);
     (component as any).recalculateClientGeneratedBenefit();
 
-    expect(component.clientGeneratedBenefit).toBe(1100);
-    expect(component.finishedClientCyclesCount).toBe(3);
+    expect(component.selectedClientCycleIds.size).toBe(2);
+    expect(component.clientGeneratedBenefit).toBe(900);
+    expect(component.finishedClientCyclesCount).toBe(2);
   });
 
-  it('should count archived cycles even when finish flags are stale', () => {
+  it('should update the total when a cycle is deselected', () => {
     const component = createComponent();
 
-    component.client = {
-      loanAmount: '2500',
-      amountPaid: '1900',
-      debtLeft: '600',
-      amountToPay: '2500',
-    } as any;
     component.clientCycles = [
       {
+        cycleId: 'cycle-4',
         loanAmount: '2000',
         amountPaid: '2000',
         debtLeft: '500',
         amountToPay: '3000',
       },
       {
+        cycleId: 'cycle-5',
+        loanAmount: '1500',
+        amountPaid: '1800',
+        debtLeft: '0',
+      },
+    ] as any;
+
+    (component as any).syncSelectedClientCycles(component.clientCycles);
+    component.toggleClientCycleSelection(component.clientCycles[0] as any);
+
+    expect(component.clientGeneratedBenefit).toBe(300);
+    expect(component.finishedClientCyclesCount).toBe(1);
+    expect(component.isCycleSelected(component.clientCycles[0] as any)).toBeFalse();
+    expect(component.isCycleSelected(component.clientCycles[1] as any)).toBeTrue();
+  });
+
+  it('should count archived cycles even when finish flags are stale', () => {
+    const component = createComponent();
+
+    component.clientCycles = [
+      {
+        cycleId: 'cycle-4',
+        loanAmount: '2000',
+        amountPaid: '2000',
+        debtLeft: '500',
+        amountToPay: '3000',
+      },
+      {
+        cycleId: 'cycle-5',
         loanAmount: '1500',
         amountPaid: 'abc',
         debtLeft: '0',
@@ -104,6 +120,7 @@ describe('ClientPortalComponent', () => {
       },
     ] as any;
 
+    (component as any).syncSelectedClientCycles(component.clientCycles);
     (component as any).recalculateClientGeneratedBenefit();
 
     expect(component.clientGeneratedBenefit).toBe(2200);

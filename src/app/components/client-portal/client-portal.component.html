@@ -863,7 +863,7 @@
               Bénéfice généré par le client
             </p>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              Total de tous les cycles terminés.
+              Total des cycles sélectionnés.
             </p>
           </div>
           <div class="text-left sm:text-right">
@@ -873,21 +873,56 @@
             <p class="text-xs text-slate-500 dark:text-slate-400">
               {{ finishedClientCyclesCount }} cycle{{
                 finishedClientCyclesCount > 1 ? 's' : ''
+              }} sélectionné{{
+                finishedClientCyclesCount > 1 ? 's' : ''
               }}
             </p>
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <a
-            *ngFor="let c of clientCycles"
-            [routerLink]="['/client-cycle', client.uid + '-' + c.cycleId]"
-            class="group flex items-center gap-3 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all cursor-pointer"
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            (click)="selectAllClientCycles()"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
-            <div
-              class="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:bg-emerald-500 dark:group-hover:bg-emerald-600 transition-colors"
+            Tout sélectionner
+          </button>
+          <button
+            type="button"
+            (click)="clearAllClientCycles()"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            Tout désélectionner
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div
+            *ngFor="let c of clientCycles"
+            class="flex items-center gap-3 rounded-xl border p-4 transition-all"
+            [ngClass]="
+              isCycleSelected(c)
+                ? 'border-emerald-400 bg-emerald-50/60 shadow-sm dark:border-emerald-500 dark:bg-emerald-950/20'
+                : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'
+            "
+          >
+            <button
+              type="button"
+              (click)="toggleClientCycleSelection(c)"
+              class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border transition"
+              [ngClass]="
+                isCycleSelected(c)
+                  ? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500'
+                  : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
+              "
+              [attr.aria-pressed]="isCycleSelected(c)"
+              [attr.aria-label]="
+                isCycleSelected(c)
+                  ? 'Retirer le cycle ' + c.debtCycle + ' du calcul'
+                  : 'Ajouter le cycle ' + c.debtCycle + ' au calcul'
+              "
             >
               <svg
-                class="w-5 h-5 text-emerald-600 dark:text-emerald-300 group-hover:text-white transition-colors"
+                class="h-4 w-4"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
@@ -896,32 +931,39 @@
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  d="M5 13l4 4L19 7"
                 />
               </svg>
-            </div>
+            </button>
             <div class="flex-1 min-w-0">
-              <p class="text-base font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+              <p class="text-base font-semibold text-slate-900 dark:text-white">
                 Cycle {{ c.debtCycle }}
               </p>
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Cliquez pour voir les détails
+                {{ (computeCycleGeneratedBenefit(c) ?? 0) | number : "1.0-0" }}
+                FC de bénéfice
               </p>
             </div>
-            <svg
-              class="w-5 h-5 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
+            <a
+              [routerLink]="['/client-cycle', client.uid + '-' + c.cycleId]"
+              class="inline-flex flex-shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700"
             >
+              Voir
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+              >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 d="M9 5l7 7-7 7"
               />
-            </svg>
-          </a>
+              </svg>
+            </a>
+          </div>
         </div>
       </div>
     </div>

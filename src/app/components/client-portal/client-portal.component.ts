@@ -68,6 +68,7 @@ type MediaAttachment = ImageAttachment | VideoAttachment;
 export class ClientPortalComponent {
   client = new Client();
   clientCycles: Client[] = [];
+  selectedClientCycleIds = new Set<string>();
   clientGeneratedBenefit = 0;
   finishedClientCyclesCount = 0;
   minPay = '';
@@ -267,10 +268,10 @@ export class ClientPortalComponent {
       );
       this.debtEnd = this.time.formatDateString(this.endDate());
       this.isDebtOverdue = this.checkDebtOverdue();
-      this.recalculateClientGeneratedBenefit();
       if (this.auth.isAdmninistrator) {
         this.data.getClientCycles(this.client.uid!).subscribe((data) => {
           this.clientCycles = data;
+          this.syncSelectedClientCycles(data);
           this.recalculateClientGeneratedBenefit();
         });
       }
@@ -280,8 +281,9 @@ export class ClientPortalComponent {
   private recalculateClientGeneratedBenefit(): void {
     let totalBenefit = 0;
     let finishedCyclesCount = 0;
-    const archivedCycles = this.clientCycles.filter((cycle) =>
-      this.hasCycleBenefitData(cycle)
+    const archivedCycles = this.clientCycles.filter(
+      (cycle) =>
+        this.isCycleSelected(cycle) && this.hasCycleBenefitData(cycle)
     );
 
     archivedCycles.forEach((cycle) => {
@@ -294,38 +296,30 @@ export class ClientPortalComponent {
       totalBenefit += cycleGeneratedBenefit;
     });
 
-    if (this.shouldIncludeCurrentCycleInGeneratedBenefit()) {
-      const currentCycleGeneratedBenefit = this.computeCycleGeneratedBenefit(
-        this.client
-      );
-      if (currentCycleGeneratedBenefit !== null) {
-        finishedCyclesCount += 1;
-        totalBenefit += currentCycleGeneratedBenefit;
-      }
-    }
-
     this.clientGeneratedBenefit = totalBenefit;
     this.finishedClientCyclesCount = finishedCyclesCount;
   }
 
-  private shouldIncludeCurrentCycleInGeneratedBenefit(): boolean {
-    if (!this.client) {
-      return false;
-    }
+  private syncSelectedClientCycles(cycles: Client[]): void {
+    const existingSelections = new Set(this.selectedClientCycleIds);
+    const hasExistingSelection = existingSelections.size > 0;
+    const nextSelections = new Set<string>();
 
-    if (!this.isFinishedCycle(this.client)) {
-      return false;
-    }
+    cycles.forEach((cycle) => {
+      const key = this.getCycleSelectionKey(cycle);
+      if (!key) {
+        return;
+      }
 
-    const currentCycleId = this.client.cycleId;
-    if (!currentCycleId) {
-      return true;
-    }
+      if (!hasExistingSelection || existingSelections.has(key)) {
+        nextSelections.add(key);
+      }
+    });
 
-    return !this.clientCycles.some((cycle) => cycle.cycleId === currentCycleId);
+    this.selectedClientCycleIds = nextSelections;
   }
 
-  private computeCycleGeneratedBenefit(cycle: Client): number | null {
+  computeCycleGeneratedBenefit(cycle: Client): number | null {
     const loanAmount = this.toFiniteNumber(cycle.loanAmount);
     const amountPaid = this.toFiniteNumber(cycle.amountPaid);
     const amountToPay = this.toFiniteNumber(cycle.amountToPay);
@@ -350,21 +344,51 @@ export class ClientPortalComponent {
     );
   }
 
-  private isFinishedCycle(cycle: Client): boolean {
-    const debtLeft = this.toFiniteNumber(cycle.debtLeft);
-    if (debtLeft !== null) {
-      return debtLeft <= 0;
+  toggleClientCycleSelection(cycle: Client): void {
+    const key = this.getCycleSelectionKey(cycle);
+    if (!key) {
+      return;
     }
 
-    const amountToPay = this.toFiniteNumber(cycle.amountToPay);
-    const amountPaid = this.toFiniteNumber(cycle.amountPaid);
+    if (this.selectedClientCycleIds.has(key)) {
+      this.selectedClientCycleIds.delete(key);
+    } else {
+      this.selectedClientCycleIds.add(key);
+    }
 
-    return (
-      amountToPay !== null &&
-      amountToPay > 0 &&
-      amountPaid !== null &&
-      amountPaid >= amountToPay
+    this.selectedClientCycleIds = new Set(this.selectedClientCycleIds);
+    this.recalculateClientGeneratedBenefit();
+  }
+
+  selectAllClientCycles(): void {
+    this.selectedClientCycleIds = new Set(
+      this.clientCycles
+        .map((cycle) => this.getCycleSelectionKey(cycle))
+        .filter((key): key is string => !!key)
     );
+    this.recalculateClientGeneratedBenefit();
+  }
+
+  clearAllClientCycles(): void {
+    this.selectedClientCycleIds = new Set<string>();
+    this.recalculateClientGeneratedBenefit();
+  }
+
+  isCycleSelected(cycle: Client): boolean {
+    const key = this.getCycleSelectionKey(cycle);
+    return !!key && this.selectedClientCycleIds.has(key);
+  }
+
+  getCycleSelectionKey(cycle: Client): string | null {
+    if (cycle.cycleId) {
+      return cycle.cycleId;
+    }
+
+    if (cycle.debtCycle) {
+      return `cycle-${cycle.debtCycle}`;
+    }
+
+    return null;
   }
 
   private toFiniteNumber(value: unknown): number | null {
