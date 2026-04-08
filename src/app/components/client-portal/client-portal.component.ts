@@ -68,6 +68,8 @@ type MediaAttachment = ImageAttachment | VideoAttachment;
 export class ClientPortalComponent {
   client = new Client();
   clientCycles: Client[] = [];
+  clientGeneratedBenefit = 0;
+  finishedClientCyclesCount = 0;
   minPay = '';
   employees: Employee[] = [];
   agent?: Employee = { firstName: '-' };
@@ -265,12 +267,113 @@ export class ClientPortalComponent {
       );
       this.debtEnd = this.time.formatDateString(this.endDate());
       this.isDebtOverdue = this.checkDebtOverdue();
+      this.recalculateClientGeneratedBenefit();
       if (this.auth.isAdmninistrator) {
         this.data.getClientCycles(this.client.uid!).subscribe((data) => {
           this.clientCycles = data;
+          this.recalculateClientGeneratedBenefit();
         });
       }
     });
+  }
+
+  private recalculateClientGeneratedBenefit(): void {
+    let totalBenefit = 0;
+    let finishedCyclesCount = 0;
+    const archivedCycles = this.clientCycles.filter((cycle) =>
+      this.hasCycleBenefitData(cycle)
+    );
+
+    archivedCycles.forEach((cycle) => {
+      const cycleGeneratedBenefit = this.computeCycleGeneratedBenefit(cycle);
+      if (cycleGeneratedBenefit === null) {
+        return;
+      }
+
+      finishedCyclesCount += 1;
+      totalBenefit += cycleGeneratedBenefit;
+    });
+
+    if (this.shouldIncludeCurrentCycleInGeneratedBenefit()) {
+      const currentCycleGeneratedBenefit = this.computeCycleGeneratedBenefit(
+        this.client
+      );
+      if (currentCycleGeneratedBenefit !== null) {
+        finishedCyclesCount += 1;
+        totalBenefit += currentCycleGeneratedBenefit;
+      }
+    }
+
+    this.clientGeneratedBenefit = totalBenefit;
+    this.finishedClientCyclesCount = finishedCyclesCount;
+  }
+
+  private shouldIncludeCurrentCycleInGeneratedBenefit(): boolean {
+    if (!this.client) {
+      return false;
+    }
+
+    if (!this.isFinishedCycle(this.client)) {
+      return false;
+    }
+
+    const currentCycleId = this.client.cycleId;
+    if (!currentCycleId) {
+      return true;
+    }
+
+    return !this.clientCycles.some((cycle) => cycle.cycleId === currentCycleId);
+  }
+
+  private computeCycleGeneratedBenefit(cycle: Client): number | null {
+    const loanAmount = this.toFiniteNumber(cycle.loanAmount);
+    const amountPaid = this.toFiniteNumber(cycle.amountPaid);
+    const amountToPay = this.toFiniteNumber(cycle.amountToPay);
+
+    if (loanAmount === null) {
+      return null;
+    }
+
+    const effectiveCollected = Math.max(amountPaid ?? 0, amountToPay ?? 0);
+    if (effectiveCollected <= 0) {
+      return null;
+    }
+
+    return effectiveCollected - loanAmount;
+  }
+
+  private hasCycleBenefitData(cycle: Client): boolean {
+    return (
+      this.toFiniteNumber(cycle.loanAmount) !== null &&
+      (this.toFiniteNumber(cycle.amountPaid) !== null ||
+        this.toFiniteNumber(cycle.amountToPay) !== null)
+    );
+  }
+
+  private isFinishedCycle(cycle: Client): boolean {
+    const debtLeft = this.toFiniteNumber(cycle.debtLeft);
+    if (debtLeft !== null) {
+      return debtLeft <= 0;
+    }
+
+    const amountToPay = this.toFiniteNumber(cycle.amountToPay);
+    const amountPaid = this.toFiniteNumber(cycle.amountPaid);
+
+    return (
+      amountToPay !== null &&
+      amountToPay > 0 &&
+      amountPaid !== null &&
+      amountPaid >= amountToPay
+    );
+  }
+
+  private toFiniteNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private formatBirthDate(birth?: string | null): string {
