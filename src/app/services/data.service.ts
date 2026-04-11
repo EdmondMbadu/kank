@@ -84,18 +84,25 @@ export class DataService {
     return clientRef.set(data, { merge: true });
   }
   /**
-   * Returns true if the employee is currently working ("Travaille").
-   * Handles common variants and typos.
+   * Returns true if the employee should receive payment stats.
+   * Rotation / transferred employees stay eligible for payment totals.
    */
   private isWorkingEmployee(employee: any): boolean {
     if (!employee) return false;
     const raw =
       employee.status ?? employee.workStatus ?? employee.employmentStatus ?? '';
     const val = String(raw).trim().toLowerCase();
-    // Accept common variants / typos
-    return ['travaille', 'tavaille', 'en travail', 'working', 'work'].includes(
-      val
-    );
+    if (
+      ['travaille', 'tavaille', 'en travail', 'working', 'work'].includes(val)
+    ) {
+      return true;
+    }
+
+    if (['transféré', 'transfere', 'transfered', 'transferred'].includes(val)) {
+      return true;
+    }
+
+    return employee.isRotation === true;
   }
 
   clientPayment(

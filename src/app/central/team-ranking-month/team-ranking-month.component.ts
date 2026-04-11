@@ -1400,7 +1400,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         if (!isInactive) continue;
 
         const ownerUid = meta.ownerUid;
-        const recipient = this.findRecipientForTotals(ownerUid);
+        const recipient = this.resolveRecipientForTotals(donor, ownerUid);
         if (!recipient) continue; // nobody active at this location → skip
 
         const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
@@ -1592,7 +1592,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         const isInactive = (donor.status || '') !== 'Travaille';
         if (!isInactive) continue;
 
-        const recipient = this.findRecipientForTotals(meta.ownerUid);
+        const recipient = this.resolveRecipientForTotals(donor, meta.ownerUid);
         if (!recipient) continue;
 
         const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
@@ -1834,6 +1834,89 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return (role || '').trim().toLowerCase();
   }
 
+  private normalizePhone(value?: string | null): string {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  private normalizeEmployeeName(employee?: Employee | null): string {
+    return [employee?.firstName, employee?.middleName, employee?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+      .toLowerCase();
+  }
+
+  private isSameEmployeeIdentity(
+    first?: Employee | null,
+    second?: Employee | null
+  ): boolean {
+    if (!first || !second) return false;
+
+    const firstPaymentCode = String(first.paymentCode || '').trim();
+    const secondPaymentCode = String(second.paymentCode || '').trim();
+    if (
+      firstPaymentCode &&
+      secondPaymentCode &&
+      firstPaymentCode === secondPaymentCode
+    ) {
+      return true;
+    }
+
+    const firstPhone = this.normalizePhone(first.phoneNumber);
+    const secondPhone = this.normalizePhone(second.phoneNumber);
+    if (firstPhone && secondPhone && firstPhone === secondPhone) {
+      return true;
+    }
+
+    const firstName = this.normalizeEmployeeName(first);
+    const secondName = this.normalizeEmployeeName(second);
+    return !!firstName && !!secondName && firstName === secondName;
+  }
+
+  private findRotationRecipientForTotals(
+    donor: Employee,
+    ownerUid: string
+  ): Employee | undefined {
+    return this.allEmployees.find((candidate: any) => {
+      if (!candidate?.uid || candidate.uid === donor?.uid) {
+        return false;
+      }
+
+      const candidateOwnerUid =
+        candidate?.tempUser?.uid || this.auth.currentUser.uid;
+      if (candidateOwnerUid === ownerUid) {
+        return false;
+      }
+
+      const candidateStatus = String(candidate.status || '')
+        .trim()
+        .toLowerCase();
+      const candidateEligible =
+        candidateStatus === 'travaille' ||
+        candidateStatus === 'transféré' ||
+        candidateStatus === 'transfere';
+      if (!candidateEligible) {
+        return false;
+      }
+
+      if (!candidate.isRotation || candidate.rotationSourceLocationId !== ownerUid) {
+        return false;
+      }
+
+      return this.isSameEmployeeIdentity(donor, candidate);
+    });
+  }
+
+  private resolveRecipientForTotals(
+    donor: Employee,
+    ownerUid: string
+  ): Employee | undefined {
+    return (
+      this.findRotationRecipientForTotals(donor, ownerUid) ||
+      this.findRecipientForTotals(ownerUid)
+    );
+  }
+
   private findRecipientForTotals(ownerUid: string): Employee | undefined {
     const eligible = this.allEmployees.filter((r: any) => {
       const sameOwner =
@@ -1934,7 +2017,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         const isInactive = (donor.status || '') !== 'Travaille';
         if (!isInactive) continue;
 
-        const recipient = this.findRecipientForTotals(meta.ownerUid);
+        const recipient = this.resolveRecipientForTotals(donor, meta.ownerUid);
         if (!recipient) continue;
 
         const rec = adjusted.get(recipient.uid!) || { total: 0, count: 0 };
