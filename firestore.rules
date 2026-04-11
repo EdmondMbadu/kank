@@ -39,7 +39,23 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) || (signedIn() && !isPortalClient());
-      allow create, update, delete: if isOwner(userId);
+      allow create, delete: if isOwner(userId);
+      allow update: if isOwner(userId) ||
+        (
+          signedIn() &&
+          !isPortalClient() &&
+          resource != null &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'teamCode'
+          ]) &&
+          (!('teamCode' in request.resource.data) ||
+            request.resource.data.teamCode is string)
+        );
+
+      match /employees/{employeeId} {
+        allow create, update: if isOwner(userId) ||
+          (signedIn() && !isPortalClient());
+      }
 
       match /clients/{clientId} {
         allow read: if isOwner(userId) ||
