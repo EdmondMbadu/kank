@@ -72,6 +72,31 @@ describe('NewCycleRegisterComponent', () => {
     fixture.detectChanges();
   }
 
+  function populateValidSubmissionFields(loanAmount: string): void {
+    component.maxNumberOfDaysToLend = 31;
+    component.client.firstName = 'Rebecca';
+    component.middleName = 'Mbuyi';
+    component.client.lastName = 'Kanku';
+    component.client.phoneNumber = '0893258653';
+    component.client.profession = 'Vendeuse';
+    component.client.businessCapital = '50000';
+    component.client.homeAddress = 'Kimayala';
+    component.client.businessAddress = 'Marche';
+    component.client.birthDate = '1990-05-10';
+    component.age = 35;
+    component.client.profilePicture = { downloadURL: 'https://example.com/photo.jpg' };
+    component.applicationFee = '5000';
+    component.memberShipFee = '0';
+    component.client.creditScore = '72';
+    component.client.savings = '20000';
+    component.savings = '15000';
+    component.loanAmount = loanAmount;
+    component.requestDate = '2026-03-25';
+    component.references = ['Maman Jeanne - 0812345678'];
+    component.codeVerificationStatus = 'correct';
+    component.maxLoanAmount = 350000;
+  }
+
   beforeEach(async () => {
     const clients = Array.from({ length: 29 }, () => new Client());
     clients[28] = Object.assign(new Client(), cycleClient);
@@ -111,6 +136,11 @@ describe('NewCycleRegisterComponent', () => {
           useValue: {
             generalMaxNumberOfClients: 70,
             generalMaxNumberOfDaysToLend: 20,
+            numbersValid: jasmine
+              .createSpy('numbersValid')
+              .and.callFake((...values: string[]) =>
+                values.every((value) => !isNaN(Number(value)) && Number(value) >= 0)
+              ),
             findClientsWithDebts: jasmine
               .createSpy('findClientsWithDebts')
               .and.returnValue([cycleClient]),
@@ -201,6 +231,7 @@ describe('NewCycleRegisterComponent', () => {
 
     expect(component.loanAmountOtherDisplay).toBeTrue();
     expect(query<HTMLInputElement>('#loanAmount').placeholder).toContain('20,000');
+    expect(normalizedText()).toContain('Le montant à prêter doit être de 50 000 FC ou plus.');
 
     selectOption('#countries', 'FC 100,000');
 
@@ -267,5 +298,32 @@ describe('NewCycleRegisterComponent', () => {
     expect(component.references).toEqual(['Maman Jeanne - 0812345678']);
     expect(normalizedText()).toContain('Maman Jeanne - 0812345678');
     expect(normalizedText()).toContain('1/3');
+  });
+
+  it('blocks submission when the requested loan amount is less than 50 000 FC', () => {
+    populateValidSubmissionFields('40 000');
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.registerClientNewDebtCycle();
+
+    expect(proceedSpy).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalled();
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain(
+      'Le montant à prêter doit être supérieur ou égal à'
+    );
+    expect(String(alertSpy.calls.mostRecent().args[0])).toContain('50');
+  });
+
+  it('allows submission when the requested loan amount is exactly 50 000 FC', () => {
+    populateValidSubmissionFields('50 000');
+    const alertSpy = spyOn(window, 'alert');
+    const proceedSpy = spyOn(component, 'proceed');
+
+    component.registerClientNewDebtCycle();
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(proceedSpy).toHaveBeenCalled();
+    expect(component.loanAmount).toBe('50000');
   });
 });

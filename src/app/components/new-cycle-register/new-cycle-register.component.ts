@@ -10,6 +10,7 @@ import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
+import { coerceToNumber } from 'src/app/utils/number-utils';
 import { __generator } from 'tslib';
 @Component({
   selector: 'app-new-cycle-register',
@@ -17,6 +18,8 @@ import { __generator } from 'tslib';
   styleUrls: ['./new-cycle-register.component.css'],
 })
 export class NewCycleRegisterComponent implements OnInit {
+  private readonly MIN_LOAN_AMOUNT = 50000;
+
   rateDisplay: boolean = false;
   id: any = '';
   employees: Employee[] = [];
@@ -185,8 +188,9 @@ export class NewCycleRegisterComponent implements OnInit {
   }
 
   registerClientNewDebtCycle() {
+    const normalizedLoanAmount = coerceToNumber(this.loanAmount);
     let inputValid = this.data.numbersValid(
-      this.loanAmount,
+      normalizedLoanAmount?.toString() ?? this.loanAmount,
       this.savings,
       this.applicationFee,
       this.memberShipFee
@@ -257,6 +261,16 @@ export class NewCycleRegisterComponent implements OnInit {
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
       return;
+    } else if (normalizedLoanAmount === null) {
+      alert('Le montant à prêter doit être un nombre valide.');
+      return;
+    } else if (normalizedLoanAmount < this.MIN_LOAN_AMOUNT) {
+      alert(
+        `Le montant à prêter doit être supérieur ou égal à ${this.MIN_LOAN_AMOUNT.toLocaleString(
+          'fr-FR'
+        )} FC.`
+      );
+      return;
     } else if (!checkDate) {
       alert(`Assurez-vous que la date de Donner L'argent au client\n
         - Est Dans L'intervalle D'Une Semaine\n
@@ -278,7 +292,7 @@ export class NewCycleRegisterComponent implements OnInit {
       );
       return;
     } else if (
-      Number(this.loanAmount) >
+      normalizedLoanAmount >
         Number(this.auth.currentUser.monthBudget) -
           Number(this.auth.currentUser.monthBudgetPending) &&
       Number(this.client.creditScore) < 70
@@ -290,7 +304,7 @@ export class NewCycleRegisterComponent implements OnInit {
         `vous n'avez pas assez d'argent dans votre budget mensuel de prêt pour effectuer cette transaction. Votre budget restant est de ${diff} FC`
       );
       return;
-    } else if (this.maxLoanAmount < Number(this.loanAmount)) {
+    } else if (this.maxLoanAmount < normalizedLoanAmount) {
       if (this.shouldShowCreditEligibilityDate) {
         alert(
           `Ce client ne peut pas encore demander un nouveau crédit. Il pourra faire une demande à partir du ${this.nextEligibleCreditDateLabel}. Dernier paiement enregistré : ${this.lastPaymentDateLabel}.`
@@ -328,6 +342,7 @@ export class NewCycleRegisterComponent implements OnInit {
       alert('Veuillez vérifier votre code de vérification');
       return;
     } else {
+      this.loanAmount = normalizedLoanAmount.toString();
       // let conf = confirm(
       //   `Vous allez enregistré ${this.client.firstName} ${this.client.lastName} pour un nouveau cycle. Voulez-vous quand même continuer?`
       // );
@@ -348,11 +363,14 @@ export class NewCycleRegisterComponent implements OnInit {
   }
 
   savingsPaidAtleast30PercentOfLoanAmount() {
-    let savings = Number(this.savings) + Number(this.client.savings);
-    let loanAmount = Number(this.loanAmount);
+    const savings =
+      (coerceToNumber(this.savings) ?? 0) +
+      (coerceToNumber(this.client.savings) ?? 0);
+    const loanAmount = coerceToNumber(this.loanAmount) ?? 0;
     const percent = this.getRequiredSavingsPercent();
     const requiredSavings = loanAmount * (percent / 100);
-    let savingsToAdd = requiredSavings - Number(this.client.savings);
+    const savingsToAdd =
+      requiredSavings - (coerceToNumber(this.client.savings) ?? 0);
     if (savings < requiredSavings) {
       alert(
         `Le montant d'épargne doit être au moins ${percent}% du montant du prêt. Le montant minimum d'épargne pour ce nouveau cycle est de ${Math.round(
@@ -367,7 +385,7 @@ export class NewCycleRegisterComponent implements OnInit {
   }
 
   get minimumSavingsRequiredForRequestedLoan(): number {
-    const loanAmount = Number(this.loanAmount || 0);
+    const loanAmount = coerceToNumber(this.loanAmount) ?? 0;
     return Math.round(loanAmount * (this.getRequiredSavingsPercent() / 100));
   }
 
