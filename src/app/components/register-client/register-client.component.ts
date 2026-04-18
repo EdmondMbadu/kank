@@ -8,6 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { coerceToNumber } from 'src/app/utils/number-utils';
 
 @Component({
   selector: 'app-register-client',
@@ -15,6 +16,8 @@ import { TimeService } from 'src/app/services/time.service';
   styleUrls: ['./register-client.component.css'],
 })
 export class RegisterClientComponent implements OnInit {
+  private readonly MIN_LOAN_AMOUNT = 50000;
+
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -130,6 +133,7 @@ export class RegisterClientComponent implements OnInit {
     const today = new Date(); // current computer date
     // only for testing.
     this.creditworthinessScore = this.calculateCreditworthiness();
+    const normalizedLoanAmount = coerceToNumber(this.loanAmount);
     let checkDate = this.time.validateDateWithInOneWeekNotPastOrToday(
       this.requestDate
     );
@@ -217,13 +221,23 @@ export class RegisterClientComponent implements OnInit {
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
       return;
+    } else if (normalizedLoanAmount === null) {
+      alert('Le montant à prêter doit être un nombre valide.');
+      return;
+    } else if (normalizedLoanAmount < this.MIN_LOAN_AMOUNT) {
+      alert(
+        `Le montant à prêter doit être supérieur ou égal à ${this.MIN_LOAN_AMOUNT.toLocaleString(
+          'fr-FR'
+        )} FC.`
+      );
+      return;
     } else if (this.nameExists()) {
       alert(
         'Un client portant exactement le même prénom, post‑nom et nom existe déjà.'
       );
       return;
     } else if (
-      Number(this.loanAmount) >
+      normalizedLoanAmount >
       Number(this.auth.currentUser.monthBudget) -
         Number(this.auth.currentUser.monthBudgetPending)
     ) {
@@ -240,7 +254,7 @@ export class RegisterClientComponent implements OnInit {
     ) {
       alert("Les frais d'inscription ou d'adhesion doit etre minimum 5000 FC.");
       return;
-    } else if (this.maxLendAmount < Number(this.loanAmount)) {
+    } else if (this.maxLendAmount < normalizedLoanAmount) {
       alert(
         `Le montant maximum que vous pouvez emprunter est de ${this.maxLendAmount} FC par rapport avec votre score credit. Reduisez votre montant de prêt`
       );
@@ -270,6 +284,7 @@ export class RegisterClientComponent implements OnInit {
       alert('Veuillez vérifier votre code de vérification');
       return;
     } else {
+      this.loanAmount = normalizedLoanAmount.toString();
       this.proceed();
     }
   }
@@ -453,6 +468,7 @@ export class RegisterClientComponent implements OnInit {
   }
 
   calculateCreditworthiness(): number {
+    const normalizedLoanAmount = coerceToNumber(this.loanAmount) ?? 0;
     let stabilityScore = 0;
     let financialStabilityScore = 0;
     let riskResilienceScore = 0;
@@ -467,9 +483,9 @@ export class RegisterClientComponent implements OnInit {
         ? 5
         : 0;
     stabilityScore +=
-      Number(this.dailyIncome) * 25 > Number(this.loanAmount)
+      Number(this.dailyIncome) * 25 > normalizedLoanAmount
         ? 10
-        : Number(this.dailyIncome) * 25 === Number(this.loanAmount)
+        : Number(this.dailyIncome) * 25 === normalizedLoanAmount
         ? 5
         : 0;
     console.log('stability score ', stabilityScore);
@@ -630,8 +646,8 @@ export class RegisterClientComponent implements OnInit {
   }
 
   savingsPaidAtleast30PercentOfLoanAmount() {
-    let savings = Number(this.savings);
-    let loanAmount = Number(this.loanAmount);
+    const savings = coerceToNumber(this.savings) ?? 0;
+    const loanAmount = coerceToNumber(this.loanAmount) ?? 0;
     const percent = this.getRequiredSavingsPercent();
     const requiredSavings = loanAmount * (percent / 100);
     const savingsToAdd = Math.round(requiredSavings);

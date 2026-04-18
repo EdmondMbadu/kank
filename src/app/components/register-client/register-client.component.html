@@ -475,6 +475,9 @@
                 <option [ngValue]="500000">FC 500,000</option>
                 <option [ngValue]="'Autre Montant'">Autre montant</option>
               </select>
+              <p class="text-xs font-medium text-red-600">
+                Le montant à prêter doit être de 50 000 FC ou plus.
+              </p>
             </label>
 
             <label *ngIf="savingsOtherDisplay" class="space-y-2">
