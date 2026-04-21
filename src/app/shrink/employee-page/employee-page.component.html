@@ -926,7 +926,7 @@
                 <div class="space-y-5 px-6 py-5 text-sm leading-6 text-slate-700 dark:text-slate-200">
                   <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800/80">
                     <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Montant concerné
+                      {{ foundationRequestModalAmountLabel }}
                     </div>
                     <div class="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-slate-50">
                       ${{ foundationRequestModalAmount | number : "1.0-0" }}
@@ -964,8 +964,42 @@
                           : 'text-red-700 dark:text-red-200'
                       "
                     >
-                      {{ foundationRequestBlockedReason }}
+                      {{ foundationPartialRequestStatusMessage }}
                     </p>
+                  </div>
+
+                  <div *ngIf="foundationRequestMode === 'partial'" class="space-y-2">
+                    <label
+                      for="foundationRequestedAmount"
+                      class="block text-sm font-semibold text-slate-900 dark:text-slate-100"
+                    >
+                      Montant demandé
+                    </label>
+                    <input
+                      id="foundationRequestedAmount"
+                      [(ngModel)]="foundationRequestedAmount"
+                      type="number"
+                      min="1"
+                      step="1"
+                      [max]="foundationWithdrawableUsd"
+                      placeholder="Entrez le montant à retirer"
+                      class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                    />
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                      Maximum autorisé actuellement : ${{ foundationWithdrawableUsd | number : "1.0-0" }}
+                    </p>
+                  </div>
+
+                  <div
+                    *ngIf="foundationRequestMode === 'partial'"
+                    class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center dark:border-emerald-500/30 dark:bg-emerald-500/10"
+                  >
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-200">
+                      Montant reconnu pour cette demande
+                    </div>
+                    <div class="mt-2 text-4xl font-black tracking-tight text-emerald-700 dark:text-emerald-200">
+                      ${{ foundationRequestedAmountValue | number : "1.0-0" }}
+                    </div>
                   </div>
 
                   <div

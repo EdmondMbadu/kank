@@ -421,6 +421,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showFoundationRulesModal = false;
   showFoundationRequestModal = false;
   foundationRequestMode: 'partial' | 'full' | null = null;
+  foundationRequestedAmount = '';
   foundationLeavingReason = '';
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
@@ -620,10 +621,29 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return 'Demander un retrait';
   }
 
+  get foundationRequestModalAmountLabel(): string {
+    return this.foundationRequestMode === 'full'
+      ? 'Montant concerné'
+      : 'Montant maximum autorisé';
+  }
+
   get foundationRequestModalAmount(): number {
     return this.foundationRequestMode === 'full'
       ? this.foundationTotalUsd
       : this.foundationWithdrawableUsd;
+  }
+
+  get foundationRequestedAmountValue(): number {
+    const raw = Number(this.foundationRequestedAmount);
+    return Number.isFinite(raw) ? raw : 0;
+  }
+
+  get foundationPartialRequestStatusMessage(): string {
+    if (!this.foundationCanRequestWithdrawal) {
+      return this.foundationRequestBlockedReason;
+    }
+
+    return 'Saisissez ci-dessous le montant exact à demander.';
   }
 
   get foundationEligibilityLabel(): string {
@@ -688,6 +708,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   openFoundationRequestModal(mode: 'partial' | 'full'): void {
     this.foundationRequestMode = mode;
+    this.foundationRequestedAmount =
+      mode === 'partial' && this.foundationWithdrawableUsd > 0
+        ? this.foundationWithdrawableUsd.toFixed(0)
+        : '';
     this.foundationLeavingReason = '';
     this.showFoundationRequestModal = true;
   }
@@ -695,6 +719,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   closeFoundationRequestModal(): void {
     this.showFoundationRequestModal = false;
     this.foundationRequestMode = null;
+    this.foundationRequestedAmount = '';
     this.foundationLeavingReason = '';
   }
 
@@ -708,8 +733,23 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         return;
       }
 
+      const requestedAmount = this.foundationRequestedAmountValue;
+      if (requestedAmount <= 0) {
+        alert('Entrez un montant valide pour la demande de retrait.');
+        return;
+      }
+
+      if (requestedAmount > this.foundationWithdrawableUsd) {
+        alert(
+          `Le montant demandé ne peut pas dépasser $${this.foundationWithdrawableUsd.toFixed(
+            0
+          )}.`
+        );
+        return;
+      }
+
       alert(
-        `Demande de retrait enregistrée pour $${this.foundationWithdrawableUsd.toFixed(
+        `Demande de retrait enregistrée pour $${requestedAmount.toFixed(
           0
         )}. Le branchement final sera ajouté à l’étape suivante.`
       );
