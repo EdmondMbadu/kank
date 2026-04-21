@@ -263,6 +263,28 @@ export class RegiserPortalComponent {
   auditAudioDeletingIndex: number | null = null;
   auditVerificationSaving = false;
 
+  get requiresAuditConversationAudio(): boolean {
+    return (
+      (this.auth.isAdmin || this.auth.isDistributor) &&
+      !this.hasPersistedAuditConversationAudio
+    );
+  }
+
+  get canConfirmAudit(): boolean {
+    return (
+      this.isConfirmed &&
+      !this.auditVerificationSaving &&
+      !this.auditAudioUploading &&
+      (!this.requiresAuditConversationAudio || !!this.selectedAuditAudioFile)
+    );
+  }
+
+  get shouldShowAuditAudioRequirementMessage(): boolean {
+    return (
+      this.requiresAuditConversationAudio && !this.selectedAuditAudioFile
+    );
+  }
+
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       const idx = Number(this.id); // position du client courant
@@ -593,6 +615,10 @@ export class RegiserPortalComponent {
   async setClientFieldAgent(field: string, value: any) {
     if (!field || !String(value ?? '').trim()) {
       alert("Entrer un nom d'agent valide");
+      return;
+    }
+    if (this.requiresAuditConversationAudio && !this.selectedAuditAudioFile) {
+      alert("Ajoutez l'audio sans lequel vous ne pouvez pas confirmer ce client.");
       return;
     }
     if (!this.client.uid || this.auditVerificationSaving) {
