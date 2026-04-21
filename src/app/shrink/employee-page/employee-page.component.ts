@@ -417,6 +417,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weeklyPaymentTotalN = 0;
   weeklyPaymentTotalUsd = '0';
   weeklyPaymentCount = 0;
+  showFoundationRulesModal = false;
+  readonly foundationMonthlyContributionUsd = 10;
+  readonly foundationPerformanceBonusUsd = 10;
+  readonly foundationMinimumBalanceUsd = 100;
   weeklyPaymentTargetFc = 300000;
   weeklyPaymentTargetReached = false;
   weeklyPaymentProgressPercent = 0;
@@ -491,6 +495,145 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.auditScopedSub?.unsubscribe();
     this.auditLegacySub?.unsubscribe();
   }
+
+  get canViewFoundationAccount(): boolean {
+    return this.isAdminUi;
+  }
+
+  get foundationJoinDate(): Date | null {
+    return this.parseEmploymentDate(this.employee?.dateJoined);
+  }
+
+  get foundationAccrualEndDate(): Date | null {
+    const joinDate = this.foundationJoinDate;
+    if (!joinDate) return null;
+
+    const today = this.startOfDay(new Date());
+    const leftDate = this.parseEmploymentDate(this.employee?.dateLeft);
+    if (leftDate && leftDate.getTime() < today.getTime()) {
+      return leftDate;
+    }
+
+    return today;
+  }
+
+  get foundationMonthsEarned(): number {
+    const joinDate = this.foundationJoinDate;
+    const endDate = this.foundationAccrualEndDate;
+    if (!joinDate || !endDate) return 0;
+
+    return this.completedMonthsBetween(joinDate, endDate);
+  }
+
+  get foundationEmployeeOfMonthCount(): number {
+    return this.employee?.bestEmployeeTrophies?.length ?? 0;
+  }
+
+  get foundationMonthlyContributionTotalUsd(): number {
+    return this.foundationMonthsEarned * this.foundationMonthlyContributionUsd;
+  }
+
+  get foundationPerformanceBonusTotalUsd(): number {
+    return (
+      this.foundationEmployeeOfMonthCount * this.foundationPerformanceBonusUsd
+    );
+  }
+
+  get foundationTotalUsd(): number {
+    return (
+      this.foundationMonthlyContributionTotalUsd +
+      this.foundationPerformanceBonusTotalUsd
+    );
+  }
+
+  get foundationWithdrawalEligible(): boolean {
+    return this.foundationMonthsEarned >= 12;
+  }
+
+  get foundationHasLeftOrganization(): boolean {
+    const leftDate = this.parseEmploymentDate(this.employee?.dateLeft);
+    return !!leftDate && leftDate.getTime() <= this.startOfDay(new Date()).getTime();
+  }
+
+  get foundationWithdrawableUsd(): number {
+    if (!this.foundationWithdrawalEligible) {
+      return 0;
+    }
+
+    if (this.foundationHasLeftOrganization) {
+      return this.foundationTotalUsd;
+    }
+
+    return Math.max(
+      0,
+      this.foundationTotalUsd - this.foundationMinimumBalanceUsd
+    );
+  }
+
+  get foundationEligibilityLabel(): string {
+    if (this.foundationHasLeftOrganization && !this.foundationWithdrawalEligible) {
+      return 'Accès perdu';
+    }
+
+    if (this.foundationHasLeftOrganization) {
+      return 'Retrait final autorisé';
+    }
+
+    return this.foundationWithdrawalEligible ? 'Retrait autorisé' : 'Encore bloqué';
+  }
+
+  get foundationStatusLabel(): string {
+    if (!this.foundationJoinDate) {
+      return "Date d'entrée requise pour calculer ce compte.";
+    }
+
+    if (this.foundationHasLeftOrganization && !this.foundationWithdrawalEligible) {
+      return "Employé sorti avant 1 an: accès perdu et fonds libérés.";
+    }
+
+    if (!this.foundationWithdrawalEligible) {
+      return `Retrait bloqué avant ${this.foundationEligibilityDateLabel}.`;
+    }
+
+    if (this.foundationHasLeftOrganization) {
+      return 'Employé sorti: retrait final total autorisé.';
+    }
+
+    if (this.foundationWithdrawableUsd <= 0) {
+      return 'Retrait indisponible tant que le solde reste sous le minimum requis.';
+    }
+
+    return 'Retrait autorisé avec un minimum permanent de $100.';
+  }
+
+  get foundationTenureLabel(): string {
+    return this.formatDurationFromMonths(this.foundationMonthsEarned);
+  }
+
+  get foundationJoinDateLabel(): string {
+    return this.formatLongDate(this.foundationJoinDate);
+  }
+
+  get foundationEligibilityDateLabel(): string {
+    const joinDate = this.foundationJoinDate;
+    if (!joinDate) return 'la date de début';
+
+    const eligibilityDate = new Date(
+      joinDate.getFullYear() + 1,
+      joinDate.getMonth(),
+      joinDate.getDate()
+    );
+    return this.formatLongDate(eligibilityDate);
+  }
+
+  openFoundationRulesModal(): void {
+    this.showFoundationRulesModal = true;
+  }
+
+  closeFoundationRulesModal(): void {
+    this.showFoundationRulesModal = false;
+  }
+
   public graphPerformance: PerformanceGraph =
     this.createEmptyPerformanceGraph();
   /* ─── Fetch on init ─────────────────────────────── */
@@ -1617,6 +1760,94 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           this.rangeValueFromPerformanceKey(this.performanceActiveRange)
         );
       });
+  }
+
+  private parseEmploymentDate(rawDate?: string | null): Date | null {
+    if (!rawDate) return null;
+
+    const trimmed = rawDate.trim();
+    if (!trimmed) return null;
+
+    const parts = trimmed.split(/[-/]/).map((part) => part.trim());
+    if (parts.length === 3) {
+      const isYearFirst = parts[0].length === 4;
+      const year = Number(isYearFirst ? parts[0] : parts[2]);
+      const month = Number(isYearFirst ? parts[1] : parts[0]);
+      const day = Number(isYearFirst ? parts[2] : parts[1]);
+
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day)
+      ) {
+        const parsed = new Date(year, month - 1, day);
+        if (
+          !Number.isNaN(parsed.getTime()) &&
+          parsed.getFullYear() === year &&
+          parsed.getMonth() === month - 1 &&
+          parsed.getDate() === day
+        ) {
+          return this.startOfDay(parsed);
+        }
+      }
+    }
+
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return this.startOfDay(parsed);
+  }
+
+  private completedMonthsBetween(start: Date, end: Date): number {
+    if (end.getTime() < start.getTime()) {
+      return 0;
+    }
+
+    let totalMonths =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+
+    if (end.getDate() < start.getDate()) {
+      totalMonths -= 1;
+    }
+
+    return Math.max(0, totalMonths);
+  }
+
+  private formatDurationFromMonths(totalMonths: number): string {
+    const safeTotalMonths = Math.max(0, totalMonths);
+    const years = Math.floor(safeTotalMonths / 12);
+    const months = safeTotalMonths % 12;
+    const parts: string[] = [];
+
+    if (years > 0) {
+      parts.push(`${years} ${years > 1 ? 'ans' : 'an'}`);
+    }
+    if (months > 0 || parts.length === 0) {
+      parts.push(`${months} mois`);
+    }
+
+    return parts.join(' ');
+  }
+
+  private formatLongDate(date: Date | null): string {
+    if (!date) return 'Date inconnue';
+
+    return date
+      .toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+      .replace(/^\d+\s+([a-zà-ÿ])/i, (match, initial) =>
+        match.replace(initial, initial.toUpperCase())
+      );
+  }
+
+  private startOfDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   toggleBonusIfCodeCorrect() {

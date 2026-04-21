@@ -228,4 +228,41 @@ describe('EmployeePageComponent', () => {
     expect(deductions).toEqual([]);
     expect(compute.computeWeeklyObjectiveDeductionUsd).not.toHaveBeenCalled();
   });
+
+  it('computes the foundation balance from completed months and employee-of-the-month trophies', () => {
+    const component = createComponent({ isAdmninistrator: true });
+
+    component.employee = {
+      firstName: 'Edmond',
+      dateJoined: '3-15-2025',
+      bestEmployeeTrophies: [
+        { month: '5', year: '2025' },
+        { month: '9', year: '2025' },
+        { month: '1', year: '2026' },
+      ],
+    };
+
+    expect(component.foundationMonthsEarned).toBe(12);
+    expect(component.foundationEmployeeOfMonthCount).toBe(3);
+    expect(component.foundationMonthlyContributionTotalUsd).toBe(120);
+    expect(component.foundationPerformanceBonusTotalUsd).toBe(30);
+    expect(component.foundationTotalUsd).toBe(150);
+    expect(component.foundationWithdrawalEligible).toBeTrue();
+    expect(component.foundationWithdrawableUsd).toBe(50);
+  });
+
+  it('keeps foundation withdrawals blocked before one year of service', () => {
+    const component = createComponent({ isAdmninistrator: true });
+
+    component.employee = {
+      firstName: 'Noella',
+      dateJoined: '10-1-2025',
+      bestEmployeeTrophies: [{ month: '2', year: '2026' }],
+    };
+
+    expect(component.foundationMonthsEarned).toBe(5);
+    expect(component.foundationTotalUsd).toBe(60);
+    expect(component.foundationWithdrawalEligible).toBeFalse();
+    expect(component.foundationWithdrawableUsd).toBe(0);
+  });
 });
