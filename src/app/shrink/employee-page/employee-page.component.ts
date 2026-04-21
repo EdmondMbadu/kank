@@ -419,6 +419,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weeklyPaymentCount = 0;
   showFoundationDetails = false;
   showFoundationRulesModal = false;
+  showFoundationRequestModal = false;
+  foundationRequestMode: 'partial' | 'full' | null = null;
+  foundationLeavingReason = '';
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
@@ -571,11 +574,59 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
-  get foundationEligibilityLabel(): string {
-    if (this.foundationHasLeftOrganization && !this.foundationWithdrawalEligible) {
-      return 'Accès perdu';
+  get foundationCanRequestWithdrawal(): boolean {
+    if (!this.foundationJoinDate) {
+      return false;
     }
 
+    if (this.foundationHasLeftOrganization) {
+      return this.foundationWithdrawalEligible && this.foundationTotalUsd > 0;
+    }
+
+    return this.foundationWithdrawalEligible && this.foundationWithdrawableUsd > 0;
+  }
+
+  get foundationCanRequestFullWithdrawal(): boolean {
+    return this.foundationTotalUsd > 0;
+  }
+
+  get foundationRequestBlockedReason(): string {
+    if (!this.foundationJoinDate) {
+      return "Date d'entrée manquante pour autoriser un retrait.";
+    }
+
+    if (this.foundationHasLeftOrganization && !this.foundationWithdrawalEligible) {
+      return "Retrait partiel non autorisé : utilisez le retrait total réservé au départ.";
+    }
+
+    if (!this.foundationWithdrawalEligible) {
+      return `Retrait non autorisé avant le ${this.foundationEligibilityDateLabel}.`;
+    }
+
+    if (!this.foundationHasLeftOrganization && this.foundationWithdrawableUsd <= 0) {
+      return `Retrait non autorisé : un minimum de $${this.foundationMinimumBalanceUsd} doit rester sur le compte.`;
+    }
+
+    return `Montant actuellement demandable : $${Math.floor(
+      this.foundationWithdrawableUsd
+    )}.`;
+  }
+
+  get foundationRequestModalTitle(): string {
+    if (this.foundationRequestMode === 'full') {
+      return 'Retirer tout le solde';
+    }
+
+    return 'Demander un retrait';
+  }
+
+  get foundationRequestModalAmount(): number {
+    return this.foundationRequestMode === 'full'
+      ? this.foundationTotalUsd
+      : this.foundationWithdrawableUsd;
+  }
+
+  get foundationEligibilityLabel(): string {
     if (this.foundationHasLeftOrganization) {
       return 'Retrait final autorisé';
     }
@@ -588,16 +639,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return "Date d'entrée requise pour calculer ce compte.";
     }
 
-    if (this.foundationHasLeftOrganization && !this.foundationWithdrawalEligible) {
-      return "Employé sorti avant 1 an: accès perdu et fonds libérés.";
+    if (this.foundationHasLeftOrganization) {
+      return 'Employé sortant: retrait total autorisé avec justification du départ.';
     }
 
     if (!this.foundationWithdrawalEligible) {
-      return `Retrait bloqué avant ${this.foundationEligibilityDateLabel}.`;
-    }
-
-    if (this.foundationHasLeftOrganization) {
-      return 'Employé sorti: retrait final total autorisé.';
+      return `Retrait partiel bloqué avant ${this.foundationEligibilityDateLabel}.`;
     }
 
     if (this.foundationWithdrawableUsd <= 0) {
@@ -637,6 +684,54 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   toggleFoundationDetails(): void {
     this.showFoundationDetails = !this.showFoundationDetails;
+  }
+
+  openFoundationRequestModal(mode: 'partial' | 'full'): void {
+    this.foundationRequestMode = mode;
+    this.foundationLeavingReason = '';
+    this.showFoundationRequestModal = true;
+  }
+
+  closeFoundationRequestModal(): void {
+    this.showFoundationRequestModal = false;
+    this.foundationRequestMode = null;
+    this.foundationLeavingReason = '';
+  }
+
+  submitFoundationRequest(): void {
+    if (!this.foundationRequestMode) {
+      return;
+    }
+
+    if (this.foundationRequestMode === 'partial') {
+      if (!this.foundationCanRequestWithdrawal) {
+        return;
+      }
+
+      alert(
+        `Demande de retrait enregistrée pour $${this.foundationWithdrawableUsd.toFixed(
+          0
+        )}. Le branchement final sera ajouté à l’étape suivante.`
+      );
+      this.closeFoundationRequestModal();
+      return;
+    }
+
+    if (!this.foundationCanRequestFullWithdrawal) {
+      return;
+    }
+
+    if (!this.foundationLeavingReason.trim()) {
+      alert('Ajoutez la raison du départ avant de retirer tout le solde.');
+      return;
+    }
+
+    alert(
+      `Demande de retrait total enregistrée pour $${this.foundationTotalUsd.toFixed(
+        0
+      )}. Raison du départ: ${this.foundationLeavingReason.trim()}. Le branchement final sera ajouté à l’étape suivante.`
+    );
+    this.closeFoundationRequestModal();
   }
 
   public graphPerformance: PerformanceGraph =

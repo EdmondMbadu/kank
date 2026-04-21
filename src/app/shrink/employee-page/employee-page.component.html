@@ -621,11 +621,6 @@
 
             <div *ngIf="showFoundationDetails" class="mt-4 space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  {{ foundationMonthsEarned }} mois x ${{ foundationMonthlyContributionUsd }}
-                  + {{ foundationEmployeeOfMonthCount }} meilleur employé x ${{ foundationPerformanceBonusUsd }}
-                </div>
-
                 <button
                   type="button"
                   (click)="openFoundationRulesModal(); $event.stopPropagation()"
@@ -645,8 +640,65 @@
                     <rect x="4" y="11" width="16" height="9" rx="2"></rect>
                     <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
                   </svg>
-                  Voir les règles
+                  Ouvrir les règles
                 </button>
+
+                <div class="flex flex-wrap justify-end gap-3">
+                  <button
+                    type="button"
+                    (click)="openFoundationRequestModal('partial'); $event.stopPropagation()"
+                    class="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3v12"></path>
+                      <path d="M7 10l5 5 5-5"></path>
+                      <path d="M5 21h14"></path>
+                    </svg>
+                    Demander un retrait
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="openFoundationRequestModal('full'); $event.stopPropagation()"
+                    class="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 21V9"></path>
+                      <path d="M17 14l-5-5-5 5"></path>
+                      <path d="M5 3h14"></path>
+                    </svg>
+                    Retirer tout le solde
+                  </button>
+                </div>
+              </div>
+
+              <div
+                class="rounded-2xl border px-4 py-3 text-sm"
+                [ngClass]="
+                  foundationCanRequestWithdrawal
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+                    : 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100'
+                "
+              >
+                {{ foundationStatusLabel }}
               </div>
 
               <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -693,21 +745,15 @@
                 </div>
               </div>
 
-              <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200">
-                  {{ foundationStatusLabel }}
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/80">
+                <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Éligibilité
                 </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/80">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Éligibilité
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {{ foundationEligibilityLabel }}
-                  </div>
-                  <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                    À partir du {{ foundationEligibilityDateLabel }}
-                  </div>
+                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {{ foundationEligibilityLabel }}
+                </div>
+                <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  À partir du {{ foundationEligibilityDateLabel }}
                 </div>
               </div>
             </div>
@@ -781,11 +827,9 @@
               <div class="w-full overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
                 <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 dark:border-slate-700">
                   <div>
-                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      Fondation Gervais · Compte Fondation Program
-                    </h3>
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Règles</h3>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      Règles du programme interne de soutien des employés.
+                      Fondation Gervais · Compte Fondation
                     </p>
                   </div>
                   <button
@@ -799,51 +843,180 @@
 
                 <div class="max-h-[calc(100vh-8rem)] space-y-5 overflow-y-auto px-6 py-5 text-sm leading-6 text-slate-700 dark:text-slate-200">
                   <p>
-                    The Compte Fondation is a savings program created by Fondation Gervais for its employees.
-                    It is not part of salary or compensation, but a separate fund designed to support employees
-                    financially over time as they continue working with the organization.
+                    Le Compte Fondation est un programme d’épargne mis en place par la Fondation Gervais pour ses employés.
+                    Il ne fait pas partie du salaire ni de la rémunération, mais constitue un fonds distinct destiné à
+                    vous soutenir financièrement dans la durée, au fur et à mesure de votre engagement au sein de la structure.
                   </p>
 
                   <div>
                     <h4 class="font-semibold text-slate-900 dark:text-slate-100">
-                      Terms of the Compte Fondation
+                      Conditions du Compte Fondation
                     </h4>
                     <ul class="mt-3 list-disc space-y-3 pl-5">
                       <li>
-                        <strong>Monthly contribution.</strong> For every full month worked, the employee earns $10
-                        added to the Compte Fondation.
+                        <strong>Contribution mensuelle.</strong> Pour chaque mois travaillé, un montant de 10 $ est
+                        crédité sur votre Compte Fondation.
+                        Exemple : si vous avez commencé le 1er janvier 2025 et que nous sommes le 15 avril, votre
+                        solde sera de 130 $.
                       </li>
                       <li>
-                        <strong>Performance bonus.</strong> The employee earns an extra $10 each time they are
-                        selected as Employee of the Month.
+                        <strong>Prime de performance.</strong> En plus de la contribution mensuelle, vous recevez 10 $
+                        supplémentaires chaque fois que vous êtes désigné meilleur employé du mois.
+                        Exemple : si vous avez été meilleur employé 5 fois, vous recevez 50 $ supplémentaires.
                       </li>
                       <li>
-                        <strong>Withdrawal eligibility.</strong> The employee must complete at least 1 year with the
-                        organization before withdrawing any funds. If they leave before reaching 1 year, access to the
-                        funds is lost and the funds are released.
+                        <strong>Conditions d’accès aux retraits.</strong> Vous devez avoir complété au moins 1 an au
+                        sein de la Fondation pour pouvoir effectuer un retrait partiel pendant que vous travaillez
+                        encore dans la structure.
                       </li>
                       <li>
-                        <strong>Withdrawals.</strong> Once eligible, withdrawal requests may be made at any time.
-                        Processing can take up to 2 weeks, though it is usually faster.
+                        <strong>Retraits.</strong> Une fois éligible, vous pouvez demander un retrait à tout moment.
+                        Le traitement peut prendre jusqu’à 2 semaines, mais il est généralement plus rapide.
+                        En cas de délai supplémentaire, vous serez informé.
                       </li>
                       <li>
-                        <strong>Minimum balance.</strong> A minimum of $100 must remain in the account at all times.
-                        If the balance is below $100, withdrawals are not allowed.
+                        <strong>Solde minimum.</strong> Un minimum de 100 $ doit être maintenu sur le compte en
+                        permanence. Exemple : si vous avez 130 $, vous pouvez retirer jusqu’à 30 $.
+                        Si votre solde est inférieur à 100 $, aucun retrait n’est autorisé.
                       </li>
                       <li>
-                        <strong>Final withdrawal.</strong> When the employee leaves the organization, the full
-                        remaining balance may be withdrawn.
+                        <strong>Retrait final.</strong> Lors de votre départ de la Fondation, vous pouvez retirer
+                        l’intégralité du solde restant.
                       </li>
                     </ul>
                   </div>
 
                   <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-100">
-                    <h4 class="font-semibold">Important Notice</h4>
+                    <h4 class="font-semibold">Avis important</h4>
                     <p class="mt-2">
-                      If an employee is caught engaging in theft, including taking money from clients or any other
-                      financial misconduct, they immediately lose full access to Compte Fondation funds. This rule
-                      applies without exception.
+                      Si vous êtes surpris en train de voler, notamment en prenant l’argent des clients ou en commettant
+                      toute autre faute financière, vous perdez immédiatement l’accès intégral à votre Compte Fondation.
+                      Cette règle s’applique sans exception.
                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            *ngIf="showFoundationRequestModal"
+            class="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4"
+          >
+            <div class="mx-auto flex min-h-full w-full max-w-2xl items-start justify-center py-4 sm:items-center">
+              <div class="w-full overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+                  <div>
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      {{ foundationRequestModalTitle }}
+                    </h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      Compte Fondation · {{ employee.firstName }} {{ employee.lastName }}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="closeFoundationRequestModal()"
+                    class="rounded-full border border-slate-300 px-3 py-1 text-sm font-semibold text-slate-600 transition hover:border-slate-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+
+                <div class="space-y-5 px-6 py-5 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800/80">
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Montant concerné
+                    </div>
+                    <div class="mt-1 text-3xl font-black tracking-tight text-slate-950 dark:text-slate-50">
+                      ${{ foundationRequestModalAmount | number : "1.0-0" }}
+                    </div>
+                  </div>
+
+                  <div
+                    *ngIf="foundationRequestMode === 'partial'"
+                    class="rounded-2xl border px-4 py-4"
+                    [ngClass]="
+                      foundationCanRequestWithdrawal
+                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10'
+                        : 'border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
+                    "
+                  >
+                    <div
+                      class="font-semibold"
+                      [ngClass]="
+                        foundationCanRequestWithdrawal
+                          ? 'text-emerald-800 dark:text-emerald-100'
+                          : 'text-red-800 dark:text-red-100'
+                      "
+                    >
+                      {{
+                        foundationCanRequestWithdrawal
+                          ? 'Retrait partiel autorisé'
+                          : 'Retrait partiel non autorisé'
+                      }}
+                    </div>
+                    <p
+                      class="mt-2 text-sm"
+                      [ngClass]="
+                        foundationCanRequestWithdrawal
+                          ? 'text-emerald-700 dark:text-emerald-200'
+                          : 'text-red-700 dark:text-red-200'
+                      "
+                    >
+                      {{ foundationRequestBlockedReason }}
+                    </p>
+                  </div>
+
+                  <div
+                    *ngIf="foundationRequestMode === 'full'"
+                    class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-500/30 dark:bg-amber-500/10"
+                  >
+                    <div class="font-semibold text-amber-900 dark:text-amber-100">
+                      Retrait total réservé au départ
+                    </div>
+                    <p class="mt-2 text-sm text-amber-800 dark:text-amber-100">
+                      Vous ne devez utiliser cette option que si l’employé quitte la Fondation. Le solde entier peut
+                      alors être demandé, mais la raison du départ doit être documentée ci-dessous.
+                    </p>
+                  </div>
+
+                  <div *ngIf="foundationRequestMode === 'full'" class="space-y-2">
+                    <label
+                      for="foundationLeavingReason"
+                      class="block text-sm font-semibold text-slate-900 dark:text-slate-100"
+                    >
+                      Raison du départ
+                    </label>
+                    <textarea
+                      id="foundationLeavingReason"
+                      [(ngModel)]="foundationLeavingReason"
+                      rows="4"
+                      placeholder="Expliquez pourquoi l’employé quitte la Fondation."
+                      class="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+                    ></textarea>
+                  </div>
+
+                  <div class="flex justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+                    <button
+                      type="button"
+                      (click)="closeFoundationRequestModal()"
+                      class="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 dark:border-slate-600 dark:text-slate-200"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      (click)="submitFoundationRequest()"
+                      class="rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                      [disabled]="
+                        foundationRequestMode === 'partial'
+                          ? !foundationCanRequestWithdrawal
+                          : !foundationCanRequestFullWithdrawal
+                      "
+                    >
+                      Confirmer la demande
+                    </button>
                   </div>
                 </div>
               </div>
