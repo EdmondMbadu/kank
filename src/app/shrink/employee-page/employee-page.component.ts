@@ -417,6 +417,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weeklyPaymentTotalN = 0;
   weeklyPaymentTotalUsd = '0';
   weeklyPaymentCount = 0;
+  showFoundationDetails = false;
   showFoundationRulesModal = false;
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
@@ -632,6 +633,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   closeFoundationRulesModal(): void {
     this.showFoundationRulesModal = false;
+  }
+
+  toggleFoundationDetails(): void {
+    this.showFoundationDetails = !this.showFoundationDetails;
   }
 
   public graphPerformance: PerformanceGraph =
