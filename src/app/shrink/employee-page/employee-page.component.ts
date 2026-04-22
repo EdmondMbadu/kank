@@ -707,6 +707,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   openFoundationRequestModal(mode: 'partial' | 'full'): void {
+    if (mode === 'partial') {
+      if (!this.foundationJoinDate) {
+        alert("La date d'entrée est requise avant de demander un retrait.");
+        return;
+      }
+
+      if (!this.foundationWithdrawalEligible) {
+        alert(
+          `Vous devez attendre d'avoir complété une année entière avant de demander un retrait. Revenez à partir du ${this.foundationEligibilityDateLabel}.`
+        );
+        return;
+      }
+    }
+
     this.foundationRequestMode = mode;
     this.foundationRequestedAmount =
       mode === 'partial' && this.foundationWithdrawableUsd > 0
