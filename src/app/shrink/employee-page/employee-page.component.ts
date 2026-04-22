@@ -439,11 +439,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showFoundationDetails = false;
   showFoundationRulesModal = false;
   showFoundationRequestModal = false;
-  showFoundationInvoiceModal = false;
   foundationRequestMode: 'partial' | 'full' | null = null;
   foundationRequestedAmount = '';
   foundationLeavingReason = '';
-  foundationInvoiceRequest: FoundationWithdrawalRequest | null = null;
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
@@ -803,16 +801,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.showFoundationRulesModal = false;
   }
 
-  openFoundationInvoiceModal(request: FoundationWithdrawalRequest): void {
-    this.foundationInvoiceRequest = request;
-    this.showFoundationInvoiceModal = true;
-  }
-
-  closeFoundationInvoiceModal(): void {
-    this.showFoundationInvoiceModal = false;
-    this.foundationInvoiceRequest = null;
-  }
-
   toggleFoundationDetails(): void {
     this.showFoundationDetails = !this.showFoundationDetails;
   }
@@ -861,6 +849,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return fullName || current?.email || 'Administration';
   }
 
+  private getViewedEmployeeName(): string {
+    const firstName = (this.employee?.firstName || '').trim();
+    const lastName = (this.employee?.lastName || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || 'Employé';
+  }
+
   private createFoundationRequestId(): string {
     return `foundation-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   }
@@ -882,6 +877,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   foundationRequestDateLabel(request: FoundationWithdrawalRequest): string {
     return this.formatLongDate(new Date(request.requestedAt));
+  }
+
+  foundationRequestEmployeeLabel(_request: FoundationWithdrawalRequest): string {
+    return this.getViewedEmployeeName();
   }
 
   foundationResolvedDateLabel(request: FoundationWithdrawalRequest): string {
@@ -928,6 +927,26 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  foundationInvoiceUrl(request: FoundationWithdrawalRequest): string {
+    return request.invoiceUrl || '';
+  }
+
+  hasFoundationReceipt(request: FoundationWithdrawalRequest): boolean {
+    return !!request.receiptUrl;
+  }
+
+  private async uploadFoundationInvoice(
+    request: FoundationWithdrawalRequest
+  ): Promise<string> {
+    const invoiceBlob = await this.compute.generateFoundationWithdrawalInvoice(
+      this.employee,
+      request
+    );
+    const path = `invoice/foundation-${this.employee.firstName}-${this.employee.lastName}-${request.id}.pdf`;
+    const uploadTask = await this.storage.upload(path, invoiceBlob);
+    return uploadTask.ref.getDownloadURL();
+  }
+
   async submitFoundationRequest(): Promise<void> {
     if (!this.foundationRequestMode) {
       return;
@@ -962,7 +981,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             amount: requestedAmount,
             requestedAt: Date.now(),
             requestedByUid: this.auth.currentUser?.uid || null,
-            requestedByName: this.getCurrentActorName(),
+            requestedByName: this.getViewedEmployeeName(),
           } as FoundationWithdrawalRequest,
           ...this.foundationRequests,
         ];
@@ -999,7 +1018,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           amount: this.foundationTotalUsd,
           requestedAt: Date.now(),
           requestedByUid: this.auth.currentUser?.uid || null,
-          requestedByName: this.getCurrentActorName(),
+          requestedByName: this.getViewedEmployeeName(),
           leavingReason: this.foundationLeavingReason.trim(),
         } as FoundationWithdrawalRequest,
         ...this.foundationRequests,
@@ -1034,19 +1053,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     try {
       const now = Date.now();
+      const approvedRequest: FoundationWithdrawalRequest = {
+        ...request,
+        status: 'approved',
+        resolvedAt: now,
+        resolvedByUid: this.auth.currentUser?.uid || null,
+        resolvedByName: this.getCurrentActorName(),
+        invoiceReference: this.foundationInvoiceReference({
+          ...request,
+          resolvedAt: now,
+        }),
+      };
+      const invoiceUrl = await this.uploadFoundationInvoice(approvedRequest);
       const nextRequests: FoundationWithdrawalRequest[] = this.foundationRequests.map(
         (entry) =>
           entry.id === request.id
             ? {
-                ...entry,
-                status: 'approved',
-                resolvedAt: now,
-                resolvedByUid: this.auth.currentUser?.uid || null,
-                resolvedByName: this.getCurrentActorName(),
-                invoiceReference: this.foundationInvoiceReference({
-                  ...entry,
-                  resolvedAt: now,
-                }),
+                ...approvedRequest,
+                invoiceUrl,
               }
             : entry
       );
@@ -2069,7 +2093,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.auditReceiptsScoped = [];
     this.auditReceiptsLegacy = [];
     this.closeAuditEntryModal();
-    this.closeFoundationInvoiceModal();
     this.closeFoundationRequestModal();
     this.employee = {};
     this.employees = [];
@@ -2653,7 +2676,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   paymentInvoiceUrl(entry: PaymentHistoryEntry): string {
-    if (entry.source !== 'salary') return '';
+    if (entry.source === 'foundation') {
+      return entry.foundationRequest?.invoiceUrl || '';
+    }
     return this.employee?.paymentsPicturePath?.[entry.sourceIndex ?? -1] || '';
   }
 

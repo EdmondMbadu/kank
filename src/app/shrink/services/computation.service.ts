@@ -3,7 +3,7 @@ import { Client } from '../../models/client';
 // import * as pdfMake from 'pdfmake/build/pdfmake';
 // import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TimeService } from '../../services/time.service';
-import { Employee } from '../../models/employee';
+import { Employee, FoundationWithdrawalRequest } from '../../models/employee';
 import { User, UserDailyField } from '../../models/user';
 import { AuthService } from '../../services/auth.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
@@ -2265,6 +2265,152 @@ export class ComputationService {
       pdfDoc.getBlob(
         (b: Blob) => resolve(b),
         (e: any) => reject(e)
+      );
+    });
+  }
+
+  async generateFoundationWithdrawalInvoice(
+    employee: Employee,
+    request: FoundationWithdrawalRequest
+  ): Promise<Blob> {
+    const safeMoney = (value: number) => {
+      const parsed = Number(value ?? 0);
+      const amount = Number.isFinite(parsed) ? Math.round(parsed) : 0;
+      return `$${amount.toLocaleString('en-US')}`;
+    };
+
+    const logo = await this.fetchImageAsBase64('../../../assets/img/gervais.png');
+    const requestDate = request.requestedAt
+      ? this.time.convertDateToDayMonthYear(
+          new Date(request.requestedAt).toLocaleDateString('en-US')
+        )
+      : this.time.getTodaysDateInFrench();
+    const resolvedDate = request.resolvedAt
+      ? this.time.convertDateToDayMonthYear(
+          new Date(request.resolvedAt).toLocaleDateString('en-US')
+        )
+      : this.time.getTodaysDateInFrench();
+    const reference =
+      request.invoiceReference ||
+      `FG-CF-${String(request.requestedAt || Date.now()).slice(-8)}`;
+
+    const bodyRows: any[] = [
+      [
+        { text: 'Rubrique', style: 'th' },
+        { text: 'Valeur', style: 'th', alignment: 'right' },
+      ],
+      ['Type de retrait', { text: request.mode === 'full' ? 'Total' : 'Partiel', alignment: 'right' }],
+      ['Montant approuvé', { text: safeMoney(request.amount), alignment: 'right' }],
+      ['Demande déposée', { text: requestDate, alignment: 'right' }],
+      ['Validation', { text: resolvedDate, alignment: 'right' }],
+      [
+        'Validée par',
+        { text: request.resolvedByName || 'Administration', alignment: 'right' },
+      ],
+    ];
+
+    if (request.leavingReason) {
+      bodyRows.push([
+        'Motif du départ',
+        { text: request.leavingReason, alignment: 'right' },
+      ]);
+    }
+
+    const dd: any = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      content: [
+        {
+          columns: [
+            [
+              { text: 'FONDATION GERVAIS', style: 'brand' },
+              {
+                text: '9 Av. Nations-Unies\nMon-Ngafula, Kinshasa (RDC)',
+                style: 'tiny',
+              },
+              { text: 'Téléphone : +243 825 333 567', style: 'tiny' },
+            ],
+            { image: logo, width: 75, alignment: 'right' },
+          ],
+        },
+        {
+          canvas: [
+            {
+              type: 'line',
+              x1: 0,
+              y1: 0,
+              x2: 435,
+              y2: 0,
+              lineWidth: 1.5,
+              lineColor: '#263238',
+            },
+          ],
+          margin: [0, 5, 0, 15],
+        },
+        { text: 'Facture Compte Fondation', style: 'docTitle' },
+        {
+          columns: [
+            {
+              text: [
+                { text: 'Employé : ', bold: true },
+                `${employee.firstName || ''} ${employee.middleName || ''} ${
+                  employee.lastName || ''
+                }\n`,
+                { text: 'Rôle : ', bold: true },
+                `${employee.role || ''}\n`,
+                { text: 'Statut : ', bold: true },
+                'Paiement approuvé Compte Fondation',
+              ],
+            },
+            {
+              text: [
+                { text: 'Référence : ', bold: true },
+                `${reference}\n`,
+                { text: "Date d'édition : ", bold: true },
+                this.time.getTodaysDateInFrench(),
+              ],
+              alignment: 'right',
+            },
+          ],
+          margin: [0, 0, 0, 15],
+        },
+        {
+          style: 'table',
+          table: {
+            widths: ['*', 'auto'],
+            body: bodyRows,
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => '#B0BEC5',
+          },
+          margin: [0, 0, 0, 16],
+        },
+        {
+          text:
+            'Cette facture confirme un paiement approuvé au titre du Compte Fondation. Le reçu bancaire peut être attaché séparément dans le dossier de paiement.',
+          style: 'note',
+        },
+      ],
+      styles: {
+        brand: { fontSize: 14, bold: true, color: '#263238' },
+        tiny: { fontSize: 8, color: '#546E7A' },
+        docTitle: { fontSize: 18, bold: true, margin: [0, 0, 0, 15] },
+        table: { margin: [0, 0, 0, 10] },
+        th: { bold: true, fillColor: '#ECEFF1', margin: [0, 3, 0, 3] },
+        note: { fontSize: 10, color: '#475569', italics: true },
+      },
+      defaultStyle: { fontSize: 10 },
+    };
+
+    const pdfMake = await this.ensurePdfMake();
+    const pdfDoc = pdfMake.createPdf(dd);
+
+    return new Promise<Blob>((resolve, reject) => {
+      pdfDoc.getBlob(
+        (blob: Blob) => resolve(blob),
+        (error: any) => reject(error)
       );
     });
   }

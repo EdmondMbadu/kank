@@ -136,6 +136,7 @@ export interface FoundationWithdrawalRequest {
   resolvedByName?: string;
   receiptUrl?: string;
   invoiceReference?: string;
+  invoiceUrl?: string;
 }
 export class Avatar {
   path?: string;
