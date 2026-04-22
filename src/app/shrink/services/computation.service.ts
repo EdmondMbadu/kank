@@ -2273,6 +2273,30 @@ export class ComputationService {
     employee: Employee,
     request: FoundationWithdrawalRequest
   ): Promise<Blob> {
+    const formatDateTime = (timestamp?: number) => {
+      if (!timestamp) {
+        return this.time.getTodaysDateInFrench();
+      }
+
+      const date = new Date(timestamp);
+      const datePart = date
+        .toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+        .replace(/^\d+\s+([a-zà-ÿ])/i, (match, initial) =>
+          match.replace(initial, initial.toUpperCase())
+        );
+      const timePart = date.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+
+      return `${datePart} à ${timePart}`;
+    };
+
     const safeMoney = (value: number) => {
       const parsed = Number(value ?? 0);
       const amount = Number.isFinite(parsed) ? Math.round(parsed) : 0;
@@ -2280,16 +2304,8 @@ export class ComputationService {
     };
 
     const logo = await this.fetchImageAsBase64('../../../assets/img/gervais.png');
-    const requestDate = request.requestedAt
-      ? this.time.convertDateToDayMonthYear(
-          new Date(request.requestedAt).toLocaleDateString('en-US')
-        )
-      : this.time.getTodaysDateInFrench();
-    const resolvedDate = request.resolvedAt
-      ? this.time.convertDateToDayMonthYear(
-          new Date(request.resolvedAt).toLocaleDateString('en-US')
-        )
-      : this.time.getTodaysDateInFrench();
+    const requestDate = formatDateTime(request.requestedAt);
+    const resolvedDate = formatDateTime(request.resolvedAt);
     const reference =
       request.invoiceReference ||
       `FG-CF-${String(request.requestedAt || Date.now()).slice(-8)}`;
@@ -2300,6 +2316,28 @@ export class ComputationService {
         { text: 'Valeur', style: 'th', alignment: 'right' },
       ],
       ['Type de retrait', { text: request.mode === 'full' ? 'Total' : 'Partiel', alignment: 'right' }],
+      [
+        'Solde avant validation',
+        {
+          text: safeMoney(request.balanceBeforeApproval ?? request.amount),
+          alignment: 'right',
+        },
+      ],
+      ['Montant retiré', { text: safeMoney(request.amount), alignment: 'right' }],
+      [
+        'Solde restant',
+        {
+          text: safeMoney(
+            request.balanceAfterApproval ??
+              Math.max(
+                0,
+                Number(request.balanceBeforeApproval ?? request.amount) -
+                  Number(request.amount ?? 0)
+              )
+          ),
+          alignment: 'right',
+        },
+      ],
       ['Montant approuvé', { text: safeMoney(request.amount), alignment: 'right' }],
       ['Demande déposée', { text: requestDate, alignment: 'right' }],
       ['Validation', { text: resolvedDate, alignment: 'right' }],

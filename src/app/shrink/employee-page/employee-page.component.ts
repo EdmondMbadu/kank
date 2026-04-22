@@ -876,7 +876,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   foundationRequestDateLabel(request: FoundationWithdrawalRequest): string {
-    return this.formatLongDate(new Date(request.requestedAt));
+    return this.formatLongDateTime(
+      request.requestedAt ? new Date(request.requestedAt) : null
+    );
   }
 
   foundationRequestEmployeeLabel(_request: FoundationWithdrawalRequest): string {
@@ -885,7 +887,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   foundationResolvedDateLabel(request: FoundationWithdrawalRequest): string {
     return request.resolvedAt
-      ? this.formatLongDate(new Date(request.resolvedAt))
+      ? this.formatLongDateTime(new Date(request.resolvedAt))
       : 'En attente';
   }
 
@@ -1067,12 +1069,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     try {
       const now = Date.now();
+      const balanceBeforeApproval = this.foundationTotalUsd;
+      const approvedAmount = Number(request.amount || 0);
       const approvedRequest: FoundationWithdrawalRequest = {
         ...request,
         status: 'approved',
         resolvedAt: now,
         resolvedByUid: this.auth.currentUser?.uid || null,
         resolvedByName: this.getCurrentActorName(),
+        balanceBeforeApproval,
+        balanceAfterApproval: Math.max(0, balanceBeforeApproval - approvedAmount),
         invoiceReference: this.foundationInvoiceReference({
           ...request,
           resolvedAt: now,
@@ -2384,6 +2390,19 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       .replace(/^\d+\s+([a-zà-ÿ])/i, (match, initial) =>
         match.replace(initial, initial.toUpperCase())
       );
+  }
+
+  private formatLongDateTime(date: Date | null): string {
+    if (!date) return 'Date inconnue';
+
+    const datePart = this.formatLongDate(date);
+    const timePart = date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    return `${datePart} à ${timePart}`;
   }
 
   private startOfDay(date: Date): Date {

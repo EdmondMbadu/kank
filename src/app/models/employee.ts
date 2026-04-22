@@ -137,6 +137,8 @@ export interface FoundationWithdrawalRequest {
   receiptUrl?: string;
   invoiceReference?: string;
   invoiceUrl?: string;
+  balanceBeforeApproval?: number;
+  balanceAfterApproval?: number;
 }
 export class Avatar {
   path?: string;
