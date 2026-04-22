@@ -1,7 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
-import { Client, Comment } from 'src/app/models/client';
+import {
+  AuditConversationAudioAttachment,
+  Client,
+  Comment,
+} from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -151,6 +155,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   showRecentPaymentsExpanded = false;
   showRecentSavingsExpanded = false;
   showClientCommentsExpanded = false;
+  showClientAuditAudiosExpanded = false;
+  expandedClientAudioKeys = new Set<string>();
   birthdayFilterMode: 'all' | 'today' | 'tomorrow' | 'custom' = 'all';
   customBirthdayInput = '';
   private birthdayTarget: { month: number; day: number } | null = null;
@@ -2490,6 +2496,7 @@ Merci pour ta confiance !`;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
     this.showClientCommentsExpanded = false;
+    this.showClientAuditAudiosExpanded = false;
     this.showClientModal = true;
   }
   closeClientModal() {
@@ -2501,6 +2508,7 @@ Merci pour ta confiance !`;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
     this.showClientCommentsExpanded = false;
+    this.showClientAuditAudiosExpanded = false;
   }
   openActiveClientPortal() {
     const trackingId = this.activeClient?.trackingId;
@@ -2699,6 +2707,75 @@ Merci pour ta confiance !`;
   toggleClientComments() {
     this.showClientCommentsExpanded = !this.showClientCommentsExpanded;
   }
+  clientAuditConversationAudios(
+    client?: Client | null
+  ): AuditConversationAudioAttachment[] {
+    if (client?.auditConversationAudios !== undefined) {
+      return client.auditConversationAudios;
+    }
+
+    if (!client?.auditConversationAudioUrl) {
+      return [];
+    }
+
+    return [
+      {
+        url: client.auditConversationAudioUrl,
+        name: client.auditConversationAudioName,
+        mimeType: client.auditConversationAudioMimeType,
+        recordedAt: client.auditConversationAudioRecordedAt,
+        recordedAtSource: client.auditConversationAudioRecordedAtSource,
+        uploadedAt: client.auditConversationAudioUploadedAt,
+        uploadedBy: client.auditConversationAudioUploadedBy,
+      },
+    ];
+  }
+  hasClientAuditAudio(client?: Client | null): boolean {
+    return this.clientAuditConversationAudios(client).length > 0;
+  }
+  clientAuditAudioCount(client?: Client | null): number {
+    return this.clientAuditConversationAudios(client).length;
+  }
+  toggleClientAuditAudioList(client?: Client | null) {
+    const key = this.clientAudioKey(client);
+    if (!key) return;
+    if (this.expandedClientAudioKeys.has(key)) {
+      this.expandedClientAudioKeys.delete(key);
+      return;
+    }
+    this.expandedClientAudioKeys.add(key);
+  }
+  isClientAuditAudioListExpanded(client?: Client | null): boolean {
+    const key = this.clientAudioKey(client);
+    return !!key && this.expandedClientAudioKeys.has(key);
+  }
+  toggleActiveClientAuditAudios() {
+    if (this.clientAuditAudioCount(this.activeClient) <= 1) return;
+    this.showClientAuditAudiosExpanded = !this.showClientAuditAudiosExpanded;
+  }
+  visibleClientAuditAudios(
+    client?: Client | null
+  ): AuditConversationAudioAttachment[] {
+    const audios = this.clientAuditConversationAudios(client);
+    return this.showClientAuditAudiosExpanded ? audios : audios.slice(0, 1);
+  }
+  hasMoreClientAuditAudios(client?: Client | null): boolean {
+    return this.clientAuditConversationAudios(client).length > 1;
+  }
+  clientAuditAudioTitle(
+    audio: AuditConversationAudioAttachment,
+    index: number
+  ): string {
+    return audio.name?.trim() || `Audio ${index + 1}`;
+  }
+  clientAuditAudioSubtitle(audio: AuditConversationAudioAttachment): string {
+    const parts: string[] = [];
+    if (audio.uploadedBy) parts.push(audio.uploadedBy);
+    if (audio.uploadedAt) {
+      parts.push(this.time.convertDateToDesiredFormat(audio.uploadedAt));
+    }
+    return parts.join(' · ');
+  }
   commentPreview(comment?: Comment | null): string {
     const text = (comment?.comment ?? '').trim();
     if (text) return text;
@@ -2737,6 +2814,13 @@ Merci pour ta confiance !`;
     );
     if (!Number.isFinite(usdRaw) || usdRaw <= 0) return '0';
     return usdRaw.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+  private clientAudioKey(client?: Client | null): string {
+    return (
+      client?.uid ||
+      client?.trackingId ||
+      `${client?.firstName || ''}-${client?.lastName || ''}-${client?.phoneNumber || ''}`
+    );
   }
   private applyClientPhoneNumberLocal(
     clientId: string,
