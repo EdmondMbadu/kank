@@ -807,6 +807,22 @@
                   >
                     Doublon × {{ getDuplicatePhoneCount(c) }}
                   </span>
+                  <span
+                    *ngIf="hasClientAuditAudio(c)"
+                    class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                    title="Audio de vérification disponible"
+                  >
+                    <svg
+                      class="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M14.5 3.27a1 1 0 0 1 1.5.86v15.74a1 1 0 0 1-1.64.77L8.3 15.5H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3.3l6.06-5.14a1 1 0 0 1 1.14-.09z"></path>
+                      <path d="M18.5 9.5a1 1 0 0 1 1.41 0 3.5 3.5 0 0 1 0 4.95 1 1 0 1 1-1.41-1.41 1.5 1.5 0 0 0 0-2.12 1 1 0 0 1 0-1.42z"></path>
+                    </svg>
+                    Audio
+                  </span>
                 </p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">
                   {{ formatDisplayPhone(c.phoneNumber) }}
@@ -2882,7 +2898,11 @@
         *ngIf="hasClientAuditAudio(activeClient)"
         class="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-5 dark:border-emerald-500/30 dark:bg-emerald-500/10"
       >
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          class="flex w-full items-center justify-between gap-3 text-left"
+          (click)="toggleClientAuditAudioSection()"
+        >
           <div>
             <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">
               Audios de vérification
@@ -2891,17 +2911,40 @@
               {{ clientAuditAudioCount(activeClient) }} audio(s) joint(s) à la fiche du client.
             </p>
           </div>
-          <button
-            *ngIf="hasMoreClientAuditAudios(activeClient)"
-            type="button"
-            class="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-500/30 dark:bg-slate-900 dark:text-emerald-200"
-            (click)="toggleActiveClientAuditAudios()"
-          >
-            {{ showClientAuditAudiosExpanded ? "Voir moins" : "Voir tous les audios" }}
-          </button>
-        </div>
+          <div class="flex items-center gap-2">
+            <span class="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-slate-900 dark:text-emerald-200">
+              {{ showClientAuditAudioSectionExpanded ? "Réduire" : "Développer" }}
+            </span>
+            <span class="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 dark:border-emerald-500/30 dark:bg-slate-900 dark:text-emerald-200">
+              <svg
+                class="h-4 w-4 transition-transform duration-200"
+                [ngClass]="{ 'rotate-180': showClientAuditAudioSectionExpanded }"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M6 9l6 6 6-6"></path>
+              </svg>
+            </span>
+          </div>
+        </button>
 
-        <div class="mt-4 space-y-3">
+        <div *ngIf="showClientAuditAudioSectionExpanded" class="mt-4 space-y-3">
+          <div class="flex justify-end">
+            <button
+              *ngIf="hasMoreClientAuditAudios(activeClient)"
+              type="button"
+              class="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-500/30 dark:bg-slate-900 dark:text-emerald-200"
+              (click)="toggleActiveClientAuditAudios()"
+            >
+              {{ showClientAuditAudiosExpanded ? "Voir moins" : "Voir tous les audios" }}
+            </button>
+          </div>
+
           <div
             *ngFor="let audio of visibleClientAuditAudios(activeClient); let i = index"
             class="rounded-2xl border border-white/80 bg-white/90 p-4 dark:border-slate-700 dark:bg-slate-900/80"

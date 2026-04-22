@@ -155,6 +155,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   showRecentPaymentsExpanded = false;
   showRecentSavingsExpanded = false;
   showClientCommentsExpanded = false;
+  showClientAuditAudioSectionExpanded = false;
   showClientAuditAudiosExpanded = false;
   expandedClientAudioKeys = new Set<string>();
   birthdayFilterMode: 'all' | 'today' | 'tomorrow' | 'custom' = 'all';
@@ -2496,6 +2497,7 @@ Merci pour ta confiance !`;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
     this.showClientCommentsExpanded = false;
+    this.showClientAuditAudioSectionExpanded = false;
     this.showClientAuditAudiosExpanded = false;
     this.showClientModal = true;
   }
@@ -2508,6 +2510,7 @@ Merci pour ta confiance !`;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
     this.showClientCommentsExpanded = false;
+    this.showClientAuditAudioSectionExpanded = false;
     this.showClientAuditAudiosExpanded = false;
   }
   openActiveClientPortal() {
@@ -2752,6 +2755,10 @@ Merci pour ta confiance !`;
   toggleActiveClientAuditAudios() {
     if (this.clientAuditAudioCount(this.activeClient) <= 1) return;
     this.showClientAuditAudiosExpanded = !this.showClientAuditAudiosExpanded;
+  }
+  toggleClientAuditAudioSection() {
+    this.showClientAuditAudioSectionExpanded =
+      !this.showClientAuditAudioSectionExpanded;
   }
   visibleClientAuditAudios(
     client?: Client | null
