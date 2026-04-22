@@ -608,40 +608,40 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   get activeMasterFilterPanelTitle(): string {
     switch (this.activeMasterFilterPanel) {
       case 'paymentDay':
-        return 'Pay Day';
+        return 'Jour de paiement';
       case 'duplicatePhone':
-        return 'Phone Duplicates';
+        return 'Doublons téléphone';
       case 'audio':
         return 'Audio';
       case 'debtStatus':
-        return 'Debt & Status';
+        return 'Dette & Statut';
       case 'stars':
-        return 'Stars';
+        return 'Étoiles';
       case 'scoreLoan':
-        return 'Score & Loan';
+        return 'Score & Prêt';
       case 'locations':
-        return 'Client Sites';
+        return 'Sites (clients)';
       default:
-        return 'Filters';
+        return 'Filtres';
     }
   }
 
   get activeMasterFilterPanelHint(): string {
     switch (this.activeMasterFilterPanel) {
       case 'paymentDay':
-        return 'Narrow clients by their scheduled payment day.';
+        return 'Affinez les clients selon leur jour de paiement prévu.';
       case 'duplicatePhone':
-        return 'Quickly spot phone numbers shared by multiple clients.';
+        return 'Repérez rapidement les numéros partagés entre plusieurs clients.';
       case 'audio':
-        return 'Filter clients by whether an audio file is attached.';
+        return "Filtrez les clients selon la présence d'un audio joint.";
       case 'debtStatus':
-        return 'Combine debt and client status in one compact panel.';
+        return 'Combinez le statut de dette et le statut du client dans un seul panneau.';
       case 'stars':
-        return 'Filter by stars or by an exact number of stars.';
+        return 'Isolez les clients selon leurs étoiles ou un nombre exact.';
       case 'scoreLoan':
-        return 'Refine the list by credit score and approved loan amount.';
+        return 'Réduisez la liste par score de crédit et montant de prêt.';
       case 'locations':
-        return 'Show only the client sites you want to include.';
+        return 'Activez seulement les sites clients que vous voulez voir.';
       default:
         return '';
     }
