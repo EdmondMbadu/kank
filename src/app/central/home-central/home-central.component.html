@@ -371,6 +371,60 @@
             <p
               class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
             >
+              Audio
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                (click)="setAudioFilter('all')"
+                class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                [ngClass]="{
+                  'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+                    isAudioFilter('all'),
+                  'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+                    !isAudioFilter('all')
+                }"
+              >
+                Tous
+              </button>
+              <button
+                type="button"
+                (click)="setAudioFilter('withAudio')"
+                class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                [ngClass]="{
+                  'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+                    isAudioFilter('withAudio'),
+                  'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+                    !isAudioFilter('withAudio')
+                }"
+              >
+                Avec audio
+              </button>
+              <button
+                type="button"
+                (click)="setAudioFilter('withoutAudio')"
+                class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                [ngClass]="{
+                  'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+                    isAudioFilter('withoutAudio'),
+                  'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+                    !isAudioFilter('withoutAudio')
+                }"
+              >
+                Sans audio
+              </button>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-300">
+              Filtre les clients selon la présence d’un audio joint.
+            </p>
+          </div>
+
+          <div
+            class="rounded-2xl border border-slate-200/70 bg-white/70 p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/60"
+          >
+            <p
+              class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300"
+            >
               Dette & Statut
             </p>
             <div class="mt-2 space-y-3">

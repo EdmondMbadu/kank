@@ -193,6 +193,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   starsFilter: 'all' | 'noStars' | 'withStars' | 'exact' = 'all';
   starsFilterValue: number | null = null;
   duplicatePhoneFilter: 'all' | 'duplicates' = 'all';
+  audioFilter: 'all' | 'withAudio' | 'withoutAudio' = 'all';
   duplicatePhoneDigits = new Set<string>();
   duplicatePhoneCounts: Record<string, number> = {};
   duplicatePhoneGroupsCount = 0;
@@ -647,6 +648,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const hasPaymentDayFilter = !!this.selectedPaymentDay;
     const hasLocationFilter = !this.masterSelectAllLocations;
     const hasDuplicateFilter = this.duplicatePhoneFilter !== 'all';
+    const hasAudioFilter = this.audioFilter !== 'all';
 
     const isDefaultView =
       !this.birthdayFilterSummary &&
@@ -657,7 +659,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       !hasQuitteFilter &&
       !hasPaymentDayFilter &&
       !hasLocationFilter &&
-      !hasDuplicateFilter;
+      !hasDuplicateFilter &&
+      !hasAudioFilter;
 
     if (isDefaultView) {
       return `Tous les clients · ${baseTotal} client(s)`;
@@ -714,6 +717,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     if (hasDuplicateFilter) {
       parts.push('Doublons téléphone');
     }
+    if (hasAudioFilter) {
+      parts.push(
+        this.audioFilter === 'withAudio' ? 'Avec audio' : 'Sans audio'
+      );
+    }
 
     parts.push(`${count} client(s)`);
     return parts.join(' · ');
@@ -729,7 +737,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       .filter((client) => this.matchesMasterLocation(client))
       .filter((client) => this.matchesPaymentDay(client))
       .filter((client) => this.matchesStarsFilter(client))
-      .filter((client) => this.matchesDuplicatePhone(client));
+      .filter((client) => this.matchesDuplicatePhone(client))
+      .filter((client) => this.matchesAudioFilter(client));
 
     this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
@@ -794,6 +803,24 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     if (this.duplicatePhoneFilter !== 'duplicates') return true;
     const digits = this.normalizePhoneDigits(client.phoneNumber);
     return !!digits && this.duplicatePhoneDigits.has(digits);
+  }
+  private matchesAudioFilter(client: Client): boolean {
+    switch (this.audioFilter) {
+      case 'withAudio':
+        return this.hasClientAuditAudio(client);
+      case 'withoutAudio':
+        return !this.hasClientAuditAudio(client);
+      default:
+        return true;
+    }
+  }
+  setAudioFilter(mode: 'all' | 'withAudio' | 'withoutAudio') {
+    if (this.audioFilter === mode) return;
+    this.audioFilter = mode;
+    this.applyClientFilters();
+  }
+  isAudioFilter(mode: 'all' | 'withAudio' | 'withoutAudio') {
+    return this.audioFilter === mode;
   }
 
   isDuplicatePhoneClient(client: Client | null | undefined): boolean {
