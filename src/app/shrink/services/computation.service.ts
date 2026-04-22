@@ -2018,12 +2018,18 @@ export class ComputationService {
     months: {
       month: number;
       monthLabel: string;
-      entries: { dateLabel: string; amount: number; kind: 'paiement' | 'bonus' }[];
+      entries: {
+        dateLabel: string;
+        amount: number;
+        kind: 'paiement' | 'bonus' | 'fondation';
+      }[];
       totalPayment: number;
       totalBonus: number;
+      totalFoundation?: number;
     }[],
     totalPayment: number,
-    totalBonus: number
+    totalBonus: number,
+    totalFoundation: number = 0
   ): Promise<Blob> {
     const safeNumber = (v: number) => {
       const cleaned = String(v ?? '').replace(/[^0-9.-]/g, '');
@@ -2110,9 +2116,17 @@ export class ComputationService {
               },
             ],
             [
+              { text: 'TOTAL COMPTE FONDATION', style: 'yearTotalLabel' },
+              {
+                text: `$${safeNumber(totalFoundation)}`,
+                style: 'yearTotalValue',
+                alignment: 'right',
+              },
+            ],
+            [
               { text: 'TOTAL RÉMUNÉRATIONS', style: 'yearTotalAllLabel' },
               {
-                text: `$${safeNumber(totalPayment + totalBonus)}`,
+                text: `$${safeNumber(totalPayment + totalBonus + totalFoundation)}`,
                 style: 'yearTotalAllValue',
                 alignment: 'right',
               },
@@ -2137,7 +2151,13 @@ export class ComputationService {
         { text: formatMoney(month.totalPayment), alignment: 'right' },
         { text: formatMoney(month.totalBonus), alignment: 'right' },
         {
-          text: formatMoney(month.totalPayment + month.totalBonus),
+          text: formatMoney(month.totalFoundation ?? 0),
+          alignment: 'right',
+        },
+        {
+          text: formatMoney(
+            month.totalPayment + month.totalBonus + (month.totalFoundation ?? 0)
+          ),
           alignment: 'right',
           style: 'total',
         },
@@ -2151,12 +2171,17 @@ export class ComputationService {
     content.push({
       style: 'table',
       table: {
-        widths: ['*', 'auto', 'auto', 'auto'],
+        widths: ['*', 'auto', 'auto', 'auto', 'auto'],
         body: [
           [
             { text: 'Mois', style: 'tableHeader' },
             { text: 'Paiements', style: 'tableHeader', alignment: 'right' },
             { text: 'Bonus', style: 'tableHeader', alignment: 'right' },
+            {
+              text: 'Fondation',
+              style: 'tableHeader',
+              alignment: 'right',
+            },
             { text: 'Rémunérations', style: 'tableHeader', alignment: 'right' },
           ],
           ...monthSummaryRows,

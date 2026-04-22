@@ -9,6 +9,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   Employee,
+  FoundationWithdrawalRequest,
   Trophy,
   WeeklyObjectiveDeduction,
 } from 'src/app/models/employee';
@@ -90,7 +91,18 @@ type ContractViewModel = {
   effectiveDate?: string;
   signatureDataUrl?: string;
 };
-type PaymentEntryKind = 'paiement' | 'bonus';
+type PaymentEntryKind = 'paiement' | 'bonus' | 'fondation';
+type PaymentHistoryEntry = {
+  id: string;
+  date: Date;
+  dateLabel: string;
+  amount: number;
+  kind: PaymentEntryKind;
+  source: 'salary' | 'foundation';
+  sourceIndex?: number;
+  rawKey?: string;
+  foundationRequest?: FoundationWithdrawalRequest;
+};
 type PaymentYearEntry = {
   rawKey: string;
   date: Date;
@@ -104,12 +116,14 @@ type PaymentYearMonthSummary = {
   entries: PaymentYearEntry[];
   totalPayment: number;
   totalBonus: number;
+  totalFoundation: number;
 };
 type PaymentYearSummary = {
   year: number;
   months: PaymentYearMonthSummary[];
   totalPayment: number;
   totalBonus: number;
+  totalFoundation: number;
 };
 
 @Component({
@@ -329,6 +343,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   locationCoordinate: LocationCoordinates = {};
   // For tracking which payment index we're attaching a receipt for
   currentReceiptIndex: number | null = null;
+  currentReceiptTarget:
+    | { kind: 'salary'; index: number }
+    | { kind: 'foundation'; requestId: string }
+    | null = null;
 
   withinRadius: boolean | null = null;
   errorMessage: string | null = null;
@@ -382,6 +400,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   totalPointsMonth: string = '';
   paymentAmounts: string[] = [];
   paymentDates: string[] = [];
+  paymentHistoryEntries: PaymentHistoryEntry[] = [];
   paymentViewMode: 'month' | 'year' = 'month';
   paymentYearSummaries: PaymentYearSummary[] = [];
 
@@ -420,9 +439,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showFoundationDetails = false;
   showFoundationRulesModal = false;
   showFoundationRequestModal = false;
+  showFoundationInvoiceModal = false;
   foundationRequestMode: 'partial' | 'full' | null = null;
   foundationRequestedAmount = '';
   foundationLeavingReason = '';
+  foundationInvoiceRequest: FoundationWithdrawalRequest | null = null;
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
@@ -544,11 +565,45 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
-  get foundationTotalUsd(): number {
+  get foundationRequests(): FoundationWithdrawalRequest[] {
+    const requests = Array.isArray(this.employee?.foundationRequests)
+      ? [...this.employee.foundationRequests]
+      : [];
+    return requests.sort((a, b) => (b.requestedAt || 0) - (a.requestedAt || 0));
+  }
+
+  get foundationPendingRequests(): FoundationWithdrawalRequest[] {
+    return this.foundationRequests.filter((request) => request.status === 'pending');
+  }
+
+  get foundationApprovedRequests(): FoundationWithdrawalRequest[] {
+    return this.foundationRequests.filter((request) => request.status === 'approved');
+  }
+
+  get foundationRejectedRequests(): FoundationWithdrawalRequest[] {
+    return this.foundationRequests.filter((request) => request.status === 'rejected');
+  }
+
+  get foundationHasPendingRequest(): boolean {
+    return this.foundationPendingRequests.length > 0;
+  }
+
+  get foundationApprovedPayoutTotalUsd(): number {
+    return this.foundationApprovedRequests.reduce(
+      (sum, request) => sum + (Number(request.amount) || 0),
+      0
+    );
+  }
+
+  get foundationGrossTotalUsd(): number {
     return (
       this.foundationMonthlyContributionTotalUsd +
       this.foundationPerformanceBonusTotalUsd
     );
+  }
+
+  get foundationTotalUsd(): number {
+    return Math.max(0, this.foundationGrossTotalUsd - this.foundationApprovedPayoutTotalUsd);
   }
 
   get foundationWithdrawalEligible(): boolean {
@@ -580,6 +635,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return false;
     }
 
+    if (this.foundationHasPendingRequest) {
+      return false;
+    }
+
     if (this.foundationHasLeftOrganization) {
       return this.foundationWithdrawalEligible && this.foundationTotalUsd > 0;
     }
@@ -588,12 +647,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get foundationCanRequestFullWithdrawal(): boolean {
-    return this.foundationTotalUsd > 0;
+    return !this.foundationHasPendingRequest && this.foundationTotalUsd > 0;
   }
 
   get foundationRequestBlockedReason(): string {
     if (!this.foundationJoinDate) {
       return "Date d'entrée manquante pour autoriser un retrait.";
+    }
+
+    if (this.foundationHasPendingRequest) {
+      return 'Une demande Compte Fondation est déjà en attente de validation.';
     }
 
     if (this.foundationHasLeftOrganization && !this.foundationWithdrawalEligible) {
@@ -647,6 +710,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get foundationEligibilityLabel(): string {
+    if (this.foundationHasPendingRequest) {
+      return 'Demande en attente';
+    }
+
     if (this.foundationHasLeftOrganization) {
       return 'Retrait final autorisé';
     }
@@ -657,6 +724,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   get foundationStatusLabel(): string {
     if (!this.foundationJoinDate) {
       return "Date d'entrée requise pour calculer ce compte.";
+    }
+
+    if (this.foundationHasPendingRequest) {
+      return 'Une demande de retrait Compte Fondation est en attente de validation.';
     }
 
     if (this.foundationHasLeftOrganization) {
@@ -694,6 +765,36 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return this.formatLongDate(eligibilityDate);
   }
 
+  get foundationPendingSummaryLabel(): string {
+    const count = this.foundationPendingRequests.length;
+    return `${count} demande${count > 1 ? 's' : ''} en attente`;
+  }
+
+  get foundationCardClasses(): Record<string, boolean> {
+    return {
+      'border-amber-200 bg-amber-50 hover:border-amber-300 hover:bg-amber-100/70 dark:border-amber-500/30 dark:bg-amber-500/10':
+        this.foundationHasPendingRequest,
+      'border-emerald-200 bg-emerald-50 hover:border-emerald-300 hover:bg-emerald-100/70 dark:border-emerald-500/30 dark:bg-emerald-500/10':
+        !this.foundationHasPendingRequest,
+    };
+  }
+
+  get foundationCardIconClasses(): Record<string, boolean> {
+    return {
+      'border-amber-200 text-amber-700 dark:border-amber-500/30 dark:text-amber-200':
+        this.foundationHasPendingRequest,
+      'border-emerald-200 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-200':
+        !this.foundationHasPendingRequest,
+    };
+  }
+
+  get foundationCardLabelClasses(): Record<string, boolean> {
+    return {
+      'text-amber-700 dark:text-amber-200': this.foundationHasPendingRequest,
+      'text-emerald-700 dark:text-emerald-200': !this.foundationHasPendingRequest,
+    };
+  }
+
   openFoundationRulesModal(): void {
     this.showFoundationRulesModal = true;
   }
@@ -702,11 +803,26 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.showFoundationRulesModal = false;
   }
 
+  openFoundationInvoiceModal(request: FoundationWithdrawalRequest): void {
+    this.foundationInvoiceRequest = request;
+    this.showFoundationInvoiceModal = true;
+  }
+
+  closeFoundationInvoiceModal(): void {
+    this.showFoundationInvoiceModal = false;
+    this.foundationInvoiceRequest = null;
+  }
+
   toggleFoundationDetails(): void {
     this.showFoundationDetails = !this.showFoundationDetails;
   }
 
   openFoundationRequestModal(mode: 'partial' | 'full'): void {
+    if (this.foundationHasPendingRequest) {
+      alert('Une demande Compte Fondation est déjà en attente. Traitez-la avant d’en créer une autre.');
+      return;
+    }
+
     if (mode === 'partial') {
       if (!this.foundationJoinDate) {
         alert("La date d'entrée est requise avant de demander un retrait.");
@@ -737,7 +853,82 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.foundationLeavingReason = '';
   }
 
-  submitFoundationRequest(): void {
+  private getCurrentActorName(): string {
+    const current = this.auth.currentUser as any;
+    const firstName = (current?.firstName || '').trim();
+    const lastName = (current?.lastName || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || current?.email || 'Administration';
+  }
+
+  private createFoundationRequestId(): string {
+    return `foundation-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private async persistFoundationRequests(
+    requests: FoundationWithdrawalRequest[]
+  ): Promise<void> {
+    if (!this.employee?.uid) {
+      throw new Error("Identifiant employé introuvable.");
+    }
+
+    this.employee.foundationRequests = requests;
+    await this.data.updateEmployeeField(
+      this.employee.uid,
+      'foundationRequests',
+      requests
+    );
+  }
+
+  foundationRequestDateLabel(request: FoundationWithdrawalRequest): string {
+    return this.formatLongDate(new Date(request.requestedAt));
+  }
+
+  foundationResolvedDateLabel(request: FoundationWithdrawalRequest): string {
+    return request.resolvedAt
+      ? this.formatLongDate(new Date(request.resolvedAt))
+      : 'En attente';
+  }
+
+  foundationRequestTypeLabel(request: FoundationWithdrawalRequest): string {
+    return request.mode === 'full' ? 'Retrait total' : 'Retrait partiel';
+  }
+
+  foundationRequestStatusBadgeClasses(
+    request: FoundationWithdrawalRequest
+  ): Record<string, boolean> {
+    return {
+      'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-100':
+        request.status === 'pending',
+      'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-100':
+        request.status === 'approved',
+      'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-100':
+        request.status === 'rejected',
+    };
+  }
+
+  foundationRequestStatusLabel(request: FoundationWithdrawalRequest): string {
+    switch (request.status) {
+      case 'approved':
+        return 'Approuvée';
+      case 'rejected':
+        return 'Rejetée';
+      default:
+        return 'En attente';
+    }
+  }
+
+  foundationInvoiceReference(request: FoundationWithdrawalRequest): string {
+    return (
+      request.invoiceReference ||
+      `FG-CF-${new Date(request.resolvedAt || request.requestedAt)
+        .getTime()
+        .toString()
+        .slice(-8)}`
+    );
+  }
+
+  async submitFoundationRequest(): Promise<void> {
     if (!this.foundationRequestMode) {
       return;
     }
@@ -762,12 +953,31 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         return;
       }
 
-      alert(
-        `Demande de retrait enregistrée pour $${requestedAmount.toFixed(
-          0
-        )}. Le branchement final sera ajouté à l’étape suivante.`
-      );
-      this.closeFoundationRequestModal();
+      try {
+        const nextRequests = [
+          {
+            id: this.createFoundationRequestId(),
+            mode: 'partial',
+            status: 'pending',
+            amount: requestedAmount,
+            requestedAt: Date.now(),
+            requestedByUid: this.auth.currentUser?.uid || null,
+            requestedByName: this.getCurrentActorName(),
+          } as FoundationWithdrawalRequest,
+          ...this.foundationRequests,
+        ];
+
+        await this.persistFoundationRequests(nextRequests);
+        alert(
+          `Demande de retrait enregistrée pour $${requestedAmount.toFixed(
+            0
+          )}. Elle apparaît maintenant en attente de validation.`
+        );
+        this.closeFoundationRequestModal();
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la demande Fondation', error);
+        alert("Impossible d'enregistrer cette demande pour le moment.");
+      }
       return;
     }
 
@@ -780,12 +990,110 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    alert(
-      `Demande de retrait total enregistrée pour $${this.foundationTotalUsd.toFixed(
-        0
-      )}. Raison du départ: ${this.foundationLeavingReason.trim()}. Le branchement final sera ajouté à l’étape suivante.`
+    try {
+      const nextRequests = [
+        {
+          id: this.createFoundationRequestId(),
+          mode: 'full',
+          status: 'pending',
+          amount: this.foundationTotalUsd,
+          requestedAt: Date.now(),
+          requestedByUid: this.auth.currentUser?.uid || null,
+          requestedByName: this.getCurrentActorName(),
+          leavingReason: this.foundationLeavingReason.trim(),
+        } as FoundationWithdrawalRequest,
+        ...this.foundationRequests,
+      ];
+
+      await this.persistFoundationRequests(nextRequests);
+      alert(
+        `Demande de retrait total enregistrée pour $${this.foundationTotalUsd.toFixed(
+          0
+        )}. Elle apparaît maintenant en attente de validation.`
+      );
+      this.closeFoundationRequestModal();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du retrait total Fondation', error);
+      alert("Impossible d'enregistrer cette demande pour le moment.");
+    }
+  }
+
+  async approveFoundationRequest(request: FoundationWithdrawalRequest): Promise<void> {
+    if (!this.isAdminUi || request.status !== 'pending') {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Approuver cette demande Compte Fondation de $${Number(
+        request.amount || 0
+      ).toFixed(0)} ?`
     );
-    this.closeFoundationRequestModal();
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const now = Date.now();
+      const nextRequests: FoundationWithdrawalRequest[] = this.foundationRequests.map(
+        (entry) =>
+          entry.id === request.id
+            ? {
+                ...entry,
+                status: 'approved',
+                resolvedAt: now,
+                resolvedByUid: this.auth.currentUser?.uid || null,
+                resolvedByName: this.getCurrentActorName(),
+                invoiceReference: this.foundationInvoiceReference({
+                  ...entry,
+                  resolvedAt: now,
+                }),
+              }
+            : entry
+      );
+
+      await this.persistFoundationRequests(nextRequests);
+      alert('Demande Compte Fondation approuvée avec succès.');
+    } catch (error) {
+      console.error("Erreur lors de l'approbation de la demande Fondation", error);
+      alert("Impossible d'approuver cette demande pour le moment.");
+    }
+  }
+
+  async rejectFoundationRequest(request: FoundationWithdrawalRequest): Promise<void> {
+    if (!this.isAdminUi || request.status !== 'pending') {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Rejeter cette demande Compte Fondation de $${Number(
+        request.amount || 0
+      ).toFixed(0)} ?`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const now = Date.now();
+      const nextRequests: FoundationWithdrawalRequest[] = this.foundationRequests.map(
+        (entry) =>
+          entry.id === request.id
+            ? {
+                ...entry,
+                status: 'rejected',
+                resolvedAt: now,
+                resolvedByUid: this.auth.currentUser?.uid || null,
+                resolvedByName: this.getCurrentActorName(),
+              }
+            : entry
+      );
+
+      await this.persistFoundationRequests(nextRequests);
+      alert('Demande Compte Fondation rejetée.');
+    } catch (error) {
+      console.error('Erreur lors du rejet de la demande Fondation', error);
+      alert("Impossible de rejeter cette demande pour le moment.");
+    }
   }
 
   public graphPerformance: PerformanceGraph =
@@ -1761,6 +2069,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.auditReceiptsScoped = [];
     this.auditReceiptsLegacy = [];
     this.closeAuditEntryModal();
+    this.closeFoundationInvoiceModal();
+    this.closeFoundationRequestModal();
     this.employee = {};
     this.employees = [];
     this.paymentCodeLoaded = false;
@@ -2154,58 +2464,78 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   getAllPayments() {
-    if (this.employee.payments !== undefined) {
-      const paymentsArray = Object.entries(this.employee.payments!);
+    const salaryEntries = Object.entries(this.employee.payments || {});
 
-      paymentsArray.sort((a, b) => {
-        const [rawA] = a;
-        const [rawB] = b;
+    salaryEntries.sort((a, b) => {
+      const [rawA] = a;
+      const [rawB] = b;
 
-        const dateA = this.time.parseFlexibleDateTime(rawA);
-        const dateB = this.time.parseFlexibleDateTime(rawB);
+      const dateA = this.time.parseFlexibleDateTime(rawA);
+      const dateB = this.time.parseFlexibleDateTime(rawB);
 
-        return dateB.getTime() - dateA.getTime();
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    const historyFromSalary: PaymentHistoryEntry[] = salaryEntries.map(
+      ([rawKey, rawAmount], displayIndex, array) => {
+        const amount = Number(rawAmount ?? 0);
+        return {
+          id: `salary-${rawKey}`,
+          rawKey,
+          date: this.time.parseFlexibleDateTime(rawKey),
+          dateLabel: this.time.convertTimeFormat(rawKey),
+          amount: Number.isFinite(amount) ? amount : 0,
+          kind: this.resolvePaymentKind(rawKey),
+          source: 'salary',
+          sourceIndex: array.length - 1 - displayIndex,
+        };
+      }
+    );
+
+    const historyFromFoundation: PaymentHistoryEntry[] =
+      this.foundationApprovedRequests.map((request) => {
+        const resolvedAt = request.resolvedAt || request.requestedAt;
+        return {
+          id: `foundation-${request.id}`,
+          date: new Date(resolvedAt),
+          dateLabel: this.formatLongDate(new Date(resolvedAt)),
+          amount: Number(request.amount || 0),
+          kind: 'fondation',
+          source: 'foundation',
+          foundationRequest: request,
+        };
       });
 
-      const currentPayments = paymentsArray;
-      this.paymentAmounts = currentPayments.map((entry) => entry[1]);
-      this.paymentDates = currentPayments.map((entry) =>
-        this.time.convertTimeFormat(entry[0])
-      );
-      this.buildPaymentYearSummaries();
-      return;
-    }
-    this.paymentYearSummaries = [];
+    this.paymentHistoryEntries = [...historyFromSalary, ...historyFromFoundation]
+      .filter((entry) => entry.date instanceof Date && !Number.isNaN(entry.date.getTime()))
+      .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+    this.paymentAmounts = this.paymentHistoryEntries.map((entry) => `${entry.amount}`);
+    this.paymentDates = this.paymentHistoryEntries.map((entry) => entry.dateLabel);
+    this.buildPaymentYearSummaries();
   }
 
   private resolvePaymentKind(rawKey: string): PaymentEntryKind {
     const lower = (rawKey || '').toLowerCase();
     if (lower.includes('bonus')) return 'bonus';
+    if (lower.includes('fondation') || lower.includes('foundation')) return 'fondation';
     if (lower.includes('paiement') || lower.includes('payment')) return 'paiement';
     return 'paiement';
   }
 
   private buildPaymentYearSummaries(): void {
-    const payments = this.employee.payments;
-    if (!payments) {
+    if (!this.paymentHistoryEntries.length) {
       this.paymentYearSummaries = [];
       return;
     }
 
-    const entries: PaymentYearEntry[] = Object.entries(payments)
-      .map(([rawKey, rawAmount]) => {
-        const date = this.time.parseFlexibleDateTime(rawKey);
-        if (Number.isNaN(date.getTime())) return null;
-        const amount = Number(rawAmount ?? 0);
-        return {
-          rawKey,
-          date,
-          dateLabel: this.time.convertTimeFormat(rawKey),
-          amount: Number.isFinite(amount) ? amount : 0,
-          kind: this.resolvePaymentKind(rawKey),
-        } as PaymentYearEntry;
-      })
-      .filter((entry): entry is PaymentYearEntry => !!entry);
+    const entries: PaymentYearEntry[] = this.paymentHistoryEntries.map((entry) => ({
+      rawKey: entry.rawKey || entry.id,
+      date: entry.date,
+      dateLabel: entry.dateLabel,
+      amount: entry.amount,
+      kind: entry.kind,
+    }));
 
     const yearMap = new Map<number, Map<number, PaymentYearEntry[]>>();
 
@@ -2223,6 +2553,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       const months: PaymentYearMonthSummary[] = [];
       let totalPayment = 0;
       let totalBonus = 0;
+      let totalFoundation = 0;
 
       Array.from(monthsMap.entries())
         .sort((a, b) => a[0] - b[0])
@@ -2232,9 +2563,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           );
           let monthPayment = 0;
           let monthBonus = 0;
+          let monthFoundation = 0;
           entriesSorted.forEach((entry) => {
             if (entry.kind === 'bonus') {
               monthBonus += entry.amount;
+            } else if (entry.kind === 'fondation') {
+              monthFoundation += entry.amount;
             } else {
               monthPayment += entry.amount;
             }
@@ -2242,6 +2576,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
           totalPayment += monthPayment;
           totalBonus += monthBonus;
+          totalFoundation += monthFoundation;
 
           months.push({
             month,
@@ -2249,6 +2584,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             entries: entriesSorted,
             totalPayment: monthPayment,
             totalBonus: monthBonus,
+            totalFoundation: monthFoundation,
           });
         });
 
@@ -2257,6 +2593,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         months,
         totalPayment,
         totalBonus,
+        totalFoundation,
       });
     });
 
@@ -2274,7 +2611,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         summary.year,
         summary.months,
         summary.totalPayment,
-        summary.totalBonus
+        summary.totalBonus,
+        summary.totalFoundation
       );
       if (!blob) {
         throw new Error('Le PDF de résumé annuel est invalide.');
@@ -2291,13 +2629,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   /* ─── helper to get filtered payments for display ─────────────────────── */
-  getFilteredPayments() {
+  getFilteredPayments(): PaymentHistoryEntry[] {
     // All users (admin and non-admin) see 2 initially, all if expanded
-    const limit = !this.showAllPayments ? 2 : this.paymentAmounts.length;
-    return Array.from(
-      { length: Math.min(limit, this.paymentAmounts.length) },
-      (_, i) => i
-    );
+    const limit = !this.showAllPayments ? 2 : this.paymentHistoryEntries.length;
+    return this.paymentHistoryEntries.slice(0, limit);
   }
 
   get paymentAccessGranted(): boolean {
@@ -2314,19 +2649,62 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   paymentEntryIndex(displayIndex: number): number {
-    return this.paymentAmounts.length - 1 - displayIndex;
+    return this.paymentHistoryEntries.length - 1 - displayIndex;
   }
 
-  paymentInvoiceUrl(displayIndex: number): string {
-    return this.employee?.paymentsPicturePath?.[this.paymentEntryIndex(displayIndex)] || '';
+  paymentInvoiceUrl(entry: PaymentHistoryEntry): string {
+    if (entry.source !== 'salary') return '';
+    return this.employee?.paymentsPicturePath?.[entry.sourceIndex ?? -1] || '';
   }
 
-  paymentReceiptUrl(displayIndex: number): string {
-    return this.employee?.receipts?.[this.paymentEntryIndex(displayIndex)] || '';
+  paymentReceiptUrl(entry: PaymentHistoryEntry): string {
+    if (entry.source === 'foundation') {
+      return entry.foundationRequest?.receiptUrl || '';
+    }
+    return this.employee?.receipts?.[entry.sourceIndex ?? -1] || '';
   }
 
-  hasPaymentReceipt(displayIndex: number): boolean {
-    return !!this.paymentReceiptUrl(displayIndex);
+  hasPaymentReceipt(entry: PaymentHistoryEntry): boolean {
+    return !!this.paymentReceiptUrl(entry);
+  }
+
+  paymentKindLabel(entry: PaymentHistoryEntry): string {
+    if (entry.kind === 'bonus') return 'Bonus';
+    if (entry.kind === 'fondation') return 'Compte Fondation';
+    return 'Virement';
+  }
+
+  paymentKindBadgeClasses(entry: PaymentHistoryEntry): Record<string, boolean> {
+    return {
+      'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300':
+        entry.kind === 'paiement',
+      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200':
+        entry.kind === 'bonus',
+      'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200':
+        entry.kind === 'fondation',
+    };
+  }
+
+  paymentAmountBadgeClasses(entry: PaymentHistoryEntry): Record<string, boolean> {
+    return {
+      'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:ring-emerald-800':
+        entry.kind !== 'fondation',
+      'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/20 dark:text-amber-100 dark:ring-amber-800':
+        entry.kind === 'fondation',
+    };
+  }
+
+  paymentInvoiceLabel(entry: PaymentHistoryEntry): string {
+    return entry.kind === 'fondation' ? 'Facture Fondation' : 'Facture';
+  }
+
+  paymentReferenceLabel(entry: PaymentHistoryEntry): string {
+    if (entry.source === 'foundation' && entry.foundationRequest) {
+      return this.foundationInvoiceReference(entry.foundationRequest);
+    }
+
+    const refNumber = (entry.sourceIndex ?? 0) + 1;
+    return `#${refNumber}`;
   }
 
   togglePaymentCheckVisible() {
@@ -4097,8 +4475,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   attachReceipt(index: number) {
     // Save which index we are about to attach or replace
     this.currentReceiptIndex = index;
+    this.currentReceiptTarget = { kind: 'salary', index };
 
     // Programmatically open the hidden file input
+    const fileInput = document.getElementById(
+      'receiptFileInput'
+    ) as HTMLInputElement;
+    fileInput.click();
+  }
+
+  attachFoundationReceipt(requestId: string) {
+    this.currentReceiptIndex = null;
+    this.currentReceiptTarget = { kind: 'foundation', requestId };
     const fileInput = document.getElementById(
       'receiptFileInput'
     ) as HTMLInputElement;
@@ -4144,41 +4532,49 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Make sure we know which index we are updating
-    if (this.currentReceiptIndex === null) {
+    if (!this.currentReceiptTarget) {
       console.error('No currentReceiptIndex set. Cannot attach receipt.');
       return;
     }
 
     try {
-      // e.g. "receipts/firstname-lastname-receipt{index}.png"
-      const path = `receipts/${this.employee.firstName}-${this.employee.lastName}-receipt${this.currentReceiptIndex}`;
+      if (this.currentReceiptTarget.kind === 'salary') {
+        const receiptIndex = this.currentReceiptTarget.index;
+        const path = `receipts/${this.employee.firstName}-${this.employee.lastName}-receipt${receiptIndex}`;
+        const uploadTask = await this.storage.upload(path, fileToUpload);
+        const downloadURL = await uploadTask.ref.getDownloadURL();
 
-      // Upload to Firebase Storage
-      const uploadTask = await this.storage.upload(path, fileToUpload);
-      const downloadURL = await uploadTask.ref.getDownloadURL();
+        if (!this.employee.receipts) {
+          this.employee.receipts = [];
+        }
+        while (this.employee.receipts.length <= receiptIndex) {
+          this.employee.receipts.push('');
+        }
 
-      // Ensure receipts array is defined & large enough
-      if (!this.employee.receipts) {
-        this.employee.receipts = [];
+        this.employee.receipts[receiptIndex] = downloadURL;
+        await this.data.updateEmployeeReceiptsField(this.employee);
+        alert('Reçu ajouté/modifié avec succès!');
+      } else {
+        const extension = fileToUpload.name.split('.').pop() || 'file';
+        const requestId = this.currentReceiptTarget.requestId;
+        const path = `foundation-receipts/${this.employee.firstName}-${this.employee.lastName}-${requestId}-${Date.now()}.${extension}`;
+        const uploadTask = await this.storage.upload(path, fileToUpload);
+        const downloadURL = await uploadTask.ref.getDownloadURL();
+        const nextRequests = this.foundationRequests.map((request) =>
+          request.id === requestId
+            ? { ...request, receiptUrl: downloadURL }
+            : request
+        );
+        await this.persistFoundationRequests(nextRequests);
+        alert('Reçu Compte Fondation ajouté/modifié avec succès!');
       }
-      // If the array is too short, fill up with empty strings
-      while (this.employee.receipts.length <= this.currentReceiptIndex) {
-        this.employee.receipts.push('');
-      }
-
-      // Insert or replace
-      this.employee.receipts[this.currentReceiptIndex] = downloadURL;
-
-      // Now update Firestore with the new `receipts` array
-      await this.data.updateEmployeeReceiptsField(this.employee);
-      alert('Reçu ajouté/modifié avec succès!');
     } catch (error) {
       console.error("Erreur d'upload :", error);
       alert("Impossible d'ajouter le reçu. Réessayez.");
     } finally {
       // Reset the index so we don't accidentally overwrite another payment
       this.currentReceiptIndex = null;
+      this.currentReceiptTarget = null;
     }
   }
   /** Envoie le SMS à l'employé affiché */

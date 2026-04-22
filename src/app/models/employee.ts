@@ -94,6 +94,7 @@ export class Employee {
   // Trophy fields - arrays to support multiple trophies
   bestTeamTrophies?: Trophy[];
   bestEmployeeTrophies?: Trophy[];
+  foundationRequests?: FoundationWithdrawalRequest[];
 
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;
@@ -119,6 +120,22 @@ export interface WeeklyObjectiveDeduction {
   start: string; // YYYY-MM-DD
   end: string; // YYYY-MM-DD
   amount: number; // dollars
+}
+
+export interface FoundationWithdrawalRequest {
+  id: string;
+  mode: 'partial' | 'full';
+  status: 'pending' | 'approved' | 'rejected';
+  amount: number;
+  requestedAt: number;
+  requestedByUid?: string | null;
+  requestedByName?: string;
+  leavingReason?: string;
+  resolvedAt?: number;
+  resolvedByUid?: string | null;
+  resolvedByName?: string;
+  receiptUrl?: string;
+  invoiceReference?: string;
 }
 export class Avatar {
   path?: string;
