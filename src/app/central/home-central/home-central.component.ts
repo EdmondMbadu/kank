@@ -120,6 +120,15 @@ type ScheduledBulkMessage = ScheduledBulkMessageDocument & {
   locationEntries: { name: string; count: number }[];
 };
 
+type MasterClientFilterPanel =
+  | 'paymentDay'
+  | 'duplicatePhone'
+  | 'audio'
+  | 'debtStatus'
+  | 'stars'
+  | 'scoreLoan'
+  | 'locations';
+
 @Component({
   selector: 'app-home-central',
   templateUrl: './home-central.component.html',
@@ -183,6 +192,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     'Sunday',
   ];
   selectedPaymentDay: string | null = null;
+  activeMasterFilterPanel: MasterClientFilterPanel = 'paymentDay';
   selectedPaymentDayTotal = 0;
   minCreditScore = 0;
   maxCreditScore = 100;
@@ -575,6 +585,66 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
         !isActive,
     };
+  }
+
+  setActiveMasterFilterPanel(panel: MasterClientFilterPanel) {
+    if (this.activeMasterFilterPanel === panel) return;
+    this.activeMasterFilterPanel = panel;
+  }
+
+  isActiveMasterFilterPanel(panel: MasterClientFilterPanel) {
+    return this.activeMasterFilterPanel === panel;
+  }
+
+  masterFilterPanelButtonClasses(panel: MasterClientFilterPanel) {
+    return {
+      'bg-emerald-600 text-white shadow-sm dark:bg-emerald-500 dark:text-white':
+        this.isActiveMasterFilterPanel(panel),
+      'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-emerald-300':
+        !this.isActiveMasterFilterPanel(panel),
+    };
+  }
+
+  get activeMasterFilterPanelTitle(): string {
+    switch (this.activeMasterFilterPanel) {
+      case 'paymentDay':
+        return 'Pay Day';
+      case 'duplicatePhone':
+        return 'Phone Duplicates';
+      case 'audio':
+        return 'Audio';
+      case 'debtStatus':
+        return 'Debt & Status';
+      case 'stars':
+        return 'Stars';
+      case 'scoreLoan':
+        return 'Score & Loan';
+      case 'locations':
+        return 'Client Sites';
+      default:
+        return 'Filters';
+    }
+  }
+
+  get activeMasterFilterPanelHint(): string {
+    switch (this.activeMasterFilterPanel) {
+      case 'paymentDay':
+        return 'Narrow clients by their scheduled payment day.';
+      case 'duplicatePhone':
+        return 'Quickly spot phone numbers shared by multiple clients.';
+      case 'audio':
+        return 'Filter clients by whether an audio file is attached.';
+      case 'debtStatus':
+        return 'Combine debt and client status in one compact panel.';
+      case 'stars':
+        return 'Filter by stars or by an exact number of stars.';
+      case 'scoreLoan':
+        return 'Refine the list by credit score and approved loan amount.';
+      case 'locations':
+        return 'Show only the client sites you want to include.';
+      default:
+        return '';
+    }
   }
 
   setDuplicatePhoneFilter(mode: 'all' | 'duplicates') {
