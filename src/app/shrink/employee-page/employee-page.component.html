@@ -665,7 +665,6 @@
                     type="button"
                     (click)="openFoundationRequestModal('partial'); $event.stopPropagation()"
                     class="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                    [disabled]="foundationHasPendingRequest"
                   >
                     <svg
                       class="h-4 w-4"
@@ -688,7 +687,6 @@
                     type="button"
                     (click)="openFoundationRequestModal('full'); $event.stopPropagation()"
                     class="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
-                    [disabled]="foundationHasPendingRequest"
                   >
                     <svg
                       class="h-4 w-4"
@@ -1240,12 +1238,17 @@
                       (click)="submitFoundationRequest()"
                       class="rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
                       [disabled]="
+                        foundationRequestSubmitting ||
                         foundationRequestMode === 'partial'
                           ? !foundationCanRequestWithdrawal
                           : !foundationCanRequestFullWithdrawal
                       "
                     >
-                      Confirmer la demande
+                      {{
+                        foundationRequestSubmitting
+                          ? "Enregistrement..."
+                          : "Confirmer la demande"
+                      }}
                     </button>
                   </div>
                 </div>

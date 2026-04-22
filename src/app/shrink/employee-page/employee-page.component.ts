@@ -442,6 +442,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   foundationRequestMode: 'partial' | 'full' | null = null;
   foundationRequestedAmount = '';
   foundationLeavingReason = '';
+  foundationRequestSubmitting = false;
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
@@ -839,6 +840,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.foundationRequestMode = null;
     this.foundationRequestedAmount = '';
     this.foundationLeavingReason = '';
+    this.foundationRequestSubmitting = false;
   }
 
   private getCurrentActorName(): string {
@@ -968,18 +970,27 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.foundationRequestSubmitting) {
+      return;
+    }
+
+    this.foundationRequestSubmitting = true;
+
     if (this.foundationRequestMode === 'partial') {
       if (!this.foundationCanRequestWithdrawal) {
+        this.foundationRequestSubmitting = false;
         return;
       }
 
       const requestedAmount = this.foundationRequestedAmountValue;
       if (requestedAmount <= 0) {
+        this.foundationRequestSubmitting = false;
         alert('Entrez un montant valide pour la demande de retrait.');
         return;
       }
 
       if (requestedAmount > this.foundationWithdrawableUsd) {
+        this.foundationRequestSubmitting = false;
         alert(
           `Le montant demandé ne peut pas dépasser $${this.foundationWithdrawableUsd.toFixed(
             0
@@ -1003,13 +1014,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         ];
 
         await this.persistFoundationRequests(nextRequests);
+        this.closeFoundationRequestModal();
         alert(
           `Demande de retrait enregistrée pour $${requestedAmount.toFixed(
             0
           )}. Elle apparaît maintenant en attente de validation.`
         );
-        this.closeFoundationRequestModal();
       } catch (error) {
+        this.foundationRequestSubmitting = false;
         console.error('Erreur lors de la sauvegarde de la demande Fondation', error);
         alert("Impossible d'enregistrer cette demande pour le moment.");
       }
@@ -1017,10 +1029,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
 
     if (!this.foundationCanRequestFullWithdrawal) {
+      this.foundationRequestSubmitting = false;
       return;
     }
 
     if (!this.foundationLeavingReason.trim()) {
+      this.foundationRequestSubmitting = false;
       alert('Ajoutez la raison du départ avant de retirer tout le solde.');
       return;
     }
@@ -1041,13 +1055,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       ];
 
       await this.persistFoundationRequests(nextRequests);
+      this.closeFoundationRequestModal();
       alert(
         `Demande de retrait total enregistrée pour $${this.foundationTotalUsd.toFixed(
           0
         )}. Elle apparaît maintenant en attente de validation.`
       );
-      this.closeFoundationRequestModal();
     } catch (error) {
+      this.foundationRequestSubmitting = false;
       console.error('Erreur lors de la sauvegarde du retrait total Fondation', error);
       alert("Impossible d'enregistrer cette demande pour le moment.");
     }
