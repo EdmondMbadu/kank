@@ -2341,10 +2341,6 @@ export class ComputationService {
       ['Montant approuvé', { text: safeMoney(request.amount), alignment: 'right' }],
       ['Demande déposée', { text: requestDate, alignment: 'right' }],
       ['Validation', { text: resolvedDate, alignment: 'right' }],
-      [
-        'Validée par',
-        { text: request.resolvedByName || 'Administration', alignment: 'right' },
-      ],
     ];
 
     if (request.leavingReason) {
