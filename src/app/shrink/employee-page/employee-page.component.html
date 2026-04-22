@@ -938,6 +938,15 @@
                         >
                           {{ hasFoundationReceipt(request) ? "Changer reçu" : "Attacher reçu" }}
                         </button>
+
+                        <button
+                          *ngIf="isAdminUi"
+                          type="button"
+                          (click)="retractFoundationApprovedRequest(request)"
+                          class="rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-700"
+                        >
+                          Retirer la validation
+                        </button>
                       </div>
                     </div>
                   </div>

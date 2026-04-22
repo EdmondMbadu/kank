@@ -935,6 +935,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return !!request.receiptUrl;
   }
 
+  private async deleteStorageUrlIfPossible(url?: string): Promise<void> {
+    if (!url) return;
+
+    try {
+      const rawStorage = (this.storage as any)?.storage;
+      if (!rawStorage?.refFromURL) {
+        return;
+      }
+      await rawStorage.refFromURL(url).delete();
+    } catch (error) {
+      console.warn('Suppression du fichier ignorée', url, error);
+    }
+  }
+
   private async uploadFoundationInvoice(
     request: FoundationWithdrawalRequest
   ): Promise<string> {
@@ -1117,6 +1131,45 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Erreur lors du rejet de la demande Fondation', error);
       alert("Impossible de rejeter cette demande pour le moment.");
+    }
+  }
+
+  async retractFoundationApprovedRequest(
+    request: FoundationWithdrawalRequest
+  ): Promise<void> {
+    if (!this.isAdminUi || request.status !== 'approved') {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Retirer cette validation Compte Fondation de $${Number(
+        request.amount || 0
+      ).toFixed(0)} ? Le montant sera remis sur le compte.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const nextRequests = this.foundationRequests.filter(
+        (entry) => entry.id !== request.id
+      );
+      await this.persistFoundationRequests(nextRequests);
+
+      await Promise.allSettled([
+        this.deleteStorageUrlIfPossible(request.invoiceUrl),
+        this.deleteStorageUrlIfPossible(request.receiptUrl),
+      ]);
+
+      alert(
+        'Validation Compte Fondation retirée. Le montant est à nouveau remis sur le compte.'
+      );
+    } catch (error) {
+      console.error(
+        'Erreur lors du retrait de la validation Fondation',
+        error
+      );
+      alert("Impossible de retirer cette validation pour le moment.");
     }
   }
 
