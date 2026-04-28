@@ -1,79 +1,568 @@
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex  container mx-auto m-12 justify-center">
-    <h1 class="text-xl md:text-3xl mr-4"> Perte D'Echanges</h1>
-    <!-- <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center "  routerLink="/client-portal">Client Portal</button> -->
-    
-</div>
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
 
+<section class="min-h-screen bg-gradient-to-b from-rose-50 via-white to-red-100/40 px-4 py-8">
+  <div
+    *ngIf="feedbackMessage"
+    class="fixed right-4 top-24 z-[60] max-w-md rounded-lg border px-4 py-3 text-sm shadow-lg"
+    [ngClass]="
+      feedbackType === 'success'
+        ? 'border-emerald-300 bg-emerald-100 text-emerald-800'
+        : 'border-red-300 bg-red-100 text-red-800'
+    ">
+    {{ feedbackMessage }}
+  </div>
 
-<div class="flex container justify-center mx-auto">
+  <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <header class="rounded-2xl border border-rose-200 bg-white p-5 shadow-sm">
+      <h1 class="text-2xl font-semibold text-gray-900 md:text-3xl">Gestion Pertes</h1>
+      <p class="mt-1 text-sm text-gray-500">
+        Gérez les pertes d’échange et les pertes de transfert avec une vue mensuelle, une recherche rapide et des corrections ciblées.
+      </p>
+    </header>
 
-    <div class=" border-2 border-green-800 rounded-lg p-12">
-    
-    
-  
-        <div *ngIf="true" class="mb-6">
-            <label for="reserve" class="block mb-2 text-sm font-medium text-gray-900 "> Argent Perdu(FC)</label>
-            <input type="text" [(ngModel)]="lossAmount"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="20000" required>
-        </div> 
-
-
-
-        <button type="submit" class="mr-10 text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center " routerLink="/gestion-today">Anuler</button>
-            <button  (click)="addLoss()" class=" text-white bg-green-700 hover:bg-green-800  font-medium rounded-full text-sm w-auto sm:w-auto px-5 py-2.5 text-center ">Ajouter</button>
-        
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+      <div class="rounded-2xl border-2 border-rose-700 bg-white p-5 shadow-sm md:p-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">Ajouter une perte d’échange</h2>
+            <p class="mt-1 text-sm text-gray-500">
+              Cette action enregistre une perte en FC et réduit le montant de <span class="font-medium">moneyInHands</span>.
+            </p>
+          </div>
+          <span class="inline-flex rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
+            FC uniquement
+          </span>
         </div>
-       
+
+        <div class="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+          <div>
+            <label for="lossAmount" class="mb-2 block text-sm font-medium text-gray-800">
+              Montant de perte (FC)
+            </label>
+            <input
+              id="lossAmount"
+              type="text"
+              [(ngModel)]="lossAmount"
+              class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-rose-500 focus:ring-rose-500"
+              placeholder="20000"
+              inputmode="numeric"
+              required />
+          </div>
+
+          <div class="flex flex-wrap items-end gap-3">
+            <button
+              type="button"
+              routerLink="/gestion-today"
+              class="rounded-full bg-slate-100 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+              Annuler
+            </button>
+            <button
+              type="button"
+              (click)="addLoss()"
+              class="rounded-full bg-rose-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-rose-800">
+              Ajouter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 via-white to-red-50 p-5 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wide text-rose-700">Période active</p>
+        <h2 class="mt-1 text-xl font-bold text-gray-900">{{ periodLabel }}</h2>
+        <p class="mt-1 text-sm text-gray-600">
+          Toutes les pertes affichées ci-dessous sont regroupées par mois et filtrées avec la même recherche.
+        </p>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <div class="rounded-xl border border-rose-200 bg-white px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-rose-700">Impact combiné</p>
+            <p class="mt-1 text-lg font-bold text-gray-900">FC {{ combinedPeriodTotalFc | number : '1.0-0' }}</p>
+            <p class="text-xs text-gray-500">$ {{ combinedPeriodTotalUsd | number : '1.0-0' }}</p>
+          </div>
+
+          <div class="rounded-xl border border-rose-200 bg-white px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-rose-700">Entrées visibles</p>
+            <p class="mt-1 text-lg font-bold text-gray-900">{{ totalVisibleLossEntries }}</p>
+            <p class="text-xs text-gray-500">
+              {{ filteredExchangeLossEntries.length }} échange · {{ filteredTransferLossEntries.length }} transfert
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-white to-orange-50 p-5 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-rose-700">Vue Périodique</p>
+          <h2 class="mt-1 text-xl font-bold text-gray-900">Analyse des pertes</h2>
+          <p class="mt-1 text-sm text-gray-600">
+            Filtrez par mois ou par année, puis cherchez une date ou un montant.
+          </p>
+        </div>
+
+        <div class="inline-flex rounded-xl border border-rose-200 bg-white p-1">
+          <button
+            type="button"
+            (click)="setPeriodMode('month')"
+            [class.bg-rose-700]="periodMode === 'month'"
+            [class.text-white]="periodMode === 'month'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-rose-100">
+            Mois
+          </button>
+          <button
+            type="button"
+            (click)="setPeriodMode('year')"
+            [class.bg-rose-700]="periodMode === 'year'"
+            [class.text-white]="periodMode === 'year'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-rose-100">
+            Année
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 grid gap-3 lg:grid-cols-5">
+        <div *ngIf="periodMode === 'month'" class="lg:col-span-1">
+          <label for="monthSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Mois
+          </label>
+          <select
+            id="monthSelect"
+            [ngModel]="selectedMonth"
+            (ngModelChange)="onMonthChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-rose-500 focus:ring-rose-500">
+            <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+              {{ month }}
+            </option>
+          </select>
+        </div>
+
+        <div [ngClass]="periodMode === 'month' ? 'lg:col-span-1' : 'lg:col-span-2'">
+          <label for="yearSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Année
+          </label>
+          <select
+            id="yearSelect"
+            [ngModel]="selectedYear"
+            (ngModelChange)="onYearChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-rose-500 focus:ring-rose-500">
+            <option *ngFor="let year of availableYears" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </div>
+
+        <div [ngClass]="periodMode === 'month' ? 'lg:col-span-3' : 'lg:col-span-3'">
+          <label for="lossSearch" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Recherche
+          </label>
+          <div class="relative">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+            </div>
+            <input
+              id="lossSearch"
+              type="text"
+              [ngModel]="searchQuery"
+              (ngModelChange)="onSearchChange($event)"
+              class="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 focus:border-rose-500 focus:ring-rose-500"
+              placeholder="Date, montant, mois, FC ou USD" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <section class="overflow-hidden rounded-2xl border border-rose-200 bg-white shadow-sm">
+        <button
+          type="button"
+          (click)="showExchangeSection = !showExchangeSection"
+          class="flex w-full flex-col gap-4 px-4 py-5 text-left transition hover:bg-rose-50 sm:px-6 lg:flex-row lg:items-start lg:justify-between"
+          [attr.aria-expanded]="showExchangeSection">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-xl font-bold text-gray-900">Pertes d’échange</h2>
+              <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
+                FC
+              </span>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">
+              Saisies manuelles en FC, avec possibilité d’ajuster <span class="font-medium">moneyInHands</span>.
+            </p>
+          </div>
+
+          <div class="flex w-full items-center justify-between gap-3 lg:w-auto lg:shrink-0 lg:justify-end">
+            <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-left lg:text-right">
+              <p class="text-xs font-semibold uppercase tracking-wide text-rose-700">Total période</p>
+              <p class="mt-1 text-lg font-bold text-gray-900">FC {{ exchangePeriodTotal | number : '1.0-0' }}</p>
+              <p class="text-xs text-gray-500">$ {{ toUsd(exchangePeriodTotal) | number : '1.0-0' }}</p>
+            </div>
+            <svg
+              class="mt-1 h-5 w-5 text-rose-500 transition-transform duration-200"
+              [ngClass]="{ 'rotate-180': showExchangeSection }"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true">
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </div>
+        </button>
+
+        <div *ngIf="showExchangeSection" class="border-t border-rose-100 px-4 py-5 sm:px-6">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              {{ filteredExchangeLossEntries.length }} entrée(s) pour {{ periodLabel }}
+            </p>
+            <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">
+              FC
+            </span>
+          </div>
+
+          <div class="mt-4 space-y-4" *ngIf="exchangeLossGroups.length; else emptyExchangeLosses">
+            <section
+              *ngFor="let group of exchangeLossGroups; trackBy: trackLossGroup"
+              class="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 class="text-base font-semibold text-gray-900">{{ group.title }}</h3>
+                  <p class="text-xs text-gray-500">{{ group.entryCount }} entrée(s)</p>
+                </div>
+                <div class="text-left sm:text-right">
+                  <p class="text-sm font-semibold text-gray-900">FC {{ group.total | number : '1.0-0' }}</p>
+                  <p class="text-xs text-gray-500">$ {{ toUsd(group.total) | number : '1.0-0' }}</p>
+                </div>
+              </div>
+
+              <ul role="list" class="mt-4 space-y-3">
+                <li
+                  *ngFor="let entry of group.entries; trackBy: trackLossEntry"
+                  class="rounded-2xl border border-white bg-white p-4 shadow-sm">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-100 font-semibold text-rose-700">
+                      {{ userInitials }}
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-sm font-semibold text-gray-900">Perte d’échange</p>
+                        <span class="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
+                          FC
+                        </span>
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500">{{ entry.dateLabel }}</p>
+                    </div>
+
+                    <div class="text-left sm:text-right">
+                      <p class="text-sm font-semibold text-gray-900">FC {{ entry.amount | number : '1.0-0' }}</p>
+                      <p class="text-xs text-gray-500">$ {{ toUsd(entry.amount) | number : '1.0-0' }}</p>
+                    </div>
+
+                    <div *ngIf="auth.isAdmin" class="flex flex-wrap gap-2 sm:justify-end">
+                      <button
+                        type="button"
+                        (click)="openEditLossModal(entry, $event)"
+                        class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700">
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        (click)="openDeleteLossModal(entry, $event)"
+                        class="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50">
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <ng-template #emptyExchangeLosses>
+            <p class="py-10 text-center text-sm text-gray-500">
+              Aucune perte d’échange enregistrée pour {{ periodLabel }}.
+            </p>
+          </ng-template>
+        </div>
+      </section>
+
+      <section class="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+        <button
+          type="button"
+          (click)="showTransferSection = !showTransferSection"
+          class="flex w-full flex-col gap-4 px-4 py-5 text-left transition hover:bg-amber-50 sm:px-6 lg:flex-row lg:items-start lg:justify-between"
+          [attr.aria-expanded]="showTransferSection">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-xl font-bold text-gray-900">Pertes de transfert</h2>
+              <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                USD
+              </span>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">
+              Générées à partir des opérations bancaires. La modification n’affecte pas les dépôts déjà enregistrés.
+            </p>
+          </div>
+
+          <div class="flex w-full items-center justify-between gap-3 lg:w-auto lg:shrink-0 lg:justify-end">
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left lg:text-right">
+              <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Total période</p>
+              <p class="mt-1 text-lg font-bold text-gray-900">$ {{ transferPeriodTotal | number : '1.0-0' }}</p>
+              <p class="text-xs text-gray-500">FC {{ toFc(transferPeriodTotal) | number : '1.0-0' }}</p>
+            </div>
+            <svg
+              class="mt-1 h-5 w-5 text-amber-500 transition-transform duration-200"
+              [ngClass]="{ 'rotate-180': showTransferSection }"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true">
+              <path d="M6 9l6 6 6-6"></path>
+            </svg>
+          </div>
+        </button>
+
+        <div *ngIf="showTransferSection" class="border-t border-amber-100 px-4 py-5 sm:px-6">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              {{ filteredTransferLossEntries.length }} entrée(s) pour {{ periodLabel }}
+            </p>
+            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+              USD
+            </span>
+          </div>
+
+          <div class="mt-4 space-y-4" *ngIf="transferLossGroups.length; else emptyTransferLosses">
+            <section
+              *ngFor="let group of transferLossGroups; trackBy: trackLossGroup"
+              class="rounded-2xl border border-amber-100 bg-amber-50/50 p-4">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 class="text-base font-semibold text-gray-900">{{ group.title }}</h3>
+                  <p class="text-xs text-gray-500">{{ group.entryCount }} entrée(s)</p>
+                </div>
+                <div class="text-left sm:text-right">
+                  <p class="text-sm font-semibold text-gray-900">$ {{ group.total | number : '1.0-0' }}</p>
+                  <p class="text-xs text-gray-500">FC {{ toFc(group.total) | number : '1.0-0' }}</p>
+                </div>
+              </div>
+
+              <ul role="list" class="mt-4 space-y-3">
+                <li
+                  *ngFor="let entry of group.entries; trackBy: trackLossEntry"
+                  class="rounded-2xl border border-white bg-white p-4 shadow-sm">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 font-semibold text-amber-700">
+                      {{ userInitials }}
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-sm font-semibold text-gray-900">Perte de transfert</p>
+                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                          USD
+                        </span>
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500">{{ entry.dateLabel }}</p>
+                    </div>
+
+                    <div class="text-left sm:text-right">
+                      <p class="text-sm font-semibold text-gray-900">$ {{ entry.amount | number : '1.0-0' }}</p>
+                      <p class="text-xs text-gray-500">FC {{ toFc(entry.amount) | number : '1.0-0' }}</p>
+                    </div>
+
+                    <div *ngIf="auth.isAdmin" class="flex flex-wrap gap-2 sm:justify-end">
+                      <button
+                        type="button"
+                        (click)="openEditLossModal(entry, $event)"
+                        class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700">
+                        Modifier
+                      </button>
+                      <button
+                        type="button"
+                        (click)="openDeleteLossModal(entry, $event)"
+                        class="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50">
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <ng-template #emptyTransferLosses>
+            <p class="py-10 text-center text-sm text-gray-500">
+              Aucune perte de transfert enregistrée pour {{ periodLabel }}.
+            </p>
+          </ng-template>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<div
+  *ngIf="showEditLossModal && pendingEditLoss"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+  <div class="w-full max-w-lg rounded-2xl border border-rose-200 bg-white p-6 shadow-xl">
+    <h3 class="text-lg font-semibold text-gray-900">
+      Modifier cette {{ pendingEditLoss.source === 'exchange' ? 'perte d’échange' : 'perte de transfert' }}
+    </h3>
+    <p class="mt-2 text-sm text-gray-600">{{ pendingEditLoss.dateLabel }}</p>
+    <div class="mt-4">
+      <label for="editLossAmount" class="mb-2 block text-sm font-medium text-gray-800">
+        Montant ({{ pendingEditLoss.currency }})
+      </label>
+      <input
+        id="editLossAmount"
+        type="text"
+        [(ngModel)]="editLossAmount"
+        class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-rose-500 focus:ring-rose-500"
+        inputmode="numeric" />
+    </div>
+
+    <p
+      class="mt-4 rounded-lg p-3 text-sm"
+      [ngClass]="
+        pendingEditLoss.source === 'exchange'
+          ? 'bg-amber-50 text-amber-800'
+          : 'bg-slate-100 text-slate-700'
+      ">
+      <ng-container *ngIf="pendingEditLoss.source === 'exchange'; else transferEditInfo">
+        Vous pouvez mettre à jour l’entrée seule, ou ajuster aussi <span class="font-semibold">moneyInHands</span> selon la différence de montant.
+      </ng-container>
+      <ng-template #transferEditInfo>
+        Cette mise à jour modifie uniquement la perte de transfert affichée dans les rapports.
+      </ng-template>
+    </p>
+
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeEditLossModal()"
+        [disabled]="!!savingLossKey"
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">
+        Annuler
+      </button>
+
+      <ng-container *ngIf="pendingEditLoss.source === 'exchange'; else transferEditActions">
+        <button
+          type="button"
+          (click)="confirmEditLoss('updateOnly')"
+          [disabled]="!!savingLossKey"
+          class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50">
+          Modifier seulement
+        </button>
+        <button
+          type="button"
+          (click)="confirmEditLoss('updateAndAdjust')"
+          [disabled]="!!savingLossKey"
+          class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-medium text-white hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50">
+          Modifier + ajuster moneyInHands
+        </button>
+      </ng-container>
+
+      <ng-template #transferEditActions>
+        <button
+          type="button"
+          (click)="confirmEditLoss()"
+          [disabled]="!!savingLossKey"
+          class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50">
+          Enregistrer
+        </button>
+      </ng-template>
+    </div>
+  </div>
 </div>
 
+<div
+  *ngIf="showDeleteLossModal && pendingDeleteLoss"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+  <div class="w-full max-w-lg rounded-2xl border border-rose-200 bg-white p-6 shadow-xl">
+    <h3 class="text-lg font-semibold text-gray-900">
+      Supprimer cette {{ pendingDeleteLoss.source === 'exchange' ? 'perte d’échange' : 'perte de transfert' }}
+    </h3>
+    <p class="mt-2 text-sm text-gray-600">{{ pendingDeleteLoss.dateLabel }}</p>
+    <p class="mt-1 text-sm text-gray-600">
+      Montant:
+      <span class="font-semibold text-gray-900">
+        {{ pendingDeleteLoss.currency }} {{ pendingDeleteLoss.amount | number : '1.0-0' }}
+      </span>
+    </p>
 
-<div class=" mt-6 flex container mx-auto  justify-center">
+    <p
+      class="mt-4 rounded-lg p-3 text-sm"
+      [ngClass]="
+        pendingDeleteLoss.source === 'exchange'
+          ? 'bg-amber-50 text-amber-800'
+          : 'bg-slate-100 text-slate-700'
+      ">
+      <ng-container *ngIf="pendingDeleteLoss.source === 'exchange'; else transferDeleteInfo">
+        Vous pouvez supprimer l’entrée seule, ou supprimer l’entrée et restaurer le montant dans
+        <span class="font-semibold">moneyInHands</span>.
+      </ng-container>
+      <ng-template #transferDeleteInfo>
+        Cette suppression retire uniquement la perte de transfert. Les dépôts bancaires déjà enregistrés restent inchangés.
+      </ng-template>
+    </p>
 
-   <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-       <div class="flex items-center justify-between mb-4">
-           <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Chronologie</h5>
-           <form class="flex items-center">   
-               <label for="simple-search" class="sr-only">Chercher</label>
-               <div class="relative w-full">
-                   <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                       <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-                       </svg>
-                   </div>
-                   <input type="text" id="simple-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Chercher Le Montant..." required>
-               </div>
-               <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                   <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                   </svg>
-                   <span class="sr-only">Chercher</span>
-               </button>
-           </form>
-   </div>
-   <div class="flow-root">
-           <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let item of  moneyLoss | keyvalue; let i=index"  routerLink="/gestion-today">
-                   <div class="flex items-center space-x-4">
-                    <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                        <span class="font-medium text-gray-600 dark:text-gray-300">{{this.auth.currentUser.firstName?.substring(0,2)}}</span>
-                    </div>
-                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                            {{moneyLossDates[i]}}
-                        </p>
-                        <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                            {{moneyLossDatesDollar[i]}}
-                        </p>
-                        </div>
-                 
-                       <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-white">
-                        FC {{moneyLossAmounts[i] | number:'1.0-0'}}
-                      <br>
-                            $ {{moneyLossAmountsDollar[i] | number:'1.0-0'}}
-                        
-                       </div>
-                   </div>
-               </li>
-           </ul>
-   </div>
-   </div>
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeDeleteLossModal()"
+        [disabled]="!!deletingLossKey"
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">
+        Annuler
+      </button>
+
+      <ng-container *ngIf="pendingDeleteLoss.source === 'exchange'; else transferDeleteActions">
+        <button
+          type="button"
+          (click)="confirmDeleteLoss('deleteOnly')"
+          [disabled]="!!deletingLossKey"
+          class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50">
+          Supprimer seulement
+        </button>
+        <button
+          type="button"
+          (click)="confirmDeleteLoss('deleteAndRestore')"
+          [disabled]="!!deletingLossKey"
+          class="rounded-lg bg-rose-700 px-4 py-2 text-sm font-medium text-white hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-50">
+          Supprimer + restaurer moneyInHands
+        </button>
+      </ng-container>
+
+      <ng-template #transferDeleteActions>
+        <button
+          type="button"
+          (click)="confirmDeleteLoss()"
+          [disabled]="!!deletingLossKey"
+          class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+          Supprimer
+        </button>
+      </ng-template>
+    </div>
+  </div>
+</div>

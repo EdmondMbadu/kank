@@ -1688,6 +1688,142 @@ export class DataService {
     return managementRef.set(data, { merge: true });
   }
 
+  async updateManagementExchangeLossEntry(
+    entryKey: string,
+    amount: string,
+    adjustMoneyInHands: boolean
+  ): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef = this.afs.doc<Management>(
+      `management/${managementId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as Management;
+      const nextExchangeLoss = { ...(current.exchangeLoss || {}) } as {
+        [key: string]: string;
+      };
+      const previousRawAmount = nextExchangeLoss[entryKey];
+      if (previousRawAmount === undefined) return;
+
+      nextExchangeLoss[entryKey] = amount;
+
+      const payload: Partial<Management> = {
+        exchangeLoss: nextExchangeLoss,
+      };
+
+      if (adjustMoneyInHands) {
+        const previousAmount = Number(previousRawAmount) || 0;
+        const nextAmount = Number(amount) || 0;
+        const delta = nextAmount - previousAmount;
+        const currentMoneyInHands = Number(current.moneyInHands || 0);
+        payload.moneyInHands = (currentMoneyInHands - delta).toString();
+      }
+
+      tx.update(managementRef, payload);
+    });
+  }
+
+  async deleteManagementExchangeLossEntry(
+    entryKey: string,
+    restoreMoneyInHands: boolean
+  ): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef = this.afs.doc<Management>(
+      `management/${managementId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as Management;
+      const nextExchangeLoss = { ...(current.exchangeLoss || {}) } as {
+        [key: string]: string;
+      };
+      const rawAmount = nextExchangeLoss[entryKey];
+      if (rawAmount === undefined) return;
+
+      delete nextExchangeLoss[entryKey];
+
+      const payload: Partial<Management> = {
+        exchangeLoss: nextExchangeLoss,
+      };
+
+      if (restoreMoneyInHands) {
+        const amountNum = Number(rawAmount) || 0;
+        const currentMoneyInHands = Number(current.moneyInHands || 0);
+        payload.moneyInHands = (currentMoneyInHands + amountNum).toString();
+      }
+
+      tx.update(managementRef, payload);
+    });
+  }
+
+  updateManagementDollarTransferLossEntry(
+    entryKey: string,
+    amount: string
+  ): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${managementId}`
+    );
+
+    return managementRef.set(
+      {
+        dollarTransferLoss: { [entryKey]: amount },
+      },
+      { merge: true }
+    );
+  }
+
+  async deleteManagementDollarTransferLossEntry(
+    entryKey: string
+  ): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef = this.afs.doc<Management>(
+      `management/${managementId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as Management;
+      const nextDollarTransferLoss = {
+        ...(current.dollarTransferLoss || {}),
+      } as {
+        [key: string]: string;
+      };
+      if (nextDollarTransferLoss[entryKey] === undefined) return;
+
+      delete nextDollarTransferLoss[entryKey];
+
+      tx.update(managementRef, {
+        dollarTransferLoss: nextDollarTransferLoss,
+      });
+    });
+  }
+
   updateUserInfoForAddExpense(amount: string, reason: string) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
