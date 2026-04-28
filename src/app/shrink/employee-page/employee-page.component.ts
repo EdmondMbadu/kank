@@ -450,6 +450,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weeklyPaymentTotalUsd = '0';
   weeklyPaymentCount = 0;
   showFoundationDetails = false;
+  showFoundationDeductionsExpanded = false;
   showFoundationRulesModal = false;
   showFoundationRequestModal = false;
   showFoundationDeductionModal = false;
