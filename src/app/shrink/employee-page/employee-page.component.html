@@ -840,27 +840,35 @@
                 <div *ngIf="foundationActiveMonthDeductions.length; else emptyFoundationDeductions" class="mt-4 space-y-3">
                   <div
                     *ngFor="let deduction of foundationActiveMonthDeductions"
-                    class="rounded-2xl border border-amber-200 bg-white/90 p-4 dark:border-amber-500/30 dark:bg-slate-900/60"
+                    class="rounded-2xl border border-amber-200 bg-white/95 p-4 shadow-sm dark:border-amber-500/30 dark:bg-slate-900/60"
                   >
                     <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div class="space-y-1">
+                      <div class="min-w-0 flex-1 space-y-3">
                         <div class="flex flex-wrap items-center gap-2">
                           <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-100">
                             {{ foundationDeductionMonthLabel(deduction) }}
                           </span>
                           <span class="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/20 dark:text-rose-100">
-                            -${{ deduction.amountUsd | number : "1.0-0" }}
+                            Retiré du compte : -${{ deduction.amountUsd | number : "1.0-0" }}
                           </span>
                         </div>
-                        <div class="text-sm text-slate-700 dark:text-slate-200">
-                          {{ deduction.reason }}
+                        <div class="rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-3 dark:border-rose-500/20 dark:bg-rose-500/10">
+                          <div class="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-200">
+                            Raison du retranchement
+                          </div>
+                          <div class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-100">
+                            {{ foundationDeductionMonthLabel(deduction) }} retiré du Compte Fondation
+                          </div>
+                          <div class="mt-2 text-sm text-slate-700 dark:text-slate-200">
+                            {{ deduction.reason }}
+                          </div>
                         </div>
                         <div class="text-xs text-slate-500 dark:text-slate-400">
-                          Ajouté par {{ deduction.createdByName || "Administration" }}
+                          Impact sur le compte : ce mois n’est pas compté dans l’ancienneté contributive et retire ${{ deduction.amountUsd | number : "1.0-0" }} du solde Fondation.
                         </div>
                       </div>
 
-                      <div *ngIf="isAdminUi" class="flex justify-end">
+                      <div *ngIf="isAdminUi" class="flex justify-end md:self-center">
                         <button
                           type="button"
                           (click)="undoFoundationMonthDeduction(deduction)"
