@@ -9,6 +9,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   Employee,
+  FoundationMonthDeduction,
   FoundationWithdrawalRequest,
   Trophy,
   WeeklyObjectiveDeduction,
@@ -123,6 +124,19 @@ type PaymentYearSummary = {
   totalPayment: number;
   totalBonus: number;
   totalFoundation: number;
+};
+
+type FoundationAccruedMonthOption = {
+  key: string;
+  month: number;
+  year: number;
+  label: string;
+};
+
+type FoundationDeductionDraft = {
+  month: number | null;
+  year: number | null;
+  reason: string;
 };
 
 @Component({
@@ -438,10 +452,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showFoundationDetails = false;
   showFoundationRulesModal = false;
   showFoundationRequestModal = false;
+  showFoundationDeductionModal = false;
   foundationRequestMode: 'partial' | 'full' | null = null;
   foundationRequestedAmount = '';
   foundationLeavingReason = '';
   foundationRequestSubmitting = false;
+  foundationDeductionSubmitting = false;
+  foundationDeductionDrafts: FoundationDeductionDraft[] = [];
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
@@ -541,12 +558,91 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return today;
   }
 
-  get foundationMonthsEarned(): number {
+  get foundationAccruedMonthOptions(): FoundationAccruedMonthOption[] {
     const joinDate = this.foundationJoinDate;
     const endDate = this.foundationAccrualEndDate;
-    if (!joinDate || !endDate) return 0;
+    if (!joinDate || !endDate) return [];
 
-    return this.completedMonthsBetween(joinDate, endDate);
+    const options: FoundationAccruedMonthOption[] = [];
+    let completedMonthIndex = 1;
+
+    while (true) {
+      const accrualDate = new Date(
+        joinDate.getFullYear(),
+        joinDate.getMonth() + completedMonthIndex,
+        joinDate.getDate()
+      );
+
+      if (accrualDate.getTime() > endDate.getTime()) {
+        break;
+      }
+
+      const month = accrualDate.getMonth() + 1;
+      const year = accrualDate.getFullYear();
+      options.push({
+        key: `${year}-${month}`,
+        month,
+        year,
+        label: this.formatFoundationMonthLabel(month, year),
+      });
+      completedMonthIndex += 1;
+    }
+
+    return options.sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.month - a.month;
+    });
+  }
+
+  get foundationAvailableDeductionYears(): number[] {
+    const years = new Set(
+      this.foundationAccruedMonthOptions.map((option) => option.year)
+    );
+    return Array.from(years).sort((a, b) => b - a);
+  }
+
+  get foundationMonthDeductions(): FoundationMonthDeduction[] {
+    const entries = Array.isArray(this.employee?.foundationMonthDeductions)
+      ? [...this.employee.foundationMonthDeductions]
+      : [];
+
+    return entries.sort((a, b) => {
+      if ((b.year || 0) !== (a.year || 0)) {
+        return (b.year || 0) - (a.year || 0);
+      }
+      if ((b.month || 0) !== (a.month || 0)) {
+        return (b.month || 0) - (a.month || 0);
+      }
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+  }
+
+  get foundationActiveMonthDeductions(): FoundationMonthDeduction[] {
+    return this.foundationMonthDeductions.filter(
+      (entry) => (entry.status || 'active') === 'active'
+    );
+  }
+
+  get foundationDeductedMonthsCount(): number {
+    return this.foundationActiveMonthDeductions.length;
+  }
+
+  get foundationDeductedAmountUsd(): number {
+    return this.foundationActiveMonthDeductions.reduce(
+      (sum, entry) => sum + (Number(entry.amountUsd) || this.foundationMonthlyContributionUsd),
+      0
+    );
+  }
+
+  get foundationRawMonthsEarned(): number {
+    return this.foundationAccruedMonthOptions.length;
+  }
+
+  get foundationMonthsEarned(): number {
+    return Math.max(
+      0,
+      this.foundationRawMonthsEarned - this.foundationDeductedMonthsCount
+    );
   }
 
   get foundationEmployeeOfMonthCount(): number {
@@ -757,7 +853,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     const eligibilityDate = new Date(
       joinDate.getFullYear() + 1,
-      joinDate.getMonth(),
+      joinDate.getMonth() + this.foundationDeductedMonthsCount,
       joinDate.getDate()
     );
     return this.formatLongDate(eligibilityDate);
@@ -799,6 +895,50 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   closeFoundationRulesModal(): void {
     this.showFoundationRulesModal = false;
+  }
+
+  openFoundationDeductionModal(): void {
+    if (!this.isAdminUi) return;
+    if (!this.foundationAccruedMonthOptions.length) {
+      alert("Aucun mois validé n'est encore disponible pour retranchement.");
+      return;
+    }
+
+    this.foundationDeductionDrafts = [this.createDefaultFoundationDeductionDraft()];
+    this.foundationDeductionSubmitting = false;
+    this.showFoundationDeductionModal = true;
+  }
+
+  closeFoundationDeductionModal(): void {
+    this.showFoundationDeductionModal = false;
+    this.foundationDeductionSubmitting = false;
+    this.foundationDeductionDrafts = [];
+  }
+
+  addFoundationDeductionDraft(): void {
+    this.foundationDeductionDrafts = [
+      ...this.foundationDeductionDrafts,
+      this.createDefaultFoundationDeductionDraft(),
+    ];
+  }
+
+  removeFoundationDeductionDraft(index: number): void {
+    if (this.foundationDeductionDrafts.length <= 1) {
+      return;
+    }
+
+    this.foundationDeductionDrafts = this.foundationDeductionDrafts.filter(
+      (_entry, draftIndex) => draftIndex !== index
+    );
+  }
+
+  foundationDeductionMonthsForYear(
+    year: number | null
+  ): FoundationAccruedMonthOption[] {
+    if (!year) return [];
+    return this.foundationAccruedMonthOptions.filter(
+      (option) => option.year === year
+    );
   }
 
   toggleFoundationDetails(): void {
@@ -874,6 +1014,142 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       'foundationRequests',
       requests
     );
+  }
+
+  private async persistFoundationMonthDeductions(
+    deductions: FoundationMonthDeduction[]
+  ): Promise<void> {
+    if (!this.employee?.uid) {
+      throw new Error("Identifiant employé introuvable.");
+    }
+
+    this.employee.foundationMonthDeductions = deductions;
+    await this.data.updateEmployeeField(
+      this.employee.uid,
+      'foundationMonthDeductions',
+      deductions
+    );
+  }
+
+  foundationDeductionMonthLabel(
+    deduction: Pick<FoundationMonthDeduction, 'month' | 'year'>
+  ): string {
+    return this.formatFoundationMonthLabel(deduction.month, deduction.year);
+  }
+
+  async submitFoundationMonthDeductions(): Promise<void> {
+    if (!this.isAdminUi) return;
+    if (!this.foundationDeductionDrafts.length) {
+      alert('Ajoutez au moins un mois à retrancher.');
+      return;
+    }
+
+    const validMonthKeys = new Set(
+      this.foundationAccruedMonthOptions.map((option) => option.key)
+    );
+    const activeKeys = new Set(
+      this.foundationActiveMonthDeductions.map(
+        (entry) => `${entry.year}-${entry.month}`
+      )
+    );
+    const pendingKeys = new Set<string>();
+    const actorName = this.getCurrentActorName();
+    const actorUid = (this.auth.currentUser as any)?.uid || null;
+    const now = Date.now();
+
+    const nextEntries: FoundationMonthDeduction[] = [];
+
+    for (const draft of this.foundationDeductionDrafts) {
+      const month = Number(draft.month);
+      const year = Number(draft.year);
+      const reason = draft.reason.trim();
+
+      if (!month || !year || !reason) {
+        alert('Chaque ligne doit contenir une année, un mois et une raison.');
+        return;
+      }
+
+      const key = `${year}-${month}`;
+      if (!validMonthKeys.has(key)) {
+        alert(
+          `Le mois ${this.formatFoundationMonthLabel(month, year)} ne fait pas partie des mois actuellement crédités pour ce compte.`
+        );
+        return;
+      }
+
+      if (activeKeys.has(key) || pendingKeys.has(key)) {
+        alert(
+          `Le mois ${this.formatFoundationMonthLabel(month, year)} est déjà retranché ou dupliqué dans cette demande.`
+        );
+        return;
+      }
+
+      pendingKeys.add(key);
+      nextEntries.push({
+        id: `foundation-deduction-${now}-${month}-${year}-${Math.random()
+          .toString(36)
+          .slice(2, 7)}`,
+        month,
+        year,
+        reason,
+        amountUsd: this.foundationMonthlyContributionUsd,
+        status: 'active',
+        createdAt: now,
+        createdByUid: actorUid,
+        createdByName: actorName,
+      });
+    }
+
+    try {
+      this.foundationDeductionSubmitting = true;
+      await this.persistFoundationMonthDeductions([
+        ...this.foundationMonthDeductions,
+        ...nextEntries,
+      ]);
+      this.closeFoundationDeductionModal();
+      alert('Mois retranchés enregistrés avec succès.');
+    } catch (error) {
+      console.error('Erreur lors du retranchement des mois Fondation', error);
+      alert("Une erreur s'est produite pendant l'enregistrement des mois retranchés.");
+    } finally {
+      this.foundationDeductionSubmitting = false;
+    }
+  }
+
+  async undoFoundationMonthDeduction(
+    deduction: FoundationMonthDeduction
+  ): Promise<void> {
+    if (!this.isAdminUi || !deduction?.id) return;
+
+    const confirmed = confirm(
+      `Annuler le retranchement de ${this.foundationDeductionMonthLabel(
+        deduction
+      )} ?`
+    );
+    if (!confirmed) return;
+
+    const actorName = this.getCurrentActorName();
+    const actorUid = (this.auth.currentUser as any)?.uid || null;
+
+    const nextDeductions = this.foundationMonthDeductions.map((entry) =>
+      entry.id === deduction.id
+        ? {
+            ...entry,
+            status: 'undone' as const,
+            revertedAt: Date.now(),
+            revertedByUid: actorUid,
+            revertedByName: actorName,
+          }
+        : entry
+    );
+
+    try {
+      await this.persistFoundationMonthDeductions(nextDeductions);
+      alert('Le mois retranché a été rétabli.');
+    } catch (error) {
+      console.error('Erreur lors de l’annulation du retranchement', error);
+      alert("Une erreur s'est produite pendant l'annulation.");
+    }
   }
 
   foundationRequestDateLabel(request: FoundationWithdrawalRequest): string {
@@ -2390,6 +2666,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
 
     return parts.join(' ');
+  }
+
+  private formatFoundationMonthLabel(month: number, year: number): string {
+    const label = this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`;
+    return `${label} ${year}`;
+  }
+
+  private createDefaultFoundationDeductionDraft(): FoundationDeductionDraft {
+    const preferred = this.foundationAccruedMonthOptions[0];
+    return {
+      month: preferred?.month ?? null,
+      year: preferred?.year ?? this.foundationAvailableDeductionYears[0] ?? null,
+      reason: '',
+    };
   }
 
   private formatLongDate(date: Date | null): string {

@@ -663,6 +663,31 @@
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
                   <button
+                    *ngIf="isAdminUi"
+                    type="button"
+                    (click)="openFoundationDeductionModal(); $event.stopPropagation()"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 sm:w-auto"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M4 7h16"></path>
+                      <path d="M4 12h16"></path>
+                      <path d="M4 17h10"></path>
+                      <path d="M18 14v6"></path>
+                      <path d="M15 17h6"></path>
+                    </svg>
+                    Retrancher mois
+                  </button>
+
+                  <button
                     type="button"
                     (click)="openFoundationRequestModal('partial'); $event.stopPropagation()"
                     class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 sm:w-auto"
@@ -721,7 +746,7 @@
                 {{ foundationStatusLabel }}
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/80">
                   <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     Début du compte
@@ -763,6 +788,18 @@
                     Minimum permanent: ${{ foundationMinimumBalanceUsd }}
                   </div>
                 </div>
+
+                <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+                  <div class="text-[11px] uppercase tracking-wide text-amber-700 dark:text-amber-200">
+                    Mois retranchés
+                  </div>
+                  <div class="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
+                    {{ foundationDeductedMonthsCount }} mois
+                  </div>
+                  <div class="text-[11px] text-amber-700/80 dark:text-amber-200/80">
+                    -${{ foundationDeductedAmountUsd | number : "1.0-0" }} au total
+                  </div>
+                </div>
               </div>
 
               <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/80">
@@ -775,6 +812,72 @@
                 <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
                   À partir du {{ foundationEligibilityDateLabel }}
                 </div>
+              </div>
+
+              <div
+                *ngIf="isAdminUi || foundationActiveMonthDeductions.length > 0"
+                class="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-500/30 dark:bg-amber-500/10"
+              >
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div class="text-[11px] uppercase tracking-wide text-amber-700 dark:text-amber-200">
+                      Mois retranchés du Compte Fondation
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
+                      {{ foundationDeductedMonthsCount }} mois actifs · -${{ foundationDeductedAmountUsd | number : "1.0-0" }}
+                    </div>
+                  </div>
+                  <button
+                    *ngIf="isAdminUi"
+                    type="button"
+                    (click)="openFoundationDeductionModal()"
+                    class="rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-500/30 dark:bg-slate-900 dark:text-amber-100"
+                  >
+                    Ajouter un retranchement
+                  </button>
+                </div>
+
+                <div *ngIf="foundationActiveMonthDeductions.length; else emptyFoundationDeductions" class="mt-4 space-y-3">
+                  <div
+                    *ngFor="let deduction of foundationActiveMonthDeductions"
+                    class="rounded-2xl border border-amber-200 bg-white/90 p-4 dark:border-amber-500/30 dark:bg-slate-900/60"
+                  >
+                    <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-100">
+                            {{ foundationDeductionMonthLabel(deduction) }}
+                          </span>
+                          <span class="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/20 dark:text-rose-100">
+                            -${{ deduction.amountUsd | number : "1.0-0" }}
+                          </span>
+                        </div>
+                        <div class="text-sm text-slate-700 dark:text-slate-200">
+                          {{ deduction.reason }}
+                        </div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">
+                          Ajouté par {{ deduction.createdByName || "Administration" }}
+                        </div>
+                      </div>
+
+                      <div *ngIf="isAdminUi" class="flex justify-end">
+                        <button
+                          type="button"
+                          (click)="undoFoundationMonthDeduction(deduction)"
+                          class="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"
+                        >
+                          Annuler le retranchement
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <ng-template #emptyFoundationDeductions>
+                  <p class="mt-4 text-sm text-amber-800 dark:text-amber-100">
+                    Aucun mois retranché pour le moment.
+                  </p>
+                </ng-template>
               </div>
 
               <div
@@ -1088,6 +1191,137 @@
                       toute autre faute financière, <strong class="font-extrabold">vous perdez immédiatement l’accès intégral à votre Compte Fondation.</strong>
                       <span class="block pt-2 font-extrabold">Cette règle s’applique sans exception.</span>
                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            *ngIf="showFoundationDeductionModal"
+            class="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4"
+          >
+            <div class="mx-auto flex min-h-full w-full max-w-3xl items-start justify-center py-4 sm:items-center">
+              <div class="w-full overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5 dark:border-slate-700">
+                  <div>
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      Retrancher Mois
+                    </h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      Compte Fondation · {{ employee.firstName }} {{ employee.lastName }}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="closeFoundationDeductionModal()"
+                    class="rounded-full border border-slate-300 px-3 py-1 text-sm font-semibold text-slate-600 transition hover:border-slate-500 hover:text-slate-900 dark:border-slate-600 dark:text-slate-300"
+                  >
+                    Fermer
+                  </button>
+                </div>
+
+                <div class="space-y-5 px-6 py-5 text-sm leading-6 text-slate-700 dark:text-slate-200">
+                  <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+                    <div class="font-semibold text-amber-900 dark:text-amber-100">
+                      Impact du retranchement
+                    </div>
+                    <p class="mt-2 text-sm text-amber-800 dark:text-amber-100">
+                      Chaque mois retranché retire <strong>${{ foundationMonthlyContributionUsd }}</strong> du Compte Fondation et réduit d’un mois l’ancienneté contributive reconnue.
+                    </p>
+                  </div>
+
+                  <div class="space-y-4">
+                    <div
+                      *ngFor="let draft of foundationDeductionDrafts; let i = index"
+                      class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800/80"
+                    >
+                      <div class="grid gap-3 md:grid-cols-[1fr_1fr_minmax(0,2fr)_auto] md:items-start">
+                        <div>
+                          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Année
+                          </label>
+                          <select
+                            [(ngModel)]="draft.year"
+                            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                          >
+                            <option [ngValue]="null">Choisir</option>
+                            <option *ngFor="let year of foundationAvailableDeductionYears" [ngValue]="year">
+                              {{ year }}
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Mois
+                          </label>
+                          <select
+                            [(ngModel)]="draft.month"
+                            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                          >
+                            <option [ngValue]="null">Choisir</option>
+                            <option
+                              *ngFor="let option of foundationDeductionMonthsForYear(draft.year)"
+                              [ngValue]="option.month"
+                            >
+                              {{ option.label }}
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                            Raison
+                          </label>
+                          <input
+                            [(ngModel)]="draft.reason"
+                            type="text"
+                            placeholder="Ex. absence prolongée, mois non comptabilisé"
+                            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                        </div>
+
+                        <div class="flex items-end justify-end">
+                          <button
+                            type="button"
+                            (click)="removeFoundationDeductionDraft(i)"
+                            [disabled]="foundationDeductionDrafts.length === 1"
+                            class="rounded-xl border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex justify-start">
+                    <button
+                      type="button"
+                      (click)="addFoundationDeductionDraft()"
+                      class="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 dark:border-slate-600 dark:text-slate-200"
+                    >
+                      Ajouter un autre mois
+                    </button>
+                  </div>
+
+                  <div class="flex justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+                    <button
+                      type="button"
+                      (click)="closeFoundationDeductionModal()"
+                      class="rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-500 dark:border-slate-600 dark:text-slate-200"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      (click)="submitFoundationMonthDeductions()"
+                      [disabled]="foundationDeductionSubmitting"
+                      class="rounded-2xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ foundationDeductionSubmitting ? "Enregistrement..." : "Confirmer le retranchement" }}
+                    </button>
                   </div>
                 </div>
               </div>

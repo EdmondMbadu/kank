@@ -265,4 +265,67 @@ describe('EmployeePageComponent', () => {
     expect(component.foundationWithdrawalEligible).toBeFalse();
     expect(component.foundationWithdrawableUsd).toBe(0);
   });
+
+  it('deducts retranched months from foundation tenure and monthly balance', () => {
+    const component = createComponent({ isAdmninistrator: true });
+
+    component.employee = {
+      firstName: 'Edmond',
+      dateJoined: '3-15-2025',
+      bestEmployeeTrophies: [{ month: '1', year: '2026' }],
+      foundationMonthDeductions: [
+        {
+          id: 'ded-1',
+          month: 2,
+          year: 2026,
+          reason: 'Absence prolongée',
+          amountUsd: 10,
+          status: 'active',
+          createdAt: Date.now(),
+        },
+        {
+          id: 'ded-2',
+          month: 1,
+          year: 2026,
+          reason: 'Mois non comptabilisé',
+          amountUsd: 10,
+          status: 'active',
+          createdAt: Date.now(),
+        },
+      ],
+    };
+
+    expect(component.foundationRawMonthsEarned).toBe(12);
+    expect(component.foundationDeductedMonthsCount).toBe(2);
+    expect(component.foundationMonthsEarned).toBe(10);
+    expect(component.foundationMonthlyContributionTotalUsd).toBe(100);
+    expect(component.foundationPerformanceBonusTotalUsd).toBe(10);
+    expect(component.foundationTotalUsd).toBe(110);
+    expect(component.foundationWithdrawalEligible).toBeFalse();
+  });
+
+  it('ignores undone month deductions in foundation totals', () => {
+    const component = createComponent({ isAdmninistrator: true });
+
+    component.employee = {
+      firstName: 'Edmond',
+      dateJoined: '3-15-2025',
+      foundationMonthDeductions: [
+        {
+          id: 'ded-1',
+          month: 2,
+          year: 2026,
+          reason: 'Absence prolongée',
+          amountUsd: 10,
+          status: 'undone',
+          createdAt: Date.now(),
+        },
+      ],
+    };
+
+    expect(component.foundationDeductedMonthsCount).toBe(0);
+    expect(component.foundationMonthsEarned).toBe(12);
+    expect(component.foundationMonthlyContributionTotalUsd).toBe(120);
+    expect(component.foundationWithdrawalEligible).toBeTrue();
+  });
 });
