@@ -55,13 +55,13 @@ export class GestionLossComponent implements OnDestroy {
   filteredExchangeLossEntries: LossEntry[] = [];
   exchangeLossGroups: LossMonthGroup[] = [];
   exchangePeriodTotal = 0;
-  showExchangeSection = true;
+  showExchangeSection = false;
 
   allTransferLossEntries: LossEntry[] = [];
   filteredTransferLossEntries: LossEntry[] = [];
   transferLossGroups: LossMonthGroup[] = [];
   transferPeriodTotal = 0;
-  showTransferSection = true;
+  showTransferSection = false;
 
   feedbackMessage = '';
   feedbackType: 'success' | 'error' = 'success';
