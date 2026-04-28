@@ -674,7 +674,9 @@
         [ngClass]="
           auth.isAdmin
             ? 'min-w-[1080px] xl:min-w-full'
-            : 'min-w-full'
+            : isAuditTeamViewer
+              ? 'min-w-[760px]'
+              : 'min-w-full'
         "
       >
       <thead
@@ -684,6 +686,13 @@
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4 rounded-s-lg">Équipe</th>
           <th scope="col" class="py-3 md:py-4 px-4 md:px-8">Attendu</th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Donnée</th>
+          <th
+            *ngIf="isAuditTeamViewer"
+            scope="col"
+            class="px-4 md:px-8 py-3 md:py-4"
+          >
+            Argent en main
+          </th>
           <th *ngIf="auth.isAdmin" scope="col" class="px-6 py-3">
             Paiement donné
           </th>
@@ -739,6 +748,52 @@
                   class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200"
                 >
                   Soumis
+                </span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">
+                  Visible à {{ reserveRevealTimeLabel }} (Kinshasa)
+                </span>
+              </div>
+            </ng-template>
+          </td>
+
+          <td *ngIf="isAuditTeamViewer" class="px-4 md:px-8 py-4 md:py-5 text-right">
+            <ng-container *ngIf="!shouldHideReserveGivenAmounts; else hiddenAuditMoneyInHandsState">
+              <div
+                *ngIf="+s.moneyInHands > 0; else clearAuditMoneyInHands"
+                class="flex flex-col items-end gap-1"
+              >
+                <span
+                  class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200"
+                >
+                  Argent en main
+                </span>
+                <span class="text-base font-semibold text-red-700">
+                  {{ +s.moneyInHands || 0 | number : "1.0-0" }} FC
+                </span>
+                <span class="text-xs text-red-500">
+                  ≈ ${{ +s.moneyInHandsDollar || 0 | number : "1.0-0" }}
+                </span>
+              </div>
+              <ng-template #clearAuditMoneyInHands>
+                <div class="flex flex-col items-end gap-1">
+                  <span
+                    class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200"
+                  >
+                    0 FC
+                  </span>
+                  <span class="text-xs text-slate-500 dark:text-slate-400">
+                    Rien en main
+                  </span>
+                </div>
+              </ng-template>
+            </ng-container>
+
+            <ng-template #hiddenAuditMoneyInHandsState>
+              <div class="flex flex-col items-end gap-1">
+                <span
+                  class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+                >
+                  Masqué
                 </span>
                 <span class="text-xs text-slate-500 dark:text-slate-400">
                   Visible à {{ reserveRevealTimeLabel }} (Kinshasa)
@@ -894,6 +949,49 @@
                 </span>
                 <span class="text-xs text-slate-500 dark:text-slate-400">
                   Total visible à {{ reserveRevealTimeLabel }} (Kinshasa)
+                </span>
+              </div>
+            </ng-template>
+          </td>
+          <td *ngIf="isAuditTeamViewer" class="px-4 md:px-8 py-3 md:py-4 text-right">
+            <ng-container *ngIf="!shouldHideReserveGivenAmounts; else hiddenAuditTotalMoneyInHandsState">
+              <div
+                *ngIf="+overallMoneyInHands > 0; else clearAuditTotalMoneyInHands"
+                class="flex flex-col items-end gap-1"
+              >
+                <span
+                  class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200"
+                >
+                  {{ auditTeamsWithMoneyInHandsCount }} équipe{{
+                    auditTeamsWithMoneyInHandsCount > 1 ? "s" : ""
+                  }}
+                  en alerte
+                </span>
+                <span class="text-base font-semibold text-red-700">
+                  {{ +overallMoneyInHands || 0 | number : "1.0-0" }} FC
+                </span>
+                <span class="text-xs text-red-500">
+                  ≈ ${{ +overallMoneyInHandsDollar || 0 | number : "1.0-0" }}
+                </span>
+              </div>
+              <ng-template #clearAuditTotalMoneyInHands>
+                <span
+                  class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200"
+                >
+                  Tout remis
+                </span>
+              </ng-template>
+            </ng-container>
+
+            <ng-template #hiddenAuditTotalMoneyInHandsState>
+              <div class="flex flex-col items-end gap-1">
+                <span
+                  class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+                >
+                  Masqué
+                </span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">
+                  Visible à {{ reserveRevealTimeLabel }} (Kinshasa)
                 </span>
               </div>
             </ng-template>

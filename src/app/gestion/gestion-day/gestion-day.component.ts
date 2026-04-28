@@ -292,6 +292,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     return currentMinutes < revealMinutes;
   }
 
+  get isAuditTeamViewer(): boolean {
+    return !this.auth.isAdmin && this.auth.isDistributor;
+  }
+
+  get auditTeamsWithMoneyInHandsCount(): number {
+    return this.reserveTotals.filter((row) => +(row.moneyInHands || 0) > 0).length;
+  }
+
   get reserveSubmittedCount(): number {
     return this.reserveTotals.filter((row) => row.hasActualSubmission).length;
   }
