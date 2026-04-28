@@ -30,7 +30,6 @@ import firebase from 'firebase/compat/app';
 // at the top, with other imports
 import exifr from 'exifr'; // if TS complains, use: import * as exifr from 'exifr';
 
-import { faL } from '@fortawesome/free-solid-svg-icons';
 // import heic2any from 'heic2any';
 /* ─── Audit-receipt model ───────────────────────── */
 interface AuditReceipt {
