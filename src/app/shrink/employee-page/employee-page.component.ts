@@ -1909,6 +1909,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return [
       "Cas de Vol — Demander plus d'argent que ce qui est requis au client : Exemple : faire payer des frais d’adhésion ou d’épargne supérieurs aux montants officiels.",
       'Cas de Vol — Donner moins d’argent au client que ce qui est déclaré : Le montant donné au client doit toujours correspondre à ce qui est inscrit dans le système.',
+      "Cas de Vol — Recevoir l'argent d'un client marqué quitter sans le déclarer : Même si le client a été marqué quitter parce qu’il ne payait plus depuis longtemps, s’il revient et paie après des mois ou des années, tout l’argent reçu doit être déclaré dans le système le jour même.",
       "Cas de Vol — Garder l'argent du client plus d'une journée : Aucun prétexte (oubli, système, budget à venir) ne justifie de garder l'argent du client. Il doit être entré dans le système le jour même.",
       'Cas de Vol — Créer de faux clients avec de fausses identités : Numéros de téléphone ou photos inventés = vol. Tolérance zéro.',
       "Cas de Vol — Prêter de l'argent à un membre de la famille ou un ami : Tout prêt doit respecter les règles sans conflit d’intérêt personnel.",
