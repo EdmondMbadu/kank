@@ -1609,6 +1609,19 @@ export class DataService {
     );
   }
 
+  updateManagementNotPaidThresholds(
+    thresholds: {
+      notPaidCycleMonthsThreshold?: number;
+      notPaidNoPaymentMonthsThreshold?: number;
+    }
+  ) {
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+
+    return managementRef.set(thresholds, { merge: true });
+  }
+
   setManagementMoneyInHands(amount: string) {
     const managementId = this.auth.managementInfo?.id;
     if (!managementId) {

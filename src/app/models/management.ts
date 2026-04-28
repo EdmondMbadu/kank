@@ -16,6 +16,8 @@ export class Management {
   budgetedExpenses?: { [date: string]: string };
   moneyInHandsTracking?: { [key: string]: string } = {};
   reserveRevealTimeKinshasa?: string;
+  notPaidCycleMonthsThreshold?: number;
+  notPaidNoPaymentMonthsThreshold?: number;
   weeklyPaymentTargetFc?: number;
   weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
   teamWeeklyBonusThresholdFc?: number;

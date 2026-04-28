@@ -1,18 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
+import { Subscription, debounceTime, distinctUntilChanged, of, switchMap } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+import { DataService } from 'src/app/services/data.service';
 
 @Component({
   selector: 'app-not-paid',
   templateUrl: './not-paid.component.html',
   styleUrls: ['./not-paid.component.css'],
 })
-export class NotPaidComponent implements OnInit {
+export class NotPaidComponent implements OnInit, OnDestroy {
+  private readonly defaultCycleMonthsThreshold = 7;
+  private readonly defaultNoPayMonthsThreshold = 5;
+  private managementSub?: Subscription;
   employees: Employee[] = [];
   clients?: Client[];
   searchControl = new FormControl();
@@ -35,11 +39,12 @@ export class NotPaidComponent implements OnInit {
 
   /* simple toggle */
   activeList: 'cycle' | 'noPay' = 'cycle';
-  /* threshold in months – default 5 for paid nothing */
-  monthsThreshold = 7;
+  /* threshold in months – persisted global default */
+  monthsThreshold = this.defaultCycleMonthsThreshold;
 
-  /* --- threshold for the no-payment list (in months)  based on cycle--- */
-  noPayMonthsThreshold = 5; // default 7 mois
+  /* --- threshold for the no-payment list (in months) --- */
+  noPayMonthsThreshold = this.defaultNoPayMonthsThreshold;
+  isSavingThresholds = false;
 
   /** called whenever the input changes */
   onThresholdChange(val: string | number): void {
@@ -47,16 +52,36 @@ export class NotPaidComponent implements OnInit {
     if (!n || n < 1) return; // ignore bad input
     this.monthsThreshold = n;
     this.computeCycleNotFinished(); // recompute list live
+    this.persistThresholdsIfAdmin();
   }
 
   constructor(
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private data: DataService
   ) {
     this.retrieveClients();
   }
   ngOnInit(): void {
+    this.managementSub = this.auth.getManagementInfo().subscribe((data: any) => {
+      const management = data?.[0] ?? {};
+      const cycleThreshold = Number(management?.notPaidCycleMonthsThreshold);
+      const noPayThreshold = Number(management?.notPaidNoPaymentMonthsThreshold);
+
+      this.monthsThreshold =
+        Number.isFinite(cycleThreshold) && cycleThreshold >= 1
+          ? cycleThreshold
+          : this.defaultCycleMonthsThreshold;
+      this.noPayMonthsThreshold =
+        Number.isFinite(noPayThreshold) && noPayThreshold >= 1
+          ? noPayThreshold
+          : this.defaultNoPayMonthsThreshold;
+
+      this.computeCycleNotFinished();
+      this.computeNoPayList();
+    });
+
     this.searchControl.valueChanges
       .pipe(
         debounceTime(300),
@@ -70,6 +95,9 @@ export class NotPaidComponent implements OnInit {
           this.haveNotPaid = results; // ⇦ update no-pay tab
         }
       });
+  }
+  ngOnDestroy(): void {
+    this.managementSub?.unsubscribe();
   }
 
   find5WeeksOrMoreNotPaid() {
@@ -133,6 +161,30 @@ export class NotPaidComponent implements OnInit {
     if (!n || n < 1) return; // ignore invalid
     this.noPayMonthsThreshold = n;
     this.computeNoPayList(); // recompute instantly
+    this.persistThresholdsIfAdmin();
+  }
+
+  private persistThresholdsIfAdmin(): void {
+    if (!this.auth.isAdmin || this.isSavingThresholds) return;
+
+    const cycleThreshold = Number(this.monthsThreshold);
+    const noPayThreshold = Number(this.noPayMonthsThreshold);
+    if (!Number.isFinite(cycleThreshold) || cycleThreshold < 1) return;
+    if (!Number.isFinite(noPayThreshold) || noPayThreshold < 1) return;
+
+    this.isSavingThresholds = true;
+    this.data
+      .updateManagementNotPaidThresholds({
+        notPaidCycleMonthsThreshold: cycleThreshold,
+        notPaidNoPaymentMonthsThreshold: noPayThreshold,
+      })
+      .catch((error) => {
+        console.error('Unable to save not-paid thresholds', error);
+        alert("Impossible d'enregistrer les seuils.");
+      })
+      .finally(() => {
+        this.isSavingThresholds = false;
+      });
   }
 
   private computeNoPayList(): void {
@@ -210,7 +262,7 @@ export class NotPaidComponent implements OnInit {
 
       this.retrieveEmployees();
       this.computeCycleNotFinished(); // ← NEW
-      this.find5WeeksOrMoreNotPaid();
+      this.computeNoPayList();
     });
   }
 
