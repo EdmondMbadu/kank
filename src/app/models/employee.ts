@@ -97,6 +97,7 @@ export class Employee {
   foundationRequests?: FoundationWithdrawalRequest[];
   foundationMonthDeductions?: FoundationMonthDeduction[];
   foundationManualBonuses?: FoundationManualBonusEntry[];
+  foundationAccountVisible?: boolean;
 
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;

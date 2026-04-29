@@ -463,6 +463,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   foundationRequestSubmitting = false;
   foundationDeductionSubmitting = false;
   foundationBonusSubmitting = false;
+  foundationVisibilitySaving = false;
   foundationDeductionDrafts: FoundationDeductionDraft[] = [];
   foundationBonusReason = '';
   readonly foundationMonthlyContributionUsd = 10;
@@ -545,7 +546,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get canViewFoundationAccount(): boolean {
-    return this.isAdminUi;
+    return this.isAdminUi && this.foundationAccountVisible;
+  }
+
+  get foundationAccountVisible(): boolean {
+    return this.employee?.foundationAccountVisible !== false;
   }
 
   get foundationJoinDate(): Date | null {
@@ -990,6 +995,33 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   toggleFoundationDetails(): void {
     this.showFoundationDetails = !this.showFoundationDetails;
+  }
+
+  async setFoundationAccountVisibility(visible: boolean): Promise<void> {
+    if (!this.isAdminUi || !this.employee?.uid || this.foundationVisibilitySaving) {
+      return;
+    }
+
+    this.foundationVisibilitySaving = true;
+    try {
+      this.employee.foundationAccountVisible = visible;
+      await this.data.updateEmployeeField(
+        this.employee.uid,
+        'foundationAccountVisible',
+        visible
+      );
+      if (!visible) {
+        this.showFoundationDetails = false;
+      }
+    } catch (error) {
+      console.error(
+        'Erreur lors de la mise à jour de la visibilité du Compte Fondation',
+        error
+      );
+      alert("Impossible de modifier la visibilité du Compte Fondation.");
+    } finally {
+      this.foundationVisibilitySaving = false;
+    }
   }
 
   openFoundationRequestModal(mode: 'partial' | 'full'): void {
