@@ -759,7 +759,7 @@
                       <path d="M12 5v14"></path>
                       <path d="M5 12h14"></path>
                     </svg>
-                    Ajouter bonus +10 $
+                    Ajouter bonus
                   </button>
 
                   <button
@@ -1045,7 +1045,7 @@
                       (click)="openFoundationBonusModal()"
                       class="rounded-xl border border-sky-300 bg-white px-3 py-2 text-xs font-semibold text-sky-900 transition hover:bg-sky-100 dark:border-sky-500/30 dark:bg-slate-900 dark:text-sky-100"
                     >
-                      Ajouter un bonus +10 $
+                      Ajouter un bonus
                     </button>
                   </div>
 
@@ -1605,7 +1605,24 @@
                       Impact du bonus
                     </div>
                     <p class="mt-2 text-sm text-sky-800 dark:text-sky-100">
-                      Cet ajout crédite immédiatement <strong>+${{ foundationManualBonusUsd }}</strong> sur le Compte Fondation. Il ne correspond à aucun mois précis et ne modifie pas l’ancienneté contributive.
+                      Cet ajout crédite immédiatement <strong>+${{ foundationBonusAmountValue }}</strong> sur le Compte Fondation. Il ne correspond à aucun mois précis et ne modifie pas l’ancienneté contributive.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Montant à ajouter ($)
+                    </label>
+                    <input
+                      [(ngModel)]="foundationBonusAmount"
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="10"
+                      class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                    />
+                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      Entrez un nombre entier, par exemple 5, 10 ou 20.
                     </p>
                   </div>
 
@@ -1635,7 +1652,11 @@
                       [disabled]="foundationBonusSubmitting"
                       class="rounded-2xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {{ foundationBonusSubmitting ? "Enregistrement..." : "Confirmer le bonus +10 $" }}
+                      {{
+                        foundationBonusSubmitting
+                          ? "Enregistrement..."
+                          : "Confirmer le bonus +$" + (foundationBonusAmountValue | number : "1.0-0")
+                      }}
                     </button>
                   </div>
                 </div>

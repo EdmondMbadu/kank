@@ -465,10 +465,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   foundationBonusSubmitting = false;
   foundationVisibilitySaving = false;
   foundationDeductionDrafts: FoundationDeductionDraft[] = [];
+  foundationBonusAmount: number | null = 10;
   foundationBonusReason = '';
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
-  readonly foundationManualBonusUsd = 10;
+  readonly foundationDefaultManualBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
   weeklyPaymentTargetFc = 300000;
   weeklyPaymentTargetReached = false;
@@ -656,9 +657,17 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   get foundationManualBonusTotalUsd(): number {
     return this.foundationActiveManualBonuses.reduce(
       (sum, entry) =>
-        sum + (Number(entry.amountUsd) || this.foundationManualBonusUsd),
+        sum + (Number(entry.amountUsd) || this.foundationDefaultManualBonusUsd),
       0
     );
+  }
+
+  get foundationBonusAmountValue(): number {
+    const raw = Number(this.foundationBonusAmount);
+    if (!Number.isFinite(raw) || raw < 1) {
+      return this.foundationDefaultManualBonusUsd;
+    }
+    return Math.floor(raw);
   }
 
   get foundationDeductedMonthsCount(): number {
@@ -956,6 +965,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   openFoundationBonusModal(): void {
     if (!this.isAdminUi) return;
+    this.foundationBonusAmount = this.foundationDefaultManualBonusUsd;
     this.foundationBonusReason = '';
     this.foundationBonusSubmitting = false;
     this.showFoundationBonusModal = true;
@@ -964,6 +974,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   closeFoundationBonusModal(): void {
     this.showFoundationBonusModal = false;
     this.foundationBonusSubmitting = false;
+    this.foundationBonusAmount = this.foundationDefaultManualBonusUsd;
     this.foundationBonusReason = '';
   }
 
@@ -1142,6 +1153,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   async submitFoundationManualBonus(): Promise<void> {
     if (!this.isAdminUi) return;
 
+    const amountUsd = this.foundationBonusAmountValue;
+    if (!Number.isInteger(amountUsd) || amountUsd < 1) {
+      alert('Entrez un montant entier valide pour le bonus Fondation.');
+      return;
+    }
+
     const reason = this.foundationBonusReason.trim();
     if (!reason) {
       alert('Ajoutez la raison du bonus Fondation.');
@@ -1155,7 +1172,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const entry: FoundationManualBonusEntry = {
       id: `foundation-bonus-${now}-${Math.random().toString(36).slice(2, 7)}`,
       reason,
-      amountUsd: this.foundationManualBonusUsd,
+      amountUsd,
       status: 'active',
       createdAt: now,
       createdByUid: actorUid,
@@ -1185,7 +1202,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     const confirmed = confirm(
       `Annuler ce bonus Fondation de $${Number(
-        entry.amountUsd || this.foundationManualBonusUsd
+        entry.amountUsd || this.foundationDefaultManualBonusUsd
       ).toFixed(0)} ?`
     );
     if (!confirmed) return;
