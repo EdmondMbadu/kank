@@ -96,6 +96,7 @@ export class Employee {
   bestEmployeeTrophies?: Trophy[];
   foundationRequests?: FoundationWithdrawalRequest[];
   foundationMonthDeductions?: FoundationMonthDeduction[];
+  foundationManualBonuses?: FoundationManualBonusEntry[];
 
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;
@@ -146,6 +147,19 @@ export interface FoundationMonthDeduction {
   id: string;
   month: number;
   year: number;
+  reason: string;
+  amountUsd: number;
+  status?: 'active' | 'undone';
+  createdAt: number;
+  createdByUid?: string | null;
+  createdByName?: string;
+  revertedAt?: number;
+  revertedByUid?: string | null;
+  revertedByName?: string;
+}
+
+export interface FoundationManualBonusEntry {
+  id: string;
   reason: string;
   amountUsd: number;
   status?: 'active' | 'undone';

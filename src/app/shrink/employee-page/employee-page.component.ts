@@ -9,6 +9,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   Employee,
+  FoundationManualBonusEntry,
   FoundationMonthDeduction,
   FoundationWithdrawalRequest,
   Trophy,
@@ -451,17 +452,22 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weeklyPaymentCount = 0;
   showFoundationDetails = false;
   showFoundationDeductionsExpanded = false;
+  showFoundationBonusesExpanded = false;
   showFoundationRulesModal = false;
   showFoundationRequestModal = false;
   showFoundationDeductionModal = false;
+  showFoundationBonusModal = false;
   foundationRequestMode: 'partial' | 'full' | null = null;
   foundationRequestedAmount = '';
   foundationLeavingReason = '';
   foundationRequestSubmitting = false;
   foundationDeductionSubmitting = false;
+  foundationBonusSubmitting = false;
   foundationDeductionDrafts: FoundationDeductionDraft[] = [];
+  foundationBonusReason = '';
   readonly foundationMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
+  readonly foundationManualBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
   weeklyPaymentTargetFc = 300000;
   weeklyPaymentTargetReached = false;
@@ -624,6 +630,32 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  get foundationManualBonuses(): FoundationManualBonusEntry[] {
+    const entries = Array.isArray(this.employee?.foundationManualBonuses)
+      ? [...this.employee.foundationManualBonuses]
+      : [];
+
+    return entries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  get foundationActiveManualBonuses(): FoundationManualBonusEntry[] {
+    return this.foundationManualBonuses.filter(
+      (entry) => (entry.status || 'active') === 'active'
+    );
+  }
+
+  get foundationManualBonusCount(): number {
+    return this.foundationActiveManualBonuses.length;
+  }
+
+  get foundationManualBonusTotalUsd(): number {
+    return this.foundationActiveManualBonuses.reduce(
+      (sum, entry) =>
+        sum + (Number(entry.amountUsd) || this.foundationManualBonusUsd),
+      0
+    );
+  }
+
   get foundationDeductedMonthsCount(): number {
     return this.foundationActiveMonthDeductions.length;
   }
@@ -693,7 +725,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   get foundationGrossTotalUsd(): number {
     return (
       this.foundationMonthlyContributionTotalUsd +
-      this.foundationPerformanceBonusTotalUsd
+      this.foundationPerformanceBonusTotalUsd +
+      this.foundationManualBonusTotalUsd
     );
   }
 
@@ -916,6 +949,19 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.foundationDeductionDrafts = [];
   }
 
+  openFoundationBonusModal(): void {
+    if (!this.isAdminUi) return;
+    this.foundationBonusReason = '';
+    this.foundationBonusSubmitting = false;
+    this.showFoundationBonusModal = true;
+  }
+
+  closeFoundationBonusModal(): void {
+    this.showFoundationBonusModal = false;
+    this.foundationBonusSubmitting = false;
+    this.foundationBonusReason = '';
+  }
+
   addFoundationDeductionDraft(): void {
     this.foundationDeductionDrafts = [
       ...this.foundationDeductionDrafts,
@@ -1032,10 +1078,108 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  private async persistFoundationManualBonuses(
+    bonuses: FoundationManualBonusEntry[]
+  ): Promise<void> {
+    if (!this.employee?.uid) {
+      throw new Error("Identifiant employé introuvable.");
+    }
+
+    this.employee.foundationManualBonuses = bonuses;
+    await this.data.updateEmployeeField(
+      this.employee.uid,
+      'foundationManualBonuses',
+      bonuses
+    );
+  }
+
   foundationDeductionMonthLabel(
     deduction: Pick<FoundationMonthDeduction, 'month' | 'year'>
   ): string {
     return this.formatFoundationMonthLabel(deduction.month, deduction.year);
+  }
+
+  foundationManualBonusDateLabel(
+    entry: Pick<FoundationManualBonusEntry, 'createdAt'>
+  ): string {
+    return this.formatLongDateTime(
+      entry?.createdAt ? new Date(entry.createdAt) : null
+    );
+  }
+
+  async submitFoundationManualBonus(): Promise<void> {
+    if (!this.isAdminUi) return;
+
+    const reason = this.foundationBonusReason.trim();
+    if (!reason) {
+      alert('Ajoutez la raison du bonus Fondation.');
+      return;
+    }
+
+    const actorName = this.getCurrentActorName();
+    const actorUid = (this.auth.currentUser as any)?.uid || null;
+    const now = Date.now();
+
+    const entry: FoundationManualBonusEntry = {
+      id: `foundation-bonus-${now}-${Math.random().toString(36).slice(2, 7)}`,
+      reason,
+      amountUsd: this.foundationManualBonusUsd,
+      status: 'active',
+      createdAt: now,
+      createdByUid: actorUid,
+      createdByName: actorName,
+    };
+
+    try {
+      this.foundationBonusSubmitting = true;
+      await this.persistFoundationManualBonuses([
+        entry,
+        ...this.foundationManualBonuses,
+      ]);
+      this.closeFoundationBonusModal();
+      alert('Bonus Fondation ajouté avec succès.');
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du bonus Fondation", error);
+      alert("Une erreur s'est produite pendant l'ajout du bonus.");
+    } finally {
+      this.foundationBonusSubmitting = false;
+    }
+  }
+
+  async undoFoundationManualBonus(
+    entry: FoundationManualBonusEntry
+  ): Promise<void> {
+    if (!this.isAdminUi || !entry?.id) return;
+
+    const confirmed = confirm(
+      `Annuler ce bonus Fondation de $${Number(
+        entry.amountUsd || this.foundationManualBonusUsd
+      ).toFixed(0)} ?`
+    );
+    if (!confirmed) return;
+
+    const actorName = this.getCurrentActorName();
+    const actorUid = (this.auth.currentUser as any)?.uid || null;
+
+    const nextBonuses = this.foundationManualBonuses.map((bonus) =>
+      bonus.id === entry.id
+        ? {
+            ...bonus,
+            status: 'undone' as const,
+            revertedAt: Date.now(),
+            revertedByUid: actorUid,
+            revertedByName: actorName,
+          }
+        : bonus
+    );
+
+    try {
+      await this.persistFoundationManualBonuses(nextBonuses);
+      alert('Le bonus Fondation a été annulé.');
+    } catch (error) {
+      console.error("Erreur lors de l'annulation du bonus Fondation", error);
+      alert("Une erreur s'est produite pendant l'annulation.");
+    }
   }
 
   async submitFoundationMonthDeductions(): Promise<void> {
