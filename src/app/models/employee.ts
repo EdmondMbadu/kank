@@ -98,6 +98,7 @@ export class Employee {
   foundationMonthDeductions?: FoundationMonthDeduction[];
   foundationManualBonuses?: FoundationManualBonusEntry[];
   foundationAccountVisible?: boolean;
+  foundationMonthlyContributionUsd?: number;
 
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;

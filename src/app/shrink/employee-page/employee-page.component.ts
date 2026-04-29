@@ -457,6 +457,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showFoundationRequestModal = false;
   showFoundationDeductionModal = false;
   showFoundationBonusModal = false;
+  showFoundationContributionModal = false;
   foundationRequestMode: 'partial' | 'full' | null = null;
   foundationRequestedAmount = '';
   foundationLeavingReason = '';
@@ -464,10 +465,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   foundationDeductionSubmitting = false;
   foundationBonusSubmitting = false;
   foundationVisibilitySaving = false;
+  foundationContributionSaving = false;
   foundationDeductionDrafts: FoundationDeductionDraft[] = [];
   foundationBonusAmount: number | null = 10;
+  foundationContributionAmount: number | null = 10;
   foundationBonusReason = '';
-  readonly foundationMonthlyContributionUsd = 10;
+  readonly foundationDefaultMonthlyContributionUsd = 10;
   readonly foundationPerformanceBonusUsd = 10;
   readonly foundationDefaultManualBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
@@ -552,6 +555,22 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   get foundationAccountVisible(): boolean {
     return this.employee?.foundationAccountVisible !== false;
+  }
+
+  get foundationMonthlyContributionUsd(): number {
+    const raw = Number(this.employee?.foundationMonthlyContributionUsd);
+    if (!Number.isFinite(raw) || raw < 1) {
+      return this.foundationDefaultMonthlyContributionUsd;
+    }
+    return Math.floor(raw);
+  }
+
+  get foundationContributionAmountValue(): number {
+    const raw = Number(this.foundationContributionAmount);
+    if (!Number.isFinite(raw) || raw < 1) {
+      return this.foundationMonthlyContributionUsd;
+    }
+    return Math.floor(raw);
   }
 
   get foundationJoinDate(): Date | null {
@@ -976,6 +995,59 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.foundationBonusSubmitting = false;
     this.foundationBonusAmount = this.foundationDefaultManualBonusUsd;
     this.foundationBonusReason = '';
+  }
+
+  openFoundationContributionModal(): void {
+    if (!this.isAdminUi) return;
+    this.foundationContributionAmount = this.foundationMonthlyContributionUsd;
+    this.foundationContributionSaving = false;
+    this.showFoundationContributionModal = true;
+  }
+
+  closeFoundationContributionModal(): void {
+    this.showFoundationContributionModal = false;
+    this.foundationContributionSaving = false;
+    this.foundationContributionAmount = this.foundationMonthlyContributionUsd;
+  }
+
+  async saveFoundationContributionAmount(): Promise<void> {
+    if (
+      !this.isAdminUi ||
+      !this.employee?.uid ||
+      this.foundationContributionSaving
+    ) {
+      return;
+    }
+
+    const amountUsd = this.foundationContributionAmountValue;
+    if (!Number.isInteger(amountUsd) || amountUsd < 1) {
+      alert(
+        'Entrez un montant entier valide pour la contribution mensuelle Fondation.'
+      );
+      return;
+    }
+
+    this.foundationContributionSaving = true;
+    try {
+      this.employee.foundationMonthlyContributionUsd = amountUsd;
+      await this.data.updateEmployeeField(
+        this.employee.uid,
+        'foundationMonthlyContributionUsd',
+        amountUsd
+      );
+      this.closeFoundationContributionModal();
+      alert('Contribution mensuelle Fondation mise à jour.');
+    } catch (error) {
+      console.error(
+        'Erreur lors de la mise à jour de la contribution Fondation',
+        error
+      );
+      alert(
+        "Impossible de modifier la contribution mensuelle du Compte Fondation."
+      );
+    } finally {
+      this.foundationContributionSaving = false;
+    }
   }
 
   addFoundationDeductionDraft(): void {
