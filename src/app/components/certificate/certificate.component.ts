@@ -44,6 +44,15 @@ export class CertificateComponent implements OnInit {
 
   certificate: Certificate = this.createEmptyCertificate();
   displayAddTeam: boolean = false;
+
+  get editingSelectedCertificate(): boolean {
+    return !!this.findCertificateForSelection();
+  }
+
+  get modalActionLabel(): string {
+    return this.editingSelectedCertificate ? 'Mettre à jour' : 'Ajouter';
+  }
+
   ngOnInit(): void {
     if (this.givenMonth < 0) {
       this.givenMonth = 11; // December
@@ -122,6 +131,14 @@ export class CertificateComponent implements OnInit {
     return this.time.monthFrenchNames[this.givenMonth] ?? '';
   }
 
+  private findCertificateForSelection(): Certificate | undefined {
+    return this.certificates.find(
+      (item) =>
+        item.month === this.getSelectedMonthLabel() &&
+        item.year === this.givenYear.toString()
+    );
+  }
+
   resetCertificateDraft(): void {
     this.certificate = this.sanitizeCertificate({
       ...this.createEmptyCertificate(),
@@ -132,7 +149,15 @@ export class CertificateComponent implements OnInit {
   }
 
   openAddCertificateModal(): void {
-    this.resetCertificateDraft();
+    const existingCertificate = this.findCertificateForSelection();
+    this.certificate = existingCertificate
+      ? this.sanitizeCertificate(existingCertificate)
+      : this.sanitizeCertificate({
+          ...this.createEmptyCertificate(),
+          month: this.getSelectedMonthLabel(),
+          year: this.givenYear.toString(),
+        });
+    this.formError = '';
     this.displayAddTeam = true;
   }
 
