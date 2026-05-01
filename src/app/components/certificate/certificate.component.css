@@ -1,0 +1,7 @@
+.certificate-modal-panel {
+  overscroll-behavior: contain;
+}
+
+.certificate-modal-panel > div {
+  -webkit-overflow-scrolling: touch;
+}

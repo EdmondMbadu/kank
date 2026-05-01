@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
-import { Router } from '@angular/router';
 import { Certificate } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -14,7 +13,6 @@ import { TimeService } from 'src/app/services/time.service';
 })
 export class CertificateComponent implements OnInit {
   constructor(
-    private router: Router,
     public auth: AuthService,
     private storage: AngularFireStorage,
     private data: DataService,
@@ -41,30 +39,23 @@ export class CertificateComponent implements OnInit {
   yearsList: number[] = this.time.yearsList;
   year = this.currentDate.getFullYear();
   preposition: string = 'De';
+  formError = '';
+  isSaving = false;
 
-  certificate: Certificate = {
-    month: '',
-    year: '',
-    bestTeam: '',
-    bestEmployee: '',
-    bestEmployeePerformance: '',
-    bestTeamCertificatePath: '',
-    bestTeamCertificateDownloadUrl: '',
-    bestEmployeeCertificatePath: '',
-    bestEmployeeCertificateDownloadUrl: '',
-    bestManagerCertificatePath: '',
-    bestManagerCertificateDownloadUrl: '',
-  };
+  certificate: Certificate = this.createEmptyCertificate();
   displayAddTeam: boolean = false;
   ngOnInit(): void {
     if (this.givenMonth < 0) {
       this.givenMonth = 11; // December
       this.givenYear -= 1; // Decrease the year
     }
+    this.resetCertificateDraft();
     this.auth.getCertificateInfo().subscribe((data) => {
       this.best = data;
       this.certificateId = this.best[0].certificateId;
-      this.certificates = this.best[0].certificate;
+      this.certificates = (this.best[0].certificate ?? []).map(
+        (item: Certificate) => this.sanitizeCertificate(item)
+      );
       this.months = [
         ...new Set(this.certificates.map((item: any) => item.month)),
       ];
@@ -75,8 +66,79 @@ export class CertificateComponent implements OnInit {
       this.updateSelection();
     });
   }
-  toggleDisplayAddTeam() {
-    this.displayAddTeam = !this.displayAddTeam;
+
+  private createEmptyCertificate(): Certificate {
+    return {
+      month: '',
+      year: '',
+      bestTeam: '',
+      bestEmployee: '',
+      bestEmployeePerformance: '',
+      bestTeamCertificatePath: '',
+      bestTeamCertificateDownloadUrl: '',
+      bestEmployeeCertificatePath: '',
+      bestEmployeeCertificateDownloadUrl: '',
+      bestManagerCertificatePath: '',
+      bestManagerCertificateDownloadUrl: '',
+    };
+  }
+
+  private sanitizeText(value?: string): string {
+    return value?.trim() ?? '';
+  }
+
+  private sanitizeCertificate(certificate?: Certificate): Certificate {
+    return {
+      month: this.sanitizeText(certificate?.month),
+      year: this.sanitizeText(certificate?.year),
+      bestTeam: this.sanitizeText(certificate?.bestTeam),
+      bestEmployee: this.sanitizeText(certificate?.bestEmployee),
+      bestEmployeePerformance: this.sanitizeText(
+        certificate?.bestEmployeePerformance
+      ),
+      bestManager: this.sanitizeText(certificate?.bestManager),
+      bestTeamCertificatePath: this.sanitizeText(
+        certificate?.bestTeamCertificatePath
+      ),
+      bestTeamCertificateDownloadUrl: this.sanitizeText(
+        certificate?.bestTeamCertificateDownloadUrl
+      ),
+      bestEmployeeCertificatePath: this.sanitizeText(
+        certificate?.bestEmployeeCertificatePath
+      ),
+      bestEmployeeCertificateDownloadUrl: this.sanitizeText(
+        certificate?.bestEmployeeCertificateDownloadUrl
+      ),
+      bestManagerCertificatePath: this.sanitizeText(
+        certificate?.bestManagerCertificatePath
+      ),
+      bestManagerCertificateDownloadUrl: this.sanitizeText(
+        certificate?.bestManagerCertificateDownloadUrl
+      ),
+    };
+  }
+
+  private getSelectedMonthLabel(): string {
+    return this.time.monthFrenchNames[this.givenMonth] ?? '';
+  }
+
+  resetCertificateDraft(): void {
+    this.certificate = this.sanitizeCertificate({
+      ...this.createEmptyCertificate(),
+      month: this.getSelectedMonthLabel(),
+      year: this.givenYear.toString(),
+    });
+    this.formError = '';
+  }
+
+  openAddCertificateModal(): void {
+    this.resetCertificateDraft();
+    this.displayAddTeam = true;
+  }
+
+  closeAddCertificateModal(): void {
+    this.displayAddTeam = false;
+    this.resetCertificateDraft();
   }
 
   updateSelection() {
@@ -105,6 +167,7 @@ export class CertificateComponent implements OnInit {
     let prefix = id.replace(/^get/, '');
     const file = event?.item(0);
     console.log(' current file data', file);
+    this.formError = '';
 
     if (file?.type.split('/')[0] !== 'image') {
       alert('Unsupported file type. Please upload an image.');
@@ -149,10 +212,58 @@ export class CertificateComponent implements OnInit {
     fileInput.click();
   }
 
-  updateData() {
-    this.certificates.push(this.certificate);
-    this.data.addCertificateData(this.certificates, this.certificateId);
-    this.router.navigate(['/home']);
+  private validateCertificate(): string {
+    if (!this.certificate.month || !this.certificate.year) {
+      return 'Choisissez le mois et l’année du certificat.';
+    }
+
+    const hasBestTeam = !!this.certificate.bestTeam?.trim();
+    const hasBestEmployee = !!this.certificate.bestEmployee?.trim();
+    const hasBestManager = !!this.certificate.bestManager?.trim();
+
+    if (!hasBestTeam && !hasBestEmployee && !hasBestManager) {
+      return 'Entrez au moins un nom de lauréat.';
+    }
+
+    return '';
+  }
+
+  async updateData() {
+    this.formError = this.validateCertificate();
+    if (this.formError) {
+      return;
+    }
+
+    const certificateToSave = this.sanitizeCertificate(this.certificate);
+    const nextCertificates = this.certificates.map((item) =>
+      this.sanitizeCertificate(item)
+    );
+
+    const existingIndex = nextCertificates.findIndex(
+      (item) =>
+        item.month === certificateToSave.month && item.year === certificateToSave.year
+    );
+
+    if (existingIndex >= 0) {
+      nextCertificates[existingIndex] = certificateToSave;
+    } else {
+      nextCertificates.push(certificateToSave);
+    }
+
+    this.isSaving = true;
+    try {
+      await this.data.addCertificateData(nextCertificates, this.certificateId);
+      this.certificates = nextCertificates;
+      this.displayAddTeam = false;
+      this.resetCertificateDraft();
+      this.givenMonth = this.time.monthFrenchNames.indexOf(
+        certificateToSave.month || ''
+      );
+      this.givenYear = Number(certificateToSave.year);
+      this.updateSelection();
+    } finally {
+      this.isSaving = false;
+    }
   }
   choose() {}
 }
