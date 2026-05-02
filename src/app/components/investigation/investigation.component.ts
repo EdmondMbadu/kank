@@ -1382,23 +1382,20 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
   }
 
-  hasMissingScheduledInvestigationComment(client?: Client | null): boolean {
+  hasScheduledCommentForSelectedDay(client?: Client | null): boolean {
     if (!client?.uid) return false;
-    if (!this.auth.isInvestigator || this.auth.isAdmin) return false;
-    if (!this.scheduledInvestigatorLocationId) return false;
-    if ((client.locationOwnerId || this.selectedLocationId) !== this.scheduledInvestigatorLocationId) {
-      return false;
-    }
 
-    return !this.getDailyVerificationComments(client).some(
-      (comment) => this.commentMatchesSelectedDay(comment)
+    return this.getDailyVerificationComments(client).some((comment) =>
+      this.commentMatchesSelectedDay(comment)
     );
   }
 
-  missingScheduledInvestigationCommentCount(): number {
-    if (!this.auth.isInvestigator || this.auth.isAdmin) return 0;
-    if (!this.scheduledInvestigatorLocationId) return 0;
+  hasMissingScheduledInvestigationComment(client?: Client | null): boolean {
+    if (!client?.uid) return false;
+    return !this.hasScheduledCommentForSelectedDay(client);
+  }
 
+  missingScheduledInvestigationCommentCount(): number {
     return (this.shouldPayToday || []).filter((client) =>
       this.hasMissingScheduledInvestigationComment(client)
     ).length;
