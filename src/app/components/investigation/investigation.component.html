@@ -681,6 +681,12 @@
                     <span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                       {{ client.locationName || "Site" }}
                     </span>
+                    <span
+                      *ngIf="hasMissingScheduledInvestigationComment(client)"
+                      class="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700"
+                    >
+                      Pas de commentaire aujourd'hui
+                    </span>
                   </p>
                   <p class="text-sm text-slate-600">
                     {{ displayPhone(client.phoneNumber) }}
