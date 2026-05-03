@@ -2039,25 +2039,38 @@
                 >
                   Résumé du mois
                 </p>
-                <p class="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                  {{ summary.scopeLabel }} •
+                <p class="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">
+                  {{ summary.scopeLabel }}
+                </p>
+                <p
+                  class="mt-1 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl"
+                >
                   {{ summary.recordedDays }} jour{{
                     summary.recordedDays > 1 ? "s" : ""
                   }}
                   renseigné{{ summary.recordedDays > 1 ? "s" : "" }} sur
-                  {{ summary.daysConsidered }}.
+                  {{ summary.daysConsidered }}
                 </p>
-                <div class="mt-3 flex flex-wrap items-center gap-3">
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                  <span
+                    class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-extrabold text-white ring-1 ring-slate-900 dark:bg-white dark:text-slate-900 dark:ring-white"
+                  >
+                    Total marqué : {{ summary.recordedDays }}
+                  </span>
                   <span
                     class="inline-flex items-center rounded-full bg-emerald-50 px-4 py-2 text-sm font-extrabold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:ring-emerald-400/20"
                   >
-                    Présence : {{ summary.confirmedPresenceDays }}
+                    Présence : {{ summary.presentDays }}
                   </span>
-                  <span
-                    class="inline-flex items-center rounded-full bg-rose-50 px-4 py-2 text-sm font-extrabold text-rose-700 ring-1 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-400/20"
-                  >
-                    Absent : {{ summary.absentDays }}
-                  </span>
+                  <ng-container *ngFor="let item of summary.items">
+                    <span
+                      *ngIf="item.code !== 'P' && item.code !== 'missing'"
+                      class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold ring-1"
+                      [ngClass]="item.toneClasses"
+                    >
+                      {{ item.label }} : {{ item.count }}
+                    </span>
+                  </ng-container>
                 </div>
               </div>
 
