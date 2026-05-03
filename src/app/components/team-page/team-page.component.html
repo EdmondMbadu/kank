@@ -43,8 +43,67 @@
 
 <!-- === EMPLOYEE GRID === -->
 <div class="mx-auto mt-12 max-w-7xl px-4">
-  <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-    <ng-container *ngFor="let em of employees; let i = index">
+  <section>
+    <div class="mb-5 flex items-end justify-between gap-4">
+      <div>
+        <p
+          class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700"
+        >
+          En service
+        </p>
+        <h2 class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+          Employés qui travaillent
+        </h2>
+      </div>
+      <span
+        class="inline-flex items-center rounded-full bg-emerald-50 px-4 py-2 text-sm font-extrabold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:ring-emerald-400/20"
+      >
+        {{ workingEmployees.length }}
+      </span>
+    </div>
+
+    <ng-container
+      [ngTemplateOutlet]="employeeGrid"
+      [ngTemplateOutletContext]="{ $implicit: workingEmployees }"
+    ></ng-container>
+  </section>
+
+  <details
+    *ngIf="auth.isAdmin && nonWorkingEmployees.length > 0"
+    class="mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-lg ring-1 ring-black/5 backdrop-blur dark:border-slate-700 dark:bg-slate-900/80 dark:ring-white/10"
+  >
+    <summary
+      class="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5"
+    >
+      <div>
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+          Admin uniquement
+        </p>
+        <h3 class="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">
+          Employés non en service
+        </h3>
+        <p class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+          Vacance, absent, malade, quitté et autres statuts.
+        </p>
+      </div>
+      <span
+        class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-extrabold text-white dark:bg-white dark:text-slate-900"
+      >
+        {{ nonWorkingEmployees.length }}
+      </span>
+    </summary>
+
+    <div class="border-t border-slate-200 px-6 py-6 dark:border-slate-700">
+      <ng-container
+        [ngTemplateOutlet]="employeeGrid"
+        [ngTemplateOutletContext]="{ $implicit: nonWorkingEmployees }"
+      ></ng-container>
+    </div>
+  </details>
+
+  <ng-template #employeeGrid let-employeeList>
+    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <ng-container *ngFor="let em of employeeList">
       <div
         class="overflow-hidden rounded-3xl bg-white/70 shadow-xl ring-1 ring-gray-200 backdrop-blur transition hover:shadow-2xl dark:bg-slate-700 dark:ring-gray-700"
       >
@@ -52,7 +111,7 @@
         <input
           *ngIf="auth.isAdmin"
           type="file"
-          [id]="'getFile' + i"
+          [id]="'getFile' + employeeDisplayIndex(em)"
           class="hidden"
           (change)="startUpload($any($event.target).files, em)"
         />
@@ -76,7 +135,7 @@
           <!-- edit button (admins only) -->
           <button
             *ngIf="auth.isAdmin"
-            (click)="onImageClick(i); $event.stopPropagation()"
+            (click)="onImageClick(employeeDisplayIndex(em)); $event.stopPropagation()"
             type="button"
             title="Changer la photo"
             class="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow hover:bg-black/80 focus:outline-none"
@@ -308,7 +367,7 @@
           <div class="mt-6 flex flex-wrap items-center gap-3">
             <button
               *ngIf="auth.isAdmin"
-              (click)="toggleEditEmployee(i)"
+              (click)="toggleEditEmployee(employeeDisplayIndex(em))"
               class="rounded-full bg-emerald-600 px-5 py-2 text-xs font-medium text-white shadow hover:bg-emerald-700"
             >
               Modifier
@@ -320,7 +379,7 @@
             >
             <button
               *ngIf="auth.isAdmin"
-              (click)="deleteEmployee(em, i)"
+              (click)="deleteEmployee(em, employeeDisplayIndex(em))"
               class="rounded-full bg-red-600 px-5 py-2 text-xs font-medium text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               title="Supprimer définitivement cet employé"
             >
@@ -343,8 +402,9 @@
           </div>
         </div>
       </div>
-    </ng-container>
-  </div>
+      </ng-container>
+    </div>
+  </ng-template>
 </div>
 
 <!-- full-screen picture viewer -->

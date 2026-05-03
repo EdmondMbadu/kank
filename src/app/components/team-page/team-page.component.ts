@@ -28,6 +28,14 @@ export class TeamPageComponent implements OnInit {
     private compute: ComputationService
   ) {}
   displayEditEmployees: boolean[] = [];
+  private readonly WORKING_STATUSES = [
+    'travaille',
+    'tavaille',
+    'travail',
+    'en travail',
+    'working',
+    'work',
+  ];
 
   // ===== Trophy Modal state =====
   trophyModalVisible = false;
@@ -256,6 +264,25 @@ export class TeamPageComponent implements OnInit {
     }
   }
 
+  get workingEmployees(): Employee[] {
+    return (this.employees ?? []).filter((employee) =>
+      this.isWorkingStatus(employee?.status)
+    );
+  }
+
+  get nonWorkingEmployees(): Employee[] {
+    return (this.employees ?? []).filter(
+      (employee) => !this.isWorkingStatus(employee?.status)
+    );
+  }
+
+  employeeDisplayIndex(employee: Employee): number {
+    if (!employee?.uid) {
+      return this.employees.indexOf(employee);
+    }
+    return this.employees.findIndex((entry) => entry.uid === employee.uid);
+  }
+
   formatEmployeeStartDate(rawDate?: string | null): string {
     if (!rawDate) return 'Date inconnue';
 
@@ -334,6 +361,11 @@ export class TeamPageComponent implements OnInit {
 
   private normalizeRoleName(value?: string): string {
     return (value ?? '').trim().toLowerCase();
+  }
+
+  private isWorkingStatus(status?: string | null): boolean {
+    const normalized = (status ?? '').trim().toLowerCase();
+    return this.WORKING_STATUSES.includes(normalized);
   }
 
   findClientsWithDebts() {
