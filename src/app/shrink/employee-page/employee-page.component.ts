@@ -46,7 +46,27 @@ interface AuditReceipt {
   source: 'scoped' | 'legacy';
 }
 
-type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N';
+type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
+
+type AttendanceMonthSummaryItem = {
+  code: AttendanceStateCode | 'missing';
+  label: string;
+  count: number;
+  toneClasses: string;
+};
+
+type AttendanceMonthSummary = {
+  monthLabel: string;
+  scopeLabel: string;
+  daysConsidered: number;
+  recordedDays: number;
+  missingDays: number;
+  confirmedPresenceDays: number;
+  presentDays: number;
+  lateDays: number;
+  absentDays: number;
+  items: AttendanceMonthSummaryItem[];
+};
 
 type PickerStateOption = {
   code: AttendanceStateCode;
@@ -3657,7 +3677,6 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       console.warn("Element with ID 'attendance-body' not found in the DOM.");
       return;
     }
-    const dict: any = this.employee?.attendance || {}; // Use an empty object if attendance is null or undefined.
     const daysInMonth = new Date(year, month, 0).getDate();
     const firstDayIndex = new Date(year, month - 1, 1).getDay();
 
@@ -3681,33 +3700,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         } else {
           // Build a date string that matches the beginning of the keys
           const dateStr = `${month}-${date}-${year}`;
-
-          // Get all keys for this day
-          const keysForDate = Object.keys(dict).filter((key) =>
-            key.startsWith(dateStr)
-          );
-
-          // Pick the key with the latest time if available.
-          // We assume the key format is: month-date-year-hour-minute-second.
-          let matchedKey: string | undefined;
-          if (keysForDate.length > 0) {
-            matchedKey = keysForDate.reduce((prev, current) => {
-              const partsPrev = prev.split('-');
-              const partsCurrent = current.split('-');
-              const hourPrev = parseInt(partsPrev[3] || '0', 10);
-              const minutePrev = parseInt(partsPrev[4] || '0', 10);
-              const secondPrev = parseInt(partsPrev[5] || '0', 10);
-              const hourCurrent = parseInt(partsCurrent[3] || '0', 10);
-              const minuteCurrent = parseInt(partsCurrent[4] || '0', 10);
-              const secondCurrent = parseInt(partsCurrent[5] || '0', 10);
-              const timePrev = hourPrev * 3600 + minutePrev * 60 + secondPrev;
-              const timeCurrent =
-                hourCurrent * 3600 + minuteCurrent * 60 + secondCurrent;
-              return timeCurrent > timePrev ? current : prev;
-            });
-          }
-
-          const attendance = matchedKey ? dict[matchedKey] : undefined;
+          const latestAttendance = this.getLatestAttendanceForLabel(dateStr);
+          const matchedKey = latestAttendance.key;
+          const attendance = latestAttendance.status || undefined;
           const keyUsed = matchedKey ?? dateStr;
           const dateLabel = dateStr;
           if (this.auth.isAdmninistrator) {
@@ -3823,6 +3818,155 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         break;
       }
     }
+  }
+
+  get attendanceMonthSummary(): AttendanceMonthSummary {
+    return this.buildAttendanceMonthSummary(this.givenMonth, this.givenYear);
+  }
+
+  private buildAttendanceMonthSummary(
+    month: number,
+    year: number
+  ): AttendanceMonthSummary {
+    const nowKin = this.kinParts(new Date());
+    const monthDelta = year * 12 + month - (nowKin.y * 12 + nowKin.m);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const daysConsidered =
+      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? nowKin.d : 0;
+
+    const counts: Record<AttendanceStateCode, number> = {
+      '': 0,
+      P: 0,
+      A: 0,
+      L: 0,
+      V: 0,
+      VP: 0,
+      N: 0,
+      F: 0,
+    };
+
+    for (let day = 1; day <= daysConsidered; day++) {
+      const status = this.getLatestAttendanceForLabel(`${month}-${day}-${year}`)
+        .status;
+      if (!status) continue;
+      counts[status] += 1;
+    }
+
+    const recordedDays =
+      counts.P + counts.A + counts.L + counts.V + counts.VP + counts.N + counts.F;
+    const monthLabel =
+      this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`;
+
+    return {
+      monthLabel,
+      scopeLabel:
+        monthDelta === 0
+          ? `Jusqu’au ${nowKin.d} ${monthLabel}`
+          : monthDelta < 0
+            ? 'Mois complet'
+            : 'Aucun jour à résumer pour le moment',
+      daysConsidered,
+      recordedDays,
+      missingDays: Math.max(daysConsidered - recordedDays, 0),
+      confirmedPresenceDays: counts.P + counts.L,
+      presentDays: counts.P,
+      lateDays: counts.L,
+      absentDays: counts.A,
+      items: [
+        {
+          code: 'P',
+          label: 'Présent',
+          count: counts.P,
+          toneClasses:
+            'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:ring-emerald-400/20',
+        },
+        {
+          code: 'L',
+          label: 'Retard',
+          count: counts.L,
+          toneClasses:
+            'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-400/20',
+        },
+        {
+          code: 'A',
+          label: 'Absent',
+          count: counts.A,
+          toneClasses:
+            'bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-200 dark:ring-rose-400/20',
+        },
+        {
+          code: 'N',
+          label: 'Néant',
+          count: counts.N,
+          toneClasses:
+            'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-500/10 dark:text-slate-200 dark:ring-slate-400/20',
+        },
+        {
+          code: 'V',
+          label: 'Vacance',
+          count: counts.V,
+          toneClasses:
+            'bg-yellow-50 text-yellow-700 ring-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-200 dark:ring-yellow-400/20',
+        },
+        {
+          code: 'VP',
+          label: 'Vacance en cours',
+          count: counts.VP,
+          toneClasses:
+            'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-200 dark:ring-sky-400/20',
+        },
+        {
+          code: 'F',
+          label: 'Anomalie',
+          count: counts.F,
+          toneClasses:
+            'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200 dark:bg-fuchsia-500/10 dark:text-fuchsia-200 dark:ring-fuchsia-400/20',
+        },
+        {
+          code: 'missing',
+          label: 'Sans statut',
+          count: Math.max(daysConsidered - recordedDays, 0),
+          toneClasses:
+            'bg-white text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700',
+        },
+      ],
+    };
+  }
+
+  private getLatestAttendanceForLabel(baseLabel: string): {
+    key?: string;
+    status: AttendanceStateCode;
+  } {
+    const attendance = this.employee?.attendance || {};
+    let matchedKey: string | undefined;
+
+    Object.keys(attendance).forEach((key) => {
+      if (this.normalizeLabel(key) !== baseLabel) return;
+      if (
+        !matchedKey ||
+        this.attendanceKeySeconds(key) > this.attendanceKeySeconds(matchedKey)
+      ) {
+        matchedKey = key;
+      }
+    });
+
+    const rawStatus = matchedKey ? attendance[matchedKey] : '';
+    const status = this.isAttendanceStateCode(rawStatus) ? rawStatus : '';
+    return { key: matchedKey, status };
+  }
+
+  private attendanceKeySeconds(key: string): number {
+    const parts = key.split('-');
+    const hh = Number(parts[3] || 0);
+    const mm = Number(parts[4] || 0);
+    const ss = Number(parts[5] || 0);
+    return hh * 3600 + mm * 60 + ss;
+  }
+
+  private isAttendanceStateCode(value: unknown): value is AttendanceStateCode {
+    return ['P', 'A', 'L', 'V', 'VP', 'N', 'F', ''].includes(
+      String(value ?? '')
+    );
   }
 
   private resolveAttendanceTargetDate(mode: 'today' | 'yesterday'): Date {
