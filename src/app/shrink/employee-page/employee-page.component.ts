@@ -3845,7 +3845,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       F: 0,
     };
 
+    let eligibleDays = 0;
+
     for (let day = 1; day <= daysConsidered; day++) {
+      if (this.isSunday(month, day, year)) continue;
+      eligibleDays += 1;
       const status = this.getLatestAttendanceForLabel(`${month}-${day}-${year}`)
         .status;
       if (!status) continue;
@@ -3865,9 +3869,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           : monthDelta < 0
             ? 'Mois complet'
             : 'Aucun jour à résumer pour le moment',
-      daysConsidered,
+      daysConsidered: eligibleDays,
       recordedDays,
-      missingDays: Math.max(daysConsidered - recordedDays, 0),
+      missingDays: Math.max(eligibleDays - recordedDays, 0),
       confirmedPresenceDays: counts.P + counts.L,
       presentDays: counts.P,
       lateDays: counts.L,
@@ -3961,6 +3965,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const mm = Number(parts[4] || 0);
     const ss = Number(parts[5] || 0);
     return hh * 3600 + mm * 60 + ss;
+  }
+
+  private isSunday(month: number, day: number, year: number): boolean {
+    return new Date(year, month - 1, day).getDay() === 0;
   }
 
   private isAttendanceStateCode(value: unknown): value is AttendanceStateCode {
