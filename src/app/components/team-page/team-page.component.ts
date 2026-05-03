@@ -35,6 +35,9 @@ export class TeamPageComponent implements OnInit {
     'en travail',
     'working',
     'work',
+    'vacance',
+    'vacances',
+    'vacation',
   ];
 
   // ===== Trophy Modal state =====
@@ -872,7 +875,11 @@ export class TeamPageComponent implements OnInit {
     if (!this.employees[index].bestTeamTrophies) {
       this.employees[index].bestTeamTrophies = [];
     }
-    this.employees[index].bestTeamTrophies!.push({ month, year });
+    const defaultPeriod = this.getDefaultTrophyPeriod();
+    this.employees[index].bestTeamTrophies!.push({
+      month: month || defaultPeriod.month,
+      year: year || defaultPeriod.year,
+    });
   }
 
   /**
@@ -882,7 +889,11 @@ export class TeamPageComponent implements OnInit {
     if (!this.employees[index].bestEmployeeTrophies) {
       this.employees[index].bestEmployeeTrophies = [];
     }
-    this.employees[index].bestEmployeeTrophies!.push({ month, year });
+    const defaultPeriod = this.getDefaultTrophyPeriod();
+    this.employees[index].bestEmployeeTrophies!.push({
+      month: month || defaultPeriod.month,
+      year: year || defaultPeriod.year,
+    });
   }
 
   /**
@@ -939,6 +950,20 @@ export class TeamPageComponent implements OnInit {
     return this.trophyModalType === 'team'
       ? 'Trophées Meilleure Équipe'
       : 'Trophées Meilleur Employé';
+  }
+
+  private getDefaultTrophyPeriod(): { month: string; year: string } {
+    const today = new Date();
+    const previousMonthDate = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      1
+    );
+
+    return {
+      month: String(previousMonthDate.getMonth() + 1).padStart(2, '0'),
+      year: String(previousMonthDate.getFullYear()),
+    };
   }
 
   /**
