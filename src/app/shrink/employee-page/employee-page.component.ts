@@ -975,8 +975,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return {
       'border-amber-200 bg-amber-50 hover:border-amber-300 hover:bg-amber-100/70 dark:border-amber-500/30 dark:bg-amber-500/10':
         this.foundationHasPendingRequest,
+      'border-orange-200 bg-orange-50 hover:border-orange-300 hover:bg-orange-100/70 dark:border-orange-500/30 dark:bg-orange-500/10':
+        !this.foundationHasPendingRequest && !this.foundationWithdrawalEligible,
       'border-emerald-200 bg-emerald-50 hover:border-emerald-300 hover:bg-emerald-100/70 dark:border-emerald-500/30 dark:bg-emerald-500/10':
-        !this.foundationHasPendingRequest,
+        !this.foundationHasPendingRequest && this.foundationWithdrawalEligible,
     };
   }
 
@@ -984,15 +986,20 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return {
       'border-amber-200 text-amber-700 dark:border-amber-500/30 dark:text-amber-200':
         this.foundationHasPendingRequest,
+      'border-orange-200 text-orange-700 dark:border-orange-500/30 dark:text-orange-200':
+        !this.foundationHasPendingRequest && !this.foundationWithdrawalEligible,
       'border-emerald-200 text-emerald-700 dark:border-emerald-500/30 dark:text-emerald-200':
-        !this.foundationHasPendingRequest,
+        !this.foundationHasPendingRequest && this.foundationWithdrawalEligible,
     };
   }
 
   get foundationCardLabelClasses(): Record<string, boolean> {
     return {
       'text-amber-700 dark:text-amber-200': this.foundationHasPendingRequest,
-      'text-emerald-700 dark:text-emerald-200': !this.foundationHasPendingRequest,
+      'text-orange-700 dark:text-orange-200':
+        !this.foundationHasPendingRequest && !this.foundationWithdrawalEligible,
+      'text-emerald-700 dark:text-emerald-200':
+        !this.foundationHasPendingRequest && this.foundationWithdrawalEligible,
     };
   }
 
