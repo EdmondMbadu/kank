@@ -811,6 +811,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  get foundationFinalWithdrawalEligible(): boolean {
+    return this.foundationWithdrawalEligible;
+  }
+
   get foundationCanRequestWithdrawal(): boolean {
     if (!this.foundationJoinDate) {
       return false;
@@ -828,7 +832,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get foundationCanRequestFullWithdrawal(): boolean {
-    return !this.foundationHasPendingRequest && this.foundationTotalUsd > 0;
+    return (
+      !this.foundationHasPendingRequest &&
+      this.foundationFinalWithdrawalEligible &&
+      this.foundationTotalUsd > 0
+    );
   }
 
   get foundationRequestBlockedReason(): string {
@@ -841,7 +849,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
 
     if (this.foundationHasLeftOrganization && !this.foundationWithdrawalEligible) {
-      return "Retrait partiel non autorisé : utilisez le retrait total réservé au départ.";
+      return "Départ avant 1 an : aucun montant du Compte Fondation n'est dû.";
     }
 
     if (!this.foundationWithdrawalEligible) {
@@ -895,6 +903,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return 'Demande en attente';
     }
 
+    if (!this.foundationJoinDate) {
+      return 'Date requise';
+    }
+
+    if (this.foundationHasLeftOrganization && !this.foundationFinalWithdrawalEligible) {
+      return 'Départ avant 1 an';
+    }
+
     if (this.foundationHasLeftOrganization) {
       return 'Retrait final autorisé';
     }
@@ -911,12 +927,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return 'Une demande de retrait Compte Fondation est en attente de validation.';
     }
 
+    if (this.foundationHasLeftOrganization && !this.foundationFinalWithdrawalEligible) {
+      return "Départ avant 1 an : aucun paiement du Compte Fondation n'est dû.";
+    }
+
     if (this.foundationHasLeftOrganization) {
       return 'Employé sortant: retrait total autorisé avec justification du départ.';
     }
 
     if (!this.foundationWithdrawalEligible) {
-      return `Retrait partiel bloqué avant ${this.foundationEligibilityDateLabel}.`;
+      return `Retrait partiel bloqué avant ${this.foundationEligibilityDateLabel}. Le retrait final reste verrouillé tant qu'une année complète n'est pas atteinte.`;
     }
 
     if (this.foundationWithdrawableUsd <= 0) {
@@ -1145,6 +1165,13 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         );
         return;
       }
+    }
+
+    if (mode === 'full' && !this.foundationFinalWithdrawalEligible) {
+      alert(
+        `Le retrait final n'est acquis qu'après une année complète. Avant le ${this.foundationEligibilityDateLabel}, aucun montant n'est dû en cas de départ.`
+      );
+      return;
     }
 
     this.foundationRequestMode = mode;

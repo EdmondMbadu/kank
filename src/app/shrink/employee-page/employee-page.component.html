@@ -809,9 +809,16 @@
                   <button
                     type="button"
                     (click)="openFoundationRequestModal('full'); $event.stopPropagation()"
-                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 sm:w-auto"
+                    [disabled]="!foundationCanRequestFullWithdrawal"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+                    [ngClass]="
+                      foundationCanRequestFullWithdrawal
+                        ? 'bg-red-600 text-white hover:bg-red-700'
+                        : 'bg-amber-100 text-amber-900'
+                    "
                   >
                     <svg
+                      *ngIf="foundationCanRequestFullWithdrawal; else foundationFullWithdrawalLockIcon"
                       class="h-4 w-4"
                       viewBox="0 0 24 24"
                       fill="none"
@@ -825,6 +832,21 @@
                       <path d="M17 14l-5-5-5 5"></path>
                       <path d="M5 3h14"></path>
                     </svg>
+                    <ng-template #foundationFullWithdrawalLockIcon>
+                      <svg
+                        class="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                        <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+                      </svg>
+                    </ng-template>
                     Retirer tout le solde
                   </button>
                 </div>
@@ -907,6 +929,64 @@
                   </div>
                   <div class="text-[11px] text-slate-500 dark:text-slate-400">
                     Minimum permanent: ${{ foundationMinimumBalanceUsd }}
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-2xl border p-3"
+                  [ngClass]="
+                    foundationFinalWithdrawalEligible
+                      ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/10'
+                      : 'border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
+                  "
+                >
+                  <div
+                    class="flex items-center gap-2 text-[11px] uppercase tracking-wide"
+                    [ngClass]="
+                      foundationFinalWithdrawalEligible
+                        ? 'text-emerald-700 dark:text-emerald-200'
+                        : 'text-amber-700 dark:text-amber-200'
+                    "
+                  >
+                    <span>Retrait final</span>
+                    <svg
+                      *ngIf="!foundationFinalWithdrawalEligible"
+                      class="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                      <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+                    </svg>
+                  </div>
+                  <div
+                    class="mt-1 text-sm font-semibold"
+                    [ngClass]="
+                      foundationFinalWithdrawalEligible
+                        ? 'text-emerald-900 dark:text-emerald-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                    "
+                  >
+                    ${{ foundationTotalUsd | number : "1.0-0" }}
+                  </div>
+                  <div
+                    class="text-[11px]"
+                    [ngClass]="
+                      foundationFinalWithdrawalEligible
+                        ? 'text-emerald-700/80 dark:text-emerald-200/80'
+                        : 'text-amber-700/80 dark:text-amber-200/80'
+                    "
+                  >
+                    {{
+                      foundationFinalWithdrawalEligible
+                        ? "Montant payable seulement au départ."
+                        : "Montant affiché, mais non acquis avant 1 an."
+                    }}
                   </div>
                 </div>
 
@@ -1436,7 +1516,8 @@
                       </li>
                       <li>
                         <strong>Retrait final.</strong> Lors de votre départ de la Fondation, vous pouvez retirer
-                        l’intégralité du solde restant.
+                        l’intégralité du solde restant uniquement si vous avez déjà complété au moins
+                        <strong>1 an dans la structure</strong>. <strong>En cas de départ avant 1 an, aucun montant n’est dû.</strong>
                       </li>
                     </ul>
                   </div>
