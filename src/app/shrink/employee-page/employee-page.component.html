@@ -4381,9 +4381,9 @@
   aria-modal="true"
 >
   <div
-    class="w-full max-w-2xl max-h-[90svh] overflow-y-auto overscroll-y-contain rounded-2xl border border-gray-100 bg-gray-50 shadow-xl dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+    class="flex w-full max-w-2xl max-h-[92svh] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-xl dark:border-gray-700 dark:bg-gray-800 dark:text-white"
   >
-    <div class="space-y-4 p-6">
+    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain p-6">
       <h2 class="font-bold">
         {{ employee.firstName }} {{ employee.lastName }} Paiement
         {{ time.monthFrenchNames[currentMonth - 1] }} {{ year }}
@@ -4493,12 +4493,29 @@
           *ngIf="
             isEmployeeUi && paymentObjectiveWeekDeductions.length > 0
           "
-          class="text-[10px] text-slate-500 dark:text-slate-400"
+          class="rounded-xl border border-rose-200 bg-rose-50/80 p-3 dark:border-rose-500/30 dark:bg-rose-500/10"
         >
-          Semaines concernées :
-          <span *ngFor="let d of paymentObjectiveWeekDeductions; let i = index">
-            {{ formatObjectiveWeekLabel(d) }}<span *ngIf="i + 1 < paymentObjectiveWeekDeductions.length"> · </span>
-          </span>
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-200">
+            Détail des semaines retirées
+          </div>
+          <div class="mt-2 space-y-2">
+            <div
+              *ngFor="let d of paymentObjectiveWeekDeductions"
+              class="flex items-start justify-between gap-3 rounded-lg border border-rose-200 bg-white/90 px-3 py-2 text-sm dark:border-rose-500/20 dark:bg-slate-900/40"
+            >
+              <div class="min-w-0">
+                <div class="font-semibold text-slate-900 dark:text-slate-100">
+                  {{ formatObjectiveWeekLabel(d) }}
+                </div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                  Semaine retirée pour objectif non atteint
+                </div>
+              </div>
+              <div class="shrink-0 font-semibold text-red-600 dark:text-red-300">
+                $ -{{ d.amount | number : "1.0-0" }}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div *ngIf="isAdminUi" class="space-y-3">
@@ -4739,7 +4756,10 @@
         </p>
         <p class="whitespace-pre-line">{{ paymentSignNote }}</p>
       </div>
-      <div>
+    </div>
+    <div
+      class="flex shrink-0 flex-wrap justify-end gap-3 border-t border-gray-200 bg-gray-50 px-4 py-4 dark:border-gray-700 dark:bg-gray-800 sm:px-6"
+    >
         <button
           (click)="togglePayment()"
           type="button"
@@ -4762,7 +4782,6 @@
         >
           Mis A Jour
         </button>
-      </div>
     </div>
   </div>
 </div>
