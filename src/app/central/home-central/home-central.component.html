@@ -179,19 +179,19 @@
               <div class="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  (click)="setActiveTopClientFocusPanel('birthdays')"
-                  class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                  [ngClass]="topClientFocusButtonClasses('birthdays')"
-                >
-                  Anniversaires
-                </button>
-                <button
-                  type="button"
                   (click)="setActiveTopClientFocusPanel('trophyMissing')"
                   class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
                   [ngClass]="topClientFocusButtonClasses('trophyMissing')"
                 >
                   Trophée non attribué
+                </button>
+                <button
+                  type="button"
+                  (click)="setActiveTopClientFocusPanel('birthdays')"
+                  class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  [ngClass]="topClientFocusButtonClasses('birthdays')"
+                >
+                  Anniversaires
                 </button>
               </div>
             </div>
@@ -395,6 +395,56 @@
               >
                 La liste affiche maintenant uniquement les clients à traiter pour attribuer un trophée.
               </p>
+            </div>
+
+            <div
+              class="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/60 p-3 shadow-sm dark:border-amber-800/60 dark:bg-amber-900/10"
+            >
+              <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <p
+                  class="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300"
+                >
+                  Résumé des trophées à attribuer
+                </p>
+                <p class="text-[11px] text-amber-700/80 dark:text-amber-300/90">
+                  {{ trophyMissingClientsCount }} client(s) · {{ trophyMissingLocationsCount }} site(s)
+                </p>
+              </div>
+
+              <div
+                *ngIf="!trophyMissingGroups.length"
+                class="mt-2 rounded-xl border border-dashed border-amber-200 bg-white/70 px-3 py-2 text-xs text-amber-700 dark:border-amber-800 dark:bg-slate-900/40 dark:text-amber-300"
+              >
+                Aucun client à traiter pour un trophée.
+              </div>
+
+              <div class="mt-3 space-y-3" *ngIf="trophyMissingGroups.length">
+                <article
+                  *ngFor="let group of trophyMissingGroups; trackBy: trackTrophyMissingGroup"
+                  class="rounded-xl border border-amber-200 bg-white/85 p-3 dark:border-amber-800/60 dark:bg-slate-900/50"
+                >
+                  <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {{ group.locationName }}
+                    </p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                      {{ group.clients.length }} client(s)
+                    </p>
+                  </div>
+
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <span
+                      *ngFor="let client of group.clients"
+                      class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200"
+                    >
+                      {{ client.firstName }} {{ client.lastName }}
+                      <span class="ml-1 text-[10px] opacity-80">
+                        (score {{ client.creditScore || '0' }})
+                      </span>
+                    </span>
+                  </div>
+                </article>
+              </div>
             </div>
           </div>
         </div>

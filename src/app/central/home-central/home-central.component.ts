@@ -62,6 +62,12 @@ type BirthdayTomorrowGroup = {
   excludedNoPhone: number;
 };
 
+type TrophyMissingGroup = {
+  key: string;
+  locationName: string;
+  clients: Client[];
+};
+
 type BulkMessageLogDocument = {
   type?: BulkLogContext;
   sentAt?: any;
@@ -590,6 +596,46 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     return (this.allClients ?? []).filter((client) =>
       this.isMissingTrophyClient(client)
     ).length;
+  }
+
+  get trophyMissingGroups(): TrophyMissingGroup[] {
+    const grouped = new Map<string, Client[]>();
+
+    for (const client of this.allClients ?? []) {
+      if (!this.isMissingTrophyClient(client)) continue;
+      const locationName = (client.locationName || 'Sans localisation').trim();
+      const key = locationName || 'Sans localisation';
+      const list = grouped.get(key) || [];
+      list.push(client);
+      grouped.set(key, list);
+    }
+
+    return Array.from(grouped.entries())
+      .map(([locationName, clients]) => ({
+        key: locationName,
+        locationName,
+        clients: clients
+          .slice()
+          .sort((a, b) =>
+            `${a.firstName || ''} ${a.lastName || ''}`
+              .trim()
+              .localeCompare(`${b.firstName || ''} ${b.lastName || ''}`.trim())
+          ),
+      }))
+      .sort((a, b) => {
+        const countDiff = b.clients.length - a.clients.length;
+        return countDiff !== 0
+          ? countDiff
+          : a.locationName.localeCompare(b.locationName);
+      });
+  }
+
+  get trophyMissingLocationsCount(): number {
+    return this.trophyMissingGroups.length;
+  }
+
+  trackTrophyMissingGroup(index: number, group: TrophyMissingGroup): string {
+    return group.key;
   }
 
   get tomorrowBirthdayDateLabel(): string {
