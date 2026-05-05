@@ -787,6 +787,46 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return Math.max(0, this.foundationGrossTotalUsd - this.foundationApprovedPayoutTotalUsd);
   }
 
+  private get foundationCompositionDenominator(): number {
+    return (
+      this.foundationGrossTotalUsd + this.foundationDeductedAmountUsd
+    );
+  }
+
+  private foundationShareOf(value: number): number {
+    const denom = this.foundationCompositionDenominator;
+    if (!denom || denom <= 0) {
+      return 0;
+    }
+    return Math.max(0, Math.min(100, (value / denom) * 100));
+  }
+
+  get foundationContributionsShare(): number {
+    return this.foundationShareOf(this.foundationMonthlyContributionTotalUsd);
+  }
+
+  get foundationPerformanceShare(): number {
+    return this.foundationShareOf(this.foundationPerformanceBonusTotalUsd);
+  }
+
+  get foundationManualBonusShare(): number {
+    return this.foundationShareOf(this.foundationManualBonusTotalUsd);
+  }
+
+  get foundationDeductionShare(): number {
+    return this.foundationShareOf(this.foundationDeductedAmountUsd);
+  }
+
+  get foundationWithdrawableShare(): number {
+    if (this.foundationTotalUsd <= 0) {
+      return 0;
+    }
+    return Math.max(
+      0,
+      Math.min(100, (this.foundationWithdrawableUsd / this.foundationTotalUsd) * 100)
+    );
+  }
+
   get foundationWithdrawalEligible(): boolean {
     return this.foundationMonthsEarned >= 12;
   }

@@ -872,153 +872,212 @@
                 {{ foundationStatusLabel }}
               </div>
 
-              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/80">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Début du compte
+              <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800/80">
+                <div class="grid gap-3 sm:grid-cols-3">
+                  <div>
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Début du compte
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {{ foundationJoinDateLabel }}
+                    </div>
                   </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {{ foundationJoinDateLabel }}
+                  <div>
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Ancienneté contributive
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {{ foundationTenureLabel }}
+                    </div>
                   </div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/80">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Ancienneté contributive
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {{ foundationTenureLabel }}
-                  </div>
-                </div>
-
-                <div class="rounded-2xl border border-violet-200 bg-violet-50/70 p-3 dark:border-violet-500/30 dark:bg-violet-500/10">
-                  <div class="text-[11px] uppercase tracking-wide text-violet-700 dark:text-violet-200">
-                    Contribution mensuelle
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-violet-900 dark:text-violet-100">
-                    ${{ foundationMonthlyContributionUsd | number : "1.0-0" }} / mois
-                  </div>
-                  <div class="text-[11px] text-violet-700/80 dark:text-violet-200/80">
-                    Valeur utilisée dans le calcul du compte
-                  </div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/80">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Bonus performance
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    ${{ foundationPerformanceBonusTotalUsd | number : "1.0-0" }}
-                  </div>
-                  <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                    {{ foundationEmployeeOfMonthCount }} sélection{{ foundationEmployeeOfMonthCount > 1 ? "s" : "" }}
-                  </div>
-                </div>
-
-                <div class="rounded-2xl border border-sky-200 bg-sky-50/70 p-3 dark:border-sky-500/30 dark:bg-sky-500/10">
-                  <div class="text-[11px] uppercase tracking-wide text-sky-700 dark:text-sky-200">
-                    Bonus ajoutés
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-sky-900 dark:text-sky-100">
-                    +${{ foundationManualBonusTotalUsd | number : "1.0-0" }}
-                  </div>
-                  <div class="text-[11px] text-sky-700/80 dark:text-sky-200/80">
-                    {{ foundationManualBonusCount }} ajout{{ foundationManualBonusCount > 1 ? "s" : "" }} manuel{{ foundationManualBonusCount > 1 ? "s" : "" }}
-                  </div>
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/80">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Disponible au retrait
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    ${{ foundationWithdrawableUsd | number : "1.0-0" }}
-                  </div>
-                  <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                    Minimum permanent: ${{ foundationMinimumBalanceUsd }}
-                  </div>
-                </div>
-
-                <div
-                  class="rounded-2xl border p-3"
-                  [ngClass]="
-                    foundationFinalWithdrawalEligible
-                      ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/10'
-                      : 'border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
-                  "
-                >
-                  <div
-                    class="flex items-center gap-2 text-[11px] uppercase tracking-wide"
-                    [ngClass]="
-                      foundationFinalWithdrawalEligible
-                        ? 'text-emerald-700 dark:text-emerald-200'
-                        : 'text-amber-700 dark:text-amber-200'
-                    "
-                  >
-                    <span>Retrait final</span>
-                    <svg
-                      *ngIf="!foundationFinalWithdrawalEligible"
-                      class="h-3.5 w-3.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <rect x="4" y="11" width="16" height="9" rx="2"></rect>
-                      <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
-                    </svg>
-                  </div>
-                  <div
-                    class="mt-1 text-sm font-semibold"
-                    [ngClass]="
-                      foundationFinalWithdrawalEligible
-                        ? 'text-emerald-900 dark:text-emerald-100'
-                        : 'text-amber-900 dark:text-amber-100'
-                    "
-                  >
-                    ${{ foundationTotalUsd | number : "1.0-0" }}
-                  </div>
-                  <div
-                    class="text-[11px]"
-                    [ngClass]="
-                      foundationFinalWithdrawalEligible
-                        ? 'text-emerald-700/80 dark:text-emerald-200/80'
-                        : 'text-amber-700/80 dark:text-amber-200/80'
-                    "
-                  >
-                    {{
-                      foundationFinalWithdrawalEligible
-                        ? "Montant payable seulement au départ."
-                        : "Montant affiché, mais non acquis avant 1 an."
-                    }}
-                  </div>
-                </div>
-
-                <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
-                  <div class="text-[11px] uppercase tracking-wide text-amber-700 dark:text-amber-200">
-                    Mois retranchés
-                  </div>
-                  <div class="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
-                    {{ foundationDeductedMonthsCount }} mois
-                  </div>
-                  <div class="text-[11px] text-amber-700/80 dark:text-amber-200/80">
-                    -${{ foundationDeductedAmountUsd | number : "1.0-0" }} au total
+                  <div>
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Contribution mensuelle
+                    </div>
+                    <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      ${{ foundationMonthlyContributionUsd | number : "1.0-0" }} / mois
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/80">
-                <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                  Éligibilité
+                <div class="flex items-end justify-between gap-3">
+                  <div>
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Composition du solde
+                    </div>
+                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Contributions + bonus − retranchements
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-3xl font-black leading-none tracking-tight text-slate-950 dark:text-slate-50">
+                      ${{ foundationTotalUsd | number : "1.0-0" }}
+                    </div>
+                  </div>
                 </div>
-                <div class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {{ foundationEligibilityLabel }}
+
+                <div class="mt-4 flex h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700/50">
+                  <div
+                    *ngIf="foundationContributionsShare > 0"
+                    class="h-full bg-violet-500"
+                    [style.width.%]="foundationContributionsShare"
+                    [title]="'Contributions: $' + (foundationMonthlyContributionTotalUsd | number : '1.0-0')"
+                  ></div>
+                  <div
+                    *ngIf="foundationPerformanceShare > 0"
+                    class="h-full bg-amber-400"
+                    [style.width.%]="foundationPerformanceShare"
+                    [title]="'Bonus performance: $' + (foundationPerformanceBonusTotalUsd | number : '1.0-0')"
+                  ></div>
+                  <div
+                    *ngIf="foundationManualBonusShare > 0"
+                    class="h-full bg-sky-500"
+                    [style.width.%]="foundationManualBonusShare"
+                    [title]="'Bonus manuels: $' + (foundationManualBonusTotalUsd | number : '1.0-0')"
+                  ></div>
+                  <div
+                    *ngIf="foundationDeductionShare > 0"
+                    class="h-full bg-rose-300/80 [background-image:repeating-linear-gradient(45deg,transparent_0_4px,rgba(255,255,255,0.55)_4px_8px)]"
+                    [style.width.%]="foundationDeductionShare"
+                    [title]="'Mois retranchés: -$' + (foundationDeductedAmountUsd | number : '1.0-0')"
+                  ></div>
                 </div>
-                <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                  À partir du {{ foundationEligibilityDateLabel }}
+
+                <div class="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                  <div class="flex items-center justify-between gap-2 rounded-xl bg-violet-50 px-3 py-2 dark:bg-violet-500/10">
+                    <div class="flex items-center gap-2 text-violet-900 dark:text-violet-100">
+                      <span class="h-2.5 w-2.5 rounded-full bg-violet-500"></span>
+                      <span class="font-medium">Contributions</span>
+                    </div>
+                    <span class="font-semibold text-violet-900 dark:text-violet-100">
+                      ${{ foundationMonthlyContributionTotalUsd | number : "1.0-0" }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 rounded-xl bg-amber-50 px-3 py-2 dark:bg-amber-500/10">
+                    <div class="flex items-center gap-2 text-amber-900 dark:text-amber-100">
+                      <span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                      <span class="font-medium">
+                        Bonus performance
+                        <span class="font-normal text-amber-700/80 dark:text-amber-200/80">
+                          · {{ foundationEmployeeOfMonthCount }}
+                        </span>
+                      </span>
+                    </div>
+                    <span class="font-semibold text-amber-900 dark:text-amber-100">
+                      ${{ foundationPerformanceBonusTotalUsd | number : "1.0-0" }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 rounded-xl bg-sky-50 px-3 py-2 dark:bg-sky-500/10">
+                    <div class="flex items-center gap-2 text-sky-900 dark:text-sky-100">
+                      <span class="h-2.5 w-2.5 rounded-full bg-sky-500"></span>
+                      <span class="font-medium">
+                        Bonus manuels
+                        <span class="font-normal text-sky-700/80 dark:text-sky-200/80">
+                          · {{ foundationManualBonusCount }}
+                        </span>
+                      </span>
+                    </div>
+                    <span class="font-semibold text-sky-900 dark:text-sky-100">
+                      +${{ foundationManualBonusTotalUsd | number : "1.0-0" }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 rounded-xl bg-rose-50 px-3 py-2 dark:bg-rose-500/10">
+                    <div class="flex items-center gap-2 text-rose-900 dark:text-rose-100">
+                      <span class="h-2.5 w-2.5 rounded-full bg-rose-400"></span>
+                      <span class="font-medium">
+                        Mois retranchés
+                        <span class="font-normal text-rose-700/80 dark:text-rose-200/80">
+                          · {{ foundationDeductedMonthsCount }}
+                        </span>
+                      </span>
+                    </div>
+                    <span class="font-semibold text-rose-900 dark:text-rose-100">
+                      −${{ foundationDeductedAmountUsd | number : "1.0-0" }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-3 lg:grid-cols-2">
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <div class="text-[11px] uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
+                      Disponible maintenant
+                    </div>
+                    <div class="text-2xl font-black text-emerald-900 dark:text-emerald-100">
+                      ${{ foundationWithdrawableUsd | number : "1.0-0" }}
+                    </div>
+                  </div>
+                  <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                    <div
+                      class="h-full rounded-full bg-emerald-500 transition-all"
+                      [style.width.%]="foundationWithdrawableShare"
+                    ></div>
+                  </div>
+                  <div class="mt-2 flex items-center justify-between text-[11px] text-emerald-800/80 dark:text-emerald-200/80">
+                    <span>Minimum à laisser : ${{ foundationMinimumBalanceUsd }}</span>
+                    <span>sur ${{ foundationTotalUsd | number : "1.0-0" }}</span>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-2xl border p-4"
+                  [ngClass]="
+                    foundationFinalWithdrawalEligible
+                      ? 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/80'
+                      : 'border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10'
+                  "
+                >
+                  <div class="flex items-baseline justify-between gap-3">
+                    <div
+                      class="flex items-center gap-2 text-[11px] uppercase tracking-wide"
+                      [ngClass]="
+                        foundationFinalWithdrawalEligible
+                          ? 'text-slate-500 dark:text-slate-400'
+                          : 'text-amber-700 dark:text-amber-200'
+                      "
+                    >
+                      <svg
+                        *ngIf="!foundationFinalWithdrawalEligible"
+                        class="h-3.5 w-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <rect x="4" y="11" width="16" height="9" rx="2"></rect>
+                        <path d="M8 11V8a4 4 0 1 1 8 0v3"></path>
+                      </svg>
+                      Retrait final (au départ)
+                    </div>
+                    <div
+                      class="text-2xl font-black"
+                      [ngClass]="
+                        foundationFinalWithdrawalEligible
+                          ? 'text-slate-950 dark:text-slate-50'
+                          : 'text-amber-900 dark:text-amber-100'
+                      "
+                    >
+                      ${{ foundationTotalUsd | number : "1.0-0" }}
+                    </div>
+                  </div>
+                  <div
+                    class="mt-3 text-xs"
+                    [ngClass]="
+                      foundationFinalWithdrawalEligible
+                        ? 'text-slate-500 dark:text-slate-400'
+                        : 'text-amber-700/90 dark:text-amber-200/90'
+                    "
+                  >
+                    {{ foundationEligibilityLabel }}<span *ngIf="!foundationFinalWithdrawalEligible">
+                      · acquis le {{ foundationEligibilityDateLabel }}</span
+                    >
+                  </div>
                 </div>
               </div>
 
