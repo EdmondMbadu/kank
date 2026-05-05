@@ -231,4 +231,14 @@ describe('TodayComponent', () => {
 
     expect(component.getDailyFieldCurrentValue('investments')).toBe('400000.00');
   });
+
+  it('opens a money-in-hands choice modal for entree du jour edits', async () => {
+    const { component } = createComponent();
+    const field = { key: 'investments', input: '200000' };
+
+    await component.submitDailyField(field);
+
+    expect(component.showInvestmentMoneyInHandsModal).toBeTrue();
+    expect(component.pendingInvestmentValue).toBe('200000');
+  });
 });

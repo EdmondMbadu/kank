@@ -1390,7 +1390,8 @@ export class DataService {
 
   async rewriteUserInvestmentDayTotal(
     dateKey: string,
-    amount: string
+    amount: string,
+    affectMoneyInHands: boolean = true
   ): Promise<void> {
     const userId = this.auth.currentUser?.uid;
     if (!userId) {
@@ -1473,13 +1474,18 @@ export class DataService {
         nextAmount
       ).toString();
 
-      tx.update(userRef, {
+      const payload: Partial<User> = {
         investments: nextInvestments,
         investmentsDollar: nextInvestmentsDollar,
         amountInvested: nextAmountInvested,
         amountInvestedDollars: nextAmountInvestedDollars,
-        moneyInHands: nextMoneyInHands,
-      });
+      };
+
+      if (affectMoneyInHands) {
+        payload.moneyInHands = nextMoneyInHands;
+      }
+
+      tx.update(userRef, payload);
 
       nextCurrentUser = {
         ...(current || {}),
@@ -1487,8 +1493,11 @@ export class DataService {
         investmentsDollar: nextInvestmentsDollar,
         amountInvested: nextAmountInvested,
         amountInvestedDollars: nextAmountInvestedDollars,
-        moneyInHands: nextMoneyInHands,
       };
+
+      if (affectMoneyInHands) {
+        nextCurrentUser.moneyInHands = nextMoneyInHands;
+      }
     });
 
     if (nextCurrentUser) {

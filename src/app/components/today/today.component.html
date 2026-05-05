@@ -1707,13 +1707,61 @@
         />
 
         <button
-          (click)="setDailyField(f.key, f.input); f.input = ''"
+          (click)="submitDailyField(f)"
           class="mt-auto w-full rounded-lg bg-red-600 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
         >
           Confirmer
         </button>
       </div>
     </ng-container>
+  </div>
+
+  <div
+    *ngIf="showInvestmentMoneyInHandsModal"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+  >
+    <div
+      class="w-full max-w-lg rounded-2xl border border-emerald-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900"
+    >
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        Modifier Entree du Jour
+      </h3>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+        Nouveau montant:
+        <span class="font-semibold text-gray-900 dark:text-gray-100">
+          FC {{ pendingInvestmentValue | number : '1.0-0' }}
+        </span>
+      </p>
+      <p class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+        Choisissez si cette modification doit aussi affecter
+        <span class="font-semibold">argent en main</span>, ou seulement
+        changer la valeur de l'entree du jour.
+      </p>
+
+      <div class="mt-5 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          (click)="closeInvestmentMoneyInHandsModal()"
+          class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-800"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          (click)="confirmInvestmentDailyFieldUpdate(false)"
+          class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-200"
+        >
+          Changer seulement l'entree
+        </button>
+        <button
+          type="button"
+          (click)="confirmInvestmentDailyFieldUpdate(true)"
+          class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+        >
+          Changer entree et argent en main
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="mt-6">

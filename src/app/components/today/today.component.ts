@@ -189,6 +189,8 @@ export class TodayComponent {
     { key: 'dailyCardReturns', label: 'Retrait Carte Du Jour', input: '' },
     { key: 'dailyCardBenefits', label: 'Carte Benefice Du Jour', input: '' },
   ];
+  showInvestmentMoneyInHandsModal = false;
+  pendingInvestmentValue = '';
 
   totalPerfomance: number = 0;
 
@@ -741,17 +743,22 @@ export class TodayComponent {
     }
     this.perc = Number(this.percentage);
   }
-  async setDailyField(mapField: string, value: any) {
+  async setDailyField(
+    mapField: string,
+    value: any,
+    affectMoneyInHands: boolean = true
+  ) {
     if (!this.compute.isNumber(value)) {
       alert('Entrez un nombre valide');
-      return;
+      return false;
     }
 
     try {
       if (mapField === 'investments') {
         await this.data.rewriteUserInvestmentDayTotal(
           this.requestDateCorrectFormat,
-          `${value}`
+          `${value}`,
+          affectMoneyInHands
         );
       } else {
         await this.auth.updateNestedUserField(
@@ -762,9 +769,54 @@ export class TodayComponent {
       }
       alert('Montant changé avec succès');
       this.initalizeInputs(); // rafraîchit l’écran
+      return true;
     } catch (err) {
       alert('Erreur lors de la mise à jour, réessayez');
+      return false;
     }
+  }
+
+  async submitDailyField(field: { key: string; input: string }) {
+    if (field.key === 'investments') {
+      if (!this.compute.isNumber(field.input)) {
+        alert('Entrez un nombre valide');
+        return;
+      }
+
+      this.pendingInvestmentValue = `${field.input}`;
+      this.showInvestmentMoneyInHandsModal = true;
+      return;
+    }
+
+    const saved = await this.setDailyField(field.key, field.input);
+    if (saved) {
+      field.input = '';
+    }
+  }
+
+  closeInvestmentMoneyInHandsModal() {
+    this.showInvestmentMoneyInHandsModal = false;
+    this.pendingInvestmentValue = '';
+  }
+
+  async confirmInvestmentDailyFieldUpdate(affectMoneyInHands: boolean) {
+    const pendingValue = this.pendingInvestmentValue;
+    const saved = await this.setDailyField(
+      'investments',
+      pendingValue,
+      affectMoneyInHands
+    );
+
+    if (!saved) return;
+
+    const investmentField = this.dailyFieldConfigs.find(
+      (field) => field.key === 'investments'
+    );
+    if (investmentField) {
+      investmentField.input = '';
+    }
+
+    this.closeInvestmentMoneyInHandsModal();
   }
 
   getDailyFieldCurrentValue(mapField: string): string {
