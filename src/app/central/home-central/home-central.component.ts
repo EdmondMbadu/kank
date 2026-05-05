@@ -200,7 +200,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     'Saturday',
     'Sunday',
   ];
-  activeTopClientFocusPanel: TopClientFocusPanel = 'birthdays';
+  activeTopClientFocusPanel: TopClientFocusPanel = 'trophyMissing';
   selectedPaymentDay: string | null = null;
   activeMasterFilterPanel: MasterClientFilterPanel = 'paymentDay';
   selectedPaymentDayTotal = 0;
