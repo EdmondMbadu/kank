@@ -180,6 +180,7 @@ export class TodayComponent {
   dailyFieldConfigs = [
     { key: 'dailyReimbursement', label: 'Paiement du Jour', input: '' },
     { key: 'dailyLending', label: 'Emprunt du Jour', input: '' },
+    { key: 'investments', label: 'Entree du Jour', input: '' },
     { key: 'dailySaving', label: 'Épargne du Jour', input: '' },
     { key: 'dailySavingReturns', label: 'Retrait Épargne Du Jour', input: '' },
     { key: 'dailyFeesReturns', label: 'Retrait Frais', input: '' },
@@ -747,16 +748,33 @@ export class TodayComponent {
     }
 
     try {
-      await this.auth.updateNestedUserField(
-        mapField,
-        this.requestDateCorrectFormat, // ex. "5-17-2025"
-        `${value}` // ex. value
-      );
+      if (mapField === 'investments') {
+        await this.data.rewriteUserInvestmentDayTotal(
+          this.requestDateCorrectFormat,
+          `${value}`
+        );
+      } else {
+        await this.auth.updateNestedUserField(
+          mapField,
+          this.requestDateCorrectFormat, // ex. "5-17-2025"
+          `${value}` // ex. value
+        );
+      }
       alert('Montant changé avec succès');
       this.initalizeInputs(); // rafraîchit l’écran
     } catch (err) {
       alert('Erreur lors de la mise à jour, réessayez');
     }
+  }
+
+  getDailyFieldCurrentValue(mapField: string): string {
+    if (mapField === 'investments') {
+      return this.dailyInvestment;
+    }
+
+    return (
+      this.auth.currentUser?.[mapField]?.[this.requestDateCorrectFormat] || '0'
+    );
   }
 
   private parseIsoDate(dateIso: string): Date | null {

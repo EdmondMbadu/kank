@@ -1696,7 +1696,7 @@
         </h3>
         <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
           Valeur actuelle :
-          <strong>{{ auth.currentUser[f.key]?.[todayKey] || 0 }}</strong>
+          <strong>{{ getDailyFieldCurrentValue(f.key) || 0 }}</strong>
         </p>
 
         <input

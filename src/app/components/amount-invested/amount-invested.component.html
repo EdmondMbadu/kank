@@ -57,6 +57,7 @@
             <input
               id="investment-search"
               type="text"
+              [formControl]="searchControl"
               placeholder="Chercher le montant..."
               class="w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 pl-10 text-sm text-gray-900 shadow-sm transition focus:border-emerald-500 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400" />
           </div>
@@ -66,9 +67,8 @@
       <!-- LIST -->
       <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
         <li
-          *ngFor="let inv of investmentsDates | slice:0:(this.auth.isAdmninistrator ? investmentsDates.length : 2); let i = index"
-          routerLink="/home"
-          class="group relative cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
+          *ngFor="let entry of visibleInvestmentEntries; trackBy: trackByInvestmentKey"
+          class="group relative px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
           <div class="flex items-center space-x-4">
             <!-- AVATAR -->
             <div class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700 dark:bg-emerald-700 dark:text-emerald-100">
@@ -78,17 +78,99 @@
             <!-- DATE INFO -->
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ investmentsFormattedDates[i] }}
+                {{ entry.formattedDate }}
+              </p>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ entry.key }}
               </p>
             </div>
 
             <!-- AMOUNT -->
-            <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
-              FC {{ investments[i] | number: '1.0-0' }}
+            <div class="text-right">
+              <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
+                FC {{ entry.amount | number: '1.0-0' }}
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                ≈ $ {{ entry.amountUsd | number: '1.0-0' }}
+              </p>
+            </div>
+
+            <div *ngIf="auth.isAdmin" class="flex items-center">
+              <button
+                type="button"
+                (click)="openDeleteModal(entry, $event)"
+                class="rounded-full bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-200 dark:bg-red-900/40 dark:text-red-200"
+              >
+                Supprimer
+              </button>
             </div>
           </div>
         </li>
       </ul>
+
+      <div
+        *ngIf="visibleInvestmentEntries.length === 0"
+        class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400"
+      >
+        Aucune entrée trouvée.
+      </div>
     </div>
   </div>
 </section>
+
+<div
+  *ngIf="showDeleteModal && pendingDeleteEntry"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+>
+  <div class="w-full max-w-lg rounded-2xl border border-emerald-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      Supprimer cet investissement
+    </h3>
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+      Date: <span class="font-medium">{{ pendingDeleteEntry.formattedDate }}</span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+      Montant:
+      <span class="font-semibold text-gray-900 dark:text-gray-100">
+        FC {{ pendingDeleteEntry.amount | number: '1.0-0' }}
+      </span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+      USD:
+      <span class="font-semibold text-gray-900 dark:text-gray-100">
+        $ {{ pendingDeleteEntry.amountUsd | number: '1.0-0' }}
+      </span>
+    </p>
+    <p class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+      Choisissez si la suppression doit aussi modifier
+      <span class="font-semibold">argent en main</span>.
+    </p>
+
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeDeleteModal()"
+        [disabled]="!!deletingEntryKey"
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-800"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteInvestment(false)"
+        [disabled]="!!deletingEntryKey"
+        class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200"
+      >
+        Supprimer seulement
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteInvestment(true)"
+        [disabled]="!!deletingEntryKey"
+        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Supprimer et changer argent en main
+      </button>
+    </div>
+  </div>
+</div>

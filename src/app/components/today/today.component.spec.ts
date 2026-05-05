@@ -202,4 +202,33 @@ describe('TodayComponent', () => {
     expect(component.weeklyShortfalls[0].label).toContain('30 Mars - 5 Avril 2026');
     expect(component.weeklyShortfalls[0].targetFc).toBe(600000);
   });
+
+  it('includes entree du jour in admin editable daily cards', () => {
+    const { component } = createComponent();
+
+    expect(component.dailyFieldConfigs).toContain(
+      jasmine.objectContaining({
+        key: 'investments',
+        label: 'Entree du Jour',
+      })
+    );
+  });
+
+  it('shows the summed entree du jour value for the selected date', () => {
+    const { component } = createComponent({
+      currentUser: {
+        uid: 'user-1',
+        teamCode: '',
+        dailyReimbursement: {},
+        investments: {
+          '4-1-2026-8-0-0': '150000',
+          '4-1-2026-9-0-0': '250000',
+        },
+      },
+    });
+
+    component.initalizeInputs();
+
+    expect(component.getDailyFieldCurrentValue('investments')).toBe('400000.00');
+  });
 });

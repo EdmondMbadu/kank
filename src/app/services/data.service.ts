@@ -1388,6 +1388,185 @@ export class DataService {
     return userRef.set(data, { merge: true });
   }
 
+  async rewriteUserInvestmentDayTotal(
+    dateKey: string,
+    amount: string
+  ): Promise<void> {
+    const userId = this.auth.currentUser?.uid;
+    if (!userId) {
+      throw new Error('Utilisateur introuvable.');
+    }
+
+    const userRef = this.afs.doc<User>(`users/${userId}`).ref;
+    let nextCurrentUser: User | null = null;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(userRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as User;
+      const nextInvestments = { ...(current.investments || {}) } as {
+        [key: string]: string;
+      };
+      const nextInvestmentsDollar = { ...(current.investmentsDollar || {}) } as {
+        [key: string]: string;
+      };
+      const removedKeys = new Set<string>();
+      const matchingKeys = Object.keys(nextInvestments).filter(
+        (entryKey) => entryKey.split('-').slice(0, 3).join('-') === dateKey
+      );
+      const fallbackDollarKeys = Object.keys(nextInvestmentsDollar).filter(
+        (entryKey) => entryKey.split('-').slice(0, 3).join('-') === dateKey
+      );
+      const targetEntryKey =
+        matchingKeys.find((entryKey) => entryKey.split('-').length >= 6) ||
+        fallbackDollarKeys.find((entryKey) => entryKey.split('-').length >= 6) ||
+        this.buildInvestmentEntryKeyForDate(dateKey);
+
+      let previousAmountTotal = 0;
+      let previousDollarTotal = 0;
+
+      matchingKeys.forEach((entryKey) => {
+        const rawAmount = nextInvestments[entryKey];
+        previousAmountTotal += Number(rawAmount) || 0;
+
+        const rawDollar =
+          nextInvestmentsDollar[entryKey] ??
+          this.compute.convertCongoleseFrancToUsDollars(String(rawAmount || 0));
+        previousDollarTotal += Number(rawDollar) || 0;
+
+        removedKeys.add(entryKey);
+        delete nextInvestments[entryKey];
+        delete nextInvestmentsDollar[entryKey];
+      });
+
+      fallbackDollarKeys.forEach((entryKey) => {
+        if (removedKeys.has(entryKey)) return;
+
+        previousDollarTotal += Number(nextInvestmentsDollar[entryKey]) || 0;
+        delete nextInvestmentsDollar[entryKey];
+      });
+
+      const nextAmount = Number(amount) || 0;
+      const nextDollar = Number(
+        this.compute.convertCongoleseFrancToUsDollars(nextAmount.toString())
+      );
+
+      if (nextAmount !== 0) {
+        nextInvestments[targetEntryKey] = nextAmount.toString();
+        nextInvestmentsDollar[targetEntryKey] = nextDollar.toString();
+      }
+
+      const nextAmountInvested = (
+        Number(current.amountInvested || 0) -
+        previousAmountTotal +
+        nextAmount
+      ).toString();
+      const nextAmountInvestedDollars = (
+        Number(current.amountInvestedDollars || 0) -
+        previousDollarTotal +
+        nextDollar
+      ).toString();
+      const nextMoneyInHands = (
+        Number(current.moneyInHands || 0) -
+        previousAmountTotal +
+        nextAmount
+      ).toString();
+
+      tx.update(userRef, {
+        investments: nextInvestments,
+        investmentsDollar: nextInvestmentsDollar,
+        amountInvested: nextAmountInvested,
+        amountInvestedDollars: nextAmountInvestedDollars,
+        moneyInHands: nextMoneyInHands,
+      });
+
+      nextCurrentUser = {
+        ...(current || {}),
+        investments: nextInvestments,
+        investmentsDollar: nextInvestmentsDollar,
+        amountInvested: nextAmountInvested,
+        amountInvestedDollars: nextAmountInvestedDollars,
+        moneyInHands: nextMoneyInHands,
+      };
+    });
+
+    if (nextCurrentUser) {
+      this.auth.currentUser = nextCurrentUser;
+    }
+  }
+
+  async deleteUserInvestmentEntry(
+    entryKey: string,
+    affectMoneyInHands: boolean
+  ): Promise<void> {
+    const userId = this.auth.currentUser?.uid;
+    if (!userId) {
+      throw new Error('Utilisateur introuvable.');
+    }
+
+    const userRef = this.afs.doc<User>(`users/${userId}`).ref;
+    let nextCurrentUser: User | null = null;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(userRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as User;
+      const nextInvestments = { ...(current.investments || {}) } as {
+        [key: string]: string;
+      };
+      const nextInvestmentsDollar = { ...(current.investmentsDollar || {}) } as {
+        [key: string]: string;
+      };
+
+      const rawAmount = nextInvestments[entryKey];
+      if (rawAmount === undefined) return;
+
+      const amountNum = Number(rawAmount) || 0;
+      const dollarNum = Number(
+        nextInvestmentsDollar[entryKey] ??
+          this.compute.convertCongoleseFrancToUsDollars(amountNum.toString())
+      );
+
+      delete nextInvestments[entryKey];
+      delete nextInvestmentsDollar[entryKey];
+
+      const payload: Partial<User> = {
+        investments: nextInvestments,
+        investmentsDollar: nextInvestmentsDollar,
+        amountInvested: (
+          Number(current.amountInvested || 0) - amountNum
+        ).toString(),
+        amountInvestedDollars: (
+          Number(current.amountInvestedDollars || 0) - dollarNum
+        ).toString(),
+      };
+
+      if (affectMoneyInHands) {
+        payload.moneyInHands = (
+          Number(current.moneyInHands || 0) - amountNum
+        ).toString();
+      }
+
+      tx.update(userRef, payload);
+
+      nextCurrentUser = {
+        ...(current || {}),
+        ...payload,
+      };
+    });
+
+    if (nextCurrentUser) {
+      this.auth.currentUser = nextCurrentUser;
+    }
+  }
+
+  private buildInvestmentEntryKeyForDate(dateKey: string): string {
+    const now = new Date();
+    return `${dateKey}-${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}`;
+  }
+
   updateUserInfoForAddToReserve(amount: string) {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.auth.currentUser.uid}`
