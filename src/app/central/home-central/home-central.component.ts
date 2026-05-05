@@ -129,6 +129,9 @@ type MasterClientFilterPanel =
   | 'scoreLoan'
   | 'locations';
 
+type TrophyMissingFilterMode = 'all' | 'missing';
+type TopClientFocusPanel = 'birthdays' | 'trophyMissing';
+
 @Component({
   selector: 'app-home-central',
   templateUrl: './home-central.component.html',
@@ -191,6 +194,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     'Saturday',
     'Sunday',
   ];
+  activeTopClientFocusPanel: TopClientFocusPanel = 'birthdays';
   selectedPaymentDay: string | null = null;
   activeMasterFilterPanel: MasterClientFilterPanel = 'paymentDay';
   selectedPaymentDayTotal = 0;
@@ -202,6 +206,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   quitteStatusFilter: 'all' | 'quitte' | 'active' = 'all';
   starsFilter: 'all' | 'noStars' | 'withStars' | 'exact' = 'all';
   starsFilterValue: number | null = null;
+  trophyMissingFilter: TrophyMissingFilterMode = 'all';
   duplicatePhoneFilter: 'all' | 'duplicates' = 'all';
   audioFilter: 'all' | 'withAudio' | 'withoutAudio' = 'all';
   duplicatePhoneDigits = new Set<string>();
@@ -525,6 +530,68 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     };
   }
 
+  setActiveTopClientFocusPanel(panel: TopClientFocusPanel) {
+    if (this.activeTopClientFocusPanel === panel) return;
+    this.activeTopClientFocusPanel = panel;
+  }
+
+  isActiveTopClientFocusPanel(panel: TopClientFocusPanel) {
+    return this.activeTopClientFocusPanel === panel;
+  }
+
+  topClientFocusButtonClasses(panel: TopClientFocusPanel) {
+    return {
+      'bg-emerald-600 text-white shadow-sm dark:bg-emerald-500 dark:text-white':
+        this.isActiveTopClientFocusPanel(panel),
+      'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-emerald-300':
+        !this.isActiveTopClientFocusPanel(panel),
+    };
+  }
+
+  get activeTopClientFocusPanelTitle(): string {
+    return this.activeTopClientFocusPanel === 'birthdays'
+      ? 'Anniversaires'
+      : 'Trophée non attribué';
+  }
+
+  get activeTopClientFocusPanelHint(): string {
+    return this.activeTopClientFocusPanel === 'birthdays'
+      ? 'Choisissez la période pour afficher les clients concernés.'
+      : 'Clients avec score de crédit ≥ 70 et aucune étoile, à revoir pour attribuer un trophée.';
+  }
+
+  setTrophyMissingFilter(mode: TrophyMissingFilterMode) {
+    if (this.trophyMissingFilter === mode) {
+      if (mode !== 'all') {
+        this.trophyMissingFilter = 'all';
+        this.applyClientFilters();
+      }
+      return;
+    }
+
+    this.trophyMissingFilter = mode;
+    this.applyClientFilters();
+  }
+
+  isTrophyMissingFilter(mode: TrophyMissingFilterMode) {
+    return this.trophyMissingFilter === mode;
+  }
+
+  trophyMissingButtonClasses(mode: TrophyMissingFilterMode) {
+    return {
+      'bg-emerald-500 text-white shadow-sm dark:bg-emerald-600 dark:text-white':
+        this.isTrophyMissingFilter(mode),
+      'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+        !this.isTrophyMissingFilter(mode),
+    };
+  }
+
+  get trophyMissingClientsCount(): number {
+    return (this.allClients ?? []).filter((client) =>
+      this.isMissingTrophyClient(client)
+    ).length;
+  }
+
   get tomorrowBirthdayDateLabel(): string {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -717,6 +784,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const hasQuitteFilter = this.quitteStatusFilter !== 'all';
     const hasPaymentDayFilter = !!this.selectedPaymentDay;
     const hasLocationFilter = !this.masterSelectAllLocations;
+    const hasTrophyMissingFilter = this.trophyMissingFilter !== 'all';
     const hasDuplicateFilter = this.duplicatePhoneFilter !== 'all';
     const hasAudioFilter = this.audioFilter !== 'all';
 
@@ -729,6 +797,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       !hasQuitteFilter &&
       !hasPaymentDayFilter &&
       !hasLocationFilter &&
+      !hasTrophyMissingFilter &&
       !hasDuplicateFilter &&
       !hasAudioFilter;
 
@@ -739,6 +808,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const parts: string[] = [];
     if (this.birthdayFilterSummary) {
       parts.push(this.birthdayFilterSummary);
+    } else if (hasTrophyMissingFilter) {
+      parts.push('Trophée non attribué');
     } else if (hasSearch) {
       parts.push('Résultats de la recherche');
     } else {
@@ -779,6 +850,9 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     if (hasPaymentDayFilter && this.selectedPaymentDay) {
       parts.push(`Paiement : ${this.displayPaymentDay(this.selectedPaymentDay)}`);
     }
+    if (hasTrophyMissingFilter) {
+      parts.push('Score ≥ 70 sans étoile');
+    }
     if (hasLocationFilter) {
       parts.push(
         `${this.masterSelectedLocations.size} site(s)`
@@ -807,6 +881,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       .filter((client) => this.matchesMasterLocation(client))
       .filter((client) => this.matchesPaymentDay(client))
       .filter((client) => this.matchesStarsFilter(client))
+      .filter((client) => this.matchesTrophyMissingFilter(client))
       .filter((client) => this.matchesDuplicatePhone(client))
       .filter((client) => this.matchesAudioFilter(client));
 
@@ -1390,7 +1465,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
   private matchesStarsFilter(client: Client): boolean {
     const starsCount = this.getStarsCount(client);
-    
+
     switch (this.starsFilter) {
       case 'noStars':
         return starsCount === 0;
@@ -1402,6 +1477,16 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       default:
         return true;
     }
+  }
+
+  private isMissingTrophyClient(client: Client): boolean {
+    const score = Number(client.creditScore);
+    return Number.isFinite(score) && score >= 70 && this.getStarsCount(client) === 0;
+  }
+
+  private matchesTrophyMissingFilter(client: Client): boolean {
+    if (this.trophyMissingFilter !== 'missing') return true;
+    return this.isMissingTrophyClient(client);
   }
 
   setStarsFilter(mode: 'all' | 'noStars' | 'withStars' | 'exact') {
@@ -1983,6 +2068,10 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       else if (this.starsFilter === 'exact' && this.starsFilterValue != null) {
         parts.push(`Étoiles = ${this.starsFilterValue}`);
       }
+    }
+
+    if (this.trophyMissingFilter === 'missing') {
+      parts.push('Trophée: non attribué');
     }
 
     if (this.birthdayFilterMode !== 'all') {
