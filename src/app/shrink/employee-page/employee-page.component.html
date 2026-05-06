@@ -668,133 +668,12 @@
             </button>
 
             <div *ngIf="showFoundationDetails" class="mt-4 space-y-4">
-              <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  (click)="openFoundationRulesModal(); $event.stopPropagation()"
-                  class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-800 shadow-sm transition hover:border-red-400 hover:bg-red-100 hover:text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100 sm:w-auto"
-                  aria-label="Voir les règles du Compte Fondation"
-                >
-                  <svg
-                    class="h-5 w-5 shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 8v5"></path>
-                    <circle cx="12" cy="17" r="1"></circle>
-                    <path d="M10.94 3.5 2.6 18a1.5 1.5 0 0 0 1.3 2.25h16.2A1.5 1.5 0 0 0 21.4 18L13.06 3.5a1.5 1.5 0 0 0-2.12 0z"></path>
-                  </svg>
-                  Règles
-                </button>
-
-                <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
-                  <button
-                    *ngIf="isAdminUi"
-                    type="button"
-                    (click)="openFoundationContributionModal(); $event.stopPropagation()"
-                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-violet-300 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-900 transition hover:border-violet-400 hover:bg-violet-100 sm:w-auto"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 1v22"></path>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                    Modifier montant/mois
-                  </button>
-
-                  <button
-                    *ngIf="isAdminUi"
-                    type="button"
-                    (click)="setFoundationAccountVisibility(false); $event.stopPropagation()"
-                    [disabled]="foundationVisibilitySaving"
-                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M3 3l18 18"></path>
-                      <path d="M10.6 10.53a2 2 0 0 0 2.87 2.77"></path>
-                      <path d="M9.88 5.09A9.77 9.77 0 0 1 12 4.8c5.05 0 9.27 3.11 10.5 7.2a10.95 10.95 0 0 1-3.02 4.56"></path>
-                      <path d="M6.61 6.7C4.44 8.02 2.8 9.88 1.5 12c.9 1.5 2.02 2.8 3.33 3.86"></path>
-                    </svg>
-                    {{
-                      foundationVisibilitySaving
-                        ? "Enregistrement..."
-                        : "Masquer la section"
-                    }}
-                  </button>
-
-                  <button
-                    *ngIf="isAdminUi"
-                    type="button"
-                    (click)="openFoundationDeductionModal(); $event.stopPropagation()"
-                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 sm:w-auto"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M4 7h16"></path>
-                      <path d="M4 12h16"></path>
-                      <path d="M4 17h10"></path>
-                      <path d="M18 14v6"></path>
-                      <path d="M15 17h6"></path>
-                    </svg>
-                    Retrancher mois
-                  </button>
-
-                  <button
-                    *ngIf="isAdminUi"
-                    type="button"
-                    (click)="openFoundationBonusModal(); $event.stopPropagation()"
-                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-900 transition hover:border-sky-400 hover:bg-sky-100 sm:w-auto"
-                  >
-                    <svg
-                      class="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 5v14"></path>
-                      <path d="M5 12h14"></path>
-                    </svg>
-                    Ajouter bonus
-                  </button>
-
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     (click)="openFoundationRequestModal('partial'); $event.stopPropagation()"
-                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 sm:w-auto"
+                    class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                   >
                     <svg
                       class="h-4 w-4"
@@ -817,11 +696,11 @@
                     type="button"
                     (click)="openFoundationRequestModal('full'); $event.stopPropagation()"
                     [disabled]="!foundationCanRequestFullWithdrawal"
-                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+                    class="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
                     [ngClass]="
                       foundationCanRequestFullWithdrawal
-                        ? 'bg-red-600 text-white hover:bg-red-700'
-                        : 'bg-amber-100 text-amber-900'
+                        ? 'border-rose-200 bg-white text-rose-700 hover:bg-rose-50 dark:border-rose-500/30 dark:bg-slate-900/60 dark:text-rose-200'
+                        : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400'
                     "
                   >
                     <svg
@@ -856,20 +735,146 @@
                     </ng-template>
                     Retirer tout le solde
                   </button>
+
+                  <button
+                    type="button"
+                    (click)="openFoundationRulesModal(); $event.stopPropagation()"
+                    class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                    aria-label="Voir les règles du Compte Fondation"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="12" cy="12" r="9"></circle>
+                      <path d="M12 8v4"></path>
+                      <circle cx="12" cy="16" r="0.6" fill="currentColor"></circle>
+                    </svg>
+                    Règles
+                  </button>
+                </div>
+
+                <div *ngIf="isAdminUi" class="flex flex-wrap items-center gap-1.5 sm:justify-end">
+                  <span class="hidden text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 sm:inline dark:text-slate-500">
+                    Admin
+                  </span>
+                  <button
+                    type="button"
+                    (click)="openFoundationContributionModal(); $event.stopPropagation()"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-violet-500/40 dark:hover:bg-violet-500/10"
+                  >
+                    <svg
+                      class="h-3.5 w-3.5 text-violet-500"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 1v22"></path>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    Montant / mois
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="openFoundationDeductionModal(); $event.stopPropagation()"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-amber-500/40 dark:hover:bg-amber-500/10"
+                  >
+                    <svg
+                      class="h-3.5 w-3.5 text-amber-500"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h10"></path>
+                      <path d="M19 9v6"></path>
+                      <path d="M16 12h6"></path>
+                    </svg>
+                    Retrancher
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="openFoundationBonusModal(); $event.stopPropagation()"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/10"
+                  >
+                    <svg
+                      class="h-3.5 w-3.5 text-sky-500"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 5v14"></path>
+                      <path d="M5 12h14"></path>
+                    </svg>
+                    Bonus
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="setFoundationAccountVisibility(false); $event.stopPropagation()"
+                    [disabled]="foundationVisibilitySaving"
+                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-800"
+                  >
+                    <svg
+                      class="h-3.5 w-3.5 text-slate-400"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 3l18 18"></path>
+                      <path d="M10.6 10.53a2 2 0 0 0 2.87 2.77"></path>
+                      <path d="M9.88 5.09A9.77 9.77 0 0 1 12 4.8c5.05 0 9.27 3.11 10.5 7.2a10.95 10.95 0 0 1-3.02 4.56"></path>
+                      <path d="M6.61 6.7C4.44 8.02 2.8 9.88 1.5 12c.9 1.5 2.02 2.8 3.33 3.86"></path>
+                    </svg>
+                    {{ foundationVisibilitySaving ? "..." : "Masquer" }}
+                  </button>
                 </div>
               </div>
 
               <div
-                class="rounded-2xl border px-4 py-3 text-sm"
+                class="flex items-start gap-3 rounded-xl border px-4 py-2.5 text-sm"
                 [ngClass]="
                   foundationHasPendingRequest
-                    ? 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
+                    ? 'border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
                     : foundationCanRequestWithdrawal
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
-                    : 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100'
+                    ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
+                    : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300'
                 "
               >
-                {{ foundationStatusLabel }}
+                <span
+                  class="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-full"
+                  [ngClass]="
+                    foundationHasPendingRequest
+                      ? 'bg-amber-500'
+                      : foundationCanRequestWithdrawal
+                      ? 'bg-emerald-500'
+                      : 'bg-slate-400'
+                  "
+                ></span>
+                <span class="leading-relaxed">{{ foundationStatusLabel }}</span>
               </div>
 
               <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800/80">
@@ -1083,24 +1088,40 @@
 
               <div
                 *ngIf="isAdminUi || foundationActiveMonthDeductions.length > 0"
-                class="overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/80 dark:border-amber-500/30 dark:bg-amber-500/10"
+                class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/80"
               >
                 <button
                   type="button"
                   (click)="showFoundationDeductionsExpanded = !showFoundationDeductionsExpanded"
-                  class="flex w-full items-start justify-between gap-4 px-4 py-4 text-left transition hover:bg-amber-100/60 dark:hover:bg-amber-500/10"
+                  class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800"
                   [attr.aria-expanded]="showFoundationDeductionsExpanded"
                 >
-                  <div>
-                    <div class="text-[11px] uppercase tracking-wide text-amber-700 dark:text-amber-200">
-                      Mois retranchés du Compte Fondation
-                    </div>
-                    <div class="mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
-                      {{ foundationDeductedMonthsCount }} mois actifs · -${{ foundationDeductedAmountUsd | number : "1.0-0" }}
+                  <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-500/15">
+                      <svg
+                        class="h-4 w-4 text-rose-500"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M5 12h14"></path>
+                      </svg>
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Mois retranchés
+                      </div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ foundationDeductedMonthsCount }} mois actif{{ foundationDeductedMonthsCount > 1 ? "s" : "" }} · −${{ foundationDeductedAmountUsd | number : "1.0-0" }}
+                      </div>
                     </div>
                   </div>
                   <svg
-                    class="mt-1 h-5 w-5 shrink-0 text-amber-700 transition-transform duration-200 dark:text-amber-200"
+                    class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200"
                     [ngClass]="{ 'rotate-180': showFoundationDeductionsExpanded }"
                     viewBox="0 0 24 24"
                     fill="none"
@@ -1114,67 +1135,81 @@
                   </svg>
                 </button>
 
-                <div *ngIf="showFoundationDeductionsExpanded" class="border-t border-amber-200/70 px-4 py-4 dark:border-amber-500/20">
-                  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="text-sm text-amber-900 dark:text-amber-100">
-                      Consultez les mois retirés du Compte Fondation et la raison exacte de chaque retranchement.
+                <div *ngIf="showFoundationDeductionsExpanded" class="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
+                  <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                      Mois retirés du Compte Fondation et la raison de chaque retranchement.
                     </div>
                     <button
                       *ngIf="isAdminUi"
                       type="button"
                       (click)="openFoundationDeductionModal()"
-                      class="rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-500/30 dark:bg-slate-900 dark:text-amber-100"
+                      class="inline-flex items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
                     >
-                      Ajouter un retranchement
+                      <svg
+                        class="h-3.5 w-3.5 text-amber-500"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                      </svg>
+                      Ajouter
                     </button>
                   </div>
 
-                  <div *ngIf="foundationActiveMonthDeductions.length; else emptyFoundationDeductions" class="space-y-3">
+                  <div *ngIf="foundationActiveMonthDeductions.length; else emptyFoundationDeductions" class="space-y-2">
                     <div
                       *ngFor="let deduction of foundationActiveMonthDeductions"
-                      class="rounded-2xl border border-amber-200 bg-white/95 p-4 shadow-sm dark:border-amber-500/30 dark:bg-slate-900/60"
+                      class="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900/40"
                     >
-                      <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div class="min-w-0 flex-1 space-y-3">
+                      <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div class="min-w-0 flex-1">
                           <div class="flex flex-wrap items-center gap-2">
-                            <span class="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-100">
+                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {{ foundationDeductionMonthLabel(deduction) }}
                             </span>
-                            <span class="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/20 dark:text-rose-100">
-                              Retiré du compte : -${{ deduction.amountUsd | number : "1.0-0" }}
+                            <span class="rounded-md bg-rose-100 px-1.5 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/20 dark:text-rose-100">
+                              −${{ deduction.amountUsd | number : "1.0-0" }}
                             </span>
                           </div>
-                          <div class="rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-3 dark:border-rose-500/20 dark:bg-rose-500/10">
-                            <div class="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-200">
-                              Raison du retranchement
-                            </div>
-                            <div class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-100">
-                              {{ foundationDeductionMonthLabel(deduction) }} retiré du Compte Fondation
-                            </div>
-                            <div class="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">
-                              {{ deduction.reason }}
-                            </div>
-                          </div>
-                          <div class="text-xs text-slate-500 dark:text-slate-400">
-                            Impact sur le compte : ce mois n’est pas compté dans l’ancienneté contributive et retire ${{ deduction.amountUsd | number : "1.0-0" }} du solde Fondation.
+                          <div class="mt-1.5 text-sm text-slate-700 dark:text-slate-300">
+                            {{ deduction.reason }}
                           </div>
                         </div>
 
-                        <div *ngIf="isAdminUi" class="flex justify-end md:self-center">
-                          <button
-                            type="button"
-                            (click)="undoFoundationMonthDeduction(deduction)"
-                            class="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"
+                        <button
+                          *ngIf="isAdminUi"
+                          type="button"
+                          (click)="undoFoundationMonthDeduction(deduction)"
+                          class="inline-flex items-center gap-1.5 self-start rounded-lg px-2.5 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-500/10 md:self-center"
+                        >
+                          <svg
+                            class="h-3.5 w-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
                           >
-                            Annuler le retranchement
-                          </button>
-                        </div>
+                            <path d="M9 14l-4-4 4-4"></path>
+                            <path d="M5 10h11a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4h-5"></path>
+                          </svg>
+                          Annuler
+                        </button>
                       </div>
                     </div>
                   </div>
 
                   <ng-template #emptyFoundationDeductions>
-                    <p class="text-sm text-amber-800 dark:text-amber-100">
+                    <p class="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
                       Aucun mois retranché pour le moment.
                     </p>
                   </ng-template>
@@ -1183,24 +1218,41 @@
 
               <div
                 *ngIf="isAdminUi || foundationActiveManualBonuses.length > 0"
-                class="overflow-hidden rounded-2xl border border-sky-200 bg-sky-50/80 dark:border-sky-500/30 dark:bg-sky-500/10"
+                class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/80"
               >
                 <button
                   type="button"
                   (click)="showFoundationBonusesExpanded = !showFoundationBonusesExpanded"
-                  class="flex w-full items-start justify-between gap-4 px-4 py-4 text-left transition hover:bg-sky-100/60 dark:hover:bg-sky-500/10"
+                  class="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800"
                   [attr.aria-expanded]="showFoundationBonusesExpanded"
                 >
-                  <div>
-                    <div class="text-[11px] uppercase tracking-wide text-sky-700 dark:text-sky-200">
-                      Bonus ajoutés au Compte Fondation
-                    </div>
-                    <div class="mt-1 text-sm font-semibold text-sky-900 dark:text-sky-100">
-                      {{ foundationManualBonusCount }} bonus actif{{ foundationManualBonusCount > 1 ? "s" : "" }} · +${{ foundationManualBonusTotalUsd | number : "1.0-0" }}
+                  <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-500/15">
+                      <svg
+                        class="h-4 w-4 text-sky-500"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                      </svg>
+                    </span>
+                    <div>
+                      <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Bonus ajoutés
+                      </div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ foundationManualBonusCount }} bonus actif{{ foundationManualBonusCount > 1 ? "s" : "" }} · +${{ foundationManualBonusTotalUsd | number : "1.0-0" }}
+                      </div>
                     </div>
                   </div>
                   <svg
-                    class="mt-1 h-5 w-5 shrink-0 text-sky-700 transition-transform duration-200 dark:text-sky-200"
+                    class="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200"
                     [ngClass]="{ 'rotate-180': showFoundationBonusesExpanded }"
                     viewBox="0 0 24 24"
                     fill="none"
@@ -1214,67 +1266,84 @@
                   </svg>
                 </button>
 
-                <div *ngIf="showFoundationBonusesExpanded" class="border-t border-sky-200/70 px-4 py-4 dark:border-sky-500/20">
-                  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="text-sm text-sky-900 dark:text-sky-100">
-                      Consultez les bonus manuels ajoutés au Compte Fondation, la date exacte d’ajout et la raison donnée.
+                <div *ngIf="showFoundationBonusesExpanded" class="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
+                  <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                      Bonus manuels ajoutés au Compte Fondation, date d’ajout et raison.
                     </div>
                     <button
                       *ngIf="isAdminUi"
                       type="button"
                       (click)="openFoundationBonusModal()"
-                      class="rounded-xl border border-sky-300 bg-white px-3 py-2 text-xs font-semibold text-sky-900 transition hover:bg-sky-100 dark:border-sky-500/30 dark:bg-slate-900 dark:text-sky-100"
+                      class="inline-flex items-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300"
                     >
-                      Ajouter un bonus
+                      <svg
+                        class="h-3.5 w-3.5 text-sky-500"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                      </svg>
+                      Ajouter
                     </button>
                   </div>
 
-                  <div *ngIf="foundationActiveManualBonuses.length; else emptyFoundationBonuses" class="space-y-3">
+                  <div *ngIf="foundationActiveManualBonuses.length; else emptyFoundationBonuses" class="space-y-2">
                     <div
                       *ngFor="let bonus of foundationActiveManualBonuses"
-                      class="rounded-2xl border border-sky-200 bg-white/95 p-4 shadow-sm dark:border-sky-500/30 dark:bg-slate-900/60"
+                      class="rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-3 dark:border-slate-700 dark:bg-slate-900/40"
                     >
-                      <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div class="min-w-0 flex-1 space-y-3">
+                      <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div class="min-w-0 flex-1">
                           <div class="flex flex-wrap items-center gap-2">
-                            <span class="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-semibold text-sky-800 dark:bg-sky-500/20 dark:text-sky-100">
-                              Ajouté le {{ foundationManualBonusDateLabel(bonus) }}
+                            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              {{ foundationManualBonusDateLabel(bonus) }}
                             </span>
-                            <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-100">
-                              Bonus ajouté : +${{ bonus.amountUsd | number : "1.0-0" }}
+                            <span class="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-100">
+                              +${{ bonus.amountUsd | number : "1.0-0" }}
                             </span>
                           </div>
-                          <div class="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3 dark:border-sky-500/20 dark:bg-sky-500/10">
-                            <div class="text-[11px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-200">
-                              Raison du bonus
-                            </div>
-                            <div class="mt-1 text-sm font-medium text-slate-800 dark:text-slate-100">
-                              Bonus manuel ajouté au Compte Fondation
-                            </div>
-                            <div class="mt-2 text-sm font-bold text-slate-900 dark:text-slate-50">
-                              {{ bonus.reason }}
-                            </div>
+                          <div class="mt-1.5 text-sm text-slate-700 dark:text-slate-300">
+                            {{ bonus.reason }}
                           </div>
-                          <div class="text-xs text-slate-500 dark:text-slate-400">
-                            Enregistré par {{ bonus.createdByName || "Administration" }}.
+                          <div class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                            Par {{ bonus.createdByName || "Administration" }}
                           </div>
                         </div>
 
-                        <div *ngIf="isAdminUi" class="flex justify-end md:self-center">
-                          <button
-                            type="button"
-                            (click)="undoFoundationManualBonus(bonus)"
-                            class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-100"
+                        <button
+                          *ngIf="isAdminUi"
+                          type="button"
+                          (click)="undoFoundationManualBonus(bonus)"
+                          class="inline-flex items-center gap-1.5 self-start rounded-lg px-2.5 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/10 md:self-center"
+                        >
+                          <svg
+                            class="h-3.5 w-3.5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
                           >
-                            Annuler le bonus
-                          </button>
-                        </div>
+                            <path d="M9 14l-4-4 4-4"></path>
+                            <path d="M5 10h11a4 4 0 0 1 4 4v0a4 4 0 0 1-4 4h-5"></path>
+                          </svg>
+                          Annuler
+                        </button>
                       </div>
                     </div>
                   </div>
 
                   <ng-template #emptyFoundationBonuses>
-                    <p class="text-sm text-sky-800 dark:text-sky-100">
+                    <p class="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
                       Aucun bonus manuel ajouté pour le moment.
                     </p>
                   </ng-template>
