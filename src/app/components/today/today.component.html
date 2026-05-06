@@ -633,15 +633,15 @@
           </span>
           <span
             *ngIf="hasProjectedWeeklyTarget"
-            class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200"
+            class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-[12px] font-bold text-emerald-900 shadow-sm dark:border-emerald-400/40 dark:bg-emerald-500/25 dark:text-emerald-100"
             [title]="'Effectif dès le ' + projectedWeeklyTargetEffectiveDateLabel"
           >
             <svg
-              class="h-3 w-3"
+              class="h-3.5 w-3.5"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              stroke-width="2.2"
+              stroke-width="2.4"
               stroke-linecap="round"
               stroke-linejoin="round"
               aria-hidden="true"
@@ -661,11 +661,11 @@
             'text-emerald-600': weekPickerProgressTone === 'green'
           }"
         >
-          {{ weekPickerProgressStatusLabel }} · {{ weekPickerProgressPercent | number : "1.0-0" }}%
+          {{ weekPickerProgressStatusLabel }}
         </span>
       </div>
 
-      <div class="relative mt-5 pt-5">
+      <div class="relative mt-5 pt-5 pb-5">
         <div
           *ngFor="let marker of weekPickerProgressMarkers"
           class="absolute -top-0.5 -translate-x-1/2 text-center"
@@ -708,6 +708,33 @@
             }"
             [style.width.%]="weekPickerProgressPercent"
           ></div>
+        </div>
+
+        <div
+          class="absolute -translate-x-1/2 text-center"
+          [style.left.%]="weekPickerProgressPercent"
+          [style.top.px]="40"
+        >
+          <div
+            class="mx-auto h-2 w-px"
+            [ngClass]="{
+              'bg-red-500': weekPickerProgressTone === 'red',
+              'bg-amber-400': weekPickerProgressTone === 'yellow',
+              'bg-orange-500': weekPickerProgressTone === 'orange',
+              'bg-emerald-500': weekPickerProgressTone === 'green'
+            }"
+          ></div>
+          <div
+            class="mt-0.5 text-[10px] font-bold leading-tight"
+            [ngClass]="{
+              'text-red-600': weekPickerProgressTone === 'red',
+              'text-amber-600': weekPickerProgressTone === 'yellow',
+              'text-orange-600': weekPickerProgressTone === 'orange',
+              'text-emerald-600': weekPickerProgressTone === 'green'
+            }"
+          >
+            {{ weekPickerProgressPercent | number : "1.0-0" }}%
+          </div>
         </div>
       </div>
     </div>
@@ -1305,14 +1332,15 @@
         </div>
 
         <div class="mt-4">
-          <div class="flex items-center justify-between text-[11px] font-semibold">
-            <span class="text-slate-500 dark:text-slate-400">
-            <strong>Minimum</strong>&nbsp;{{
-                weekPickerTargetFc | number : "1.0-0"
-              }}
-              FC
+          <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">
+              <span class="font-semibold uppercase tracking-wide">Minimum</span>
+              <span class="ml-1 text-sm font-bold text-slate-800 dark:text-slate-100">
+                {{ weekPickerTargetFc | number : "1.0-0" }} FC
+              </span>
             </span>
             <span
+              class="text-[11px] font-semibold"
               [ngClass]="{
                 'text-red-600': weeklyProgressTone === 'red',
                 'text-amber-600': weeklyProgressTone === 'yellow',
@@ -1323,76 +1351,99 @@
               {{ weeklyProgressStatusLabel }}
             </span>
           </div>
-          <div
-            *ngIf="hasProjectedWeeklyTarget"
-            class="mt-2 rounded-xl border-l-4 border-emerald-500 bg-gradient-to-r from-emerald-50 via-white to-transparent px-3 py-2 shadow-sm dark:border-emerald-400 dark:from-emerald-900/20 dark:via-slate-900/30"
-          >
-            <div class="flex items-start gap-2">
-              <span
-                class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-black text-white"
-                >↑</span
-              >
-              <div>
-                <div class="text-[10px] font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-                  Nouveau minimum bientôt
-                </div>
-                <div class="text-[13px] font-extrabold text-slate-900 dark:text-slate-100">
-                  {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
-                </div>
-                <div class="text-[11px] text-slate-600 dark:text-slate-400">
-                  Effectif dès le {{ projectedWeeklyTargetEffectiveDateLabel }}
-                </div>
-              </div>
-            </div>
-          </div>
 
           <div
-            class="relative mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+            *ngIf="hasProjectedWeeklyTarget"
+            class="mt-1.5 inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-900 shadow-sm dark:border-emerald-400/40 dark:bg-emerald-500/25 dark:text-emerald-100"
+            [title]="'Effectif dès le ' + projectedWeeklyTargetEffectiveDateLabel"
           >
-            <ng-container *ngFor="let marker of weeklyProgressMarkers">
-              <div
-                class="pointer-events-none absolute inset-y-0 z-10 w-px bg-white/90 dark:bg-slate-900/80"
-                [style.left.%]="marker.percent"
-              ></div>
-            </ng-container>
-            <div
-              class="h-2 rounded-full transition-all duration-300"
-              [ngClass]="{
-                'bg-red-500': weeklyProgressTone === 'red',
-                'bg-amber-400': weeklyProgressTone === 'yellow',
-                'bg-orange-500': weeklyProgressTone === 'orange',
-                'bg-emerald-500': weeklyProgressTone === 'green'
-              }"
-              [style.width.%]="weeklyProgressPercent"
-            ></div>
-          </div>
-          <div
-            *ngIf="weeklyProgressMarkers.length > 0"
-            class="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold"
-          >
-            <span
-              *ngFor="let marker of weeklyProgressMarkers"
-              class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5"
-              [ngClass]="{
-                'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-200':
-                  marker.amountFc === 600000,
-                'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-700/40 dark:bg-orange-900/20 dark:text-orange-200':
-                  marker.amountFc === 900000
-              }"
+            <svg
+              class="h-3 w-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
             >
-              <span
-                class="inline-flex h-2 w-2 rounded-full"
+              <path d="M12 19V5"></path>
+              <path d="M5 12l7-7 7 7"></path>
+            </svg>
+            {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC dès {{ projectedWeeklyTargetEffectiveDateLabel }}
+          </div>
+
+          <div class="relative mt-4 pt-4 pb-4">
+            <div
+              *ngFor="let marker of weeklyProgressMarkers"
+              class="absolute -top-0.5 -translate-x-1/2 text-center"
+              [style.left.%]="marker.percent"
+            >
+              <div
+                class="text-[9px] font-semibold leading-tight"
+                [ngClass]="{
+                  'text-amber-700 dark:text-amber-300': marker.amountFc === 600000,
+                  'text-orange-700 dark:text-orange-300': marker.amountFc === 900000
+                }"
+              >
+                {{ marker.label }}
+              </div>
+              <div
+                class="mx-auto mt-0.5 h-1.5 w-px"
                 [ngClass]="{
                   'bg-amber-400': marker.amountFc === 600000,
                   'bg-orange-500': marker.amountFc === 900000
                 }"
-              ></span>
-              {{ marker.label }}
-            </span>
-          </div>
+              ></div>
+            </div>
 
-          <div class="mt-1 text-center text-[11px] text-slate-500">
-            {{ weeklyProgressPercent | number : "1.0-0" }}% atteint
+            <div
+              class="relative h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+            >
+              <ng-container *ngFor="let marker of weeklyProgressMarkers">
+                <div
+                  class="pointer-events-none absolute inset-y-0 z-10 w-px bg-white/90 dark:bg-slate-900/80"
+                  [style.left.%]="marker.percent"
+                ></div>
+              </ng-container>
+              <div
+                class="h-2 rounded-full transition-all duration-300"
+                [ngClass]="{
+                  'bg-red-500': weeklyProgressTone === 'red',
+                  'bg-amber-400': weeklyProgressTone === 'yellow',
+                  'bg-orange-500': weeklyProgressTone === 'orange',
+                  'bg-emerald-500': weeklyProgressTone === 'green'
+                }"
+                [style.width.%]="weeklyProgressPercent"
+              ></div>
+            </div>
+
+            <div
+              class="absolute -translate-x-1/2 text-center"
+              [style.left.%]="weeklyProgressPercent"
+              [style.top.px]="32"
+            >
+              <div
+                class="mx-auto h-1.5 w-px"
+                [ngClass]="{
+                  'bg-red-500': weeklyProgressTone === 'red',
+                  'bg-amber-400': weeklyProgressTone === 'yellow',
+                  'bg-orange-500': weeklyProgressTone === 'orange',
+                  'bg-emerald-500': weeklyProgressTone === 'green'
+                }"
+              ></div>
+              <div
+                class="mt-0.5 text-[9px] font-bold leading-tight"
+                [ngClass]="{
+                  'text-red-600': weeklyProgressTone === 'red',
+                  'text-amber-600': weeklyProgressTone === 'yellow',
+                  'text-orange-600': weeklyProgressTone === 'orange',
+                  'text-emerald-600': weeklyProgressTone === 'green'
+                }"
+              >
+                {{ weeklyProgressPercent | number : "1.0-0" }}%
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1644,27 +1695,29 @@
       <h3 class="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-50">
         Paiement de la semaine (objectif)
       </h3>
-      <p class="mb-3 text-sm text-gray-600 dark:text-gray-300">
+      <p class="mb-2 text-sm text-gray-600 dark:text-gray-300">
         Valeur actuelle :
         <strong>{{ weeklyTargetFc | number : "1.0-0" }} FC</strong>
       </p>
       <div
         *ngIf="hasProjectedWeeklyTarget"
-        class="mb-3 rounded-xl border-l-4 border-emerald-500 bg-gradient-to-r from-emerald-50 via-white to-transparent px-3 py-2 text-sm text-slate-800 shadow-sm dark:border-emerald-400 dark:from-emerald-900/20 dark:via-slate-900/30 dark:text-slate-100"
+        class="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-900 shadow-sm dark:border-emerald-400/40 dark:bg-emerald-500/25 dark:text-emerald-100"
+        [title]="'Effectif dès le ' + projectedWeeklyTargetEffectiveDateLabel"
       >
-        <span class="inline-flex items-center gap-1.5 font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-          <span
-            class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[10px] text-white"
-            >↑</span
-          >
-          Nouveau minimum bientôt
-        </span>
-        <div class="mt-1 text-base font-extrabold text-slate-900 dark:text-slate-100">
-          {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC
-        </div>
-        <div class="text-[12px] text-slate-600 dark:text-slate-400">
-          Effectif dès le {{ projectedWeeklyTargetEffectiveDateLabel }}
-        </div>
+        <svg
+          class="h-3.5 w-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 19V5"></path>
+          <path d="M5 12l7-7 7 7"></path>
+        </svg>
+        {{ projectedWeeklyTargetFc | number : "1.0-0" }} FC dès {{ projectedWeeklyTargetEffectiveDateLabel }}
       </div>
 
       <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">
