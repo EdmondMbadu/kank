@@ -55,6 +55,9 @@ export class User {
   savingsRequiredPercent?: string;
   weeklyPaymentTargetFc?: string;
   weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
+  foundationAttendanceRequiredDays?: number;
+  foundationAttendanceRuleStartMonth?: number;
+  foundationAttendanceRuleStartYear?: number;
 }
 export class LocationCoordinates {
   longitude?: string;

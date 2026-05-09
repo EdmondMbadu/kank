@@ -308,6 +308,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   // Map: 'M-D-YYYY' -> array of attachments for that day
   monthAttachmentsByLabel: Record<string, any[]> = {};
+  private attendanceRuleRevision = 0;
+  private attendanceIndexBuildId = 0;
+  private attendanceIndexCache: {
+    source: Record<string, string | undefined>;
+    revision: number;
+    size: number;
+    version: string;
+    statusByDay: Map<string, { key?: string; status: AttendanceStateCode }>;
+    presentDaysByMonth: Map<string, number>;
+  } | null = null;
+  private foundationAutomaticAttendanceCacheKey = '';
+  private foundationAutomaticAttendanceCache: FoundationMonthDeduction[] = [];
 
   // ── États UI pour le marquage automatique de présence ──
   isMarkingPresence = false;
@@ -600,7 +612,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get foundationAttendanceRequiredDaysSetting(): number {
-    const raw = Number(this.employee?.foundationAttendanceRequiredDays);
+    const raw = Number(
+      this.employee?.foundationAttendanceRequiredDays ??
+        this.auth.currentUser?.foundationAttendanceRequiredDays
+    );
     if (!Number.isFinite(raw) || raw < 1) {
       return this.foundationDefaultAttendanceRequiredDays;
     }
@@ -616,7 +631,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get foundationAttendanceRuleStartMonthSetting(): number | null {
-    const raw = Number(this.employee?.foundationAttendanceRuleStartMonth);
+    const raw = Number(
+      this.employee?.foundationAttendanceRuleStartMonth ??
+        this.auth.currentUser?.foundationAttendanceRuleStartMonth
+    );
     if (!Number.isInteger(raw) || raw < 1 || raw > 12) {
       return null;
     }
@@ -624,7 +642,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get foundationAttendanceRuleStartYearSetting(): number | null {
-    const raw = Number(this.employee?.foundationAttendanceRuleStartYear);
+    const raw = Number(
+      this.employee?.foundationAttendanceRuleStartYear ??
+        this.auth.currentUser?.foundationAttendanceRuleStartYear
+    );
     if (!Number.isInteger(raw) || raw < 2000 || raw > 2100) {
       return null;
     }
@@ -793,20 +814,36 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
 
     const requiredDays = this.foundationAttendanceRequiredDaysSetting;
+    const storedDeductions = this.foundationStoredActiveMonthDeductions;
+    const accruedOptions = this.foundationAccruedMonthOptions;
+    const attendanceIndex = this.getAttendanceIndex();
+    const cacheKey = [
+      this.employee?.uid || '',
+      attendanceIndex.version,
+      startIndex,
+      requiredDays,
+      this.foundationMonthlyContributionUsd,
+      accruedOptions.length,
+      accruedOptions[0]?.key || '',
+      accruedOptions[accruedOptions.length - 1]?.key || '',
+      storedDeductions
+        .map((entry) => `${entry.year}-${entry.month}-${entry.status || 'active'}`)
+        .join('|'),
+    ].join('::');
+
+    if (cacheKey === this.foundationAutomaticAttendanceCacheKey) {
+      return this.foundationAutomaticAttendanceCache;
+    }
+
     const storedDeductionKeys = new Set(
-      this.foundationStoredActiveMonthDeductions.map(
-        (entry) => `${entry.year}-${entry.month}`
-      )
+      storedDeductions.map((entry) => `${entry.year}-${entry.month}`)
     );
 
-    return this.foundationAccruedMonthOptions
+    const deductions = accruedOptions
       .filter((option) => option.year * 12 + option.month >= startIndex)
       .filter((option) => !storedDeductionKeys.has(option.key))
       .map((option): FoundationMonthDeduction | null => {
-        const presentDays = this.foundationPresentDaysForMonth(
-          option.month,
-          option.year
-        );
+        const presentDays = this.foundationPresentDaysForMonth(option.month, option.year);
 
         if (presentDays >= requiredDays) {
           return null;
@@ -831,6 +868,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         };
       })
       .filter((entry): entry is FoundationMonthDeduction => !!entry);
+
+    this.foundationAutomaticAttendanceCacheKey = cacheKey;
+    this.foundationAutomaticAttendanceCache = deductions;
+    return deductions;
   }
 
   get foundationActiveMonthDeductions(): FoundationMonthDeduction[] {
@@ -4331,42 +4372,92 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     };
   }
 
-  private foundationPresentDaysForMonth(month: number, year: number): number {
-    const daysInMonth = new Date(year, month, 0).getDate();
-    let presentDays = 0;
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      if (this.isSunday(month, day, year)) continue;
-      const status = this.getLatestAttendanceForLabel(`${month}-${day}-${year}`)
-        .status;
-      if (status === 'P') {
-        presentDays += 1;
-      }
-    }
-
-    return presentDays;
-  }
-
   private getLatestAttendanceForLabel(baseLabel: string): {
     key?: string;
     status: AttendanceStateCode;
   } {
-    const attendance = this.employee?.attendance || {};
-    let matchedKey: string | undefined;
+    return (
+      this.getAttendanceIndex().statusByDay.get(baseLabel) || { status: '' }
+    );
+  }
 
-    Object.keys(attendance).forEach((key) => {
-      if (this.normalizeLabel(key) !== baseLabel) return;
-      if (
-        !matchedKey ||
-        this.attendanceKeySeconds(key) > this.attendanceKeySeconds(matchedKey)
-      ) {
-        matchedKey = key;
+  private foundationPresentDaysForMonth(month: number, year: number): number {
+    return this.getAttendanceIndex().presentDaysByMonth.get(`${year}-${month}`) || 0;
+  }
+
+  private getAttendanceIndex(): {
+    version: string;
+    statusByDay: Map<string, { key?: string; status: AttendanceStateCode }>;
+    presentDaysByMonth: Map<string, number>;
+  } {
+    const attendance = (this.employee?.attendance || {}) as Record<
+      string,
+      string | undefined
+    >;
+    const keys = Object.keys(attendance);
+
+    if (
+      this.attendanceIndexCache &&
+      this.attendanceIndexCache.source === attendance &&
+      this.attendanceIndexCache.revision === this.attendanceRuleRevision &&
+      this.attendanceIndexCache.size === keys.length
+    ) {
+      return this.attendanceIndexCache;
+    }
+
+    const statusWithSeconds = new Map<
+      string,
+      { key?: string; status: AttendanceStateCode; seconds: number }
+    >();
+    const presentDaysByMonth = new Map<string, number>();
+
+    keys.forEach((key) => {
+      const rawStatus = attendance[key];
+      const status = this.isAttendanceStateCode(rawStatus) ? rawStatus : '';
+      const normalizedLabel = this.normalizeLabel(key);
+      const seconds = this.attendanceKeySeconds(key);
+      const existing = statusWithSeconds.get(normalizedLabel);
+
+      if (!existing || seconds > existing.seconds) {
+        statusWithSeconds.set(normalizedLabel, { key, status, seconds });
       }
     });
 
-    const rawStatus = matchedKey ? attendance[matchedKey] : '';
-    const status = this.isAttendanceStateCode(rawStatus) ? rawStatus : '';
-    return { key: matchedKey, status };
+    const statusByDay = new Map<string, { key?: string; status: AttendanceStateCode }>();
+    statusWithSeconds.forEach(({ key, status }, normalizedLabel) => {
+      statusByDay.set(normalizedLabel, { key, status });
+      if (status !== 'P') return;
+
+      const [month, day, year] = normalizedLabel
+        .split('-')
+        .map((part) => Number(part));
+      if (!month || !day || !year || this.isSunday(month, day, year)) return;
+
+      const monthKey = `${year}-${month}`;
+      presentDaysByMonth.set(
+        monthKey,
+        (presentDaysByMonth.get(monthKey) || 0) + 1
+      );
+    });
+
+    this.attendanceIndexBuildId += 1;
+    this.attendanceIndexCache = {
+      source: attendance,
+      revision: this.attendanceRuleRevision,
+      size: keys.length,
+      version: `${this.attendanceIndexBuildId}`,
+      statusByDay,
+      presentDaysByMonth,
+    };
+
+    return this.attendanceIndexCache;
+  }
+
+  private invalidateAttendanceRuleCaches(): void {
+    this.attendanceRuleRevision += 1;
+    this.attendanceIndexCache = null;
+    this.foundationAutomaticAttendanceCacheKey = '';
+    this.foundationAutomaticAttendanceCache = [];
   }
 
   private attendanceKeySeconds(key: string): number {
@@ -5278,6 +5369,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         ...(this.employee.attendance ?? {}),
         ...update,
       };
+      this.invalidateAttendanceRuleCaches();
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (err) {
       alert("Une erreur s'est produite lors de l'attendance, Réessayez");
@@ -5401,6 +5493,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       // local refresh (existing) ...
       this.employee.attendance = this.employee.attendance || {};
       this.employee.attendance[label] = attendanceValue;
+      this.invalidateAttendanceRuleCaches();
       if (attMeta) {
         this.monthAttachmentsByLabel[plainLabel] = [
           ...(this.monthAttachmentsByLabel[plainLabel] ?? []),
@@ -5428,6 +5521,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     // Update attendance from VP to V
     this.employee.attendance[date] = 'V';
+    this.invalidateAttendanceRuleCaches();
 
     // Increase the number of accepted vacations
     let acceptedVacations =
@@ -5470,6 +5564,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     // Remove the entry from the attendance object
     delete this.employee.attendance[date];
+    this.invalidateAttendanceRuleCaches();
 
     console.log(
       'Updated attendance after rejection:',
@@ -6945,6 +7040,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       try {
         await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
         this.employee.attendance = newAtt;
+        this.invalidateAttendanceRuleCaches();
         this.generateAttendanceTable(this.givenMonth, this.givenYear);
       } catch (e) {
         alert('❌ Impossible de mettre à jour la présence');
@@ -7011,6 +7107,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       );
       this.employee.attendance = newAtt;
       this.employee.vacationAcceptedNumberOfDays = updatedAccepted.toString();
+      this.invalidateAttendanceRuleCaches();
       this.vacation = Math.max(
         0,
         this.getVacationTotalDays() - updatedAccepted
@@ -7041,6 +7138,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.data.updateEmployeeAttendanceRejection(newAtt, this.employee.uid!);
       // await this.data.updateEmployeeAttendance(newAtt, this.employee.uid!);
       this.employee.attendance = newAtt;
+      this.invalidateAttendanceRuleCaches();
       this.generateAttendanceTable(this.givenMonth, this.givenYear);
     } catch (e) {
       alert('❌ Impossible de supprimer cet état');

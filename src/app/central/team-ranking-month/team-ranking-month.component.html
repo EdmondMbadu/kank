@@ -3691,3 +3691,152 @@
     </div>
   </div>
 </section>
+
+<!-- === GLOBAL FOUNDATION RULES SECTION === -->
+<section
+  *ngIf="auth.isAdmin"
+  class="px-4 pb-10 mx-auto max-w-5xl lg:px-6"
+>
+  <div
+    class="rounded-2xl border border-emerald-200/80 bg-white/95 p-6 shadow-lg shadow-slate-200/50 dark:border-emerald-800/70 dark:bg-slate-900/80 dark:shadow-none"
+  >
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="max-w-2xl">
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md"
+          >
+            <svg
+              class="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12l2 2 4-4m5.5 2A8.5 8.5 0 113.5 12a8.5 8.5 0 0117 0z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+              Règles générales Compte Fondation
+            </h2>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              Définir la condition de présence qui s’applique à tous les employés.
+            </p>
+          </div>
+        </div>
+
+        <p class="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Cette règle enregistre le nombre de jours <strong>Présent</strong> requis et le mois de début sur tous les employés chargés.
+          Les règles individuelles restent modifiables depuis la page de chaque employé.
+        </p>
+      </div>
+
+      <div
+        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-800/80"
+      >
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Portée
+        </div>
+        <div class="mt-1 font-bold text-slate-900 dark:text-slate-100">
+          {{ globalFoundationRuleEmployeeCount }} employé{{ globalFoundationRuleEmployeeCount > 1 ? "s" : "" }}
+        </div>
+        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Début : {{ globalFoundationRuleStartLabel }}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 grid gap-4 md:grid-cols-3">
+      <div>
+        <label
+          class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+        >
+          Jours présents requis
+        </label>
+        <input
+          [(ngModel)]="globalFoundationRuleRequiredDays"
+          type="number"
+          min="1"
+          max="31"
+          step="1"
+          placeholder="20"
+          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        />
+      </div>
+
+      <div>
+        <label
+          class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+        >
+          Mois de début
+        </label>
+        <select
+          [(ngModel)]="globalFoundationRuleStartMonth"
+          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        >
+          <option [ngValue]="null">Choisir</option>
+          <option *ngFor="let month of monthsList" [ngValue]="month">
+            {{ time.monthFrenchNames[month - 1] }}
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label
+          class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+        >
+          Année de début
+        </label>
+        <select
+          [(ngModel)]="globalFoundationRuleStartYear"
+          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+        >
+          <option [ngValue]="null">Choisir</option>
+          <option *ngFor="let year of globalFoundationRuleYearOptions" [ngValue]="year">
+            {{ year }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div
+      class="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
+    >
+      À partir de {{ globalFoundationRuleStartLabel }}, les mois qui ne respectent pas cette condition seront retranchés automatiquement sur la page employé. Les mois avant cette date restent comptés normalement.
+    </div>
+
+    <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p
+        *ngIf="globalFoundationRuleMessage"
+        class="text-sm font-medium"
+        [ngClass]="
+          globalFoundationRuleMessage.includes('Impossible')
+            ? 'text-rose-700 dark:text-rose-300'
+            : 'text-emerald-700 dark:text-emerald-300'
+        "
+      >
+        {{ globalFoundationRuleMessage }}
+      </p>
+      <span *ngIf="!globalFoundationRuleMessage" class="hidden sm:block"></span>
+
+      <button
+        type="button"
+        (click)="saveGlobalFoundationAttendanceRule()"
+        [disabled]="globalFoundationRuleSaving || globalFoundationRuleEmployeeCount === 0"
+        class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{
+          globalFoundationRuleSaving
+            ? "Application..."
+            : "Appliquer à tous les employés"
+        }}
+      </button>
+    </div>
+  </div>
+</section>

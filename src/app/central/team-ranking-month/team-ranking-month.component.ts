@@ -132,6 +132,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   // Employee Management section state
   showEmployeeManagementSection = false;
+
+  // Global Compte Fondation attendance rule state
+  globalFoundationRuleRequiredDays: number | null = 20;
+  globalFoundationRuleStartMonth: number | null = null;
+  globalFoundationRuleStartYear: number | null = null;
+  globalFoundationRuleSaving = false;
+  globalFoundationRuleMessage = '';
+  private globalFoundationRuleInitialized = false;
   
   // Employee transfer feature state
   showEmployeeCopySection = false;
@@ -2165,6 +2173,218 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.showEmployeeManagementSection = !this.showEmployeeManagementSection;
   }
 
+  private initializeGlobalFoundationRuleDefaults(employees: Employee[]): void {
+    if (this.globalFoundationRuleInitialized) {
+      return;
+    }
+
+    const currentUser = this.auth.currentUser || {};
+    const source =
+      this.hasCompleteFoundationRule(currentUser) &&
+      Number.isFinite(Number(currentUser.foundationAttendanceRequiredDays))
+        ? currentUser
+        : employees.find((employee) => this.hasCompleteFoundationRule(employee));
+
+    if (source) {
+      this.globalFoundationRuleRequiredDays = Number(
+        (source as any).foundationAttendanceRequiredDays
+      );
+      this.globalFoundationRuleStartMonth = Number(
+        (source as any).foundationAttendanceRuleStartMonth
+      );
+      this.globalFoundationRuleStartYear = Number(
+        (source as any).foundationAttendanceRuleStartYear
+      );
+    } else {
+      this.globalFoundationRuleRequiredDays = 20;
+      this.globalFoundationRuleStartMonth = this.currentMonth;
+      this.globalFoundationRuleStartYear = this.year;
+    }
+
+    this.globalFoundationRuleInitialized = true;
+  }
+
+  private hasCompleteFoundationRule(source: any): boolean {
+    const requiredDays = Number(source?.foundationAttendanceRequiredDays);
+    const month = Number(source?.foundationAttendanceRuleStartMonth);
+    const year = Number(source?.foundationAttendanceRuleStartYear);
+    return (
+      Number.isInteger(requiredDays) &&
+      requiredDays >= 1 &&
+      requiredDays <= 31 &&
+      Number.isInteger(month) &&
+      month >= 1 &&
+      month <= 12 &&
+      Number.isInteger(year) &&
+      year >= 2000 &&
+      year <= 2100
+    );
+  }
+
+  get globalFoundationRuleYearOptions(): number[] {
+    const years = new Set<number>([
+      this.year - 1,
+      this.year,
+      this.year + 1,
+      this.year + 2,
+      ...this.yearsList,
+    ]);
+
+    const selectedYear = Number(this.globalFoundationRuleStartYear);
+    if (Number.isInteger(selectedYear)) {
+      years.add(selectedYear);
+    }
+
+    return Array.from(years)
+      .filter((year) => Number.isInteger(year) && year >= 2000 && year <= 2100)
+      .sort((a, b) => b - a);
+  }
+
+  get globalFoundationRuleStartLabel(): string {
+    const month = Number(this.globalFoundationRuleStartMonth);
+    const year = Number(this.globalFoundationRuleStartYear);
+    if (
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12 ||
+      !Number.isInteger(year) ||
+      year < 2000 ||
+      year > 2100
+    ) {
+      return 'Non configuré';
+    }
+
+    return `${this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`} ${year}`;
+  }
+
+  get globalFoundationRuleEmployeeCount(): number {
+    return this.uniqueFoundationRuleTargets().length;
+  }
+
+  private uniqueFoundationRuleTargets(): Array<{
+    ownerUid: string;
+    employee: Employee;
+  }> {
+    const map = new Map<string, { ownerUid: string; employee: Employee }>();
+    (this.allEmployeesAll || []).forEach((employee) => {
+      const ownerUid = employee?.tempUser?.uid || this.auth.currentUser?.uid;
+      if (!ownerUid || !employee?.uid) {
+        return;
+      }
+      map.set(`${ownerUid}-${employee.uid}`, { ownerUid, employee });
+    });
+    return Array.from(map.values());
+  }
+
+  async saveGlobalFoundationAttendanceRule(): Promise<void> {
+    if (this.globalFoundationRuleSaving) {
+      return;
+    }
+
+    const requiredDays = Number(this.globalFoundationRuleRequiredDays);
+    const startMonth = Number(this.globalFoundationRuleStartMonth);
+    const startYear = Number(this.globalFoundationRuleStartYear);
+
+    if (!Number.isInteger(requiredDays) || requiredDays < 1 || requiredDays > 31) {
+      alert('Entrez un nombre de jours présents entre 1 et 31.');
+      return;
+    }
+
+    if (
+      !Number.isInteger(startMonth) ||
+      startMonth < 1 ||
+      startMonth > 12 ||
+      !Number.isInteger(startYear) ||
+      startYear < 2000 ||
+      startYear > 2100
+    ) {
+      alert('Choisissez le mois et l’année de début.');
+      return;
+    }
+
+    const targets = this.uniqueFoundationRuleTargets();
+    if (!targets.length) {
+      alert('Aucun employé chargé pour appliquer cette règle.');
+      return;
+    }
+
+    const confirmed = confirm(
+      `Appliquer cette règle Compte Fondation à ${targets.length} employé${
+        targets.length > 1 ? 's' : ''
+      } ?\n\n${requiredDays} jours Présent à partir de ${this.globalFoundationRuleStartLabel}.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    const fields: Partial<Employee> = {
+      foundationAttendanceRequiredDays: requiredDays,
+      foundationAttendanceRuleStartMonth: startMonth,
+      foundationAttendanceRuleStartYear: startYear,
+    };
+    const ownerIds = Array.from(
+      new Set([
+        ...targets.map((target) => target.ownerUid),
+        this.auth.currentUser?.uid,
+      ].filter((id): id is string => !!id))
+    );
+
+    this.globalFoundationRuleSaving = true;
+    this.globalFoundationRuleMessage = '';
+    try {
+      await Promise.all([
+        this.auth.updateUsersFieldBulk(
+          ownerIds,
+          'foundationAttendanceRequiredDays',
+          requiredDays
+        ),
+        this.auth.updateUsersFieldBulk(
+          ownerIds,
+          'foundationAttendanceRuleStartMonth',
+          startMonth
+        ),
+        this.auth.updateUsersFieldBulk(
+          ownerIds,
+          'foundationAttendanceRuleStartYear',
+          startYear
+        ),
+        ...targets.map((target) =>
+          this.data.updateEmployeeFieldsForUser(
+            target.ownerUid,
+            target.employee.uid!,
+            fields
+          )
+        ),
+      ]);
+
+      this.auth.currentUser = {
+        ...(this.auth.currentUser || {}),
+        foundationAttendanceRequiredDays: requiredDays,
+        foundationAttendanceRuleStartMonth: startMonth,
+        foundationAttendanceRuleStartYear: startYear,
+      };
+
+      targets.forEach(({ employee }) => {
+        employee.foundationAttendanceRequiredDays = requiredDays;
+        employee.foundationAttendanceRuleStartMonth = startMonth;
+        employee.foundationAttendanceRuleStartYear = startYear;
+      });
+
+      this.globalFoundationRuleMessage = `Règle appliquée à ${targets.length} employé${
+        targets.length > 1 ? 's' : ''
+      }.`;
+    } catch (error) {
+      console.error(
+        'Erreur lors de la mise à jour globale de la règle Compte Fondation',
+        error
+      );
+      this.globalFoundationRuleMessage =
+        "Impossible d'appliquer la règle à tous les employés.";
+    } finally {
+      this.globalFoundationRuleSaving = false;
+    }
+  }
+
   /** ---------- Employee Transfer Feature ---------- */
   toggleEmployeeCopySection(): void {
     this.showEmployeeCopySection = !this.showEmployeeCopySection;
@@ -2574,6 +2794,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   private afterEmployeesAggregated(allEmployees: Employee[]): void {
     this.allEmployeesAll = allEmployees;
+    this.initializeGlobalFoundationRuleDefaults(allEmployees);
     this.filterAndInitializeEmployees(allEmployees, this.currentClients);
     this.logDebug('Finished aggregating employees', {
       totalRaw: allEmployees.length,
