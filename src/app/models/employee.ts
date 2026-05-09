@@ -99,6 +99,9 @@ export class Employee {
   foundationManualBonuses?: FoundationManualBonusEntry[];
   foundationAccountVisible?: boolean;
   foundationMonthlyContributionUsd?: number;
+  foundationAttendanceRequiredDays?: number;
+  foundationAttendanceRuleStartMonth?: number;
+  foundationAttendanceRuleStartYear?: number;
 
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;
@@ -152,6 +155,9 @@ export interface FoundationMonthDeduction {
   reason: string;
   amountUsd: number;
   status?: 'active' | 'undone';
+  source?: 'manual' | 'attendance_rule';
+  presentDays?: number;
+  requiredPresentDays?: number;
   createdAt: number;
   createdByUid?: string | null;
   createdByName?: string;

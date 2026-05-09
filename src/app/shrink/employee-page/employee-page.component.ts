@@ -478,6 +478,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   showFoundationDeductionModal = false;
   showFoundationBonusModal = false;
   showFoundationContributionModal = false;
+  showFoundationAttendanceRuleModal = false;
   foundationRequestMode: 'partial' | 'full' | null = null;
   foundationRequestedAmount = '';
   foundationLeavingReason = '';
@@ -486,11 +487,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   foundationBonusSubmitting = false;
   foundationVisibilitySaving = false;
   foundationContributionSaving = false;
+  foundationAttendanceRuleSaving = false;
   foundationDeductionDrafts: FoundationDeductionDraft[] = [];
   foundationBonusAmount: number | null = 10;
   foundationContributionAmount: number | null = 10;
+  foundationAttendanceRequiredDaysInput: number | null = 20;
+  foundationAttendanceRuleStartMonthInput: number | null = null;
+  foundationAttendanceRuleStartYearInput: number | null = null;
   foundationBonusReason = '';
   readonly foundationDefaultMonthlyContributionUsd = 10;
+  readonly foundationDefaultAttendanceRequiredDays = 20;
   readonly foundationPerformanceBonusUsd = 10;
   readonly foundationDefaultManualBonusUsd = 10;
   readonly foundationMinimumBalanceUsd = 100;
@@ -593,6 +599,111 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return Math.floor(raw);
   }
 
+  get foundationAttendanceRequiredDaysSetting(): number {
+    const raw = Number(this.employee?.foundationAttendanceRequiredDays);
+    if (!Number.isFinite(raw) || raw < 1) {
+      return this.foundationDefaultAttendanceRequiredDays;
+    }
+    return Math.floor(raw);
+  }
+
+  get foundationAttendanceRequiredDaysValue(): number {
+    const raw = Number(this.foundationAttendanceRequiredDaysInput);
+    if (!Number.isFinite(raw) || raw < 1) {
+      return this.foundationAttendanceRequiredDaysSetting;
+    }
+    return Math.floor(raw);
+  }
+
+  get foundationAttendanceRuleStartMonthSetting(): number | null {
+    const raw = Number(this.employee?.foundationAttendanceRuleStartMonth);
+    if (!Number.isInteger(raw) || raw < 1 || raw > 12) {
+      return null;
+    }
+    return raw;
+  }
+
+  get foundationAttendanceRuleStartYearSetting(): number | null {
+    const raw = Number(this.employee?.foundationAttendanceRuleStartYear);
+    if (!Number.isInteger(raw) || raw < 2000 || raw > 2100) {
+      return null;
+    }
+    return raw;
+  }
+
+  get foundationAttendanceRuleEnabled(): boolean {
+    return (
+      this.foundationAttendanceRuleStartMonthSetting !== null &&
+      this.foundationAttendanceRuleStartYearSetting !== null
+    );
+  }
+
+  private get foundationAttendanceRuleStartIndex(): number | null {
+    const month = this.foundationAttendanceRuleStartMonthSetting;
+    const year = this.foundationAttendanceRuleStartYearSetting;
+    if (!month || !year) return null;
+    return year * 12 + month;
+  }
+
+  get foundationAttendanceRuleStartLabel(): string {
+    const month = this.foundationAttendanceRuleStartMonthSetting;
+    const year = this.foundationAttendanceRuleStartYearSetting;
+    if (!month || !year) return 'Non configurée';
+    return this.formatFoundationMonthLabel(month, year);
+  }
+
+  get foundationAttendanceRuleRulesLabel(): string {
+    return this.foundationAttendanceRuleEnabled
+      ? this.foundationAttendanceRuleStartLabel
+      : "son activation par l'administration";
+  }
+
+  get foundationAttendanceRuleSummaryLabel(): string {
+    if (!this.foundationAttendanceRuleEnabled) {
+      return 'Condition présence non activée';
+    }
+
+    return `${this.foundationAttendanceRequiredDaysSetting} jours présents dès ${this.foundationAttendanceRuleStartLabel}`;
+  }
+
+  get foundationAttendanceRuleInputStartLabel(): string {
+    const month = Number(this.foundationAttendanceRuleStartMonthInput);
+    const year = Number(this.foundationAttendanceRuleStartYearInput);
+    if (
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12 ||
+      !Number.isInteger(year) ||
+      year < 2000 ||
+      year > 2100
+    ) {
+      return 'la date de début choisie';
+    }
+
+    return this.formatFoundationMonthLabel(month, year);
+  }
+
+  get foundationAttendanceRuleYearOptions(): number[] {
+    const now = new Date();
+    const years = new Set<number>([
+      now.getFullYear() - 1,
+      now.getFullYear(),
+      now.getFullYear() + 1,
+      now.getFullYear() + 2,
+      ...this.yearsList,
+      ...this.foundationAvailableDeductionYears,
+    ]);
+
+    const selectedYear = this.foundationAttendanceRuleStartYearSetting;
+    if (selectedYear) {
+      years.add(selectedYear);
+    }
+
+    return Array.from(years)
+      .filter((year) => Number.isInteger(year) && year >= 2000 && year <= 2100)
+      .sort((a, b) => b - a);
+  }
+
   get foundationJoinDate(): Date | null {
     return this.parseEmploymentDate(this.employee?.dateJoined);
   }
@@ -669,10 +780,76 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     });
   }
 
-  get foundationActiveMonthDeductions(): FoundationMonthDeduction[] {
+  get foundationStoredActiveMonthDeductions(): FoundationMonthDeduction[] {
     return this.foundationMonthDeductions.filter(
       (entry) => (entry.status || 'active') === 'active'
     );
+  }
+
+  get foundationAutomaticAttendanceDeductions(): FoundationMonthDeduction[] {
+    const startIndex = this.foundationAttendanceRuleStartIndex;
+    if (!startIndex) {
+      return [];
+    }
+
+    const requiredDays = this.foundationAttendanceRequiredDaysSetting;
+    const storedDeductionKeys = new Set(
+      this.foundationStoredActiveMonthDeductions.map(
+        (entry) => `${entry.year}-${entry.month}`
+      )
+    );
+
+    return this.foundationAccruedMonthOptions
+      .filter((option) => option.year * 12 + option.month >= startIndex)
+      .filter((option) => !storedDeductionKeys.has(option.key))
+      .map((option): FoundationMonthDeduction | null => {
+        const presentDays = this.foundationPresentDaysForMonth(
+          option.month,
+          option.year
+        );
+
+        if (presentDays >= requiredDays) {
+          return null;
+        }
+
+        return {
+          id: `foundation-attendance-rule-${option.year}-${option.month}`,
+          month: option.month,
+          year: option.year,
+          reason: `Condition présence non remplie : ${presentDays} jour${
+            presentDays > 1 ? 's' : ''
+          } présent${
+            presentDays > 1 ? 's' : ''
+          } sur ${requiredDays} requis. Les vacances, retards, absences, anomalies et journées sans statut ne comptent pas.`,
+          amountUsd: this.foundationMonthlyContributionUsd,
+          status: 'active' as const,
+          source: 'attendance_rule' as const,
+          presentDays,
+          requiredPresentDays: requiredDays,
+          createdAt: 0,
+          createdByName: 'Condition automatique',
+        };
+      })
+      .filter((entry): entry is FoundationMonthDeduction => !!entry);
+  }
+
+  get foundationActiveMonthDeductions(): FoundationMonthDeduction[] {
+    return [
+      ...this.foundationStoredActiveMonthDeductions,
+      ...this.foundationAutomaticAttendanceDeductions,
+    ].sort((a, b) => {
+      if ((b.year || 0) !== (a.year || 0)) {
+        return (b.year || 0) - (a.year || 0);
+      }
+      if ((b.month || 0) !== (a.month || 0)) {
+        return (b.month || 0) - (a.month || 0);
+      }
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+  }
+
+  get foundationAutomaticDeductedMonthsCount(): number {
+    return this.foundationAutomaticAttendanceDeductions.length;
   }
 
   get foundationManualBonuses(): FoundationManualBonusEntry[] {
@@ -1097,6 +1274,138 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.foundationContributionAmount = this.foundationMonthlyContributionUsd;
   }
 
+  openFoundationAttendanceRuleModal(): void {
+    if (!this.isAdminUi) return;
+    this.foundationAttendanceRequiredDaysInput =
+      this.foundationAttendanceRequiredDaysSetting;
+    this.foundationAttendanceRuleStartMonthInput =
+      this.foundationAttendanceRuleStartMonthSetting;
+    this.foundationAttendanceRuleStartYearInput =
+      this.foundationAttendanceRuleStartYearSetting;
+    this.foundationAttendanceRuleSaving = false;
+    this.showFoundationAttendanceRuleModal = true;
+  }
+
+  closeFoundationAttendanceRuleModal(): void {
+    this.showFoundationAttendanceRuleModal = false;
+    this.foundationAttendanceRuleSaving = false;
+    this.foundationAttendanceRequiredDaysInput =
+      this.foundationAttendanceRequiredDaysSetting;
+    this.foundationAttendanceRuleStartMonthInput =
+      this.foundationAttendanceRuleStartMonthSetting;
+    this.foundationAttendanceRuleStartYearInput =
+      this.foundationAttendanceRuleStartYearSetting;
+  }
+
+  async saveFoundationAttendanceRule(): Promise<void> {
+    if (
+      !this.isAdminUi ||
+      !this.employee?.uid ||
+      this.foundationAttendanceRuleSaving
+    ) {
+      return;
+    }
+
+    const requiredDays = Number(this.foundationAttendanceRequiredDaysInput);
+    const startMonth = Number(this.foundationAttendanceRuleStartMonthInput);
+    const startYear = Number(this.foundationAttendanceRuleStartYearInput);
+
+    if (!Number.isInteger(requiredDays) || requiredDays < 1 || requiredDays > 31) {
+      alert('Entrez un nombre de jours présents entre 1 et 31.');
+      return;
+    }
+
+    if (
+      !Number.isInteger(startMonth) ||
+      startMonth < 1 ||
+      startMonth > 12 ||
+      !Number.isInteger(startYear) ||
+      startYear < 2000 ||
+      startYear > 2100
+    ) {
+      alert('Choisissez le mois et l’année de début de la condition.');
+      return;
+    }
+
+    const normalizedRequiredDays = Math.floor(requiredDays);
+    this.foundationAttendanceRuleSaving = true;
+    try {
+      this.employee.foundationAttendanceRequiredDays = normalizedRequiredDays;
+      this.employee.foundationAttendanceRuleStartMonth = startMonth;
+      this.employee.foundationAttendanceRuleStartYear = startYear;
+      await Promise.all([
+        this.data.updateEmployeeField(
+          this.employee.uid,
+          'foundationAttendanceRequiredDays',
+          normalizedRequiredDays
+        ),
+        this.data.updateEmployeeField(
+          this.employee.uid,
+          'foundationAttendanceRuleStartMonth',
+          startMonth
+        ),
+        this.data.updateEmployeeField(
+          this.employee.uid,
+          'foundationAttendanceRuleStartYear',
+          startYear
+        ),
+      ]);
+      this.closeFoundationAttendanceRuleModal();
+      alert('Condition de présence Fondation mise à jour.');
+    } catch (error) {
+      console.error(
+        'Erreur lors de la mise à jour de la condition présence Fondation',
+        error
+      );
+      alert("Impossible de modifier la condition présence du Compte Fondation.");
+    } finally {
+      this.foundationAttendanceRuleSaving = false;
+    }
+  }
+
+  async disableFoundationAttendanceRule(): Promise<void> {
+    if (
+      !this.isAdminUi ||
+      !this.employee?.uid ||
+      this.foundationAttendanceRuleSaving
+    ) {
+      return;
+    }
+
+    const confirmed = confirm(
+      'Désactiver la condition de présence du Compte Fondation ? Les mois ne seront plus automatiquement retranchés par présence.'
+    );
+    if (!confirmed) return;
+
+    this.foundationAttendanceRuleSaving = true;
+    try {
+      this.employee.foundationAttendanceRuleStartMonth = undefined;
+      this.employee.foundationAttendanceRuleStartYear = undefined;
+      await Promise.all([
+        this.data.updateEmployeeField(
+          this.employee.uid,
+          'foundationAttendanceRuleStartMonth',
+          null
+        ),
+        this.data.updateEmployeeField(
+          this.employee.uid,
+          'foundationAttendanceRuleStartYear',
+          null
+        ),
+      ]);
+      this.closeFoundationAttendanceRuleModal();
+      alert('Condition de présence Fondation désactivée.');
+    } catch (error) {
+      console.error(
+        'Erreur lors de la désactivation de la condition présence Fondation',
+        error
+      );
+      alert("Impossible de désactiver la condition présence du Compte Fondation.");
+    } finally {
+      this.foundationAttendanceRuleSaving = false;
+    }
+  }
+
   async saveFoundationContributionAmount(): Promise<void> {
     if (
       !this.isAdminUi ||
@@ -1308,6 +1617,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return this.formatFoundationMonthLabel(deduction.month, deduction.year);
   }
 
+  foundationDeductionIsAutomatic(deduction: FoundationMonthDeduction): boolean {
+    return deduction.source === 'attendance_rule';
+  }
+
+  foundationDeductionSourceLabel(deduction: FoundationMonthDeduction): string {
+    return this.foundationDeductionIsAutomatic(deduction)
+      ? 'Condition présence'
+      : 'Manuel';
+  }
+
   foundationManualBonusDateLabel(
     entry: Pick<FoundationManualBonusEntry, 'createdAt'>
   ): string {
@@ -1454,6 +1773,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         reason,
         amountUsd: this.foundationMonthlyContributionUsd,
         status: 'active',
+        source: 'manual',
         createdAt: now,
         createdByUid: actorUid,
         createdByName: actorName,
@@ -3029,7 +3349,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return parts.join(' ');
   }
 
-  private formatFoundationMonthLabel(month: number, year: number): string {
+  formatFoundationMonthLabel(month: number, year: number): string {
     const label = this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`;
     return `${label} ${year}`;
   }
@@ -4009,6 +4329,22 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         },
       ],
     };
+  }
+
+  private foundationPresentDaysForMonth(month: number, year: number): number {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let presentDays = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      if (this.isSunday(month, day, year)) continue;
+      const status = this.getLatestAttendanceForLabel(`${month}-${day}-${year}`)
+        .status;
+      if (status === 'P') {
+        presentDays += 1;
+      }
+    }
+
+    return presentDays;
   }
 
   private getLatestAttendanceForLabel(baseLabel: string): {
