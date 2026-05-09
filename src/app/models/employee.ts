@@ -102,6 +102,7 @@ export class Employee {
   foundationAttendanceRequiredDays?: number;
   foundationAttendanceRuleStartMonth?: number;
   foundationAttendanceRuleStartYear?: number;
+  foundationAttendanceRuleCountMode?: FoundationAttendanceRuleCountMode;
 
   // ---------- UI-only transient fields (not saved) ----------
   _attachmentFile?: File | null;
@@ -122,6 +123,8 @@ export class Employee {
 
   originLocation?: string;
 }
+
+export type FoundationAttendanceRuleCountMode = 'present' | 'marked_workday';
 
 export interface WeeklyObjectiveDeduction {
   start: string; // YYYY-MM-DD
@@ -157,7 +160,9 @@ export interface FoundationMonthDeduction {
   status?: 'active' | 'undone';
   source?: 'manual' | 'attendance_rule';
   presentDays?: number;
+  countedDays?: number;
   requiredPresentDays?: number;
+  countMode?: FoundationAttendanceRuleCountMode;
   createdAt: number;
   createdByUid?: string | null;
   createdByName?: string;

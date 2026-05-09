@@ -58,6 +58,7 @@ export class User {
   foundationAttendanceRequiredDays?: number;
   foundationAttendanceRuleStartMonth?: number;
   foundationAttendanceRuleStartYear?: number;
+  foundationAttendanceRuleCountMode?: 'present' | 'marked_workday';
 }
 export class LocationCoordinates {
   longitude?: string;

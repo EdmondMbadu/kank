@@ -9,6 +9,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   Employee,
+  FoundationAttendanceRuleCountMode,
   FoundationManualBonusEntry,
   FoundationMonthDeduction,
   FoundationWithdrawalRequest,
@@ -317,6 +318,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     version: string;
     statusByDay: Map<string, { key?: string; status: AttendanceStateCode }>;
     presentDaysByMonth: Map<string, number>;
+    markedWorkdaysByMonth: Map<string, number>;
   } | null = null;
   private foundationAutomaticAttendanceCacheKey = '';
   private foundationAutomaticAttendanceCache: FoundationMonthDeduction[] = [];
@@ -506,6 +508,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   foundationAttendanceRequiredDaysInput: number | null = 20;
   foundationAttendanceRuleStartMonthInput: number | null = null;
   foundationAttendanceRuleStartYearInput: number | null = null;
+  foundationAttendanceRuleCountModeInput: FoundationAttendanceRuleCountMode =
+    'present';
   foundationBonusReason = '';
   readonly foundationDefaultMonthlyContributionUsd = 10;
   readonly foundationDefaultAttendanceRequiredDays = 20;
@@ -652,6 +656,49 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return raw;
   }
 
+  get foundationAttendanceRuleCountModeSetting(): FoundationAttendanceRuleCountMode {
+    const raw =
+      this.employee?.foundationAttendanceRuleCountMode ??
+      this.auth.currentUser?.foundationAttendanceRuleCountMode;
+    return this.normalizeFoundationAttendanceRuleCountMode(raw);
+  }
+
+  get foundationAttendanceRuleCountModeValue(): FoundationAttendanceRuleCountMode {
+    return this.normalizeFoundationAttendanceRuleCountMode(
+      this.foundationAttendanceRuleCountModeInput
+    );
+  }
+
+  get foundationAttendanceRuleCountModeLabel(): string {
+    return this.foundationAttendanceRuleCountModeSetting === 'marked_workday'
+      ? 'Présent + Retard marqué'
+      : 'Présent seulement';
+  }
+
+  get foundationAttendanceRuleCountModeValueLabel(): string {
+    return this.foundationAttendanceRuleCountModeValue === 'marked_workday'
+      ? 'Présent + Retard marqué'
+      : 'Présent seulement';
+  }
+
+  get foundationAttendanceRuleCountedStatusLabel(): string {
+    return this.foundationAttendanceRuleCountModeSetting === 'marked_workday'
+      ? 'Présent ou Retard marqué'
+      : 'Présent';
+  }
+
+  get foundationAttendanceRuleCountedStatusValueLabel(): string {
+    return this.foundationAttendanceRuleCountModeValue === 'marked_workday'
+      ? 'Présent ou Retard marqué'
+      : 'Présent';
+  }
+
+  get foundationAttendanceRuleExcludedStatusLabel(): string {
+    return this.foundationAttendanceRuleCountModeValue === 'marked_workday'
+      ? 'Les vacances, absences, anomalies et journées sans statut ne comptent pas.'
+      : 'Les retards, vacances, absences, anomalies et journées sans statut ne comptent pas.';
+  }
+
   get foundationAttendanceRuleEnabled(): boolean {
     return (
       this.foundationAttendanceRuleStartMonthSetting !== null &&
@@ -684,7 +731,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return 'Condition présence non activée';
     }
 
-    return `${this.foundationAttendanceRequiredDaysSetting} jours présents dès ${this.foundationAttendanceRuleStartLabel}`;
+    return `${this.foundationAttendanceRequiredDaysSetting} jours ${this.foundationAttendanceRuleCountedStatusLabel} dès ${this.foundationAttendanceRuleStartLabel}`;
   }
 
   get foundationAttendanceRuleInputStartLabel(): string {
@@ -814,6 +861,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
 
     const requiredDays = this.foundationAttendanceRequiredDaysSetting;
+    const countMode = this.foundationAttendanceRuleCountModeSetting;
     const storedDeductions = this.foundationStoredActiveMonthDeductions;
     const accruedOptions = this.foundationAccruedMonthOptions;
     const attendanceIndex = this.getAttendanceIndex();
@@ -822,6 +870,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       attendanceIndex.version,
       startIndex,
       requiredDays,
+      countMode,
       this.foundationMonthlyContributionUsd,
       accruedOptions.length,
       accruedOptions[0]?.key || '',
@@ -843,26 +892,37 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       .filter((option) => option.year * 12 + option.month >= startIndex)
       .filter((option) => !storedDeductionKeys.has(option.key))
       .map((option): FoundationMonthDeduction | null => {
-        const presentDays = this.foundationPresentDaysForMonth(option.month, option.year);
+        const countedDays = this.foundationCountedDaysForMonth(
+          option.month,
+          option.year,
+          countMode
+        );
 
-        if (presentDays >= requiredDays) {
+        if (countedDays >= requiredDays) {
           return null;
         }
+
+        const countedStatusLabel =
+          countMode === 'marked_workday' ? 'Présent ou Retard marqué' : 'Présent';
+        const excludedStatusLabel =
+          countMode === 'marked_workday'
+            ? 'Les vacances, absences, anomalies et journées sans statut ne comptent pas.'
+            : 'Les vacances, retards, absences, anomalies et journées sans statut ne comptent pas.';
 
         return {
           id: `foundation-attendance-rule-${option.year}-${option.month}`,
           month: option.month,
           year: option.year,
-          reason: `Condition présence non remplie : ${presentDays} jour${
-            presentDays > 1 ? 's' : ''
-          } présent${
-            presentDays > 1 ? 's' : ''
-          } sur ${requiredDays} requis. Les vacances, retards, absences, anomalies et journées sans statut ne comptent pas.`,
+          reason: `Condition présence non remplie : ${countedDays} jour${
+            countedDays > 1 ? 's' : ''
+          } ${countedStatusLabel} sur ${requiredDays} requis. ${excludedStatusLabel}`,
           amountUsd: this.foundationMonthlyContributionUsd,
           status: 'active' as const,
           source: 'attendance_rule' as const,
-          presentDays,
+          presentDays: countedDays,
+          countedDays,
           requiredPresentDays: requiredDays,
+          countMode,
           createdAt: 0,
           createdByName: 'Condition automatique',
         };
@@ -1323,6 +1383,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.foundationAttendanceRuleStartMonthSetting;
     this.foundationAttendanceRuleStartYearInput =
       this.foundationAttendanceRuleStartYearSetting;
+    this.foundationAttendanceRuleCountModeInput =
+      this.foundationAttendanceRuleCountModeSetting;
     this.foundationAttendanceRuleSaving = false;
     this.showFoundationAttendanceRuleModal = true;
   }
@@ -1336,6 +1398,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.foundationAttendanceRuleStartMonthSetting;
     this.foundationAttendanceRuleStartYearInput =
       this.foundationAttendanceRuleStartYearSetting;
+    this.foundationAttendanceRuleCountModeInput =
+      this.foundationAttendanceRuleCountModeSetting;
   }
 
   async saveFoundationAttendanceRule(): Promise<void> {
@@ -1350,9 +1414,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const requiredDays = Number(this.foundationAttendanceRequiredDaysInput);
     const startMonth = Number(this.foundationAttendanceRuleStartMonthInput);
     const startYear = Number(this.foundationAttendanceRuleStartYearInput);
+    const countMode = this.foundationAttendanceRuleCountModeValue;
 
     if (!Number.isInteger(requiredDays) || requiredDays < 1 || requiredDays > 31) {
-      alert('Entrez un nombre de jours présents entre 1 et 31.');
+      alert('Entrez un nombre de jours requis entre 1 et 31.');
       return;
     }
 
@@ -1374,6 +1439,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.employee.foundationAttendanceRequiredDays = normalizedRequiredDays;
       this.employee.foundationAttendanceRuleStartMonth = startMonth;
       this.employee.foundationAttendanceRuleStartYear = startYear;
+      this.employee.foundationAttendanceRuleCountMode = countMode;
+      this.invalidateAttendanceRuleCaches();
       await Promise.all([
         this.data.updateEmployeeField(
           this.employee.uid,
@@ -1389,6 +1456,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           this.employee.uid,
           'foundationAttendanceRuleStartYear',
           startYear
+        ),
+        this.data.updateEmployeeField(
+          this.employee.uid,
+          'foundationAttendanceRuleCountMode',
+          countMode
         ),
       ]);
       this.closeFoundationAttendanceRuleModal();
@@ -4381,14 +4453,23 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private foundationPresentDaysForMonth(month: number, year: number): number {
-    return this.getAttendanceIndex().presentDaysByMonth.get(`${year}-${month}`) || 0;
+  private foundationCountedDaysForMonth(
+    month: number,
+    year: number,
+    mode: FoundationAttendanceRuleCountMode
+  ): number {
+    const attendanceIndex = this.getAttendanceIndex();
+    const monthKey = `${year}-${month}`;
+    return mode === 'marked_workday'
+      ? attendanceIndex.markedWorkdaysByMonth.get(monthKey) || 0
+      : attendanceIndex.presentDaysByMonth.get(monthKey) || 0;
   }
 
   private getAttendanceIndex(): {
     version: string;
     statusByDay: Map<string, { key?: string; status: AttendanceStateCode }>;
     presentDaysByMonth: Map<string, number>;
+    markedWorkdaysByMonth: Map<string, number>;
   } {
     const attendance = (this.employee?.attendance || {}) as Record<
       string,
@@ -4410,6 +4491,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       { key?: string; status: AttendanceStateCode; seconds: number }
     >();
     const presentDaysByMonth = new Map<string, number>();
+    const markedWorkdaysByMonth = new Map<string, number>();
 
     keys.forEach((key) => {
       const rawStatus = attendance[key];
@@ -4426,7 +4508,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const statusByDay = new Map<string, { key?: string; status: AttendanceStateCode }>();
     statusWithSeconds.forEach(({ key, status }, normalizedLabel) => {
       statusByDay.set(normalizedLabel, { key, status });
-      if (status !== 'P') return;
+      if (status !== 'P' && status !== 'L') return;
 
       const [month, day, year] = normalizedLabel
         .split('-')
@@ -4434,10 +4516,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       if (!month || !day || !year || this.isSunday(month, day, year)) return;
 
       const monthKey = `${year}-${month}`;
-      presentDaysByMonth.set(
+      markedWorkdaysByMonth.set(
         monthKey,
-        (presentDaysByMonth.get(monthKey) || 0) + 1
+        (markedWorkdaysByMonth.get(monthKey) || 0) + 1
       );
+      if (status === 'P') {
+        presentDaysByMonth.set(
+          monthKey,
+          (presentDaysByMonth.get(monthKey) || 0) + 1
+        );
+      }
     });
 
     this.attendanceIndexBuildId += 1;
@@ -4448,9 +4536,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       version: `${this.attendanceIndexBuildId}`,
       statusByDay,
       presentDaysByMonth,
+      markedWorkdaysByMonth,
     };
 
     return this.attendanceIndexCache;
+  }
+
+  private normalizeFoundationAttendanceRuleCountMode(
+    value: unknown
+  ): FoundationAttendanceRuleCountMode {
+    return value === 'marked_workday' ? 'marked_workday' : 'present';
   }
 
   private invalidateAttendanceRuleCaches(): void {

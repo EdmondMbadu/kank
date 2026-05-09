@@ -1677,8 +1677,14 @@
                         <strong>Mois non travaillés.</strong> La contribution mensuelle de
                         {{ foundationMonthlyContributionUsd | number : "1.0-0" }} $ s’applique uniquement aux mois validés.
                         À partir de {{ foundationAttendanceRuleRulesLabel }}, un mois est validé seulement si vous avez au moins
-                        <strong>{{ foundationAttendanceRequiredDaysSetting }} jour{{ foundationAttendanceRequiredDaysSetting > 1 ? "s" : "" }} avec le statut Présent</strong>
-                        pendant le mois. Les vacances, retards, absences, anomalies et journées sans statut ne comptent pas.
+                        <strong>{{ foundationAttendanceRequiredDaysSetting }} jour{{ foundationAttendanceRequiredDaysSetting > 1 ? "s" : "" }} {{ foundationAttendanceRuleCountedStatusLabel }}</strong>
+                        pendant le mois.
+                        <ng-container *ngIf="foundationAttendanceRuleCountModeSetting === 'marked_workday'; else foundationPresentOnlyRuleText">
+                          Les vacances, absences, anomalies et journées sans statut ne comptent pas.
+                        </ng-container>
+                        <ng-template #foundationPresentOnlyRuleText>
+                          Les vacances, retards, absences, anomalies et journées sans statut ne comptent pas.
+                        </ng-template>
                         Si la condition n’est pas atteinte, ce montant n’est pas compté et le mois apparaît dans les mois retranchés.
                       </li>
                       <li>
@@ -1984,14 +1990,31 @@
                     <p class="mt-2 text-sm text-emerald-800 dark:text-emerald-100">
                       À partir du mois choisi, chaque mois crédité au Compte Fondation doit avoir au moins
                       <strong>{{ foundationAttendanceRequiredDaysValue }}</strong> jour{{ foundationAttendanceRequiredDaysValue > 1 ? "s" : "" }}
-                      marqué{{ foundationAttendanceRequiredDaysValue > 1 ? "s" : "" }} <strong>Présent</strong>.
-                      Les retards, vacances, absences, anomalies et journées sans statut ne comptent pas.
+                      marqué{{ foundationAttendanceRequiredDaysValue > 1 ? "s" : "" }}
+                      <strong>{{ foundationAttendanceRuleCountedStatusValueLabel }}</strong>.
+                      {{ foundationAttendanceRuleExcludedStatusLabel }}
                     </p>
                   </div>
 
                   <div>
                     <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      Jours présents requis
+                      Mode de comptage
+                    </label>
+                    <select
+                      [(ngModel)]="foundationAttendanceRuleCountModeInput"
+                      class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                    >
+                      <option [ngValue]="'present'">Présent seulement</option>
+                      <option [ngValue]="'marked_workday'">Présent + Retard marqué</option>
+                    </select>
+                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      Utilisez Présent + Retard marqué seulement pour un employé dont les retards sont acceptés comme journées travaillées. Vacances, absences, anomalies et jours sans statut restent exclus.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Jours requis
                     </label>
                     <input
                       [(ngModel)]="foundationAttendanceRequiredDaysInput"
@@ -2003,7 +2026,7 @@
                       class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                     />
                     <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Exemple : 20 signifie que le mois est crédité seulement si l’employé a 20 journées avec le statut Présent.
+                      Exemple : 20 signifie que le mois est crédité seulement si l’employé a 20 journées comptées selon le mode {{ foundationAttendanceRuleCountModeValueLabel }}.
                     </p>
                   </div>
 
