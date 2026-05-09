@@ -432,6 +432,47 @@ export class TeamPageComponent implements OnInit {
     fileInput.click();
   }
 
+  private employeeUploadPath(
+    emp: Employee,
+    file: File,
+    kind: 'profile' | 'cv'
+  ): string {
+    const userId = this.safeStorageSegment(this.auth.currentUser?.uid, 'user');
+    const employeeId = this.safeStorageSegment(emp.uid, 'employee');
+    const employeeName = this.safeStorageSegment(
+      [emp.firstName, emp.middleName, emp.lastName].filter(Boolean).join('-'),
+      'employee'
+    );
+    const extension = this.safeStorageExtension(file.name, file.type);
+    const uniqueSuffix = `${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
+
+    return `avatar/${userId}-${employeeId}-${employeeName}-${kind}-${uniqueSuffix}.${extension}`;
+  }
+
+  private safeStorageSegment(value: string | undefined, fallback: string): string {
+    const segment = (value || fallback)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    return segment || fallback;
+  }
+
+  private safeStorageExtension(fileName: string, fileType: string): string {
+    const extensionFromName = fileName.split('.').pop()?.toLowerCase() || '';
+    if (/^[a-z0-9]{1,8}$/.test(extensionFromName)) {
+      return extensionFromName;
+    }
+
+    const extensionFromType = fileType.split('/').pop()?.toLowerCase() || '';
+    return /^[a-z0-9]{1,8}$/.test(extensionFromType)
+      ? extensionFromType
+      : 'file';
+  }
+
   async startUpload(event: FileList, emp: Employee) {
     console.log('current employee', emp);
     const file = event?.item(0);
@@ -448,7 +489,7 @@ export class TeamPageComponent implements OnInit {
       );
       return;
     }
-    const path = `avatar/${emp.firstName}-${emp.lastName}`;
+    const path = this.employeeUploadPath(emp, file, 'profile');
 
     // the main task
     console.log('the path', path);
@@ -484,7 +525,7 @@ export class TeamPageComponent implements OnInit {
       );
       return;
     }
-    const path = `avatar/${emp.firstName}-${emp.lastName}-CV`;
+    const path = this.employeeUploadPath(emp, file, 'cv');
 
     // the main task
     console.log('the path', path);
