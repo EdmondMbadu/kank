@@ -1680,7 +1680,7 @@
                         <strong>{{ foundationAttendanceRequiredDaysSetting }} jour{{ foundationAttendanceRequiredDaysSetting > 1 ? "s" : "" }} {{ foundationAttendanceRuleCountedStatusLabel }}</strong>
                         pendant le mois.
                         <ng-container *ngIf="foundationAttendanceRuleCountModeSetting === 'marked_workday'; else foundationPresentOnlyRuleText">
-                          Les vacances, absences, anomalies et journées sans statut ne comptent pas.
+                          Les absences, anomalies, néants et journées sans statut ne comptent pas.
                         </ng-container>
                         <ng-template #foundationPresentOnlyRuleText>
                           Les vacances, retards, absences, anomalies et journées sans statut ne comptent pas.
@@ -2005,10 +2005,10 @@
                       class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                     >
                       <option [ngValue]="'present'">Présent seulement</option>
-                      <option [ngValue]="'marked_workday'">Présent + Retard marqué</option>
+                      <option [ngValue]="'marked_workday'">Présent + Retard + Vacance</option>
                     </select>
                     <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      Utilisez Présent + Retard marqué seulement pour un employé dont les retards sont acceptés comme journées travaillées. Vacances, absences, anomalies et jours sans statut restent exclus.
+                      Utilisez Présent + Retard + Vacance seulement pour un employé dont les retards et vacances doivent être acceptés dans le total marqué. Absences, anomalies, néants et jours sans statut restent exclus.
                     </p>
                   </div>
 

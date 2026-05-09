@@ -671,31 +671,31 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   get foundationAttendanceRuleCountModeLabel(): string {
     return this.foundationAttendanceRuleCountModeSetting === 'marked_workday'
-      ? 'Présent + Retard marqué'
+      ? 'Présent + Retard + Vacance'
       : 'Présent seulement';
   }
 
   get foundationAttendanceRuleCountModeValueLabel(): string {
     return this.foundationAttendanceRuleCountModeValue === 'marked_workday'
-      ? 'Présent + Retard marqué'
+      ? 'Présent + Retard + Vacance'
       : 'Présent seulement';
   }
 
   get foundationAttendanceRuleCountedStatusLabel(): string {
     return this.foundationAttendanceRuleCountModeSetting === 'marked_workday'
-      ? 'Présent ou Retard marqué'
+      ? 'Présent, Retard marqué ou Vacance'
       : 'Présent';
   }
 
   get foundationAttendanceRuleCountedStatusValueLabel(): string {
     return this.foundationAttendanceRuleCountModeValue === 'marked_workday'
-      ? 'Présent ou Retard marqué'
+      ? 'Présent, Retard marqué ou Vacance'
       : 'Présent';
   }
 
   get foundationAttendanceRuleExcludedStatusLabel(): string {
     return this.foundationAttendanceRuleCountModeValue === 'marked_workday'
-      ? 'Les vacances, absences, anomalies et journées sans statut ne comptent pas.'
+      ? 'Les absences, anomalies, néants et journées sans statut ne comptent pas.'
       : 'Les retards, vacances, absences, anomalies et journées sans statut ne comptent pas.';
   }
 
@@ -903,10 +903,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         }
 
         const countedStatusLabel =
-          countMode === 'marked_workday' ? 'Présent ou Retard marqué' : 'Présent';
+          countMode === 'marked_workday'
+            ? 'Présent, Retard marqué ou Vacance'
+            : 'Présent';
         const excludedStatusLabel =
           countMode === 'marked_workday'
-            ? 'Les vacances, absences, anomalies et journées sans statut ne comptent pas.'
+            ? 'Les absences, anomalies, néants et journées sans statut ne comptent pas.'
             : 'Les vacances, retards, absences, anomalies et journées sans statut ne comptent pas.';
 
         return {
@@ -4508,7 +4510,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const statusByDay = new Map<string, { key?: string; status: AttendanceStateCode }>();
     statusWithSeconds.forEach(({ key, status }, normalizedLabel) => {
       statusByDay.set(normalizedLabel, { key, status });
-      if (status !== 'P' && status !== 'L') return;
+      if (status !== 'P' && status !== 'L' && status !== 'V' && status !== 'VP') {
+        return;
+      }
 
       const [month, day, year] = normalizedLabel
         .split('-')
