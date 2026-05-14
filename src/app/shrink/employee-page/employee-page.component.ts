@@ -395,6 +395,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     | { kind: 'salary'; index: number }
     | { kind: 'foundation'; requestId: string }
     | null = null;
+  deletingPaymentEntryIds = new Set<string>();
 
   withinRadius: boolean | null = null;
   errorMessage: string | null = null;
@@ -3902,6 +3903,110 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     const refNumber = (entry.sourceIndex ?? 0) + 1;
     return `#${refNumber}`;
+  }
+
+  isPaymentEntryDeleting(entry: PaymentHistoryEntry): boolean {
+    return this.deletingPaymentEntryIds.has(entry.id);
+  }
+
+  async removePaymentHistoryEntry(entry: PaymentHistoryEntry): Promise<void> {
+    if (!this.isAdminUi || !entry || this.isPaymentEntryDeleting(entry)) {
+      return;
+    }
+
+    const confirmed = confirm(
+      `Supprimer cette entrée de ${this.paymentKindLabel(entry).toLowerCase()} de $${Number(
+        entry.amount || 0
+      ).toFixed(0)} ? La facture et le reçu liés seront aussi supprimés si possible.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    this.deletingPaymentEntryIds.add(entry.id);
+
+    try {
+      if (entry.source === 'foundation') {
+        await this.removeFoundationPaymentHistoryEntry(entry);
+      } else {
+        await this.removeSalaryPaymentHistoryEntry(entry);
+      }
+
+      this.getAllPayments();
+      alert('Entrée supprimée avec succès.');
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'entrée de paiement", error);
+      alert("Impossible de supprimer cette entrée pour le moment.");
+    } finally {
+      this.deletingPaymentEntryIds.delete(entry.id);
+    }
+  }
+
+  private async removeFoundationPaymentHistoryEntry(
+    entry: PaymentHistoryEntry
+  ): Promise<void> {
+    const request = entry.foundationRequest;
+    if (!request?.id) {
+      throw new Error('Demande Fondation introuvable.');
+    }
+
+    const nextRequests = this.foundationRequests.filter(
+      (item) => item.id !== request.id
+    );
+    await this.persistFoundationRequests(nextRequests);
+
+    await Promise.allSettled([
+      this.deleteStorageUrlIfPossible(request.invoiceUrl),
+      this.deleteStorageUrlIfPossible(request.receiptUrl),
+    ]);
+  }
+
+  private async removeSalaryPaymentHistoryEntry(
+    entry: PaymentHistoryEntry
+  ): Promise<void> {
+    if (!this.employee?.uid || !entry.rawKey) {
+      throw new Error('Paiement employé introuvable.');
+    }
+
+    const sourceIndex = entry.sourceIndex ?? -1;
+    const nextPayments = { ...(this.employee.payments || {}) };
+    delete nextPayments[entry.rawKey];
+
+    const currentInvoices = [...(this.employee.paymentsPicturePath || [])];
+    const currentReceipts = [...(this.employee.receipts || [])];
+    const invoiceUrl = sourceIndex >= 0 ? currentInvoices[sourceIndex] : '';
+    const receiptUrl = sourceIndex >= 0 ? currentReceipts[sourceIndex] : '';
+    const nextInvoices = this.removeArrayIndex(currentInvoices, sourceIndex);
+    const nextReceipts = this.removeArrayIndex(currentReceipts, sourceIndex);
+
+    const updates: Partial<Employee> = {
+      payments: nextPayments,
+      paymentsPicturePath: nextInvoices,
+      receipts: nextReceipts,
+    };
+
+    await this.data.updateEmployeeTopLevelFieldsForUser(
+      this.auth.currentUser.uid,
+      this.employee.uid,
+      updates
+    );
+
+    this.employee.payments = nextPayments;
+    this.employee.paymentsPicturePath = nextInvoices;
+    this.employee.receipts = nextReceipts;
+
+    await Promise.allSettled([
+      this.deleteStorageUrlIfPossible(invoiceUrl),
+      this.deleteStorageUrlIfPossible(receiptUrl),
+    ]);
+  }
+
+  private removeArrayIndex<T>(items: T[], index: number): T[] {
+    if (!Number.isInteger(index) || index < 0 || index >= items.length) {
+      return items;
+    }
+
+    return items.filter((_, itemIndex) => itemIndex !== index);
   }
 
   togglePaymentCheckVisible() {

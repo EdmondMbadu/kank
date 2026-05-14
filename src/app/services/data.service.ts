@@ -3390,6 +3390,18 @@ export class DataService {
 
     return employeeRef.set(fields, { merge: true });
   }
+
+  updateEmployeeTopLevelFieldsForUser(
+    userId: string,
+    employeeId: string,
+    fields: Partial<Employee>
+  ) {
+    const employeeRef: AngularFirestoreDocument<Employee> = this.afs.doc(
+      `users/${userId}/employees/${employeeId}`
+    );
+
+    return employeeRef.update(fields);
+  }
   findClientsWithDebts(clients: Client[] | null | undefined): Client[] {
     if (!Array.isArray(clients)) {
       return [];

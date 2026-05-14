@@ -3895,6 +3895,16 @@
                     Attacher Reçu
                   </button>
                 </ng-container>
+
+                <button
+                  *ngIf="isAdminUi"
+                  type="button"
+                  (click)="removePaymentHistoryEntry(entry)"
+                  [disabled]="isPaymentEntryDeleting(entry)"
+                  class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20"
+                >
+                  {{ isPaymentEntryDeleting(entry) ? 'Suppression...' : 'Supprimer' }}
+                </button>
               </div>
             </li>
           </ul>
