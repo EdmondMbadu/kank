@@ -431,7 +431,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
           const unpaidToday: Client[] = this.currentClientsReserve.filter(
             (cl) => {
               const paidKeys = Object.keys(cl.payments || {}).filter(
-                (k) => k.startsWith(this.today) // paiement horodaté aujourd’hui
+                (k) => k.startsWith(this.requestDateCorrectFormat)
               );
               return paidKeys.length === 0; // ⇦ donc pas encore payé
             }
@@ -997,6 +997,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.frenchDate = this.time.convertDateToDayMonthYear(
       this.requestDateCorrectFormat
     );
+    this.theDay = this.time.getDayOfWeek(this.requestDateCorrectFormat);
 
     this.initalizeInputs();
     this.getAllClients();
@@ -1864,7 +1865,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   private getTodaysComment(client: Client) {
     if (!client.comments?.length) return null;
 
-    const [mm, dd, yyyy] = this.today.split('-'); // ex. 07-21-2025
+    const [mm, dd, yyyy] = this.requestDateCorrectFormat.split('-'); // ex. 07-21-2025
     const normalised = `${Number(mm)}-${Number(dd)}-${yyyy}`;
     return client.comments.find((c) => c.time?.startsWith(normalised)) || null;
   }
