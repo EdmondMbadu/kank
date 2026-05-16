@@ -709,6 +709,7 @@ export class TodayComponent {
     this.day = this.time.getDayOfWeek(this.requestDateCorrectFormat); // ✅ same as good page
 
     this.initalizeInputs();
+    this.findClientsWithDebts();
     this.recomputeHeaderReasons(); // ⬅ use new function
     this.computeRequestTotalSameAsRequestToday();
   }
