@@ -1872,6 +1872,57 @@ export class DataService {
 
     return managementRef.set(data, { merge: true });
   }
+
+  async deleteBankDepositEntry(
+    dateKey: string,
+    restoreMoneyInHands: boolean
+  ): Promise<void> {
+    const managementId = this.auth.managementInfo?.id;
+    if (!managementId) {
+      throw new Error('Management introuvable.');
+    }
+
+    const managementRef = this.afs.doc<Management>(
+      `management/${managementId}`
+    ).ref;
+
+    await this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      if (!snapshot.exists) return;
+
+      const current = (snapshot.data() || {}) as Management;
+      const nextBankDepositDollars = {
+        ...(current.bankDepositDollars || {}),
+      } as {
+        [key: string]: string;
+      };
+      const nextBankDepositFrancs = {
+        ...(current.bankDepositFrancs || {}),
+      } as {
+        [key: string]: string;
+      };
+
+      const rawFrancAmount = nextBankDepositFrancs[dateKey];
+      const rawDollarAmount = nextBankDepositDollars[dateKey];
+      if (rawFrancAmount === undefined && rawDollarAmount === undefined) return;
+
+      delete nextBankDepositDollars[dateKey];
+      delete nextBankDepositFrancs[dateKey];
+
+      const payload: Partial<Management> = {
+        bankDepositDollars: nextBankDepositDollars,
+        bankDepositFrancs: nextBankDepositFrancs,
+      };
+
+      if (restoreMoneyInHands) {
+        const amountNum = Number(rawFrancAmount || 0) || 0;
+        const currentMoneyInHands = Number(current.moneyInHands || 0);
+        payload.moneyInHands = (currentMoneyInHands + amountNum).toString();
+      }
+
+      tx.update(managementRef, payload);
+    });
+  }
   updateManagementInfoForMoneyLoss(amount: string) {
     console.log('data from management', this.auth.managementInfo);
     const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(

@@ -1,6 +1,6 @@
 <app-navbar
-  [email]="this.auth.currentUser.email"
-  [firstName]="this.auth.currentUser.firstName"
+  [email]="this.auth.currentUser?.email || ''"
+  [firstName]="this.auth.currentUser?.firstName || ''"
   [path]="'home'"
 ></app-navbar>
 <div class="container mx-auto px-4 pt-10">
@@ -171,7 +171,7 @@
               class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-100 dark:bg-gray-600"
             >
               <span class="font-medium text-gray-600 dark:text-gray-300">{{
-                this.auth.currentUser.firstName?.substring(0, 2)
+                this.auth.currentUser?.firstName?.substring(0, 2)
               }}</span>
             </div>
             <div class="flex-1 min-w-0">
@@ -251,11 +251,92 @@
                   </svg>
                   Modifier
                 </button>
+                <button
+                  *ngIf="auth.isAdmin"
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  [disabled]="!!deletingBankEntryKey"
+                  (click)="openDeleteBankModal(i, $event)"
+                >
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path
+                      d="M6.5 7.5v7m3.5-7v7m3.5-7v7M4 5h12m-2 0-.7-1.4A1 1 0 0 0 12.4 3H7.6a1 1 0 0 0-.9.6L6 5m-.5 0 .6 11a1 1 0 0 0 1 .9h5.8a1 1 0 0 0 1-.9l.6-11"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Supprimer
+                </button>
               </div>
             </ng-template>
           </div>
         </li>
       </ul>
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="showDeleteBankModal && pendingDeleteBankEntry"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+>
+  <div
+    class="w-full max-w-lg rounded-2xl border border-green-200 bg-white p-6 shadow-xl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="delete-bank-title"
+  >
+    <h3 id="delete-bank-title" class="text-lg font-semibold text-gray-900">
+      Supprimer cette entrée bancaire
+    </h3>
+    <p class="mt-2 text-sm text-gray-600">
+      Date:
+      <span class="font-medium">{{ pendingDeleteBankEntry.displayDate }}</span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600">
+      Montant banque:
+      <span class="font-semibold text-gray-900">
+        $ {{ pendingDeleteBankEntry.amount | number : "1.0-0" }}
+      </span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600">
+      Montant FC:
+      <span class="font-semibold text-gray-900">
+        FC {{ pendingDeleteBankEntry.francAmount | number : "1.0-0" }}
+      </span>
+    </p>
+    <p class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+      Voulez-vous aussi remettre le montant FC dans
+      <span class="font-semibold">argent en main</span> ?
+    </p>
+
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeDeleteBankModal()"
+        [disabled]="!!deletingBankEntryKey"
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteBankEntry('deleteOnly')"
+        [disabled]="!!deletingBankEntryKey"
+        class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Supprimer seulement
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteBankEntry('deleteAndRestore')"
+        [disabled]="!!deletingBankEntryKey"
+        class="rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Supprimer + remettre en main
+      </button>
     </div>
   </div>
 </div>

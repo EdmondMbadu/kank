@@ -38,6 +38,14 @@ export class GestionBankComponent {
   editingValue: string = '';
   editingFrancValue: string = '';
   isSavingEntry = false;
+  showDeleteBankModal = false;
+  deletingBankEntryKey: string | null = null;
+  pendingDeleteBankEntry: {
+    key: string;
+    displayDate: string;
+    amount: string;
+    francAmount: string;
+  } | null = null;
 
   constructor(
     public auth: AuthService,
@@ -188,6 +196,95 @@ export class GestionBankComponent {
     this.editingIndex = null;
     this.editingValue = '';
     this.editingFrancValue = '';
+  }
+
+  openDeleteBankModal(index: number, event: Event) {
+    event.stopPropagation();
+    if (!this.auth.isAdmin || this.deletingBankEntryKey) {
+      return;
+    }
+
+    const target = this.moneyBankEntries[index];
+    if (!target) {
+      return;
+    }
+
+    this.pendingDeleteBankEntry = {
+      key: target.key,
+      displayDate: target.displayDate,
+      amount: target.amount,
+      francAmount: target.francAmount,
+    };
+    this.showDeleteBankModal = true;
+  }
+
+  closeDeleteBankModal() {
+    if (this.deletingBankEntryKey) {
+      return;
+    }
+    this.showDeleteBankModal = false;
+    this.pendingDeleteBankEntry = null;
+  }
+
+  async confirmDeleteBankEntry(
+    choice: 'deleteOnly' | 'deleteAndRestore'
+  ): Promise<void> {
+    if (!this.auth.isAdmin) {
+      return;
+    }
+
+    const pending = this.pendingDeleteBankEntry;
+    if (!pending) {
+      return;
+    }
+
+    const shouldRestore = choice === 'deleteAndRestore';
+
+    try {
+      this.deletingBankEntryKey = pending.key;
+      await this.data.deleteBankDepositEntry(pending.key, shouldRestore);
+
+      const nextBankDepositDollars = {
+        ...(this.managementInfo?.bankDepositDollars || {}),
+      };
+      const nextBankDepositFrancs = {
+        ...(this.managementInfo?.bankDepositFrancs || {}),
+      };
+      delete nextBankDepositDollars[pending.key];
+      delete nextBankDepositFrancs[pending.key];
+
+      const nextMoneyInHands = shouldRestore
+        ? (
+            Number(this.managementInfo?.moneyInHands || 0) +
+            Number(pending.francAmount || 0)
+          ).toString()
+        : this.managementInfo?.moneyInHands;
+
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        bankDepositDollars: nextBankDepositDollars,
+        bankDepositFrancs: nextBankDepositFrancs,
+        moneyInHands: nextMoneyInHands,
+      };
+
+      if (this.auth.managementInfo) {
+        this.auth.managementInfo = {
+          ...(this.auth.managementInfo || {}),
+          bankDepositDollars: nextBankDepositDollars,
+          bankDepositFrancs: nextBankDepositFrancs,
+          moneyInHands: nextMoneyInHands,
+        };
+      }
+
+      this.getCurrentServed();
+      this.cancelEditing();
+    } catch (err) {
+      console.error('Failed to delete bank deposit entry', err);
+      alert("La suppression de l'entrée a échoué. Réessayez.");
+    } finally {
+      this.deletingBankEntryKey = null;
+      this.closeDeleteBankModal();
+    }
   }
 
   async saveEditedAmount(index: number) {
