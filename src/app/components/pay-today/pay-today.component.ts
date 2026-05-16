@@ -30,6 +30,14 @@ export class PayTodayComponent implements OnInit {
     Friday: 'Vendredi',
     Saturday: 'Samedi',
   };
+  paymentDayOptions = [
+    { value: 'Monday', label: 'Lundi' },
+    { value: 'Tuesday', label: 'Mardi' },
+    { value: 'Wednesday', label: 'Mercredi' },
+    { value: 'Thursday', label: 'Jeudi' },
+    { value: 'Friday', label: 'Vendredi' },
+    { value: 'Saturday', label: 'Samedi' },
+  ];
   today = this.time.todaysDateMonthDayYear();
   filteredItems?: Client[];
   trackingIds: string[] = [];
@@ -100,6 +108,19 @@ export class PayTodayComponent implements OnInit {
   setSerachCriteria(criteria: string) {
     this.searchCriteria = criteria;
     this.selectedField = criteria;
+  }
+
+  selectPaymentDay(day: string) {
+    this.setSerachCriteria('paymentDay');
+    this.searchControl.setValue(day);
+  }
+
+  isPaymentDaySelected(day: string): boolean {
+    return (
+      this.searchCriteria === 'paymentDay' &&
+      this.normalizeDaySearchValue(this.searchControl.value) ===
+        this.normalizeDaySearchValue(day)
+    );
   }
 
   getAgentUidByName(name: string) {
@@ -216,9 +237,22 @@ export class PayTodayComponent implements OnInit {
     this.search(this.searchControl.value);
   }
 
+  private normalizeSearchValue(value: unknown): string {
+    return String(value ?? '').trim().toLowerCase();
+  }
+
+  private normalizeDaySearchValue(value: unknown): string {
+    return this.normalizeSearchValue(value)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z]/g, '');
+  }
+
   search(value: string, field: string = this.searchCriteria) {
-    if (value) {
-      const lowerCaseValue = value.toLowerCase();
+    const lowerCaseValue = this.normalizeSearchValue(value);
+
+    if (lowerCaseValue) {
+      const normalizedDayValue = this.normalizeDaySearchValue(lowerCaseValue);
 
       let current: Client[];
 
@@ -240,8 +274,12 @@ export class PayTodayComponent implements OnInit {
           switch (field) {
             case 'paymentDay':
               return (
-                client.paymentDay?.toLowerCase().includes(lowerCaseValue) ||
-                client.frenchPaymentDay?.toLowerCase().includes(lowerCaseValue)
+                this.normalizeDaySearchValue(client.paymentDay).includes(
+                  normalizedDayValue
+                ) ||
+                this.normalizeDaySearchValue(client.frenchPaymentDay).includes(
+                  normalizedDayValue
+                )
               );
             case 'loanAmount':
               return client.loanAmount?.toString() === lowerCaseValue;

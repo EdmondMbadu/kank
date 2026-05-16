@@ -202,12 +202,32 @@
               rounded-2xl shadow-xl ring-1 ring-black/5 p-6 space-y-6">
 
     <!-- Barre de recherche -->
-    <div class="flex items-center justify-between ">
+    <div class="flex flex-col gap-4">
       <h3 class="text-lg md:text-xl font-semibold text-gray-800 dark:text-white">
         Programmé
       </h3>
 
-      <form class="relative flex-1 max-w-xs">
+      <div
+        *ngIf="selectedField === 'paymentDay'; else textSearchInput"
+        class="grid w-full grid-cols-2 gap-2 sm:grid-cols-3"
+      >
+        <button
+          *ngFor="let day of paymentDayOptions"
+          type="button"
+          (click)="selectPaymentDay(day.label)"
+          class="h-10 rounded-full border px-3 text-sm font-semibold transition-colors"
+          [ngClass]="
+            isPaymentDaySelected(day.label)
+              ? 'border-emerald-600 bg-emerald-600 text-white shadow'
+              : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-emerald-50 dark:border-gray-600 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600'
+          "
+        >
+          {{ day.label }}
+        </button>
+      </div>
+
+      <ng-template #textSearchInput>
+        <form class="relative flex-1 max-w-xs">
         <input id="simple-search" type="text"
                [formControl]="searchControl"
                placeholder="Rechercher…"
@@ -224,7 +244,8 @@
                   d="m21 21-4.35-4.35M5.5 11a5.5 5.5 0 1111 0 5.5 5.5 0 01-11 0z" />
           </svg>
         </span>
-      </form>
+        </form>
+      </ng-template>
     </div>
 
     <!-- Liste des clients -->
