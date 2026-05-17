@@ -2123,6 +2123,22 @@ export class DataService {
     return userRef.set(data, { merge: true });
   }
 
+  addManagementOtherExpense(
+    amount: string,
+    reason: string,
+    dateKey = this.time.todaysDate()
+  ) {
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+
+    const data: Partial<Management> = {
+      otherExpenses: { [dateKey]: `${amount}:${reason.trim()}` },
+    };
+
+    return managementRef.set(data, { merge: true });
+  }
+
   async deleteManagementExpenseEntry(
     entryKey: string,
     deductFromMoneyInHands: boolean

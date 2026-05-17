@@ -82,6 +82,7 @@ export class GestionMonthComponent {
     '/gestion-investment',
     '/gestion-fraudes',
     '/gestion-month',
+    '/gestion-month',
   ];
   summary: string[] = [
     'Pourcentage Perte Du Mois',
@@ -95,6 +96,7 @@ export class GestionMonthComponent {
     'Investissement Du Mois',
     'Suivi des fraudes du mois',
     ' Benefice Reel Du Mois',
+    'Autres dépenses du mois',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -109,6 +111,7 @@ export class GestionMonthComponent {
   givenMonthTotalInvestmentAmount: string = '';
   givenMonthTotalBudgetedExpenseAmount: string = '';
   givenMonthTotalFraudAmount: string = '0';
+  givenMonthTotalOtherExpenseAmount: string = '0';
   fraudRatioOfReserve: number = 0;
 
   givenMonthRealGain: string = '';
@@ -125,6 +128,7 @@ export class GestionMonthComponent {
     '../../../assets/img/invest.svg',
     '../../../assets/img/expense.svg',
     '../../../assets/img/benefit.svg',
+    '../../../assets/img/expense.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -196,6 +200,11 @@ export class GestionMonthComponent {
       this.givenMonth,
       this.givenYear
     );
+    this.givenMonthTotalOtherExpenseAmount = this.compute.findTotalGiventMonth(
+      this.managementInfo?.otherExpenses!,
+      this.givenMonth,
+      this.givenYear
+    );
     let totalLoss = (
       Number(this.givenMonthTotalLossAmount) +
       Number(
@@ -225,7 +234,8 @@ export class GestionMonthComponent {
       Number(this.givenMonthTotalExpenseAmount) -
       Number(this.givenMonthTotalBudgetedExpenseAmount) -
       Number(totalLoss) -
-      Number(this.givenMonthTotalFraudAmount)
+      Number(this.givenMonthTotalFraudAmount) -
+      Number(this.givenMonthTotalOtherExpenseAmount)
     ).toString();
     this.summaryContent = [
       `${this.lossRatio}`,
@@ -239,6 +249,7 @@ export class GestionMonthComponent {
       `${this.givenMonthTotalInvestmentAmount}`,
       `${this.givenMonthTotalFraudAmount}`,
       `${this.givenMonthRealGain}`,
+      `${this.givenMonthTotalOtherExpenseAmount}`,
     ];
     this.valuesConvertedToDollars = [
       ``,
@@ -265,6 +276,9 @@ export class GestionMonthComponent {
       )}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthRealGain
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.givenMonthTotalOtherExpenseAmount
       )}`,
     ];
   }

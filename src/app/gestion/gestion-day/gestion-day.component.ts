@@ -88,6 +88,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   recentServeDates: string[] = [];
   recentServeAmounts: number[] = [];
   dailyExpense: string = '0';
+  dailyOtherExpense: string = '0';
   dailyBudgetExpense = '0';
   dailyPayment: string = '0';
   dailyBankFranc: string = '0';
@@ -178,6 +179,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     '/gestion-loss',
     '/gestion-investment',
     '/gestion-fraudes',
+    '/gestion-today',
   ];
   summary: string[] = [
     'Pourcentage Perte Du Mois',
@@ -190,6 +192,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     'Perte Du Jour',
     'Investissement Du Jour',
     'Suivi des fraudes du mois',
+    'Autres dépenses',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -203,6 +206,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     '../../../assets/img/bank.png',
     '../../../assets/img/loss.png',
     '../../../assets/img/invest.svg',
+    '../../../assets/img/expense.svg',
     '../../../assets/img/expense.svg',
   ];
 
@@ -864,6 +868,12 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         this.requestDateCorrectFormat
       )
       .toString();
+    this.dailyOtherExpense = this.compute
+      .findTotalForToday(
+        this.managementInfo?.otherExpenses!,
+        this.requestDateCorrectFormat
+      )
+      .toString();
     this.dailyBudgetExpense = this.compute
       .findTotalForToday(
         this.managementInfo?.budgetedExpenses!,
@@ -931,6 +941,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.dailyReserve === undefined ? '0' : this.dailyReserve;
     this.dailyExpense =
       this.dailyExpense === undefined ? '0' : this.dailyExpense;
+    this.dailyOtherExpense =
+      this.dailyOtherExpense === undefined ? '0' : this.dailyOtherExpense;
     this.dailyBudgetExpense =
       this.dailyBudgetExpense === undefined ? '0' : this.dailyBudgetExpense;
     this.dailyLoss = this.dailyLoss === undefined ? '0' : this.dailyLoss;
@@ -969,6 +981,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       `${dloss}`,
       `${this.dailyInvestment}`,
       `${this.givenMonthTotalFraudAmount}`,
+      `${this.dailyOtherExpense}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -985,6 +998,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyInvestment)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.givenMonthTotalFraudAmount
+      )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.dailyOtherExpense
       )}`,
     ];
   }
@@ -1789,6 +1805,10 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   isSavingMoneyInHandsModal = false;
   showBudgetModal = false;
   budgetInput: number | null = null;
+  showOtherExpenseModal = false;
+  otherExpenseAmount: number | null = null;
+  otherExpenseReason = '';
+  isSavingOtherExpense = false;
 
   openMoneyInHandsModal() {
     if (!this.auth.isAdmin) return;
@@ -1841,6 +1861,65 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   closeBudgetModal() {
     this.showBudgetModal = false;
   }
+
+  openOtherExpenseModal() {
+    if (!this.auth.isAdmin) return;
+
+    this.otherExpenseAmount = null;
+    this.otherExpenseReason = '';
+    this.showOtherExpenseModal = true;
+  }
+
+  closeOtherExpenseModal() {
+    if (this.isSavingOtherExpense) return;
+
+    this.showOtherExpenseModal = false;
+  }
+
+  async saveOtherExpense(): Promise<void> {
+    if (!this.auth.isAdmin || this.isSavingOtherExpense) return;
+
+    if (this.otherExpenseAmount === null || isNaN(this.otherExpenseAmount)) {
+      alert('Montant invalide');
+      return;
+    }
+    if (!this.otherExpenseReason.trim()) {
+      alert('Veuillez indiquer la raison');
+      return;
+    }
+
+    const amount = Math.trunc(Number(this.otherExpenseAmount));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Entrez un montant positif en FC.');
+      return;
+    }
+
+    this.isSavingOtherExpense = true;
+    try {
+      const dateKey = this.time.todaysDate();
+      await this.data.addManagementOtherExpense(
+        amount.toString(),
+        this.otherExpenseReason,
+        dateKey
+      );
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        otherExpenses: {
+          ...(this.managementInfo?.otherExpenses || {}),
+          [dateKey]: `${amount}:${this.otherExpenseReason.trim()}`,
+        },
+      };
+      this.showOtherExpenseModal = false;
+      this.initalizeInputs();
+      alert('Autre dépense enregistrée.');
+    } catch (error) {
+      console.error('Unable to save other expense', error);
+      alert("Impossible d'enregistrer cette autre dépense.");
+    } finally {
+      this.isSavingOtherExpense = false;
+    }
+  }
+
   async saveBudgetedExpense() {
     if (this.budgetInput === null || isNaN(this.budgetInput)) {
       alert('Montant invalide');
@@ -1886,6 +1965,13 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       ev.preventDefault();
       ev.stopPropagation();
       this.openBudgetModal();
+      return;
+    }
+
+    if (i === 10) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.openOtherExpenseModal();
     }
   }
 
