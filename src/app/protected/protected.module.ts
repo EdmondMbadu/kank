@@ -78,6 +78,7 @@ import { GestionBankComponent } from '../gestion/gestion-bank/gestion-bank.compo
 import { GestionLossComponent } from '../gestion/gestion-loss/gestion-loss.component';
 import { AuthGuard } from '../services/auth.guard';
 import { GestionInvestmentComponent } from '../gestion/gestion-investment/gestion-investment.component';
+import { GestionOtherExpensesComponent } from '../gestion/gestion-other-expenses/gestion-other-expenses.component';
 import { GestionFraudeComponent } from '../gestion/gestion-fraude/gestion-fraude.component';
 import { TutorialComponent } from '../components/tutorial/tutorial.component';
 import { LossesComponent } from '../components/losses/losses.component';
@@ -169,6 +170,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     GestionBankComponent,
     GestionLossComponent,
     GestionInvestmentComponent,
+    GestionOtherExpensesComponent,
     GestionFraudeComponent,
     TutorialComponent,
     LossesComponent,

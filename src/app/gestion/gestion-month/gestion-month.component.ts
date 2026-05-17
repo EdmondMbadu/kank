@@ -82,7 +82,7 @@ export class GestionMonthComponent {
     '/gestion-investment',
     '/gestion-fraudes',
     '/gestion-month',
-    '/gestion-month',
+    '/gestion-other-expenses',
   ];
   summary: string[] = [
     'Pourcentage Perte Du Mois',

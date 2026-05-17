@@ -1,0 +1,277 @@
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
+
+<section class="min-h-screen bg-gradient-to-b from-green-50 via-white to-green-100/40 px-4 py-8">
+  <div
+    *ngIf="feedbackMessage"
+    class="fixed right-4 top-24 z-[60] max-w-md rounded-lg border px-4 py-3 text-sm shadow-lg"
+    [ngClass]="
+      feedbackType === 'success'
+        ? 'border-green-300 bg-green-100 text-green-800'
+        : 'border-red-300 bg-red-100 text-red-800'
+    ">
+    {{ feedbackMessage }}
+  </div>
+
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-6">
+    <header class="rounded-2xl border border-green-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900 md:text-3xl">
+            Autres dépenses
+          </h1>
+          <p class="mt-1 text-sm text-gray-500">
+            Salaires, transports et autres dépenses courantes non saisies dans les dépenses normales.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="backToMonth()"
+          class="self-start rounded-full border border-green-200 bg-white px-4 py-2 text-sm font-semibold text-green-700 transition hover:bg-green-50">
+          Retour au mois
+        </button>
+      </div>
+    </header>
+
+    <div
+      *ngIf="auth.isAdmin"
+      class="rounded-2xl border-2 border-green-700 bg-white p-5 shadow-sm md:p-6">
+      <div class="grid gap-4 md:grid-cols-2">
+        <div>
+          <label for="otherExpenseReason" class="mb-2 block text-sm font-medium text-gray-800">
+            Raison
+          </label>
+          <input
+            id="otherExpenseReason"
+            type="text"
+            [(ngModel)]="otherExpenseReason"
+            class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500"
+            placeholder="Salaire, transport, frais non saisis"
+            required />
+        </div>
+
+        <div>
+          <label for="otherExpenseAmount" class="mb-2 block text-sm font-medium text-gray-800">
+            Montant (FC)
+          </label>
+          <input
+            id="otherExpenseAmount"
+            type="text"
+            [(ngModel)]="otherExpenseAmount"
+            class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500"
+            placeholder="50000"
+            required />
+        </div>
+      </div>
+
+      <p class="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+        Ces montants ne changent pas argent en main. Ils sont uniquement déduits du bénéfice réel du mois.
+      </p>
+
+      <div class="mt-5 flex flex-wrap gap-3">
+        <button
+          type="button"
+          routerLink="/gestion-month"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
+          Annuler
+        </button>
+        <button
+          type="button"
+          (click)="addOtherExpense()"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
+          Ajouter
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 via-white to-emerald-50 p-5 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">Vue Périodique</p>
+          <h2 class="mt-1 text-xl font-bold text-gray-900">Analyse des autres dépenses</h2>
+          <p class="mt-1 text-sm text-gray-600">
+            Filtrez par mois ou par année pour voir les montants, dates et raisons.
+          </p>
+        </div>
+
+        <div class="inline-flex rounded-xl border border-green-200 bg-white p-1">
+          <button
+            type="button"
+            (click)="setPeriodMode('month')"
+            [class.bg-green-700]="periodMode === 'month'"
+            [class.text-white]="periodMode === 'month'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100">
+            Mois
+          </button>
+          <button
+            type="button"
+            (click)="setPeriodMode('year')"
+            [class.bg-green-700]="periodMode === 'year'"
+            [class.text-white]="periodMode === 'year'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-green-100">
+            Annee
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 grid gap-3 md:grid-cols-4">
+        <div *ngIf="periodMode === 'month'" class="md:col-span-2">
+          <label for="otherExpenseMonthSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Mois
+          </label>
+          <select
+            id="otherExpenseMonthSelect"
+            [ngModel]="selectedMonth"
+            (ngModelChange)="onMonthChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500">
+            <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+              {{ month }}
+            </option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label for="otherExpenseYearSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Annee
+          </label>
+          <select
+            id="otherExpenseYearSelect"
+            [ngModel]="selectedYear"
+            (ngModelChange)="onYearChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-green-500">
+            <option *ngFor="let year of availableYears" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </div>
+
+        <div class="rounded-xl border border-green-200 bg-white px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">Total periode</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">FC {{ periodTotal | number : '1.0-0' }}</p>
+          <p class="text-xs text-gray-500">$ {{ toUsd(periodTotal) | number : '1.0-0' }}</p>
+        </div>
+
+        <div class="rounded-xl border border-green-200 bg-white px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-green-700">Transactions</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">{{ filteredOtherExpenseEntries.length }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">Autres dépenses · {{ periodLabel }}</h2>
+          <p class="mt-1 text-xs text-gray-500">
+            {{ periodMode === 'month' ? 'Mois sélectionné' : 'Année sélectionnée' }}
+          </p>
+        </div>
+        <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+          {{ filteredOtherExpenseEntries.length }} entrée(s)
+        </span>
+      </div>
+
+      <ul role="list" class="divide-y divide-gray-200" *ngIf="filteredOtherExpenseEntries.length; else emptyOtherExpenses">
+        <li
+          *ngFor="let entry of visibleOtherExpenseEntries"
+          class="group flex items-center gap-3 py-3 transition hover:bg-green-50/60">
+          <div
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 font-medium text-green-700">
+            AD
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <p class="break-words text-sm font-medium text-gray-900">{{ entry.reason }}</p>
+            <p class="text-xs text-gray-500">{{ entry.dateLabel }}</p>
+          </div>
+
+          <div class="shrink-0 text-right">
+            <p class="text-sm font-semibold text-gray-900">FC {{ entry.amount | number : '1.0-0' }}</p>
+            <p class="text-xs text-gray-500">$ {{ toUsd(entry.amount) | number : '1.0-0' }}</p>
+          </div>
+
+          <button
+            *ngIf="auth.isAdmin"
+            type="button"
+            (click)="openDeleteOtherExpenseModal(entry.key, $event)"
+            [disabled]="deletingOtherExpenseKey === entry.key"
+            class="ml-1 rounded p-1 text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Supprimer l'autre dépense">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+          </button>
+        </li>
+      </ul>
+
+      <ng-template #emptyOtherExpenses>
+        <p class="py-8 text-center text-sm text-gray-500">
+          Aucune autre dépense enregistrée pour {{ periodLabel }}.
+        </p>
+      </ng-template>
+
+      <div *ngIf="hasMoreOtherExpenses()" class="mt-4 text-center">
+        <button
+          type="button"
+          (click)="showAllOtherExpenses = !showAllOtherExpenses"
+          class="rounded-full bg-green-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-green-800">
+          {{ showAllOtherExpenses ? 'Moins' : 'Plus' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div
+  *ngIf="showDeleteOtherExpenseModal && pendingDeleteOtherExpense"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+  <div class="w-full max-w-lg rounded-2xl border border-green-200 bg-white p-6 shadow-xl">
+    <h3 class="text-lg font-semibold text-gray-900">Supprimer cette autre dépense</h3>
+    <p class="mt-2 text-sm text-gray-600">
+      <span class="font-medium">{{ pendingDeleteOtherExpense.reason }}</span>
+      <span class="mx-1">·</span>
+      <span>{{ pendingDeleteOtherExpense.dateLabel }}</span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600">
+      Montant: <span class="font-semibold text-gray-900">FC {{ pendingDeleteOtherExpense.amount | number : '1.0-0' }}</span>
+    </p>
+    <p class="mt-1 text-sm text-gray-600">
+      USD: <span class="font-semibold text-gray-900">$ {{ toUsd(pendingDeleteOtherExpense.amount) | number : '1.0-0' }}</span>
+    </p>
+    <p class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+      Cette suppression retire seulement l'entrée des autres dépenses. Argent en main ne change pas.
+    </p>
+
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
+      <button
+        type="button"
+        (click)="closeDeleteOtherExpenseModal()"
+        [disabled]="!!deletingOtherExpenseKey"
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">
+        Annuler
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteOtherExpense()"
+        [disabled]="!!deletingOtherExpenseKey"
+        class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+        Supprimer
+      </button>
+    </div>
+  </div>
+</div>
