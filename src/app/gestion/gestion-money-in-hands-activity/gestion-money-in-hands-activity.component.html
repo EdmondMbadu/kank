@@ -1,0 +1,210 @@
+<app-navbar
+  [email]="auth.currentUser.email"
+  [firstName]="auth.currentUser.firstName"
+  [path]="'home'">
+</app-navbar>
+
+<section class="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50/40 px-4 py-8">
+  <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <header class="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900 md:text-3xl">
+            Traçabilité Argent en main
+          </h1>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500">
+            Historique des mouvements qui changent argent en main: réserve, argent servi,
+            investissement, dépenses, pertes, banque et corrections manuelles.
+          </p>
+        </div>
+        <a
+          routerLink="/gestion-today"
+          class="self-start rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">
+          Retour au jour
+        </a>
+      </div>
+    </header>
+
+    <div
+      class="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-sky-50 p-5 shadow-sm">
+      <div class="grid gap-3 md:grid-cols-3">
+        <div class="rounded-xl border border-emerald-100 bg-white px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Argent en main actuel
+          </p>
+          <p class="mt-1 text-lg font-bold text-gray-900">
+            FC {{ currentMoneyInHands | number : '1.0-0' }}
+          </p>
+          <p class="text-xs text-gray-500">$ {{ toUsd(currentMoneyInHands) | number : '1.0-0' }}</p>
+        </div>
+
+        <div class="rounded-xl border border-emerald-100 bg-white px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Variation période
+          </p>
+          <p
+            class="mt-1 text-lg font-bold"
+            [ngClass]="periodNetChange < 0 ? 'text-red-700' : 'text-emerald-700'">
+            {{ periodNetChange >= 0 ? '+' : '' }}FC {{ periodNetChange | number : '1.0-0' }}
+          </p>
+          <p class="text-xs text-gray-500">
+            {{ periodLabel }}
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-emerald-100 bg-white px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Mouvements
+          </p>
+          <p class="mt-1 text-lg font-bold text-gray-900">
+            {{ filteredRows.length }}
+          </p>
+          <p class="text-xs text-gray-500">entrée(s) dans la période</p>
+        </div>
+      </div>
+
+      <div class="mt-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Vue périodique
+          </p>
+          <p class="mt-1 text-sm text-gray-600">
+            Les mouvements sont groupés par mois, du plus récent au plus ancien.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-end gap-3">
+          <div class="inline-flex rounded-xl border border-emerald-200 bg-white p-1">
+            <button
+              type="button"
+              (click)="setPeriodMode('month')"
+              [class.bg-emerald-700]="periodMode === 'month'"
+              [class.text-white]="periodMode === 'month'"
+              class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-emerald-100">
+              Mois
+            </button>
+            <button
+              type="button"
+              (click)="setPeriodMode('year')"
+              [class.bg-emerald-700]="periodMode === 'year'"
+              [class.text-white]="periodMode === 'year'"
+              class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-emerald-100">
+              Annee
+            </button>
+          </div>
+
+          <label *ngIf="periodMode === 'month'" class="block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Mois
+            <select
+              [ngModel]="selectedMonth"
+              (ngModelChange)="onMonthChange($event)"
+              class="mt-1 block rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+              <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+                {{ month }}
+              </option>
+            </select>
+          </label>
+
+          <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Annee
+            <select
+              [ngModel]="selectedYear"
+              (ngModelChange)="onYearChange($event)"
+              class="mt-1 block rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+              <option *ngFor="let year of availableYears" [ngValue]="year">
+                {{ year }}
+              </option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="activityGroups.length; else emptyHistory">
+      <section
+        *ngFor="let group of activityGroups"
+        class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">{{ group.monthLabel }}</h2>
+            <p class="mt-1 text-xs text-gray-500">
+              {{ group.records.length }} mouvement(s)
+            </p>
+          </div>
+          <div
+            class="rounded-full px-3 py-1 text-xs font-semibold"
+            [ngClass]="group.totalChange < 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'">
+            Net {{ group.totalChange >= 0 ? '+' : '' }}FC {{ group.totalChange | number : '1.0-0' }}
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <article
+            *ngFor="let row of group.records"
+            class="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    {{ row.source }}
+                  </span>
+                  <span
+                    *ngIf="row.isLegacy"
+                    class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                    ancien suivi
+                  </span>
+                </div>
+                <h3 class="mt-2 break-words text-base font-semibold text-gray-900">
+                  {{ row.action }}
+                </h3>
+                <p class="mt-1 text-sm text-gray-600">{{ row.note }}</p>
+                <p class="mt-2 text-xs text-gray-500">
+                  {{ row.dateLabel }}
+                  <span *ngIf="row.createdBy"> · enregistré par {{ row.createdBy }}</span>
+                </p>
+              </div>
+
+              <div class="grid min-w-[260px] grid-cols-3 gap-2 text-right">
+                <div class="rounded-lg bg-white p-2">
+                  <p class="text-[11px] uppercase tracking-wide text-gray-500">Avant</p>
+                  <p class="text-sm font-bold text-gray-900">
+                    <ng-container *ngIf="row.previousAmount !== null; else unknownBefore">
+                      {{ row.previousAmount | number : '1.0-0' }}
+                    </ng-container>
+                    <ng-template #unknownBefore>--</ng-template>
+                  </p>
+                </div>
+                <div class="rounded-lg bg-white p-2">
+                  <p class="text-[11px] uppercase tracking-wide text-gray-500">Variation</p>
+                  <p
+                    class="text-sm font-bold"
+                    [ngClass]="(row.changeAmount || 0) < 0 ? 'text-red-700' : 'text-emerald-700'">
+                    <ng-container *ngIf="row.changeAmount !== null; else unknownChange">
+                      {{ row.changeAmount >= 0 ? '+' : '' }}{{ row.changeAmount | number : '1.0-0' }}
+                    </ng-container>
+                    <ng-template #unknownChange>--</ng-template>
+                  </p>
+                </div>
+                <div class="rounded-lg bg-white p-2">
+                  <p class="text-[11px] uppercase tracking-wide text-gray-500">Après</p>
+                  <p class="text-sm font-bold text-gray-900">
+                    {{ row.newAmount | number : '1.0-0' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </ng-container>
+
+    <ng-template #emptyHistory>
+      <div class="rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900">Aucun mouvement trouvé</h2>
+        <p class="mt-2 text-sm text-gray-500">
+          Les prochains changements d'argent en main seront enregistrés ici avec leur source.
+        </p>
+      </div>
+    </ng-template>
+  </div>
+</section>

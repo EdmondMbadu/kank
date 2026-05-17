@@ -19,7 +19,7 @@ import {
 import { ComputationService } from '../shrink/services/computation.service';
 import { Card, CardTotalWithdrawalSnapshot } from '../models/card';
 import { doc, increment, writeBatch } from 'firebase/firestore';
-import { Audit, Management } from '../models/management';
+import { Audit, Management, MoneyInHandsActivity } from '../models/management';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import firebase from 'firebase/compat/app'; // ① NEW
@@ -39,6 +39,83 @@ export class DataService {
     private compute: ComputationService,
     private router: Router
   ) {}
+
+  private buildMoneyInHandsActivity(
+    previousAmount: number,
+    newAmount: number,
+    source: string,
+    action: string,
+    relatedEntryKey?: string,
+    note?: string
+  ): { key: string; entry: MoneyInHandsActivity } {
+    const changeAmount = newAmount - previousAmount;
+    const baseKey = this.time.todaysDate();
+    const key = `${baseKey}-${Math.floor(Math.random() * 100000)}`;
+    const entry: MoneyInHandsActivity = {
+      previousAmount: previousAmount.toString(),
+      changeAmount: changeAmount.toString(),
+      newAmount: newAmount.toString(),
+      source,
+      action,
+      direction:
+        changeAmount > 0
+          ? 'increase'
+          : changeAmount < 0
+          ? 'decrease'
+          : 'adjustment',
+      relatedEntryKey,
+      note,
+      createdBy: this.auth.currentUser?.firstName || 'Systeme',
+    };
+
+    return { key, entry };
+  }
+
+  private moneyInHandsActivityPatch(
+    previousAmount: number,
+    newAmount: number,
+    source: string,
+    action: string,
+    relatedEntryKey?: string,
+    note?: string
+  ): Pick<Management, 'moneyInHandsActivities'> {
+    const activity = this.buildMoneyInHandsActivity(
+      previousAmount,
+      newAmount,
+      source,
+      action,
+      relatedEntryKey,
+      note
+    );
+
+    return {
+      moneyInHandsActivities: {
+        [activity.key]: activity.entry,
+      },
+    };
+  }
+
+  private moneyInHandsActivityFieldPatch(
+    previousAmount: number,
+    newAmount: number,
+    source: string,
+    action: string,
+    relatedEntryKey?: string,
+    note?: string
+  ): Record<string, MoneyInHandsActivity> {
+    const activity = this.buildMoneyInHandsActivity(
+      previousAmount,
+      newAmount,
+      source,
+      action,
+      relatedEntryKey,
+      note
+    );
+
+    return {
+      [`moneyInHandsActivities.${activity.key}`]: activity.entry,
+    };
+  }
   tomorrow = this.time.getTomorrowsDateMonthDayYear();
   todayFull = this.time.todaysDate();
   url: string = '';
@@ -1604,12 +1681,21 @@ export class DataService {
       `management/${this.auth.managementInfo.id}`
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const newMoneyInHands = previousMoneyInHands + Number(amount);
+    const dateKey = this.time.todaysDate();
     const data = {
-      moneyInHands: (
-        Number(this.auth.managementInfo.moneyInHands) + Number(amount)
-      ).toString(),
+      moneyInHands: newMoneyInHands.toString(),
 
-      reserve: { [this.time.todaysDate()]: amount },
+      reserve: { [dateKey]: amount },
+      ...this.moneyInHandsActivityPatch(
+        previousMoneyInHands,
+        newMoneyInHands,
+        'Réserve du jour',
+        'Réserve ajoutée',
+        dateKey,
+        `Réserve de ${amount} FC ajoutée.`
+      ),
     };
 
     return managementRef.set(data, { merge: true });
@@ -1690,9 +1776,11 @@ export class DataService {
 
       // Update management document (if applicable)
       if (managementRef && managementData) {
-        const newManagementMoneyInHands = (
-          Number(managementData.moneyInHands || 0) + amountNum
-        ).toString();
+        const previousManagementMoneyInHands = Number(
+          managementData.moneyInHands || 0
+        );
+        const newManagementMoneyInHands =
+          previousManagementMoneyInHands + amountNum;
 
         // Merge management reserve map entries
         const existingMgmtReserve = managementData.reserve || {};
@@ -1704,8 +1792,18 @@ export class DataService {
         tx.set(
           managementRef,
           {
-            moneyInHands: newManagementMoneyInHands,
+            moneyInHands: newManagementMoneyInHands.toString(),
             reserve: { [dateKey]: newMgmtReserveValue },
+            ...this.moneyInHandsActivityPatch(
+              previousManagementMoneyInHands,
+              newManagementMoneyInHands,
+              'Réserve équipe',
+              'Réserve ajoutée par une équipe',
+              dateKey,
+              `Réserve de ${amountNum} FC ajoutée par ${
+                this.auth.currentUser?.firstName || 'une équipe'
+              }.`
+            ),
           },
           { merge: true }
         );
@@ -1718,12 +1816,21 @@ export class DataService {
       `management/${this.auth.managementInfo.id}`
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const newMoneyInHands = previousMoneyInHands + Number(amount);
+    const dateKey = this.time.todaysDate();
     const data = {
-      moneyInHands: (
-        Number(this.auth.managementInfo.moneyInHands) + Number(amount)
-      ).toString(),
+      moneyInHands: newMoneyInHands.toString(),
 
-      investment: { [this.time.todaysDate()]: amount },
+      investment: { [dateKey]: amount },
+      ...this.moneyInHandsActivityPatch(
+        previousMoneyInHands,
+        newMoneyInHands,
+        'Investissement',
+        'Investissement ajouté',
+        dateKey,
+        `Investissement de ${amount} FC ajouté.`
+      ),
     };
 
     return managementRef.set(data, { merge: true });
@@ -1762,7 +1869,19 @@ export class DataService {
       if (deductFromMoneyInHands) {
         const amountNum = Number(rawAmount) || 0;
         const currentMoneyInHands = Number(current.moneyInHands || 0);
-        payload.moneyInHands = (currentMoneyInHands - amountNum).toString();
+        const nextMoneyInHands = currentMoneyInHands - amountNum;
+        payload.moneyInHands = nextMoneyInHands.toString();
+        Object.assign(
+          payload,
+          this.moneyInHandsActivityFieldPatch(
+            currentMoneyInHands,
+            nextMoneyInHands,
+            'Investissement',
+            'Investissement supprimé avec déduction',
+            entryKey,
+            `Suppression d'un investissement de ${amountNum} FC avec impact argent en main.`
+          )
+        );
       }
 
       tx.update(managementRef, payload);
@@ -1775,12 +1894,20 @@ export class DataService {
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
     const dateKey = this.time.reserveTargetDateKey();
-    const newMoneyInHands =
-      Number(this.auth.managementInfo.moneyInHands) - Number(amount);
+    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const newMoneyInHands = previousMoneyInHands - Number(amount);
     const data = {
       moneyInHands: newMoneyInHands.toString(),
       moneyGiven: { [dateKey]: amount },
       moneyInHandsTracking: { [dateKey]: newMoneyInHands.toString() },
+      ...this.moneyInHandsActivityPatch(
+        previousMoneyInHands,
+        newMoneyInHands,
+        'Argent à servir',
+        'Argent servi',
+        dateKey,
+        `Argent à servir de ${amount} FC enregistré.`
+      ),
     };
 
     return managementRef.set(data, { merge: true });
@@ -1816,11 +1943,32 @@ export class DataService {
       throw new Error('Management introuvable.');
     }
 
-    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+    const managementRef = this.afs.doc<Management>(
       `management/${managementId}`
-    );
+    ).ref;
 
-    return managementRef.set({ moneyInHands: amount }, { merge: true });
+    return this.afs.firestore.runTransaction(async (tx) => {
+      const snapshot = await tx.get(managementRef);
+      const current = (snapshot.data() || {}) as Management;
+      const previousMoneyInHands = Number(current.moneyInHands || 0);
+      const newMoneyInHands = Number(amount) || 0;
+
+      tx.set(
+        managementRef,
+        {
+          moneyInHands: amount,
+          ...this.moneyInHandsActivityPatch(
+            previousMoneyInHands,
+            newMoneyInHands,
+            'Correction manuelle',
+            'Argent en main modifié directement',
+            undefined,
+            'Modification directe depuis Gestion du Jour.'
+          ),
+        },
+        { merge: true }
+      );
+    });
   }
   updateManagementInfoToAddMoneyInTheBank(
     amountFrancs: string,
@@ -1831,14 +1979,23 @@ export class DataService {
       `management/${this.auth.managementInfo.id}`
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const newMoneyInHands = previousMoneyInHands - Number(amountFrancs);
+    const dateKey = this.time.todaysDate();
     const data = {
-      moneyInHands: (
-        Number(this.auth.managementInfo.moneyInHands) - Number(amountFrancs)
-      ).toString(),
+      moneyInHands: newMoneyInHands.toString(),
 
-      bankDepositDollars: { [this.time.todaysDate()]: amountDollars },
-      bankDepositFrancs: { [this.time.todaysDate()]: amountFrancs },
-      dollarTransferLoss: { [this.time.todaysDate()]: loss },
+      bankDepositDollars: { [dateKey]: amountDollars },
+      bankDepositFrancs: { [dateKey]: amountFrancs },
+      dollarTransferLoss: { [dateKey]: loss },
+      ...this.moneyInHandsActivityPatch(
+        previousMoneyInHands,
+        newMoneyInHands,
+        'Banque',
+        'Argent envoyé en banque',
+        dateKey,
+        `${amountFrancs} FC déposés en banque (${amountDollars} $).`
+      ),
     };
 
     return managementRef.set(data, { merge: true });
@@ -1917,7 +2074,19 @@ export class DataService {
       if (restoreMoneyInHands) {
         const amountNum = Number(rawFrancAmount || 0) || 0;
         const currentMoneyInHands = Number(current.moneyInHands || 0);
-        payload.moneyInHands = (currentMoneyInHands + amountNum).toString();
+        const nextMoneyInHands = currentMoneyInHands + amountNum;
+        payload.moneyInHands = nextMoneyInHands.toString();
+        Object.assign(
+          payload,
+          this.moneyInHandsActivityFieldPatch(
+            currentMoneyInHands,
+            nextMoneyInHands,
+            'Banque',
+            'Dépôt bancaire supprimé avec restauration',
+            dateKey,
+            `Suppression d'un dépôt bancaire: ${amountNum} FC remis dans argent en main.`
+          )
+        );
       }
 
       tx.update(managementRef, payload);
@@ -1929,12 +2098,21 @@ export class DataService {
       `management/${this.auth.managementInfo.id}`
     );
     // let dollar = this.compute.convertCongoleseFrancToUsDollars(amount);
+    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const newMoneyInHands = previousMoneyInHands - Number(amount);
+    const dateKey = this.time.todaysDate();
     const data = {
-      moneyInHands: (
-        Number(this.auth.managementInfo.moneyInHands) - Number(amount)
-      ).toString(),
+      moneyInHands: newMoneyInHands.toString(),
 
-      exchangeLoss: { [this.time.todaysDate()]: amount },
+      exchangeLoss: { [dateKey]: amount },
+      ...this.moneyInHandsActivityPatch(
+        previousMoneyInHands,
+        newMoneyInHands,
+        'Perte du jour',
+        'Perte enregistrée',
+        dateKey,
+        `Perte de ${amount} FC enregistrée.`
+      ),
     };
 
     return managementRef.set(data, { merge: true });
@@ -1976,7 +2154,19 @@ export class DataService {
         const nextAmount = Number(amount) || 0;
         const delta = nextAmount - previousAmount;
         const currentMoneyInHands = Number(current.moneyInHands || 0);
-        payload.moneyInHands = (currentMoneyInHands - delta).toString();
+        const nextMoneyInHands = currentMoneyInHands - delta;
+        payload.moneyInHands = nextMoneyInHands.toString();
+        Object.assign(
+          payload,
+          this.moneyInHandsActivityFieldPatch(
+            currentMoneyInHands,
+            nextMoneyInHands,
+            'Perte du jour',
+            'Perte modifiée avec ajustement',
+            entryKey,
+            `Perte modifiée de ${previousAmount} FC à ${nextAmount} FC.`
+          )
+        );
       }
 
       tx.update(managementRef, payload);
@@ -2016,7 +2206,19 @@ export class DataService {
       if (restoreMoneyInHands) {
         const amountNum = Number(rawAmount) || 0;
         const currentMoneyInHands = Number(current.moneyInHands || 0);
-        payload.moneyInHands = (currentMoneyInHands + amountNum).toString();
+        const nextMoneyInHands = currentMoneyInHands + amountNum;
+        payload.moneyInHands = nextMoneyInHands.toString();
+        Object.assign(
+          payload,
+          this.moneyInHandsActivityFieldPatch(
+            currentMoneyInHands,
+            nextMoneyInHands,
+            'Perte du jour',
+            'Perte supprimée avec restauration',
+            entryKey,
+            `Suppression d'une perte de ${amountNum} FC avec restauration argent en main.`
+          )
+        );
       }
 
       tx.update(managementRef, payload);
@@ -2112,12 +2314,21 @@ export class DataService {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `management/${this.auth.managementInfo.id}`
     );
+    const previousMoneyInHands = Number(this.auth.managementInfo.moneyInHands || 0);
+    const newMoneyInHands = previousMoneyInHands - Number(amount);
+    const dateKey = this.time.todaysDate();
     const data = {
-      moneyInHands: (
-        Number(this.auth.managementInfo.moneyInHands) - Number(amount)
-      ).toString(),
+      moneyInHands: newMoneyInHands.toString(),
 
-      expenses: { [this.time.todaysDate()]: `${amount}:${reason}` },
+      expenses: { [dateKey]: `${amount}:${reason}` },
+      ...this.moneyInHandsActivityPatch(
+        previousMoneyInHands,
+        newMoneyInHands,
+        'Dépense du jour',
+        'Dépense enregistrée',
+        dateKey,
+        `${amount} FC pour ${reason}.`
+      ),
     };
 
     return userRef.set(data, { merge: true });
@@ -2173,7 +2384,19 @@ export class DataService {
         const amountPart = String(rawExpense).split(':')[0];
         const amountNum = Number(amountPart) || 0;
         const currentMoneyInHands = Number(current.moneyInHands || 0);
-        payload.moneyInHands = (currentMoneyInHands - amountNum).toString();
+        const nextMoneyInHands = currentMoneyInHands - amountNum;
+        payload.moneyInHands = nextMoneyInHands.toString();
+        Object.assign(
+          payload,
+          this.moneyInHandsActivityFieldPatch(
+            currentMoneyInHands,
+            nextMoneyInHands,
+            'Dépense du jour',
+            'Dépense supprimée avec déduction',
+            entryKey,
+            `Suppression d'une dépense de ${amountNum} FC avec déduction argent en main.`
+          )
+        );
       }
 
       tx.update(managementRef, payload);

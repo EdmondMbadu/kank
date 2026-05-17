@@ -4,6 +4,7 @@ import { WeeklyPaymentTargetPeriod } from './weekly-payment-target';
 export class Management {
   id?: string;
   moneyInHands?: string;
+  moneyInHandsActivities?: { [key: string]: MoneyInHandsActivity } = {};
   expenses?: { [key: string]: string } = {};
   otherExpenses?: { [key: string]: string } = {};
   fraudes?: { [key: string]: string } = {};
@@ -29,6 +30,18 @@ export class Management {
     gestion?: string;
     investigator?: string;
   };
+}
+
+export interface MoneyInHandsActivity {
+  previousAmount: string;
+  changeAmount: string;
+  newAmount: string;
+  source: string;
+  action: string;
+  direction: 'increase' | 'decrease' | 'adjustment';
+  note?: string;
+  relatedEntryKey?: string;
+  createdBy?: string;
 }
 
 export class Audit {

@@ -180,6 +180,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     '/gestion-investment',
     '/gestion-fraudes',
     '/gestion-today',
+    '/gestion-money-in-hands-activity',
   ];
   summary: string[] = [
     'Pourcentage Perte Du Mois',
@@ -193,6 +194,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     'Investissement Du Jour',
     'Suivi des fraudes du mois',
     'Autres dépenses',
+    'Traçabilité Argent en main',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -208,6 +210,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     '../../../assets/img/invest.svg',
     '../../../assets/img/expense.svg',
     '../../../assets/img/expense.svg',
+    '../../../assets/img/audit.png',
   ];
 
   isFetchingClients = false;
@@ -982,6 +985,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       `${this.dailyInvestment}`,
       `${this.givenMonthTotalFraudAmount}`,
       `${this.dailyOtherExpense}`,
+      `${this.moneyInHands}`,
     ];
 
     this.valuesConvertedToDollars = [
@@ -1002,6 +1006,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       `${this.compute.convertCongoleseFrancToUsDollars(
         this.dailyOtherExpense
       )}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(this.moneyInHands)}`,
     ];
   }
 

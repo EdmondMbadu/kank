@@ -71,6 +71,7 @@ import { GestionExpenseComponent } from '../gestion/gestion-expense/gestion-expe
 import { GestionBankComponent } from '../gestion/gestion-bank/gestion-bank.component';
 import { GestionLossComponent } from '../gestion/gestion-loss/gestion-loss.component';
 import { GestionInvestmentComponent } from '../gestion/gestion-investment/gestion-investment.component';
+import { GestionMoneyInHandsActivityComponent } from '../gestion/gestion-money-in-hands-activity/gestion-money-in-hands-activity.component';
 import { GestionMonthComponent } from '../gestion/gestion-month/gestion-month.component';
 import { GestionOtherExpensesComponent } from '../gestion/gestion-other-expenses/gestion-other-expenses.component';
 import { GestionFraudeComponent } from '../gestion/gestion-fraude/gestion-fraude.component';
@@ -249,6 +250,10 @@ const routes: Routes = [
   { path: 'gestion-bank', component: GestionBankComponent },
   { path: 'gestion-loss', component: GestionLossComponent },
   { path: 'gestion-investment', component: GestionInvestmentComponent },
+  {
+    path: 'gestion-money-in-hands-activity',
+    component: GestionMoneyInHandsActivityComponent,
+  },
   { path: 'gestion-fraudes', component: GestionFraudeComponent },
   { path: 'gestion-month', component: GestionMonthComponent },
   { path: 'gestion-other-expenses', component: GestionOtherExpensesComponent },
