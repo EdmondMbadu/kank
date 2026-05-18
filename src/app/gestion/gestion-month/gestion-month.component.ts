@@ -1,9 +1,16 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { Management } from 'src/app/models/management';
+import { Client } from 'src/app/models/client';
+import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+
+type MonthlyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 
 @Component({
   selector: 'app-gestion-month',
@@ -15,7 +22,8 @@ export class GestionMonthComponent {
     private router: Router,
     public auth: AuthService,
     public time: TimeService,
-    public compute: ComputationService
+    public compute: ComputationService,
+    private data: DataService
   ) {}
   ngOnInit() {
     this.auth.getManagementInfo().subscribe((data) => {
@@ -26,6 +34,12 @@ export class GestionMonthComponent {
         this.onForecastModelChange();
       } else {
         this.updateReserveGraphics(this.graphicsRange);
+      }
+    });
+    this.auth.getAllUsersInfo().subscribe((data) => {
+      this.allUsers = data || [];
+      if (this.auth.isAdmin && this.allUsers.length > 0) {
+        this.loadMonthlyPaymentTotals();
       }
     });
   }
@@ -113,6 +127,33 @@ export class GestionMonthComponent {
   givenMonthTotalFraudAmount: string = '0';
   givenMonthTotalOtherExpenseAmount: string = '0';
   fraudRatioOfReserve: number = 0;
+  allUsers: User[] = [];
+  monthlyPaymentTotals: Array<{
+    firstName: string;
+    expectedFc: number;
+    expectedDollar: number;
+    totalFc: number;
+    totalDollar: number;
+    minimumFc: number;
+    minimumDollar: number;
+    expectedProgressPercent: number;
+    expectedProgressTone: MonthlyProgressTone;
+    minimumProgressPercent: number;
+    minimumProgressTone: MonthlyProgressTone;
+    minimumStatusLabel: string;
+    trackingId: string;
+  }> = [];
+  overallMonthlyExpectedTotal = 0;
+  overallMonthlyExpectedTotalDollar = 0;
+  overallMonthlyPaymentTotal = 0;
+  overallMonthlyPaymentTotalDollar = 0;
+  overallMonthlyMinimumTotal = 0;
+  overallMonthlyMinimumTotalDollar = 0;
+  overallMonthlyExpectedProgressPercent = 0;
+  overallMonthlyExpectedProgressTone: MonthlyProgressTone = 'red';
+  overallMonthlyMinimumProgressPercent = 0;
+  overallMonthlyMinimumProgressTone: MonthlyProgressTone = 'red';
+  isLoadingMonthlyPayments = false;
 
   givenMonthRealGain: string = '';
 
@@ -281,6 +322,191 @@ export class GestionMonthComponent {
         this.givenMonthTotalOtherExpenseAmount
       )}`,
     ];
+    this.loadMonthlyPaymentTotals();
+  }
+
+  loadMonthlyPaymentTotals(): void {
+    if (!this.auth.isAdmin || !this.allUsers.length) return;
+
+    this.isLoadingMonthlyPayments = true;
+    forkJoin(
+      this.allUsers.map((user) =>
+        this.auth.getClientsOfAUser(user.uid!).pipe(take(1))
+      )
+    ).subscribe({
+      next: (clientsByUser) => {
+        this.computeMonthlyPaymentTotals(clientsByUser);
+        this.isLoadingMonthlyPayments = false;
+      },
+      error: (error) => {
+        console.error('Unable to load monthly payment totals', error);
+        this.isLoadingMonthlyPayments = false;
+      },
+    });
+  }
+
+  private computeMonthlyPaymentTotals(clientsByUser: Client[][]): void {
+    this.overallMonthlyExpectedTotal = 0;
+    this.overallMonthlyPaymentTotal = 0;
+    this.overallMonthlyMinimumTotal = 0;
+
+    this.monthlyPaymentTotals = this.allUsers.map((user, index) => {
+      const clients = clientsByUser[index] || [];
+      const expectedFc = this.computeMonthlyExpectedTotalForUser(clients);
+      const totalFc = this.computeMonthlyPaymentTotalForUser(user);
+      const minimumFc = this.computeMonthlyMinimumForUser(user);
+      const expectedProgressPercent = this.computeProgressPercent(
+        totalFc,
+        expectedFc
+      );
+      const minimumProgressPercent = this.computeProgressPercent(
+        totalFc,
+        minimumFc
+      );
+      const expectedProgressTone = this.resolveProgressTone(
+        expectedProgressPercent
+      );
+      const minimumProgressTone = this.resolveProgressTone(
+        minimumProgressPercent
+      );
+
+      this.overallMonthlyExpectedTotal += expectedFc;
+      this.overallMonthlyPaymentTotal += totalFc;
+      this.overallMonthlyMinimumTotal += minimumFc;
+
+      return {
+        firstName: user.firstName!,
+        expectedFc,
+        expectedDollar: this.toUsd(expectedFc),
+        totalFc,
+        totalDollar: this.toUsd(totalFc),
+        minimumFc,
+        minimumDollar: this.toUsd(minimumFc),
+        expectedProgressPercent,
+        expectedProgressTone,
+        minimumProgressPercent,
+        minimumProgressTone,
+        minimumStatusLabel: totalFc >= minimumFc ? 'Atteint' : 'À faire',
+        trackingId: user.uid!,
+      };
+    });
+
+    this.monthlyPaymentTotals.sort((a, b) => b.totalFc - a.totalFc);
+    this.overallMonthlyExpectedTotalDollar = this.toUsd(
+      this.overallMonthlyExpectedTotal
+    );
+    this.overallMonthlyPaymentTotalDollar = this.toUsd(
+      this.overallMonthlyPaymentTotal
+    );
+    this.overallMonthlyMinimumTotalDollar = this.toUsd(
+      this.overallMonthlyMinimumTotal
+    );
+    this.overallMonthlyExpectedProgressPercent = this.computeProgressPercent(
+      this.overallMonthlyPaymentTotal,
+      this.overallMonthlyExpectedTotal
+    );
+    this.overallMonthlyExpectedProgressTone = this.resolveProgressTone(
+      this.overallMonthlyExpectedProgressPercent
+    );
+    this.overallMonthlyMinimumProgressPercent = this.computeProgressPercent(
+      this.overallMonthlyPaymentTotal,
+      this.overallMonthlyMinimumTotal
+    );
+    this.overallMonthlyMinimumProgressTone = this.resolveProgressTone(
+      this.overallMonthlyMinimumProgressPercent
+    );
+  }
+
+  private computeMonthlyPaymentTotalForUser(user: User): number {
+    const payments = user.dailyReimbursement || {};
+    return Object.entries(payments).reduce((sum, [key, value]) => {
+      const [month, , year] = key.split('-').map(Number);
+      if (month !== this.givenMonth || year !== this.givenYear) return sum;
+      const amount = Number(value) || 0;
+      return sum + amount;
+    }, 0);
+  }
+
+  private computeMonthlyExpectedTotalForUser(clients: Client[]): number {
+    const clientsWithDebts = this.data.findClientsWithDebts(clients);
+    const daysInMonth = new Date(this.givenYear, this.givenMonth, 0).getDate();
+    let total = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${this.givenMonth}-${day}-${this.givenYear}`;
+      const dayName = this.time.getDayOfWeek(dateKey);
+      const clientsExpectedForDay = clientsWithDebts.filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === dayName &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+      total += this.compute.computeExpectedPerDate(clientsExpectedForDay);
+    }
+
+    return total;
+  }
+
+  private computeMonthlyMinimumForUser(user: User): number {
+    return this.getMonthWeekStartDates().reduce((sum, weekStart) => {
+      return (
+        sum +
+        this.auth.resolveWeeklyPaymentTargetForDate(
+          this.formatDateKey(weekStart),
+          user
+        )
+      );
+    }, 0);
+  }
+
+  private getMonthWeekStartDates(): Date[] {
+    const firstDay = new Date(this.givenYear, this.givenMonth - 1, 1);
+    const lastDay = new Date(this.givenYear, this.givenMonth, 0);
+    const firstWeekStart = this.getWeekStart(firstDay);
+    const weeks: Date[] = [];
+    const cursor = new Date(firstWeekStart);
+
+    while (cursor <= lastDay) {
+      weeks.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 7);
+    }
+
+    return weeks;
+  }
+
+  private getWeekStart(date: Date): Date {
+    const start = new Date(date);
+    const daysSinceMonday = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+
+  private formatDateKey(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+  }
+
+  private computeProgressPercent(total: number, target: number): number {
+    const totalValue = Number(total) || 0;
+    const targetValue = Number(target) || 0;
+    if (targetValue <= 0) return totalValue > 0 ? 100 : 0;
+    return Math.min(100, (totalValue / targetValue) * 100);
+  }
+
+  private resolveProgressTone(percent: number): MonthlyProgressTone {
+    const value = Number(percent) || 0;
+    if (value >= 100) return 'green';
+    if (value >= 80) return 'orange';
+    if (value >= 50) return 'yellow';
+    return 'red';
+  }
+
+  private toUsd(amountFc: number): number {
+    return Number(
+      this.compute.convertCongoleseFrancToUsDollars(amountFc.toString())
+    ) || 0;
   }
 
   updateReserveGraphics(time: number) {

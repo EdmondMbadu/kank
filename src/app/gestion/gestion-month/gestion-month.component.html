@@ -212,6 +212,260 @@
   </div>
 </section>
 
+<section
+  *ngIf="auth.isAdmin"
+  class="container mx-auto px-6 pb-12"
+>
+  <div
+    class="rounded-3xl border border-indigo-100 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+  >
+    <div
+      class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+    >
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Paiement du Mois
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400">
+          Mois : {{ time.monthFrenchNames[givenMonth - 1] }} {{ givenYear }}
+        </p>
+      </div>
+      <div
+        *ngIf="isLoadingMonthlyPayments"
+        class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200"
+      >
+        Chargement...
+      </div>
+    </div>
+
+    <div class="mt-4 w-full overflow-x-auto">
+      <table
+        class="min-w-[860px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 lg:min-w-full"
+      >
+        <thead
+          class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
+        >
+          <tr>
+            <th scope="col" class="px-4 md:px-8 py-3 md:py-4 rounded-s-lg">
+              Équipe
+            </th>
+            <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
+              Attendu mois
+            </th>
+            <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
+              Total mois
+            </th>
+            <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
+              Minimum mois
+            </th>
+            <th scope="col" class="px-4 md:px-8 py-3 md:py-4">
+              Avancement minimum
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            *ngFor="let s of monthlyPaymentTotals; let i = index"
+            class="bg-white dark:bg-gray-800/40"
+          >
+            <th
+              scope="row"
+              class="px-4 md:px-8 py-4 md:py-5 font-medium text-gray-900 dark:text-white whitespace-nowrap"
+            >
+              {{ i + 1 }}.&nbsp;{{ s.firstName }}
+            </th>
+
+            <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  ${{ +s.expectedDollar || 0 | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +s.expectedFc || 0 | number : "1.0-0" }} FC
+                </span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                  somme des attendus journaliers
+                </span>
+                <div class="mt-2 w-36">
+                  <div
+                    class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                    title="Progression basée sur le total mois divisé par l'attendu mois"
+                  >
+                    <div
+                      class="h-1.5 rounded-full transition-all duration-300"
+                      [ngClass]="{
+                        'bg-red-500': s.expectedProgressTone === 'red',
+                        'bg-amber-400': s.expectedProgressTone === 'yellow',
+                        'bg-orange-500': s.expectedProgressTone === 'orange',
+                        'bg-emerald-500': s.expectedProgressTone === 'green'
+                      }"
+                      [style.width.%]="s.expectedProgressPercent || 0"
+                    ></div>
+                  </div>
+                  <div
+                    class="mt-1 text-[11px] font-semibold"
+                    [ngClass]="{
+                      'text-red-600': s.expectedProgressTone === 'red',
+                      'text-amber-600': s.expectedProgressTone === 'yellow',
+                      'text-orange-600': s.expectedProgressTone === 'orange',
+                      'text-emerald-600': s.expectedProgressTone === 'green'
+                    }"
+                  >
+                    {{ s.expectedProgressPercent || 0 | number : "1.0-0" }}% réalisé
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  ${{ +s.totalDollar || 0 | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +s.totalFc || 0 | number : "1.0-0" }} FC
+                </span>
+              </div>
+            </td>
+
+            <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {{ +s.minimumFc || 0 | number : "1.0-0" }} FC
+                </span>
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  ≈ $ {{ +s.minimumDollar || 0 | number : "1.0-0" }}
+                </span>
+                <span
+                  class="text-xs font-semibold"
+                  [ngClass]="{
+                    'text-red-600': s.minimumProgressTone === 'red',
+                    'text-amber-600': s.minimumProgressTone === 'yellow',
+                    'text-orange-600': s.minimumProgressTone === 'orange',
+                    'text-emerald-600': s.minimumProgressTone === 'green'
+                  }"
+                >
+                  {{ s.minimumStatusLabel }}
+                </span>
+              </div>
+            </td>
+
+            <td class="px-4 md:px-8 py-4 md:py-5">
+              <div class="w-44">
+                <div
+                  class="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                >
+                  <div
+                    class="h-2 rounded-full transition-all duration-300"
+                    [ngClass]="{
+                      'bg-red-500': s.minimumProgressTone === 'red',
+                      'bg-amber-400': s.minimumProgressTone === 'yellow',
+                      'bg-orange-500': s.minimumProgressTone === 'orange',
+                      'bg-emerald-500': s.minimumProgressTone === 'green'
+                    }"
+                    [style.width.%]="s.minimumProgressPercent || 0"
+                  ></div>
+                </div>
+                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {{ s.minimumProgressPercent || 0 | number : "1.0-0" }}%
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+
+        <tfoot>
+          <tr class="font-semibold">
+            <th scope="row" class="px-4 md:px-8 py-3 md:py-4 text-base">
+              Total mois
+            </th>
+            <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  ${{ +overallMonthlyExpectedTotalDollar || 0 | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +overallMonthlyExpectedTotal || 0 | number : "1.0-0" }} FC
+                </span>
+                <div class="mt-3 w-48">
+                  <div
+                    class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                    title="Progression totale basée sur total mois divisé par attendu mois"
+                  >
+                    <div
+                      class="h-2.5 rounded-full transition-all duration-300"
+                      [ngClass]="{
+                        'bg-red-500': overallMonthlyExpectedProgressTone === 'red',
+                        'bg-amber-400': overallMonthlyExpectedProgressTone === 'yellow',
+                        'bg-orange-500': overallMonthlyExpectedProgressTone === 'orange',
+                        'bg-emerald-500': overallMonthlyExpectedProgressTone === 'green'
+                      }"
+                      [style.width.%]="overallMonthlyExpectedProgressPercent || 0"
+                    ></div>
+                  </div>
+                  <div
+                    class="mt-1.5 text-xs font-bold"
+                    [ngClass]="{
+                      'text-red-600': overallMonthlyExpectedProgressTone === 'red',
+                      'text-amber-600': overallMonthlyExpectedProgressTone === 'yellow',
+                      'text-orange-600': overallMonthlyExpectedProgressTone === 'orange',
+                      'text-emerald-600': overallMonthlyExpectedProgressTone === 'green'
+                    }"
+                  >
+                    {{ overallMonthlyExpectedProgressPercent || 0 | number : "1.0-0" }}% réalisé au total
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  ${{ +overallMonthlyPaymentTotalDollar || 0 | number : "1.0-0" }}
+                </span>
+                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {{ +overallMonthlyPaymentTotal || 0 | number : "1.0-0" }} FC
+                </span>
+              </div>
+            </td>
+            <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+              <div class="flex flex-col items-end">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {{ +overallMonthlyMinimumTotal || 0 | number : "1.0-0" }} FC
+                </span>
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  ≈ $ {{ +overallMonthlyMinimumTotalDollar || 0 | number : "1.0-0" }}
+                </span>
+              </div>
+            </td>
+            <td class="px-4 md:px-8 py-3 md:py-4">
+              <div class="w-48">
+                <div
+                  class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                >
+                  <div
+                    class="h-2.5 rounded-full transition-all duration-300"
+                    [ngClass]="{
+                      'bg-red-500': overallMonthlyMinimumProgressTone === 'red',
+                      'bg-amber-400': overallMonthlyMinimumProgressTone === 'yellow',
+                      'bg-orange-500': overallMonthlyMinimumProgressTone === 'orange',
+                      'bg-emerald-500': overallMonthlyMinimumProgressTone === 'green'
+                    }"
+                    [style.width.%]="overallMonthlyMinimumProgressPercent || 0"
+                  ></div>
+                </div>
+                <div class="mt-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
+                  {{ overallMonthlyMinimumProgressPercent || 0 | number : "1.0-0" }}%
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</section>
+
 <section class="container mx-auto px-6 pb-16">
   <div
     class="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
