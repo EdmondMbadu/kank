@@ -263,6 +263,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     totalInDollar: number;
     weeklyExpectedFc: number;
     weeklyExpectedDollar: number;
+    weeklyExpectedProgressPercent: number;
+    weeklyExpectedProgressTone: WeeklyProgressTone;
     weeklyTargetFc: number;
     weeklyProgressPercent: number;
     weeklyTargetReached: boolean;
@@ -1096,6 +1098,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
           weeklyExpectedFc.toString()
         )
       );
+      const weeklyExpectedProgressPercent =
+        weeklyExpectedFc === 0
+          ? total > 0
+            ? 100
+            : 0
+          : Math.min(100, (total / weeklyExpectedFc) * 100);
+      const weeklyExpectedProgressTone =
+        this.resolveExpectedProgressTone(weeklyExpectedProgressPercent);
       const weeklyTargetReached = total >= weeklyTargetFc;
       const weeklyProgressPercent =
         weeklyTargetFc === 0 ? 0 : Math.min(100, (total / weeklyTargetFc) * 100);
@@ -1113,6 +1123,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
         totalInDollar,
         weeklyExpectedFc,
         weeklyExpectedDollar,
+        weeklyExpectedProgressPercent,
+        weeklyExpectedProgressTone,
         weeklyTargetFc,
         weeklyProgressPercent,
         weeklyTargetReached,
@@ -1186,6 +1198,15 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
 
     return total;
+  }
+
+  private resolveExpectedProgressTone(percent: number): WeeklyProgressTone {
+    const value = Number(percent) || 0;
+
+    if (value >= 100) return 'green';
+    if (value >= 80) return 'orange';
+    if (value >= 50) return 'yellow';
+    return 'red';
   }
 
   private resolveWeeklyProgressState(

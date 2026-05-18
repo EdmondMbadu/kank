@@ -1167,6 +1167,34 @@
               <span class="text-[11px] text-slate-500 dark:text-slate-400">
                 somme des attendus journaliers
               </span>
+              <div class="mt-2 w-36">
+                <div
+                  class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                  title="Progression basée sur le total semaine divisé par l'attendu semaine"
+                >
+                  <div
+                    class="h-1.5 rounded-full transition-all duration-300"
+                    [ngClass]="{
+                      'bg-red-500': s.weeklyExpectedProgressTone === 'red',
+                      'bg-amber-400': s.weeklyExpectedProgressTone === 'yellow',
+                      'bg-orange-500': s.weeklyExpectedProgressTone === 'orange',
+                      'bg-emerald-500': s.weeklyExpectedProgressTone === 'green'
+                    }"
+                    [style.width.%]="s.weeklyExpectedProgressPercent || 0"
+                  ></div>
+                </div>
+                <div
+                  class="mt-1 text-[11px] font-semibold"
+                  [ngClass]="{
+                    'text-red-600': s.weeklyExpectedProgressTone === 'red',
+                    'text-amber-600': s.weeklyExpectedProgressTone === 'yellow',
+                    'text-orange-600': s.weeklyExpectedProgressTone === 'orange',
+                    'text-emerald-600': s.weeklyExpectedProgressTone === 'green'
+                  }"
+                >
+                  {{ s.weeklyExpectedProgressPercent || 0 | number : "1.0-0" }}% réalisé
+                </div>
+              </div>
             </div>
           </td>
 
