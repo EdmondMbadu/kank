@@ -277,6 +277,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   overallWeeklyPaymentTotalDollar: number = 0;
   overallWeeklyExpectedTotal: number = 0;
   overallWeeklyExpectedTotalDollar: number = 0;
+  overallWeeklyExpectedProgressPercent: number = 0;
+  overallWeeklyExpectedProgressTone: WeeklyProgressTone = 'red';
   private weeklyClientsByUser = new Map<string, Client[]>();
   private readonly weeklyFloorMilestoneFc = 600000;
   private readonly weeklyStretchMilestoneFc = 900000;
@@ -1145,6 +1147,19 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.compute.convertCongoleseFrancToUsDollars(
         this.overallWeeklyExpectedTotal.toString()
       )
+    );
+    this.overallWeeklyExpectedProgressPercent =
+      this.overallWeeklyExpectedTotal === 0
+        ? this.overallWeeklyPaymentTotal > 0
+          ? 100
+          : 0
+        : Math.min(
+            100,
+            (this.overallWeeklyPaymentTotal / this.overallWeeklyExpectedTotal) *
+              100
+          );
+    this.overallWeeklyExpectedProgressTone = this.resolveExpectedProgressTone(
+      this.overallWeeklyExpectedProgressPercent
     );
   }
 

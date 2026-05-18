@@ -1294,6 +1294,34 @@
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +overallWeeklyExpectedTotal || 0 | number : "1.0-0" }} FC
               </span>
+              <div class="mt-3 w-48">
+                <div
+                  class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                  title="Progression totale basée sur total semaine divisé par attendu semaine"
+                >
+                  <div
+                    class="h-2.5 rounded-full transition-all duration-300"
+                    [ngClass]="{
+                      'bg-red-500': overallWeeklyExpectedProgressTone === 'red',
+                      'bg-amber-400': overallWeeklyExpectedProgressTone === 'yellow',
+                      'bg-orange-500': overallWeeklyExpectedProgressTone === 'orange',
+                      'bg-emerald-500': overallWeeklyExpectedProgressTone === 'green'
+                    }"
+                    [style.width.%]="overallWeeklyExpectedProgressPercent || 0"
+                  ></div>
+                </div>
+                <div
+                  class="mt-1.5 text-xs font-bold"
+                  [ngClass]="{
+                    'text-red-600': overallWeeklyExpectedProgressTone === 'red',
+                    'text-amber-600': overallWeeklyExpectedProgressTone === 'yellow',
+                    'text-orange-600': overallWeeklyExpectedProgressTone === 'orange',
+                    'text-emerald-600': overallWeeklyExpectedProgressTone === 'green'
+                  }"
+                >
+                  {{ overallWeeklyExpectedProgressPercent || 0 | number : "1.0-0" }}% réalisé au total
+                </div>
+              </div>
             </div>
           </td>
           <td class="px-4 md:px-8 py-3 md:py-4 text-right">
