@@ -1117,7 +1117,7 @@
 
     <div class="mt-4 w-full overflow-x-auto">
       <table
-        class="min-w-[640px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 lg:min-w-full"
+        class="min-w-[760px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 lg:min-w-full"
       >
       <thead
         class="text-xs uppercase bg-gray-100 dark:bg-gray-700/70 dark:text-gray-300"
@@ -1127,6 +1127,7 @@
             Équipe
           </th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Total semaine</th>
+          <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Attendu semaine</th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Minimum</th>
           <th scope="col" class="px-4 md:px-8 py-3 md:py-4">Avancement</th>
         </tr>
@@ -1151,6 +1152,20 @@
               </span>
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +s.total || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
+          </td>
+
+          <td class="px-4 md:px-8 py-4 md:py-5 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +s.weeklyExpectedDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +s.weeklyExpectedFc || 0 | number : "1.0-0" }} FC
+              </span>
+              <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                somme des attendus journaliers
               </span>
             </div>
           </td>
@@ -1240,6 +1255,16 @@
               </span>
               <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                 {{ +overallWeeklyPaymentTotal || 0 | number : "1.0-0" }} FC
+              </span>
+            </div>
+          </td>
+          <td class="px-4 md:px-8 py-3 md:py-4 text-right">
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                ${{ +overallWeeklyExpectedTotalDollar || 0 | number : "1.0-0" }}
+              </span>
+              <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                {{ +overallWeeklyExpectedTotal || 0 | number : "1.0-0" }} FC
               </span>
             </div>
           </td>

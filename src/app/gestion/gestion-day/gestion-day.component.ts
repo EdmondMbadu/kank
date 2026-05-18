@@ -261,6 +261,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     firstName: string;
     total: number;
     totalInDollar: number;
+    weeklyExpectedFc: number;
+    weeklyExpectedDollar: number;
     weeklyTargetFc: number;
     weeklyProgressPercent: number;
     weeklyTargetReached: boolean;
@@ -271,6 +273,9 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   }> = [];
   overallWeeklyPaymentTotal: number = 0;
   overallWeeklyPaymentTotalDollar: number = 0;
+  overallWeeklyExpectedTotal: number = 0;
+  overallWeeklyExpectedTotalDollar: number = 0;
+  private weeklyClientsByUser = new Map<string, Client[]>();
   private readonly weeklyFloorMilestoneFc = 600000;
   private readonly weeklyStretchMilestoneFc = 900000;
 
@@ -353,6 +358,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
     this.overallMoneyInHands = 0;
     this.overallMoneyInHandsDollar = 0;
+    this.weeklyClientsByUser.clear();
 
     this.input = this.compute
       .findTodayTotalResultsGivenField(
@@ -392,6 +398,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
           .pipe(take(1)),
       }).subscribe(
         ({ clients, cards, receipts }) => {
+          this.weeklyClientsByUser.set(user.uid!, clients);
           let userTotal = 0;
           let reserveTotal = 0;
           let userTotalToday = 0;
@@ -669,6 +676,7 @@ export class GestionDayComponent implements OnInit, OnDestroy {
               (Number(this.dailyReserve) / this.overallTotalReserve) *
               100
             ).toFixed(2);
+            this.computeWeeklyPaymentTotals();
 
             this.isFetchingClients = false;
             // Now you can use this.userRequestTotals and this.overallTotal in your template
@@ -1066,8 +1074,13 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     if (!this.allUsers || this.allUsers.length === 0) return;
 
     this.overallWeeklyPaymentTotal = 0;
+    this.overallWeeklyExpectedTotal = 0;
     this.weeklyPaymentTotals = this.allUsers.map((user) => {
       const weeklyTargetFc = this.resolveWeeklyTargetFcForUser(
+        user,
+        this.weeklyPaymentDateCorrectFormat
+      );
+      const weeklyExpectedFc = this.computeWeeklyExpectedTotalForUser(
         user,
         this.weeklyPaymentDateCorrectFormat
       );
@@ -1078,6 +1091,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       const totalInDollar = Number(
         this.compute.convertCongoleseFrancToUsDollars(total.toString())
       );
+      const weeklyExpectedDollar = Number(
+        this.compute.convertCongoleseFrancToUsDollars(
+          weeklyExpectedFc.toString()
+        )
+      );
       const weeklyTargetReached = total >= weeklyTargetFc;
       const weeklyProgressPercent =
         weeklyTargetFc === 0 ? 0 : Math.min(100, (total / weeklyTargetFc) * 100);
@@ -1087,11 +1105,14 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       );
 
       this.overallWeeklyPaymentTotal += total;
+      this.overallWeeklyExpectedTotal += weeklyExpectedFc;
 
       return {
         firstName: user.firstName!,
         total,
         totalInDollar,
+        weeklyExpectedFc,
+        weeklyExpectedDollar,
         weeklyTargetFc,
         weeklyProgressPercent,
         weeklyTargetReached,
@@ -1106,6 +1127,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.overallWeeklyPaymentTotalDollar = Number(
       this.compute.convertCongoleseFrancToUsDollars(
         this.overallWeeklyPaymentTotal.toString()
+      )
+    );
+    this.overallWeeklyExpectedTotalDollar = Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.overallWeeklyExpectedTotal.toString()
       )
     );
   }
@@ -1134,6 +1160,32 @@ export class GestionDayComponent implements OnInit, OnDestroy {
       this.formatDateKey(start),
       user
     );
+  }
+
+  private computeWeeklyExpectedTotalForUser(user: User, dateKey: string): number {
+    const clients = this.weeklyClientsByUser.get(user.uid || '') || [];
+    if (clients.length === 0) return 0;
+
+    const clientsWithDebts = this.data.findClientsWithDebts(clients);
+    const { start, end } = this.getWeekBounds(dateKey);
+    const cursor = new Date(start);
+    let total = 0;
+
+    while (cursor <= end) {
+      const dayName = this.time.getDayOfWeek(this.formatDateKey(cursor));
+      const clientsExpectedForDay = clientsWithDebts.filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === dayName &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+      total += this.compute.computeExpectedPerDate(clientsExpectedForDay);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
   }
 
   private resolveWeeklyProgressState(
