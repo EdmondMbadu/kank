@@ -60,6 +60,7 @@ export class TutorialComponent implements OnInit, OnDestroy {
   weeklyMinimumSaving = false;
   teamWeeklyBonusThresholdFc = 1500000;
   teamWeeklyBonusThresholdInput = '';
+  teamWeeklyBonusTotalInput = '';
   teamWeeklyBonusGuide: TeamWeeklyBonusGuideRow[] = [];
   teamWeeklyBonusSaving = false;
   private weeklyTargetSub?: Subscription;
@@ -302,6 +303,65 @@ export class TutorialComponent implements OnInit, OnDestroy {
 
   get teamWeeklyBonusStepUsd(): number {
     return 5;
+  }
+
+  get teamWeeklyBonusEnteredTotalFc(): number {
+    const value = Number(this.teamWeeklyBonusTotalInput);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
+  get teamWeeklyBonusExpectedUsd(): number {
+    const totalFc = this.teamWeeklyBonusEnteredTotalFc;
+    if (totalFc < this.teamWeeklyBonusThresholdFc) {
+      return 0;
+    }
+
+    const completedSteps =
+      Math.floor(
+        (totalFc - this.teamWeeklyBonusThresholdFc) /
+          this.teamWeeklyBonusStepFc
+      ) + 1;
+
+    return completedSteps * this.teamWeeklyBonusStepUsd;
+  }
+
+  get teamWeeklyBonusCurrentLevel(): number {
+    return this.teamWeeklyBonusExpectedUsd / this.teamWeeklyBonusStepUsd;
+  }
+
+  get teamWeeklyBonusNextTargetFc(): number {
+    if (this.teamWeeklyBonusEnteredTotalFc < this.teamWeeklyBonusThresholdFc) {
+      return this.teamWeeklyBonusThresholdFc;
+    }
+
+    return (
+      this.teamWeeklyBonusThresholdFc +
+      this.teamWeeklyBonusCurrentLevel * this.teamWeeklyBonusStepFc
+    );
+  }
+
+  get teamWeeklyBonusRemainingFc(): number {
+    return Math.max(
+      this.teamWeeklyBonusNextTargetFc - this.teamWeeklyBonusEnteredTotalFc,
+      0
+    );
+  }
+
+  get teamWeeklyBonusProgressPercent(): number {
+    const totalFc = this.teamWeeklyBonusEnteredTotalFc;
+    const startFc =
+      totalFc < this.teamWeeklyBonusThresholdFc
+        ? 0
+        : this.teamWeeklyBonusThresholdFc +
+          Math.max(this.teamWeeklyBonusCurrentLevel - 1, 0) *
+            this.teamWeeklyBonusStepFc;
+    const targetFc = this.teamWeeklyBonusNextTargetFc;
+    const rangeFc = Math.max(targetFc - startFc, 1);
+
+    return Math.min(
+      Math.max(((totalFc - startFc) / rangeFc) * 100, 0),
+      100
+    );
   }
 
   private syncTeamWeeklyBonusThreshold(thresholdFc: number): void {
