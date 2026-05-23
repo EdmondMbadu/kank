@@ -42,6 +42,7 @@ export interface MoneyInHandsActivity {
   note?: string;
   relatedEntryKey?: string;
   createdBy?: string;
+  createdAt?: any;
 }
 
 export class Audit {

@@ -66,6 +66,7 @@ export class DataService {
       relatedEntryKey,
       note,
       createdBy: this.auth.currentUser?.firstName || 'Systeme',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
 
     return { key, entry };

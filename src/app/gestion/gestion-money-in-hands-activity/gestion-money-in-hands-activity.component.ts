@@ -142,19 +142,149 @@ export class GestionMoneyInHandsActivityComponent {
       rows.push(this.toLegacyRow(key, value));
     });
 
-    this.allRows = rows.sort((a, b) => b.timestamp - a.timestamp);
+    this.allRows = this.sortRowsByTimestampWithLocalBalanceRepair(rows);
     this.buildAvailableYears();
     this.applyPeriodFilter();
+  }
+
+  private sortRowsByTimestampWithLocalBalanceRepair(
+    rows: MoneyInHandsActivityRow[]
+  ): MoneyInHandsActivityRow[] {
+    const sorted = [...rows].sort((a, b) => this.compareByTimestampDesc(a, b));
+    const ordered: MoneyInHandsActivityRow[] = [];
+    let cluster: MoneyInHandsActivityRow[] = [];
+
+    sorted.forEach((row) => {
+      if (!this.canBalanceRepair(row)) {
+        ordered.push(...this.sortLocalClusterByBalanceSequence(cluster));
+        cluster = [];
+        ordered.push(row);
+        return;
+      }
+
+      const previous = cluster[cluster.length - 1];
+      if (!previous || this.isSameLocalCluster(previous, row)) {
+        cluster.push(row);
+        return;
+      }
+
+      ordered.push(...this.sortLocalClusterByBalanceSequence(cluster));
+      cluster = [row];
+    });
+
+    ordered.push(...this.sortLocalClusterByBalanceSequence(cluster));
+    return ordered;
+  }
+
+  private sortLocalClusterByBalanceSequence(
+    rows: MoneyInHandsActivityRow[]
+  ): MoneyInHandsActivityRow[] {
+    if (rows.length <= 1) {
+      return rows;
+    }
+
+    const remaining = [...rows];
+    const ordered: MoneyInHandsActivityRow[] = [];
+
+    while (remaining.length > 0) {
+      let nextIndex = this.findLocalChainEndIndex(remaining);
+      let [nextRow] = remaining.splice(nextIndex, 1);
+      ordered.push(nextRow);
+
+      while (nextRow.previousAmount !== null) {
+        const linkedIndex = this.findUniqueNewAmountIndex(
+          remaining,
+          nextRow.previousAmount
+        );
+        if (linkedIndex === -1) {
+          break;
+        }
+
+        [nextRow] = remaining.splice(linkedIndex, 1);
+        ordered.push(nextRow);
+      }
+    }
+
+    return ordered;
+  }
+
+  private findLocalChainEndIndex(rows: MoneyInHandsActivityRow[]): number {
+    const chainEndIndexes = rows
+      .map((row, index) => ({ row, index }))
+      .filter(
+        ({ row }) =>
+          !rows.some((candidate) =>
+            this.sameAmount(candidate.previousAmount, row.newAmount)
+          )
+      )
+      .map(({ index }) => index);
+
+    return chainEndIndexes.length > 0 ? chainEndIndexes[0] : 0;
+  }
+
+  private findUniqueNewAmountIndex(
+    rows: MoneyInHandsActivityRow[],
+    amount: number
+  ): number {
+    const matches = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => this.sameAmount(row.newAmount, amount));
+
+    return matches.length === 1 ? matches[0].index : -1;
+  }
+
+  private compareByTimestampDesc(
+    a: MoneyInHandsActivityRow,
+    b: MoneyInHandsActivityRow
+  ): number {
+    if (b.timestamp !== a.timestamp) {
+      return b.timestamp - a.timestamp;
+    }
+
+    return b.key.localeCompare(a.key);
+  }
+
+  private sameAmount(
+    left: number | null | undefined,
+    right: number | null | undefined
+  ): boolean {
+    return left != null && right != null && left === right;
+  }
+
+  private canBalanceRepair(row: MoneyInHandsActivityRow): boolean {
+    return !row.isLegacy && row.previousAmount !== null && row.timestamp > 0;
+  }
+
+  private isSameLocalCluster(
+    newer: MoneyInHandsActivityRow,
+    older: MoneyInHandsActivityRow
+  ): boolean {
+    const maxGapMs = 10 * 60 * 1000;
+    return (
+      this.sameCalendarDay(newer.timestamp, older.timestamp) &&
+      Math.abs(newer.timestamp - older.timestamp) <= maxGapMs
+    );
+  }
+
+  private sameCalendarDay(leftTimestamp: number, rightTimestamp: number): boolean {
+    const left = new Date(leftTimestamp);
+    const right = new Date(rightTimestamp);
+    return (
+      left.getFullYear() === right.getFullYear() &&
+      left.getMonth() === right.getMonth() &&
+      left.getDate() === right.getDate()
+    );
   }
 
   private toActivityRow(
     key: string,
     entry: MoneyInHandsActivity
   ): MoneyInHandsActivityRow {
-    const dateParts = this.parseDateKey(key);
+    const activityDate = this.parseActivityDate(entry.createdAt, key);
+    const dateParts = this.datePartsFromDate(activityDate);
     return {
       key,
-      dateLabel: this.time.convertTimeFormat(key),
+      dateLabel: this.formatActivityDate(activityDate),
       month: dateParts.month,
       year: dateParts.year,
       monthLabel: this.monthLabel(dateParts.month, dateParts.year),
@@ -221,7 +351,47 @@ export class GestionMoneyInHandsActivityComponent {
     year: number;
     timestamp: number;
   } {
-    const parsed = this.time.parseFlexibleDateTime(key);
+    return this.datePartsFromDate(this.time.parseFlexibleDateTime(key));
+  }
+
+  private parseActivityDate(createdAt: any, fallbackKey: string): Date {
+    if (createdAt?.toDate) {
+      const parsed = createdAt.toDate();
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    if (typeof createdAt?.seconds === 'number') {
+      const milliseconds =
+        createdAt.seconds * 1000 +
+        Math.floor((createdAt.nanoseconds || 0) / 1000000);
+      const parsed = new Date(milliseconds);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    if (createdAt instanceof Date && !Number.isNaN(createdAt.getTime())) {
+      return createdAt;
+    }
+
+    if (typeof createdAt === 'string') {
+      const parsed = this.time.parseFlexibleDateTime(createdAt);
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return this.time.parseFlexibleDateTime(fallbackKey);
+  }
+
+  private datePartsFromDate(date: Date): {
+    month: number;
+    year: number;
+    timestamp: number;
+  } {
+    const parsed = date;
     if (!Number.isNaN(parsed.getTime())) {
       return {
         month: parsed.getMonth() + 1,
@@ -236,6 +406,30 @@ export class GestionMoneyInHandsActivityComponent {
       year: fallback.getFullYear(),
       timestamp: 0,
     };
+  }
+
+  private formatActivityDate(date: Date): string {
+    const monthNames = [
+      'Janvier',
+      'Février',
+      'Mars',
+      'Avril',
+      'Mai',
+      'Juin',
+      'Juillet',
+      'Août',
+      'Septembre',
+      'Octobre',
+      'Novembre',
+      'Décembre',
+    ];
+    const day = date.getDate();
+    const month = monthNames[date.getMonth()] || '';
+    const year = date.getFullYear();
+    const hour = (`0${date.getHours()}`).slice(-2);
+    const minute = (`0${date.getMinutes()}`).slice(-2);
+
+    return `${day} ${month} ${year} à ${hour}:${minute}`;
   }
 
   private monthLabel(month: number, year: number): string {
