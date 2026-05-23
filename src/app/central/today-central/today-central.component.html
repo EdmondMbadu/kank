@@ -322,24 +322,46 @@
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   <div class="flex flex-col items-end">
-                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      ${{ 
-                        toNum(
-                          val(
-                            s,
-                            "totalReserveInDollars",
-                            "amountUsd",
-                            "valueUsd"
-                          )
-                        ) | number : "1.0-0"
-                      }}
-                    </span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">
-                      {{ 
-                        toNum(val(s, "totalReserve", "amount", "value"))
-                          | number : "1.0-0"
-                      }} FC
-                    </span>
+                    <ng-container *ngIf="auth.isAdmin; else auditReserveAmount">
+                      <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        ${{ 
+                          toNum(
+                            val(
+                              s,
+                              "totalReserveInDollars",
+                              "amountUsd",
+                              "valueUsd"
+                            )
+                          ) | number : "1.0-0"
+                        }}
+                      </span>
+                      <span class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ 
+                          toNum(val(s, "totalReserve", "amount", "value"))
+                            | number : "1.0-0"
+                        }} FC
+                      </span>
+                    </ng-container>
+                    <ng-template #auditReserveAmount>
+                      <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        {{ 
+                          toNum(val(s, "totalReserve", "amount", "value"))
+                            | number : "1.0-0"
+                        }} FC
+                      </span>
+                      <span class="text-xs text-slate-500 dark:text-slate-400">
+                        ${{ 
+                          toNum(
+                            val(
+                              s,
+                              "totalReserveInDollars",
+                              "amountUsd",
+                              "valueUsd"
+                            )
+                          ) | number : "1.0-0"
+                        }}
+                      </span>
+                    </ng-template>
                   </div>
                 </td>
               </tr>
@@ -353,12 +375,22 @@
                 <td *ngIf="auth.isAdmin" class="px-3 py-2"></td>
                 <td class="px-3 py-2 text-right">
                   <div class="flex flex-col items-end">
-                    <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                      ${{ toNum(dailyReserveDollars) | number : "1.0-0" }}
-                    </span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">
-                      {{ toNum(dailyReserve) | number : "1.0-0" }} FC
-                    </span>
+                    <ng-container *ngIf="auth.isAdmin; else auditReserveTotal">
+                      <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        ${{ toNum(dailyReserveDollars) | number : "1.0-0" }}
+                      </span>
+                      <span class="text-xs text-slate-500 dark:text-slate-400">
+                        {{ toNum(dailyReserve) | number : "1.0-0" }} FC
+                      </span>
+                    </ng-container>
+                    <ng-template #auditReserveTotal>
+                      <span class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        {{ toNum(dailyReserve) | number : "1.0-0" }} FC
+                      </span>
+                      <span class="text-xs text-slate-500 dark:text-slate-400">
+                        ${{ toNum(dailyReserveDollars) | number : "1.0-0" }}
+                      </span>
+                    </ng-template>
                   </div>
                 </td>
               </tr>
