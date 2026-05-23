@@ -276,7 +276,11 @@
               role="menuitem"
               tabindex="-1"
               id="menu-item-0"
-              >Classement du jour</a
+              >{{
+                auth.isDistributor && !auth.isAdmin
+                  ? "Réserve du jour"
+                  : "Classement du jour"
+              }}</a
             >
 
             <a
