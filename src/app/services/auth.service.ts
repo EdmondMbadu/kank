@@ -60,6 +60,7 @@ export class AuthService {
   managementInfo: any = {};
   private readonly adminWord = 'synergie';
   private readonly distributorWord = 'geste';
+  private readonly auditWord = 'audit';
   private readonly investigatorWord = 'invest';
   public isAdmninistrator: boolean = false;
   public isDistributoring: boolean = false;
@@ -1623,7 +1624,8 @@ export class AuthService {
     this.isAdmninistrator =
       normalized === this.normalizeSecret(rolePasswords.admin);
     this.isDistributoring =
-      normalized === this.normalizeSecret(rolePasswords.gestion);
+      normalized === this.normalizeSecret(rolePasswords.gestion) ||
+      normalized === this.normalizeSecret(this.auditWord);
     this.isInvestigating =
       normalized === this.normalizeSecret(rolePasswords.investigator);
 

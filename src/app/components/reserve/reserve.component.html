@@ -75,7 +75,7 @@
       <!-- LIST -->
       <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
         <li
-          *ngFor="let item of (reserve | keyvalue | slice:0:(this.auth.isAdmninistrator ? reserve.length : 2)); let i = index"
+          *ngFor="let item of visibleReserveEntries"
           routerLink="/home"
           class="group relative cursor-pointer px-6 py-4 transition-colors duration-150 hover:bg-emerald-50 dark:hover:bg-slate-700/60">
           <div class="flex items-center space-x-4">
@@ -87,17 +87,28 @@
             <!-- DATE INFO -->
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ reserveDates[i] }}
+                {{ item.date }}
               </p>
             </div>
 
             <!-- AMOUNT -->
             <div class="inline-flex items-center text-base font-semibold text-gray-900 dark:text-gray-100">
-              FC {{ reserveAmounts[i] | number: '1.0-0' }}
+              FC {{ item.amount | number: '1.0-0' }}
             </div>
           </div>
         </li>
       </ul>
+
+      <div
+        *ngIf="hasMoreReserveEntries"
+        class="flex justify-center border-t border-gray-200 px-6 py-4 dark:border-gray-700">
+        <button
+          type="button"
+          (click)="showMoreReserveEntries()"
+          class="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-emerald-700">
+          Voir plus
+        </button>
+      </div>
     </div>
   </div>
 </section>

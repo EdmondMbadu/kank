@@ -5,6 +5,11 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { DataService } from 'src/app/services/data.service';
 import { TimeService } from 'src/app/services/time.service';
 
+type ReserveEntry = {
+  date: string;
+  amount: string;
+};
+
 @Component({
   selector: 'app-reserve',
   templateUrl: './reserve.component.html',
@@ -15,6 +20,8 @@ export class ReserveComponent {
   reserve: string[] = [];
   reserveAmounts: string[] = [];
   reserveDates: string[] = [];
+  reserveEntries: ReserveEntry[] = [];
+  visibleReserveCount = 10;
   currentUser: any = {};
   expectedReserve: string = '0';
   clients?: any[] = [];
@@ -27,6 +34,22 @@ export class ReserveComponent {
   tooltipColor: string = ''; // 'tooltip-red' or 'tooltip-green', etc.
   dailyPercentage: number = 0; // Will store (daily sum / expected) * 100
   isLoading: boolean = false; // Loading state to prevent double submissions
+
+  get canSeeFullReserve(): boolean {
+    return this.auth.isAdmninistrator || this.auth.isDistributor;
+  }
+
+  get visibleReserveEntries(): ReserveEntry[] {
+    const limit = this.canSeeFullReserve ? this.visibleReserveCount : 2;
+    return this.reserveEntries.slice(0, limit);
+  }
+
+  get hasMoreReserveEntries(): boolean {
+    return (
+      this.canSeeFullReserve &&
+      this.visibleReserveCount < this.reserveEntries.length
+    );
+  }
 
   constructor(
     public auth: AuthService,
@@ -113,13 +136,21 @@ export class ReserveComponent {
 
       // Sort by date descending
       let currentreserve = this.compute.sortArrayByDateDescendingOrder(
-        Object.entries(this.currentUser.reserve)
+        Object.entries(this.currentUser.reserve || {}) as [string, string][]
       );
       this.reserveAmounts = currentreserve.map((entry) => entry[1]);
       this.reserveDates = currentreserve.map((entry) =>
         this.time.convertTimeFormat(entry[0])
       );
+      this.reserveEntries = currentreserve.map((entry) => ({
+        date: this.time.convertTimeFormat(entry[0]),
+        amount: entry[1],
+      }));
     });
+  }
+
+  showMoreReserveEntries() {
+    this.visibleReserveCount += 10;
   }
 
   /**
