@@ -159,7 +159,7 @@
   class="container mx-auto px-6 pt-8 pb-4"
 >
   <div
-    class="mx-auto flex max-w-4xl flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between"
+    class="mx-auto grid max-w-4xl grid-cols-1 gap-4 rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60 md:grid-cols-[1fr_auto_auto] md:items-center"
   >
     <div>
       <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
@@ -168,6 +168,31 @@
       <h1 class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">
         {{ frenchDate }}
       </h1>
+    </div>
+    <div
+      *ngIf="!shouldHideReserveRankingForAudit"
+      class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-right dark:border-emerald-800 dark:bg-emerald-900/30"
+    >
+      <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-200">
+        Total réserve
+      </p>
+      <p class="mt-1 text-3xl font-bold text-emerald-700 dark:text-emerald-100">
+        {{ toNum(dailyReserve) | number : "1.0-0" }} FC
+      </p>
+      <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-200">
+        ${{ toNum(dailyReserveDollars) | number : "1.0-0" }}
+      </p>
+    </div>
+    <div
+      *ngIf="shouldHideReserveRankingForAudit"
+      class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-4 text-right dark:border-slate-700 dark:bg-slate-800/40"
+    >
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
+        Total réserve
+      </p>
+      <p class="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">
+        Visible à {{ reserveRevealTimeLabel }} (Kinshasa)
+      </p>
     </div>
     <label class="block text-sm font-medium text-slate-600 dark:text-slate-300">
       <span class="mb-1 block text-xs uppercase tracking-wide text-slate-400">
