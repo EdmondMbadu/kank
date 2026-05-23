@@ -123,6 +123,7 @@ type TFTransportCost = { loc: string; amount: number };
 type TFTransportSettingsDoc = {
   locationCosts?: Record<string, TFTransportCost>;
   creditBuffer?: number;
+  dollarRate?: number;
   updatedAt?: number;
   updatedById?: string;
 };
@@ -131,6 +132,7 @@ type TFWeekTotalSummary = {
   scheduledTotal: number;
   buffer: number;
   total: number;
+  dollarTotal: number;
   locations: Array<{
     loc: string;
     days: number;
@@ -296,6 +298,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   taskTransportCostInputs: Record<string, string> = {};
   taskCreditBuffer = 0;
   taskCreditBufferInput = '0';
+  taskDollarRate = 2350;
+  taskDollarRateInput = '2350';
   taskTransportSaving = false;
   taskTransportEditorOpen = false;
   taskCurrentWeekTotal: TFWeekTotalSummary = {
@@ -303,6 +307,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     scheduledTotal: 0,
     buffer: 0,
     total: 0,
+    dollarTotal: 0,
     locations: [],
   };
   taskNextWeekTotal: TFWeekTotalSummary = {
@@ -310,6 +315,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     scheduledTotal: 0,
     buffer: 0,
     total: 0,
+    dollarTotal: 0,
     locations: [],
   };
   taskPicker = {
@@ -2785,6 +2791,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         this.taskCreditBufferInput = this.taskCreditBuffer
           ? this.taskCreditBuffer.toString()
           : '';
+        const dollarRate = Number(doc?.dollarRate ?? 2350);
+        this.taskDollarRate =
+          Number.isFinite(dollarRate) && dollarRate > 0 ? dollarRate : 2350;
+        this.taskDollarRateInput = this.taskDollarRate.toString();
         this.taskTransportCostInputs = {};
         this.ensureTaskTransportInputs();
         this.recomputeTaskTransportTotals();
@@ -2812,6 +2822,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.taskTransportCosts = this.buildTaskTransportCostsFromInputs(false);
     const buffer = this.parseMoneyInput(this.taskCreditBufferInput);
     this.taskCreditBuffer = buffer > 0 ? buffer : 0;
+    const dollarRate = this.parseMoneyInput(this.taskDollarRateInput);
+    this.taskDollarRate = dollarRate > 0 ? dollarRate : 0;
     this.recomputeTaskTransportTotals();
   }
 
@@ -2829,6 +2841,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       alert('Entrez un montant valide pour le buffer crédits.');
       return;
     }
+    const dollarRate = this.parseMoneyInput(this.taskDollarRateInput);
+    if (dollarRate <= 0) {
+      alert('Entrez un taux dollar valide.');
+      return;
+    }
 
     this.taskTransportSaving = true;
     try {
@@ -2836,6 +2853,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         {
           locationCosts,
           creditBuffer,
+          dollarRate,
           updatedAt: Date.now(),
           updatedById: this.currentUserId,
         },
@@ -2843,6 +2861,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       );
       this.taskTransportCosts = locationCosts;
       this.taskCreditBuffer = creditBuffer;
+      this.taskDollarRate = dollarRate;
       this.recomputeTaskTransportTotals();
     } catch (err) {
       console.error('Failed to save task transport settings:', err);
@@ -2955,11 +2974,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
 
     const buffer = Number(this.taskCreditBuffer || 0);
+    const total = scheduledTotal + buffer;
+    const dollarRate = Number(this.taskDollarRate || 0);
     return {
       label: this.formatTaskTransportWeekLabel(start),
       scheduledTotal,
       buffer,
-      total: scheduledTotal + buffer,
+      total,
+      dollarTotal: dollarRate > 0 ? total / dollarRate : 0,
       locations: Array.from(locationMap.values()).sort((a, b) =>
         a.loc.localeCompare(b.loc)
       ),
@@ -2970,6 +2992,15 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const cost = this.taskTransportCosts[this.slugLocation(loc)];
     const amount = Number(cost?.amount ?? 0);
     return Number.isFinite(amount) && amount > 0 ? amount : 0;
+  }
+
+  formatDollarAmount(value?: string | number): string {
+    const num = Number(value ?? 0);
+    if (!Number.isFinite(num)) return '0.00';
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 
   private formatTaskTransportWeekLabel(start: Date): string {
