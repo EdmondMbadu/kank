@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Employee } from 'src/app/models/employee';
+import { Management } from 'src/app/models/management';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -21,7 +22,11 @@ export class TodayCentralComponent {
   ) {}
 
   allUsers: User[] = [];
+  managementInfo?: Management = {};
   ngOnInit(): void {
+    this.auth.getManagementInfo().subscribe((data) => {
+      this.managementInfo = data?.[0] || {};
+    });
     // if (this.auth.isAdmin) {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
@@ -120,6 +125,43 @@ export class TodayCentralComponent {
   summaryContent: string[] = [];
   copyPaymentsMessage: string | null = null;
   isCopyingPayments = false;
+
+  get isAuditTeamViewer(): boolean {
+    return !this.auth.isAdmin && this.auth.isDistributor;
+  }
+
+  get isAuditOnlyTodayCentral(): boolean {
+    return this.isAuditTeamViewer && !this.auth.isAdmin;
+  }
+
+  get reserveRevealTimeLabel(): string {
+    return this.normalizeRevealTime(this.managementInfo?.reserveRevealTimeKinshasa);
+  }
+
+  get shouldHideReserveGivenAmounts(): boolean {
+    if (this.auth.isAdmin) return false;
+
+    const selected = this.parseMonthDayYearLabel(this.requestDateCorrectFormat);
+    const now = this.kinshasaNowParts();
+    if (!selected) return true;
+
+    const selectedStamp = selected.y * 10_000 + selected.m * 100 + selected.d;
+    const todayStamp = now.y * 10_000 + now.m * 100 + now.d;
+
+    if (selectedStamp < todayStamp) return false;
+    if (selectedStamp > todayStamp) return true;
+
+    const currentMinutes = now.hh * 60 + now.mm;
+    const { hour, minute } = this.parseRevealTime(
+      this.managementInfo?.reserveRevealTimeKinshasa
+    );
+    const revealMinutes = hour * 60 + minute;
+    return currentMinutes < revealMinutes;
+  }
+
+  get shouldHideReserveRankingForAudit(): boolean {
+    return this.isAuditTeamViewer && this.shouldHideReserveGivenAmounts;
+  }
 
   get tomorrowDayName(): string {
     const dayNames = [
@@ -732,6 +774,84 @@ export class TodayCentralComponent {
       }
     }
     return 0;
+  }
+
+  private normalizeRevealTime(value?: string | null): string {
+    const fallback = '22:30';
+    const raw = (value || '').trim();
+    if (!/^\d{1,2}:\d{2}$/.test(raw)) return fallback;
+
+    const [hourStr, minuteStr] = raw.split(':');
+    const hour = Number(hourStr);
+    const minute = Number(minuteStr);
+
+    if (
+      !Number.isInteger(hour) ||
+      !Number.isInteger(minute) ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return fallback;
+    }
+
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  }
+
+  private parseRevealTime(value?: string | null): {
+    hour: number;
+    minute: number;
+  } {
+    const normalized = this.normalizeRevealTime(value);
+    const [hour, minute] = normalized.split(':').map(Number);
+    return { hour, minute };
+  }
+
+  private parseMonthDayYearLabel(label: string): {
+    m: number;
+    d: number;
+    y: number;
+  } | null {
+    if (!label) return null;
+    const parts = label.split('-').map(Number);
+    if (parts.length < 3 || parts.some((part) => !Number.isFinite(part))) {
+      return null;
+    }
+    return { m: parts[0], d: parts[1], y: parts[2] };
+  }
+
+  private kinshasaNowParts(): {
+    y: number;
+    m: number;
+    d: number;
+    hh: number;
+    mm: number;
+  } {
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Kinshasa',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    const bag: Record<string, string> = {};
+    for (const part of formatter.formatToParts(new Date())) {
+      if (part.type !== 'literal') {
+        bag[part.type] = part.value;
+      }
+    }
+
+    return {
+      y: Number(bag['year']),
+      m: Number(bag['month']),
+      d: Number(bag['day']),
+      hh: Number(bag['hour']),
+      mm: Number(bag['minute']),
+    };
   }
 
   // Baselines for today/tomorrow (bars = % of max $)
