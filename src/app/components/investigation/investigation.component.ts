@@ -119,6 +119,19 @@ type RecoveredAwayMonth = {
 
 type TFEntry = { loc: string; employees: string[] };
 type TFCell = { iso: string; entries?: TFEntry[] };
+type TFTransportCost = { loc: string; amount: number };
+type TFTransportSettingsDoc = {
+  locationCosts?: Record<string, TFTransportCost>;
+  creditBuffer?: number;
+  updatedAt?: number;
+  updatedById?: string;
+};
+type TFWeekTotalSummary = {
+  label: string;
+  scheduledTotal: number;
+  buffer: number;
+  total: number;
+};
 
 @Component({
   selector: 'app-investigation',
@@ -273,6 +286,23 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   taskForceLocations: string[] = [];
   taskMonthWeeks: (TFCell | null)[][] = [];
   taskWeekSummary: { day: string; entries: TFEntry[] }[] = [];
+  taskTransportCosts: Record<string, TFTransportCost> = {};
+  taskTransportCostInputs: Record<string, string> = {};
+  taskCreditBuffer = 0;
+  taskCreditBufferInput = '0';
+  taskTransportSaving = false;
+  taskCurrentWeekTotal: TFWeekTotalSummary = {
+    label: '',
+    scheduledTotal: 0,
+    buffer: 0,
+    total: 0,
+  };
+  taskNextWeekTotal: TFWeekTotalSummary = {
+    label: '',
+    scheduledTotal: 0,
+    buffer: 0,
+    total: 0,
+  };
   taskPicker = {
     visible: false,
     day: null as null | { iso: string; date: Date },
@@ -317,7 +347,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   private allClientsSub = new Subscription();
   private allEmployeesSub = new Subscription();
   private tfSubs: Subscription[] = [];
+  private taskTransportSettingsSub?: Subscription;
+  private taskCurrentWeekTotalSub?: Subscription;
+  private taskNextWeekTotalSub?: Subscription;
   private tfCellByIso = new Map<string, TFCell>();
+  private taskCurrentWeekDays: Record<string, unknown> = {};
+  private taskNextWeekDays: Record<string, unknown> = {};
 
   constructor(
     public auth: AuthService,
@@ -339,6 +374,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.recoveredAwayYears = this.time.yearsList;
     this.feedbackYears = this.time.yearsList;
     this.loadRecoveredAwayBonusPercent();
+    this.loadTaskTransportSettings();
+    this.loadTaskTransportWeekTotals();
 
     const userSub = this.auth.user$.subscribe((user: User | null) => {
       this.currentUserId = user?.uid ?? '';
@@ -365,6 +402,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.subs.unsubscribe();
     this.tfSubs.forEach((s) => s.unsubscribe());
     this.recoveredAwayBonusSub?.unsubscribe();
+    this.taskTransportSettingsSub?.unsubscribe();
+    this.taskCurrentWeekTotalSub?.unsubscribe();
+    this.taskNextWeekTotalSub?.unsubscribe();
   }
 
   private loadClientsForLocation(userId: string): void {
@@ -642,6 +682,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       .map((loc) => (loc.firstName || loc.email || 'Site').trim())
       .filter((name) => name.length > 0);
     this.taskForceLocations = Array.from(new Set(names));
+    this.ensureTaskTransportInputs();
   }
 
   private loadAllEmployeesForLocations(): void {
@@ -2723,6 +2764,218 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     });
   }
 
+  private loadTaskTransportSettings(): void {
+    this.taskTransportSettingsSub?.unsubscribe();
+    this.taskTransportSettingsSub = this.afs
+      .doc<TFTransportSettingsDoc>('taskforceTransportSettings/default')
+      .valueChanges()
+      .subscribe((doc) => {
+        this.taskTransportCosts = doc?.locationCosts || {};
+        const buffer = Number(doc?.creditBuffer ?? 0);
+        this.taskCreditBuffer = Number.isFinite(buffer) && buffer > 0 ? buffer : 0;
+        this.taskCreditBufferInput = this.taskCreditBuffer
+          ? this.taskCreditBuffer.toString()
+          : '';
+        this.taskTransportCostInputs = {};
+        this.ensureTaskTransportInputs();
+        this.recomputeTaskTransportTotals();
+      });
+    this.subs.add(this.taskTransportSettingsSub);
+  }
+
+  private ensureTaskTransportInputs(): void {
+    const nextInputs: Record<string, string> = {};
+    this.taskForceLocations.forEach((loc) => {
+      const key = this.slugLocation(loc);
+      const existingInput = this.taskTransportCostInputs[loc];
+      const savedAmount = Number(this.taskTransportCosts[key]?.amount ?? 0);
+      nextInputs[loc] =
+        existingInput !== undefined
+          ? existingInput
+          : savedAmount > 0
+          ? savedAmount.toString()
+          : '';
+    });
+    this.taskTransportCostInputs = nextInputs;
+  }
+
+  onTaskTransportInputChange(): void {
+    this.taskTransportCosts = this.buildTaskTransportCostsFromInputs(false);
+    const buffer = this.parseMoneyInput(this.taskCreditBufferInput);
+    this.taskCreditBuffer = buffer > 0 ? buffer : 0;
+    this.recomputeTaskTransportTotals();
+  }
+
+  async saveTaskTransportSettings(): Promise<void> {
+    if (!this.auth.isAdmin || this.taskTransportSaving) return;
+
+    const locationCosts = this.buildTaskTransportCostsFromInputs(true);
+    if (!locationCosts) {
+      alert('Entrez des montants valides pour le transport.');
+      return;
+    }
+
+    const creditBuffer = this.parseMoneyInput(this.taskCreditBufferInput);
+    if (creditBuffer < 0) {
+      alert('Entrez un montant valide pour le buffer crédits.');
+      return;
+    }
+
+    this.taskTransportSaving = true;
+    try {
+      await this.afs.doc('taskforceTransportSettings/default').set(
+        {
+          locationCosts,
+          creditBuffer,
+          updatedAt: Date.now(),
+          updatedById: this.currentUserId,
+        },
+        { merge: true }
+      );
+      this.taskTransportCosts = locationCosts;
+      this.taskCreditBuffer = creditBuffer;
+      this.recomputeTaskTransportTotals();
+    } catch (err) {
+      console.error('Failed to save task transport settings:', err);
+      alert("Impossible d'enregistrer le budget transport.");
+    } finally {
+      this.taskTransportSaving = false;
+    }
+  }
+
+  private buildTaskTransportCostsFromInputs(
+    strict: true
+  ): Record<string, TFTransportCost> | null;
+  private buildTaskTransportCostsFromInputs(
+    strict: false
+  ): Record<string, TFTransportCost>;
+  private buildTaskTransportCostsFromInputs(
+    strict: boolean
+  ): Record<string, TFTransportCost> | null {
+    const locationCosts: Record<string, TFTransportCost> = {};
+    for (const loc of this.taskForceLocations) {
+      const amount = this.parseMoneyInput(this.taskTransportCostInputs[loc]);
+      if (amount < 0) {
+        if (strict) return null;
+        continue;
+      }
+      if (amount > 0) {
+        locationCosts[this.slugLocation(loc)] = { loc, amount };
+      }
+    }
+    return locationCosts;
+  }
+
+  private parseMoneyInput(value: string | number | null | undefined): number {
+    const raw = (value ?? '').toString().replace(/\s/g, '').replace(',', '.');
+    if (!raw) return 0;
+    const amount = Number(raw);
+    if (!Number.isFinite(amount)) return -1;
+    return Math.round(amount);
+  }
+
+  private loadTaskTransportWeekTotals(): void {
+    this.taskCurrentWeekTotalSub?.unsubscribe();
+    this.taskNextWeekTotalSub?.unsubscribe();
+
+    const currentStart = this.startOfIsoWeek(new Date());
+    const nextStart = this.addDays(currentStart, 7);
+
+    this.taskCurrentWeekTotal.label = this.formatTaskTransportWeekLabel(currentStart);
+    this.taskNextWeekTotal.label = this.formatTaskTransportWeekLabel(nextStart);
+
+    this.taskCurrentWeekTotalSub = this.performance
+      .getTaskForce(this.isoWeekId(currentStart))
+      .subscribe((doc) => {
+        this.taskCurrentWeekDays = doc?.days ?? {};
+        this.recomputeTaskTransportTotals();
+      });
+
+    this.taskNextWeekTotalSub = this.performance
+      .getTaskForce(this.isoWeekId(nextStart))
+      .subscribe((doc) => {
+        this.taskNextWeekDays = doc?.days ?? {};
+        this.recomputeTaskTransportTotals();
+      });
+
+    this.subs.add(this.taskCurrentWeekTotalSub);
+    this.subs.add(this.taskNextWeekTotalSub);
+  }
+
+  private recomputeTaskTransportTotals(): void {
+    const currentStart = this.startOfIsoWeek(new Date());
+    const nextStart = this.addDays(currentStart, 7);
+    this.taskCurrentWeekTotal = this.buildTaskTransportWeekTotal(
+      currentStart,
+      this.taskCurrentWeekDays
+    );
+    this.taskNextWeekTotal = this.buildTaskTransportWeekTotal(
+      nextStart,
+      this.taskNextWeekDays
+    );
+  }
+
+  private buildTaskTransportWeekTotal(
+    start: Date,
+    days: Record<string, unknown>
+  ): TFWeekTotalSummary {
+    let scheduledTotal = 0;
+    for (let i = 0; i < 6; i++) {
+      const iso = this.ymd(this.addDays(start, i));
+      this.taskEntriesFromDayValue(days?.[iso]).forEach((entry) => {
+        scheduledTotal += this.taskTransportCostForLocation(entry.loc);
+      });
+    }
+
+    const buffer = Number(this.taskCreditBuffer || 0);
+    return {
+      label: this.formatTaskTransportWeekLabel(start),
+      scheduledTotal,
+      buffer,
+      total: scheduledTotal + buffer,
+    };
+  }
+
+  private taskTransportCostForLocation(loc: string): number {
+    const cost = this.taskTransportCosts[this.slugLocation(loc)];
+    const amount = Number(cost?.amount ?? 0);
+    return Number.isFinite(amount) && amount > 0 ? amount : 0;
+  }
+
+  private formatTaskTransportWeekLabel(start: Date): string {
+    const end = this.addDays(start, 5);
+    const startMonth = this.monthNames[start.getMonth()];
+    const endMonth = this.monthNames[end.getMonth()];
+    if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+      return `${start.getDate()}-${end.getDate()} ${startMonth} ${start.getFullYear()}`;
+    }
+    return `${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth} ${end.getFullYear()}`;
+  }
+
+  private taskEntriesFromDayValue(value: unknown): TFEntry[] {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value
+        .map((entry) => ({
+          loc: (entry?.loc || '').toString(),
+          employees: Array.isArray(entry?.employees) ? entry.employees : [],
+        }))
+        .filter((entry) => entry.loc);
+    }
+    if (typeof value === 'string') {
+      return [{ loc: value, employees: [] }];
+    }
+
+    return Object.values(
+      value as Record<string, { loc: string; employees: string[] }>
+    )
+      .map((entry) => ({
+        loc: (entry?.loc || '').toString(),
+        employees: Array.isArray(entry?.employees) ? entry.employees : [],
+      }))
+      .filter((entry) => entry.loc);
+  }
+
   private loadTaskForceMonth(): void {
     this.tfSubs.forEach((s) => s.unsubscribe());
     this.tfSubs = [];
@@ -2772,18 +3025,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
           const cell = this.tfCellByIso.get(iso);
           if (!cell) return;
 
-          const dayMap =
-            typeof val === 'string'
-              ? { [val.toLowerCase()]: { loc: val, employees: [] } }
-              : (val as Record<string, { loc: string; employees: string[] }>);
-
-          cell.entries = Object.values(dayMap).map((d) => ({
-            loc: d.loc,
-            employees: Array.isArray(d.employees) ? d.employees : [],
-          }));
+          cell.entries = this.taskEntriesFromDayValue(val);
         });
 
         this.recomputeTaskWeekSummary();
+        this.recomputeTaskTransportTotals();
         this.applyInvestigatorLocationFromSchedule();
       });
 

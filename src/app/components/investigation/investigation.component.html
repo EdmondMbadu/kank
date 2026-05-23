@@ -1758,6 +1758,111 @@
         </div>
       </div>
 
+      <div
+        *ngIf="auth.isAdmin"
+        class="mb-6 rounded-xl border border-emerald-200/80 bg-white p-5 shadow-sm"
+      >
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+              <h4 class="text-sm font-bold uppercase tracking-wider text-slate-700">
+                Budget transport
+              </h4>
+            </div>
+            <p class="mt-1 text-xs text-slate-500">
+              Montants en francs congolais. Le total couvre lundi-samedi et inclut le buffer crédits.
+            </p>
+          </div>
+
+          <div class="grid w-full gap-3 sm:grid-cols-2 lg:max-w-xl">
+            <div class="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
+              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                Semaine en cours
+              </p>
+              <p class="mt-1 text-[11px] text-emerald-700/80">
+                {{ taskCurrentWeekTotal.label }}
+              </p>
+              <p class="mt-2 text-xl font-bold text-slate-900">
+                {{ formatAmount(taskCurrentWeekTotal.total) }} FC
+              </p>
+              <p class="mt-1 text-[11px] text-slate-500">
+                Transport {{ formatAmount(taskCurrentWeekTotal.scheduledTotal) }} FC · Buffer
+                {{ formatAmount(taskCurrentWeekTotal.buffer) }} FC
+              </p>
+            </div>
+
+            <div class="rounded-lg border border-sky-100 bg-sky-50/60 p-3">
+              <p class="text-xs font-semibold uppercase tracking-wide text-sky-700">
+                Semaine prochaine
+              </p>
+              <p class="mt-1 text-[11px] text-sky-700/80">
+                {{ taskNextWeekTotal.label }}
+              </p>
+              <p class="mt-2 text-xl font-bold text-slate-900">
+                {{ formatAmount(taskNextWeekTotal.total) }} FC
+              </p>
+              <p class="mt-1 text-[11px] text-slate-500">
+                Transport {{ formatAmount(taskNextWeekTotal.scheduledTotal) }} FC · Buffer
+                {{ formatAmount(taskNextWeekTotal.buffer) }} FC
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <label
+            *ngFor="let loc of taskForceLocations"
+            class="block rounded-lg border border-slate-100 bg-slate-50/70 p-3"
+          >
+            <span class="block truncate text-xs font-semibold text-slate-700">
+              {{ loc }}
+            </span>
+            <div class="mt-2 flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                [(ngModel)]="taskTransportCostInputs[loc]"
+                (ngModelChange)="onTaskTransportInputChange()"
+                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                placeholder="0"
+              />
+              <span class="text-xs font-semibold text-slate-500">FC</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-end sm:justify-between">
+          <label class="block sm:w-64">
+            <span class="block text-xs font-semibold text-slate-700">
+              Buffer crédits
+            </span>
+            <div class="mt-2 flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                [(ngModel)]="taskCreditBufferInput"
+                (ngModelChange)="onTaskTransportInputChange()"
+                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                placeholder="0"
+              />
+              <span class="text-xs font-semibold text-slate-500">FC</span>
+            </div>
+          </label>
+
+          <button
+            type="button"
+            (click)="saveTaskTransportSettings()"
+            [disabled]="taskTransportSaving"
+            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ taskTransportSaving ? "Enregistrement..." : "Enregistrer budget" }}
+          </button>
+        </div>
+      </div>
+
       <div class="overflow-x-auto rounded-xl border border-indigo-200/70 bg-white shadow-sm">
         <table class="w-full text-sm">
           <thead>
