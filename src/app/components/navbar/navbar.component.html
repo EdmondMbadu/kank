@@ -271,16 +271,13 @@
 
           <div *ngIf="gestionDropDown">
             <a
+              *ngIf="auth.isDistributor && !auth.isAdmin"
               routerLink="/today-central"
               class="block px-6 py-2 text-lg hover:bg-slate-100"
               role="menuitem"
               tabindex="-1"
               id="menu-item-0"
-              >{{
-                auth.isDistributor && !auth.isAdmin
-                  ? "Réserve du jour"
-                  : "Classement du jour"
-              }}</a
+              >Réserve du jour</a
             >
 
             <a
