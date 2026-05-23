@@ -131,6 +131,12 @@ type TFWeekTotalSummary = {
   scheduledTotal: number;
   buffer: number;
   total: number;
+  locations: Array<{
+    loc: string;
+    days: number;
+    dailyAmount: number;
+    total: number;
+  }>;
 };
 
 @Component({
@@ -291,17 +297,20 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   taskCreditBuffer = 0;
   taskCreditBufferInput = '0';
   taskTransportSaving = false;
+  taskTransportEditorOpen = false;
   taskCurrentWeekTotal: TFWeekTotalSummary = {
     label: '',
     scheduledTotal: 0,
     buffer: 0,
     total: 0,
+    locations: [],
   };
   taskNextWeekTotal: TFWeekTotalSummary = {
     label: '',
     scheduledTotal: 0,
     buffer: 0,
     total: 0,
+    locations: [],
   };
   taskPicker = {
     visible: false,
@@ -2920,10 +2929,28 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     days: Record<string, unknown>
   ): TFWeekTotalSummary {
     let scheduledTotal = 0;
+    const locationMap = new Map<
+      string,
+      { loc: string; days: number; dailyAmount: number; total: number }
+    >();
+
     for (let i = 0; i < 6; i++) {
       const iso = this.ymd(this.addDays(start, i));
       this.taskEntriesFromDayValue(days?.[iso]).forEach((entry) => {
-        scheduledTotal += this.taskTransportCostForLocation(entry.loc);
+        const dailyAmount = this.taskTransportCostForLocation(entry.loc);
+        scheduledTotal += dailyAmount;
+        const key = this.slugLocation(entry.loc);
+        const existing =
+          locationMap.get(key) || {
+            loc: entry.loc,
+            days: 0,
+            dailyAmount,
+            total: 0,
+          };
+        existing.days += 1;
+        existing.dailyAmount = dailyAmount;
+        existing.total += dailyAmount;
+        locationMap.set(key, existing);
       });
     }
 
@@ -2933,6 +2960,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       scheduledTotal,
       buffer,
       total: scheduledTotal + buffer,
+      locations: Array.from(locationMap.values()).sort((a, b) =>
+        a.loc.localeCompare(b.loc)
+      ),
     };
   }
 
