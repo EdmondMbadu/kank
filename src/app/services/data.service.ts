@@ -63,11 +63,17 @@ export class DataService {
           : changeAmount < 0
           ? 'decrease'
           : 'adjustment',
-      relatedEntryKey,
-      note,
       createdBy: this.auth.currentUser?.firstName || 'Systeme',
-      createdAt: firebase.firestore.Timestamp.now(),
+      createdAt: new Date().toISOString(),
     };
+
+    if (relatedEntryKey) {
+      entry.relatedEntryKey = relatedEntryKey;
+    }
+
+    if (note) {
+      entry.note = note;
+    }
 
     return { key, entry };
   }
