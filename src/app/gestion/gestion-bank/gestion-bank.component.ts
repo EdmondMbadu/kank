@@ -64,6 +64,8 @@ export class GestionBankComponent {
   }
 
   async addToBank() {
+    this.compteDollarAmount();
+
     if (
       this.bankAmount === '' ||
       this.loss === '' ||
@@ -126,12 +128,26 @@ export class GestionBankComponent {
   }
 
   compteDollarAmount() {
-    this.moneyInDollar = Math.floor(
-      Number(this.bankAmount) / Number(this.rateUsed)
-    ).toString();
-    this.moneyInDollarIf = Math.floor(
-      Number(this.bankAmount) / Number(this.rateToday)
-    ).toString();
+    const bankAmount = Number(this.bankAmount);
+    const rateUsed = Number(this.rateUsed);
+    const rateToday = Number(this.rateToday);
+
+    if (
+      !Number.isFinite(bankAmount) ||
+      !Number.isFinite(rateUsed) ||
+      !Number.isFinite(rateToday) ||
+      bankAmount <= 0 ||
+      rateUsed <= 0 ||
+      rateToday <= 0
+    ) {
+      this.moneyInDollar = '';
+      this.moneyInDollarIf = '';
+      this.loss = '';
+      return;
+    }
+
+    this.moneyInDollar = Math.floor(bankAmount / rateUsed).toString();
+    this.moneyInDollarIf = Math.floor(bankAmount / rateToday).toString();
 
     this.loss = (
       Number(this.moneyInDollarIf) - Number(this.moneyInDollar)

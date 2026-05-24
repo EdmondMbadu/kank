@@ -1452,7 +1452,7 @@ export class AuthService {
     return alloweedRoles.some(
       (element) =>
         roles.includes(element) ||
-        (this.currentUser.admin && this.currentUser.admin === 'true')
+        this.currentUser?.admin === 'true'
     );
   }
   private matchingRoleDistributor(alloweedRoles: string[]): boolean {
@@ -1463,8 +1463,7 @@ export class AuthService {
     return alloweedRoles.some(
       (element) =>
         roles.includes(element) ||
-        (this.currentUser.distributor &&
-          this.currentUser.distributor === 'true')
+        this.currentUser?.distributor === 'true'
     );
   }
   private matchingRoleInvestigator(alloweedRoles: string[]): boolean {
@@ -1475,7 +1474,7 @@ export class AuthService {
     return alloweedRoles.some(
       (element) =>
         roles.includes(element) ||
-        (this.currentUser as any).investigator === 'true'
+        (this.currentUser as any)?.investigator === 'true'
     );
   }
 

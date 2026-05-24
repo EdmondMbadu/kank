@@ -28,7 +28,8 @@
             type="text"
             inputmode="numeric"
             pattern="[0-9]*"
-            [(ngModel)]="bankAmount"
+            [ngModel]="bankAmount"
+            (ngModelChange)="bankAmount = $event; compteDollarAmount()"
             id="savings"
             class="w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 pl-10 text-sm text-slate-900 focus:border-green-500 focus:ring-green-500"
             placeholder="20000"
@@ -44,11 +45,11 @@
             type="text"
             inputmode="numeric"
             pattern="[0-9]*"
-            [(ngModel)]="rateUsed"
+            [ngModel]="rateUsed"
+            (ngModelChange)="rateUsed = $event; compteDollarAmount()"
             id="savings"
             class="w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-slate-900 focus:border-green-500 focus:ring-green-500"
             placeholder="2800"
-            (change)="compteDollarAmount()"
             required
           />
         </div>
@@ -61,11 +62,11 @@
             type="text"
             inputmode="numeric"
             pattern="[0-9]*"
-            [(ngModel)]="rateToday"
+            [ngModel]="rateToday"
+            (ngModelChange)="rateToday = $event; compteDollarAmount()"
             id="savings"
             class="w-full rounded-lg border border-slate-300 bg-gray-50 p-2.5 text-sm text-slate-900 focus:border-green-500 focus:ring-green-500"
             placeholder="2800"
-            (change)="compteDollarAmount()"
             required
           />
         </div>
