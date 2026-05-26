@@ -105,6 +105,13 @@ export class TodayComponent {
     );
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
+      this.weeklyExpectedTotalN = this.computeWeeklyExpectedTotal(
+        this.requestDateCorrectFormat
+      );
+      this.weeklyExpectedTotalDollars = this.compute
+        .convertCongoleseFrancToUsDollars(this.weeklyExpectedTotalN.toString())
+        .toString();
+      this.updateWeekPickerTotals();
 
       this.recomputeHeaderReasons();
 
@@ -133,6 +140,8 @@ export class TodayComponent {
   dailyPaymentDollars: string = '0';
   weeklyPaymentTotalN: number = 0;
   weeklyPaymentTotalDollars: string = '0';
+  weeklyExpectedTotalN: number = 0;
+  weeklyExpectedTotalDollars: string = '0';
   weeklyTargetFc: number = 600000;
   projectedWeeklyTargetFc: number | null = null;
   projectedWeeklyTargetEffectiveDate = '';
@@ -153,6 +162,8 @@ export class TodayComponent {
   weekPickerEndLabel: string = '';
   weekPickerTotalN: number = 0;
   weekPickerTotalDollars: string = '0';
+  weekPickerExpectedTotalN: number = 0;
+  weekPickerExpectedTotalDollars: string = '0';
   weekPickerTargetFc: number = 600000;
   weekPickerTargetReached: boolean = false;
   weekPickerProgressPercent: number = 0;
@@ -400,6 +411,12 @@ export class TodayComponent {
     this.weeklyPaymentTotalDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.weeklyPaymentTotalN.toString())
       .toString();
+    this.weeklyExpectedTotalN = this.computeWeeklyExpectedTotal(
+      this.requestDateCorrectFormat
+    );
+    this.weeklyExpectedTotalDollars = this.compute
+      .convertCongoleseFrancToUsDollars(this.weeklyExpectedTotalN.toString())
+      .toString();
     this.weeklyRangeLabel = this.computeWeeklyRangeLabel(
       this.requestDateCorrectFormat
     );
@@ -448,6 +465,30 @@ export class TodayComponent {
     return total;
   }
 
+  private computeWeeklyExpectedTotal(dateKey: string): number {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const clientsWithDebts = this.data.findClientsWithDebts(this.clients || []);
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const dayKey = this.formatDateKey(cursor);
+      const dayName = this.time.getDayOfWeek(dayKey);
+      const clientsExpectedForDay = clientsWithDebts.filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === dayName &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+      total += this.compute.computeExpectedPerDate(clientsExpectedForDay);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
   private computeWeeklyRangeLabel(dateKey: string): string {
     const { start, end } = this.getWeekBounds(dateKey);
     return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
@@ -477,6 +518,12 @@ export class TodayComponent {
     this.weekPickerTotalN = this.computeWeeklyPaymentTotal(dateKey);
     this.weekPickerTotalDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.weekPickerTotalN.toString())
+      .toString();
+    this.weekPickerExpectedTotalN = this.computeWeeklyExpectedTotal(dateKey);
+    this.weekPickerExpectedTotalDollars = this.compute
+      .convertCongoleseFrancToUsDollars(
+        this.weekPickerExpectedTotalN.toString()
+      )
       .toString();
     this.weekPickerTargetFc = this.resolveWeeklyTargetFcForDate(dateKey);
     this.weekPickerTargetReached =
