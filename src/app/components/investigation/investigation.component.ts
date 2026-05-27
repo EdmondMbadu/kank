@@ -4,7 +4,7 @@ import {
   AngularFirestoreDocument,
 } from '@angular/fire/compat/firestore';
 import { Router } from '@angular/router';
-import { combineLatest, Subscription } from 'rxjs';
+import { combineLatest, firstValueFrom, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { User } from 'src/app/models/user';
 import { Client, Comment } from 'src/app/models/client';
@@ -119,6 +119,8 @@ type RecoveredAwayMonth = {
 
 type TFEntry = { loc: string; employees: string[] };
 type TFCell = { iso: string; entries?: TFEntry[] };
+type TFDayMap = { [k: string]: { loc: string; employees: string[] } };
+type TFMonthAssignmentWeek = { weekId: string; start: Date; dates: Date[] };
 type TFTransportCost = { loc: string; amount: number };
 type TFTransportSettingsDoc = {
   locationCosts?: Record<string, TFTransportCost>;
@@ -326,6 +328,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     search: '',
     selected: new Set<string>(),
   };
+  taskMonthEmployeeUid = '';
+  taskMonthAutoAssigning = false;
 
   readonly weekHeaders = [
     'Dimanche',
@@ -3337,6 +3341,189 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       console.error('Failed to remove task-force week assignment:', err);
       alert("Impossible de retirer les affectations de la semaine.");
     }
+  }
+
+  async assignEmployeeForTaskMonth(): Promise<void> {
+    if (!this.auth.isAdmin || this.taskMonthAutoAssigning) return;
+
+    const employeeUid = (this.taskMonthEmployeeUid || '').trim();
+    const employee = this.byUid(employeeUid);
+    const weeks = this.getTaskMonthAssignmentWeeks();
+    const locations = this.taskForceLocations.filter((loc) => loc.trim());
+
+    if (!employeeUid || !employee) {
+      alert('Choisissez un agent.');
+      return;
+    }
+    if (!locations.length) {
+      alert('Aucun site disponible.');
+      return;
+    }
+    if (!weeks.length) {
+      alert('Aucune semaine à affecter pour ce mois.');
+      return;
+    }
+
+    const employeeName = `${employee.firstName ?? ''} ${
+      employee.lastName ?? ''
+    }`.trim();
+    const ok = confirm(
+      `Affecter ${employeeName || 'cet agent'} automatiquement pour ${
+        this.monthNames[this.month - 1]
+      } ${this.year} ?`
+    );
+    if (!ok) return;
+
+    this.taskMonthAutoAssigning = true;
+    try {
+      const history = await this.buildEmployeeTaskLocationHistory(
+        employeeUid,
+        weeks[0].start
+      );
+
+      for (const week of weeks) {
+        const loc = this.chooseTaskMonthLocation(history, locations);
+        const weekDoc = await firstValueFrom(
+          this.performance.getTaskForce(week.weekId)
+        );
+        const days = weekDoc?.days ?? {};
+
+        for (const date of week.dates) {
+          const iso = this.ymd(date);
+          const baseEntries = this.taskEntriesFromDayValue(days[iso]);
+          const map = this.assignEmployeeToTaskLocation(
+            baseEntries,
+            loc,
+            employeeUid
+          );
+          await this.performance.setTaskForceDay(week.weekId, iso, map);
+        }
+
+        history.set(this.slugLocation(loc), week.start);
+      }
+
+      this.loadTaskForceMonth();
+    } catch (err) {
+      console.error('Failed to auto-assign task-force month:', err);
+      alert("Impossible d'affecter automatiquement le mois.");
+    } finally {
+      this.taskMonthAutoAssigning = false;
+    }
+  }
+
+  private getTaskMonthAssignmentWeeks(): TFMonthAssignmentWeek[] {
+    const first = this.startOfMonth(new Date(this.year, this.month - 1));
+    const last = this.endOfMonth(first);
+    const weeks = new Map<string, TFMonthAssignmentWeek>();
+
+    for (let d = first; d <= last; d = this.addDays(d, 1)) {
+      if (d.getDay() === 0) continue;
+
+      const weekId = this.isoWeekId(d);
+      if (!weeks.has(weekId)) {
+        weeks.set(weekId, {
+          weekId,
+          start: this.startOfIsoWeek(d),
+          dates: [],
+        });
+      }
+      weeks.get(weekId)!.dates.push(new Date(d));
+    }
+
+    return Array.from(weeks.values()).sort(
+      (a, b) => a.start.getTime() - b.start.getTime()
+    );
+  }
+
+  private async buildEmployeeTaskLocationHistory(
+    employeeUid: string,
+    beforeWeekStart: Date
+  ): Promise<Map<string, Date>> {
+    const history = new Map<string, Date>();
+    const base = this.startOfIsoWeek(beforeWeekStart);
+    const lookbackWeeks = 52;
+    const weekRefs = Array.from({ length: lookbackWeeks }).map((_, idx) => {
+      const start = this.addDays(base, -7 * (idx + 1));
+      return { start, weekId: this.isoWeekId(start) };
+    });
+
+    const docs = await Promise.all(
+      weekRefs.map(async (ref) => ({
+        ...ref,
+        doc: await firstValueFrom(this.performance.getTaskForce(ref.weekId)),
+      }))
+    );
+
+    docs.forEach(({ doc }) => {
+      const days = doc?.days ?? {};
+      Object.entries(days).forEach(([iso, value]) => {
+        const date = this.isoToLocal(iso);
+        this.taskEntriesFromDayValue(value).forEach((entry) => {
+          if (!(entry.employees || []).includes(employeeUid)) return;
+
+          const key = this.slugLocation(entry.loc);
+          const current = history.get(key);
+          if (!current || date.getTime() > current.getTime()) {
+            history.set(key, date);
+          }
+        });
+      });
+    });
+
+    return history;
+  }
+
+  private chooseTaskMonthLocation(
+    history: Map<string, Date>,
+    locations: string[]
+  ): string {
+    const originalIndex = new Map<string, number>();
+    locations.forEach((loc, idx) =>
+      originalIndex.set(this.slugLocation(loc), idx)
+    );
+
+    return [...locations].sort((a, b) => {
+      const aKey = this.slugLocation(a);
+      const bKey = this.slugLocation(b);
+      const aLast = history.get(aKey)?.getTime() ?? Number.NEGATIVE_INFINITY;
+      const bLast = history.get(bKey)?.getTime() ?? Number.NEGATIVE_INFINITY;
+
+      if (aLast !== bLast) return aLast - bLast;
+      return (originalIndex.get(aKey) ?? 0) - (originalIndex.get(bKey) ?? 0);
+    })[0];
+  }
+
+  private assignEmployeeToTaskLocation(
+    baseEntries: TFEntry[],
+    loc: string,
+    employeeUid: string
+  ): TFDayMap {
+    const targetKey = this.slugLocation(loc);
+    const map: TFDayMap = {};
+    const targetEmployees = new Set<string>();
+
+    baseEntries.forEach((entry) => {
+      const key = this.slugLocation(entry.loc);
+      const employees = Array.isArray(entry.employees) ? entry.employees : [];
+      const remaining = employees.filter((uid) => uid !== employeeUid);
+
+      if (key === targetKey) {
+        remaining.forEach((uid) => targetEmployees.add(uid));
+        return;
+      }
+
+      const hadEmployee = employees.includes(employeeUid);
+      if (remaining.length || !hadEmployee) {
+        map[key] = {
+          loc: entry.loc,
+          employees: Array.from(new Set(remaining)),
+        };
+      }
+    });
+
+    targetEmployees.add(employeeUid);
+    map[targetKey] = { loc, employees: Array.from(targetEmployees) };
+    return map;
   }
 
   private getISOWeek(d: Date): number {
