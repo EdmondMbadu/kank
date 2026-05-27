@@ -3476,6 +3476,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.loadTaskForceMonth();
   }
 
+  isTaskForceToday(cell: TFCell | null): boolean {
+    return !!cell && cell.iso === this.ymd(new Date());
+  }
+
   private ymd(d: Date): string {
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
