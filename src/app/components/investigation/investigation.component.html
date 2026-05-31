@@ -1696,7 +1696,7 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div class="min-w-0">
             <p class="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Attendu semaine
+              Performance paiement de la semaine
             </p>
             <p class="mt-0.5 text-sm font-semibold text-slate-800">
               {{ selectedLocationLabel || "Site" }}
@@ -1706,40 +1706,7 @@
             </p>
           </div>
 
-          <div class="grid w-full gap-3 sm:w-[34rem] md:grid-cols-2">
-            <div>
-              <div
-                class="mb-1 flex items-center justify-between text-xs font-bold"
-                [ngClass]="{
-                  'text-red-600': weeklyExpectedProgressTone === 'red',
-                  'text-amber-600': weeklyExpectedProgressTone === 'yellow',
-                  'text-orange-600': weeklyExpectedProgressTone === 'orange',
-                  'text-emerald-600': weeklyExpectedProgressTone === 'green'
-                }"
-              >
-                <span>Cette semaine</span>
-                <span>{{ weeklyExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
-              </div>
-              <div
-                class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner"
-                title="Cette semaine: paiement divisé par attendu semaine"
-              >
-                <div
-                  class="h-2.5 rounded-full transition-all duration-300"
-                  [ngClass]="{
-                    'bg-red-500': weeklyExpectedProgressTone === 'red',
-                    'bg-amber-400': weeklyExpectedProgressTone === 'yellow',
-                    'bg-orange-500': weeklyExpectedProgressTone === 'orange',
-                    'bg-emerald-500': weeklyExpectedProgressTone === 'green'
-                  }"
-                  [style.width.%]="weeklyExpectedProgressPercent || 0"
-                ></div>
-              </div>
-              <p class="mt-1 text-[11px] text-slate-500">
-                {{ weeklyExpectedRangeLabel }}
-              </p>
-            </div>
-
+          <div class="w-full space-y-3 sm:w-80">
             <div>
               <div
                 class="mb-1 flex items-center justify-between text-xs font-bold"
@@ -1770,6 +1737,39 @@
               </div>
               <p class="mt-1 text-[11px] text-slate-500">
                 {{ previousWeeklyExpectedRangeLabel }}
+              </p>
+            </div>
+
+            <div>
+              <div
+                class="mb-1 flex items-center justify-between text-xs font-bold"
+                [ngClass]="{
+                  'text-red-600': weeklyExpectedProgressTone === 'red',
+                  'text-amber-600': weeklyExpectedProgressTone === 'yellow',
+                  'text-orange-600': weeklyExpectedProgressTone === 'orange',
+                  'text-emerald-600': weeklyExpectedProgressTone === 'green'
+                }"
+              >
+                <span>Cette semaine</span>
+                <span>{{ weeklyExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+              </div>
+              <div
+                class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner"
+                title="Cette semaine: paiement divisé par attendu semaine"
+              >
+                <div
+                  class="h-2.5 rounded-full transition-all duration-300"
+                  [ngClass]="{
+                    'bg-red-500': weeklyExpectedProgressTone === 'red',
+                    'bg-amber-400': weeklyExpectedProgressTone === 'yellow',
+                    'bg-orange-500': weeklyExpectedProgressTone === 'orange',
+                    'bg-emerald-500': weeklyExpectedProgressTone === 'green'
+                  }"
+                  [style.width.%]="weeklyExpectedProgressPercent || 0"
+                ></div>
+              </div>
+              <p class="mt-1 text-[11px] text-slate-500">
+                {{ weeklyExpectedRangeLabel }}
               </p>
             </div>
           </div>
