@@ -140,6 +140,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
   globalFoundationRuleSaving = false;
   globalFoundationRuleMessage = '';
   private globalFoundationRuleInitialized = false;
+
+  // Team monthly budget state
+  budgetViewMode: 'selected' | 'all' = 'selected';
+  selectedBudgetTeamId = '';
+  selectedBudgetInput = '';
+  selectedBudgetSaving = false;
+  selectedBudgetMessage = '';
   
   // Employee transfer feature state
   showEmployeeCopySection = false;
@@ -567,6 +574,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.updateWeekPickerLabels();
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
+      this.initializeBudgetTeamSelection();
       this.logDebug('Locations fetched', {
         count: this.allUsers?.length ?? 0,
         ids: this.allUsers?.map((u) => u.uid) ?? [],
@@ -2259,6 +2267,119 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   get globalFoundationRuleEmployeeCount(): number {
     return this.uniqueFoundationRuleTargets().length;
+  }
+
+  get sortedBudgetTeams(): User[] {
+    return [...(this.allUsers || [])].sort((a, b) =>
+      this.getBudgetTeamLabel(a).localeCompare(this.getBudgetTeamLabel(b))
+    );
+  }
+
+  get selectedBudgetTeam(): User | undefined {
+    return (this.allUsers || []).find(
+      (user) => user.uid === this.selectedBudgetTeamId
+    );
+  }
+
+  get selectedBudgetAmount(): number {
+    return this.getBudgetAmount(this.selectedBudgetTeam);
+  }
+
+  private initializeBudgetTeamSelection(): void {
+    if (!this.allUsers?.length) {
+      this.selectedBudgetTeamId = '';
+      return;
+    }
+
+    const selectedStillExists = this.allUsers.some(
+      (user) => user.uid === this.selectedBudgetTeamId
+    );
+    if (selectedStillExists) {
+      return;
+    }
+
+    const currentUserId = this.auth.currentUser?.uid;
+    const currentTeam = this.allUsers.find((user) => user.uid === currentUserId);
+    this.selectedBudgetTeamId = currentTeam?.uid || this.allUsers[0]?.uid || '';
+  }
+
+  setBudgetViewMode(mode: 'selected' | 'all'): void {
+    this.budgetViewMode = mode;
+    this.selectedBudgetMessage = '';
+    if (mode === 'selected') {
+      this.initializeBudgetTeamSelection();
+    }
+  }
+
+  onBudgetTeamChange(): void {
+    this.selectedBudgetMessage = '';
+    this.selectedBudgetInput = '';
+  }
+
+  selectBudgetTeam(userId?: string): void {
+    if (!userId) return;
+    this.selectedBudgetTeamId = userId;
+    this.budgetViewMode = 'selected';
+    this.onBudgetTeamChange();
+  }
+
+  getBudgetTeamLabel(user?: User): string {
+    if (!user) return 'Equipe inconnue';
+    return (
+      [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+      user.email ||
+      user.uid ||
+      'Equipe inconnue'
+    );
+  }
+
+  getBudgetAmount(user?: User): number {
+    const value = Number(user?.monthBudget);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  async saveSelectedTeamBudget(): Promise<void> {
+    if (this.selectedBudgetSaving) return;
+    if (!this.selectedBudgetTeamId) {
+      alert('Choisissez une équipe.');
+      return;
+    }
+
+    const value = Number(this.selectedBudgetInput);
+    if (!Number.isFinite(value) || value < 0) {
+      alert('Entrez un budget valide.');
+      return;
+    }
+
+    const payload = value.toString();
+    this.selectedBudgetSaving = true;
+    this.selectedBudgetMessage = '';
+    try {
+      await this.auth.updateUserFieldForUserId(
+        this.selectedBudgetTeamId,
+        'monthBudget',
+        payload
+      );
+      this.allUsers = this.allUsers.map((user) =>
+        user.uid === this.selectedBudgetTeamId
+          ? { ...user, monthBudget: payload }
+          : user
+      );
+      if (this.auth.currentUser?.uid === this.selectedBudgetTeamId) {
+        this.auth.currentUser = {
+          ...(this.auth.currentUser || {}),
+          monthBudget: payload,
+        };
+      }
+      this.selectedBudgetInput = '';
+      this.selectedBudgetMessage = 'Budget mis à jour.';
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du budget d'équipe", error);
+      this.selectedBudgetMessage =
+        "Impossible d'enregistrer le budget de cette équipe.";
+    } finally {
+      this.selectedBudgetSaving = false;
+    }
   }
 
   private uniqueFoundationRuleTargets(): Array<{
