@@ -19,7 +19,12 @@ import {
 import { ComputationService } from '../shrink/services/computation.service';
 import { Card, CardTotalWithdrawalSnapshot } from '../models/card';
 import { doc, increment, writeBatch } from 'firebase/firestore';
-import { Audit, Management, MoneyInHandsActivity } from '../models/management';
+import {
+  Audit,
+  Management,
+  MoneyInHandsActivity,
+  MonthlyPaymentSnapshot,
+} from '../models/management';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
 import firebase from 'firebase/compat/app'; // ① NEW
@@ -1927,6 +1932,20 @@ export class DataService {
 
     return managementRef.set(
       { reserveRevealTimeKinshasa: timeValue },
+      { merge: true }
+    );
+  }
+
+  updateManagementMonthlyPaymentSnapshot(
+    snapshotKey: string,
+    snapshot: MonthlyPaymentSnapshot
+  ) {
+    const managementRef: AngularFirestoreDocument<Management> = this.afs.doc(
+      `management/${this.auth.managementInfo.id}`
+    );
+
+    return managementRef.set(
+      { monthlyPaymentSnapshots: { [snapshotKey]: snapshot } },
       { merge: true }
     );
   }

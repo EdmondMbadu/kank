@@ -2,7 +2,11 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { take } from 'rxjs/operators';
-import { Management } from 'src/app/models/management';
+import {
+  Management,
+  MonthlyPaymentSnapshot,
+  MonthlyPaymentSnapshotRow,
+} from 'src/app/models/management';
 import { Client } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
@@ -128,25 +132,10 @@ export class GestionMonthComponent {
   givenMonthTotalOtherExpenseAmount: string = '0';
   fraudRatioOfReserve: number = 0;
   allUsers: User[] = [];
-  monthlyPaymentTotals: Array<{
-    firstName: string;
-    expectedFc: number;
-    expectedDollar: number;
-    totalFc: number;
-    totalDollar: number;
-    reserveFc: number;
-    reserveDollar: number;
-    minimumFc: number;
-    minimumDollar: number;
-    expectedProgressPercent: number;
-    expectedProgressTone: MonthlyProgressTone;
-    reserveExpectedProgressPercent: number;
-    reserveExpectedProgressTone: MonthlyProgressTone;
-    minimumProgressPercent: number;
-    minimumProgressTone: MonthlyProgressTone;
-    minimumStatusLabel: string;
-    trackingId: string;
-  }> = [];
+  monthlyPaymentTotals: MonthlyPaymentSnapshotRow[] = [];
+  selectedMonthlyPaymentSnapshot?: MonthlyPaymentSnapshot;
+  isSavingMonthlyPaymentSnapshot = false;
+  monthlyPaymentSnapshotMessage = '';
   overallMonthlyExpectedTotal = 0;
   overallMonthlyExpectedTotalDollar = 0;
   overallMonthlyPaymentTotal = 0;
@@ -330,7 +319,106 @@ export class GestionMonthComponent {
         this.givenMonthTotalOtherExpenseAmount
       )}`,
     ];
+    this.selectMonthlyPaymentSnapshot();
     this.loadMonthlyPaymentTotals();
+  }
+
+  async takeMonthlyPaymentSnapshot(): Promise<void> {
+    if (this.isLoadingMonthlyPayments || this.isSavingMonthlyPaymentSnapshot) {
+      return;
+    }
+
+    if (!this.monthlyPaymentTotals.length) {
+      alert('Aucune donnée de paiement disponible pour prendre un snapshot.');
+      return;
+    }
+
+    const snapshotKey = this.getMonthlyPaymentSnapshotKey(
+      this.givenMonth,
+      this.givenYear
+    );
+    const existingSnapshot =
+      this.managementInfo?.monthlyPaymentSnapshots?.[snapshotKey];
+    const monthLabel = `${this.time.monthFrenchNames[this.givenMonth - 1]} ${
+      this.givenYear
+    }`;
+    const confirmMessage = existingSnapshot
+      ? `Un snapshot existe déjà pour ${monthLabel}. Voulez-vous le remplacer par les valeurs affichées maintenant ?`
+      : `Prendre un snapshot de Paiement du Mois pour ${monthLabel} avec les valeurs affichées maintenant ?`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    const snapshot = this.buildMonthlyPaymentSnapshot();
+    this.isSavingMonthlyPaymentSnapshot = true;
+    this.monthlyPaymentSnapshotMessage = '';
+
+    try {
+      await this.data.updateManagementMonthlyPaymentSnapshot(
+        snapshotKey,
+        snapshot
+      );
+      this.managementInfo = {
+        ...(this.managementInfo || {}),
+        monthlyPaymentSnapshots: {
+          ...(this.managementInfo?.monthlyPaymentSnapshots || {}),
+          [snapshotKey]: snapshot,
+        },
+      };
+      this.selectedMonthlyPaymentSnapshot = snapshot;
+      this.monthlyPaymentSnapshotMessage = `Snapshot enregistré pour ${monthLabel}.`;
+    } catch (error) {
+      console.error('Unable to save monthly payment snapshot', error);
+      alert("Impossible d'enregistrer le snapshot du mois.");
+    } finally {
+      this.isSavingMonthlyPaymentSnapshot = false;
+    }
+  }
+
+  private buildMonthlyPaymentSnapshot(): MonthlyPaymentSnapshot {
+    return {
+      month: this.givenMonth,
+      year: this.givenYear,
+      monthLabel: `${this.time.monthFrenchNames[this.givenMonth - 1]} ${
+        this.givenYear
+      }`,
+      createdAt: new Date().toISOString(),
+      createdBy: this.auth.currentUser?.firstName || 'Admin',
+      rows: this.monthlyPaymentTotals.map((row) => ({ ...row })),
+      totals: {
+        expectedFc: this.overallMonthlyExpectedTotal,
+        expectedDollar: this.overallMonthlyExpectedTotalDollar,
+        paymentFc: this.overallMonthlyPaymentTotal,
+        paymentDollar: this.overallMonthlyPaymentTotalDollar,
+        reserveFc: this.overallMonthlyReserveTotal,
+        reserveDollar: this.overallMonthlyReserveTotalDollar,
+        minimumFc: this.overallMonthlyMinimumTotal,
+        minimumDollar: this.overallMonthlyMinimumTotalDollar,
+        expectedProgressPercent: this.overallMonthlyExpectedProgressPercent,
+        expectedProgressTone: this.overallMonthlyExpectedProgressTone,
+        reserveExpectedProgressPercent:
+          this.overallMonthlyReserveExpectedProgressPercent,
+        reserveExpectedProgressTone:
+          this.overallMonthlyReserveExpectedProgressTone,
+        minimumProgressPercent: this.overallMonthlyMinimumProgressPercent,
+        minimumProgressTone: this.overallMonthlyMinimumProgressTone,
+      },
+    };
+  }
+
+  private selectMonthlyPaymentSnapshot(): void {
+    const snapshotKey = this.getMonthlyPaymentSnapshotKey(
+      this.givenMonth,
+      this.givenYear
+    );
+    this.selectedMonthlyPaymentSnapshot =
+      this.managementInfo?.monthlyPaymentSnapshots?.[snapshotKey];
+    this.monthlyPaymentSnapshotMessage = '';
+  }
+
+  private getMonthlyPaymentSnapshotKey(month: number, year: number): string {
+    return `${month}-${year}`;
   }
 
   loadMonthlyPaymentTotals(): void {

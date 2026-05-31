@@ -25,11 +25,59 @@ export class Management {
   teamWeeklyBonusThresholdFc?: number;
   projectedWeeklyPaymentTargetFc?: number;
   projectedWeeklyPaymentEffectiveDate?: string;
+  monthlyPaymentSnapshots?: { [monthYear: string]: MonthlyPaymentSnapshot };
   rolePasswords?: {
     admin?: string;
     gestion?: string;
     investigator?: string;
   };
+}
+
+export interface MonthlyPaymentSnapshot {
+  month: number;
+  year: number;
+  monthLabel: string;
+  createdAt: string;
+  createdBy?: string;
+  rows: MonthlyPaymentSnapshotRow[];
+  totals: MonthlyPaymentSnapshotTotals;
+}
+
+export interface MonthlyPaymentSnapshotRow {
+  firstName: string;
+  expectedFc: number;
+  expectedDollar: number;
+  totalFc: number;
+  totalDollar: number;
+  reserveFc: number;
+  reserveDollar: number;
+  minimumFc: number;
+  minimumDollar: number;
+  expectedProgressPercent: number;
+  expectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
+  reserveExpectedProgressPercent: number;
+  reserveExpectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
+  minimumProgressPercent: number;
+  minimumProgressTone: 'red' | 'yellow' | 'orange' | 'green';
+  minimumStatusLabel: string;
+  trackingId: string;
+}
+
+export interface MonthlyPaymentSnapshotTotals {
+  expectedFc: number;
+  expectedDollar: number;
+  paymentFc: number;
+  paymentDollar: number;
+  reserveFc: number;
+  reserveDollar: number;
+  minimumFc: number;
+  minimumDollar: number;
+  expectedProgressPercent: number;
+  expectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
+  reserveExpectedProgressPercent: number;
+  reserveExpectedProgressTone: 'red' | 'yellow' | 'orange' | 'green';
+  minimumProgressPercent: number;
+  minimumProgressTone: 'red' | 'yellow' | 'orange' | 'green';
 }
 
 export interface MoneyInHandsActivity {
