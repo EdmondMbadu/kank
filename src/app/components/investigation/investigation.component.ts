@@ -13,6 +13,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { ComputationService } from 'src/app/shrink/services/computation.service';
 
 type InvestigationDayComment = {
   name?: string;
@@ -142,6 +143,7 @@ type TFWeekTotalSummary = {
     total: number;
   }>;
 };
+type WeeklyExpectedProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 
 @Component({
   selector: 'app-investigation',
@@ -330,6 +332,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   };
   taskMonthEmployeeUid = '';
   taskMonthAutoAssigning = false;
+  weeklyExpectedProgressPercent = 0;
+  weeklyExpectedProgressTone: WeeklyExpectedProgressTone = 'red';
+  weeklyExpectedRangeLabel = '';
 
   readonly weekHeaders = [
     'Dimanche',
@@ -377,6 +382,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     public auth: AuthService,
     private time: TimeService,
     private data: DataService,
+    private compute: ComputationService,
     private performance: PerformanceService,
     private afs: AngularFirestore,
     private router: Router
@@ -400,12 +406,14 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.currentUserId = user?.uid ?? '';
       this.ensureDefaultLocation();
       this.applyInvestigatorLocationFromSchedule();
+      this.updateWeeklyExpectedProgress();
     });
     const locationsSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.locations = Array.isArray(data) ? (data as User[]) : [];
       this.ensureDefaultLocation();
       this.applyInvestigatorLocationFromSchedule();
       this.updateTaskForceLocations();
+      this.updateWeeklyExpectedProgress();
       this.loadFeedbackForAccessibleLocations();
       this.loadAllEmployeesForLocations();
       this.loadAllProblematicClients();
@@ -448,6 +456,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.assignTrackingIds();
       this.filterShouldPayToday();
       this.filterAllClients();
+      this.updateWeeklyExpectedProgress();
     });
     this.subs.add(this.clientsSub);
   }
@@ -633,6 +642,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.loadClientsForLocation(user.uid);
     this.initDayDocForLocation(user.uid);
     this.initFeedbackDocForLocation(user.uid);
+    this.updateWeeklyExpectedProgress();
   }
 
   private selectedDateAsLocalDate(): Date {
@@ -813,6 +823,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.syncFeedbackFilterWithSelectedDate();
     this.applyInvestigatorLocationFromSchedule();
     this.filterShouldPayToday();
+    this.updateWeeklyExpectedProgress();
     const ownerId = this.selectedLocationId || this.currentUserId;
     if (ownerId) {
       this.daySummary = '';
@@ -820,6 +831,142 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.initDayDocForLocation(ownerId);
       this.initFeedbackDocForLocation(ownerId);
     }
+  }
+
+  private updateWeeklyExpectedProgress(): void {
+    const dateKey = this.weeklyExpectedProgressDateKey();
+    this.weeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(dateKey);
+
+    const user = this.selectedLocationUser();
+    if (!user) {
+      this.weeklyExpectedProgressPercent = 0;
+      this.weeklyExpectedProgressTone = 'red';
+      return;
+    }
+
+    const weeklyExpectedFc = this.computeWeeklyExpectedTotalForClients(
+      this.clients,
+      dateKey
+    );
+    const weeklyPaymentFc = this.computeWeeklyPaymentTotalForUser(user, dateKey);
+
+    this.weeklyExpectedProgressPercent =
+      weeklyExpectedFc === 0
+        ? weeklyPaymentFc > 0
+          ? 100
+          : 0
+        : Math.min(100, (weeklyPaymentFc / weeklyExpectedFc) * 100);
+    this.weeklyExpectedProgressTone = this.resolveExpectedProgressTone(
+      this.weeklyExpectedProgressPercent
+    );
+  }
+
+  private selectedLocationUser(): User | undefined {
+    const ownerId = this.selectedLocationId || this.currentUserId;
+    return this.locations.find((loc) => loc.uid === ownerId);
+  }
+
+  private weeklyExpectedProgressDateKey(): string {
+    const selectedDate = this.selectedDateAsLocalDate();
+    if (
+      selectedDate.getMonth() + 1 === this.month &&
+      selectedDate.getFullYear() === this.year
+    ) {
+      return this.formatDateKey(selectedDate);
+    }
+
+    const today = new Date();
+    if (today.getMonth() + 1 === this.month && today.getFullYear() === this.year) {
+      return this.formatDateKey(today);
+    }
+
+    return this.formatDateKey(new Date(this.year, this.month - 1, 1));
+  }
+
+  private computeWeeklyPaymentTotalForUser(user: User, dateKey: string): number {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const payments = user.dailyReimbursement || {};
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const key = this.formatDateKey(cursor);
+      const amount = Number(payments[key] ?? 0);
+      if (!Number.isNaN(amount)) {
+        total += amount;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private computeWeeklyExpectedTotalForClients(
+    clients: Client[],
+    dateKey: string
+  ): number {
+    const clientsWithDebts = this.data.findClientsWithDebts(clients);
+    const { start, end } = this.getWeekBounds(dateKey);
+    const cursor = new Date(start);
+    let total = 0;
+
+    while (cursor <= end) {
+      const dayName = this.time.getDayOfWeek(this.formatDateKey(cursor));
+      const clientsExpectedForDay = clientsWithDebts.filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === dayName &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+      total += this.compute.computeExpectedPerDate(clientsExpectedForDay);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private resolveExpectedProgressTone(
+    percent: number
+  ): WeeklyExpectedProgressTone {
+    const value = Number(percent) || 0;
+
+    if (value >= 100) return 'green';
+    if (value >= 80) return 'orange';
+    if (value >= 50) return 'yellow';
+    return 'red';
+  }
+
+  private computeWeeklyRangeLabel(dateKey: string): string {
+    const { start, end } = this.getWeekBounds(dateKey);
+    return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
+  }
+
+  private getWeekBounds(dateKey: string): { start: Date; end: Date } {
+    const [month, day, year] = dateKey.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const dayIndex = dateObj.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(dateObj);
+    start.setDate(dateObj.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+  }
+
+  private formatWeekDate(date: Date): string {
+    return `${date.getDate()} ${
+      this.monthNames[date.getMonth()]
+    } ${date.getFullYear()}`;
+  }
+
+  private formatDateKey(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
   }
 
   private refreshProblematic(): void {
@@ -3653,6 +3800,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.month = d.getMonth() + 1;
     this.year = d.getFullYear();
     this.loadTaskForceMonth();
+    this.updateWeeklyExpectedProgress();
   }
 
   nextTaskForceMonth(): void {
@@ -3661,6 +3809,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.month = d.getMonth() + 1;
     this.year = d.getFullYear();
     this.loadTaskForceMonth();
+    this.updateWeeklyExpectedProgress();
   }
 
   isTaskForceToday(cell: TFCell | null): boolean {
