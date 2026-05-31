@@ -36,6 +36,14 @@ type InvestigationDayDoc = {
   updatedAt?: string;
 };
 
+type InvestigationWeekDoc = {
+  weekKey?: string;
+  weekLabel?: string;
+  summary?: string;
+  comments?: InvestigationDayComment[];
+  updatedAt?: string;
+};
+
 type ClientFeedbackAnswer = {
   id: string;
   question: string;
@@ -242,9 +250,15 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   dayKey = '';
   dayLabel = '';
   selectedDate = '';
+  summaryMode: 'week' | 'day' = 'week';
   daySummary = '';
   daySummarySaving = false;
+  weekKey = '';
+  weekLabel = '';
+  weekSummary = '';
+  weekSummarySaving = false;
   dayComments: InvestigationDayComment[] = [];
+  weekComments: InvestigationDayComment[] = [];
   dayCommentName = '';
   dayCommentText = '';
   dayCommentPosting = false;
@@ -370,9 +384,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   year = new Date().getFullYear();
 
   private dayDoc?: AngularFirestoreDocument<InvestigationDayDoc>;
+  private weekDoc?: AngularFirestoreDocument<InvestigationWeekDoc>;
   private feedbackDoc?: AngularFirestoreDocument<ClientFeedbackDayDoc>;
   private subs = new Subscription();
   private dayDocSub?: Subscription;
+  private weekDocSub?: Subscription;
   private feedbackDocSub?: Subscription;
   private clientsSub?: Subscription;
   private allClientsSub = new Subscription();
@@ -437,6 +453,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.subs.unsubscribe();
     this.tfSubs.forEach((s) => s.unsubscribe());
     this.recoveredAwayBonusSub?.unsubscribe();
+    this.weekDocSub?.unsubscribe();
     this.taskTransportSettingsSub?.unsubscribe();
     this.taskCurrentWeekTotalSub?.unsubscribe();
     this.taskNextWeekTotalSub?.unsubscribe();
@@ -529,6 +546,22 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.subs.add(this.dayDocSub);
   }
 
+  private initWeekDocForLocation(userId: string): void {
+    this.weekDoc = this.getWeekDocRef(userId);
+
+    if (this.weekDocSub) {
+      this.weekDocSub.unsubscribe();
+    }
+
+    this.weekDocSub = this.weekDoc.valueChanges().subscribe((doc) => {
+      this.weekSummary = doc?.summary ?? '';
+      this.weekComments = Array.isArray(doc?.comments) ? doc!.comments! : [];
+      this.weekComments = this.sortDayComments(this.weekComments);
+    });
+
+    this.subs.add(this.weekDocSub);
+  }
+
   private initFeedbackDocForLocation(userId: string): void {
     this.feedbackDoc = this.getFeedbackDocRef(userId);
     this.loadFeedbackForAccessibleLocations();
@@ -538,6 +571,13 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const ownerId = userId || this.selectedLocationId || this.currentUserId;
     return this.afs.doc<InvestigationDayDoc>(
       `users/${ownerId}/investigationDays/${this.dayKey}`
+    );
+  }
+
+  private getWeekDocRef(userId?: string) {
+    const ownerId = userId || this.selectedLocationId || this.currentUserId;
+    return this.afs.doc<InvestigationWeekDoc>(
+      `users/${ownerId}/investigationWeeks/${this.weekKey}`
     );
   }
 
@@ -645,10 +685,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedLocationLabel = user.firstName || user.email || 'Site';
     this.daySummary = '';
     this.dayComments = [];
+    this.weekComments = [];
     this.clientFeedbackEntries = [];
     this.allClientFeedbackEntries = [];
     this.loadClientsForLocation(user.uid);
     this.initDayDocForLocation(user.uid);
+    this.initWeekDocForLocation(user.uid);
     this.initFeedbackDocForLocation(user.uid);
     this.updateWeeklyExpectedProgress();
   }
@@ -824,6 +866,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.dayLabel = `${dayFrench} ${this.time.convertDateToDayMonthYear(
       this.dayKey
     )}`;
+
+    const { start, end } = this.getWeekBounds(this.dayKey);
+    this.weekKey = this.ymd(start);
+    this.weekLabel = `${this.formatWeekDate(start)} - ${this.formatWeekDate(
+      end
+    )}`;
   }
 
   onDateChange(): void {
@@ -837,7 +885,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     if (ownerId) {
       this.daySummary = '';
       this.dayComments = [];
+      this.weekSummary = '';
+      this.weekComments = [];
       this.initDayDocForLocation(ownerId);
+      this.initWeekDocForLocation(ownerId);
       this.initFeedbackDocForLocation(ownerId);
     }
   }
@@ -2950,6 +3001,38 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       });
   }
 
+  saveWeekSummary(): void {
+    if (!this.weekDoc) return;
+    this.weekSummarySaving = true;
+
+    const payload: InvestigationWeekDoc = {
+      weekKey: this.weekKey,
+      weekLabel: this.weekLabel,
+      summary: this.weekSummary.trim(),
+      updatedAt: this.time.todaysDate(),
+    };
+
+    this.weekDoc
+      .set(payload, { merge: true })
+      .catch((err) => {
+        console.error('Failed to save week summary:', err);
+        alert('Impossible de sauvegarder le resume de la semaine.');
+      })
+      .finally(() => {
+        this.weekSummarySaving = false;
+      });
+  }
+
+  get summaryComments(): InvestigationDayComment[] {
+    return this.summaryMode === 'week' ? this.weekComments : this.dayComments;
+  }
+
+  get summaryCommentPlaceholder(): string {
+    return this.summaryMode === 'week'
+      ? "Commentaire sur la semaine pour l'équipe..."
+      : "Commentaire sur la journée pour l'équipe...";
+  }
+
   postDayComment(): void {
     if (!this.selectedLocationId && !this.currentUserId) {
       alert('Utilisateur non disponible. Veuillez reessayer.');
@@ -2969,18 +3052,32 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       timeFormatted: this.time.convertDateToDesiredFormat(time),
     };
 
-    const updated = [...this.dayComments, newComment];
-    this.dayComments = this.sortDayComments(updated);
+    const isWeekMode = this.summaryMode === 'week';
+    const updated = this.sortDayComments([...this.summaryComments, newComment]);
+    if (isWeekMode) {
+      this.weekComments = updated;
+    } else {
+      this.dayComments = updated;
+    }
 
-    const dayDoc = this.getDayDocRef();
+    const targetDoc: AngularFirestoreDocument<any> = isWeekMode
+      ? this.getWeekDocRef()
+      : this.getDayDocRef();
     this.dayCommentPosting = true;
-    dayDoc
+    targetDoc
       .set(
-        {
-          dateKey: this.dayKey,
-          comments: this.dayComments,
-          updatedAt: time,
-        },
+        isWeekMode
+          ? {
+              weekKey: this.weekKey,
+              weekLabel: this.weekLabel,
+              comments: this.weekComments,
+              updatedAt: time,
+            }
+          : {
+              dateKey: this.dayKey,
+              comments: this.dayComments,
+              updatedAt: time,
+            },
         { merge: true }
       )
       .then(() => {
@@ -2999,19 +3096,30 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   deleteDayComment(index: number): void {
     if (!this.auth.isAdmin) return;
     if (!this.selectedLocationId && !this.currentUserId) return;
-    if (index < 0 || index >= this.dayComments.length) return;
+    if (index < 0 || index >= this.summaryComments.length) return;
 
     if (!confirm('Supprimer définitivement ce commentaire ?')) return;
 
-    const updated = [...this.dayComments];
+    const isWeekMode = this.summaryMode === 'week';
+    const updated = [...this.summaryComments];
     updated.splice(index, 1);
-    this.dayComments = this.sortDayComments(updated);
+    const sorted = this.sortDayComments(updated);
+    if (isWeekMode) {
+      this.weekComments = sorted;
+    } else {
+      this.dayComments = sorted;
+    }
 
-    const dayDoc = this.getDayDocRef();
-    dayDoc
-      .set({ comments: this.dayComments }, { merge: true })
+    const targetDoc: AngularFirestoreDocument<any> = isWeekMode
+      ? this.getWeekDocRef()
+      : this.getDayDocRef();
+    targetDoc
+      .set(
+        { comments: isWeekMode ? this.weekComments : this.dayComments },
+        { merge: true }
+      )
       .catch((err) => {
-        console.error('Failed to delete day comment:', err);
+        console.error('Failed to delete investigation comment:', err);
         alert('Impossible de supprimer le commentaire.');
       });
   }
