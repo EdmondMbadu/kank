@@ -134,6 +134,8 @@ export class GestionMonthComponent {
     expectedDollar: number;
     totalFc: number;
     totalDollar: number;
+    reserveFc: number;
+    reserveDollar: number;
     minimumFc: number;
     minimumDollar: number;
     expectedProgressPercent: number;
@@ -147,6 +149,8 @@ export class GestionMonthComponent {
   overallMonthlyExpectedTotalDollar = 0;
   overallMonthlyPaymentTotal = 0;
   overallMonthlyPaymentTotalDollar = 0;
+  overallMonthlyReserveTotal = 0;
+  overallMonthlyReserveTotalDollar = 0;
   overallMonthlyMinimumTotal = 0;
   overallMonthlyMinimumTotalDollar = 0;
   overallMonthlyExpectedProgressPercent = 0;
@@ -348,12 +352,14 @@ export class GestionMonthComponent {
   private computeMonthlyPaymentTotals(clientsByUser: Client[][]): void {
     this.overallMonthlyExpectedTotal = 0;
     this.overallMonthlyPaymentTotal = 0;
+    this.overallMonthlyReserveTotal = 0;
     this.overallMonthlyMinimumTotal = 0;
 
     this.monthlyPaymentTotals = this.allUsers.map((user, index) => {
       const clients = clientsByUser[index] || [];
       const expectedFc = this.computeMonthlyExpectedTotalForUser(clients);
       const totalFc = this.computeMonthlyPaymentTotalForUser(user);
+      const reserveFc = this.computeMonthlyReserveTotalForUser(user);
       const minimumFc = this.computeMonthlyMinimumForUser(user);
       const expectedProgressPercent = this.computeProgressPercent(
         totalFc,
@@ -372,6 +378,7 @@ export class GestionMonthComponent {
 
       this.overallMonthlyExpectedTotal += expectedFc;
       this.overallMonthlyPaymentTotal += totalFc;
+      this.overallMonthlyReserveTotal += reserveFc;
       this.overallMonthlyMinimumTotal += minimumFc;
 
       return {
@@ -380,6 +387,8 @@ export class GestionMonthComponent {
         expectedDollar: this.toUsd(expectedFc),
         totalFc,
         totalDollar: this.toUsd(totalFc),
+        reserveFc,
+        reserveDollar: this.toUsd(reserveFc),
         minimumFc,
         minimumDollar: this.toUsd(minimumFc),
         expectedProgressPercent,
@@ -397,6 +406,9 @@ export class GestionMonthComponent {
     );
     this.overallMonthlyPaymentTotalDollar = this.toUsd(
       this.overallMonthlyPaymentTotal
+    );
+    this.overallMonthlyReserveTotalDollar = this.toUsd(
+      this.overallMonthlyReserveTotal
     );
     this.overallMonthlyMinimumTotalDollar = this.toUsd(
       this.overallMonthlyMinimumTotal
@@ -425,6 +437,20 @@ export class GestionMonthComponent {
       const amount = Number(value) || 0;
       return sum + amount;
     }, 0);
+  }
+
+  private computeMonthlyReserveTotalForUser(user: User): number {
+    const reserve = user.reserve || {};
+    return Object.entries(reserve).reduce((sum, [key, value]) => {
+      const [month, , year] = key.split('-').map(Number);
+      if (month !== this.givenMonth || year !== this.givenYear) return sum;
+      return sum + this.extractAmount(value);
+    }, 0);
+  }
+
+  private extractAmount(value: unknown): number {
+    const amount = Number(String(value ?? '').split(':')[0]);
+    return Number.isFinite(amount) ? amount : 0;
   }
 
   private computeMonthlyExpectedTotalForUser(clients: Client[]): number {
