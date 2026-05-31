@@ -313,9 +313,8 @@ export class AuthService {
   SignOn(email: string, password: string, word: string): Promise<void> {
     return this.fireauth // ← on retourne la promesse
       .signInWithEmailAndPassword(email, password)
-      .then(async (res) => {
+      .then((res) => {
         this.applyRoleWord(word);
-        await this.persistAcceptedRoleAccess(res.user?.uid || undefined);
 
         if (res.user?.emailVerified) {
           this.router.navigate(['/home']);
@@ -1630,33 +1629,6 @@ export class AuthService {
       normalized === this.normalizeSecret(rolePasswords.investigator);
 
     this.persistRoleFlags();
-  }
-
-  public async applyRoleWordAndPersist(
-    word: string,
-    userId?: string
-  ): Promise<void> {
-    this.applyRoleWord(word);
-    await this.persistAcceptedRoleAccess(userId);
-  }
-
-  public async persistAcceptedRoleAccess(userId?: string): Promise<void> {
-    const uid = userId || this.currentUser?.uid;
-    if (!uid || !this.isAdmninistrator) {
-      return;
-    }
-
-    const userRef: AngularFirestoreDocument<User> = this.afs.doc(
-      `users/${uid}`
-    );
-    await userRef.set({ admin: 'true' }, { merge: true });
-    if (this.currentUser?.uid === uid || !this.currentUser?.uid) {
-      this.currentUser = {
-        ...(this.currentUser || {}),
-        uid,
-        admin: 'true',
-      };
-    }
   }
 
   public clearPersistedRoleFlags(): void {

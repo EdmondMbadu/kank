@@ -26,7 +26,7 @@ export class PublicAuthService {
     try {
       const auth = getAuth(app);
       const result = await signInWithEmailAndPassword(auth, email, password);
-      await this.authService.applyRoleWordAndPersist(word, result.user?.uid);
+      this.authService.applyRoleWord(word);
 
       if (result.user?.emailVerified) {
         await this.router.navigate(['/home']);
