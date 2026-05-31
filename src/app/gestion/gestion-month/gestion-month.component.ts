@@ -140,6 +140,8 @@ export class GestionMonthComponent {
     minimumDollar: number;
     expectedProgressPercent: number;
     expectedProgressTone: MonthlyProgressTone;
+    reserveExpectedProgressPercent: number;
+    reserveExpectedProgressTone: MonthlyProgressTone;
     minimumProgressPercent: number;
     minimumProgressTone: MonthlyProgressTone;
     minimumStatusLabel: string;
@@ -155,6 +157,8 @@ export class GestionMonthComponent {
   overallMonthlyMinimumTotalDollar = 0;
   overallMonthlyExpectedProgressPercent = 0;
   overallMonthlyExpectedProgressTone: MonthlyProgressTone = 'red';
+  overallMonthlyReserveExpectedProgressPercent = 0;
+  overallMonthlyReserveExpectedProgressTone: MonthlyProgressTone = 'red';
   overallMonthlyMinimumProgressPercent = 0;
   overallMonthlyMinimumProgressTone: MonthlyProgressTone = 'red';
   isLoadingMonthlyPayments = false;
@@ -365,12 +369,19 @@ export class GestionMonthComponent {
         totalFc,
         expectedFc
       );
+      const reserveExpectedProgressPercent = this.computeProgressPercent(
+        reserveFc,
+        expectedFc
+      );
       const minimumProgressPercent = this.computeProgressPercent(
         totalFc,
         minimumFc
       );
       const expectedProgressTone = this.resolveProgressTone(
         expectedProgressPercent
+      );
+      const reserveExpectedProgressTone = this.resolveProgressTone(
+        reserveExpectedProgressPercent
       );
       const minimumProgressTone = this.resolveProgressTone(
         minimumProgressPercent
@@ -393,6 +404,8 @@ export class GestionMonthComponent {
         minimumDollar: this.toUsd(minimumFc),
         expectedProgressPercent,
         expectedProgressTone,
+        reserveExpectedProgressPercent,
+        reserveExpectedProgressTone,
         minimumProgressPercent,
         minimumProgressTone,
         minimumStatusLabel: totalFc >= minimumFc ? 'Atteint' : 'À faire',
@@ -419,6 +432,14 @@ export class GestionMonthComponent {
     );
     this.overallMonthlyExpectedProgressTone = this.resolveProgressTone(
       this.overallMonthlyExpectedProgressPercent
+    );
+    this.overallMonthlyReserveExpectedProgressPercent =
+      this.computeProgressPercent(
+        this.overallMonthlyReserveTotal,
+        this.overallMonthlyExpectedTotal
+      );
+    this.overallMonthlyReserveExpectedProgressTone = this.resolveProgressTone(
+      this.overallMonthlyReserveExpectedProgressPercent
     );
     this.overallMonthlyMinimumProgressPercent = this.computeProgressPercent(
       this.overallMonthlyPaymentTotal,

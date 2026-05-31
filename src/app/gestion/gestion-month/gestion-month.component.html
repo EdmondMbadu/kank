@@ -290,32 +290,65 @@
                 <span class="text-[11px] text-slate-500 dark:text-slate-400">
                   somme des attendus journaliers
                 </span>
-                <div class="mt-2 w-36">
-                  <div
-                    class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
-                    title="Progression basée sur le total mois divisé par l'attendu mois"
-                  >
+                <div class="mt-2 w-40 space-y-2">
+                  <div>
                     <div
-                      class="h-1.5 rounded-full transition-all duration-300"
+                      class="mb-1 flex items-center justify-between text-[11px] font-semibold"
                       [ngClass]="{
-                        'bg-red-500': s.expectedProgressTone === 'red',
-                        'bg-amber-400': s.expectedProgressTone === 'yellow',
-                        'bg-orange-500': s.expectedProgressTone === 'orange',
-                        'bg-emerald-500': s.expectedProgressTone === 'green'
+                        'text-red-600': s.expectedProgressTone === 'red',
+                        'text-amber-600': s.expectedProgressTone === 'yellow',
+                        'text-orange-600': s.expectedProgressTone === 'orange',
+                        'text-emerald-600': s.expectedProgressTone === 'green'
                       }"
-                      [style.width.%]="s.expectedProgressPercent || 0"
-                    ></div>
+                    >
+                      <span>Paiement</span>
+                      <span>{{ s.expectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                      title="Progression basée sur paiement du mois divisé par l'attendu mois"
+                    >
+                      <div
+                        class="h-1.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': s.expectedProgressTone === 'red',
+                          'bg-amber-400': s.expectedProgressTone === 'yellow',
+                          'bg-orange-500': s.expectedProgressTone === 'orange',
+                          'bg-emerald-500': s.expectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="s.expectedProgressPercent || 0"
+                      ></div>
+                    </div>
                   </div>
-                  <div
-                    class="mt-1 text-[11px] font-semibold"
-                    [ngClass]="{
-                      'text-red-600': s.expectedProgressTone === 'red',
-                      'text-amber-600': s.expectedProgressTone === 'yellow',
-                      'text-orange-600': s.expectedProgressTone === 'orange',
-                      'text-emerald-600': s.expectedProgressTone === 'green'
-                    }"
-                  >
-                    {{ s.expectedProgressPercent || 0 | number : "1.0-0" }}% réalisé
+
+                  <div>
+                    <div
+                      class="mb-1 flex items-center justify-between text-[11px] font-semibold"
+                      [ngClass]="{
+                        'text-red-600': s.reserveExpectedProgressTone === 'red',
+                        'text-amber-600': s.reserveExpectedProgressTone === 'yellow',
+                        'text-orange-600': s.reserveExpectedProgressTone === 'orange',
+                        'text-emerald-600': s.reserveExpectedProgressTone === 'green'
+                      }"
+                    >
+                      <span>Réserve</span>
+                      <span>{{ s.reserveExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                      title="Progression basée sur réserve du mois divisée par l'attendu mois"
+                    >
+                      <div
+                        class="h-1.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': s.reserveExpectedProgressTone === 'red',
+                          'bg-amber-400': s.reserveExpectedProgressTone === 'yellow',
+                          'bg-orange-500': s.reserveExpectedProgressTone === 'orange',
+                          'bg-emerald-500': s.reserveExpectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="s.reserveExpectedProgressPercent || 0"
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -402,32 +435,65 @@
                 <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
                   {{ +overallMonthlyExpectedTotal || 0 | number : "1.0-0" }} FC
                 </span>
-                <div class="mt-3 w-48">
-                  <div
-                    class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
-                    title="Progression totale basée sur total mois divisé par attendu mois"
-                  >
+                <div class="mt-3 w-52 space-y-2">
+                  <div>
                     <div
-                      class="h-2.5 rounded-full transition-all duration-300"
+                      class="mb-1 flex items-center justify-between text-xs font-bold"
                       [ngClass]="{
-                        'bg-red-500': overallMonthlyExpectedProgressTone === 'red',
-                        'bg-amber-400': overallMonthlyExpectedProgressTone === 'yellow',
-                        'bg-orange-500': overallMonthlyExpectedProgressTone === 'orange',
-                        'bg-emerald-500': overallMonthlyExpectedProgressTone === 'green'
+                        'text-red-600': overallMonthlyExpectedProgressTone === 'red',
+                        'text-amber-600': overallMonthlyExpectedProgressTone === 'yellow',
+                        'text-orange-600': overallMonthlyExpectedProgressTone === 'orange',
+                        'text-emerald-600': overallMonthlyExpectedProgressTone === 'green'
                       }"
-                      [style.width.%]="overallMonthlyExpectedProgressPercent || 0"
-                    ></div>
+                    >
+                      <span>Paiement</span>
+                      <span>{{ overallMonthlyExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                      title="Progression totale basée sur paiement du mois divisé par attendu mois"
+                    >
+                      <div
+                        class="h-2.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': overallMonthlyExpectedProgressTone === 'red',
+                          'bg-amber-400': overallMonthlyExpectedProgressTone === 'yellow',
+                          'bg-orange-500': overallMonthlyExpectedProgressTone === 'orange',
+                          'bg-emerald-500': overallMonthlyExpectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="overallMonthlyExpectedProgressPercent || 0"
+                      ></div>
+                    </div>
                   </div>
-                  <div
-                    class="mt-1.5 text-xs font-bold"
-                    [ngClass]="{
-                      'text-red-600': overallMonthlyExpectedProgressTone === 'red',
-                      'text-amber-600': overallMonthlyExpectedProgressTone === 'yellow',
-                      'text-orange-600': overallMonthlyExpectedProgressTone === 'orange',
-                      'text-emerald-600': overallMonthlyExpectedProgressTone === 'green'
-                    }"
-                  >
-                    {{ overallMonthlyExpectedProgressPercent || 0 | number : "1.0-0" }}% réalisé au total
+
+                  <div>
+                    <div
+                      class="mb-1 flex items-center justify-between text-xs font-bold"
+                      [ngClass]="{
+                        'text-red-600': overallMonthlyReserveExpectedProgressTone === 'red',
+                        'text-amber-600': overallMonthlyReserveExpectedProgressTone === 'yellow',
+                        'text-orange-600': overallMonthlyReserveExpectedProgressTone === 'orange',
+                        'text-emerald-600': overallMonthlyReserveExpectedProgressTone === 'green'
+                      }"
+                    >
+                      <span>Réserve</span>
+                      <span>{{ overallMonthlyReserveExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+                    </div>
+                    <div
+                      class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+                      title="Progression totale basée sur réserve du mois divisée par attendu mois"
+                    >
+                      <div
+                        class="h-2.5 rounded-full transition-all duration-300"
+                        [ngClass]="{
+                          'bg-red-500': overallMonthlyReserveExpectedProgressTone === 'red',
+                          'bg-amber-400': overallMonthlyReserveExpectedProgressTone === 'yellow',
+                          'bg-orange-500': overallMonthlyReserveExpectedProgressTone === 'orange',
+                          'bg-emerald-500': overallMonthlyReserveExpectedProgressTone === 'green'
+                        }"
+                        [style.width.%]="overallMonthlyReserveExpectedProgressPercent || 0"
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </div>
