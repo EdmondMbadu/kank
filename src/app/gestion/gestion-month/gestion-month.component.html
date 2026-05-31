@@ -604,9 +604,35 @@
           <span *ngIf="snapshot.createdBy">par {{ snapshot.createdBy }}</span>
         </p>
       </div>
+      <button
+        type="button"
+        [attr.aria-label]="
+          isMonthlyPaymentSnapshotExpanded
+            ? 'Masquer le snapshot'
+            : 'Afficher le snapshot'
+        "
+        (click)="isMonthlyPaymentSnapshotExpanded = !isMonthlyPaymentSnapshotExpanded"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-900/30"
+      >
+        <svg
+          class="h-5 w-5 transition-transform"
+          [ngClass]="{ 'rotate-180': isMonthlyPaymentSnapshotExpanded }"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
     </div>
 
-    <div class="mt-4 w-full overflow-x-auto">
+    <div
+      *ngIf="isMonthlyPaymentSnapshotExpanded"
+      class="mt-4 w-full overflow-x-auto"
+    >
       <table
         class="min-w-[1020px] text-sm text-left rtl:text-right text-gray-700 dark:text-gray-300 xl:min-w-full"
       >

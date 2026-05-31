@@ -136,6 +136,7 @@ export class GestionMonthComponent {
   selectedMonthlyPaymentSnapshot?: MonthlyPaymentSnapshot;
   isSavingMonthlyPaymentSnapshot = false;
   monthlyPaymentSnapshotMessage = '';
+  isMonthlyPaymentSnapshotExpanded = false;
   overallMonthlyExpectedTotal = 0;
   overallMonthlyExpectedTotalDollar = 0;
   overallMonthlyPaymentTotal = 0;
@@ -367,6 +368,7 @@ export class GestionMonthComponent {
         },
       };
       this.selectedMonthlyPaymentSnapshot = snapshot;
+      this.isMonthlyPaymentSnapshotExpanded = true;
       this.monthlyPaymentSnapshotMessage = `Snapshot enregistré pour ${monthLabel}.`;
     } catch (error) {
       console.error('Unable to save monthly payment snapshot', error);
@@ -414,6 +416,7 @@ export class GestionMonthComponent {
     );
     this.selectedMonthlyPaymentSnapshot =
       this.managementInfo?.monthlyPaymentSnapshots?.[snapshotKey];
+    this.isMonthlyPaymentSnapshotExpanded = false;
     this.monthlyPaymentSnapshotMessage = '';
   }
 
