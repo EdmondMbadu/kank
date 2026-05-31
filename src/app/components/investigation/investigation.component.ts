@@ -332,6 +332,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   };
   taskMonthEmployeeUid = '';
   taskMonthAutoAssigning = false;
+  paymentPerformanceDate = '';
+  dailyPaymentPerformancePercent = 0;
+  dailyPaymentPerformanceTone: WeeklyExpectedProgressTone = 'red';
+  dailyPaymentPerformanceLabel = '';
   weeklyExpectedProgressPercent = 0;
   weeklyExpectedProgressTone: WeeklyExpectedProgressTone = 'red';
   weeklyExpectedRangeLabel = '';
@@ -397,6 +401,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       return;
     }
     this.selectedDate = this.time.getTodaysDateYearMonthDay();
+    this.paymentPerformanceDate = this.selectedDate;
     this.updateDateContext();
     this.syncFeedbackFilterWithSelectedDate();
     this.recoveredAwayYears = this.time.yearsList;
@@ -824,6 +829,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   onDateChange(): void {
     this.updateDateContext();
     this.syncFeedbackFilterWithSelectedDate();
+    this.paymentPerformanceDate = this.selectedDate;
     this.applyInvestigatorLocationFromSchedule();
     this.filterShouldPayToday();
     this.updateWeeklyExpectedProgress();
@@ -836,8 +842,16 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
   }
 
+  onPaymentPerformanceDateChange(): void {
+    if (!this.paymentPerformanceDate) {
+      this.paymentPerformanceDate = this.selectedDate || this.time.getTodaysDateYearMonthDay();
+    }
+    this.updateWeeklyExpectedProgress();
+  }
+
   private updateWeeklyExpectedProgress(): void {
     const dateKey = this.weeklyExpectedProgressDateKey();
+    this.dailyPaymentPerformanceLabel = this.formatPerformanceDateLabel(dateKey);
     this.weeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(dateKey);
     this.previousWeeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(
       this.previousWeekDateKey(dateKey)
@@ -845,6 +859,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     const user = this.selectedLocationUser();
     if (!user) {
+      this.dailyPaymentPerformancePercent = 0;
+      this.dailyPaymentPerformanceTone = 'red';
       this.weeklyExpectedProgressPercent = 0;
       this.weeklyExpectedProgressTone = 'red';
       this.previousWeeklyExpectedProgressPercent = 0;
@@ -852,6 +868,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const dayProgress = this.computeDailyExpectedProgressForDate(user, dateKey);
     const currentWeekProgress = this.computeWeeklyExpectedProgressForDate(
       user,
       dateKey
@@ -861,6 +878,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.previousWeekDateKey(dateKey)
     );
 
+    this.dailyPaymentPerformancePercent = dayProgress.percent;
+    this.dailyPaymentPerformanceTone = dayProgress.tone;
     this.weeklyExpectedProgressPercent = currentWeekProgress.percent;
     this.weeklyExpectedProgressTone = currentWeekProgress.tone;
     this.previousWeeklyExpectedProgressPercent = previousWeekProgress.percent;
@@ -873,20 +892,20 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private weeklyExpectedProgressDateKey(): string {
-    const selectedDate = this.selectedDateAsLocalDate();
-    if (
-      selectedDate.getMonth() + 1 === this.month &&
-      selectedDate.getFullYear() === this.year
-    ) {
-      return this.formatDateKey(selectedDate);
+    if (this.paymentPerformanceDate) {
+      const [year, month, day] = this.paymentPerformanceDate
+        .split('-')
+        .map(Number);
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day)
+      ) {
+        return this.formatDateKey(new Date(year, month - 1, day));
+      }
     }
 
-    const today = new Date();
-    if (today.getMonth() + 1 === this.month && today.getFullYear() === this.year) {
-      return this.formatDateKey(today);
-    }
-
-    return this.formatDateKey(new Date(this.year, this.month - 1, 1));
+    return this.formatDateKey(this.selectedDateAsLocalDate());
   }
 
   private previousWeekDateKey(dateKey: string): string {
@@ -916,6 +935,51 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       percent,
       tone: this.resolveExpectedProgressTone(percent),
     };
+  }
+
+  private computeDailyExpectedProgressForDate(
+    user: User,
+    dateKey: string
+  ): { percent: number; tone: WeeklyExpectedProgressTone } {
+    const dailyExpectedFc = this.computeDailyExpectedTotalForClients(
+      this.clients,
+      dateKey
+    );
+    const dailyPaymentFc = this.computeDailyPaymentTotalForUser(user, dateKey);
+    const percent =
+      dailyExpectedFc === 0
+        ? dailyPaymentFc > 0
+          ? 100
+          : 0
+        : Math.min(100, (dailyPaymentFc / dailyExpectedFc) * 100);
+
+    return {
+      percent,
+      tone: this.resolveExpectedProgressTone(percent),
+    };
+  }
+
+  private computeDailyPaymentTotalForUser(user: User, dateKey: string): number {
+    const amount = Number(user.dailyReimbursement?.[dateKey] ?? 0);
+    return Number.isNaN(amount) ? 0 : amount;
+  }
+
+  private computeDailyExpectedTotalForClients(
+    clients: Client[],
+    dateKey: string
+  ): number {
+    const dayName = this.time.getDayOfWeek(dateKey);
+    const clientsExpectedForDay = this.data
+      .findClientsWithDebts(clients)
+      .filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === dayName &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+    return this.compute.computeExpectedPerDate(clientsExpectedForDay);
   }
 
   private computeWeeklyPaymentTotalForUser(user: User, dateKey: string): number {
@@ -998,6 +1062,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return `${date.getDate()} ${
       this.monthNames[date.getMonth()]
     } ${date.getFullYear()}`;
+  }
+
+  private formatPerformanceDateLabel(dateKey: string): string {
+    const [month, day, year] = dateKey.split('-').map(Number);
+    return this.formatWeekDate(new Date(year, month - 1, day));
   }
 
   private formatDateKey(date: Date): string {
