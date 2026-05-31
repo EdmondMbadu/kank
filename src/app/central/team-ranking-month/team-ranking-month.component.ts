@@ -2285,6 +2285,22 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.getBudgetAmount(this.selectedBudgetTeam);
   }
 
+  get averageBudgetManagerPerformance(): number {
+    const performances = this.sortedBudgetTeams
+      .map((team) => this.getTeamManagerPerformance(team))
+      .filter((value) => value > 0);
+    if (!performances.length) return 0;
+    const total = performances.reduce((sum, value) => sum + value, 0);
+    return this.compute.roundNumber(total / performances.length);
+  }
+
+  get totalBudgetAmount(): number {
+    return this.sortedBudgetTeams.reduce(
+      (sum, team) => sum + this.getBudgetAmount(team),
+      0
+    );
+  }
+
   private initializeBudgetTeamSelection(): void {
     if (!this.allUsers?.length) {
       this.selectedBudgetTeamId = '';
@@ -2336,6 +2352,62 @@ export class TeamRankingMonthComponent implements OnDestroy {
   getBudgetAmount(user?: User): number {
     const value = Number(user?.monthBudget);
     return Number.isFinite(value) ? value : 0;
+  }
+
+  getTeamManager(team?: User): Employee | undefined {
+    if (!team?.uid) return undefined;
+
+    const managers = (this.allEmployeesAll || []).filter((employee) => {
+      const ownerUid = employee?.tempUser?.uid || this.auth.currentUser?.uid;
+      return (
+        ownerUid === team.uid &&
+        this.normalizeRole(employee?.role).includes('manager')
+      );
+    });
+
+    const activeManager = managers.find((employee) => {
+      const status = this.normalizeRole(employee?.status);
+      return (
+        status === 'travaille' ||
+        status === 'transféré' ||
+        status === 'transfere'
+      );
+    });
+
+    return activeManager || managers[0];
+  }
+
+  getTeamManagerName(team?: User): string {
+    const manager = this.getTeamManager(team);
+    const name = [manager?.firstName, manager?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    return name || 'Manager non trouvé';
+  }
+
+  getTeamManagerPerformance(team?: User): number {
+    const manager = this.getTeamManager(team);
+    const value = Number(manager?.performancePercentageMonth);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  getTeamManagerPerformanceClass(team?: User): string {
+    const value = this.getTeamManagerPerformance(team);
+    if (value >= 80) {
+      return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300';
+    }
+    if (value >= 50) {
+      return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
+    }
+    if (value > 0) {
+      return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-300';
+    }
+    return 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400';
+  }
+
+  trackBudgetTeamByUid(_index: number, team: User): string {
+    return team.uid || `${team.email || 'team'}-${_index}`;
   }
 
   async saveSelectedTeamBudget(): Promise<void> {

@@ -3978,40 +3978,96 @@
       </div>
     </div>
 
-    <div *ngIf="budgetViewMode === 'all'" class="mt-6 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-      <div class="grid grid-cols-[1fr_auto_auto] gap-3 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-        <div>Équipe</div>
-        <div class="text-right">Budget</div>
-        <div class="text-right">Action</div>
+    <div *ngIf="budgetViewMode === 'all'" class="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+      <div class="mb-4 grid gap-3 sm:grid-cols-3">
+        <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Équipes
+          </div>
+          <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+            {{ sortedBudgetTeams.length }}
+          </div>
+        </div>
+        <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Performance manager moyenne
+          </div>
+          <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+            {{ averageBudgetManagerPerformance | number : "1.0-0" }}%
+          </div>
+        </div>
+        <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Budget total actuel
+          </div>
+          <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+            FC {{ totalBudgetAmount | number : "1.0-0" }}
+          </div>
+        </div>
       </div>
-      <div
-        *ngFor="let team of sortedBudgetTeams"
-        class="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-t border-slate-200 px-4 py-3 text-sm dark:border-slate-700"
-      >
-        <div class="min-w-0">
-          <div class="truncate font-semibold text-slate-900 dark:text-white">
-            {{ getBudgetTeamLabel(team) }}
-          </div>
-          <div class="truncate text-xs text-slate-500 dark:text-slate-400">
-            {{ team.email || team.uid }}
-          </div>
-        </div>
-        <div class="whitespace-nowrap text-right font-bold text-slate-900 dark:text-white">
-          FC {{ getBudgetAmount(team) | number : "1.0-0" }}
-        </div>
-        <button
-          type="button"
-          (click)="selectBudgetTeam(team.uid)"
-          class="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+        <table class="min-w-[760px] w-full table-auto border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <th class="px-4 py-3 text-left">Équipe</th>
+              <th class="px-4 py-3 text-left">Manager actuel</th>
+              <th class="px-4 py-3 text-right">Performance mois</th>
+              <th class="px-4 py-3 text-right">Budget actuel</th>
+              <th class="px-4 py-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr
+              *ngFor="let team of sortedBudgetTeams; trackBy: trackBudgetTeamByUid"
+              class="transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
+            >
+              <td class="px-4 py-3">
+                <div class="font-semibold text-slate-900 dark:text-white">
+                  {{ getBudgetTeamLabel(team) }}
+                </div>
+                <div class="mt-0.5 max-w-xs truncate text-xs text-slate-500 dark:text-slate-400">
+                  {{ team.email || team.uid }}
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-medium text-slate-800 dark:text-slate-100">
+                  {{ getTeamManagerName(team) }}
+                </div>
+                <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Manager
+                </div>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <span
+                  class="inline-flex min-w-[5rem] justify-center rounded-full border px-3 py-1 text-xs font-bold"
+                  [ngClass]="getTeamManagerPerformanceClass(team)"
+                >
+                  {{ getTeamManagerPerformance(team) | number : "1.0-0" }}%
+                </span>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-right text-base font-extrabold text-slate-900 dark:text-white">
+                FC {{ getBudgetAmount(team) | number : "1.0-0" }}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <button
+                  type="button"
+                  (click)="selectBudgetTeam(team.uid)"
+                  class="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                >
+                  Modifier
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div
+          *ngIf="sortedBudgetTeams.length === 0"
+          class="border-t border-slate-200 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
         >
-          Modifier
-        </button>
-      </div>
-      <div
-        *ngIf="sortedBudgetTeams.length === 0"
-        class="border-t border-slate-200 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
-      >
-        Aucune équipe trouvée.
+          Aucune équipe trouvée.
+        </div>
       </div>
     </div>
   </div>
