@@ -3847,226 +3847,329 @@
   class="px-4 pb-12 mx-auto max-w-5xl lg:px-6"
 >
   <div
-    class="rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none"
+    class="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none"
   >
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div class="max-w-2xl">
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md dark:bg-emerald-600"
-          >
-            <svg
-              class="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h2 class="text-xl font-bold text-slate-900 dark:text-white">
-              Budget Emprunts du Mois
-            </h2>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Voir le budget de l’équipe sélectionnée ou comparer toutes les équipes.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold dark:border-slate-700 dark:bg-slate-800"
-      >
-        <button
-          type="button"
-          (click)="setBudgetViewMode('selected')"
-          class="rounded-lg px-4 py-2 transition"
-          [ngClass]="
-            budgetViewMode === 'selected'
-              ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-white'
-              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          "
-        >
-          Équipe actuelle
-        </button>
-        <button
-          type="button"
-          (click)="setBudgetViewMode('all')"
-          class="rounded-lg px-4 py-2 transition"
-          [ngClass]="
-            budgetViewMode === 'all'
-              ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-white'
-              : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          "
-        >
-          Toutes
-        </button>
-      </div>
-    </div>
-
-    <div *ngIf="budgetViewMode === 'selected'" class="mt-6 grid gap-5 lg:grid-cols-[1fr_0.85fr]">
-      <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/80">
-        <label
-          class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
-        >
-          Équipe
-        </label>
-        <select
-          [(ngModel)]="selectedBudgetTeamId"
-          (ngModelChange)="onBudgetTeamChange()"
-          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-        >
-          <option value="">Choisir une équipe</option>
-          <option *ngFor="let team of sortedBudgetTeams" [value]="team.uid">
-            {{ getBudgetTeamLabel(team) }}
-          </option>
-        </select>
-
-        <div class="mt-5 rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Budget actuel
-          </div>
-          <div class="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
-            FC {{ selectedBudgetAmount | number : "1.0-0" }}
-          </div>
-          <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {{ getBudgetTeamLabel(selectedBudgetTeam) }}
-          </div>
-        </div>
-      </div>
-
-      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-900/20">
-        <label
-          class="mb-2 block text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
-        >
-          Nouveau budget
-        </label>
-        <input
-          [(ngModel)]="selectedBudgetInput"
-          type="number"
-          min="0"
-          step="1"
-          placeholder="Montant en FC"
-          class="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-slate-900 dark:text-slate-100"
-        />
-        <button
-          type="button"
-          (click)="saveSelectedTeamBudget()"
-          [disabled]="selectedBudgetSaving || !selectedBudgetTeamId"
-          class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {{ selectedBudgetSaving ? "Sauvegarde..." : "Mettre à jour" }}
-        </button>
-        <p
-          *ngIf="selectedBudgetMessage"
-          class="mt-3 text-sm font-medium"
-          [ngClass]="
-            selectedBudgetMessage.includes('Impossible')
-              ? 'text-rose-700 dark:text-rose-300'
-              : 'text-emerald-700 dark:text-emerald-300'
-          "
-        >
-          {{ selectedBudgetMessage }}
-        </p>
-      </div>
-    </div>
-
-    <div *ngIf="budgetViewMode === 'all'" class="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/40">
-      <div class="mb-4 grid gap-3 sm:grid-cols-3">
-        <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Équipes
-          </div>
-          <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
-            {{ sortedBudgetTeams.length }}
-          </div>
-        </div>
-        <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Performance manager moyenne
-          </div>
-          <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
-            {{ averageBudgetManagerPerformance | number : "1.0-0" }}%
-          </div>
-        </div>
-        <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
-          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Budget total actuel
-          </div>
-          <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
-            FC {{ totalBudgetAmount | number : "1.0-0" }}
-          </div>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-        <table class="min-w-[760px] w-full table-auto border-collapse text-sm">
-          <thead>
-            <tr class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              <th class="px-4 py-3 text-left">Équipe</th>
-              <th class="px-4 py-3 text-left">Manager actuel</th>
-              <th class="px-4 py-3 text-right">Performance mois</th>
-              <th class="px-4 py-3 text-right">Budget actuel</th>
-              <th class="px-4 py-3 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr
-              *ngFor="let team of sortedBudgetTeams; trackBy: trackBudgetTeamByUid"
-              class="transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
-            >
-              <td class="px-4 py-3">
-                <div class="font-semibold text-slate-900 dark:text-white">
-                  {{ getBudgetTeamLabel(team) }}
-                </div>
-                <div class="mt-0.5 max-w-xs truncate text-xs text-slate-500 dark:text-slate-400">
-                  {{ team.email || team.uid }}
-                </div>
-              </td>
-              <td class="px-4 py-3">
-                <div class="font-medium text-slate-800 dark:text-slate-100">
-                  {{ getTeamManagerName(team) }}
-                </div>
-                <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  Manager
-                </div>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <span
-                  class="inline-flex min-w-[5rem] justify-center rounded-full border px-3 py-1 text-xs font-bold"
-                  [ngClass]="getTeamManagerPerformanceClass(team)"
-                >
-                  {{ getTeamManagerPerformance(team) | number : "1.0-0" }}%
-                </span>
-              </td>
-              <td class="whitespace-nowrap px-4 py-3 text-right text-base font-extrabold text-slate-900 dark:text-white">
-                FC {{ getBudgetAmount(team) | number : "1.0-0" }}
-              </td>
-              <td class="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  (click)="selectBudgetTeam(team.uid)"
-                  class="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
-                >
-                  Modifier
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
+    <button
+      type="button"
+      (click)="toggleBudgetSection()"
+      class="flex w-full flex-col gap-4 p-6 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <div class="flex items-center gap-3">
         <div
-          *ngIf="sortedBudgetTeams.length === 0"
-          class="border-t border-slate-200 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md dark:bg-emerald-600"
         >
-          Aucune équipe trouvée.
+          <svg
+            class="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+            Budget Emprunts du Mois
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Formule : performance manager x 100 000 FC.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-4 lg:justify-end">
+        <div class="text-right">
+          <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Vue par défaut
+          </div>
+          <div class="mt-1 text-sm font-bold text-slate-900 dark:text-white">
+            Toutes les équipes
+          </div>
+        </div>
+        <svg
+          class="h-6 w-6 text-slate-500 transition-transform dark:text-slate-300"
+          [class.rotate-180]="budgetSectionOpen"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+
+    <div *ngIf="budgetSectionOpen" class="border-t border-slate-200 p-6 dark:border-slate-800">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div
+          class="inline-flex w-fit rounded-xl border border-slate-200 bg-slate-50 p-1 text-sm font-semibold dark:border-slate-700 dark:bg-slate-800"
+        >
+          <button
+            type="button"
+            (click)="setBudgetViewMode('all')"
+            class="rounded-lg px-4 py-2 transition"
+            [ngClass]="
+              budgetViewMode === 'all'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-white'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            "
+          >
+            Toutes
+          </button>
+          <button
+            type="button"
+            (click)="setBudgetViewMode('selected')"
+            class="rounded-lg px-4 py-2 transition"
+            [ngClass]="
+              budgetViewMode === 'selected'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-white'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            "
+          >
+            Équipe actuelle
+          </button>
+        </div>
+
+        <div class="text-sm text-slate-500 dark:text-slate-400">
+          Projeté = performance manager du mois x 100 000 FC
+        </div>
+      </div>
+
+      <div *ngIf="budgetViewMode === 'selected'" class="mt-6 grid gap-5 lg:grid-cols-[1fr_0.85fr]">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/80">
+          <label
+            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+          >
+            Équipe
+          </label>
+          <select
+            [(ngModel)]="selectedBudgetTeamId"
+            (ngModelChange)="onBudgetTeamChange()"
+            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="">Choisir une équipe</option>
+            <option *ngFor="let team of sortedBudgetTeams" [value]="team.uid">
+              {{ getBudgetTeamLabel(team) }}
+            </option>
+          </select>
+
+          <div class="mt-5 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+              <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Budget actuel
+              </div>
+              <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">
+                FC {{ selectedBudgetAmount | number : "1.0-0" }}
+              </div>
+            </div>
+            <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+              <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Budget projeté
+              </div>
+              <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">
+                FC {{ getProjectedBudgetAmount(selectedBudgetTeam) | number : "1.0-0" }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-900/20">
+          <label
+            class="mb-2 block text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
+          >
+            Nouveau budget manuel
+          </label>
+          <input
+            [(ngModel)]="selectedBudgetInput"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="Montant en FC"
+            class="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-slate-900 dark:text-slate-100"
+          />
+          <button
+            type="button"
+            (click)="saveSelectedTeamBudget()"
+            [disabled]="selectedBudgetSaving || !selectedBudgetTeamId"
+            class="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ selectedBudgetSaving ? "Sauvegarde..." : "Mettre à jour" }}
+          </button>
+          <p
+            *ngIf="selectedBudgetMessage"
+            class="mt-3 text-sm font-medium"
+            [ngClass]="
+              selectedBudgetMessage.includes('Impossible')
+                ? 'text-rose-700 dark:text-rose-300'
+                : 'text-emerald-700 dark:text-emerald-300'
+            "
+          >
+            {{ selectedBudgetMessage }}
+          </p>
+        </div>
+      </div>
+
+      <div *ngIf="budgetViewMode === 'all'" class="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+        <div class="mb-4 grid gap-3 lg:grid-cols-4">
+          <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Équipes
+            </div>
+            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+              {{ sortedBudgetTeams.length }}
+            </div>
+          </div>
+          <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Performance moyenne
+            </div>
+            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+              {{ averageBudgetManagerPerformance | number : "1.0-0" }}%
+            </div>
+          </div>
+          <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Budget actuel total
+            </div>
+            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+              FC {{ totalBudgetAmount | number : "1.0-0" }}
+            </div>
+          </div>
+          <div class="rounded-xl bg-white p-4 shadow-sm dark:bg-slate-900">
+            <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Budget recommandé total
+            </div>
+            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+              FC {{ totalRecommendedBudgetAmount | number : "1.0-0" }}
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4 rounded-xl border border-emerald-200 bg-white p-4 dark:border-emerald-800 dark:bg-slate-900">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <label class="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                [(ngModel)]="budgetFormulaOverrideHigherBudgets"
+                class="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span>
+                <span class="block text-sm font-bold text-slate-900 dark:text-white">
+                  Forcer la formule pour toutes les équipes
+                </span>
+                <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                  Désactivé : garde le budget actuel quand il est déjà supérieur au budget projeté.
+                </span>
+              </span>
+            </label>
+
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {{ budgetFormulaTeamsToUpdateCount }} à modifier · {{ budgetFormulaTeamsSkippedCount }} conservée(s)
+              </div>
+              <button
+                type="button"
+                (click)="applyBudgetFormulaToTeams()"
+                [disabled]="budgetFormulaSaving || budgetFormulaTeamsToUpdateCount === 0"
+                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ budgetFormulaSaving ? "Application..." : "Appliquer la formule" }}
+              </button>
+            </div>
+          </div>
+          <p
+            *ngIf="budgetFormulaMessage"
+            class="mt-3 text-sm font-medium"
+            [ngClass]="
+              budgetFormulaMessage.includes('Impossible')
+                ? 'text-rose-700 dark:text-rose-300'
+                : 'text-emerald-700 dark:text-emerald-300'
+            "
+          >
+            {{ budgetFormulaMessage }}
+          </p>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <table class="min-w-[980px] w-full table-auto border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <th class="px-4 py-3 text-left">Équipe</th>
+                <th class="px-4 py-3 text-left">Manager actuel</th>
+                <th class="px-4 py-3 text-right">Performance</th>
+                <th class="px-4 py-3 text-right">Budget actuel</th>
+                <th class="px-4 py-3 text-right">Budget projeté</th>
+                <th class="px-4 py-3 text-right">Recommandé</th>
+                <th class="px-4 py-3 text-right">Statut</th>
+                <th class="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let team of sortedBudgetTeams; trackBy: trackBudgetTeamByUid"
+                class="transition hover:bg-slate-50 dark:hover:bg-slate-800/70"
+              >
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-slate-900 dark:text-white">
+                    {{ getBudgetTeamLabel(team) }}
+                  </div>
+                  <div class="mt-0.5 max-w-xs truncate text-xs text-slate-500 dark:text-slate-400">
+                    {{ team.email || team.uid }}
+                  </div>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-slate-800 dark:text-slate-100">
+                    {{ getTeamManagerName(team) }}
+                  </div>
+                  <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Manager
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <span
+                    class="inline-flex min-w-[5rem] justify-center rounded-full border px-3 py-1 text-xs font-bold"
+                    [ngClass]="getTeamManagerPerformanceClass(team)"
+                  >
+                    {{ getTeamManagerPerformance(team) | number : "1.0-0" }}%
+                  </span>
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right font-bold text-slate-900 dark:text-white">
+                  FC {{ getBudgetAmount(team) | number : "1.0-0" }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-200">
+                  FC {{ getProjectedBudgetAmount(team) | number : "1.0-0" }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-right text-base font-extrabold text-slate-900 dark:text-white">
+                  FC {{ getRecommendedBudgetAmount(team) | number : "1.0-0" }}
+                </td>
+                <td class="px-4 py-3 text-right text-xs font-bold" [ngClass]="getBudgetFormulaStatusClass(team)">
+                  {{ getBudgetFormulaStatus(team) }}
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    (click)="selectBudgetTeam(team.uid)"
+                    class="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                  >
+                    Modifier
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div
+            *ngIf="sortedBudgetTeams.length === 0"
+            class="border-t border-slate-200 px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
+          >
+            Aucune équipe trouvée.
+          </div>
         </div>
       </div>
     </div>

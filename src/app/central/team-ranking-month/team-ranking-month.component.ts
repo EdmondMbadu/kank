@@ -142,11 +142,15 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private globalFoundationRuleInitialized = false;
 
   // Team monthly budget state
-  budgetViewMode: 'selected' | 'all' = 'selected';
+  budgetSectionOpen = false;
+  budgetViewMode: 'selected' | 'all' = 'all';
   selectedBudgetTeamId = '';
   selectedBudgetInput = '';
   selectedBudgetSaving = false;
   selectedBudgetMessage = '';
+  budgetFormulaOverrideHigherBudgets = false;
+  budgetFormulaSaving = false;
+  budgetFormulaMessage = '';
   
   // Employee transfer feature state
   showEmployeeCopySection = false;
@@ -2301,6 +2305,35 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
   }
 
+  get totalProjectedBudgetAmount(): number {
+    return this.sortedBudgetTeams.reduce(
+      (sum, team) => sum + this.getProjectedBudgetAmount(team),
+      0
+    );
+  }
+
+  get totalRecommendedBudgetAmount(): number {
+    return this.sortedBudgetTeams.reduce(
+      (sum, team) => sum + this.getRecommendedBudgetAmount(team),
+      0
+    );
+  }
+
+  get budgetFormulaTeamsToUpdateCount(): number {
+    return this.getBudgetFormulaUpdates().length;
+  }
+
+  get budgetFormulaTeamsSkippedCount(): number {
+    return this.sortedBudgetTeams.length - this.budgetFormulaTeamsToUpdateCount;
+  }
+
+  toggleBudgetSection(): void {
+    this.budgetSectionOpen = !this.budgetSectionOpen;
+    if (this.budgetSectionOpen) {
+      this.budgetViewMode = 'all';
+    }
+  }
+
   private initializeBudgetTeamSelection(): void {
     if (!this.allUsers?.length) {
       this.selectedBudgetTeamId = '';
@@ -2392,6 +2425,40 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return Number.isFinite(value) ? value : 0;
   }
 
+  getProjectedBudgetAmount(team?: User): number {
+    return this.getTeamManagerPerformance(team) * 100000;
+  }
+
+  getRecommendedBudgetAmount(team?: User): number {
+    const projected = this.getProjectedBudgetAmount(team);
+    if (this.budgetFormulaOverrideHigherBudgets) {
+      return projected;
+    }
+    return Math.max(this.getBudgetAmount(team), projected);
+  }
+
+  getBudgetFormulaStatus(team?: User): string {
+    const current = this.getBudgetAmount(team);
+    const projected = this.getProjectedBudgetAmount(team);
+    if (this.budgetFormulaOverrideHigherBudgets) {
+      return current === projected ? 'Déjà aligné' : 'Sera remplacé';
+    }
+    if (current > projected) return 'Conservé';
+    if (current === projected) return 'Déjà aligné';
+    return 'À augmenter';
+  }
+
+  getBudgetFormulaStatusClass(team?: User): string {
+    const status = this.getBudgetFormulaStatus(team);
+    if (status === 'À augmenter' || status === 'Sera remplacé') {
+      return 'text-emerald-700 dark:text-emerald-300';
+    }
+    if (status === 'Conservé') {
+      return 'text-amber-700 dark:text-amber-300';
+    }
+    return 'text-slate-500 dark:text-slate-400';
+  }
+
   getTeamManagerPerformanceClass(team?: User): string {
     const value = this.getTeamManagerPerformance(team);
     if (value >= 80) {
@@ -2408,6 +2475,86 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   trackBudgetTeamByUid(_index: number, team: User): string {
     return team.uid || `${team.email || 'team'}-${_index}`;
+  }
+
+  private getBudgetFormulaUpdates(): Array<{ userId: string; budget: number }> {
+    return this.sortedBudgetTeams
+      .map((team) => {
+        const userId = team.uid || '';
+        const projected = this.getProjectedBudgetAmount(team);
+        const current = this.getBudgetAmount(team);
+        const nextBudget = this.budgetFormulaOverrideHigherBudgets
+          ? projected
+          : Math.max(current, projected);
+        return { userId, budget: nextBudget, current };
+      })
+      .filter(
+        (item) =>
+          !!item.userId &&
+          Number.isFinite(item.budget) &&
+          item.budget !== item.current
+      )
+      .map(({ userId, budget }) => ({ userId, budget }));
+  }
+
+  async applyBudgetFormulaToTeams(): Promise<void> {
+    if (this.budgetFormulaSaving) return;
+
+    const updates = this.getBudgetFormulaUpdates();
+    if (!updates.length) {
+      this.budgetFormulaMessage = 'Aucun budget à modifier.';
+      return;
+    }
+
+    const confirmed = confirm(
+      `Appliquer la formule Performance manager x 100 000 à ${updates.length} équipe${
+        updates.length > 1 ? 's' : ''
+      } ?`
+    );
+    if (!confirmed) return;
+
+    this.budgetFormulaSaving = true;
+    this.budgetFormulaMessage = '';
+    try {
+      await Promise.all(
+        updates.map((update) =>
+          this.auth.updateUserFieldForUserId(
+            update.userId,
+            'monthBudget',
+            update.budget.toString()
+          )
+        )
+      );
+
+      const budgetByUserId = new Map(
+        updates.map((update) => [update.userId, update.budget.toString()])
+      );
+      this.allUsers = this.allUsers.map((user) =>
+        user.uid && budgetByUserId.has(user.uid)
+          ? { ...user, monthBudget: budgetByUserId.get(user.uid) }
+          : user
+      );
+
+      if (
+        this.auth.currentUser?.uid &&
+        budgetByUserId.has(this.auth.currentUser.uid)
+      ) {
+        this.auth.currentUser = {
+          ...(this.auth.currentUser || {}),
+          monthBudget: budgetByUserId.get(this.auth.currentUser.uid),
+        };
+      }
+
+      this.budgetFormulaMessage = `Formule appliquée à ${updates.length} équipe${
+        updates.length > 1 ? 's' : ''
+      }.`;
+    } catch (error) {
+      console.error("Erreur lors de l'application de la formule budget", error);
+      this.budgetFormulaMessage =
+        "Impossible d'appliquer la formule à toutes les équipes.";
+    } finally {
+      this.budgetFormulaSaving = false;
+    }
   }
 
   async saveSelectedTeamBudget(): Promise<void> {
