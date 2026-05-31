@@ -16,22 +16,6 @@ service cloud.firestore {
         request.auth.token.portalClient == true;
     }
 
-    function currentUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function isAdminUser() {
-      return signedIn() &&
-        !isPortalClient() &&
-        (
-          currentUserData().admin == 'true' ||
-          (
-            currentUserData().roles is list &&
-            currentUserData().roles.hasAny(['admin'])
-          )
-        );
-    }
-
     function portalOwnerUid() {
       return isPortalClient() &&
         ('ownerUid' in request.auth.token) ?
@@ -58,7 +42,8 @@ service cloud.firestore {
       allow create, delete: if isOwner(userId);
       allow update: if isOwner(userId) ||
         (
-          isAdminUser() &&
+          signedIn() &&
+          !isPortalClient() &&
           resource != null &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'monthBudget'
