@@ -705,7 +705,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return new Date();
   }
 
-  private resolveInvestigatorScheduledLocationForSelectedDate(): User | null {
+  private resolveInvestigatorScheduledLocationForSelectedDate(
+    syncTaskForceMonth = true
+  ): User | null {
     this.scheduledInvestigatorLocationId = '';
     this.scheduledInvestigatorLocationLabel = '';
 
@@ -716,9 +718,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     const month = date.getMonth() + 1;
     const year = date.getFullYear();
     if (this.month !== month || this.year !== year) {
-      this.month = month;
-      this.year = year;
-      this.loadTaskForceMonth();
+      if (syncTaskForceMonth) {
+        this.month = month;
+        this.year = year;
+        this.loadTaskForceMonth();
+      }
       return null;
     }
 
@@ -749,8 +753,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return user;
   }
 
-  private applyInvestigatorLocationFromSchedule(): void {
-    const user = this.resolveInvestigatorScheduledLocationForSelectedDate();
+  private applyInvestigatorLocationFromSchedule(syncTaskForceMonth = true): void {
+    const user =
+      this.resolveInvestigatorScheduledLocationForSelectedDate(syncTaskForceMonth);
     if (!user || user.uid === this.selectedLocationId) return;
 
     this.applyLocation(user);
@@ -3454,7 +3459,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
         this.recomputeTaskWeekSummary();
         this.recomputeTaskTransportTotals();
-        this.applyInvestigatorLocationFromSchedule();
+        this.applyInvestigatorLocationFromSchedule(false);
       });
 
       this.tfSubs.push(sub);
@@ -4012,7 +4017,6 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.month = d.getMonth() + 1;
     this.year = d.getFullYear();
     this.loadTaskForceMonth();
-    this.updateWeeklyExpectedProgress();
   }
 
   nextTaskForceMonth(): void {
@@ -4021,7 +4025,6 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.month = d.getMonth() + 1;
     this.year = d.getFullYear();
     this.loadTaskForceMonth();
-    this.updateWeeklyExpectedProgress();
   }
 
   isTaskForceToday(cell: TFCell | null): boolean {
