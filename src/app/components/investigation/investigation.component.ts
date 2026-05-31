@@ -335,6 +335,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   weeklyExpectedProgressPercent = 0;
   weeklyExpectedProgressTone: WeeklyExpectedProgressTone = 'red';
   weeklyExpectedRangeLabel = '';
+  previousWeeklyExpectedProgressPercent = 0;
+  previousWeeklyExpectedProgressTone: WeeklyExpectedProgressTone = 'red';
+  previousWeeklyExpectedRangeLabel = '';
 
   readonly weekHeaders = [
     'Dimanche',
@@ -836,29 +839,32 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   private updateWeeklyExpectedProgress(): void {
     const dateKey = this.weeklyExpectedProgressDateKey();
     this.weeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(dateKey);
+    this.previousWeeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(
+      this.previousWeekDateKey(dateKey)
+    );
 
     const user = this.selectedLocationUser();
     if (!user) {
       this.weeklyExpectedProgressPercent = 0;
       this.weeklyExpectedProgressTone = 'red';
+      this.previousWeeklyExpectedProgressPercent = 0;
+      this.previousWeeklyExpectedProgressTone = 'red';
       return;
     }
 
-    const weeklyExpectedFc = this.computeWeeklyExpectedTotalForClients(
-      this.clients,
+    const currentWeekProgress = this.computeWeeklyExpectedProgressForDate(
+      user,
       dateKey
     );
-    const weeklyPaymentFc = this.computeWeeklyPaymentTotalForUser(user, dateKey);
-
-    this.weeklyExpectedProgressPercent =
-      weeklyExpectedFc === 0
-        ? weeklyPaymentFc > 0
-          ? 100
-          : 0
-        : Math.min(100, (weeklyPaymentFc / weeklyExpectedFc) * 100);
-    this.weeklyExpectedProgressTone = this.resolveExpectedProgressTone(
-      this.weeklyExpectedProgressPercent
+    const previousWeekProgress = this.computeWeeklyExpectedProgressForDate(
+      user,
+      this.previousWeekDateKey(dateKey)
     );
+
+    this.weeklyExpectedProgressPercent = currentWeekProgress.percent;
+    this.weeklyExpectedProgressTone = currentWeekProgress.tone;
+    this.previousWeeklyExpectedProgressPercent = previousWeekProgress.percent;
+    this.previousWeeklyExpectedProgressTone = previousWeekProgress.tone;
   }
 
   private selectedLocationUser(): User | undefined {
@@ -881,6 +887,35 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     }
 
     return this.formatDateKey(new Date(this.year, this.month - 1, 1));
+  }
+
+  private previousWeekDateKey(dateKey: string): string {
+    const [month, day, year] = dateKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() - 7);
+    return this.formatDateKey(date);
+  }
+
+  private computeWeeklyExpectedProgressForDate(
+    user: User,
+    dateKey: string
+  ): { percent: number; tone: WeeklyExpectedProgressTone } {
+    const weeklyExpectedFc = this.computeWeeklyExpectedTotalForClients(
+      this.clients,
+      dateKey
+    );
+    const weeklyPaymentFc = this.computeWeeklyPaymentTotalForUser(user, dateKey);
+    const percent =
+      weeklyExpectedFc === 0
+        ? weeklyPaymentFc > 0
+          ? 100
+          : 0
+        : Math.min(100, (weeklyPaymentFc / weeklyExpectedFc) * 100);
+
+    return {
+      percent,
+      tone: this.resolveExpectedProgressTone(percent),
+    };
   }
 
   private computeWeeklyPaymentTotalForUser(user: User, dateKey: string): number {

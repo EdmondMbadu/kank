@@ -1706,33 +1706,71 @@
             </p>
           </div>
 
-          <div class="w-full sm:w-64">
-            <div
-              class="mb-1 flex items-center justify-between text-xs font-bold"
-              [ngClass]="{
-                'text-red-600': weeklyExpectedProgressTone === 'red',
-                'text-amber-600': weeklyExpectedProgressTone === 'yellow',
-                'text-orange-600': weeklyExpectedProgressTone === 'orange',
-                'text-emerald-600': weeklyExpectedProgressTone === 'green'
-              }"
-            >
-              <span>Progression</span>
-              <span>{{ weeklyExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
-            </div>
-            <div
-              class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner"
-              title="Progression basée sur le paiement de la semaine divisé par l'attendu semaine"
-            >
+          <div class="grid w-full gap-3 sm:w-[34rem] md:grid-cols-2">
+            <div>
               <div
-                class="h-2.5 rounded-full transition-all duration-300"
+                class="mb-1 flex items-center justify-between text-xs font-bold"
                 [ngClass]="{
-                  'bg-red-500': weeklyExpectedProgressTone === 'red',
-                  'bg-amber-400': weeklyExpectedProgressTone === 'yellow',
-                  'bg-orange-500': weeklyExpectedProgressTone === 'orange',
-                  'bg-emerald-500': weeklyExpectedProgressTone === 'green'
+                  'text-red-600': weeklyExpectedProgressTone === 'red',
+                  'text-amber-600': weeklyExpectedProgressTone === 'yellow',
+                  'text-orange-600': weeklyExpectedProgressTone === 'orange',
+                  'text-emerald-600': weeklyExpectedProgressTone === 'green'
                 }"
-                [style.width.%]="weeklyExpectedProgressPercent || 0"
-              ></div>
+              >
+                <span>Cette semaine</span>
+                <span>{{ weeklyExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+              </div>
+              <div
+                class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner"
+                title="Cette semaine: paiement divisé par attendu semaine"
+              >
+                <div
+                  class="h-2.5 rounded-full transition-all duration-300"
+                  [ngClass]="{
+                    'bg-red-500': weeklyExpectedProgressTone === 'red',
+                    'bg-amber-400': weeklyExpectedProgressTone === 'yellow',
+                    'bg-orange-500': weeklyExpectedProgressTone === 'orange',
+                    'bg-emerald-500': weeklyExpectedProgressTone === 'green'
+                  }"
+                  [style.width.%]="weeklyExpectedProgressPercent || 0"
+                ></div>
+              </div>
+              <p class="mt-1 text-[11px] text-slate-500">
+                {{ weeklyExpectedRangeLabel }}
+              </p>
+            </div>
+
+            <div>
+              <div
+                class="mb-1 flex items-center justify-between text-xs font-bold"
+                [ngClass]="{
+                  'text-red-600': previousWeeklyExpectedProgressTone === 'red',
+                  'text-amber-600': previousWeeklyExpectedProgressTone === 'yellow',
+                  'text-orange-600': previousWeeklyExpectedProgressTone === 'orange',
+                  'text-emerald-600': previousWeeklyExpectedProgressTone === 'green'
+                }"
+              >
+                <span>Semaine passée</span>
+                <span>{{ previousWeeklyExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
+              </div>
+              <div
+                class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner"
+                title="Semaine passée: paiement divisé par attendu semaine"
+              >
+                <div
+                  class="h-2.5 rounded-full transition-all duration-300"
+                  [ngClass]="{
+                    'bg-red-500': previousWeeklyExpectedProgressTone === 'red',
+                    'bg-amber-400': previousWeeklyExpectedProgressTone === 'yellow',
+                    'bg-orange-500': previousWeeklyExpectedProgressTone === 'orange',
+                    'bg-emerald-500': previousWeeklyExpectedProgressTone === 'green'
+                  }"
+                  [style.width.%]="previousWeeklyExpectedProgressPercent || 0"
+                ></div>
+              </div>
+              <p class="mt-1 text-[11px] text-slate-500">
+                {{ previousWeeklyExpectedRangeLabel }}
+              </p>
             </div>
           </div>
         </div>
