@@ -905,6 +905,30 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.updateWeeklyExpectedProgress();
   }
 
+  shiftPaymentPerformanceWeek(deltaWeeks: number): void {
+    const date = this.paymentPerformanceDateAsLocalDate();
+    date.setDate(date.getDate() + deltaWeeks * 7);
+    this.paymentPerformanceDate = this.ymd(date);
+    this.updateWeeklyExpectedProgress();
+  }
+
+  private paymentPerformanceDateAsLocalDate(): Date {
+    if (this.paymentPerformanceDate) {
+      const [year, month, day] = this.paymentPerformanceDate
+        .split('-')
+        .map(Number);
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day)
+      ) {
+        return new Date(year, month - 1, day);
+      }
+    }
+
+    return this.selectedDateAsLocalDate();
+  }
+
   private updateWeeklyExpectedProgress(): void {
     const dateKey = this.weeklyExpectedProgressDateKey();
     this.dailyPaymentPerformanceLabel = this.formatPerformanceDateLabel(dateKey);
