@@ -140,7 +140,29 @@
 </section>
 
 <section class="container mx-auto px-6">
-  <div class="relative mx-auto max-w-3xl">
+  <details class="group relative mx-auto max-w-3xl">
+    <summary
+      class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-emerald-700"
+    >
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">
+          Clients
+        </p>
+        <h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Tous les clients
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Recherche, focus rapides, filtres et accès aux fiches.
+        </p>
+      </div>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition group-open:rotate-180 dark:bg-slate-800 dark:text-slate-300">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
+    </summary>
+
+  <div class="relative mx-auto mt-4 max-w-3xl">
     <div
       class="rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_20px_45px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
     >
@@ -1019,9 +1041,9 @@
       <ul
         *ngIf="filteredItems.length > 0; else noClientsFound"
         role="list"
-        class="mt-6 max-h-[22rem] space-y-2 overflow-y-auto pr-1"
+        class="mt-6 space-y-2"
       >
-        <li *ngFor="let c of filteredItems">
+        <li *ngFor="let c of visibleFilteredItems">
           <button
             type="button"
             class="group w-full rounded-2xl border border-slate-200/70 bg-white/70 px-4 py-3 text-left transition hover:-translate-y-[2px] hover:border-emerald-300 hover:bg-emerald-50/70 focus:outline-none focus:ring-2 focus:ring-emerald-300 dark:border-slate-700 dark:bg-slate-900/70 dark:hover:border-emerald-600/60 dark:hover:bg-slate-800/90"
@@ -1100,6 +1122,19 @@
           </button>
         </li>
       </ul>
+      <div *ngIf="hasMoreFilteredItems" class="mt-4 flex justify-center">
+        <button
+          type="button"
+          (click)="toggleFilteredItemsExpansion()"
+          class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          {{
+            showAllFilteredItems
+              ? "Voir moins"
+              : "Voir plus (" + (filteredItems.length - visibleFilteredItems.length) + ")"
+          }}
+        </button>
+      </div>
       <ng-template #noClientsFound>
         <div
           class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300"
@@ -1113,11 +1148,33 @@
       class="pointer-events-none absolute inset-x-6 -bottom-6 -z-10 h-32 rounded-3xl bg-emerald-400/20 blur-3xl"
     ></div>
   </div>
+  </details>
 </section>
 
 <section class="container mx-auto px-6">
+  <details class="group mx-auto mt-6 max-w-2xl">
+    <summary
+      class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-rose-200/70 bg-white px-5 py-4 shadow-sm transition hover:border-rose-300 hover:bg-rose-50/50 dark:border-rose-900/50 dark:bg-slate-900/80"
+    >
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-600 dark:text-rose-300">
+          Rappel
+        </p>
+        <h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Rappel collectif
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Envoi aux clients planifiés aujourd'hui.
+        </p>
+      </div>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-rose-50 text-rose-500 transition group-open:rotate-180 dark:bg-rose-900/20 dark:text-rose-300">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
+    </summary>
   <div
-    class="mx-auto mt-6 max-w-2xl overflow-hidden rounded-3xl border border-rose-200/70 bg-white p-6 shadow-[0_20px_50px_-18px_rgba(220,38,38,0.4)] dark:border-rose-900/50 dark:bg-slate-900/80"
+    class="mt-4 overflow-hidden rounded-3xl border border-rose-200/70 bg-white p-6 shadow-[0_20px_50px_-18px_rgba(220,38,38,0.4)] dark:border-rose-900/50 dark:bg-slate-900/80"
   >
     <div class="flex items-start gap-4">
       <span
@@ -1151,11 +1208,33 @@
       </div>
     </div>
   </div>
+  </details>
 </section>
 
 <section class="container mx-auto px-6 pb-20 pt-10">
+  <details class="group">
+    <summary
+      class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-indigo-700"
+    >
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+          Relances
+        </p>
+        <h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Relances multi-sites — clients sans crédit
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Filtres, sélection par site et relance groupée.
+        </p>
+      </div>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition group-open:rotate-180 dark:bg-slate-800 dark:text-slate-300">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
+    </summary>
   <div
-    class="rounded-3xl border border-slate-200/70 bg-white/95 shadow-[0_25px_65px_-28px_rgba(15,23,42,0.5)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
+    class="mt-4 rounded-3xl border border-slate-200/70 bg-white/95 shadow-[0_25px_65px_-28px_rgba(15,23,42,0.5)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
   >
     <!-- Header -->
     <div
@@ -1351,13 +1430,11 @@
       <div
         class="rounded-3xl border border-slate-200/70 bg-white/70 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
       >
-        <div
-          class="max-h-[460px] overflow-auto divide-y divide-slate-200/70 dark:divide-slate-800"
-        >
-          <div
-            *ngFor="let c of finishedFiltered"
-            class="px-4 py-3 transition hover:-translate-y-[1px] hover:bg-emerald-50/70 dark:hover:bg-slate-800/60"
-          >
+          <div class="divide-y divide-slate-200/70 dark:divide-slate-800">
+            <div
+              *ngFor="let c of visibleFinishedFiltered"
+              class="px-4 py-3 transition hover:-translate-y-[1px] hover:bg-emerald-50/70 dark:hover:bg-slate-800/60"
+            >
             <div class="flex items-center justify-between gap-4">
               <div class="min-w-0 flex items-center gap-3">
                 <div
@@ -1489,10 +1566,24 @@
               </div>
             </div>
           </div>
+          <div *ngIf="hasMoreFinishedFiltered" class="border-t border-slate-200/70 px-4 py-4 text-center dark:border-slate-800">
+            <button
+              type="button"
+              (click)="toggleFinishedFilteredExpansion()"
+              class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {{
+                showAllFinishedFiltered
+                  ? "Voir moins"
+                  : "Voir plus (" + (finishedFiltered.length - visibleFinishedFiltered.length) + ")"
+              }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==== CONTACTS LIST SECTION (Admin only) ==== -->
@@ -1500,8 +1591,29 @@
   *ngIf="auth.isAdmin"
   class="container mx-auto px-6 pb-16"
 >
+  <details class="group relative mx-auto max-w-3xl">
+    <summary
+      class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-emerald-700"
+    >
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">
+          Prospects
+        </p>
+        <h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Contacts enregistrés
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Prospects collectés, recherche et SMS groupé.
+        </p>
+      </div>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition group-open:rotate-180 dark:bg-slate-800 dark:text-slate-300">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
+    </summary>
   <div
-    class="relative mx-auto max-w-3xl rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_20px_45px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
+    class="relative mx-auto mt-4 max-w-3xl rounded-3xl border border-slate-200/70 bg-white/95 p-6 shadow-[0_20px_45px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
   >
     <div
       class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -1590,7 +1702,7 @@
         <div
           class="overflow-hidden rounded-2xl border border-slate-100 shadow-sm dark:border-slate-700"
         >
-          <div class="max-h-[460px] overflow-auto">
+          <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
               <thead class="bg-slate-50/70 dark:bg-slate-800/70">
                 <tr
@@ -1607,7 +1719,7 @@
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
                 <tr
-                  *ngFor="let contact of filteredContacts"
+                  *ngFor="let contact of visibleFilteredContacts"
                   class="text-sm text-slate-600 dark:text-slate-300"
                 >
                   <td class="px-4 py-4 sm:px-6">
@@ -1684,6 +1796,19 @@
               </tbody>
             </table>
           </div>
+          <div *ngIf="hasMoreFilteredContacts" class="border-t border-slate-100 px-4 py-4 text-center dark:border-slate-800">
+            <button
+              type="button"
+              (click)="toggleFilteredContactsExpansion()"
+              class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {{
+                showAllFilteredContacts
+                  ? "Voir moins"
+                  : "Voir plus (" + (filteredContacts.length - visibleFilteredContacts.length) + ")"
+              }}
+            </button>
+          </div>
         </div>
       </ng-container>
 
@@ -1722,6 +1847,7 @@
       </ng-template>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==== BIRTHDAY TOMORROW MODAL ==== -->
@@ -2565,8 +2691,29 @@
 
 <!-- ==== SCHEDULED BULK MESSAGES ==== -->
 <section class="container mx-auto px-6 py-12">
+  <details class="group">
+    <summary
+      class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-amber-200 hover:bg-amber-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-amber-700"
+    >
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-amber-300">
+          Programmation
+        </p>
+        <h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Messages groupés programmés
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Envois planifiés en heure de Kinshasa.
+        </p>
+      </div>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition group-open:rotate-180 dark:bg-slate-800 dark:text-slate-300">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
+    </summary>
   <div
-    class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
+    class="mt-4 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
   >
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -2705,12 +2852,34 @@
       </article>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==== BULK MESSAGE LOG ==== -->
 <section class="container mx-auto px-6 py-12">
+  <details class="group">
+    <summary
+      class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-emerald-700"
+    >
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">
+          Historique
+        </p>
+        <h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          Journaux des messages groupés
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+          Historique des envois, résultats et détails par site.
+        </p>
+      </div>
+      <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition group-open:rotate-180 dark:bg-slate-800 dark:text-slate-300">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </span>
+    </summary>
   <div
-    class="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
+    class="mt-4 rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-900/80"
   >
     <div
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -2875,6 +3044,7 @@
       </article>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ==== CLIENT QUICK VIEW MODAL ==== -->

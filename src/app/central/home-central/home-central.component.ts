@@ -164,6 +164,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   // master list search
   searchControl = new FormControl('');
   filteredItems: Client[] = [];
+  showAllFilteredItems = false;
   activeClient: Client | null = null;
   showClientModal = false;
   phoneEditValue = '';
@@ -242,6 +243,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   // ===== NEW: multi-site finished-debt dashboard state =====
   finishedAll: Client[] = []; // all finished across all sites
   finishedFiltered: Client[] = []; // after filters
+  showAllFinishedFiltered = false;
   fdSearchControl = new FormControl('');
   fdMinScore = 60;
   fdMaxScore = 100;
@@ -3228,6 +3230,7 @@ Merci pour ta confiance !`;
   };
   contactSending = false;
   contactSendResult: SendResult | null = null;
+  showAllFilteredContacts = false;
 
   // Contact bulk SMS modal
   contactBulkModal = {
@@ -3685,6 +3688,51 @@ Merci pona confiance na FONDATION GERVAIS.`;
     return this.filteredContacts.filter((c) =>
       this.hasDialableContactPhone(c)
     ).length;
+  }
+
+  get visibleFilteredItems(): Client[] {
+    return this.showAllFilteredItems
+      ? this.filteredItems
+      : this.filteredItems.slice(0, 8);
+  }
+
+  get hasMoreFilteredItems(): boolean {
+    return this.filteredItems.length > 8;
+  }
+
+  toggleFilteredItemsExpansion(): void {
+    if (!this.hasMoreFilteredItems) return;
+    this.showAllFilteredItems = !this.showAllFilteredItems;
+  }
+
+  get visibleFinishedFiltered(): Client[] {
+    return this.showAllFinishedFiltered
+      ? this.finishedFiltered
+      : this.finishedFiltered.slice(0, 10);
+  }
+
+  get hasMoreFinishedFiltered(): boolean {
+    return this.finishedFiltered.length > 10;
+  }
+
+  toggleFinishedFilteredExpansion(): void {
+    if (!this.hasMoreFinishedFiltered) return;
+    this.showAllFinishedFiltered = !this.showAllFinishedFiltered;
+  }
+
+  get visibleFilteredContacts(): ContactEntry[] {
+    return this.showAllFilteredContacts
+      ? this.filteredContacts
+      : this.filteredContacts.slice(0, 10);
+  }
+
+  get hasMoreFilteredContacts(): boolean {
+    return this.filteredContacts.length > 10;
+  }
+
+  toggleFilteredContactsExpansion(): void {
+    if (!this.hasMoreFilteredContacts) return;
+    this.showAllFilteredContacts = !this.showAllFilteredContacts;
   }
 
   get visibleBulkLogs(): BulkMessageLog[] {
