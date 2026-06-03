@@ -31,6 +31,7 @@ const FLEXPAY_CALLBACK_HTTP_URL_DEFAULT = DEFAULT_PROJECT_ID ?
   `https://us-central1-${DEFAULT_PROJECT_ID}.cloudfunctions.net/flexpayMobileMoneyCallback` :
   FLEXPAY_CALLBACK_URL_FALLBACK;
 const MOBILE_MONEY_LOOKUP_COLLECTION = "mobileMoneyTransactionLookup";
+const PAYMENT_REMINDER_LOGS_COLLECTION = "payment_reminder_logs";
 
 const flexpayConfig = (functions.config() && functions.config().flexpay) || {};
 const FLEXPAY_MERCHANT =
@@ -48,6 +49,83 @@ function resolveFlexpayCallbackUrl(rawUrl) {
   }
   return trimmed;
 }
+
+function dateKeyForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+  const values = {};
+  parts.forEach((part) => {
+    if (part.type !== "literal") values[part.type] = part.value;
+  });
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+async function recordPaymentReminderLog(payload) {
+  const now = new Date();
+  await db.collection(PAYMENT_REMINDER_LOGS_COLLECTION).add({
+    source: payload.source || "manual",
+    total: Number(payload.total) || 0,
+    succeeded: Number(payload.succeeded) || 0,
+    failed: Number(payload.failed) || 0,
+    quitteTotal: Number(payload.quitteTotal) || 0,
+    quitteSucceeded: Number(payload.quitteSucceeded) || 0,
+    skipped: Number(payload.skipped) || 0,
+    timeZone: KINSHASA_TIME_ZONE,
+    sentAtDateKey: dateKeyForTimeZone(now, KINSHASA_TIME_ZONE),
+    sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    sentAtMs: now.getTime(),
+    sentBy: payload.sentBy || null,
+    sentById: payload.sentById || null,
+  });
+}
+
+exports.getPaymentReminderLogs = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to read reminder logs.",
+    );
+  }
+
+  const dateKey = String((data && data.dateKey) || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "dateKey must use YYYY-MM-DD.",
+    );
+  }
+
+  const snap = await db
+      .collection(PAYMENT_REMINDER_LOGS_COLLECTION)
+      .where("sentAtDateKey", "==", dateKey)
+      .limit(20)
+      .get();
+
+  const logs = snap.docs.map((doc) => {
+    const row = doc.data() || {};
+    return {
+      id: doc.id,
+      source: row.source || "manual",
+      total: Number(row.total) || 0,
+      succeeded: Number(row.succeeded) || 0,
+      failed: Number(row.failed) || 0,
+      quitteTotal: Number(row.quitteTotal) || 0,
+      quitteSucceeded: Number(row.quitteSucceeded) || 0,
+      skipped: Number(row.skipped) || 0,
+      sentAtDateKey: row.sentAtDateKey || dateKey,
+      sentAtMs: Number(row.sentAtMs) || 0,
+      sentBy: row.sentBy || null,
+      sentById: row.sentById || null,
+    };
+  });
+
+  return {logs};
+});
 
 const FLEXPAY_CALLBACK_URL = resolveFlexpayCallbackUrl(
     flexpayConfig.callback_url || process.env.FLEXPAY_CALLBACK_URL || "",
@@ -1903,10 +1981,14 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
 
   let successCount = 0;
   let failCount = 0;
+  let quitteTotal = 0;
+  let quitteSuccessCount = 0;
 
   // Iterate through each client, format phone, build message, and send
   for (const client of clients) {
     const {firstName, lastName, phoneNumber, minPayment, debtLeft, savings} = client;
+    const isQuitteClient = client.isQuitte === true || isLeftQuitte(client);
+    if (isQuitteClient) quitteTotal++;
     if (!phoneNumber) {
       console.log("Skipping client with no phone number:", client);
       failCount++;
@@ -1936,15 +2018,33 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
       });
       console.log(`SMS sent to ${formattedNumber} ->`, response);
       successCount++;
+      if (isQuitteClient) quitteSuccessCount++;
     } catch (error) {
       console.error("Error sending SMS:", error);
       failCount++;
     }
   }
 
+  const authInfo = context.auth || {};
+  const authToken = authInfo.token || {};
+  await recordPaymentReminderLog({
+    source: "manual",
+    total: clients.length,
+    succeeded: successCount,
+    failed: failCount,
+    quitteTotal,
+    quitteSucceeded: quitteSuccessCount,
+    sentBy: authToken.name || authToken.email || null,
+    sentById: authInfo.uid || null,
+  });
+
   // Return an object so the client knows how many succeeded/failed
   return {
     message: `Reminders sent. Success: ${successCount}, Failed: ${failCount}`,
+    successCount,
+    failCount,
+    quitteTotal,
+    quitteSuccessCount,
   };
 });
 
@@ -2344,15 +2444,29 @@ exports.scheduledSendReminders = functions.pubsub
           didClientStartThisWeek(client)
           );
         });
+        const scheduledQuitteTotal = clientsToRemind.filter((client) =>
+          isLeftQuitte(client),
+        ).length;
 
         if (clientsToRemind.length === 0) {
           console.log("No clients need reminders today after filtering. Exiting...");
+          await recordPaymentReminderLog({
+            source: "scheduled",
+            total: 0,
+            succeeded: 0,
+            failed: 0,
+            quitteTotal: 0,
+            quitteSucceeded: 0,
+            sentBy: "Automatique 8h",
+          });
           return null;
         }
 
         // 6. Send SMS to each valid client
         let successCount = 0;
         let failCount = 0;
+        let quitteSuccessCount = 0;
+        let skippedCount = 0;
 
         for (const client of clientsToRemind) {
           const {
@@ -2364,6 +2478,7 @@ exports.scheduledSendReminders = functions.pubsub
             debtCycleEndDate,
             requestNotTosend,
           } = client;
+          const isQuitteClient = isLeftQuitte(client);
 
           // Calculate minPayment with your logic
           //   amountToPay / paymentPeriodRange
@@ -2426,6 +2541,7 @@ exports.scheduledSendReminders = functions.pubsub
           // IMPORTANT: If client is late, ALWAYS send message regardless of requestNotTosend
           if (!isLate && requestNotTosend === "true") {
             console.log(`Skipping client ${firstName} ${lastName} - requested not to send and NOT late (deadline: ${debtCycleEndDate || "N/A"})`);
+            skippedCount++;
             continue;
           }
 
@@ -2460,11 +2576,23 @@ exports.scheduledSendReminders = functions.pubsub
             // console.log(`SMS sent to ${formattedNumber} =>`, message);
             console.log(`SMS sent to ${formattedNumber} =>`, response);
             successCount++;
+            if (isQuitteClient) quitteSuccessCount++;
           } catch (error) {
             console.error(`Error sending SMS to ${formattedNumber}:`, error);
             failCount++;
           }
         }
+
+        await recordPaymentReminderLog({
+          source: "scheduled",
+          total: clientsToRemind.length,
+          succeeded: successCount,
+          failed: failCount,
+          quitteTotal: scheduledQuitteTotal,
+          quitteSucceeded: quitteSuccessCount,
+          skipped: skippedCount,
+          sentBy: "Automatique 8h",
+        });
 
         console.log(
             `===> Reminders done. Success: ${successCount}, Failed: ${failCount}`,

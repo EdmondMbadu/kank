@@ -126,6 +126,37 @@ type ScheduledBulkMessage = ScheduledBulkMessageDocument & {
   locationEntries: { name: string; count: number }[];
 };
 
+type PaymentReminderLogDocument = {
+  source?: 'manual' | 'scheduled' | string;
+  total?: number;
+  succeeded?: number;
+  failed?: number;
+  quitteTotal?: number;
+  quitteSucceeded?: number;
+  skipped?: number;
+  sentAtDateKey?: string;
+  sentAtMs?: number;
+  sentAt?: any;
+  sentBy?: string | null;
+  sentById?: string | null;
+};
+
+type PaymentReminderLog = PaymentReminderLogDocument & {
+  id: string;
+  sentAtDate: Date;
+  sourceLabel: string;
+};
+
+type PaymentReminderSummaryStats = {
+  runs: number;
+  planned: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  quittePlanned: number;
+  quitteSent: number;
+};
+
 type MasterClientFilterPanel =
   | 'paymentDay'
   | 'duplicatePhone'
@@ -313,6 +344,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
     this.listenToBulkLogs();
     this.listenToScheduledBulkMessages();
+    this.loadPaymentReminderLogsForDate();
   }
 
   getAllClients() {
@@ -1880,6 +1912,23 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const reminderCount =
+      this.allCurrentClientsWithDebtsScheduledToPayToday.length;
+    const todayLabel = new Date().toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const confirmed = window.confirm(
+      `Confirmer l'envoi du rappel d'aujourd'hui ?\n\n${reminderCount} client${
+        reminderCount > 1 ? 's' : ''
+      } planifié${
+        reminderCount > 1 ? 's' : ''
+      } pour le ${todayLabel} recevront un SMS de rappel.\n\nCette action ne peut pas être annulée.`
+    );
+
+    if (!confirmed) return;
+
     const clientsPayload =
       this.allCurrentClientsWithDebtsScheduledToPayToday.map((client) => {
         const minPayment = this.data.minimumPayment(client);
@@ -1887,6 +1936,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
           firstName: client.firstName,
           lastName: client.lastName,
           phoneNumber: client.phoneNumber,
+          isQuitte: this.isClientQuitte(client),
+          vitalStatus: client.vitalStatus || null,
           minPayment,
           debtLeft: client.debtLeft,
           savings: client.savings,
@@ -1897,6 +1948,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     callable({ clients: clientsPayload }).subscribe({
       next: (result: any) => {
         console.log('Reminder function result:', result);
+        this.loadPaymentReminderLogsForDate();
         alert('Reminders sent successfully!');
       },
       error: (err: any) => {
@@ -2771,7 +2823,13 @@ Merci pour ta confiance !`;
     return (initials || 'CL').toUpperCase();
   }
   isClientQuitte(client?: Client | null): boolean {
-    return (client?.vitalStatus || '').trim() === 'Quitté';
+    const normalized = this.normalizeVitalStatus(client?.vitalStatus);
+    return (
+      normalized === 'quitte' ||
+      normalized === 'quittee' ||
+      normalized === 'quite' ||
+      normalized === 'quit'
+    );
   }
   get allActivePhones(): string[] {
     const raw = [
@@ -3256,6 +3314,15 @@ Merci pour ta confiance !`;
   scheduledBulkError: string | null = null;
   showAllScheduledBulk = false;
   private scheduledBulkSub?: Subscription;
+  paymentReminderLogs: PaymentReminderLog[] = [];
+  paymentReminderLogsLoading = false;
+  paymentReminderLogsError: string | null = null;
+  paymentReminderLogsWarning: string | null = null;
+  paymentReminderDateKey = this.formatDateKeyForTimeZone(
+    new Date(),
+    'Africa/Kinshasa'
+  );
+  private readonly paymentReminderLogsLimit = 20;
 
 
   ngOnDestroy(): void {
@@ -3895,6 +3962,196 @@ Merci pona confiance na FONDATION GERVAIS.`;
       console.error('Delete scheduled bulk failed', error);
       window.alert('Impossible de supprimer pour le moment.');
     }
+  }
+
+  get paymentReminderSummaryStats(): PaymentReminderSummaryStats {
+    return this.paymentReminderLogs.reduce(
+      (summary, log) => {
+        summary.runs += 1;
+        summary.planned += Number(log.total) || 0;
+        summary.sent += Number(log.succeeded) || 0;
+        summary.failed += Number(log.failed) || 0;
+        summary.skipped += Number(log.skipped) || 0;
+        summary.quittePlanned += Number(log.quitteTotal) || 0;
+        summary.quitteSent += Number(log.quitteSucceeded) || 0;
+        return summary;
+      },
+      {
+        runs: 0,
+        planned: 0,
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        quittePlanned: 0,
+        quitteSent: 0,
+      }
+    );
+  }
+
+  get paymentReminderDateLabel(): string {
+    const date = this.dateFromDateKey(this.paymentReminderDateKey);
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  get paymentReminderIsToday(): boolean {
+    return (
+      this.paymentReminderDateKey ===
+      this.formatDateKeyForTimeZone(new Date(), 'Africa/Kinshasa')
+    );
+  }
+
+  get hasPaymentReminderLogs(): boolean {
+    return this.paymentReminderLogs.length > 0;
+  }
+
+  paymentReminderMetric(value: number): string {
+    if (!this.hasPaymentReminderLogs) return '—';
+    return Number(value || 0).toLocaleString('fr-FR', {
+      maximumFractionDigits: 0,
+    });
+  }
+
+  async setPaymentReminderDate(value: string): Promise<void> {
+    if (!value || value === this.paymentReminderDateKey) return;
+    this.paymentReminderDateKey = value;
+    await this.loadPaymentReminderLogsForDate();
+  }
+
+  async shiftPaymentReminderDate(days: number): Promise<void> {
+    const date = this.dateFromDateKey(this.paymentReminderDateKey);
+    date.setDate(date.getDate() + days);
+    this.paymentReminderDateKey = this.formatDateKeyForInput(date);
+    await this.loadPaymentReminderLogsForDate();
+  }
+
+  async loadPaymentReminderLogsForDate(): Promise<void> {
+    const requestedDateKey = this.paymentReminderDateKey;
+    this.paymentReminderLogsLoading = true;
+    this.paymentReminderLogsError = null;
+    this.paymentReminderLogsWarning = null;
+
+    try {
+      const snap = await firstValueFrom(
+        this.afs
+          .collection<PaymentReminderLogDocument>(
+            'payment_reminder_logs',
+            (ref) =>
+              ref
+                .where('sentAtDateKey', '==', requestedDateKey)
+                .limit(this.paymentReminderLogsLimit)
+          )
+          .get()
+      );
+
+      if (requestedDateKey !== this.paymentReminderDateKey) return;
+
+      this.paymentReminderLogs = snap.docs
+        .map((doc) =>
+          this.transformPaymentReminderLogDocument(doc.id, doc.data())
+        )
+        .sort((a, b) => (b.sentAtMs || 0) - (a.sentAtMs || 0));
+    } catch (error) {
+      console.warn('Direct reminder log read failed; trying callable.', error);
+      if (requestedDateKey === this.paymentReminderDateKey) {
+        await this.loadPaymentReminderLogsViaCallable(requestedDateKey);
+      }
+    } finally {
+      if (requestedDateKey === this.paymentReminderDateKey) {
+        this.paymentReminderLogsLoading = false;
+      }
+    }
+  }
+
+  trackPaymentReminderLog(index: number, log: PaymentReminderLog): string {
+    return log.id;
+  }
+
+  private async loadPaymentReminderLogsViaCallable(
+    requestedDateKey: string
+  ): Promise<void> {
+    try {
+      const callable = this.fns.httpsCallable('getPaymentReminderLogs');
+      const result: any = await firstValueFrom(
+        callable({ dateKey: requestedDateKey })
+      );
+      if (requestedDateKey !== this.paymentReminderDateKey) return;
+
+      const logs = Array.isArray(result?.logs) ? result.logs : [];
+      const transformedLogs: PaymentReminderLog[] = logs
+        .map((log: PaymentReminderLogDocument & { id?: string }, index: number) =>
+          this.transformPaymentReminderLogDocument(
+            log.id || `${requestedDateKey}-${index}`,
+            log
+          )
+        )
+        .sort(
+          (a: PaymentReminderLog, b: PaymentReminderLog) =>
+            (b.sentAtMs || 0) - (a.sentAtMs || 0)
+        );
+      this.paymentReminderLogs = transformedLogs;
+      this.paymentReminderLogsWarning =
+        'Lecture sécurisée utilisée parce que la lecture directe est bloquée.';
+    } catch (fallbackError) {
+      console.error('Payment reminder logs callable failed', fallbackError);
+      if (requestedDateKey === this.paymentReminderDateKey) {
+        this.paymentReminderLogs = [];
+        this.paymentReminderLogsError =
+          'Impossible de charger les rappels pour cette date.';
+      }
+    }
+  }
+
+  private transformPaymentReminderLogDocument(
+    id: string,
+    data: PaymentReminderLogDocument | undefined
+  ): PaymentReminderLog {
+    const safe = data ?? {};
+    const sentAtMs = Number(safe.sentAtMs) || Date.now();
+    return {
+      ...safe,
+      id,
+      sentAtMs,
+      sentAtDate: new Date(sentAtMs),
+      sourceLabel:
+        safe.source === 'scheduled'
+          ? 'Automatique'
+          : safe.source === 'manual'
+          ? 'Manuel'
+          : 'Rappel',
+    };
+  }
+
+  private dateFromDateKey(dateKey: string): Date {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    if (!year || !month || !day) return new Date();
+    return new Date(year, month - 1, day, 12, 0, 0);
+  }
+
+  private formatDateKeyForInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private formatDateKeyForTimeZone(date: Date, timeZone: string): string {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const parts = formatter.formatToParts(date);
+    const values: Record<string, string> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') values[part.type] = part.value;
+    }
+    return `${values['year']}-${values['month']}-${values['day']}`;
   }
 
   private formatDateTimeForTimeZone(date: Date, timeZone: string): string {
