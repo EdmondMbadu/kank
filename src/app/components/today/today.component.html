@@ -428,9 +428,9 @@
 </details>
 <!-- ╰──────────────────────────────────────────────────────────────╯ -->
 <ng-container *ngIf="!isSunday">
-  <div class="mx-auto mt-4 max-w-5xl px-3 sm:mt-6 sm:px-6 lg:px-8">
+  <div class="mx-auto mt-4 max-w-5xl px-3 sm:px-6 lg:px-8">
     <div
-      class="relative overflow-hidden rounded-2xl border-l-4 p-3 antialiased ring-1 sm:border-l-8 sm:p-6"
+      class="relative overflow-hidden rounded-2xl border-l-4 p-3 antialiased ring-1 sm:p-4"
       [style.borderLeftColor]="
         compute.getGradientColor(activePaymentPerformancePercent)
       "
@@ -460,28 +460,28 @@
         class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between"
       >
         <div class="min-w-0">
-          <p class="text-[10px] font-bold uppercase tracking-wider opacity-80 sm:text-[11px]">
+          <p class="text-[10px] font-bold uppercase tracking-wider opacity-80">
             Performance paiement
           </p>
-          <h2 class="mt-0.5 text-base font-extrabold tracking-tight sm:mt-1 sm:text-xl">
+          <h2 class="mt-0.5 text-base font-extrabold tracking-tight sm:text-lg">
             {{ activePaymentPerformanceTitle }}
           </h2>
-          <p class="mt-0.5 text-xs font-medium opacity-95 sm:mt-1 sm:text-base">
+          <p class="mt-0.5 text-xs font-medium opacity-95 sm:text-sm">
             {{ activePaymentPerformanceMotivation }}
           </p>
-          <p class="mt-0.5 text-[11px] font-semibold opacity-80 sm:mt-1 sm:text-xs">
+          <p class="mt-0.5 text-[11px] font-semibold opacity-80">
             {{ paymentPerformanceMode === "week" ? "Semaine" : frenchDate }}
           </p>
         </div>
 
         <div class="flex flex-wrap items-end gap-1.5 lg:justify-end">
           <div
-            class="inline-flex h-7 rounded-lg border border-white/35 bg-white/20 p-0.5 text-[11px] font-bold shadow-sm sm:h-8 sm:text-xs"
+            class="inline-flex h-7 rounded-lg border border-white/35 bg-white/20 p-0.5 text-[11px] font-bold shadow-sm"
           >
             <button
               type="button"
               (click)="setPaymentPerformanceMode('day')"
-              class="rounded-md px-2.5 transition sm:px-3"
+              class="rounded-md px-2.5 transition"
               [ngClass]="
                 paymentPerformanceMode === 'day'
                   ? 'bg-white text-slate-900 shadow-sm'
@@ -493,7 +493,7 @@
             <button
               type="button"
               (click)="setPaymentPerformanceMode('week')"
-              class="rounded-md px-2.5 transition sm:px-3"
+              class="rounded-md px-2.5 transition"
               [ngClass]="
                 paymentPerformanceMode === 'week'
                   ? 'bg-white text-slate-900 shadow-sm'
@@ -504,13 +504,13 @@
             </button>
           </div>
 
-          <label class="block text-[10px] font-bold uppercase tracking-wider opacity-80 sm:text-[11px]">
+          <label class="block text-[10px] font-bold uppercase tracking-wider opacity-80">
             Date
             <input
               [(ngModel)]="paymentPerformanceDate"
               (change)="onPaymentPerformanceDateChange()"
               type="date"
-              class="mt-0.5 block h-7 rounded-lg border border-white/40 bg-white px-2 text-[11px] font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/70 sm:mt-1 sm:h-auto sm:px-3 sm:py-2 sm:text-xs"
+              class="mt-0.5 block h-7 rounded-lg border border-white/40 bg-white px-2 text-[11px] font-semibold text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/70"
             />
           </label>
 
@@ -520,7 +520,7 @@
               (click)="shiftPaymentPerformancePeriod(-1)"
               aria-label="Période précédente"
               title="Période précédente"
-              class="flex h-7 w-7 items-center justify-center rounded-lg border border-white/35 bg-white/20 text-xs font-bold shadow-sm transition hover:bg-white hover:text-slate-900 sm:h-8 sm:w-8 sm:text-sm"
+              class="flex h-7 w-7 items-center justify-center rounded-lg border border-white/35 bg-white/20 text-xs font-bold shadow-sm transition hover:bg-white hover:text-slate-900"
             >
               ‹
             </button>
@@ -529,7 +529,7 @@
               (click)="shiftPaymentPerformancePeriod(1)"
               aria-label="Période suivante"
               title="Période suivante"
-              class="flex h-7 w-7 items-center justify-center rounded-lg border border-white/35 bg-white/20 text-xs font-bold shadow-sm transition hover:bg-white hover:text-slate-900 sm:h-8 sm:w-8 sm:text-sm"
+              class="flex h-7 w-7 items-center justify-center rounded-lg border border-white/35 bg-white/20 text-xs font-bold shadow-sm transition hover:bg-white hover:text-slate-900"
             >
               ›
             </button>
@@ -537,18 +537,18 @@
         </div>
       </div>
 
-      <div class="mt-3 sm:mt-4">
+      <div class="mt-3">
         <div class="flex items-center justify-between gap-3">
-          <p class="text-2xl font-black leading-none sm:text-4xl">
+          <p class="text-2xl font-black leading-none sm:text-3xl">
             {{ activePaymentPerformancePercentText }} %
           </p>
-          <p class="max-w-[9rem] text-right text-[11px] font-semibold leading-tight opacity-90 sm:max-w-none sm:text-xs">
+          <p class="max-w-[9rem] text-right text-[11px] font-semibold leading-tight opacity-90 sm:max-w-none">
             {{ activePaymentPerformanceContextLabel }}
           </p>
         </div>
 
         <div
-          class="mt-2 h-2 w-full overflow-hidden rounded-full sm:mt-3 sm:h-2.5"
+          class="mt-2 h-2 w-full overflow-hidden rounded-full"
           [ngClass]="{
             'bg-white/30':
               activePaymentPerformancePercent === 0 ||
@@ -559,7 +559,7 @@
           }"
         >
           <div
-            class="h-2 rounded-full transition-all duration-300 sm:h-2.5"
+            class="h-2 rounded-full transition-all duration-300"
             [style.width.%]="activePaymentPerformancePercent"
             [style.background]="
               compute.getGradientColor(activePaymentPerformancePercent)
