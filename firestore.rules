@@ -148,6 +148,10 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /payment_reminder_settings/{docId} {
+      allow read, write: if signedIn() && !isPortalClient();
+    }
+
     match /{topCollection}/{docId} {
       allow read, write: if signedIn() &&
         !isPortalClient() &&

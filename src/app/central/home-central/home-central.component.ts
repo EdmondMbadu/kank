@@ -128,11 +128,14 @@ type ScheduledBulkMessage = ScheduledBulkMessageDocument & {
 
 type PaymentReminderLogDocument = {
   source?: 'manual' | 'scheduled' | string;
+  sendMode?: PaymentReminderSendMode | string;
+  plannedTotal?: number;
   total?: number;
   succeeded?: number;
   failed?: number;
   quitteTotal?: number;
   quitteSucceeded?: number;
+  excludedQuitte?: number;
   skipped?: number;
   sentAtDateKey?: string;
   sentAtMs?: number;
@@ -156,6 +159,8 @@ type PaymentReminderSummaryStats = {
   quittePlanned: number;
   quitteSent: number;
 };
+
+type PaymentReminderSendMode = 'all' | 'excludeQuitte';
 
 type MasterClientFilterPanel =
   | 'paymentDay'
@@ -191,6 +196,10 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   allcurrentClientsWithDebts: Client[] = [];
   allCurrentClientsWithDebtsScheduledToPayToday: Client[] = [];
   scheduledReminderClientView: 'all' | 'quitte' | 'active' = 'all';
+  scheduledReminderSendMode: PaymentReminderSendMode = 'all';
+  scheduledReminderSettingsLoading = false;
+  scheduledReminderSettingsSaving = false;
+  scheduledReminderSettingsError: string | null = null;
   showAllScheduledReminderClients = false;
   allUsers: User[] = [];
 
@@ -347,6 +356,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     this.listenToBulkLogs();
     this.listenToScheduledBulkMessages();
     this.loadPaymentReminderLogsForDate();
+    this.loadScheduledReminderSendMode();
   }
 
   getAllClients() {
@@ -1906,6 +1916,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
   // ===== scheduled-to-pay reminders (existing) =====
   sendReminders() {
+    const targetClients = this.scheduledReminderSendTargetClients;
     if (
       !this.allCurrentClientsWithDebtsScheduledToPayToday ||
       this.allCurrentClientsWithDebtsScheduledToPayToday.length === 0
@@ -1913,9 +1924,14 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       console.log('No clients to remind.');
       return;
     }
+    if (!targetClients.length) {
+      alert(
+        'Aucun client ne correspond à la règle actuelle du rappel collectif.'
+      );
+      return;
+    }
 
-    const reminderCount =
-      this.allCurrentClientsWithDebtsScheduledToPayToday.length;
+    const reminderCount = targetClients.length;
     const todayLabel = new Date().toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'long',
@@ -1926,13 +1942,15 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         reminderCount > 1 ? 's' : ''
       } planifié${
         reminderCount > 1 ? 's' : ''
-      } pour le ${todayLabel} recevront un SMS de rappel.\n\nCette action ne peut pas être annulée.`
+      } pour le ${todayLabel} recevront un SMS de rappel.\n\nRègle active: ${
+        this.scheduledReminderSendModeLabel
+      }.\n\nCette action ne peut pas être annulée.`
     );
 
     if (!confirmed) return;
 
     const clientsPayload =
-      this.allCurrentClientsWithDebtsScheduledToPayToday.map((client) => {
+      targetClients.map((client) => {
         const minPayment = this.data.minimumPayment(client);
         return {
           firstName: client.firstName,
@@ -1947,7 +1965,12 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       });
 
     const callable = this.fns.httpsCallable('sendPaymentReminders');
-    callable({ clients: clientsPayload }).subscribe({
+    callable({
+      clients: clientsPayload,
+      sendMode: this.scheduledReminderSendMode,
+      plannedTotal: this.scheduledReminderClientsToday.length,
+      excludedQuitte: this.scheduledReminderExcludedQuitteCount,
+    }).subscribe({
       next: (result: any) => {
         console.log('Reminder function result:', result);
         this.loadPaymentReminderLogsForDate();
@@ -4022,6 +4045,30 @@ Merci pona confiance na FONDATION GERVAIS.`;
     return this.allCurrentClientsWithDebtsScheduledToPayToday ?? [];
   }
 
+  get scheduledReminderSendTargetClients(): Client[] {
+    if (this.scheduledReminderSendMode === 'excludeQuitte') {
+      return this.scheduledReminderActiveClients;
+    }
+    return this.scheduledReminderClientsToday;
+  }
+
+  get scheduledReminderExcludedQuitteCount(): number {
+    if (this.scheduledReminderSendMode !== 'excludeQuitte') return 0;
+    return this.scheduledReminderQuitteClients.length;
+  }
+
+  get scheduledReminderSendModeLabel(): string {
+    return this.scheduledReminderSendMode === 'excludeQuitte'
+      ? 'Non quittés seulement'
+      : 'Tous les planifiés';
+  }
+
+  get scheduledReminderSendModeHint(): string {
+    return this.scheduledReminderSendMode === 'excludeQuitte'
+      ? 'Les clients marqués quitté ne recevront pas ce rappel.'
+      : 'Tous les clients planifiés aujourd’hui recevront ce rappel.';
+  }
+
   get scheduledReminderQuitteClients(): Client[] {
     return this.scheduledReminderClientsToday.filter((client) =>
       this.isClientQuitte(client)
@@ -4092,6 +4139,71 @@ Merci pona confiance na FONDATION GERVAIS.`;
       'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white':
         !active,
     };
+  }
+
+  scheduledReminderSendModeButtonClasses(mode: PaymentReminderSendMode) {
+    const active = this.scheduledReminderSendMode === mode;
+    return {
+      'bg-rose-600 text-white shadow-sm': active,
+      'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white':
+        !active,
+    };
+  }
+
+  async setScheduledReminderSendMode(
+    mode: PaymentReminderSendMode
+  ): Promise<void> {
+    if (this.scheduledReminderSendMode === mode) return;
+
+    const nextLabel =
+      mode === 'excludeQuitte'
+        ? 'envoyer seulement aux clients non quittés'
+        : 'envoyer à tous les clients planifiés';
+    const confirmed = window.confirm(
+      `Changer la règle des rappels ?\n\nDésormais, le rappel collectif va ${nextLabel}.\n\nCette règle sera utilisée pour les prochains envois manuels et automatiques.`
+    );
+    if (!confirmed) return;
+
+    this.scheduledReminderSettingsSaving = true;
+    this.scheduledReminderSettingsError = null;
+    try {
+      await this.afs.doc('payment_reminder_settings/default').set(
+        {
+          sendMode: mode,
+          updatedAtMs: Date.now(),
+          updatedBy: this.auth.currentUser?.uid ?? null,
+        },
+        { merge: true }
+      );
+      this.scheduledReminderSendMode = mode;
+      this.showAllScheduledReminderClients = false;
+    } catch (error) {
+      console.error('Payment reminder settings save failed', error);
+      this.scheduledReminderSettingsError =
+        'Impossible de sauvegarder la règle pour le moment.';
+    } finally {
+      this.scheduledReminderSettingsSaving = false;
+    }
+  }
+
+  private async loadScheduledReminderSendMode(): Promise<void> {
+    this.scheduledReminderSettingsLoading = true;
+    this.scheduledReminderSettingsError = null;
+    try {
+      const snap: any = await firstValueFrom(
+        this.afs.doc('payment_reminder_settings/default').get()
+      );
+      const data = snap?.data?.() || {};
+      this.scheduledReminderSendMode =
+        data.sendMode === 'excludeQuitte' ? 'excludeQuitte' : 'all';
+    } catch (error) {
+      console.error('Payment reminder settings load failed', error);
+      this.scheduledReminderSettingsError =
+        'Impossible de charger la règle; mode tous planifiés utilisé.';
+      this.scheduledReminderSendMode = 'all';
+    } finally {
+      this.scheduledReminderSettingsLoading = false;
+    }
   }
 
   toggleScheduledReminderClients(): void {

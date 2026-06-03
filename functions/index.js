@@ -32,6 +32,8 @@ const FLEXPAY_CALLBACK_HTTP_URL_DEFAULT = DEFAULT_PROJECT_ID ?
   FLEXPAY_CALLBACK_URL_FALLBACK;
 const MOBILE_MONEY_LOOKUP_COLLECTION = "mobileMoneyTransactionLookup";
 const PAYMENT_REMINDER_LOGS_COLLECTION = "payment_reminder_logs";
+const PAYMENT_REMINDER_SETTINGS_COLLECTION = "payment_reminder_settings";
+const PAYMENT_REMINDER_SETTINGS_DOC_ID = "default";
 
 const flexpayConfig = (functions.config() && functions.config().flexpay) || {};
 const FLEXPAY_MERCHANT =
@@ -69,11 +71,14 @@ async function recordPaymentReminderLog(payload) {
   const now = new Date();
   await db.collection(PAYMENT_REMINDER_LOGS_COLLECTION).add({
     source: payload.source || "manual",
+    sendMode: normalizePaymentReminderSendMode(payload.sendMode),
+    plannedTotal: Number(payload.plannedTotal) || Number(payload.total) || 0,
     total: Number(payload.total) || 0,
     succeeded: Number(payload.succeeded) || 0,
     failed: Number(payload.failed) || 0,
     quitteTotal: Number(payload.quitteTotal) || 0,
     quitteSucceeded: Number(payload.quitteSucceeded) || 0,
+    excludedQuitte: Number(payload.excludedQuitte) || 0,
     skipped: Number(payload.skipped) || 0,
     timeZone: KINSHASA_TIME_ZONE,
     sentAtDateKey: dateKeyForTimeZone(now, KINSHASA_TIME_ZONE),
@@ -82,6 +87,23 @@ async function recordPaymentReminderLog(payload) {
     sentBy: payload.sentBy || null,
     sentById: payload.sentById || null,
   });
+}
+
+function normalizePaymentReminderSendMode(value) {
+  return value === "excludeQuitte" ? "excludeQuitte" : "all";
+}
+
+async function getPaymentReminderSendMode() {
+  try {
+    const snap = await db
+        .collection(PAYMENT_REMINDER_SETTINGS_COLLECTION)
+        .doc(PAYMENT_REMINDER_SETTINGS_DOC_ID)
+        .get();
+    return normalizePaymentReminderSendMode(snap.exists && snap.data().sendMode);
+  } catch (error) {
+    console.error("Failed to load payment reminder send mode:", error);
+    return "all";
+  }
 }
 
 exports.getPaymentReminderLogs = functions.https.onCall(async (data, context) => {
@@ -1962,6 +1984,7 @@ Ozui Niongo ya ${montant} FC. Efuteli Ekobanda le ${dateDebut} pe ekosila le ${d
  */
 exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
   const {clients} = data;
+  const sendMode = normalizePaymentReminderSendMode(data && data.sendMode);
 
   if (!clients || !Array.isArray(clients)) {
     console.error("No client array provided");
@@ -1970,6 +1993,8 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
         "Expected clients array",
     );
   }
+  const plannedTotal = Number(data && data.plannedTotal) || clients.length;
+  const excludedQuitte = Number(data && data.excludedQuitte) || 0;
 
   // Optionally, you can check if the caller is authenticated:
   // if (!context.auth) {
@@ -2029,11 +2054,14 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
   const authToken = authInfo.token || {};
   await recordPaymentReminderLog({
     source: "manual",
+    sendMode,
+    plannedTotal,
     total: clients.length,
     succeeded: successCount,
     failed: failCount,
     quitteTotal,
     quitteSucceeded: quitteSuccessCount,
+    excludedQuitte,
     sentBy: authToken.name || authToken.email || null,
     sentById: authInfo.uid || null,
   });
@@ -2045,6 +2073,9 @@ exports.sendPaymentReminders = functions.https.onCall(async (data, context) => {
     failCount,
     quitteTotal,
     quitteSuccessCount,
+    sendMode,
+    plannedTotal,
+    excludedQuitte,
   };
 });
 
@@ -2437,26 +2468,39 @@ exports.scheduledSendReminders = functions.pubsub
         const clientsWithDebts = findClientsWithDebtsIncludingThoseWhoLeft(allClients);
 
         // 5. Filter by paymentDay, isPhoneCorrect, and didClientStartThisWeek
-        const clientsToRemind = clientsWithDebts.filter((client) => {
+        const plannedClientsToRemind = clientsWithDebts.filter((client) => {
           return (
             client.paymentDay === theDay &&
           client.isPhoneCorrect !== "false" &&
           didClientStartThisWeek(client)
           );
         });
+        const plannedQuitteTotal = plannedClientsToRemind.filter((client) =>
+          isLeftQuitte(client),
+        ).length;
+        const sendMode = await getPaymentReminderSendMode();
+        const clientsToRemind = sendMode === "excludeQuitte" ?
+          plannedClientsToRemind.filter((client) => !isLeftQuitte(client)) :
+          plannedClientsToRemind;
         const scheduledQuitteTotal = clientsToRemind.filter((client) =>
           isLeftQuitte(client),
         ).length;
+        const excludedQuitte = sendMode === "excludeQuitte" ?
+          plannedQuitteTotal :
+          0;
 
         if (clientsToRemind.length === 0) {
           console.log("No clients need reminders today after filtering. Exiting...");
           await recordPaymentReminderLog({
             source: "scheduled",
+            sendMode,
+            plannedTotal: plannedClientsToRemind.length,
             total: 0,
             succeeded: 0,
             failed: 0,
-            quitteTotal: 0,
+            quitteTotal: scheduledQuitteTotal,
             quitteSucceeded: 0,
+            excludedQuitte,
             sentBy: "Automatique 8h",
           });
           return null;
@@ -2585,11 +2629,14 @@ exports.scheduledSendReminders = functions.pubsub
 
         await recordPaymentReminderLog({
           source: "scheduled",
+          sendMode,
+          plannedTotal: plannedClientsToRemind.length,
           total: clientsToRemind.length,
           succeeded: successCount,
           failed: failCount,
           quitteTotal: scheduledQuitteTotal,
           quitteSucceeded: quitteSuccessCount,
+          excludedQuitte,
           skipped: skippedCount,
           sentBy: "Automatique 8h",
         });
