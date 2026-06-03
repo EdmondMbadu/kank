@@ -1342,6 +1342,150 @@
               </div>
             </div>
           </ng-container>
+
+          <div
+            class="mt-4 rounded-2xl border border-slate-200 bg-white/80 p-4 dark:border-slate-800 dark:bg-slate-900/70"
+          >
+            <div
+              class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+            >
+              <div>
+                <p
+                  class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-300"
+                >
+                  Prévu aujourd’hui
+                </p>
+                <h4
+                  class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100"
+                >
+                  Clients qui doivent recevoir le rappel
+                </h4>
+              </div>
+              <div
+                class="inline-flex rounded-full bg-slate-100 p-1 text-xs font-semibold dark:bg-slate-800"
+              >
+                <button
+                  type="button"
+                  (click)="setScheduledReminderClientView('all')"
+                  [ngClass]="scheduledReminderViewButtonClasses('all')"
+                  class="rounded-full px-3 py-1.5 transition"
+                >
+                  Tous
+                </button>
+                <button
+                  type="button"
+                  (click)="setScheduledReminderClientView('quitte')"
+                  [ngClass]="scheduledReminderViewButtonClasses('quitte')"
+                  class="rounded-full px-3 py-1.5 transition"
+                >
+                  Quittés
+                </button>
+                <button
+                  type="button"
+                  (click)="setScheduledReminderClientView('active')"
+                  [ngClass]="scheduledReminderViewButtonClasses('active')"
+                  class="rounded-full px-3 py-1.5 transition"
+                >
+                  Non quittés
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-2">
+              <div
+                class="rounded-xl bg-slate-50 px-3 py-3 text-center dark:bg-slate-950/40"
+              >
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Total
+                </p>
+                <p class="mt-1 text-2xl font-semibold leading-none text-slate-900 dark:text-white">
+                  {{ scheduledReminderClientStats.total | number : "1.0-0" }}
+                </p>
+              </div>
+              <div
+                class="rounded-xl bg-amber-50 px-3 py-3 text-center dark:bg-amber-950/20"
+              >
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-500">
+                  Quittés
+                </p>
+                <p class="mt-1 text-2xl font-semibold leading-none text-amber-700 dark:text-amber-300">
+                  {{ scheduledReminderClientStats.quitte | number : "1.0-0" }}
+                </p>
+              </div>
+              <div
+                class="rounded-xl bg-emerald-50 px-3 py-3 text-center dark:bg-emerald-950/20"
+              >
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-500">
+                  Non quittés
+                </p>
+                <p class="mt-1 text-2xl font-semibold leading-none text-emerald-700 dark:text-emerald-300">
+                  {{ scheduledReminderClientStats.active | number : "1.0-0" }}
+                </p>
+              </div>
+            </div>
+
+            <div
+              *ngIf="isFetchingClients"
+              class="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-300"
+            >
+              Calcul des clients planifiés…
+            </div>
+
+            <div
+              *ngIf="!isFetchingClients && !scheduledReminderClientStats.total"
+              class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-950/30 dark:text-slate-300"
+            >
+              Aucun client planifié pour le rappel d’aujourd’hui.
+            </div>
+
+            <div
+              *ngIf="!isFetchingClients && visibleScheduledReminderClients.length"
+              class="mt-4 space-y-2"
+            >
+              <div
+                *ngFor="
+                  let client of visibleScheduledReminderClients;
+                  trackBy: trackScheduledReminderClient
+                "
+                class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-950/40"
+              >
+                <div class="min-w-0">
+                  <p
+                    class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100"
+                  >
+                    {{ client.firstName || "Client" }} {{ client.lastName || "" }}
+                  </p>
+                  <p class="truncate text-xs text-slate-500 dark:text-slate-400">
+                    {{ client.locationName || "Site non indiqué" }} ·
+                    {{ displayPhone(client.phoneNumber) }}
+                  </p>
+                </div>
+                <span
+                  class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [ngClass]="
+                    isClientQuitte(client)
+                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
+                      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
+                  "
+                >
+                  {{ isClientQuitte(client) ? "Quitté" : "Non quitté" }}
+                </span>
+              </div>
+            </div>
+
+            <button
+              *ngIf="hasMoreScheduledReminderClients"
+              type="button"
+              (click)="toggleScheduledReminderClients()"
+              class="mt-3 inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {{
+                showAllScheduledReminderClients
+                  ? "Voir moins"
+                  : "Voir plus de " + scheduledReminderClientViewLabel
+              }}
+            </button>
+          </div>
         </div>
 
         <button

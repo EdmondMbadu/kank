@@ -190,6 +190,8 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   currentClients: Array<Client[]> = [];
   allcurrentClientsWithDebts: Client[] = [];
   allCurrentClientsWithDebtsScheduledToPayToday: Client[] = [];
+  scheduledReminderClientView: 'all' | 'quitte' | 'active' = 'all';
+  showAllScheduledReminderClients = false;
   allUsers: User[] = [];
 
   // master list search
@@ -4014,6 +4016,95 @@ Merci pona confiance na FONDATION GERVAIS.`;
     return Number(value || 0).toLocaleString('fr-FR', {
       maximumFractionDigits: 0,
     });
+  }
+
+  get scheduledReminderClientsToday(): Client[] {
+    return this.allCurrentClientsWithDebtsScheduledToPayToday ?? [];
+  }
+
+  get scheduledReminderQuitteClients(): Client[] {
+    return this.scheduledReminderClientsToday.filter((client) =>
+      this.isClientQuitte(client)
+    );
+  }
+
+  get scheduledReminderActiveClients(): Client[] {
+    return this.scheduledReminderClientsToday.filter(
+      (client) => !this.isClientQuitte(client)
+    );
+  }
+
+  get scheduledReminderClientStats(): {
+    total: number;
+    quitte: number;
+    active: number;
+  } {
+    return {
+      total: this.scheduledReminderClientsToday.length,
+      quitte: this.scheduledReminderQuitteClients.length,
+      active: this.scheduledReminderActiveClients.length,
+    };
+  }
+
+  get filteredScheduledReminderClients(): Client[] {
+    if (this.scheduledReminderClientView === 'quitte') {
+      return this.scheduledReminderQuitteClients;
+    }
+    if (this.scheduledReminderClientView === 'active') {
+      return this.scheduledReminderActiveClients;
+    }
+    return this.scheduledReminderClientsToday;
+  }
+
+  get visibleScheduledReminderClients(): Client[] {
+    if (this.showAllScheduledReminderClients) {
+      return this.filteredScheduledReminderClients;
+    }
+    return this.filteredScheduledReminderClients.slice(0, 4);
+  }
+
+  get hasMoreScheduledReminderClients(): boolean {
+    return this.filteredScheduledReminderClients.length > 4;
+  }
+
+  get scheduledReminderClientViewLabel(): string {
+    switch (this.scheduledReminderClientView) {
+      case 'quitte':
+        return 'quittés';
+      case 'active':
+        return 'non quittés';
+      default:
+        return 'clients';
+    }
+  }
+
+  setScheduledReminderClientView(view: 'all' | 'quitte' | 'active'): void {
+    if (this.scheduledReminderClientView === view) return;
+    this.scheduledReminderClientView = view;
+    this.showAllScheduledReminderClients = false;
+  }
+
+  scheduledReminderViewButtonClasses(view: 'all' | 'quitte' | 'active') {
+    const active = this.scheduledReminderClientView === view;
+    return {
+      'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900':
+        active,
+      'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white':
+        !active,
+    };
+  }
+
+  toggleScheduledReminderClients(): void {
+    if (!this.hasMoreScheduledReminderClients) return;
+    this.showAllScheduledReminderClients = !this.showAllScheduledReminderClients;
+  }
+
+  trackScheduledReminderClient(index: number, client: Client): string {
+    return (
+      client.uid ||
+      client.trackingId ||
+      `${client.firstName || ''}-${client.lastName || ''}-${client.phoneNumber || index}`
+    );
   }
 
   async setPaymentReminderDate(value: string): Promise<void> {
