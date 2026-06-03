@@ -37,10 +37,23 @@ interface WeeklyShortfall {
   isComplete: boolean;
 }
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
+type PaymentPerformanceMode = 'day' | 'week';
 interface WeeklyProgressMarker {
   amountFc: number;
   label: string;
   percent: number;
+}
+interface PaymentPerformanceWeekRow {
+  label: string;
+  rangeLabel: string;
+  expectedFc: number;
+  expectedDollars: number;
+  actualFc: number;
+  actualDollars: number;
+  remainingFc: number;
+  remainingDollars: number;
+  percent: number;
+  tone: WeeklyProgressTone;
 }
 @Component({
   selector: 'app-today',
@@ -89,6 +102,7 @@ export class TodayComponent {
     private storage: AngularFireStorage
   ) {}
   ngOnInit() {
+    this.paymentPerformanceDate = this.requestDate;
     this.initalizeInputs();
     this.detailOpen = new Date().getHours() >= 16; // 4pm works better
     this.weekPickerStartDate = this.requestDate;
@@ -117,6 +131,7 @@ export class TodayComponent {
 
       this.findClientsWithDebts();
       this.computeRequestTotalSameAsRequestToday(); // NEW
+      this.updatePaymentPerformanceWeeks();
     });
 
     this.auth.getAllClientsCard().subscribe((cards: any) => {
@@ -156,6 +171,9 @@ export class TodayComponent {
   weeklyProgressStatusLabel = 'À faire';
   weeklyProgressMarkers: WeeklyProgressMarker[] = [];
   weeklyRangeLabel: string = '';
+  paymentPerformanceMode: PaymentPerformanceMode = 'day';
+  paymentPerformanceDate: string = '';
+  paymentPerformanceWeeks: PaymentPerformanceWeekRow[] = [];
   weekPickerStartDate: string = '';
   weekPickerRangeLabel: string = '';
   weekPickerStartLabel: string = '';
@@ -445,6 +463,7 @@ export class TodayComponent {
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLoss)}`,
     ];
     this.recomputeMoneyInHandsTrace();
+    this.updatePaymentPerformanceWeeks();
   }
 
   private computeWeeklyPaymentTotal(dateKey: string): number {
@@ -746,6 +765,7 @@ export class TodayComponent {
   }
 
   findDailyActivitiesAmount() {
+    this.paymentPerformanceDate = this.requestDate;
     this.requestDateCorrectFormat = this.time.convertDateToMonthDayYear(
       this.requestDate
     );
@@ -759,6 +779,7 @@ export class TodayComponent {
     this.findClientsWithDebts();
     this.recomputeHeaderReasons(); // ⬅ use new function
     this.computeRequestTotalSameAsRequestToday();
+    this.updatePaymentPerformanceWeeks();
   }
 
   findClientsWithDebts() {
@@ -892,6 +913,100 @@ export class TodayComponent {
       return null;
     }
     return parsed;
+  }
+
+  private formatIsoDate(date: Date): string {
+    const pad = (value: number) => value.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+      date.getDate()
+    )}`;
+  }
+
+  private paymentPerformanceDateKey(): string {
+    const parsed = this.parseIsoDate(this.paymentPerformanceDate);
+    if (!parsed) return this.requestDateCorrectFormat;
+    return this.formatDateKey(parsed);
+  }
+
+  onPaymentPerformanceDateChange(): void {
+    if (!this.parseIsoDate(this.paymentPerformanceDate)) {
+      this.paymentPerformanceDate = this.requestDate;
+      this.updatePaymentPerformanceWeeks();
+      return;
+    }
+
+    this.requestDate = this.paymentPerformanceDate;
+    this.findDailyActivitiesAmount();
+  }
+
+  setPaymentPerformanceMode(mode: PaymentPerformanceMode): void {
+    this.paymentPerformanceMode = mode;
+    this.updatePaymentPerformanceWeeks();
+  }
+
+  shiftPaymentPerformanceWeek(deltaWeeks: number): void {
+    const base =
+      this.parseIsoDate(this.paymentPerformanceDate) ||
+      this.parseIsoDate(this.requestDate) ||
+      new Date();
+
+    base.setDate(base.getDate() + deltaWeeks * 7);
+    this.paymentPerformanceDate = this.formatIsoDate(base);
+    this.requestDate = this.paymentPerformanceDate;
+    this.findDailyActivitiesAmount();
+  }
+
+  private resolvePaymentProgressTone(percent: number): WeeklyProgressTone {
+    const value = Number(percent) || 0;
+    if (value >= 100) return 'green';
+    if (value >= 80) return 'orange';
+    if (value >= 50) return 'yellow';
+    return 'red';
+  }
+
+  private buildPaymentPerformanceWeekRow(
+    label: string,
+    dateKey: string
+  ): PaymentPerformanceWeekRow {
+    const expectedFc = this.computeWeeklyExpectedTotal(dateKey);
+    const actualFc = this.computeWeeklyPaymentTotal(dateKey);
+    const remainingFc = Math.max(expectedFc - actualFc, 0);
+    const percent =
+      expectedFc === 0
+        ? actualFc > 0
+          ? 100
+          : 0
+        : Math.min(100, (actualFc / expectedFc) * 100);
+
+    return {
+      label,
+      rangeLabel: this.computeWeeklyRangeLabel(dateKey),
+      expectedFc,
+      expectedDollars: Number(
+        this.compute.convertCongoleseFrancToUsDollars(expectedFc.toString())
+      ),
+      actualFc,
+      actualDollars: Number(
+        this.compute.convertCongoleseFrancToUsDollars(actualFc.toString())
+      ),
+      remainingFc,
+      remainingDollars: Number(
+        this.compute.convertCongoleseFrancToUsDollars(remainingFc.toString())
+      ),
+      percent,
+      tone: this.resolvePaymentProgressTone(percent),
+    };
+  }
+
+  private updatePaymentPerformanceWeeks(): void {
+    const dateKey = this.paymentPerformanceDateKey();
+    this.paymentPerformanceWeeks = [
+      this.buildPaymentPerformanceWeekRow('Semaine sélectionnée', dateKey),
+    ];
+  }
+
+  get selectedPaymentPerformanceWeek(): PaymentPerformanceWeekRow | null {
+    return this.paymentPerformanceWeeks[0] || null;
   }
 
   get hasProjectedWeeklyTarget(): boolean {
@@ -1390,6 +1505,46 @@ export class TodayComponent {
 
   get canShowPercentage(): boolean {
     return this.auth.isAdmin || this.isPercentageUnlocked;
+  }
+
+  get todayPaymentProgressTone(): WeeklyProgressTone {
+    return this.resolvePaymentProgressTone(this.clampedPerc);
+  }
+
+  get todayPaymentProgressLabel(): string {
+    const expected = Number(this.expectedReserve) || 0;
+    const actual = Number(this.dailyPayment) || 0;
+
+    if (expected <= 0) {
+      return actual > 0
+        ? 'Paiement saisi sans attente planifiée.'
+        : 'Aucune attente planifiée pour ce jour.';
+    }
+
+    if (actual >= expected) return 'Objectif du jour couvert.';
+    if (this.clampedPerc >= 80) return 'Presque couvert, reste à finaliser.';
+    if (this.clampedPerc >= 50) return 'Plus de la moitié est couverte.';
+    return 'Retard à combler avant la clôture.';
+  }
+
+  get todayPaymentRemainingFc(): number {
+    const expected = Number(this.expectedReserve) || 0;
+    const actual = Number(this.dailyPayment) || 0;
+    return Math.max(expected - actual, 0);
+  }
+
+  get todayPaymentRemainingDollars(): number {
+    return Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.todayPaymentRemainingFc.toString()
+      )
+    );
+  }
+
+  get dailyReserveDollars(): number {
+    return Number(
+      this.compute.convertCongoleseFrancToUsDollars(this.dailyReserve)
+    );
   }
 
   /** Pour sécuriser l’affichage de la jauge et des classes */

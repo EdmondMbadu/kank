@@ -844,141 +844,374 @@
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
-<!-- ╭─ Performance & reserve ──────────────────────────────────────────╮ -->
-<section class="mx-auto mt-12 max-w-3xl px-4 sm:px-6 lg:px-8">
-  <!-- ── Performance cards ─────────────────────────────────────────── -->
-  <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else perfMasked">
-    <ng-container *ngIf="expectedReserve === '0'">
-      <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow">
-        <h2 class="text-xl font-semibold text-green-800 dark:text-green-300">
-          Performance Paiement du Jour
-        </h2>
-        <p class="mt-2 text-3xl font-extrabold text-green-900">____%</p>
+<!-- ╭─ Daily payment performance ──────────────────────────────────────╮ -->
+<section class="mx-auto mt-12 max-w-4xl px-4 sm:px-6 lg:px-8">
+  <div
+    class="rounded-2xl border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/60 dark:border-slate-700 dark:bg-slate-800 dark:shadow-none sm:p-6"
+  >
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div class="min-w-0">
+        <div class="flex items-start gap-3">
+          <div
+            class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+          >
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 19V5m0 14h16M8 15l3-3 2 2 5-6"
+              />
+            </svg>
+          </div>
+          <div>
+            <p
+              class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
+              Performance paiement
+            </p>
+            <h2
+              class="mt-1 text-xl font-extrabold text-slate-900 dark:text-white"
+            >
+              {{ frenchDate }}
+            </h2>
+            <p class="mt-1 max-w-xl text-sm text-slate-500 dark:text-slate-400">
+              <ng-container *ngIf="paymentPerformanceMode === 'day'">
+                Attendu aujourd'hui, paiement reçu, puis reste à couvrir avant
+                la clôture.
+              </ng-container>
+              <ng-container *ngIf="paymentPerformanceMode === 'week'">
+                Attendu de la semaine, paiement réalisé, puis reste à couvrir.
+              </ng-container>
+            </p>
+          </div>
+        </div>
       </div>
-    </ng-container>
 
-    <ng-container *ngIf="expectedReserve !== '0' && perc >= 50">
-      <div class="mb-8 rounded-2xl bg-green-50 p-6 text-center shadow">
-        <h2 class="text-xl font-semibold text-green-800">
-          Performance Paiement du Jour
-        </h2>
-        <p class="mt-2 text-3xl font-extrabold text-green-900">
-          <ng-container *ngIf="canShowPercentage; else hiddenPerfPercentage">
-            {{ percentage }}%
-          </ng-container>
-          <ng-template #hiddenPerfPercentage>•••</ng-template>
-        </p>
-      </div>
-    </ng-container>
+      <div class="flex flex-wrap items-end gap-2 lg:justify-end">
+        <div
+          class="mb-0.5 inline-flex h-8 rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-bold shadow-sm dark:border-slate-600 dark:bg-slate-700"
+        >
+          <button
+            type="button"
+            (click)="setPaymentPerformanceMode('day')"
+            class="rounded-md px-3 transition"
+            [ngClass]="
+              paymentPerformanceMode === 'day'
+                ? 'bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-300'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300'
+            "
+          >
+            Jour
+          </button>
+          <button
+            type="button"
+            (click)="setPaymentPerformanceMode('week')"
+            class="rounded-md px-3 transition"
+            [ngClass]="
+              paymentPerformanceMode === 'week'
+                ? 'bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-300'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-300'
+            "
+          >
+            Semaine
+          </button>
+        </div>
 
-    <ng-container *ngIf="expectedReserve !== '0' && perc < 50">
-      <div class="mb-8 rounded-2xl bg-red-50 p-6 text-center shadow">
-        <h2 class="text-xl font-semibold text-red-800">
-          Performance Paiement du Jour
-        </h2>
-        <p class="mt-2 text-3xl font-extrabold text-red-900">
-          <ng-container *ngIf="canShowPercentage; else hiddenPerfPercentage2">
-            {{ percentage }}%
-          </ng-container>
-          <ng-template #hiddenPerfPercentage2>•••</ng-template>
-        </p>
-      </div>
-    </ng-container>
-  </ng-container>
+        <label
+          class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+        >
+          Date
+          <input
+            [(ngModel)]="paymentPerformanceDate"
+            (change)="onPaymentPerformanceDateChange()"
+            type="date"
+            class="mt-1 block rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white"
+          />
+        </label>
 
-  <!-- masked version with padlock -->
-  <ng-template #perfMasked>
-    <div
-      class="relative mb-8 rounded-2xl bg-gray-100 p-6 text-center shadow dark:bg-slate-700"
-    >
-      <h2 class="text-xl font-semibold text-gray-500 dark:text-gray-300">
-        Performance Paiement du Jour
-      </h2>
-      <p class="mt-2 text-3xl font-extrabold text-gray-400">•••</p>
+        <div class="flex items-center gap-1 pb-0.5">
+          <button
+            type="button"
+            (click)="shiftPaymentPerformanceWeek(-1)"
+            aria-label="Semaine précédente"
+            title="Semaine précédente"
+            class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-600 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            (click)="shiftPaymentPerformanceWeek(1)"
+            aria-label="Semaine suivante"
+            title="Semaine suivante"
+            class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-600 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+          >
+            ›
+          </button>
+        </div>
 
-      <!-- padlock -->
-      <button
-        (click)="openCodeModal()"
-        class="absolute top-3 right-3 rounded-full bg-gray-300/70 p-2 text-gray-700 hover:bg-gray-400 dark:bg-slate-600 dark:text-gray-100"
-      >
-        🔒
-      </button>
-    </div>
-  </ng-template>
-  <!-- ──────────────────────────────────────────────────────────────── -->
-
-  <!-- ── Reserve card ──────────────────────────────────────────────── -->
-  <div class="rounded-2xl bg-white p-8 shadow dark:bg-slate-800">
-    <h3
-      class="mb-6 text-center text-2xl font-bold text-green-800 underline dark:text-green-300"
-    >
-      Reserve
-    </h3>
-
-    <!-- expected reserve -->
-    <div class="mb-6 rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-slate-700">
-      <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
-        Reserve Attendue du Jour
-      </h4>
-      <p class="text-xl font-bold text-green-900 dark:text-green-200">
-        {{ expectedReserve | number : "1.0-0" }} FC
-        <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-        {{ expectedReserveInDollars | number : "1.0-0" }} $
-      </p>
-    </div>
-
-    <!-- daily reserve / payment -->
-    <div class="rounded-lg bg-gray-50 p-4 shadow-sm dark:bg-slate-700">
-      <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
-        Paiement du Jour
         <button
           *ngIf="!isPayUnlocked && !auth.isAdmin"
+          type="button"
           (click)="openCodeModal()"
-          class="ml-2 rounded bg-gray-300/70 px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-400 dark:bg-slate-600 dark:text-gray-100"
+          class="mb-0.5 inline-flex h-8 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
+          aria-label="Déverrouiller le paiement du jour"
+          title="Déverrouiller le paiement du jour"
         >
           🔒
         </button>
-      </h4>
-
-      <p
-        class="mb-3 text-xl font-bold"
-        [ngClass]="
-          isPayUnlocked || auth.isAdmin
-            ? 'text-green-900 dark:text-green-200'
-            : 'text-gray-400 dark:text-gray-500'
-        "
-      >
-        <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else payDash">
-          {{ dailyPayment | number : "1.0-0" }} FC
-          <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-          {{ dailyPaymentDollars | number : "1.0-0" }} $
-        </ng-container>
-        <ng-template #payDash>•••</ng-template>
-      </p>
-      <ng-container *ngIf="isPayUnlocked || auth.isAdmin">
-        <p
-          *ngIf="dailyMobileMoneyPaymentN > 0"
-          class="mb-3 text-sm text-slate-600 dark:text-slate-300"
-        >
-          Mobile Money: {{ dailyMobileMoneyPayment | number : "1.0-0" }} FC
-        </p>
-      </ng-container>
-
-      <h4 class="mb-1 text-lg font-semibold text-green-800 dark:text-green-300">
-        Reserve du Jour
-      </h4>
-      <p class="text-xl font-bold text-green-900 dark:text-green-200">
-        {{ dailyReserve | number : "1.0-0" }} FC
-        <span class="mx-1 text-gray-500 dark:text-gray-400">→</span>
-        {{
-          compute.convertCongoleseFrancToUsDollars(dailyReserve)
-            | number : "1.0-0"
-        }}
-        $
-      </p>
+      </div>
     </div>
+
+    <ng-container
+      *ngIf="paymentPerformanceMode === 'day'; else weeklyPaymentPerformance"
+    >
+      <div class="mt-6">
+        <div
+          class="mb-2 flex items-center justify-between gap-4 text-sm font-bold"
+          [ngClass]="{
+            'text-red-600 dark:text-red-400':
+              todayPaymentProgressTone === 'red',
+            'text-amber-600 dark:text-amber-400':
+              todayPaymentProgressTone === 'yellow',
+            'text-orange-600 dark:text-orange-400':
+              todayPaymentProgressTone === 'orange',
+            'text-emerald-600 dark:text-emerald-400':
+              todayPaymentProgressTone === 'green'
+          }"
+        >
+          <span>Paiement du jour</span>
+          <span>
+            <ng-container *ngIf="canShowPercentage; else paymentProgressLocked">
+              {{ clampedPerc | number : "1.0-0" }}%
+            </ng-container>
+            <ng-template #paymentProgressLocked>•••</ng-template>
+          </span>
+        </div>
+
+        <div
+          class="h-3.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+          title="Paiement reçu divisé par le montant attendu aujourd'hui"
+        >
+          <div
+            class="h-3.5 rounded-full transition-all duration-300"
+            [ngClass]="{
+              'bg-red-500': todayPaymentProgressTone === 'red',
+              'bg-amber-400': todayPaymentProgressTone === 'yellow',
+              'bg-orange-500': todayPaymentProgressTone === 'orange',
+              'bg-emerald-500': todayPaymentProgressTone === 'green',
+              'bg-slate-400': !canShowPercentage
+            }"
+            [style.width.%]="canShowPercentage ? clampedPerc : 0"
+          ></div>
+        </div>
+
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          <ng-container *ngIf="canShowPercentage; else paymentStoryLocked">
+            {{ todayPaymentProgressLabel }}
+          </ng-container>
+          <ng-template #paymentStoryLocked>
+            Entrez le code pour voir la progression et le paiement reçu.
+          </ng-template>
+        </p>
+      </div>
+
+      <div class="mt-6 grid gap-3 md:grid-cols-3">
+        <div
+          class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
+        >
+          <p
+            class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+          >
+            Attendu aujourd'hui
+          </p>
+          <p class="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">
+            {{ expectedReserve | number : "1.0-0" }} FC
+          </p>
+          <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            {{ expectedReserveInDollars | number : "1.0-0" }} $
+          </p>
+        </div>
+
+        <div
+          class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
+        >
+          <p
+            class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+          >
+            Reçu aujourd'hui
+          </p>
+          <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else paymentLocked">
+            <p class="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">
+              {{ dailyPayment | number : "1.0-0" }} FC
+            </p>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              {{ dailyPaymentDollars | number : "1.0-0" }} $
+              <ng-container *ngIf="dailyMobileMoneyPaymentN > 0">
+                · Mobile Money:
+                {{ dailyMobileMoneyPayment | number : "1.0-0" }} FC
+              </ng-container>
+            </p>
+          </ng-container>
+          <ng-template #paymentLocked>
+            <p class="mt-2 text-lg font-extrabold text-slate-400">•••</p>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Paiement verrouillé
+            </p>
+          </ng-template>
+        </div>
+
+        <div
+          class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
+        >
+          <p
+            class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+          >
+            Reste à couvrir
+          </p>
+          <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else remainingLocked">
+            <p class="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">
+              {{ todayPaymentRemainingFc | number : "1.0-0" }} FC
+            </p>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              {{ todayPaymentRemainingDollars | number : "1.0-0" }} $
+              <span class="mx-1">·</span>
+              Réserve: {{ dailyReserve | number : "1.0-0" }} FC
+              <span class="text-slate-400">
+                ({{ dailyReserveDollars | number : "1.0-0" }} $)
+              </span>
+            </p>
+          </ng-container>
+          <ng-template #remainingLocked>
+            <p class="mt-2 text-lg font-extrabold text-slate-400">•••</p>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Écart verrouillé
+            </p>
+          </ng-template>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #weeklyPaymentPerformance>
+      <ng-container *ngIf="selectedPaymentPerformanceWeek as week">
+        <div class="mt-6">
+          <div
+            class="mb-2 flex items-center justify-between gap-4 text-sm font-bold"
+            [ngClass]="{
+              'text-red-600 dark:text-red-400': week.tone === 'red',
+              'text-amber-600 dark:text-amber-400': week.tone === 'yellow',
+              'text-orange-600 dark:text-orange-400': week.tone === 'orange',
+              'text-emerald-600 dark:text-emerald-400': week.tone === 'green'
+            }"
+          >
+            <span>{{ week.label }}</span>
+            <span>
+              <ng-container *ngIf="canShowPercentage; else weekProgressLocked">
+                {{ week.percent | number : "1.0-0" }}%
+              </ng-container>
+              <ng-template #weekProgressLocked>•••</ng-template>
+            </span>
+          </div>
+
+          <div
+            class="h-3.5 w-full overflow-hidden rounded-full bg-slate-200 shadow-inner dark:bg-slate-700"
+            title="Paiement de la semaine divisé par attendu de la semaine"
+          >
+            <div
+              class="h-3.5 rounded-full transition-all duration-300"
+              [ngClass]="{
+                'bg-red-500': week.tone === 'red',
+                'bg-amber-400': week.tone === 'yellow',
+                'bg-orange-500': week.tone === 'orange',
+                'bg-emerald-500': week.tone === 'green',
+                'bg-slate-400': !canShowPercentage
+              }"
+              [style.width.%]="canShowPercentage ? week.percent : 0"
+            ></div>
+          </div>
+
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            {{ week.rangeLabel }}
+          </p>
+        </div>
+
+        <div class="mt-6 grid gap-3 md:grid-cols-3">
+          <div
+            class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
+          >
+            <p
+              class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
+              Attendu semaine
+            </p>
+            <p class="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">
+              {{ week.expectedFc | number : "1.0-0" }} FC
+            </p>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              {{ week.expectedDollars | number : "1.0-0" }} $
+            </p>
+          </div>
+
+          <div
+            class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
+          >
+            <p
+              class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
+              Fait semaine
+            </p>
+            <ng-container *ngIf="isPayUnlocked || auth.isAdmin; else weekDoneLocked">
+              <p class="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">
+                {{ week.actualFc | number : "1.0-0" }} FC
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {{ week.actualDollars | number : "1.0-0" }} $
+              </p>
+            </ng-container>
+            <ng-template #weekDoneLocked>
+              <p class="mt-2 text-lg font-extrabold text-slate-400">•••</p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Verrouillé
+              </p>
+            </ng-template>
+          </div>
+
+          <div
+            class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
+          >
+            <p
+              class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >
+              Reste semaine
+            </p>
+            <ng-container
+              *ngIf="isPayUnlocked || auth.isAdmin; else weekRemainingLocked"
+            >
+              <p class="mt-2 text-lg font-extrabold text-slate-900 dark:text-white">
+                {{ week.remainingFc | number : "1.0-0" }} FC
+              </p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {{ week.remainingDollars | number : "1.0-0" }} $
+              </p>
+            </ng-container>
+            <ng-template #weekRemainingLocked>
+              <p class="mt-2 text-lg font-extrabold text-slate-400">•••</p>
+              <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Écart verrouillé
+              </p>
+            </ng-template>
+          </div>
+        </div>
+      </ng-container>
+    </ng-template>
   </div>
-  <!-- ──────────────────────────────────────────────────────────────── -->
 </section>
 <!-- ╰───────────────────────────────────────────────────────────────────╯ -->
 
