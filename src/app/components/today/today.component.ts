@@ -956,6 +956,23 @@ export class TodayComponent {
     this.findDailyActivitiesAmount();
   }
 
+  shiftPaymentPerformancePeriod(direction: number): void {
+    if (this.paymentPerformanceMode === 'week') {
+      this.shiftPaymentPerformanceWeek(direction);
+      return;
+    }
+
+    const base =
+      this.parseIsoDate(this.paymentPerformanceDate) ||
+      this.parseIsoDate(this.requestDate) ||
+      new Date();
+
+    base.setDate(base.getDate() + direction);
+    this.paymentPerformanceDate = this.formatIsoDate(base);
+    this.requestDate = this.paymentPerformanceDate;
+    this.findDailyActivitiesAmount();
+  }
+
   private resolvePaymentProgressTone(percent: number): WeeklyProgressTone {
     const value = Number(percent) || 0;
     if (value >= 100) return 'green';
@@ -1509,6 +1526,59 @@ export class TodayComponent {
 
   get todayPaymentProgressTone(): WeeklyProgressTone {
     return this.resolvePaymentProgressTone(this.clampedPerc);
+  }
+
+  get activePaymentPerformancePercent(): number {
+    if (this.paymentPerformanceMode === 'week') {
+      return Math.max(
+        0,
+        Math.min(100, Number(this.selectedPaymentPerformanceWeek?.percent) || 0)
+      );
+    }
+
+    return this.clampedPerc;
+  }
+
+  get activePaymentPerformancePercentText(): string {
+    return this.activePaymentPerformancePercent.toFixed(2);
+  }
+
+  get activePaymentPerformanceTone(): WeeklyProgressTone {
+    return this.resolvePaymentProgressTone(this.activePaymentPerformancePercent);
+  }
+
+  get activePaymentPerformanceTitle(): string {
+    const percent = this.activePaymentPerformancePercent;
+    if (percent === 0) return '🚨 0 % — Pas encore de paiement';
+    if (percent < 30) return '🧭 Encore loin';
+    if (percent < 50) return '👍 Bon début';
+    if (percent < 70) return '💪 Bien joué';
+    if (percent < 80) return '✅ Très bien';
+    if (percent < 90) return '🌟 Super travail';
+    return '🏆 Excellent';
+  }
+
+  get activePaymentPerformanceMotivation(): string {
+    const percent = this.activePaymentPerformancePercent;
+    if (percent === 0) return 'On s’y met maintenant : vous pouvez le faire 💪';
+    if (percent < 30) return 'C’est un début ; continuez, chaque visite compte.';
+    if (percent < 50) return 'Beau rythme — cap sur 50 %, puis 70 %.';
+    if (percent < 70) return 'Vous êtes sur la bonne voie — poussez jusqu’à 70 %.';
+    if (percent < 80) return 'Dernière ligne droite vers 80 %.';
+    if (percent < 90) return 'Plus que quelques pas vers 90 %.';
+    return 'Vous êtes une inspiration — cap sur 100 % !';
+  }
+
+  get activePaymentPerformanceObjectiveLabel(): string {
+    return this.paymentPerformanceMode === 'week'
+      ? 'Objectif de la semaine atteint à'
+      : 'Objectif du jour atteint à';
+  }
+
+  get activePaymentPerformanceContextLabel(): string {
+    return this.paymentPerformanceMode === 'week'
+      ? this.selectedPaymentPerformanceWeek?.rangeLabel || this.weekPickerRangeLabel
+      : 'Retard à combler avant la clôture.';
   }
 
   get todayPaymentProgressLabel(): string {
