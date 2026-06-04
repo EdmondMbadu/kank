@@ -1329,15 +1329,23 @@
                     {{ log.sentAtDate | date : "HH:mm" }}
                   </p>
                   <p class="text-xs text-slate-500 dark:text-slate-400">
-                    {{ log.succeeded || 0 }} envoyés,
-                    {{ log.quitteSucceeded || 0 }} quittés,
-                    {{ log.failed || 0 }} échecs
+                    {{
+                      log.sendMode === "excludeQuitte"
+                        ? "Non quittés seulement"
+                        : "Tous planifiés"
+                    }}
+                    · {{ log.succeeded || 0 }} envoyés /
+                    {{ log.plannedTotal || log.total || 0 }} planifiés
+                    <span *ngIf="log.excludedQuitte">
+                      · {{ log.excludedQuitte }} quittés exclus
+                    </span>
+                    <span *ngIf="log.failed"> · {{ log.failed }} échecs </span>
                   </p>
                 </div>
                 <span
                   class="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-200"
                 >
-                  {{ log.total || 0 }}
+                  {{ log.total || 0 }} ciblés
                 </span>
               </div>
             </div>

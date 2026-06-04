@@ -133,11 +133,14 @@ exports.getPaymentReminderLogs = functions.https.onCall(async (data, context) =>
     return {
       id: doc.id,
       source: row.source || "manual",
+      sendMode: normalizePaymentReminderSendMode(row.sendMode),
+      plannedTotal: Number(row.plannedTotal) || Number(row.total) || 0,
       total: Number(row.total) || 0,
       succeeded: Number(row.succeeded) || 0,
       failed: Number(row.failed) || 0,
       quitteTotal: Number(row.quitteTotal) || 0,
       quitteSucceeded: Number(row.quitteSucceeded) || 0,
+      excludedQuitte: Number(row.excludedQuitte) || 0,
       skipped: Number(row.skipped) || 0,
       sentAtDateKey: row.sentAtDateKey || dateKey,
       sentAtMs: Number(row.sentAtMs) || 0,
@@ -2488,6 +2491,16 @@ exports.scheduledSendReminders = functions.pubsub
         const excludedQuitte = sendMode === "excludeQuitte" ?
           plannedQuitteTotal :
           0;
+        console.log(
+            "===> Payment reminder mode:",
+            sendMode,
+            "planned:",
+            plannedClientsToRemind.length,
+            "target:",
+            clientsToRemind.length,
+            "excludedQuitte:",
+            excludedQuitte,
+        );
 
         if (clientsToRemind.length === 0) {
           console.log("No clients need reminders today after filtering. Exiting...");
@@ -3361,13 +3374,15 @@ function buildRecruitmentMessage(e) {
 }
 function isLeftQuitte(c) {
   const fields = [
-    c.status, c.clientStatus, c.followUpStatus, c.suiviStatus,
+    c.vitalStatus, c.vital_status, c.status, c.clientStatus,
+    c.followUpStatus, c.suiviStatus,
     c.state, c.stage, c.note, c.notes, c.flags, c.tags, c.labels,
   ];
   const parts = [];
   for (const f of fields) {
     if (!f) continue;
     if (Array.isArray(f)) parts.push(f.join(" "));
+    else if (typeof f === "object") parts.push(JSON.stringify(f));
     else parts.push(String(f));
   }
   const txt = parts.join(" ").toLowerCase()

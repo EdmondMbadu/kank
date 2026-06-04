@@ -1133,6 +1133,36 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       .trim();
   }
 
+  private normalizeQuitteStatusFields(client?: Client | null): string {
+    const rawClient = (client ?? {}) as any;
+    const fields = [
+      rawClient.vitalStatus,
+      rawClient.vital_status,
+      rawClient.status,
+      rawClient.clientStatus,
+      rawClient.followUpStatus,
+      rawClient.suiviStatus,
+      rawClient.state,
+      rawClient.stage,
+      rawClient.note,
+      rawClient.notes,
+      rawClient.flags,
+      rawClient.tags,
+      rawClient.labels,
+    ];
+
+    return this.normalizeVitalStatus(
+      fields
+        .filter(Boolean)
+        .map((value) => {
+          if (Array.isArray(value)) return value.join(' ');
+          if (typeof value === 'object') return JSON.stringify(value);
+          return String(value);
+        })
+        .join(' ')
+    );
+  }
+
   duplicateClientStatusLabel(client: Client): string {
     const raw = (client.vitalStatus || '').trim();
     const normalized = this.normalizeVitalStatus(raw);
@@ -2848,12 +2878,13 @@ Merci pour ta confiance !`;
     return (initials || 'CL').toUpperCase();
   }
   isClientQuitte(client?: Client | null): boolean {
-    const normalized = this.normalizeVitalStatus(client?.vitalStatus);
+    const normalized = this.normalizeQuitteStatusFields(client);
     return (
       normalized === 'quitte' ||
       normalized === 'quittee' ||
       normalized === 'quite' ||
-      normalized === 'quit'
+      normalized === 'quit' ||
+      /\b\+?quittee?\b|\bleft\b|\bparti(e)?\b/.test(normalized)
     );
   }
   get allActivePhones(): string[] {
@@ -3992,12 +4023,14 @@ Merci pona confiance na FONDATION GERVAIS.`;
   get paymentReminderSummaryStats(): PaymentReminderSummaryStats {
     return this.paymentReminderLogs.reduce(
       (summary, log) => {
+        const plannedTotal = Number(log.plannedTotal) || Number(log.total) || 0;
+        const excludedQuitte = Number(log.excludedQuitte) || 0;
         summary.runs += 1;
-        summary.planned += Number(log.total) || 0;
+        summary.planned += plannedTotal;
         summary.sent += Number(log.succeeded) || 0;
         summary.failed += Number(log.failed) || 0;
         summary.skipped += Number(log.skipped) || 0;
-        summary.quittePlanned += Number(log.quitteTotal) || 0;
+        summary.quittePlanned += (Number(log.quitteTotal) || 0) + excludedQuitte;
         summary.quitteSent += Number(log.quitteSucceeded) || 0;
         return summary;
       },
@@ -4315,9 +4348,19 @@ Merci pona confiance na FONDATION GERVAIS.`;
   ): PaymentReminderLog {
     const safe = data ?? {};
     const sentAtMs = Number(safe.sentAtMs) || Date.now();
+    const total = Number(safe.total) || 0;
     return {
       ...safe,
       id,
+      sendMode: safe.sendMode === 'excludeQuitte' ? 'excludeQuitte' : 'all',
+      plannedTotal: Number(safe.plannedTotal) || total,
+      total,
+      succeeded: Number(safe.succeeded) || 0,
+      failed: Number(safe.failed) || 0,
+      quitteTotal: Number(safe.quitteTotal) || 0,
+      quitteSucceeded: Number(safe.quitteSucceeded) || 0,
+      excludedQuitte: Number(safe.excludedQuitte) || 0,
+      skipped: Number(safe.skipped) || 0,
       sentAtMs,
       sentAtDate: new Date(sentAtMs),
       sourceLabel:
