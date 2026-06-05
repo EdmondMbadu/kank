@@ -172,6 +172,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   presenceEmployeeSearch = '';
   presenceEmployeeSearchOpen = false;
   presenceSummaryIncludeSaturday = false;
+  presenceSummaryIncludeAbsent = false;
+  presenceSummaryIncludeAnomaly = false;
   presenceAttachmentsByLabel: Record<string, any[]> = {};
   presenceAttachmentsLoading = false;
   private presenceAttachmentsCacheKey = '';
@@ -626,6 +628,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.presenceMonth,
       this.presenceYear,
       this.presenceSummaryIncludeSaturday,
+      this.presenceSummaryIncludeAbsent,
+      this.presenceSummaryIncludeAnomaly,
       this.presenceExceptionCacheSignature(),
     ].join('|');
   }
@@ -662,6 +666,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   onPresenceSummarySaturdayChange(): void {
+    this.invalidatePresenceCache();
+  }
+
+  onPresenceSummaryFilterChange(): void {
     this.invalidatePresenceCache();
   }
 
@@ -1047,7 +1055,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const missed = days
       .map((label) => {
         const status = this.getLatestAttendanceForEmployeeDay(employee, label).status;
-        if (!this.isPresenceMissedStatus(status)) return null;
+        if (!this.isPresenceSummaryIncludedStatus(status)) return null;
         return {
           label,
           display: this.presenceDayDisplay(label),
@@ -1092,8 +1100,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return labels;
   }
 
-  private isPresenceMissedStatus(status: AttendanceStateCode): boolean {
-    return status === '' || status === 'A' || status === 'F';
+  private isPresenceSummaryIncludedStatus(status: AttendanceStateCode): boolean {
+    if (!status) return true;
+    if (status === 'A') return this.presenceSummaryIncludeAbsent;
+    if (status === 'F') return this.presenceSummaryIncludeAnomaly;
+    return false;
   }
 
   private presenceDayDisplay(label: string): string {

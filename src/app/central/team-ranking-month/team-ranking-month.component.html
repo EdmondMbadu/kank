@@ -437,7 +437,8 @@
                   Résumé des jours manqués
                 </p>
                 <p class="mt-1 text-sm font-semibold text-slate-500">
-                  {{ presenceMissSummaryScopeLabel }} — dimanche exclu.
+                  {{ presenceMissSummaryScopeLabel }} — Sans statut, lundi à vendredi.
+                  Dimanche exclu.
                 </p>
                 <p class="mt-1 text-lg font-black text-slate-900">
                   {{ presenceMissSummaryEmployees.length }} employé{{
@@ -452,26 +453,36 @@
                 </p>
               </div>
 
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm font-semibold text-slate-700">
-                <label class="mr-3 inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
+              <div
+                *ngIf="auth.isAdmin"
+                class="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm font-semibold text-slate-700"
+              >
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
                   <input
-                    type="radio"
-                    name="presenceSummarySaturday"
-                    [checked]="!presenceSummaryIncludeSaturday"
-                    (change)="presenceSummaryIncludeSaturday = false; onPresenceSummarySaturdayChange()"
-                    class="text-emerald-600 focus:ring-emerald-500"
+                    type="checkbox"
+                    [(ngModel)]="presenceSummaryIncludeSaturday"
+                    (ngModelChange)="onPresenceSummarySaturdayChange()"
+                    class="rounded text-emerald-600 focus:ring-emerald-500"
                   />
-                  Lun-Ven
+                  Samedi
                 </label>
                 <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
                   <input
-                    type="radio"
-                    name="presenceSummarySaturday"
-                    [checked]="presenceSummaryIncludeSaturday"
-                    (change)="presenceSummaryIncludeSaturday = true; onPresenceSummarySaturdayChange()"
-                    class="text-emerald-600 focus:ring-emerald-500"
+                    type="checkbox"
+                    [(ngModel)]="presenceSummaryIncludeAbsent"
+                    (ngModelChange)="onPresenceSummaryFilterChange()"
+                    class="rounded text-rose-600 focus:ring-rose-500"
                   />
-                  Inclure samedi
+                  Absents
+                </label>
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="presenceSummaryIncludeAnomaly"
+                    (ngModelChange)="onPresenceSummaryFilterChange()"
+                    class="rounded text-fuchsia-600 focus:ring-fuchsia-500"
+                  />
+                  Anomalies
                 </label>
               </div>
             </div>
