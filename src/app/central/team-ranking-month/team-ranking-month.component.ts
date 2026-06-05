@@ -42,11 +42,33 @@ type AttendanceMonthSummary = {
 type PresenceCalendarCell = {
   day: number | null;
   label: string;
+  dateISO: string;
+  key?: string;
   status: AttendanceStateCode;
   statusLabel: string;
   timeLabel: string;
   classes: string;
   attachment?: any;
+};
+type PresenceMissedDay = {
+  label: string;
+  display: string;
+  status: AttendanceStateCode;
+  statusLabel: string;
+};
+type PresenceEmployeeMissSummary = {
+  employee: Employee;
+  name: string;
+  missedDays: number;
+  absentDays: number;
+  unmarkedDays: number;
+  anomalyDays: number;
+  days: PresenceMissedDay[];
+};
+type PresenceStateOption = {
+  code: AttendanceStateCode;
+  label: string;
+  hint?: string;
 };
 
 @Component({
@@ -140,9 +162,31 @@ export class TeamRankingMonthComponent implements OnDestroy {
   selectedPresenceEmployeeId = '';
   presenceEmployeeSearch = '';
   presenceEmployeeSearchOpen = false;
+  presenceSummaryIncludeSaturday = false;
   presenceAttachmentsByLabel: Record<string, any[]> = {};
   presenceAttachmentsLoading = false;
   private presenceAttachmentsCacheKey = '';
+  presenceStateOptions: PresenceStateOption[] = [
+    { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
+    { code: 'P', label: 'Présent' },
+    { code: 'A', label: 'Absent' },
+    { code: 'L', label: 'Retard' },
+    { code: 'V', label: 'Vacances' },
+    { code: 'VP', label: 'Vacances en cours' },
+    { code: 'N', label: 'Néant' },
+    { code: 'F', label: 'Anomalie' },
+  ];
+  presenceDayEditor = {
+    open: false,
+    employeeId: '',
+    employeeName: '',
+    dateLabel: '',
+    dateISO: '',
+    status: '' as AttendanceStateCode,
+    selectedStatus: '' as AttendanceStateCode,
+    saving: false,
+    error: '',
+  };
   presenceAttachmentViewer = {
     open: false,
     url: '',
@@ -429,6 +473,35 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.buildPresenceCalendarWeeks(employee, this.presenceMonth, this.presenceYear);
   }
 
+  get presenceMissSummaryScopeLabel(): string {
+    const nowKin = this.kinParts(new Date());
+    const monthDelta =
+      this.presenceYear * 12 +
+      this.presenceMonth -
+      (nowKin.y * 12 + nowKin.m);
+    if (monthDelta === 0) {
+      return `Jusqu'au ${nowKin.d} ${this.presenceMonthLabel}`;
+    }
+    if (monthDelta < 0) return 'Mois complet';
+    return 'Aucun jour à résumer pour le moment';
+  }
+
+  get presenceMissSummaryEmployees(): PresenceEmployeeMissSummary[] {
+    const employees = this.allEmployees || [];
+    const summaries = employees
+      .map((employee) => this.buildPresenceMissSummaryForEmployee(employee))
+      .filter((summary) => summary.missedDays > 0);
+    summaries.sort((a, b) => b.missedDays - a.missedDays || a.name.localeCompare(b.name));
+    return summaries;
+  }
+
+  get presenceMissSummaryTotal(): number {
+    return this.presenceMissSummaryEmployees.reduce(
+      (total, item) => total + item.missedDays,
+      0
+    );
+  }
+
   togglePresenceCalendar(): void {
     this.presenceCalendarOpen = !this.presenceCalendarOpen;
     if (this.presenceCalendarOpen) {
@@ -450,6 +523,102 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   onPresencePeriodChange(): void {
     this.loadPresenceAttachmentsForSelection();
+  }
+
+  onPresenceSummarySaturdayChange(): void {
+    // Getter-driven summary refreshes automatically; the method keeps template intent clear.
+  }
+
+  openPresenceDayEditor(cell: PresenceCalendarCell): void {
+    const employee = this.selectedPresenceEmployee;
+    if (!this.auth.isAdmin || !employee || !cell.day) return;
+    this.presenceDayEditor = {
+      open: true,
+      employeeId: employee.uid || '',
+      employeeName: this.formatRankingEmployeeName(employee),
+      dateLabel: cell.label,
+      dateISO: cell.dateISO,
+      status: cell.status,
+      selectedStatus: cell.status,
+      saving: false,
+      error: '',
+    };
+  }
+
+  closePresenceDayEditor(): void {
+    this.presenceDayEditor = {
+      open: false,
+      employeeId: '',
+      employeeName: '',
+      dateLabel: '',
+      dateISO: '',
+      status: '',
+      selectedStatus: '',
+      saving: false,
+      error: '',
+    };
+  }
+
+  async applyPresenceDayEditor(): Promise<void> {
+    if (!this.auth.isAdmin || !this.presenceDayEditor.open) return;
+    const employee = this.allEmployees.find(
+      (item) => item.uid === this.presenceDayEditor.employeeId
+    );
+    if (!employee?.uid) return;
+
+    const ownerUid = employee.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      this.presenceDayEditor.error = "Impossible d'identifier le propriétaire.";
+      return;
+    }
+
+    const label = this.normalizeAttendanceLabel(this.presenceDayEditor.dateLabel);
+    const nextStatus = this.presenceDayEditor.selectedStatus;
+    const nextAttendance = { ...(employee.attendance || {}) };
+    Object.keys(nextAttendance).forEach((key) => {
+      if (this.normalizeAttendanceLabel(key) === label) {
+        delete nextAttendance[key];
+      }
+    });
+    if (nextStatus) {
+      nextAttendance[label] = nextStatus;
+    }
+
+    this.presenceDayEditor.saving = true;
+    this.presenceDayEditor.error = '';
+    try {
+      await this.data.updateEmployeeTopLevelFieldsForUser(ownerUid, employee.uid, {
+        attendance: nextAttendance,
+      });
+
+      const attendanceDoc = this.afs.doc(
+        `users/${ownerUid}/employees/${employee.uid}/attendance/${this.presenceDayEditor.dateISO}`
+      );
+      await attendanceDoc.set(
+        {
+          status: nextStatus || '',
+          dateISO: this.presenceDayEditor.dateISO,
+          dateLabel: label,
+          updatedAt: new Date(),
+          updatedBy: this.auth.currentUser?.uid || 'unknown',
+        },
+        { merge: true }
+      );
+
+      employee.attendance = nextAttendance;
+      const fullEmployee = this.allEmployeesAll.find((item) => item.uid === employee.uid);
+      if (fullEmployee) {
+        fullEmployee.attendance = nextAttendance;
+      }
+      this.closePresenceDayEditor();
+    } catch (error) {
+      console.error('Failed to update presence day', error);
+      this.presenceDayEditor.error = 'Impossible de mettre à jour cette journée.';
+    } finally {
+      if (this.presenceDayEditor.open) {
+        this.presenceDayEditor.saving = false;
+      }
+    }
   }
 
   private ensurePresenceEmployeeSelection(): void {
@@ -559,6 +728,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         week.push({
           day,
           label,
+          dateISO: this.dateIsoFromParts(month, day, year),
+          key: latest.key,
           status: latest.status,
           statusLabel: this.attendanceLabelForCode(latest.status),
           timeLabel,
@@ -578,11 +749,77 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return {
       day: null,
       label: '',
+      dateISO: '',
       status: '',
       statusLabel: '',
       timeLabel: '',
       classes: 'bg-slate-50 text-slate-300',
     };
+  }
+
+  private buildPresenceMissSummaryForEmployee(
+    employee: Employee
+  ): PresenceEmployeeMissSummary {
+    const days = this.presenceEligibleDayLabels(
+      this.presenceMonth,
+      this.presenceYear,
+      this.presenceSummaryIncludeSaturday
+    );
+    const missed = days
+      .map((label) => {
+        const status = this.getLatestAttendanceForEmployeeDay(employee, label).status;
+        if (!this.isPresenceMissedStatus(status)) return null;
+        return {
+          label,
+          display: this.presenceDayDisplay(label),
+          status,
+          statusLabel: status ? this.attendanceLabelForCode(status) : 'Sans statut',
+        } as PresenceMissedDay;
+      })
+      .filter((item): item is PresenceMissedDay => !!item);
+
+    return {
+      employee,
+      name: this.formatRankingEmployeeName(employee),
+      missedDays: missed.length,
+      absentDays: missed.filter((item) => item.status === 'A').length,
+      unmarkedDays: missed.filter((item) => !item.status).length,
+      anomalyDays: missed.filter((item) => item.status === 'F').length,
+      days: missed,
+    };
+  }
+
+  private presenceEligibleDayLabels(
+    month: number,
+    year: number,
+    includeSaturday: boolean
+  ): string[] {
+    const nowKin = this.kinParts(new Date());
+    const monthDelta = year * 12 + month - (nowKin.y * 12 + nowKin.m);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const daysConsidered =
+      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? nowKin.d : 0;
+    const labels: string[] = [];
+
+    for (let day = 1; day <= daysConsidered; day++) {
+      const dayOfWeek = new Date(year, month - 1, day).getDay();
+      if (dayOfWeek === 0) continue;
+      if (!includeSaturday && dayOfWeek === 6) continue;
+      labels.push(`${month}-${day}-${year}`);
+    }
+
+    return labels;
+  }
+
+  private isPresenceMissedStatus(status: AttendanceStateCode): boolean {
+    return status === '' || status === 'A' || status === 'F';
+  }
+
+  private presenceDayDisplay(label: string): string {
+    const [month, day, year] = label.split('-').map(Number);
+    if (!month || !day || !year) return label;
+    const monthName = this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`;
+    return `${day} ${monthName}`;
   }
 
   private getLatestAttendanceForEmployeeDay(
@@ -672,6 +909,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
       startISO: `${year}-${m}-01`,
       endISO: `${year}-${m}-${String(daysInMonth).padStart(2, '0')}`,
     };
+  }
+
+  private dateIsoFromParts(month: number, day: number, year: number): string {
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(
+      2,
+      '0'
+    )}`;
   }
 
   private normalizeAttendanceLabelFromInputs(

@@ -430,6 +430,96 @@
             </select>
           </div>
 
+          <div class="border-b border-slate-200 bg-white px-4 py-4">
+            <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
+                  Résumé des jours manqués
+                </p>
+                <p class="mt-1 text-sm font-semibold text-slate-500">
+                  {{ presenceMissSummaryScopeLabel }} — dimanche exclu.
+                </p>
+                <p class="mt-1 text-lg font-black text-slate-900">
+                  {{ presenceMissSummaryEmployees.length }} employé{{
+                    presenceMissSummaryEmployees.length > 1 ? "s" : ""
+                  }}
+                  avec jour manqué
+                  <span class="text-slate-500">
+                    ({{ presenceMissSummaryTotal }} jour{{
+                      presenceMissSummaryTotal > 1 ? "s" : ""
+                    }})
+                  </span>
+                </p>
+              </div>
+
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm font-semibold text-slate-700">
+                <label class="mr-3 inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
+                  <input
+                    type="radio"
+                    name="presenceSummarySaturday"
+                    [checked]="!presenceSummaryIncludeSaturday"
+                    (change)="presenceSummaryIncludeSaturday = false; onPresenceSummarySaturdayChange()"
+                    class="text-emerald-600 focus:ring-emerald-500"
+                  />
+                  Lun-Ven
+                </label>
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
+                  <input
+                    type="radio"
+                    name="presenceSummarySaturday"
+                    [checked]="presenceSummaryIncludeSaturday"
+                    (change)="presenceSummaryIncludeSaturday = true; onPresenceSummarySaturdayChange()"
+                    class="text-emerald-600 focus:ring-emerald-500"
+                  />
+                  Inclure samedi
+                </label>
+              </div>
+            </div>
+
+            <div
+              *ngIf="presenceMissSummaryEmployees.length > 0; else noPresenceMissedEmployees"
+              class="mt-4 grid gap-3 md:grid-cols-2"
+            >
+              <button
+                *ngFor="let summary of presenceMissSummaryEmployees"
+                type="button"
+                class="rounded-2xl border border-rose-100 bg-rose-50/70 p-3 text-left transition hover:border-rose-200 hover:bg-rose-50"
+                (click)="selectPresenceEmployee(summary.employee)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="font-black text-slate-900">{{ summary.name }}</p>
+                    <p class="mt-1 text-xs font-semibold text-slate-500">
+                      Absent: {{ summary.absentDays }} · Sans statut:
+                      {{ summary.unmarkedDays }} · Anomalie:
+                      {{ summary.anomalyDays }}
+                    </p>
+                  </div>
+                  <span class="rounded-full bg-rose-600 px-3 py-1 text-xs font-black text-white">
+                    {{ summary.missedDays }} jour{{
+                      summary.missedDays > 1 ? "s" : ""
+                    }}
+                  </span>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-1.5">
+                  <span
+                    *ngFor="let day of summary.days"
+                    class="rounded-full bg-white px-2 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-100"
+                    [title]="day.statusLabel"
+                  >
+                    {{ day.display }}
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            <ng-template #noPresenceMissedEmployees>
+              <div class="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+                Aucun jour manqué pour cette période.
+              </div>
+            </ng-template>
+          </div>
+
           <div *ngIf="selectedPresenceEmployee; else noPresenceEmployee" class="p-4">
             <div
               *ngIf="presenceMonthSummary as summary"
@@ -489,7 +579,14 @@
                     <td
                       *ngFor="let cell of week"
                       class="relative"
+                      [class.cursor-pointer]="auth.isAdmin && cell.day"
                       [ngClass]="cell.day ? cell.classes : 'bg-slate-50'"
+                      (click)="openPresenceDayEditor(cell)"
+                      [title]="
+                        auth.isAdmin && cell.day
+                          ? 'Modifier la présence'
+                          : ''
+                      "
                     >
                       <ng-container *ngIf="cell.day">
                         <div class="font-black">{{ cell.day }}</div>
@@ -4423,6 +4520,106 @@
         controls
         class="mx-auto max-h-[70vh] w-full rounded-lg"
       ></video>
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="presenceDayEditor.open"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+  (click)="closePresenceDayEditor()"
+>
+  <div
+    class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between border-b border-slate-200 px-4 py-3">
+      <div>
+        <h3 class="text-base font-bold text-slate-900">
+          Modifier la présence
+        </h3>
+        <p class="mt-0.5 text-sm font-semibold text-slate-500">
+          {{ presenceDayEditor.employeeName }} — {{ presenceDayEditor.dateLabel }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        (click)="closePresenceDayEditor()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="space-y-3 px-4 py-4">
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          *ngFor="let option of presenceStateOptions"
+          type="button"
+          class="rounded-xl px-3 py-2 text-left text-sm ring-1 transition hover:shadow"
+          [ngClass]="{
+            'bg-emerald-50 text-emerald-800 ring-emerald-300':
+              presenceDayEditor.selectedStatus === option.code &&
+              option.code === 'P',
+            'bg-rose-50 text-rose-800 ring-rose-300':
+              presenceDayEditor.selectedStatus === option.code &&
+              option.code === 'A',
+            'bg-amber-50 text-amber-800 ring-amber-300':
+              presenceDayEditor.selectedStatus === option.code &&
+              option.code === 'L',
+            'bg-yellow-50 text-yellow-800 ring-yellow-300':
+              presenceDayEditor.selectedStatus === option.code &&
+              option.code === 'V',
+            'bg-sky-50 text-sky-800 ring-sky-300':
+              presenceDayEditor.selectedStatus === option.code &&
+              option.code === 'VP',
+            'bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-300':
+              presenceDayEditor.selectedStatus === option.code &&
+              option.code === 'F',
+            'bg-slate-100 text-slate-800 ring-slate-300':
+              presenceDayEditor.selectedStatus === option.code &&
+              (option.code === '' || option.code === 'N'),
+            'bg-white text-slate-700 ring-slate-200':
+              presenceDayEditor.selectedStatus !== option.code
+          }"
+          (click)="presenceDayEditor.selectedStatus = option.code"
+        >
+          <div class="font-bold">{{ option.label }}</div>
+          <div *ngIf="option.hint" class="mt-0.5 text-xs opacity-75">
+            {{ option.hint }}
+          </div>
+        </button>
+      </div>
+
+      <p class="text-xs font-medium text-slate-500">
+        Les jours marqués Présent, Retard, Vacances, Vacances en cours ou Néant
+        ne comptent pas comme jours manqués dans le résumé.
+      </p>
+
+      <p
+        *ngIf="presenceDayEditor.error"
+        class="rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700"
+      >
+        {{ presenceDayEditor.error }}
+      </p>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
+      <button
+        type="button"
+        class="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200"
+        (click)="closePresenceDayEditor()"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        class="rounded-full bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="presenceDayEditor.saving"
+        (click)="applyPresenceDayEditor()"
+      >
+        {{ presenceDayEditor.saving ? "Enregistrement..." : "Enregistrer" }}
+      </button>
     </div>
   </div>
 </div>
