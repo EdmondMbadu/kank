@@ -187,6 +187,15 @@ export class TeamRankingMonthComponent implements OnDestroy {
   presenceBulkModalOpen = false;
   presenceBulkSaving = false;
   presenceBulkMessage = '';
+  private presenceCacheVersion = 0;
+  private presenceMissSummaryCacheKey = '';
+  private presenceMissSummaryCache: PresenceEmployeeMissSummary[] = [];
+  private presenceMonthSummaryCacheKey = '';
+  private presenceMonthSummaryCache: AttendanceMonthSummary | null = null;
+  private presenceCalendarWeeksCacheKey = '';
+  private presenceCalendarWeeksCache: PresenceCalendarCell[][] = [];
+  private presenceBulkUnassignedCacheKey = '';
+  private presenceBulkUnassignedCache: PresenceMissedDay[] = [];
   presenceStateOptions: PresenceStateOption[] = [
     { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
@@ -485,13 +494,31 @@ export class TeamRankingMonthComponent implements OnDestroy {
   get presenceMonthSummary(): AttendanceMonthSummary | null {
     const employee = this.selectedPresenceEmployee;
     if (!employee) return null;
-    return this.buildPresenceMonthSummary(employee, this.presenceMonth, this.presenceYear);
+    const key = this.presenceSelectedCacheKey('monthSummary');
+    if (this.presenceMonthSummaryCacheKey !== key) {
+      this.presenceMonthSummaryCache = this.buildPresenceMonthSummary(
+        employee,
+        this.presenceMonth,
+        this.presenceYear
+      );
+      this.presenceMonthSummaryCacheKey = key;
+    }
+    return this.presenceMonthSummaryCache;
   }
 
   get presenceCalendarWeeks(): PresenceCalendarCell[][] {
     const employee = this.selectedPresenceEmployee;
     if (!employee) return [];
-    return this.buildPresenceCalendarWeeks(employee, this.presenceMonth, this.presenceYear);
+    const key = this.presenceSelectedCacheKey('calendar');
+    if (this.presenceCalendarWeeksCacheKey !== key) {
+      this.presenceCalendarWeeksCache = this.buildPresenceCalendarWeeks(
+        employee,
+        this.presenceMonth,
+        this.presenceYear
+      );
+      this.presenceCalendarWeeksCacheKey = key;
+    }
+    return this.presenceCalendarWeeksCache;
   }
 
   get presenceMissSummaryScopeLabel(): string {
@@ -508,12 +535,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   get presenceMissSummaryEmployees(): PresenceEmployeeMissSummary[] {
-    const employees = this.allEmployees || [];
-    const summaries = employees
-      .map((employee) => this.buildPresenceMissSummaryForEmployee(employee))
-      .filter((summary) => summary.missedDays > 0);
-    summaries.sort((a, b) => b.missedDays - a.missedDays || a.name.localeCompare(b.name));
-    return summaries;
+    const key = this.presenceCollectionCacheKey('missSummary');
+    if (this.presenceMissSummaryCacheKey !== key) {
+      const employees = this.allEmployees || [];
+      const summaries = employees
+        .map((employee) => this.buildPresenceMissSummaryForEmployee(employee))
+        .filter((summary) => summary.missedDays > 0);
+      summaries.sort((a, b) => b.missedDays - a.missedDays || a.name.localeCompare(b.name));
+      this.presenceMissSummaryCache = summaries;
+      this.presenceMissSummaryCacheKey = key;
+    }
+    return this.presenceMissSummaryCache;
   }
 
   get presenceMissSummaryTotal(): number {
@@ -530,20 +562,27 @@ export class TeamRankingMonthComponent implements OnDestroy {
   get presenceBulkUnassignedDays(): PresenceMissedDay[] {
     const employee = this.selectedPresenceEmployee;
     if (!employee) return [];
-    return this.presenceEligibleDayLabels(
-      this.presenceMonth,
-      this.presenceYear,
-      this.presenceBulkIncludeSaturday
-    )
-      .filter(
-        (label) => !this.getLatestAttendanceForEmployeeDay(employee, label).status
+    const key = this.presenceSelectedCacheKey(
+      `bulk:${this.presenceBulkIncludeSaturday}`
+    );
+    if (this.presenceBulkUnassignedCacheKey !== key) {
+      this.presenceBulkUnassignedCache = this.presenceEligibleDayLabels(
+        this.presenceMonth,
+        this.presenceYear,
+        this.presenceBulkIncludeSaturday
       )
-      .map((label) => ({
-        label,
-        display: this.presenceDayDisplay(label),
-        status: '',
-        statusLabel: 'Sans statut',
-      }));
+        .filter(
+          (label) => !this.getLatestAttendanceForEmployeeDay(employee, label).status
+        )
+        .map((label) => ({
+          label,
+          display: this.presenceDayDisplay(label),
+          status: '',
+          statusLabel: 'Sans statut',
+        }));
+      this.presenceBulkUnassignedCacheKey = key;
+    }
+    return this.presenceBulkUnassignedCache;
   }
 
   get presenceExceptionList(): PresenceExceptionDay[] {
@@ -558,6 +597,37 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   get presenceMonthEndISO(): string {
     return this.monthIsoRange(this.presenceMonth, this.presenceYear).endISO;
+  }
+
+  private invalidatePresenceCache(): void {
+    this.presenceCacheVersion += 1;
+  }
+
+  private presenceExceptionCacheSignature(): string {
+    return Object.keys(this.presenceExceptionDays).sort().join(',');
+  }
+
+  private presenceSelectedCacheKey(scope: string): string {
+    return [
+      scope,
+      this.presenceCacheVersion,
+      this.selectedPresenceEmployeeId,
+      this.presenceMonth,
+      this.presenceYear,
+      this.presenceExceptionCacheSignature(),
+    ].join('|');
+  }
+
+  private presenceCollectionCacheKey(scope: string): string {
+    return [
+      scope,
+      this.presenceCacheVersion,
+      this.allEmployees?.length || 0,
+      this.presenceMonth,
+      this.presenceYear,
+      this.presenceSummaryIncludeSaturday,
+      this.presenceExceptionCacheSignature(),
+    ].join('|');
   }
 
   togglePresenceCalendar(): void {
@@ -579,22 +649,25 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.presenceEmployeeSearch = this.formatRankingEmployeeName(employee);
     this.presenceEmployeeSearchOpen = false;
     this.presenceBulkMessage = '';
+    this.invalidatePresenceCache();
     this.loadPresenceAttachmentsForSelection();
   }
 
   onPresencePeriodChange(): void {
     this.presenceBulkMessage = '';
     this.ensurePresenceExceptionDate();
+    this.invalidatePresenceCache();
     this.loadPresenceExceptionDaysForSelection();
     this.loadPresenceAttachmentsForSelection();
   }
 
   onPresenceSummarySaturdayChange(): void {
-    // Getter-driven summary refreshes automatically; the method keeps template intent clear.
+    this.invalidatePresenceCache();
   }
 
   onPresenceBulkSaturdayChange(): void {
     this.presenceBulkMessage = '';
+    this.invalidatePresenceCache();
   }
 
   openPresenceBulkModal(): void {
@@ -645,7 +718,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
         attendance: nextAttendance,
       });
 
-      await Promise.all(
+      employee.attendance = nextAttendance;
+      const fullEmployee = this.allEmployeesAll.find((item) => item.uid === employee.uid);
+      if (fullEmployee) {
+        fullEmployee.attendance = nextAttendance;
+      }
+      this.invalidatePresenceCache();
+      this.presenceBulkMessage = `${targetDays.length} jour${
+        targetDays.length > 1 ? 's' : ''
+      } mis à jour.`;
+      this.presenceBulkModalOpen = false;
+
+      Promise.allSettled(
         targetDays.map((day) =>
           this.afs
             .doc(
@@ -663,17 +747,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
               { merge: true }
             )
         )
-      );
-
-      employee.attendance = nextAttendance;
-      const fullEmployee = this.allEmployeesAll.find((item) => item.uid === employee.uid);
-      if (fullEmployee) {
-        fullEmployee.attendance = nextAttendance;
-      }
-      this.presenceBulkMessage = `${targetDays.length} jour${
-        targetDays.length > 1 ? 's' : ''
-      } mis à jour.`;
-      this.presenceBulkModalOpen = false;
+      ).then((results) => {
+        const failed = results.filter((result) => result.status === 'rejected');
+        if (failed.length) {
+          console.warn('Some attendance day documents failed to sync', failed);
+        }
+      });
     } catch (error) {
       console.error('Failed to bulk fill presence days', error);
       this.presenceBulkMessage =
@@ -803,6 +882,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       if (fullEmployee) {
         fullEmployee.attendance = nextAttendance;
       }
+      this.invalidatePresenceCache();
       this.closePresenceDayEditor();
     } catch (error) {
       console.error('Failed to update presence day', error);
@@ -1077,9 +1157,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
       const snapshot = await firstValueFrom(this.afs.doc(path).get());
       const data = snapshot.data() as any;
       this.presenceExceptionDays = data?.days || {};
+      this.invalidatePresenceCache();
     } catch (error) {
       console.error('Failed to load presence exception days', error);
       this.presenceExceptionDays = {};
+      this.invalidatePresenceCache();
       this.presenceExceptionMessage =
         'Impossible de charger les jours exception.';
     } finally {
@@ -1112,6 +1194,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.presenceExceptionDays = days;
       this.presenceExceptionsCacheKey = path;
       this.presenceExceptionMessage = successMessage;
+      this.invalidatePresenceCache();
     } catch (error) {
       console.error('Failed to save presence exception days', error);
       this.presenceExceptionMessage =
@@ -1191,6 +1274,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       });
 
       await Promise.all(tasks);
+      this.invalidatePresenceCache();
     } catch (error) {
       console.error('Failed to load presence attachments', error);
     } finally {
@@ -4230,6 +4314,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.initializeGlobalFoundationRuleDefaults(allEmployees);
     this.filterAndInitializeEmployees(allEmployees, this.currentClients);
     this.ensurePresenceEmployeeSelection();
+    this.invalidatePresenceCache();
     this.logDebug('Finished aggregating employees', {
       totalRaw: allEmployees.length,
       totalDisplay: this.allEmployees.length,
