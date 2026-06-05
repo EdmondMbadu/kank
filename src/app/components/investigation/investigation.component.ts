@@ -384,6 +384,18 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     'Novembre',
     'Décembre',
   ];
+  readonly employeeScheduleChipClasses = [
+    'bg-sky-100 text-sky-800 ring-sky-200',
+    'bg-emerald-100 text-emerald-800 ring-emerald-200',
+    'bg-amber-100 text-amber-900 ring-amber-200',
+    'bg-rose-100 text-rose-800 ring-rose-200',
+    'bg-violet-100 text-violet-800 ring-violet-200',
+    'bg-cyan-100 text-cyan-800 ring-cyan-200',
+    'bg-lime-100 text-lime-900 ring-lime-200',
+    'bg-fuchsia-100 text-fuchsia-800 ring-fuchsia-200',
+    'bg-orange-100 text-orange-900 ring-orange-200',
+    'bg-teal-100 text-teal-800 ring-teal-200',
+  ];
   month = new Date().getMonth() + 1;
   year = new Date().getFullYear();
 
@@ -3660,6 +3672,19 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   byUid(uid?: string): Employee | undefined {
     return this.employees.find((e) => e.uid === uid);
+  }
+
+  employeeScheduleChipClass(uid?: string): string {
+    if (!uid) return 'bg-slate-100 text-slate-700 ring-slate-200';
+
+    let hash = 0;
+    for (let i = 0; i < uid.length; i++) {
+      hash = (hash * 31 + uid.charCodeAt(i)) >>> 0;
+    }
+
+    return this.employeeScheduleChipClasses[
+      hash % this.employeeScheduleChipClasses.length
+    ];
   }
 
   visibleTaskEntries(cell?: TFCell | null): TFEntry[] {

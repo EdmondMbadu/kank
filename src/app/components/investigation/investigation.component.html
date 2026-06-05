@@ -1918,23 +1918,28 @@
 
             <div class="mt-2 space-y-2">
               <ng-container *ngIf="d.entries?.length; else noEntries">
-                <div *ngFor="let e of d.entries" class="text-xs">
-                  <div class="font-semibold">📌 {{ e.loc }}</div>
-                  <div class="flex flex-wrap gap-1 mt-1">
-                    <span
+                <div class="grid gap-1.5 text-xs">
+                  <ng-container *ngFor="let e of d.entries">
+                    <div
                       *ngFor="let uid of e.employees | slice : 0 : 3"
-                      class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800"
+                      class="rounded-lg px-2 py-1.5 text-center shadow-sm ring-1"
+                      [ngClass]="employeeScheduleChipClass(uid)"
                     >
-                      {{ (byUid(uid)?.firstName) || "—" }}
-                      {{ (byUid(uid)?.lastName) || "" }}
-                    </span>
+                      <div class="truncate text-[11px] font-bold leading-tight">
+                        {{ e.loc }}
+                      </div>
+                      <div class="mt-0.5 truncate text-[11px] font-semibold leading-tight opacity-80">
+                        {{ (byUid(uid)?.firstName) || "—" }}
+                        {{ (byUid(uid)?.lastName) || "" }}
+                      </div>
+                    </div>
                     <span
                       *ngIf="(e.employees?.length || 0) > 3"
                       class="text-[11px] text-gray-600"
                     >
                       +{{ e.employees.length - 3 }}
                     </span>
-                  </div>
+                  </ng-container>
                 </div>
               </ng-container>
               <ng-template #noEntries>
@@ -2229,19 +2234,21 @@
 
                   <ng-container *ngIf="visibleTaskEntries(c).length; else dash">
                     <div class="space-y-2">
-                      <div
-                        *ngFor="let e of visibleTaskEntries(c)"
-                        class="rounded-lg border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30 px-2 py-2"
-                      >
-                        <div class="text-xs font-bold text-slate-700">📌 {{ e.loc }}</div>
-                        <div class="mt-1.5 flex flex-wrap gap-1">
-                          <span
+                      <ng-container *ngFor="let e of visibleTaskEntries(c)">
+                        <div class="grid gap-1">
+                          <div
                             *ngFor="let uid of e.employees | slice : 0 : 4"
-                            class="rounded-md bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-800"
+                            class="rounded-lg px-2 py-1.5 text-center text-[10px] shadow-sm ring-1"
+                            [ngClass]="employeeScheduleChipClass(uid)"
                           >
-                            {{ (byUid(uid)?.firstName) || "—" }}
-                            {{ (byUid(uid)?.lastName) || "" }}
-                          </span>
+                            <div class="truncate font-bold leading-tight">
+                              {{ e.loc }}
+                            </div>
+                            <div class="mt-0.5 truncate font-semibold leading-tight opacity-80">
+                              {{ (byUid(uid)?.firstName) || "—" }}
+                              {{ (byUid(uid)?.lastName) || "" }}
+                            </div>
+                          </div>
 
                           <span
                             *ngIf="(e.employees?.length || 0) > 4"
@@ -2250,7 +2257,7 @@
                             +{{ e.employees.length - 4 }}
                           </span>
                         </div>
-                      </div>
+                      </ng-container>
                     </div>
                   </ng-container>
                   <ng-template #dash>
