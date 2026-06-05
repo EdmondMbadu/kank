@@ -79,6 +79,10 @@ type PresenceExceptionDay = {
   createdAt?: any;
   createdBy?: string;
 };
+type EmployeePresenceWindow = {
+  joinedISO: string;
+  leftISO: string;
+};
 
 @Component({
   selector: 'app-team-ranking-month',
@@ -198,6 +202,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private presenceCalendarWeeksCache: PresenceCalendarCell[][] = [];
   private presenceBulkUnassignedCacheKey = '';
   private presenceBulkUnassignedCache: PresenceMissedDay[] = [];
+  private presenceEmploymentDateCache = new Map<string, EmployeePresenceWindow>();
   presenceStateOptions: PresenceStateOption[] = [
     { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
@@ -573,6 +578,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         this.presenceYear,
         this.presenceBulkIncludeSaturday
       )
+        .filter((label) => this.isPresenceDayInsideEmployment(employee, label))
         .filter(
           (label) => !this.getLatestAttendanceForEmployeeDay(employee, label).status
         )
@@ -944,6 +950,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       if (this.isSunday(month, day, year)) continue;
       const label = `${month}-${day}-${year}`;
       if (this.isPresenceExceptionLabel(label)) continue;
+      if (!this.isPresenceDayInsideEmployment(employee, label)) continue;
       eligibleDays += 1;
       const status = this.getLatestAttendanceForEmployeeDay(
         employee,
@@ -1053,6 +1060,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.presenceSummaryIncludeSaturday
     );
     const missed = days
+      .filter((label) => this.isPresenceDayInsideEmployment(employee, label))
       .map((label) => {
         const status = this.getLatestAttendanceForEmployeeDay(employee, label).status;
         if (!this.isPresenceSummaryIncludedStatus(status)) return null;
@@ -1123,6 +1131,90 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const [month, day, year] = label.split('-').map(Number);
     if (!month || !day || !year) return '';
     return this.dateIsoFromParts(month, day, year);
+  }
+
+  private isPresenceDayInsideEmployment(
+    employee: Employee,
+    label: string
+  ): boolean {
+    const dateISO = this.dateIsoFromLabel(label);
+    if (!dateISO) return true;
+
+    const { joinedISO, leftISO } = this.presenceEmploymentWindow(employee);
+    if (joinedISO && dateISO < joinedISO) return false;
+    if (leftISO && dateISO > leftISO) return false;
+    return true;
+  }
+
+  private presenceEmploymentWindow(employee: Employee): EmployeePresenceWindow {
+    const cacheKey = [
+      employee?.uid || '',
+      employee?.dateJoined || '',
+      employee?.dateLeft || '',
+    ].join('|');
+    const cached = this.presenceEmploymentDateCache.get(cacheKey);
+    if (cached) return cached;
+
+    const window = {
+      joinedISO: this.parsePresenceEmploymentDateISO(employee?.dateJoined),
+      leftISO: this.parsePresenceEmploymentDateISO(employee?.dateLeft),
+    };
+    this.presenceEmploymentDateCache.set(cacheKey, window);
+    return window;
+  }
+
+  private parsePresenceEmploymentDateISO(rawDate?: unknown): string {
+    if (!rawDate) return '';
+
+    if (rawDate instanceof Date) {
+      return this.isoFromDateObject(rawDate);
+    }
+
+    const timestampLike = rawDate as { toDate?: () => Date; seconds?: number };
+    if (typeof timestampLike.toDate === 'function') {
+      return this.isoFromDateObject(timestampLike.toDate());
+    }
+    if (typeof timestampLike.seconds === 'number') {
+      return this.isoFromDateObject(new Date(timestampLike.seconds * 1000));
+    }
+
+    if (typeof rawDate !== 'string') return '';
+    const trimmed = rawDate.trim();
+    if (!trimmed) return '';
+
+    const parts = trimmed.split(/[-/]/).map((part) => part.trim());
+    if (parts.length === 3) {
+      const yearFirst = parts[0].length === 4;
+      const year = Number(yearFirst ? parts[0] : parts[2]);
+      const month = Number(yearFirst ? parts[1] : parts[0]);
+      const day = Number(yearFirst ? parts[2] : parts[1]);
+      const parsed = new Date(year, month - 1, day);
+
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day) &&
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.getFullYear() === year &&
+        parsed.getMonth() === month - 1 &&
+        parsed.getDate() === day
+      ) {
+        return this.isoFromDateObject(parsed);
+      }
+    }
+
+    const fallback = new Date(trimmed);
+    if (Number.isNaN(fallback.getTime())) return '';
+    return this.isoFromDateObject(fallback);
+  }
+
+  private isoFromDateObject(date: Date): string {
+    if (Number.isNaN(date.getTime())) return '';
+    return this.dateIsoFromParts(
+      date.getMonth() + 1,
+      date.getDate(),
+      date.getFullYear()
+    );
   }
 
   private presenceExceptionMonthKey(): string {
