@@ -1922,15 +1922,23 @@
                   <ng-container *ngFor="let e of d.entries">
                     <div
                       *ngFor="let uid of e.employees | slice : 0 : 3"
-                      class="rounded-lg px-2 py-1.5 text-center shadow-sm ring-1"
+                      class="w-full min-w-0 max-w-full overflow-hidden rounded-lg px-2 py-1.5 text-center shadow-sm ring-1"
                       [ngClass]="employeeScheduleChipClass(uid)"
                     >
-                      <div class="truncate text-[11px] font-bold leading-tight">
+                      <div class="min-w-0 break-words text-[11px] font-bold leading-snug">
                         {{ e.loc }}
                       </div>
-                      <div class="mt-0.5 truncate text-[11px] font-semibold leading-tight opacity-80">
-                        {{ (byUid(uid)?.firstName) || "—" }}
-                        {{ (byUid(uid)?.lastName) || "" }}
+                      <div
+                        class="mt-1 min-w-0 border-t border-white/70 pt-1"
+                      >
+                        <div class="flex min-w-0 flex-wrap justify-center gap-x-1 gap-y-0 rounded-md bg-white/55 px-1.5 py-0.5 text-[11px] font-semibold leading-snug text-slate-700">
+                          <span class="whitespace-nowrap">
+                            {{ (byUid(uid)?.firstName) || "—" }}
+                          </span>
+                          <span class="whitespace-nowrap">
+                            {{ (byUid(uid)?.lastName) || "" }}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <span
@@ -2238,15 +2246,23 @@
                         <div class="grid gap-1">
                           <div
                             *ngFor="let uid of e.employees | slice : 0 : 4"
-                            class="rounded-lg px-2 py-1.5 text-center text-[10px] shadow-sm ring-1"
+                            class="w-full min-w-0 max-w-full overflow-hidden rounded-lg px-1.5 py-1.5 text-center text-[10px] shadow-sm ring-1"
                             [ngClass]="employeeScheduleChipClass(uid)"
                           >
-                            <div class="truncate font-bold leading-tight">
+                            <div class="min-w-0 break-words font-bold leading-snug">
                               {{ e.loc }}
                             </div>
-                            <div class="mt-0.5 truncate font-semibold leading-tight opacity-80">
-                              {{ (byUid(uid)?.firstName) || "—" }}
-                              {{ (byUid(uid)?.lastName) || "" }}
+                            <div
+                              class="mt-1 min-w-0 border-t border-white/70 pt-1"
+                            >
+                              <div class="flex min-w-0 flex-wrap justify-center gap-x-1 gap-y-0 rounded-md bg-white/55 px-1 py-0.5 font-semibold leading-snug text-slate-700">
+                                <span class="whitespace-nowrap">
+                                  {{ (byUid(uid)?.firstName) || "—" }}
+                                </span>
+                                <span class="whitespace-nowrap">
+                                  {{ (byUid(uid)?.lastName) || "" }}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
