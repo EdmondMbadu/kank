@@ -48,6 +48,8 @@ type PresenceCalendarCell = {
   statusLabel: string;
   timeLabel: string;
   classes: string;
+  isException?: boolean;
+  exceptionReason?: string;
   attachment?: any;
 };
 type PresenceMissedDay = {
@@ -69,6 +71,13 @@ type PresenceStateOption = {
   code: AttendanceStateCode;
   label: string;
   hint?: string;
+};
+type PresenceExceptionDay = {
+  dateISO: string;
+  dateLabel: string;
+  reason: string;
+  createdAt?: any;
+  createdBy?: string;
 };
 
 @Component({
@@ -166,6 +175,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
   presenceAttachmentsByLabel: Record<string, any[]> = {};
   presenceAttachmentsLoading = false;
   private presenceAttachmentsCacheKey = '';
+  presenceExceptionDays: Record<string, PresenceExceptionDay> = {};
+  presenceExceptionsLoading = false;
+  presenceExceptionSaving = false;
+  presenceExceptionDate = this.time.getTodaysDateYearMonthDay();
+  presenceExceptionReason = '';
+  presenceExceptionMessage = '';
+  private presenceExceptionsCacheKey = '';
   presenceStateOptions: PresenceStateOption[] = [
     { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
@@ -502,10 +518,26 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
   }
 
+  get presenceExceptionList(): PresenceExceptionDay[] {
+    return Object.values(this.presenceExceptionDays).sort((a, b) =>
+      a.dateISO.localeCompare(b.dateISO)
+    );
+  }
+
+  get presenceMonthStartISO(): string {
+    return this.monthIsoRange(this.presenceMonth, this.presenceYear).startISO;
+  }
+
+  get presenceMonthEndISO(): string {
+    return this.monthIsoRange(this.presenceMonth, this.presenceYear).endISO;
+  }
+
   togglePresenceCalendar(): void {
     this.presenceCalendarOpen = !this.presenceCalendarOpen;
     if (this.presenceCalendarOpen) {
       this.ensurePresenceEmployeeSelection();
+      this.ensurePresenceExceptionDate();
+      this.loadPresenceExceptionDaysForSelection();
       this.loadPresenceAttachmentsForSelection();
     }
   }
@@ -522,11 +554,52 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   onPresencePeriodChange(): void {
+    this.ensurePresenceExceptionDate();
+    this.loadPresenceExceptionDaysForSelection();
     this.loadPresenceAttachmentsForSelection();
   }
 
   onPresenceSummarySaturdayChange(): void {
     // Getter-driven summary refreshes automatically; the method keeps template intent clear.
+  }
+
+  async addPresenceExceptionDay(): Promise<void> {
+    if (!this.auth.isAdmin || !this.presenceExceptionDate) return;
+    if (
+      this.presenceExceptionDate < this.presenceMonthStartISO ||
+      this.presenceExceptionDate > this.presenceMonthEndISO
+    ) {
+      this.presenceExceptionMessage =
+        'Choisissez une date dans le mois sélectionné.';
+      return;
+    }
+
+    const dateLabel = this.normalizeAttendanceLabelFromInputs(
+      '',
+      this.presenceExceptionDate
+    );
+    if (!dateLabel) return;
+
+    const nextDays = {
+      ...this.presenceExceptionDays,
+      [this.presenceExceptionDate]: {
+        dateISO: this.presenceExceptionDate,
+        dateLabel,
+        reason: this.presenceExceptionReason.trim() || 'Exception',
+        createdAt: new Date(),
+        createdBy: this.auth.currentUser?.uid || 'unknown',
+      },
+    };
+
+    await this.savePresenceExceptionDays(nextDays, 'Jour exception ajouté.');
+    this.presenceExceptionReason = '';
+  }
+
+  async deletePresenceExceptionDay(dateISO: string): Promise<void> {
+    if (!this.auth.isAdmin || !dateISO) return;
+    const nextDays = { ...this.presenceExceptionDays };
+    delete nextDays[dateISO];
+    await this.savePresenceExceptionDays(nextDays, 'Jour exception supprimé.');
   }
 
   openPresenceDayEditor(cell: PresenceCalendarCell): void {
@@ -661,10 +734,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
     let eligibleDays = 0;
     for (let day = 1; day <= daysConsidered; day++) {
       if (this.isSunday(month, day, year)) continue;
+      const label = `${month}-${day}-${year}`;
+      if (this.isPresenceExceptionLabel(label)) continue;
       eligibleDays += 1;
       const status = this.getLatestAttendanceForEmployeeDay(
         employee,
-        `${month}-${day}-${year}`
+        label
       ).status;
       if (!status) continue;
       counts[status] += 1;
@@ -723,17 +798,21 @@ export class TeamRankingMonthComponent implements OnDestroy {
         }
 
         const label = `${month}-${day}-${year}`;
+        const dateISO = this.dateIsoFromParts(month, day, year);
+        const exception = this.presenceExceptionDays[dateISO];
         const latest = this.getLatestAttendanceForEmployeeDay(employee, label);
         const timeLabel = latest.key ? latest.key.split('-').slice(3, 5).join(':') : '';
         week.push({
           day,
           label,
-          dateISO: this.dateIsoFromParts(month, day, year),
+          dateISO,
           key: latest.key,
           status: latest.status,
           statusLabel: this.attendanceLabelForCode(latest.status),
           timeLabel,
           classes: this.presenceCellClasses(latest.status),
+          isException: !!exception,
+          exceptionReason: exception?.reason || '',
           attachment: this.findPresenceAttachmentForDay(employee, label),
         });
         day += 1;
@@ -805,7 +884,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
       const dayOfWeek = new Date(year, month - 1, day).getDay();
       if (dayOfWeek === 0) continue;
       if (!includeSaturday && dayOfWeek === 6) continue;
-      labels.push(`${month}-${day}-${year}`);
+      const label = `${month}-${day}-${year}`;
+      if (this.isPresenceExceptionLabel(label)) continue;
+      labels.push(label);
     }
 
     return labels;
@@ -820,6 +901,104 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (!month || !day || !year) return label;
     const monthName = this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`;
     return `${day} ${monthName}`;
+  }
+
+  private isPresenceExceptionLabel(label: string): boolean {
+    const dateISO = this.dateIsoFromLabel(label);
+    return !!dateISO && !!this.presenceExceptionDays[dateISO];
+  }
+
+  private dateIsoFromLabel(label: string): string {
+    const [month, day, year] = label.split('-').map(Number);
+    if (!month || !day || !year) return '';
+    return this.dateIsoFromParts(month, day, year);
+  }
+
+  private presenceExceptionMonthKey(): string {
+    return `${this.presenceYear}-${String(this.presenceMonth).padStart(2, '0')}`;
+  }
+
+  private presenceExceptionDocPath(): string {
+    const uid = this.auth.currentUser?.uid || '';
+    return uid
+      ? `users/${uid}/presenceExceptionMonths/${this.presenceExceptionMonthKey()}`
+      : '';
+  }
+
+  private ensurePresenceExceptionDate(): void {
+    const { startISO, endISO } = this.monthIsoRange(
+      this.presenceMonth,
+      this.presenceYear
+    );
+    if (
+      !this.presenceExceptionDate ||
+      this.presenceExceptionDate < startISO ||
+      this.presenceExceptionDate > endISO
+    ) {
+      this.presenceExceptionDate = startISO;
+    }
+  }
+
+  private async loadPresenceExceptionDaysForSelection(): Promise<void> {
+    const path = this.presenceExceptionDocPath();
+    if (!path) {
+      this.presenceExceptionDays = {};
+      this.presenceExceptionsCacheKey = '';
+      return;
+    }
+
+    const cacheKey = `${path}`;
+    if (this.presenceExceptionsCacheKey === cacheKey) return;
+
+    this.presenceExceptionsCacheKey = cacheKey;
+    this.presenceExceptionsLoading = true;
+    this.presenceExceptionMessage = '';
+    try {
+      const snapshot = await firstValueFrom(this.afs.doc(path).get());
+      const data = snapshot.data() as any;
+      this.presenceExceptionDays = data?.days || {};
+    } catch (error) {
+      console.error('Failed to load presence exception days', error);
+      this.presenceExceptionDays = {};
+      this.presenceExceptionMessage =
+        'Impossible de charger les jours exception.';
+    } finally {
+      this.presenceExceptionsLoading = false;
+    }
+  }
+
+  private async savePresenceExceptionDays(
+    days: Record<string, PresenceExceptionDay>,
+    successMessage: string
+  ): Promise<void> {
+    const path = this.presenceExceptionDocPath();
+    if (!path) {
+      this.presenceExceptionMessage = "Impossible d'identifier l'administrateur.";
+      return;
+    }
+
+    this.presenceExceptionSaving = true;
+    this.presenceExceptionMessage = '';
+    try {
+      await this.afs.doc(path).set(
+        {
+          monthKey: this.presenceExceptionMonthKey(),
+          days,
+          updatedAt: new Date(),
+          updatedBy: this.auth.currentUser?.uid || 'unknown',
+        },
+        { merge: true }
+      );
+      this.presenceExceptionDays = days;
+      this.presenceExceptionsCacheKey = path;
+      this.presenceExceptionMessage = successMessage;
+    } catch (error) {
+      console.error('Failed to save presence exception days', error);
+      this.presenceExceptionMessage =
+        "Impossible d'enregistrer les jours exception.";
+    } finally {
+      this.presenceExceptionSaving = false;
+    }
   }
 
   private getLatestAttendanceForEmployeeDay(
