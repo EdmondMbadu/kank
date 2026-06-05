@@ -139,8 +139,46 @@
   </div>
 </section>
 
-<section class="container mx-auto px-6">
-  <details class="group relative mx-auto max-w-3xl">
+<section class="container mx-auto px-6 pb-8">
+  <div
+    class="flex flex-col gap-4 border-y border-slate-200/70 py-5 dark:border-slate-800"
+  >
+    <div>
+      <p
+        class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300"
+      >
+        Sections
+      </p>
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        Accès rapide
+      </h2>
+    </div>
+
+    <nav
+      class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+      aria-label="Sections du tableau central"
+    >
+      <ng-container *ngFor="let section of homeSections">
+        <button
+          *ngIf="!section.adminOnly || auth.isAdmin"
+          type="button"
+          class="min-w-max rounded-full border px-4 py-2 text-left text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          [ngClass]="homeSectionTabClasses(section.id)"
+          [attr.aria-selected]="isActiveHomeSection(section.id)"
+          (click)="setActiveHomeSection(section.id)"
+        >
+          <span class="block text-[10px] uppercase tracking-[0.18em] opacity-70">
+            {{ section.eyebrow }}
+          </span>
+          <span class="block">{{ section.label }}</span>
+        </button>
+      </ng-container>
+    </nav>
+  </div>
+</section>
+
+<section *ngIf="isActiveHomeSection('clients')" class="container mx-auto px-6">
+  <details class="group relative mx-auto max-w-3xl" open>
     <summary
       class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-emerald-700"
     >
@@ -1151,8 +1189,8 @@
   </details>
 </section>
 
-<section class="container mx-auto px-6">
-  <details class="group mx-auto mt-6 max-w-2xl">
+<section *ngIf="isActiveHomeSection('reminders')" class="container mx-auto px-6">
+  <details class="group mx-auto mt-6 max-w-2xl" open>
     <summary
       class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-rose-200/70 bg-white px-5 py-4 shadow-sm transition hover:border-rose-300 hover:bg-rose-50/50 dark:border-rose-900/50 dark:bg-slate-900/80"
     >
@@ -1617,8 +1655,11 @@
   </details>
 </section>
 
-<section class="container mx-auto px-6 pb-20 pt-10">
-  <details class="group">
+<section
+  *ngIf="isActiveHomeSection('relances')"
+  class="container mx-auto px-6 pb-20 pt-10"
+>
+  <details class="group" open>
     <summary
       class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-indigo-700"
     >
@@ -1994,10 +2035,10 @@
 
 <!-- ==== CONTACTS LIST SECTION (Admin only) ==== -->
 <section
-  *ngIf="auth.isAdmin"
+  *ngIf="auth.isAdmin && isActiveHomeSection('contacts')"
   class="container mx-auto px-6 pb-16"
 >
-  <details class="group relative mx-auto max-w-3xl">
+  <details class="group relative mx-auto max-w-3xl" open>
     <summary
       class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-emerald-700"
     >
@@ -3096,8 +3137,11 @@
 </div>
 
 <!-- ==== SCHEDULED BULK MESSAGES ==== -->
-<section class="container mx-auto px-6 py-12">
-  <details class="group">
+<section
+  *ngIf="isActiveHomeSection('scheduled')"
+  class="container mx-auto px-6 py-12"
+>
+  <details class="group" open>
     <summary
       class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-amber-200 hover:bg-amber-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-amber-700"
     >
@@ -3262,8 +3306,11 @@
 </section>
 
 <!-- ==== BULK MESSAGE LOG ==== -->
-<section class="container mx-auto px-6 py-12">
-  <details class="group">
+<section
+  *ngIf="isActiveHomeSection('logs')"
+  class="container mx-auto px-6 py-12"
+>
+  <details class="group" open>
     <summary
       class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-emerald-700"
     >

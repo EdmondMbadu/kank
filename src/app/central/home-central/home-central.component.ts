@@ -173,6 +173,13 @@ type MasterClientFilterPanel =
 
 type TrophyMissingFilterMode = 'all' | 'missing';
 type TopClientFocusPanel = 'birthdays' | 'trophyMissing';
+type HomeCentralSection =
+  | 'clients'
+  | 'reminders'
+  | 'relances'
+  | 'contacts'
+  | 'scheduled'
+  | 'logs';
 
 @Component({
   selector: 'app-home-central',
@@ -195,6 +202,29 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   currentClients: Array<Client[]> = [];
   allcurrentClientsWithDebts: Client[] = [];
   allCurrentClientsWithDebtsScheduledToPayToday: Client[] = [];
+  activeHomeSection: HomeCentralSection = 'clients';
+  homeSections: Array<{
+    id: HomeCentralSection;
+    label: string;
+    eyebrow: string;
+    adminOnly?: boolean;
+  }> = [
+    { id: 'clients', label: 'Tous les clients', eyebrow: 'Clients' },
+    { id: 'reminders', label: 'Rappel collectif', eyebrow: 'Rappel' },
+    { id: 'relances', label: 'Relances multi-sites', eyebrow: 'Relances' },
+    {
+      id: 'contacts',
+      label: 'Contacts enregistrés',
+      eyebrow: 'Prospects',
+      adminOnly: true,
+    },
+    {
+      id: 'scheduled',
+      label: 'Messages programmés',
+      eyebrow: 'Programmation',
+    },
+    { id: 'logs', label: 'Journaux', eyebrow: 'Historique' },
+  ];
   scheduledReminderClientView: 'all' | 'quitte' | 'active' = 'all';
   scheduledReminderSendMode: PaymentReminderSendMode = 'all';
   scheduledReminderSettingsLoading = false;
@@ -438,6 +468,25 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   ];
   summaryContent: string[] = [];
   sContent: string[] = [];
+
+  setActiveHomeSection(section: HomeCentralSection) {
+    if (this.activeHomeSection === section) return;
+    this.activeHomeSection = section;
+  }
+
+  isActiveHomeSection(section: HomeCentralSection) {
+    return this.activeHomeSection === section;
+  }
+
+  homeSectionTabClasses(section: HomeCentralSection) {
+    const isActive = this.isActiveHomeSection(section);
+    return {
+      'border-emerald-500 bg-emerald-600 text-white shadow-sm shadow-emerald-900/10':
+        isActive,
+      'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200':
+        !isActive,
+    };
+  }
 
   initalizeInputs() {
     this.findClientsWithoutDebtsButWithSavings();
