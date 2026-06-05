@@ -1,10 +1,11 @@
 <app-navbar
-  [email]="this.auth.currentUser.email"
-  [firstName]="this.auth.currentUser.firstName"
+  [email]="this.auth.currentUser?.email || ''"
+  [firstName]="this.auth.currentUser?.firstName || ''"
   [path]="'home'"
 ></app-navbar>
 
 <section
+  *ngIf="canViewInvestigationDashboard; else investigationAccessPrompt"
   class="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4 py-8"
 >
   <header class="container mx-auto mb-8">
@@ -35,6 +36,7 @@
             Site
           </span>
           <select
+            *ngIf="auth.isAdmin; else assignedSiteLabel"
             [(ngModel)]="selectedLocationId"
             (change)="onLocationChange()"
             class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
@@ -43,6 +45,11 @@
               {{ loc.firstName || loc.email || "Site" }}
             </option>
           </select>
+          <ng-template #assignedSiteLabel>
+            <span class="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+              {{ selectedLocationLabel || "Aucun site affecté" }}
+            </span>
+          </ng-template>
         </label>
       </div>
     </div>
@@ -2220,10 +2227,10 @@
                     </span>
                   </span>
 
-                  <ng-container *ngIf="c.entries?.length; else dash">
+                  <ng-container *ngIf="visibleTaskEntries(c).length; else dash">
                     <div class="space-y-2">
                       <div
-                        *ngFor="let e of c.entries"
+                        *ngFor="let e of visibleTaskEntries(c)"
                         class="rounded-lg border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30 px-2 py-2"
                       >
                         <div class="text-xs font-bold text-slate-700">📌 {{ e.loc }}</div>
@@ -2258,6 +2265,53 @@
     </section>
   </div>
 </section>
+
+<ng-template #investigationAccessPrompt>
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6"
+  >
+    <div class="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+      <h2 class="text-lg font-bold text-slate-900">Entrez votre code</h2>
+      <p class="mt-2 text-sm text-slate-600">
+        Veuillez entrer votre code pour accéder à votre page de vérification.
+      </p>
+
+      <input
+        [(ngModel)]="investigationAccessCode"
+        (ngModelChange)="investigationAccessCode = $event?.trim?.() ?? $event"
+        (keyup.enter)="verifyInvestigationAccessCode()"
+        type="text"
+        autocomplete="one-time-code"
+        class="mt-5 w-full rounded border p-2 text-sm text-slate-900 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        placeholder="Code"
+        autofocus
+      />
+
+      <p
+        *ngIf="investigationAccessError"
+        class="mt-2 text-sm font-semibold text-red-600"
+      >
+        {{ investigationAccessError }}
+      </p>
+
+      <button
+        type="button"
+        (click)="verifyInvestigationAccessCode()"
+        class="mt-5 w-full rounded bg-green-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+      >
+        Valider
+      </button>
+
+      <button
+        type="button"
+        routerLink="/home"
+        class="mt-2 w-full rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+      >
+        Annuler
+      </button>
+    </div>
+  </div>
+</ng-template>
 
 <!-- Modal: Vérification -->
 <div

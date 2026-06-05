@@ -190,6 +190,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   scheduledInvestigatorLocationId = '';
   scheduledInvestigatorLocationLabel = '';
   private currentUserId = '';
+  investigationAccessCode = '';
+  investigationAccessError = '';
+  investigationAccessEmployee?: Employee;
+  investigationAccessAuthorized = false;
 
   activeClient?: Client;
   showClientModal = false;
@@ -459,6 +463,49 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.taskNextWeekTotalSub?.unsubscribe();
   }
 
+  get requiresInvestigationEmployeeCode(): boolean {
+    return !this.auth.isAdmin && this.auth.isInvestigator;
+  }
+
+  get canViewInvestigationDashboard(): boolean {
+    return this.auth.isAdmin || (this.auth.isInvestigator && this.investigationAccessAuthorized);
+  }
+
+  get investigationAccessEmployeeName(): string {
+    const emp = this.investigationAccessEmployee;
+    return `${emp?.firstName ?? ''} ${emp?.lastName ?? ''}`.trim();
+  }
+
+  verifyInvestigationAccessCode(): void {
+    const entered = (this.investigationAccessCode || '').trim();
+    if (!entered) {
+      this.investigationAccessError = 'Entrez votre code.';
+      return;
+    }
+
+    const employee = this.employees.find(
+      (emp) => (emp.paymentCode || '').trim() === entered
+    );
+
+    if (!employee?.uid) {
+      this.investigationAccessError = 'Code incorrect. Essayez encore.';
+      this.investigationAccessCode = '';
+      this.investigationAccessAuthorized = false;
+      this.investigationAccessEmployee = undefined;
+      return;
+    }
+
+    this.investigationAccessEmployee = employee;
+    this.investigationAccessAuthorized = true;
+    this.investigationAccessError = '';
+    this.investigationAccessCode = '';
+    this.applyInvestigatorLocationFromSchedule();
+    this.recomputeTaskWeekSummary();
+    this.recomputeTaskTransportTotals();
+    this.loadFeedbackForAccessibleLocations();
+    this.loadAllProblematicClients();
+  }
+
   private loadClientsForLocation(userId: string): void {
     if (this.clientsSub) {
       this.clientsSub.unsubscribe();
@@ -490,13 +537,16 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.allClientsSub.unsubscribe();
     this.allClientsSub = new Subscription();
 
-    if (!this.locations.length) {
+    const accessibleLocations = this.accessibleInvestigationLocations();
+
+    if (!accessibleLocations.length) {
       this.allClients = [];
       this.refreshGlobalClientSections();
+      this.updateRecoveredAwaySummary();
       return;
     }
 
-    const sources = this.locations
+    const sources = accessibleLocations
       .filter((loc) => !!loc?.uid)
       .map((loc) =>
         this.auth.getClientsOfAUser(loc.uid!).pipe(
@@ -599,7 +649,9 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       this.feedbackDocSub.unsubscribe();
     }
 
-    if (!this.locations.length) {
+    const accessibleLocations = this.accessibleInvestigationLocations();
+
+    if (!accessibleLocations.length) {
       this.allClientFeedbackEntries = [];
       this.clientFeedbackEntries = [];
       this.feedbackSummary = this.buildFeedbackSummary([]);
@@ -607,7 +659,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const sources = this.locations
+    const sources = accessibleLocations
       .filter((loc) => !!loc?.uid)
       .map((loc) =>
         this.afs
@@ -660,6 +712,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   }
 
   private ensureDefaultLocation(): void {
+    if (this.requiresInvestigationEmployeeCode && !this.investigationAccessAuthorized) {
+      return;
+    }
+
     const preferred =
       this.selectedLocationId || this.currentUserId || this.locations[0]?.uid || '';
     if (!preferred) return;
@@ -695,6 +751,39 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.updateWeeklyExpectedProgress();
   }
 
+  private accessibleInvestigationLocations(): User[] {
+    if (this.auth.isAdmin) {
+      return this.locations;
+    }
+
+    if (!this.requiresInvestigationEmployeeCode || !this.investigationAccessAuthorized) {
+      return [];
+    }
+
+    const selected = this.locations.find((loc) => loc.uid === this.selectedLocationId);
+    return selected ? [selected] : [];
+  }
+
+  private clearSelectedInvestigationLocation(): void {
+    this.selectedLocationId = '';
+    this.selectedLocationLabel = '';
+    this.scheduledInvestigatorLocationId = '';
+    this.scheduledInvestigatorLocationLabel = '';
+    this.clients = [];
+    this.shouldPayToday = [];
+    this.filteredAllClients = [];
+    this.daySummary = '';
+    this.dayComments = [];
+    this.weekSummary = '';
+    this.weekComments = [];
+    this.clientFeedbackEntries = [];
+    this.allClientFeedbackEntries = [];
+    this.allClients = [];
+    this.refreshGlobalClientSections();
+    this.updateRecoveredAwaySummary();
+    this.updateWeeklyExpectedProgress();
+  }
+
   private selectedDateAsLocalDate(): Date {
     if (this.selectedDate) {
       const [y, m, d] = this.selectedDate.split('-').map(Number);
@@ -712,7 +801,10 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.scheduledInvestigatorLocationLabel = '';
 
     if (!this.auth.isInvestigator || this.auth.isAdmin) return null;
-    if (!this.currentUserId || !this.locations.length) return null;
+    if (!this.locations.length) return null;
+
+    const employeeUid = this.investigationScheduleEmployeeUid();
+    if (!employeeUid) return null;
 
     const date = this.selectedDateAsLocalDate();
     const month = date.getMonth() + 1;
@@ -731,7 +823,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     if (!cell?.entries?.length) return null;
 
     const directMatch = cell.entries.find((entry) =>
-      (entry.employees || []).includes(this.currentUserId)
+      (entry.employees || []).includes(employeeUid)
     );
     const targetLoc =
       directMatch?.loc || (cell.entries.length === 1 ? cell.entries[0].loc : '');
@@ -756,9 +848,21 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   private applyInvestigatorLocationFromSchedule(syncTaskForceMonth = true): void {
     const user =
       this.resolveInvestigatorScheduledLocationForSelectedDate(syncTaskForceMonth);
-    if (!user || user.uid === this.selectedLocationId) return;
+    if (!user) {
+      if (this.requiresInvestigationEmployeeCode && this.investigationAccessAuthorized) {
+        this.clearSelectedInvestigationLocation();
+      }
+      return;
+    }
+
+    if (user.uid === this.selectedLocationId) {
+      this.loadAllProblematicClients();
+      this.loadFeedbackForAccessibleLocations();
+      return;
+    }
 
     this.applyLocation(user);
+    this.loadAllProblematicClients();
   }
 
   private updateTaskForceLocations(): void {
@@ -799,6 +903,11 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       });
 
       this.employees = Array.from(deduped.values());
+      if (this.investigationAccessEmployee?.uid) {
+        this.investigationAccessEmployee =
+          this.employees.find((emp) => emp.uid === this.investigationAccessEmployee?.uid) ||
+          this.investigationAccessEmployee;
+      }
     });
 
     this.allEmployeesSub.add(sub);
@@ -3347,7 +3456,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
     for (let i = 0; i < 6; i++) {
       const iso = this.ymd(this.addDays(start, i));
-      this.taskEntriesFromDayValue(days?.[iso]).forEach((entry) => {
+      this.visibleTaskEntriesFromList(this.taskEntriesFromDayValue(days?.[iso])).forEach((entry) => {
         const dailyAmount = this.taskTransportCostForLocation(entry.loc);
         scheduledTotal += dailyAmount;
         const key = this.slugLocation(entry.loc);
@@ -3513,7 +3622,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
         }
       }
 
-      return { day: names[i], entries };
+      return { day: names[i], entries: this.visibleTaskEntriesFromList(entries) };
     });
   }
 
@@ -3551,6 +3660,34 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   byUid(uid?: string): Employee | undefined {
     return this.employees.find((e) => e.uid === uid);
+  }
+
+  visibleTaskEntries(cell?: TFCell | null): TFEntry[] {
+    return this.visibleTaskEntriesFromList(cell?.entries ?? []);
+  }
+
+  private investigationScheduleEmployeeUid(): string {
+    if (this.requiresInvestigationEmployeeCode) {
+      return this.investigationAccessEmployee?.uid || '';
+    }
+
+    return this.currentUserId;
+  }
+
+  private visibleTaskEntriesFromList(entries: TFEntry[]): TFEntry[] {
+    if (this.auth.isAdmin) {
+      return entries;
+    }
+
+    const employeeUid = this.investigationScheduleEmployeeUid();
+    if (!employeeUid) return [];
+
+    return entries
+      .map((entry) => ({
+        loc: entry.loc,
+        employees: (entry.employees || []).filter((uid) => uid === employeeUid),
+      }))
+      .filter((entry) => entry.loc && entry.employees.length > 0);
   }
 
   filteredEmployees(): Employee[] {
