@@ -182,6 +182,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
   presenceExceptionReason = '';
   presenceExceptionMessage = '';
   private presenceExceptionsCacheKey = '';
+  presenceBulkIncludeSaturday = false;
+  presenceBulkStatus: AttendanceStateCode = 'A';
+  presenceBulkModalOpen = false;
+  presenceBulkSaving = false;
+  presenceBulkMessage = '';
   presenceStateOptions: PresenceStateOption[] = [
     { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
@@ -518,6 +523,29 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
   }
 
+  get presenceBulkStatusOptions(): PresenceStateOption[] {
+    return this.presenceStateOptions.filter((option) => !!option.code);
+  }
+
+  get presenceBulkUnassignedDays(): PresenceMissedDay[] {
+    const employee = this.selectedPresenceEmployee;
+    if (!employee) return [];
+    return this.presenceEligibleDayLabels(
+      this.presenceMonth,
+      this.presenceYear,
+      this.presenceBulkIncludeSaturday
+    )
+      .filter(
+        (label) => !this.getLatestAttendanceForEmployeeDay(employee, label).status
+      )
+      .map((label) => ({
+        label,
+        display: this.presenceDayDisplay(label),
+        status: '',
+        statusLabel: 'Sans statut',
+      }));
+  }
+
   get presenceExceptionList(): PresenceExceptionDay[] {
     return Object.values(this.presenceExceptionDays).sort((a, b) =>
       a.dateISO.localeCompare(b.dateISO)
@@ -550,10 +578,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.selectedPresenceEmployeeId = employee?.uid || '';
     this.presenceEmployeeSearch = this.formatRankingEmployeeName(employee);
     this.presenceEmployeeSearchOpen = false;
+    this.presenceBulkMessage = '';
     this.loadPresenceAttachmentsForSelection();
   }
 
   onPresencePeriodChange(): void {
+    this.presenceBulkMessage = '';
     this.ensurePresenceExceptionDate();
     this.loadPresenceExceptionDaysForSelection();
     this.loadPresenceAttachmentsForSelection();
@@ -561,6 +591,96 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   onPresenceSummarySaturdayChange(): void {
     // Getter-driven summary refreshes automatically; the method keeps template intent clear.
+  }
+
+  onPresenceBulkSaturdayChange(): void {
+    this.presenceBulkMessage = '';
+  }
+
+  openPresenceBulkModal(): void {
+    this.presenceBulkMessage = '';
+    this.presenceBulkModalOpen = true;
+  }
+
+  closePresenceBulkModal(): void {
+    if (this.presenceBulkSaving) return;
+    this.presenceBulkModalOpen = false;
+  }
+
+  async applyPresenceBulkFill(): Promise<void> {
+    if (!this.auth.isAdmin) return;
+    const employee = this.selectedPresenceEmployee;
+    if (!employee?.uid || !this.presenceBulkStatus) return;
+
+    const ownerUid = employee.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      this.presenceBulkMessage = "Impossible d'identifier le propriétaire.";
+      return;
+    }
+
+    const targetDays = this.presenceBulkUnassignedDays;
+    if (!targetDays.length) {
+      this.presenceBulkMessage = 'Aucun jour non assigné à remplir.';
+      return;
+    }
+
+    const confirmed = confirm(
+      `Marquer ${targetDays.length} jour${
+        targetDays.length > 1 ? 's' : ''
+      } non assigné${
+        targetDays.length > 1 ? 's' : ''
+      } comme ${this.attendanceLabelForCode(this.presenceBulkStatus)} pour ${this.selectedPresenceEmployeeName} ?`
+    );
+    if (!confirmed) return;
+
+    const nextAttendance = { ...(employee.attendance || {}) };
+    targetDays.forEach((day) => {
+      nextAttendance[day.label] = this.presenceBulkStatus;
+    });
+
+    this.presenceBulkSaving = true;
+    this.presenceBulkMessage = '';
+    try {
+      await this.data.updateEmployeeTopLevelFieldsForUser(ownerUid, employee.uid, {
+        attendance: nextAttendance,
+      });
+
+      await Promise.all(
+        targetDays.map((day) =>
+          this.afs
+            .doc(
+              `users/${ownerUid}/employees/${employee.uid}/attendance/${this.dateIsoFromLabel(day.label)}`
+            )
+            .set(
+              {
+                status: this.presenceBulkStatus,
+                dateISO: this.dateIsoFromLabel(day.label),
+                dateLabel: day.label,
+                updatedAt: new Date(),
+                updatedBy: this.auth.currentUser?.uid || 'unknown',
+                source: 'admin_bulk_fill',
+              },
+              { merge: true }
+            )
+        )
+      );
+
+      employee.attendance = nextAttendance;
+      const fullEmployee = this.allEmployeesAll.find((item) => item.uid === employee.uid);
+      if (fullEmployee) {
+        fullEmployee.attendance = nextAttendance;
+      }
+      this.presenceBulkMessage = `${targetDays.length} jour${
+        targetDays.length > 1 ? 's' : ''
+      } mis à jour.`;
+      this.presenceBulkModalOpen = false;
+    } catch (error) {
+      console.error('Failed to bulk fill presence days', error);
+      this.presenceBulkMessage =
+        'Impossible de remplir les jours non assignés.';
+    } finally {
+      this.presenceBulkSaving = false;
+    }
   }
 
   async addPresenceExceptionDay(): Promise<void> {

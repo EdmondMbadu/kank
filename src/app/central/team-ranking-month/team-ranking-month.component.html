@@ -649,6 +649,44 @@
               </div>
             </div>
 
+            <div
+              *ngIf="auth.isAdmin"
+              class="mb-4 flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p class="text-xs font-black uppercase tracking-[0.18em] text-amber-700">
+                  Jours non assignés
+                </p>
+                <p class="mt-1 text-sm font-semibold text-slate-600">
+                  {{ presenceBulkUnassignedDays.length }} jour{{
+                    presenceBulkUnassignedDays.length > 1 ? "s" : ""
+                  }}
+                  à traiter pour {{ selectedPresenceEmployeeName }}.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="presenceBulkSaving"
+                (click)="openPresenceBulkModal()"
+              >
+                Remplir les jours non assignés
+              </button>
+            </div>
+
+            <p
+              *ngIf="auth.isAdmin && presenceBulkMessage"
+              class="mb-4 rounded-xl px-4 py-3 text-sm font-bold"
+              [ngClass]="
+                presenceBulkMessage.includes('Impossible')
+                  ? 'bg-rose-50 text-rose-700'
+                  : 'bg-emerald-50 text-emerald-700'
+              "
+            >
+              {{ presenceBulkMessage }}
+            </p>
+
             <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
               <table class="attendance-table w-full text-sm">
                 <thead>
@@ -4714,6 +4752,134 @@
         (click)="applyPresenceDayEditor()"
       >
         {{ presenceDayEditor.saving ? "Enregistrement..." : "Enregistrer" }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="presenceBulkModalOpen"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+  (click)="closePresenceBulkModal()"
+>
+  <div
+    class="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between border-b border-slate-200 px-4 py-3">
+      <div>
+        <h3 class="text-lg font-black text-slate-900">
+          Remplir les jours non assignés
+        </h3>
+        <p class="mt-1 text-sm font-semibold text-slate-500">
+          Pour {{ selectedPresenceEmployeeName }}, seuls les jours sans statut
+          seront modifiés. Les dimanches, jours exception et jours déjà marqués
+          sont ignorés.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        (click)="closePresenceBulkModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="space-y-4 px-4 py-4">
+      <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <p class="text-2xl font-black text-slate-900">
+          {{ presenceBulkUnassignedDays.length }} jour{{
+            presenceBulkUnassignedDays.length > 1 ? "s" : ""
+          }}
+          non assigné{{
+            presenceBulkUnassignedDays.length > 1 ? "s" : ""
+          }}
+        </p>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm font-semibold text-slate-700">
+          <label class="mr-3 inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
+            <input
+              type="radio"
+              name="presenceBulkSaturdayModal"
+              [checked]="!presenceBulkIncludeSaturday"
+              (change)="presenceBulkIncludeSaturday = false; onPresenceBulkSaturdayChange()"
+              class="text-amber-600 focus:ring-amber-500"
+            />
+            Lun-Ven
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1">
+            <input
+              type="radio"
+              name="presenceBulkSaturdayModal"
+              [checked]="presenceBulkIncludeSaturday"
+              (change)="presenceBulkIncludeSaturday = true; onPresenceBulkSaturdayChange()"
+              class="text-amber-600 focus:ring-amber-500"
+            />
+            Inclure samedi
+          </label>
+        </div>
+
+        <select
+          [(ngModel)]="presenceBulkStatus"
+          class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
+        >
+          <option
+            *ngFor="let option of presenceBulkStatusOptions"
+            [ngValue]="option.code"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+
+      <div
+        *ngIf="presenceBulkUnassignedDays.length > 0"
+        class="flex max-h-36 flex-wrap gap-1.5 overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-2"
+      >
+        <span
+          *ngFor="let day of presenceBulkUnassignedDays"
+          class="rounded-full bg-white px-2 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-100"
+        >
+          {{ day.display }}
+        </span>
+      </div>
+
+      <p
+        *ngIf="presenceBulkMessage"
+        class="rounded-xl px-3 py-2 text-sm font-bold"
+        [ngClass]="
+          presenceBulkMessage.includes('Impossible')
+            ? 'bg-rose-50 text-rose-700'
+            : 'bg-emerald-50 text-emerald-700'
+        "
+      >
+        {{ presenceBulkMessage }}
+      </p>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-4 py-3">
+      <button
+        type="button"
+        class="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="presenceBulkSaving"
+        (click)="closePresenceBulkModal()"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        class="rounded-full bg-amber-600 px-4 py-2 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+        [disabled]="
+          presenceBulkSaving ||
+          presenceBulkUnassignedDays.length === 0 ||
+          !presenceBulkStatus
+        "
+        (click)="applyPresenceBulkFill()"
+      >
+        {{ presenceBulkSaving ? "Enregistrement..." : "Appliquer" }}
       </button>
     </div>
   </div>

@@ -67,6 +67,16 @@ service cloud.firestore {
           (signedIn() && !isPortalClient());
       }
 
+      match /employees/{employeeId}/attendance/{dateISO} {
+        allow read, write: if isOwner(userId) ||
+          (signedIn() && !isPortalClient());
+
+        match /attachments/{attachmentId} {
+          allow read, write: if isOwner(userId) ||
+            (signedIn() && !isPortalClient());
+        }
+      }
+
       match /clients/{clientId} {
         allow read: if isOwner(userId) ||
           (signedIn() && !isPortalClient()) ||
