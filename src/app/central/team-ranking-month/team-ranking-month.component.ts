@@ -136,7 +136,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   ];
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
+  presenceCalendarOpen = false;
   selectedPresenceEmployeeId = '';
+  presenceEmployeeSearch = '';
+  presenceEmployeeSearchOpen = false;
   presenceAttachmentsByLabel: Record<string, any[]> = {};
   presenceAttachmentsLoading = false;
   private presenceAttachmentsCacheKey = '';
@@ -396,6 +399,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.formatRankingEmployeeName(this.selectedPresenceEmployee);
   }
 
+  get filteredPresenceEmployees(): Employee[] {
+    const query = this.presenceEmployeeSearch.trim().toLowerCase();
+    const employees = this.allEmployees || [];
+    if (!query) return employees.slice(0, 8);
+    return employees
+      .filter((employee) =>
+        this.formatRankingEmployeeName(employee).toLowerCase().includes(query)
+      )
+      .slice(0, 10);
+  }
+
   get presenceMonthLabel(): string {
     return (
       this.time.monthFrenchNames?.[Number(this.presenceMonth) - 1] ||
@@ -415,10 +429,22 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.buildPresenceCalendarWeeks(employee, this.presenceMonth, this.presenceYear);
   }
 
-  onPresenceEmployeeChange(): void {
-    if (!this.selectedPresenceEmployeeId && this.allEmployees?.length) {
-      this.selectedPresenceEmployeeId = this.allEmployees[0].uid || '';
+  togglePresenceCalendar(): void {
+    this.presenceCalendarOpen = !this.presenceCalendarOpen;
+    if (this.presenceCalendarOpen) {
+      this.ensurePresenceEmployeeSelection();
+      this.loadPresenceAttachmentsForSelection();
     }
+  }
+
+  onPresenceEmployeeSearchChange(): void {
+    this.presenceEmployeeSearchOpen = true;
+  }
+
+  selectPresenceEmployee(employee: Employee): void {
+    this.selectedPresenceEmployeeId = employee?.uid || '';
+    this.presenceEmployeeSearch = this.formatRankingEmployeeName(employee);
+    this.presenceEmployeeSearchOpen = false;
     this.loadPresenceAttachmentsForSelection();
   }
 
@@ -429,6 +455,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private ensurePresenceEmployeeSelection(): void {
     if (!this.allEmployees?.length) {
       this.selectedPresenceEmployeeId = '';
+      this.presenceEmployeeSearch = '';
       return;
     }
 
@@ -438,7 +465,6 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (!stillExists) {
       this.selectedPresenceEmployeeId = this.allEmployees[0].uid || '';
     }
-    this.loadPresenceAttachmentsForSelection();
   }
 
   private buildPresenceMonthSummary(

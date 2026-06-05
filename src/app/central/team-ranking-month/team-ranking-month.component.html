@@ -328,8 +328,10 @@
       <div
         class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
-        <div
-          class="flex flex-col gap-4 bg-gradient-to-r from-emerald-700 to-teal-700 px-4 py-4 text-white md:flex-row md:items-center md:justify-between"
+        <button
+          type="button"
+          class="flex w-full flex-col gap-4 bg-gradient-to-r from-emerald-700 to-teal-700 px-4 py-4 text-left text-white md:flex-row md:items-center md:justify-between"
+          (click)="togglePresenceCalendar()"
         >
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">
@@ -352,22 +354,65 @@
             </p>
           </div>
 
-          <div class="grid w-full gap-2 md:w-auto md:grid-cols-[minmax(220px,1fr)_150px_120px]">
-            <select
-              [(ngModel)]="selectedPresenceEmployeeId"
-              (ngModelChange)="onPresenceEmployeeChange()"
-              class="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
-            >
-              <option value="" disabled>Choisir un employé</option>
-              <option *ngFor="let em of allEmployees" [ngValue]="em.uid">
-                {{ em.firstName }} {{ em.lastName }}
-              </option>
-            </select>
+          <span
+            class="inline-flex items-center justify-center rounded-lg bg-white/15 px-4 py-2 text-sm font-bold ring-1 ring-white/25 transition hover:bg-white/20"
+          >
+            {{ presenceCalendarOpen ? "Fermer" : "Ouvrir" }}
+            <span class="ml-2 text-base leading-none">
+              {{ presenceCalendarOpen ? "↑" : "↓" }}
+            </span>
+          </span>
+        </button>
+
+        <div *ngIf="presenceCalendarOpen">
+          <div class="grid gap-3 border-b border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(260px,1fr)_150px_120px]">
+            <div class="relative">
+              <input
+                type="text"
+                [(ngModel)]="presenceEmployeeSearch"
+                (ngModelChange)="onPresenceEmployeeSearchChange()"
+                (focus)="presenceEmployeeSearchOpen = true"
+                placeholder="Rechercher un employé"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              />
+              <div
+                *ngIf="presenceEmployeeSearchOpen && presenceEmployeeSearch.trim()"
+                class="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-20 max-h-72 overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-xl"
+              >
+                <button
+                  *ngFor="let em of filteredPresenceEmployees"
+                  type="button"
+                  class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-emerald-50"
+                  [ngClass]="
+                    em.uid === selectedPresenceEmployeeId
+                      ? 'bg-emerald-50 text-emerald-800'
+                      : 'text-slate-800'
+                  "
+                  (click)="selectPresenceEmployee(em)"
+                >
+                  <span class="font-semibold">
+                    {{ em.firstName }} {{ em.lastName }}
+                  </span>
+                  <span
+                    *ngIf="em.uid === selectedPresenceEmployeeId"
+                    class="text-xs font-bold text-emerald-700"
+                  >
+                    Sélectionné
+                  </span>
+                </button>
+                <div
+                  *ngIf="filteredPresenceEmployees.length === 0"
+                  class="px-3 py-3 text-sm text-slate-500"
+                >
+                  Aucun employé trouvé.
+                </div>
+              </div>
+            </div>
 
             <select
               [(ngModel)]="presenceMonth"
               (ngModelChange)="onPresencePeriodChange()"
-              class="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             >
               <option *ngFor="let month of monthsList" [ngValue]="month">
                 {{ time.monthFrenchNames[month - 1] }}
@@ -377,106 +422,106 @@
             <select
               [(ngModel)]="presenceYear"
               (ngModelChange)="onPresencePeriodChange()"
-              class="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             >
               <option *ngFor="let year of yearsList" [ngValue]="year">
                 {{ year }}
               </option>
             </select>
           </div>
-        </div>
 
-        <div *ngIf="selectedPresenceEmployee; else noPresenceEmployee" class="p-4">
-          <div
-            *ngIf="presenceMonthSummary as summary"
-            class="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
-          >
-            <p
-              class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700"
+          <div *ngIf="selectedPresenceEmployee; else noPresenceEmployee" class="p-4">
+            <div
+              *ngIf="presenceMonthSummary as summary"
+              class="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
             >
-              Résumé du mois
-            </p>
-            <p class="mt-1 text-sm font-bold text-slate-500">
-              {{ summary.scopeLabel }}
-            </p>
-            <p class="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-              {{ summary.recordedDays }} jour{{ summary.recordedDays > 1 ? "s" : "" }}
-              renseigné{{ summary.recordedDays > 1 ? "s" : "" }} sur
-              {{ summary.daysConsidered }}
-            </p>
-            <div class="mt-4 flex flex-wrap items-center gap-3">
-              <span
-                class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-extrabold text-white ring-1 ring-slate-900"
+              <p
+                class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700"
               >
-                Total marqué : {{ summary.recordedDays }}
-              </span>
-              <span
-                class="inline-flex items-center rounded-full bg-emerald-50 px-4 py-2 text-sm font-extrabold text-emerald-700 ring-1 ring-emerald-200"
-              >
-                Présence : {{ summary.presentDays }}
-              </span>
-              <ng-container *ngFor="let item of summary.items">
+                Résumé du mois
+              </p>
+              <p class="mt-1 text-sm font-bold text-slate-500">
+                {{ summary.scopeLabel }}
+              </p>
+              <p class="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                {{ summary.recordedDays }} jour{{ summary.recordedDays > 1 ? "s" : "" }}
+                renseigné{{ summary.recordedDays > 1 ? "s" : "" }} sur
+                {{ summary.daysConsidered }}
+              </p>
+              <div class="mt-4 flex flex-wrap items-center gap-3">
                 <span
-                  *ngIf="item.count > 0"
-                  class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold ring-1"
-                  [ngClass]="item.classes"
+                  class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-extrabold text-white ring-1 ring-slate-900"
                 >
-                  {{ item.label }} : {{ item.count }}
+                  Total marqué : {{ summary.recordedDays }}
                 </span>
-              </ng-container>
+                <span
+                  class="inline-flex items-center rounded-full bg-emerald-50 px-4 py-2 text-sm font-extrabold text-emerald-700 ring-1 ring-emerald-200"
+                >
+                  Présence : {{ summary.presentDays }}
+                </span>
+                <ng-container *ngFor="let item of summary.items">
+                  <span
+                    *ngIf="item.count > 0"
+                    class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold ring-1"
+                    [ngClass]="item.classes"
+                  >
+                    {{ item.label }} : {{ item.count }}
+                  </span>
+                </ng-container>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+              <table class="attendance-table w-full text-sm">
+                <thead>
+                  <tr>
+                    <th>Dimanche</th>
+                    <th>Lundi</th>
+                    <th>Mardi</th>
+                    <th>Mercredi</th>
+                    <th>Jeudi</th>
+                    <th>Vendredi</th>
+                    <th>Samedi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let week of presenceCalendarWeeks">
+                    <td
+                      *ngFor="let cell of week"
+                      class="relative"
+                      [ngClass]="cell.day ? cell.classes : 'bg-slate-50'"
+                    >
+                      <ng-container *ngIf="cell.day">
+                        <div class="font-black">{{ cell.day }}</div>
+                        <div class="mt-1 text-xs font-bold">
+                          {{ cell.status ? cell.statusLabel : "Non marqué" }}
+                        </div>
+                        <div *ngIf="cell.timeLabel" class="mt-1 text-[11px] opacity-80">
+                          {{ cell.timeLabel }}
+                        </div>
+                        <button
+                          *ngIf="cell.attachment"
+                          type="button"
+                          class="mt-1 inline-flex items-center justify-center rounded bg-white/85 px-1.5 py-0.5 text-xs text-slate-900 ring-1 ring-black/10 hover:bg-white"
+                          title="Voir la pièce jointe"
+                          (click)="openPresenceAttachment(cell.attachment, cell.label); $event.stopPropagation()"
+                        >
+                          📷
+                        </button>
+                      </ng-container>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-            <table class="attendance-table w-full text-sm">
-              <thead>
-                <tr>
-                  <th>Dimanche</th>
-                  <th>Lundi</th>
-                  <th>Mardi</th>
-                  <th>Mercredi</th>
-                  <th>Jeudi</th>
-                  <th>Vendredi</th>
-                  <th>Samedi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let week of presenceCalendarWeeks">
-                  <td
-                    *ngFor="let cell of week"
-                    class="relative"
-                    [ngClass]="cell.day ? cell.classes : 'bg-slate-50'"
-                  >
-                    <ng-container *ngIf="cell.day">
-                      <div class="font-black">{{ cell.day }}</div>
-                      <div class="mt-1 text-xs font-bold">
-                        {{ cell.status ? cell.statusLabel : "Non marqué" }}
-                      </div>
-                      <div *ngIf="cell.timeLabel" class="mt-1 text-[11px] opacity-80">
-                        {{ cell.timeLabel }}
-                      </div>
-                      <button
-                        *ngIf="cell.attachment"
-                        type="button"
-                        class="mt-1 inline-flex items-center justify-center rounded bg-white/85 px-1.5 py-0.5 text-xs text-slate-900 ring-1 ring-black/10 hover:bg-white"
-                        title="Voir la pièce jointe"
-                        (click)="openPresenceAttachment(cell.attachment, cell.label); $event.stopPropagation()"
-                      >
-                        📷
-                      </button>
-                    </ng-container>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ng-template #noPresenceEmployee>
+            <div class="p-8 text-center text-sm text-slate-500">
+              Aucun employé disponible pour afficher le calendrier de présence.
+            </div>
+          </ng-template>
         </div>
-
-        <ng-template #noPresenceEmployee>
-          <div class="p-8 text-center text-sm text-slate-500">
-            Aucun employé disponible pour afficher le calendrier de présence.
-          </div>
-        </ng-template>
       </div>
     </section>
     </ng-template>
