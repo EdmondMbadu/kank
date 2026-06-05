@@ -322,6 +322,164 @@
         </div>
       </div>
     </div>
+
+    <ng-template #presenceCalendarSection>
+    <section class="mx-auto mb-10 max-w-5xl px-4">
+      <div
+        class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      >
+        <div
+          class="flex flex-col gap-4 bg-gradient-to-r from-emerald-700 to-teal-700 px-4 py-4 text-white md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">
+              Présence
+            </p>
+            <h3 class="mt-1 text-xl font-bold tracking-tight">
+              Calendrier de Présence
+            </h3>
+            <p class="mt-1 text-sm text-white/80">
+              {{ presenceMonthLabel }} {{ presenceYear }}
+              <span *ngIf="selectedPresenceEmployee">
+                — {{ selectedPresenceEmployeeName }}
+              </span>
+            </p>
+            <p
+              *ngIf="presenceAttachmentsLoading"
+              class="mt-1 text-xs font-medium text-white/75"
+            >
+              Chargement des photos de présence...
+            </p>
+          </div>
+
+          <div class="grid w-full gap-2 md:w-auto md:grid-cols-[minmax(220px,1fr)_150px_120px]">
+            <select
+              [(ngModel)]="selectedPresenceEmployeeId"
+              (ngModelChange)="onPresenceEmployeeChange()"
+              class="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            >
+              <option value="" disabled>Choisir un employé</option>
+              <option *ngFor="let em of allEmployees" [ngValue]="em.uid">
+                {{ em.firstName }} {{ em.lastName }}
+              </option>
+            </select>
+
+            <select
+              [(ngModel)]="presenceMonth"
+              (ngModelChange)="onPresencePeriodChange()"
+              class="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            >
+              <option *ngFor="let month of monthsList" [ngValue]="month">
+                {{ time.monthFrenchNames[month - 1] }}
+              </option>
+            </select>
+
+            <select
+              [(ngModel)]="presenceYear"
+              (ngModelChange)="onPresencePeriodChange()"
+              class="rounded-lg border border-white/20 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm focus:border-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            >
+              <option *ngFor="let year of yearsList" [ngValue]="year">
+                {{ year }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="selectedPresenceEmployee; else noPresenceEmployee" class="p-4">
+          <div
+            *ngIf="presenceMonthSummary as summary"
+            class="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+          >
+            <p
+              class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700"
+            >
+              Résumé du mois
+            </p>
+            <p class="mt-1 text-sm font-bold text-slate-500">
+              {{ summary.scopeLabel }}
+            </p>
+            <p class="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+              {{ summary.recordedDays }} jour{{ summary.recordedDays > 1 ? "s" : "" }}
+              renseigné{{ summary.recordedDays > 1 ? "s" : "" }} sur
+              {{ summary.daysConsidered }}
+            </p>
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+              <span
+                class="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-extrabold text-white ring-1 ring-slate-900"
+              >
+                Total marqué : {{ summary.recordedDays }}
+              </span>
+              <span
+                class="inline-flex items-center rounded-full bg-emerald-50 px-4 py-2 text-sm font-extrabold text-emerald-700 ring-1 ring-emerald-200"
+              >
+                Présence : {{ summary.presentDays }}
+              </span>
+              <ng-container *ngFor="let item of summary.items">
+                <span
+                  *ngIf="item.count > 0"
+                  class="inline-flex items-center rounded-full px-4 py-2 text-sm font-extrabold ring-1"
+                  [ngClass]="item.classes"
+                >
+                  {{ item.label }} : {{ item.count }}
+                </span>
+              </ng-container>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <table class="attendance-table w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Dimanche</th>
+                  <th>Lundi</th>
+                  <th>Mardi</th>
+                  <th>Mercredi</th>
+                  <th>Jeudi</th>
+                  <th>Vendredi</th>
+                  <th>Samedi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let week of presenceCalendarWeeks">
+                  <td
+                    *ngFor="let cell of week"
+                    class="relative"
+                    [ngClass]="cell.day ? cell.classes : 'bg-slate-50'"
+                  >
+                    <ng-container *ngIf="cell.day">
+                      <div class="font-black">{{ cell.day }}</div>
+                      <div class="mt-1 text-xs font-bold">
+                        {{ cell.status ? cell.statusLabel : "Non marqué" }}
+                      </div>
+                      <div *ngIf="cell.timeLabel" class="mt-1 text-[11px] opacity-80">
+                        {{ cell.timeLabel }}
+                      </div>
+                      <button
+                        *ngIf="cell.attachment"
+                        type="button"
+                        class="mt-1 inline-flex items-center justify-center rounded bg-white/85 px-1.5 py-0.5 text-xs text-slate-900 ring-1 ring-black/10 hover:bg-white"
+                        title="Voir la pièce jointe"
+                        (click)="openPresenceAttachment(cell.attachment, cell.label); $event.stopPropagation()"
+                      >
+                        📷
+                      </button>
+                    </ng-container>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <ng-template #noPresenceEmployee>
+          <div class="p-8 text-center text-sm text-slate-500">
+            Aucun employé disponible pour afficher le calendrier de présence.
+          </div>
+        </ng-template>
+      </div>
+    </section>
+    </ng-template>
     <div
       *ngIf="auth.isAdmin && rankingMode === 'weeklyPayments'"
       class="container mx-auto flex justify-center mb-6"
@@ -2558,11 +2716,11 @@
   </div>
 </div>
 
-<!-- any template -->
 <div class="mx-auto container max-w-5xl">
   <app-rotation-schedule
     [employees]="allEmployees"
     [locations]="allLocations"
+    [hideTaskForceBoard]="true"
   ></app-rotation-schedule>
 </div>
 
@@ -4175,3 +4333,51 @@
     </div>
   </div>
 </section>
+
+<ng-container *ngTemplateOutlet="presenceCalendarSection"></ng-container>
+
+<div
+  *ngIf="presenceAttachmentViewer.open"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+  (click)="closePresenceAttachment()"
+>
+  <div
+    class="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+      <div>
+        <h3 class="text-base font-semibold text-slate-900">
+          Pièce jointe — {{ presenceAttachmentViewer.dateLabel }}
+        </h3>
+        <p
+          *ngIf="presenceAttachmentViewer.takenAt"
+          class="mt-0.5 text-xs text-slate-500"
+        >
+          Pris le : {{ formatKinshasa(presenceAttachmentViewer.takenAt) }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        (click)="closePresenceAttachment()"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="max-h-[76vh] overflow-auto bg-slate-950 p-3">
+      <img
+        *ngIf="presenceAttachmentViewer.kind === 'image'"
+        [src]="presenceAttachmentViewer.url"
+        alt="Photo de présence"
+        class="mx-auto max-h-[70vh] rounded-lg object-contain"
+      />
+      <video
+        *ngIf="presenceAttachmentViewer.kind === 'video'"
+        [src]="presenceAttachmentViewer.url"
+        controls
+        class="mx-auto max-h-[70vh] w-full rounded-lg"
+      ></video>
+    </div>
+  </div>
+</div>

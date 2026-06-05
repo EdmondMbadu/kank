@@ -713,6 +713,7 @@
       </tbody>
     </table>
   </div>
+<ng-container *ngIf="!hideTaskForceBoard">
 <!-- ╭─ ADMIN‑ONLY TASKFORCE MONTH BOARD ───────────────────╮ -->
 <div *ngIf="auth.isAdmin || auth.isDistributor"
      class="flex items-center justify-between my-2">
@@ -945,6 +946,7 @@
 </div>
 
 <!-- ╰───────────────────────────────────────────────────────────╯ -->
+</ng-container>
 
   <!-- ═════════════ Picker modal (unchanged logic) ═════════════ -->
   <div

@@ -134,6 +134,7 @@ mot de passe: ${loc.password ?? '—'}`;
   /* ---- inputs ---- */
   @Input() employees: Employee[] = [];
   @Input() locations: string[] = [];
+  @Input() hideTaskForceBoard = false;
   public readonly weekHeaders = [
     'Dimanche',
     'Lundi',

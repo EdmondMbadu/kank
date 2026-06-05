@@ -11,15 +11,42 @@ import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { DataService } from 'src/app/services/data.service';
 import exifr from 'exifr';
-import { Subscription } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
+type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
 type MonthlySignatureEntry = {
   rawKey: string;
   date: Date;
   kind: 'paiement' | 'bonus';
   receiptIndex: number;
   receiptUrl: string | null;
+};
+type AttendanceMonthSummaryItem = {
+  code: AttendanceStateCode | 'missing';
+  label: string;
+  count: number;
+  classes: string;
+};
+type AttendanceMonthSummary = {
+  monthLabel: string;
+  scopeLabel: string;
+  daysConsidered: number;
+  recordedDays: number;
+  presentDays: number;
+  lateDays: number;
+  absentDays: number;
+  items: AttendanceMonthSummaryItem[];
+};
+type PresenceCalendarCell = {
+  day: number | null;
+  label: string;
+  status: AttendanceStateCode;
+  statusLabel: string;
+  timeLabel: string;
+  classes: string;
+  attachment?: any;
 };
 
 @Component({
@@ -32,9 +59,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
   givenMonth: number = this.currentMonth;
+  presenceMonth: number = this.currentMonth;
   month = this.compute.getMonthNameFrench(this.currentMonth);
   year = this.currentDate.getFullYear();
   givenYear = this.year;
+  presenceYear = this.year;
   monthsList: number[] = [...Array(12).keys()].map((i) => i + 1);
   day = this.currentDate.getDate();
   maxRange: number = 0;
@@ -107,6 +136,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
   ];
 
   allEmployeesAll: Employee[] = []; // includes inactive, used for partner merge
+  selectedPresenceEmployeeId = '';
+  presenceAttachmentsByLabel: Record<string, any[]> = {};
+  presenceAttachmentsLoading = false;
+  private presenceAttachmentsCacheKey = '';
+  presenceAttachmentViewer = {
+    open: false,
+    url: '',
+    kind: '' as 'image' | 'video' | '',
+    dateLabel: '',
+    takenAt: null as Date | null,
+    takenAtSource: '' as string,
+  };
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
   showMonthlyAmounts = false;
@@ -236,19 +277,20 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
   }
 
-  normalizeAttendanceCode(raw: unknown): '' | 'P' | 'A' | 'L' | 'N' | 'V' | 'VP' {
+  normalizeAttendanceCode(raw: unknown): AttendanceStateCode {
     const value = (raw ?? '').toString().trim().toUpperCase();
     if (!value) return '';
     if (value === 'P' || value === 'PRESENT' || value === 'PRÉSENT') return 'P';
     if (value === 'A' || value === 'ABSENT') return 'A';
     if (value === 'L' || value === 'LATE' || value === 'RETARD') return 'L';
     if (value === 'N' || value === 'NEANT' || value === 'NÉANT') return 'N';
+    if (value === 'F' || value === 'ANOMALIE') return 'F';
     if (value === 'VP') return 'VP';
     if (value === 'V' || value === 'VACANCES' || value === 'VACANCE') return 'V';
     return '';
   }
 
-  attendanceCodeForDate(employee: Employee): '' | 'P' | 'A' | 'L' | 'N' | 'V' | 'VP' {
+  attendanceCodeForDate(employee: Employee): AttendanceStateCode {
     const dayKey = this.todayDayKey || this.time.todaysDateMonthDayYear();
     const fullEmployee =
       this.allEmployeesAll?.find((e) => e?.uid && e.uid === employee?.uid) ||
@@ -307,6 +349,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         return 'Vacances';
       case 'VP':
         return 'Vacances en cours';
+      case 'F':
+        return 'Anomalie';
       case 'N':
       case '':
       default:
@@ -338,6 +382,485 @@ export class TeamRankingMonthComponent implements OnDestroy {
       return current === '' || current === 'N';
     }
     return current === code;
+  }
+
+  get selectedPresenceEmployee(): Employee | null {
+    if (!this.selectedPresenceEmployeeId) return this.allEmployees?.[0] || null;
+    return (
+      this.allEmployees?.find((employee) => employee.uid === this.selectedPresenceEmployeeId) ||
+      null
+    );
+  }
+
+  get selectedPresenceEmployeeName(): string {
+    return this.formatRankingEmployeeName(this.selectedPresenceEmployee);
+  }
+
+  get presenceMonthLabel(): string {
+    return (
+      this.time.monthFrenchNames?.[Number(this.presenceMonth) - 1] ||
+      `Mois ${this.presenceMonth}`
+    );
+  }
+
+  get presenceMonthSummary(): AttendanceMonthSummary | null {
+    const employee = this.selectedPresenceEmployee;
+    if (!employee) return null;
+    return this.buildPresenceMonthSummary(employee, this.presenceMonth, this.presenceYear);
+  }
+
+  get presenceCalendarWeeks(): PresenceCalendarCell[][] {
+    const employee = this.selectedPresenceEmployee;
+    if (!employee) return [];
+    return this.buildPresenceCalendarWeeks(employee, this.presenceMonth, this.presenceYear);
+  }
+
+  onPresenceEmployeeChange(): void {
+    if (!this.selectedPresenceEmployeeId && this.allEmployees?.length) {
+      this.selectedPresenceEmployeeId = this.allEmployees[0].uid || '';
+    }
+    this.loadPresenceAttachmentsForSelection();
+  }
+
+  onPresencePeriodChange(): void {
+    this.loadPresenceAttachmentsForSelection();
+  }
+
+  private ensurePresenceEmployeeSelection(): void {
+    if (!this.allEmployees?.length) {
+      this.selectedPresenceEmployeeId = '';
+      return;
+    }
+
+    const stillExists = this.allEmployees.some(
+      (employee) => employee.uid === this.selectedPresenceEmployeeId
+    );
+    if (!stillExists) {
+      this.selectedPresenceEmployeeId = this.allEmployees[0].uid || '';
+    }
+    this.loadPresenceAttachmentsForSelection();
+  }
+
+  private buildPresenceMonthSummary(
+    employee: Employee,
+    month: number,
+    year: number
+  ): AttendanceMonthSummary {
+    const nowKin = this.kinParts(new Date());
+    const monthDelta = year * 12 + month - (nowKin.y * 12 + nowKin.m);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const daysConsidered =
+      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? nowKin.d : 0;
+
+    const counts: Record<AttendanceStateCode, number> = {
+      '': 0,
+      P: 0,
+      A: 0,
+      L: 0,
+      V: 0,
+      VP: 0,
+      N: 0,
+      F: 0,
+    };
+
+    let eligibleDays = 0;
+    for (let day = 1; day <= daysConsidered; day++) {
+      if (this.isSunday(month, day, year)) continue;
+      eligibleDays += 1;
+      const status = this.getLatestAttendanceForEmployeeDay(
+        employee,
+        `${month}-${day}-${year}`
+      ).status;
+      if (!status) continue;
+      counts[status] += 1;
+    }
+
+    const recordedDays =
+      counts.P + counts.A + counts.L + counts.V + counts.VP + counts.N + counts.F;
+    const monthLabel = this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`;
+
+    return {
+      monthLabel,
+      scopeLabel:
+        monthDelta === 0
+          ? `Jusqu'au ${nowKin.d} ${monthLabel}`
+          : monthDelta < 0
+          ? 'Mois complet'
+          : 'Aucun jour à résumer pour le moment',
+      daysConsidered: eligibleDays,
+      recordedDays,
+      presentDays: counts.P,
+      lateDays: counts.L,
+      absentDays: counts.A,
+      items: [
+        { code: 'L', label: 'Retard', count: counts.L, classes: this.presenceSummaryClasses('L') },
+        { code: 'A', label: 'Absent', count: counts.A, classes: this.presenceSummaryClasses('A') },
+        { code: 'N', label: 'Néant', count: counts.N, classes: this.presenceSummaryClasses('N') },
+        { code: 'V', label: 'Vacance', count: counts.V, classes: this.presenceSummaryClasses('V') },
+        { code: 'VP', label: 'Vacance en cours', count: counts.VP, classes: this.presenceSummaryClasses('VP') },
+        { code: 'F', label: 'Anomalie', count: counts.F, classes: this.presenceSummaryClasses('F') },
+        {
+          code: 'missing',
+          label: 'Sans statut',
+          count: Math.max(eligibleDays - recordedDays, 0),
+          classes: 'bg-white text-slate-700 ring-slate-200',
+        },
+      ],
+    };
+  }
+
+  private buildPresenceCalendarWeeks(
+    employee: Employee,
+    month: number,
+    year: number
+  ): PresenceCalendarCell[][] {
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const firstDayIndex = new Date(year, month - 1, 1).getDay();
+    const weeks: PresenceCalendarCell[][] = [];
+    let day = 1;
+
+    for (let rowIndex = 0; rowIndex < 6; rowIndex++) {
+      const week: PresenceCalendarCell[] = [];
+      for (let columnIndex = 0; columnIndex < 7; columnIndex++) {
+        if ((rowIndex === 0 && columnIndex < firstDayIndex) || day > daysInMonth) {
+          week.push(this.emptyPresenceCell());
+          continue;
+        }
+
+        const label = `${month}-${day}-${year}`;
+        const latest = this.getLatestAttendanceForEmployeeDay(employee, label);
+        const timeLabel = latest.key ? latest.key.split('-').slice(3, 5).join(':') : '';
+        week.push({
+          day,
+          label,
+          status: latest.status,
+          statusLabel: this.attendanceLabelForCode(latest.status),
+          timeLabel,
+          classes: this.presenceCellClasses(latest.status),
+          attachment: this.findPresenceAttachmentForDay(employee, label),
+        });
+        day += 1;
+      }
+      weeks.push(week);
+      if (day > daysInMonth) break;
+    }
+
+    return weeks;
+  }
+
+  private emptyPresenceCell(): PresenceCalendarCell {
+    return {
+      day: null,
+      label: '',
+      status: '',
+      statusLabel: '',
+      timeLabel: '',
+      classes: 'bg-slate-50 text-slate-300',
+    };
+  }
+
+  private getLatestAttendanceForEmployeeDay(
+    employee: Employee,
+    baseLabel: string
+  ): { key?: string; status: AttendanceStateCode } {
+    const attendance = employee?.attendance || {};
+    const matches = Object.keys(attendance)
+      .filter((key) => this.normalizeAttendanceLabel(key) === baseLabel)
+      .map((key) => ({
+        key,
+        status: this.normalizeAttendanceCode(attendance[key]) as AttendanceStateCode,
+        seconds: this.attendanceKeySeconds(key),
+      }));
+
+    if (!matches.length) return { status: '' };
+    matches.sort((a, b) => b.seconds - a.seconds);
+    return { key: matches[0].key, status: matches[0].status };
+  }
+
+  private async loadPresenceAttachmentsForSelection(): Promise<void> {
+    const employee = this.selectedPresenceEmployee;
+    const ownerUid = employee?.tempUser?.uid || this.auth.currentUser?.uid;
+    const employeeId = employee?.uid;
+    if (!ownerUid || !employeeId) {
+      this.presenceAttachmentsByLabel = {};
+      this.presenceAttachmentsCacheKey = '';
+      return;
+    }
+
+    const cacheKey = `${ownerUid}:${employeeId}:${this.presenceYear}-${this.presenceMonth}`;
+    if (this.presenceAttachmentsCacheKey === cacheKey) return;
+
+    this.presenceAttachmentsCacheKey = cacheKey;
+    this.presenceAttachmentsByLabel = {};
+    this.presenceAttachmentsLoading = true;
+
+    try {
+      const { startISO, endISO } = this.monthIsoRange(
+        this.presenceMonth,
+        this.presenceYear
+      );
+      const attendanceColl = this.afs.collection(
+        `users/${ownerUid}/employees/${employeeId}/attendance`,
+        (ref) =>
+          ref.where('dateISO', '>=', startISO).where('dateISO', '<=', endISO)
+      );
+      const monthSnap = await firstValueFrom(attendanceColl.get());
+      const tasks = monthSnap.docs.map(async (dayDoc) => {
+        const data = dayDoc.data() as any;
+        const label = this.normalizeAttendanceLabelFromInputs(
+          data?.dateLabel,
+          data?.dateISO
+        );
+        if (!label) return;
+
+        const attColl = this.afs.collection(
+          `users/${ownerUid}/employees/${employeeId}/attendance/${dayDoc.id}/attachments`,
+          (ref) => ref.orderBy('uploadedAt', 'desc')
+        );
+        const attSnap = await firstValueFrom(attColl.get());
+        const attachments = attSnap.docs
+          .map((snapshot) => snapshot.data() as any)
+          .sort((a, b) => this.attachmentSortTime(b) - this.attachmentSortTime(a));
+        if (!attachments.length) return;
+        this.presenceAttachmentsByLabel[label] = [
+          ...(this.presenceAttachmentsByLabel[label] || []),
+          ...attachments,
+        ];
+      });
+
+      await Promise.all(tasks);
+    } catch (error) {
+      console.error('Failed to load presence attachments', error);
+    } finally {
+      this.presenceAttachmentsLoading = false;
+    }
+  }
+
+  private monthIsoRange(month: number, year: number): {
+    startISO: string;
+    endISO: string;
+  } {
+    const m = String(month).padStart(2, '0');
+    const daysInMonth = new Date(year, month, 0).getDate();
+    return {
+      startISO: `${year}-${m}-01`,
+      endISO: `${year}-${m}-${String(daysInMonth).padStart(2, '0')}`,
+    };
+  }
+
+  private normalizeAttendanceLabelFromInputs(
+    dateLabel?: string,
+    dateISO?: string
+  ): string {
+    if (dateLabel) return this.normalizeAttendanceLabel(dateLabel);
+    if (dateISO) {
+      const [year, month, day] = dateISO.split('-').map(Number);
+      if (year && month && day) return `${month}-${day}-${year}`;
+    }
+    return '';
+  }
+
+  private findPresenceAttachmentForDay(employee: Employee, dateLabel: string) {
+    const normalized = this.normalizeAttendanceLabel(dateLabel);
+    const attachments =
+      this.presenceAttachmentsByLabel[normalized] ||
+      this.presenceAttachmentsByLabel[dateLabel];
+    if (attachments?.length) return this.pickLatestPresenceAttachment(attachments);
+
+    const legacy = (employee as any)?.attendanceAttachments || {};
+    const keys = Object.keys(legacy).filter(
+      (key) =>
+        key.startsWith(dateLabel) ||
+        this.normalizeAttendanceLabel(key) === normalized
+    );
+    if (!keys.length) return null;
+    const bestKey = keys.reduce((previous, current) =>
+      this.attendanceKeySeconds(current) > this.attendanceKeySeconds(previous)
+        ? current
+        : previous
+    );
+    return legacy[bestKey];
+  }
+
+  private pickLatestPresenceAttachment(attachments: any[]): any {
+    return [...attachments].sort(
+      (a, b) => this.attachmentSortTime(b) - this.attachmentSortTime(a)
+    )[0];
+  }
+
+  private attachmentSortTime(att: any): number {
+    const takenAt = typeof att?.takenAt === 'number' ? att.takenAt : -Infinity;
+    if (takenAt !== -Infinity) return takenAt;
+    return this.toTimestamp(att?.uploadedAt);
+  }
+
+  private toTimestamp(value: any): number {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = Date.parse(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (value?.toMillis) return value.toMillis();
+    if (value?.seconds) return value.seconds * 1000;
+    return 0;
+  }
+
+  attachmentUrl(att: any): string {
+    return (
+      att?.url ||
+      att?.downloadURL ||
+      att?.downloadUrl ||
+      att?.secureUrl ||
+      ''
+    )
+      .toString()
+      .trim();
+  }
+
+  attachmentKind(att: any): 'image' | 'video' | '' {
+    const contentType = (
+      att?.contentType ||
+      att?.type ||
+      att?.mimeType ||
+      att?.metadata?.contentType ||
+      ''
+    )
+      .toString()
+      .toLowerCase();
+
+    if (contentType.startsWith('image/')) return 'image';
+    if (contentType.startsWith('video/')) return 'video';
+
+    const url = this.attachmentUrl(att).toLowerCase();
+    if (/\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)(\?|$)/.test(url)) {
+      return 'image';
+    }
+    if (/\.(mp4|mov|webm|ogg|m4v)(\?|$)/.test(url)) {
+      return 'video';
+    }
+    return '';
+  }
+
+  openPresenceAttachment(att: any, dateLabel: string): void {
+    const kind = this.attachmentKind(att);
+    const url = this.attachmentUrl(att);
+    if (!kind || !url) return;
+    this.presenceAttachmentViewer = {
+      open: true,
+      url,
+      kind,
+      dateLabel,
+      takenAt:
+        this.coerceToDate(att?.takenAt) ||
+        this.coerceToDate(att?.createdAt) ||
+        this.coerceToDate(att?.uploadedAt) ||
+        null,
+      takenAtSource:
+        att?.takenAtSource || (att?.uploadedAt ? 'storageUploadedAt' : 'unknown'),
+    };
+  }
+
+  closePresenceAttachment(): void {
+    this.presenceAttachmentViewer.open = false;
+  }
+
+  private coerceToDate(value: any): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+    if (typeof value === 'number') return new Date(value);
+    if (typeof value === 'string') {
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date;
+    }
+    if (value?.toDate) return value.toDate();
+    if (value?.seconds) return new Date(value.seconds * 1000);
+    return null;
+  }
+
+  formatKinshasa(date: Date): string {
+    return new Intl.DateTimeFormat('fr-CD', {
+      timeZone: 'Africa/Kinshasa',
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  }
+
+  private normalizeAttendanceLabel(key?: string): string {
+    if (!key) return '';
+    const parts = key.split('-');
+    if (parts.length < 3) return '';
+    return `${Number(parts[0])}-${Number(parts[1])}-${parts[2]}`;
+  }
+
+  private attendanceKeySeconds(key: string): number {
+    const parts = key.split('-');
+    const hh = Number(parts[3] || 0);
+    const mm = Number(parts[4] || 0);
+    const ss = Number(parts[5] || 0);
+    return hh * 3600 + mm * 60 + ss;
+  }
+
+  private kinParts(date: Date): { y: number; m: number; d: number } {
+    const parts = new Intl.DateTimeFormat('fr-CD', {
+      timeZone: 'Africa/Kinshasa',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const map: Record<string, string> = {};
+    parts.forEach((part) => {
+      map[part.type] = part.value;
+    });
+    return {
+      y: Number(map['year']),
+      m: Number(map['month']),
+      d: Number(map['day']),
+    };
+  }
+
+  private isSunday(month: number, day: number, year: number): boolean {
+    return new Date(year, month - 1, day).getDay() === 0;
+  }
+
+  presenceCellClasses(code: string): string {
+    switch (code) {
+      case 'P':
+        return 'bg-emerald-600 text-white ring-emerald-700';
+      case 'A':
+        return 'bg-rose-600 text-white ring-rose-700';
+      case 'L':
+        return 'bg-amber-500 text-white ring-amber-600';
+      case 'V':
+        return 'bg-yellow-400 text-slate-900 ring-yellow-500';
+      case 'VP':
+        return 'bg-sky-600 text-white ring-sky-700';
+      case 'F':
+        return 'bg-fuchsia-700 text-white ring-fuchsia-800';
+      case 'N':
+        return 'bg-slate-400 text-white ring-slate-500';
+      case '':
+      default:
+        return 'bg-white text-slate-700 ring-slate-200';
+    }
+  }
+
+  private presenceSummaryClasses(code: AttendanceStateCode): string {
+    switch (code) {
+      case 'L':
+        return 'bg-amber-50 text-amber-700 ring-amber-200';
+      case 'A':
+        return 'bg-rose-50 text-rose-700 ring-rose-200';
+      case 'V':
+        return 'bg-yellow-50 text-yellow-700 ring-yellow-200';
+      case 'VP':
+        return 'bg-sky-50 text-sky-700 ring-sky-200';
+      case 'F':
+        return 'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200';
+      case 'N':
+      case '':
+      default:
+        return 'bg-slate-100 text-slate-700 ring-slate-200';
+    }
   }
 
   async setAttendanceForSelectedDate(
@@ -563,7 +1086,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     public time: TimeService,
     private performance: PerformanceService,
     private compute: ComputationService,
-    private data: DataService
+    private data: DataService,
+    private afs: AngularFirestore
   ) {}
   isFetchingClients = false;
   currentEmployees: any = [];
@@ -3136,6 +3660,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.allEmployeesAll = allEmployees;
     this.initializeGlobalFoundationRuleDefaults(allEmployees);
     this.filterAndInitializeEmployees(allEmployees, this.currentClients);
+    this.ensurePresenceEmployeeSelection();
     this.logDebug('Finished aggregating employees', {
       totalRaw: allEmployees.length,
       totalDisplay: this.allEmployees.length,
