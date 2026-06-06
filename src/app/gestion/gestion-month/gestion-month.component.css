@@ -1,0 +1,92 @@
+.monthly-heatmap-grid {
+  position: relative;
+  height: clamp(360px, 56vw, 620px);
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #0f172a;
+}
+
+.monthly-heatmap-tile {
+  position: absolute;
+  box-sizing: border-box;
+  container-type: size;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.86);
+  padding: clamp(.25rem,1.1vw,.9rem);
+  color: white;
+  text-align: left;
+}
+
+.monthly-heatmap-short,
+.monthly-heatmap-compact {
+  display: none;
+}
+
+.monthly-heatmap-name,
+.monthly-heatmap-value,
+.monthly-heatmap-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monthly-heatmap-name {
+  font-size: clamp(.72rem,1.4vw,1.8rem);
+  font-weight: 800;
+}
+
+.monthly-heatmap-value {
+  font-size: clamp(.62rem,1vw,1.05rem);
+  font-weight: 700;
+}
+
+.monthly-heatmap-meta {
+  font-size: clamp(.56rem,.85vw,.8rem);
+  opacity: .9;
+}
+
+.monthly-heatmap-tile--red { background: #dc2626; }
+.monthly-heatmap-tile--yellow { background: #d97706; }
+.monthly-heatmap-tile--orange { background: #ea580c; }
+.monthly-heatmap-tile--green { background: #059669; }
+
+@container (max-width: 86px), (max-height: 54px) {
+  .monthly-heatmap-tile {
+    align-items: center;
+    gap: 0;
+    padding: .18rem;
+    text-align: center;
+  }
+
+  .monthly-heatmap-name,
+  .monthly-heatmap-value,
+  .monthly-heatmap-meta {
+    display: none;
+  }
+
+  .monthly-heatmap-short,
+  .monthly-heatmap-compact {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .monthly-heatmap-short {
+    font-size: .68rem;
+    font-weight: 900;
+  }
+
+  .monthly-heatmap-compact {
+    margin-top: .1rem;
+    font-size: .58rem;
+    font-weight: 800;
+  }
+}

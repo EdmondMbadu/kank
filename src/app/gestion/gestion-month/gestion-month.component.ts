@@ -15,6 +15,34 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { TimeService } from 'src/app/services/time.service';
 
 type MonthlyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
+type MonthlyHeatmapMode = 'paymentMonth' | 'reserveMonth' | 'minimumMonth';
+
+interface MonthlyHeatmapOption {
+  mode: MonthlyHeatmapMode;
+  label: string;
+}
+
+interface MonthlyHeatmapTile {
+  label: string;
+  shortLabel: string;
+  valueFc: number;
+  compactValue: string;
+  valueDollar: number;
+  expectedFc: number;
+  percent: number;
+  sharePercent: number;
+  tone: MonthlyProgressTone;
+  statusLabel: string;
+  detailLabel: string;
+  layoutStyle: { [key: string]: string };
+}
+
+interface MonthlyHeatmapRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 @Component({
   selector: 'app-gestion-month',
@@ -152,8 +180,56 @@ export class GestionMonthComponent {
   overallMonthlyMinimumProgressPercent = 0;
   overallMonthlyMinimumProgressTone: MonthlyProgressTone = 'red';
   isLoadingMonthlyPayments = false;
+  monthlyHeatmapMode: MonthlyHeatmapMode = 'paymentMonth';
+  readonly monthlyHeatmapOptions: MonthlyHeatmapOption[] = [
+    { mode: 'paymentMonth', label: 'Paiement du mois' },
+    { mode: 'reserveMonth', label: 'Réserve du mois' },
+    { mode: 'minimumMonth', label: 'Minimum mois' },
+  ];
 
   givenMonthRealGain: string = '';
+
+  get activeMonthlyHeatmapOption(): MonthlyHeatmapOption {
+    return (
+      this.monthlyHeatmapOptions.find(
+        (option) => option.mode === this.monthlyHeatmapMode
+      ) || this.monthlyHeatmapOptions[0]
+    );
+  }
+
+  get monthlyHeatmapView(): {
+    title: string;
+    subtitle: string;
+    totalValueFc: number;
+    totalValueDollar: number;
+    totalExpectedFc: number;
+    percent: number;
+    tone: MonthlyProgressTone;
+    statusLabel: string;
+    tiles: MonthlyHeatmapTile[];
+  } {
+    const tiles = this.buildMonthlyHeatmapTiles();
+    const totalValueFc = tiles.reduce((sum, tile) => sum + tile.valueFc, 0);
+    const totalExpectedFc = tiles.reduce((sum, tile) => sum + tile.expectedFc, 0);
+    const percent = this.computeProgressPercent(totalValueFc, totalExpectedFc);
+    const tone = this.resolveProgressTone(percent);
+
+    return {
+      title: this.activeMonthlyHeatmapOption.label,
+      subtitle: `${this.time.monthFrenchNames[this.givenMonth - 1]} ${this.givenYear}`,
+      totalValueFc,
+      totalValueDollar: this.toUsd(totalValueFc),
+      totalExpectedFc,
+      percent,
+      tone,
+      statusLabel: this.resolveProgressStatusLabel(percent),
+      tiles,
+    };
+  }
+
+  setMonthlyHeatmapMode(mode: MonthlyHeatmapMode): void {
+    this.monthlyHeatmapMode = mode;
+  }
 
   imagePaths: string[] = [
     '../../../assets/img/loss-ratio.png',
@@ -639,6 +715,184 @@ export class GestionMonthComponent {
     if (value >= 80) return 'orange';
     if (value >= 50) return 'yellow';
     return 'red';
+  }
+
+  private buildMonthlyHeatmapTiles(): MonthlyHeatmapTile[] {
+    const baseRows = this.getMonthlyHeatmapBaseRows();
+    const totalDone = baseRows.reduce((sum, row) => sum + Math.max(row.valueFc, 0), 0);
+    const rows =
+      totalDone > 0
+        ? baseRows
+            .filter((row) => row.valueFc > 0)
+            .sort((a, b) => b.valueFc - a.valueFc)
+        : [];
+    const layout = this.buildMonthlyTreemapLayout(
+      rows.map((row) => Math.max(row.valueFc, 1))
+    );
+
+    return rows.map((row, index) => {
+      const percent = this.computeProgressPercent(row.valueFc, row.expectedFc);
+      const rect = layout[index] || { x: 0, y: 0, width: 0, height: 0 };
+
+      return {
+        ...row,
+        shortLabel: this.buildShortTeamLabel(row.label),
+        compactValue: this.formatCompactFc(row.valueFc),
+        percent,
+        sharePercent: totalDone === 0 ? 0 : (row.valueFc / totalDone) * 100,
+        tone: this.resolveProgressTone(percent),
+        statusLabel: this.resolveProgressStatusLabel(percent),
+        layoutStyle: {
+          left: `${rect.x}%`,
+          top: `${rect.y}%`,
+          width: `${rect.width}%`,
+          height: `${rect.height}%`,
+        },
+      };
+    });
+  }
+
+  private getMonthlyHeatmapBaseRows(): Array<{
+    label: string;
+    valueFc: number;
+    valueDollar: number;
+    expectedFc: number;
+    detailLabel: string;
+  }> {
+    return this.monthlyPaymentTotals.map((row) => {
+      const valueFc =
+        this.monthlyHeatmapMode === 'reserveMonth'
+          ? Number(row.reserveFc || 0)
+          : Number(row.totalFc || 0);
+      const expectedFc =
+        this.monthlyHeatmapMode === 'minimumMonth'
+          ? Number(row.minimumFc || 0)
+          : Number(row.expectedFc || 0);
+
+      return {
+        label: row.firstName,
+        valueFc,
+        valueDollar: this.toUsd(valueFc),
+        expectedFc,
+        detailLabel:
+          this.monthlyHeatmapMode === 'reserveMonth'
+            ? 'Attendu réserve'
+            : this.monthlyHeatmapMode === 'minimumMonth'
+            ? 'Minimum'
+            : 'Attendu paiement',
+      };
+    });
+  }
+
+  private buildMonthlyTreemapLayout(weights: number[]): MonthlyHeatmapRect[] {
+    const rects: MonthlyHeatmapRect[] = [];
+    const items = weights.map((weight, index) => ({
+      index,
+      weight: Math.max(Number(weight) || 0, 1),
+    }));
+
+    this.partitionMonthlyTreemap(items, { x: 0, y: 0, width: 100, height: 100 }, rects);
+    return rects;
+  }
+
+  private partitionMonthlyTreemap(
+    items: Array<{ index: number; weight: number }>,
+    rect: MonthlyHeatmapRect,
+    rects: MonthlyHeatmapRect[]
+  ): void {
+    if (!items.length) return;
+    if (items.length === 1) {
+      rects[items[0].index] = rect;
+      return;
+    }
+
+    const total = items.reduce((sum, item) => sum + item.weight, 0);
+    let running = 0;
+    let split = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const next = running + items[i].weight;
+      if (i > 0 && Math.abs(total / 2 - running) <= Math.abs(total / 2 - next)) {
+        break;
+      }
+      running = next;
+      split = i + 1;
+    }
+
+    split = Math.max(1, Math.min(items.length - 1, split));
+    const first = items.slice(0, split);
+    const second = items.slice(split);
+    const firstTotal = first.reduce((sum, item) => sum + item.weight, 0);
+
+    if (rect.width >= rect.height) {
+      const firstWidth = rect.width * (firstTotal / total);
+      this.partitionMonthlyTreemap(first, { ...rect, width: firstWidth }, rects);
+      this.partitionMonthlyTreemap(
+        second,
+        {
+          x: rect.x + firstWidth,
+          y: rect.y,
+          width: rect.width - firstWidth,
+          height: rect.height,
+        },
+        rects
+      );
+      return;
+    }
+
+    const firstHeight = rect.height * (firstTotal / total);
+    this.partitionMonthlyTreemap(first, { ...rect, height: firstHeight }, rects);
+    this.partitionMonthlyTreemap(
+      second,
+      {
+        x: rect.x,
+        y: rect.y + firstHeight,
+        width: rect.width,
+        height: rect.height - firstHeight,
+      },
+      rects
+    );
+  }
+
+  getMonthlyHeatmapToneClass(tone: MonthlyProgressTone): string {
+    return `monthly-heatmap-tile--${tone}`;
+  }
+
+  getMonthlyHeatmapTextClass(tone: MonthlyProgressTone): { [key: string]: boolean } {
+    return {
+      'text-red-600': tone === 'red',
+      'text-amber-600': tone === 'yellow',
+      'text-orange-600': tone === 'orange',
+      'text-emerald-600': tone === 'green',
+    };
+  }
+
+  private resolveProgressStatusLabel(percent: number): string {
+    const value = Number(percent) || 0;
+    if (value >= 100) return 'Atteint';
+    if (value >= 80) return '80%+';
+    if (value >= 50) return '50%+';
+    return 'À faire';
+  }
+
+  private buildShortTeamLabel(label: string): string {
+    return (label || '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 3);
+  }
+
+  private formatCompactFc(amountFc: number): string {
+    const amount = Number(amountFc) || 0;
+    if (amount >= 1_000_000) {
+      return `${(amount / 1_000_000).toFixed(amount >= 10_000_000 ? 0 : 1)}M`;
+    }
+    if (amount >= 1_000) {
+      return `${(amount / 1_000).toFixed(amount >= 100_000 ? 0 : 1)}K`;
+    }
+    return `${amount}`;
   }
 
   private toUsd(amountFc: number): number {
