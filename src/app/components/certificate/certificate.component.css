@@ -9,12 +9,15 @@
 .certificate-card-grid {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 24rem));
+  grid-template-columns: minmax(0, 1fr);
   justify-content: center;
 }
 
-.certificate-card-grid--three {
-  max-width: none;
+@media (min-width: 768px) {
+  .certificate-card-grid--two,
+  .certificate-card-grid--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1280px) {

@@ -93,6 +93,7 @@
         <div
           class="certificate-card-grid"
           [ngClass]="{
+            'certificate-card-grid--two': selectedAwardCount === 2,
             'certificate-card-grid--three': selectedAwardCount >= 3
           }"
         >
