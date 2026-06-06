@@ -13,10 +13,43 @@ import { DataService } from 'src/app/services/data.service';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
+type GestionHeatmapMode =
+  | 'paymentToday'
+  | 'reserveToday'
+  | 'paymentWeek'
+  | 'reserveWeek';
+
 interface WeeklyProgressMarker {
   amountFc: number;
   label: string;
   percent: number;
+}
+
+interface GestionHeatmapOption {
+  mode: GestionHeatmapMode;
+  label: string;
+}
+
+interface GestionHeatmapTile {
+  label: string;
+  shortLabel: string;
+  valueFc: number;
+  compactValue: string;
+  valueDollar: number;
+  expectedFc: number;
+  percent: number;
+  sharePercent: number;
+  tone: WeeklyProgressTone;
+  statusLabel: string;
+  detailLabel: string;
+  layoutStyle: { [key: string]: string };
+}
+
+interface GestionHeatmapRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 @Component({
@@ -282,6 +315,64 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   private weeklyClientsByUser = new Map<string, Client[]>();
   private readonly weeklyFloorMilestoneFc = 600000;
   private readonly weeklyStretchMilestoneFc = 900000;
+  gestionHeatmapMode: GestionHeatmapMode = 'paymentToday';
+  readonly gestionHeatmapOptions: GestionHeatmapOption[] = [
+    { mode: 'paymentToday', label: 'Paiement du jour' },
+    { mode: 'reserveToday', label: 'Réserve du jour' },
+    { mode: 'paymentWeek', label: 'Paiement semaine' },
+    { mode: 'reserveWeek', label: 'Réserve semaine' },
+  ];
+
+  get activeGestionHeatmapOption(): GestionHeatmapOption {
+    return (
+      this.gestionHeatmapOptions.find(
+        (option) => option.mode === this.gestionHeatmapMode
+      ) || this.gestionHeatmapOptions[0]
+    );
+  }
+
+  get gestionHeatmapView(): {
+    title: string;
+    subtitle: string;
+    totalValueFc: number;
+    totalValueDollar: number;
+    totalExpectedFc: number;
+    percent: number;
+    tone: WeeklyProgressTone;
+    statusLabel: string;
+    tiles: GestionHeatmapTile[];
+  } {
+    const tiles = this.buildGestionHeatmapTiles();
+    const totalValueFc = tiles.reduce((sum, tile) => sum + tile.valueFc, 0);
+    const totalExpectedFc = tiles.reduce((sum, tile) => sum + tile.expectedFc, 0);
+    const percent =
+      totalExpectedFc === 0
+        ? totalValueFc > 0
+          ? 100
+          : 0
+        : Math.min(100, (totalValueFc / totalExpectedFc) * 100);
+    const tone = this.resolveExpectedProgressTone(percent);
+
+    return {
+      title: this.activeGestionHeatmapOption.label,
+      subtitle:
+        this.gestionHeatmapMode === 'paymentToday' ||
+        this.gestionHeatmapMode === 'reserveToday'
+          ? this.time.convertDateToDayMonthYear(this.requestDateCorrectFormat)
+          : this.weeklyPaymentRangeLabel,
+      totalValueFc,
+      totalValueDollar: this.convertFcToDollar(totalValueFc),
+      totalExpectedFc,
+      percent,
+      tone,
+      statusLabel: this.resolveExpectedStatusLabel(percent),
+      tiles,
+    };
+  }
+
+  setGestionHeatmapMode(mode: GestionHeatmapMode): void {
+    this.gestionHeatmapMode = mode;
+  }
 
   get reserveRevealTimeLabel(): string {
     return this.normalizeRevealTime(this.managementInfo?.reserveRevealTimeKinshasa);
@@ -1213,6 +1304,255 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     }
 
     return total;
+  }
+
+  private buildGestionHeatmapTiles(): GestionHeatmapTile[] {
+    const baseRows = this.getGestionHeatmapBaseRows();
+    const totalDone = baseRows.reduce((sum, row) => sum + Math.max(row.valueFc, 0), 0);
+    const rows =
+      totalDone > 0
+        ? baseRows
+            .filter((row) => row.valueFc > 0)
+            .sort((a, b) => b.valueFc - a.valueFc)
+        : [];
+    const layout = this.buildGestionTreemapLayout(
+      rows.map((row) => Math.max(row.valueFc, 1))
+    );
+
+    return rows.map((row, index) => {
+      const percent =
+        row.expectedFc === 0
+          ? row.valueFc > 0
+            ? 100
+            : 0
+          : Math.min(100, (row.valueFc / row.expectedFc) * 100);
+      const tone = this.resolveExpectedProgressTone(percent);
+      const rect = layout[index] || { x: 0, y: 0, width: 0, height: 0 };
+
+      return {
+        ...row,
+        shortLabel: this.buildShortTeamLabel(row.label),
+        compactValue: this.formatCompactFc(row.valueFc),
+        percent,
+        sharePercent: totalDone === 0 ? 0 : (row.valueFc / totalDone) * 100,
+        tone,
+        statusLabel: this.resolveExpectedStatusLabel(percent),
+        layoutStyle: {
+          left: `${rect.x}%`,
+          top: `${rect.y}%`,
+          width: `${rect.width}%`,
+          height: `${rect.height}%`,
+        },
+      };
+    });
+  }
+
+  private getGestionHeatmapBaseRows(): Array<{
+    label: string;
+    valueFc: number;
+    valueDollar: number;
+    expectedFc: number;
+    detailLabel: string;
+  }> {
+    if (
+      this.gestionHeatmapMode === 'paymentToday' ||
+      this.gestionHeatmapMode === 'reserveToday'
+    ) {
+      return this.reserveTotals.map((row) => {
+        const valueFc =
+          this.gestionHeatmapMode === 'paymentToday'
+            ? Number(row.payment || 0)
+            : Number(row.actual || 0);
+
+        return {
+          label: row.firstName,
+          valueFc,
+          valueDollar: this.convertFcToDollar(valueFc),
+          expectedFc: Number(row.total || 0),
+          detailLabel:
+            this.gestionHeatmapMode === 'paymentToday'
+              ? 'Attendu paiement'
+              : 'Réserve attendue',
+        };
+      });
+    }
+
+    return this.weeklyPaymentTotals.map((row) => {
+      const user = this.allUsers.find((item) => item.uid === row.trackingId);
+      const valueFc =
+        this.gestionHeatmapMode === 'paymentWeek'
+          ? Number(row.total || 0)
+          : this.computeWeeklyReserveTotalForUser(
+              user,
+              this.weeklyPaymentDateCorrectFormat
+            );
+
+      return {
+        label: row.firstName,
+        valueFc,
+        valueDollar: this.convertFcToDollar(valueFc),
+        expectedFc: Number(row.weeklyExpectedFc || 0),
+        detailLabel:
+          this.gestionHeatmapMode === 'paymentWeek'
+            ? 'Attendu semaine'
+            : 'Réserve attendue',
+      };
+    });
+  }
+
+  private computeWeeklyReserveTotalForUser(
+    user: User | undefined,
+    dateKey: string
+  ): number {
+    if (!user) return 0;
+
+    const reserves = user.reserve || {};
+    const { start, end } = this.getWeekBounds(dateKey);
+    const cursor = new Date(start);
+    let total = 0;
+
+    while (cursor <= end) {
+      const keyPrefix = this.formatDateKey(cursor);
+      Object.keys(reserves).forEach((key) => {
+        if (!key.startsWith(keyPrefix)) return;
+        const amount = Number((reserves as any)[key] ?? 0);
+        if (!Number.isNaN(amount)) {
+          total += amount;
+        }
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private buildGestionTreemapLayout(weights: number[]): GestionHeatmapRect[] {
+    const rects: GestionHeatmapRect[] = [];
+    const items = weights.map((weight, index) => ({
+      index,
+      weight: Math.max(Number(weight) || 0, 1),
+    }));
+
+    this.partitionGestionTreemap(items, { x: 0, y: 0, width: 100, height: 100 }, rects);
+    return rects;
+  }
+
+  private partitionGestionTreemap(
+    items: Array<{ index: number; weight: number }>,
+    rect: GestionHeatmapRect,
+    rects: GestionHeatmapRect[]
+  ): void {
+    if (items.length === 0) return;
+    if (items.length === 1) {
+      rects[items[0].index] = rect;
+      return;
+    }
+
+    const total = items.reduce((sum, item) => sum + item.weight, 0);
+    let running = 0;
+    let split = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const next = running + items[i].weight;
+      if (i > 0 && Math.abs(total / 2 - running) <= Math.abs(total / 2 - next)) {
+        break;
+      }
+      running = next;
+      split = i + 1;
+    }
+
+    split = Math.max(1, Math.min(items.length - 1, split));
+    const first = items.slice(0, split);
+    const second = items.slice(split);
+    const firstTotal = first.reduce((sum, item) => sum + item.weight, 0);
+
+    if (rect.width >= rect.height) {
+      const firstWidth = rect.width * (firstTotal / total);
+      this.partitionGestionTreemap(
+        first,
+        { ...rect, width: firstWidth },
+        rects
+      );
+      this.partitionGestionTreemap(
+        second,
+        {
+          x: rect.x + firstWidth,
+          y: rect.y,
+          width: rect.width - firstWidth,
+          height: rect.height,
+        },
+        rects
+      );
+      return;
+    }
+
+    const firstHeight = rect.height * (firstTotal / total);
+    this.partitionGestionTreemap(
+      first,
+      { ...rect, height: firstHeight },
+      rects
+    );
+    this.partitionGestionTreemap(
+      second,
+      {
+        x: rect.x,
+        y: rect.y + firstHeight,
+        width: rect.width,
+        height: rect.height - firstHeight,
+      },
+      rects
+    );
+  }
+
+  getGestionHeatmapToneClass(tone: WeeklyProgressTone): string {
+    return `gestion-heatmap-tile--${tone}`;
+  }
+
+  getGestionHeatmapTextClass(tone: WeeklyProgressTone): { [key: string]: boolean } {
+    return {
+      'text-red-600': tone === 'red',
+      'text-amber-600': tone === 'yellow',
+      'text-orange-600': tone === 'orange',
+      'text-emerald-600': tone === 'green',
+    };
+  }
+
+  private resolveExpectedStatusLabel(percent: number): string {
+    const value = Number(percent) || 0;
+
+    if (value >= 100) return 'Atteint';
+    if (value >= 80) return '80%+';
+    if (value >= 50) return '50%+';
+    return 'À faire';
+  }
+
+  private convertFcToDollar(amountFc: number): number {
+    return Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        (Number(amountFc) || 0).toString()
+      )
+    );
+  }
+
+  private buildShortTeamLabel(label: string): string {
+    return (label || '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 3);
+  }
+
+  private formatCompactFc(amountFc: number): string {
+    const amount = Number(amountFc) || 0;
+
+    if (amount >= 1_000_000) {
+      return `${(amount / 1_000_000).toFixed(amount >= 10_000_000 ? 0 : 1)}M`;
+    }
+    if (amount >= 1_000) {
+      return `${(amount / 1_000).toFixed(amount >= 100_000 ? 0 : 1)}K`;
+    }
+    return `${amount}`;
   }
 
   private resolveExpectedProgressTone(percent: number): WeeklyProgressTone {

@@ -19,3 +19,108 @@
   width: 100% !important;
   max-width: 100% !important;
 }
+
+.gestion-heatmap-grid {
+  position: relative;
+  height: clamp(360px, 56vw, 620px);
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #0f172a;
+}
+
+.gestion-heatmap-tile {
+  position: absolute;
+  box-sizing: border-box;
+  container-type: size;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  padding: clamp(0.25rem, 1.1vw, 0.9rem);
+  color: white;
+  text-align: left;
+}
+
+.gestion-heatmap-short,
+.gestion-heatmap-compact {
+  display: none;
+}
+
+.gestion-heatmap-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.72rem, 1.4vw, 1.8rem);
+  font-weight: 800;
+}
+
+.gestion-heatmap-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.62rem, 1vw, 1.05rem);
+  font-weight: 700;
+}
+
+.gestion-heatmap-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(0.56rem, 0.85vw, 0.8rem);
+  opacity: 0.9;
+}
+
+.gestion-heatmap-tile--red {
+  background: #dc2626;
+}
+
+.gestion-heatmap-tile--yellow {
+  background: #d97706;
+}
+
+.gestion-heatmap-tile--orange {
+  background: #ea580c;
+}
+
+.gestion-heatmap-tile--green {
+  background: #059669;
+}
+
+@container (max-width: 86px), (max-height: 54px) {
+  .gestion-heatmap-tile {
+    align-items: center;
+    gap: 0;
+    padding: 0.18rem;
+    text-align: center;
+  }
+
+  .gestion-heatmap-name,
+  .gestion-heatmap-value,
+  .gestion-heatmap-meta {
+    display: none;
+  }
+
+  .gestion-heatmap-short,
+  .gestion-heatmap-compact {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .gestion-heatmap-short {
+    font-size: 0.68rem;
+    font-weight: 900;
+  }
+
+  .gestion-heatmap-compact {
+    margin-top: 0.1rem;
+    font-size: 0.58rem;
+    font-weight: 800;
+  }
+}
