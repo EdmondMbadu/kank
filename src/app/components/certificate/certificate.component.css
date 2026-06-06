@@ -5,3 +5,52 @@
 .certificate-modal-panel > div {
   -webkit-overflow-scrolling: touch;
 }
+
+.trophy-heatmap-grid {
+  position: relative;
+  height: clamp(30rem, 64vw, 46rem);
+  border-radius: 1rem;
+  background: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.trophy-heatmap-tile {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-sizing: border-box;
+}
+
+.trophy-heatmap-avatar {
+  width: clamp(1.35rem, 3vw, 3.75rem);
+  height: clamp(1.35rem, 3vw, 3.75rem);
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.trophy-tile--team {
+  background: linear-gradient(135deg, #047857, #0f766e);
+}
+
+.trophy-tile--employee {
+  background: linear-gradient(135deg, #b45309, #d97706);
+}
+
+.trophy-tile--balanced {
+  background: linear-gradient(135deg, #334155, #475569);
+}
+
+.trophy-tile--elite {
+  background: linear-gradient(135deg, #78350f, #a16207 48%, #047857);
+}
+
+@media (max-width: 768px) {
+  .trophy-heatmap-grid {
+    height: 42rem;
+  }
+}

@@ -1,79 +1,93 @@
 <app-navbar
-  [email]="this.auth.currentUser.email"
-  [firstName]="this.auth.currentUser.firstName"
+  [email]="auth.currentUser?.email"
+  [firstName]="auth.currentUser?.firstName"
   [path]="'home'"
 ></app-navbar>
 
 <section class="min-h-screen bg-slate-50">
-  <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-8">
       <div
-        class="flex flex-col items-center text-center lg:flex-row lg:items-end lg:justify-between lg:text-left"
+        class="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm sm:px-6"
       >
-        <div class="space-y-3">
-          <p
-            class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-500"
-          >
-            Tableau d'honneur
-          </p>
-          <h2 class="text-3xl font-bold text-slate-900 sm:text-4xl">
-            Les Meilleurs {{ preposition }}
-            {{ time.monthFrenchNames[givenMonth] }} {{ givenYear }}
-          </h2>
-          <p class="text-sm text-slate-600 sm:text-base">
-            Chaque certificat met en lumière les performances exceptionnelles du
-            mois sélectionné.
-          </p>
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div class="max-w-2xl">
+            <p class="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600">
+              Tableau d'honneur
+            </p>
+            <h2 class="mt-2 text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
+              Les Meilleurs {{ preposition }}
+              {{ time.monthFrenchNames[givenMonth] }} {{ givenYear }}
+            </h2>
+            <p class="mt-2 text-sm font-medium text-slate-500">
+              Certificats et lauréats du mois sélectionné.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div>
+              <label
+                class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
+                for="monthFilter"
+                >Mois</label
+              >
+              <select
+                id="monthFilter"
+                [(ngModel)]="givenMonth"
+                (change)="updateSelection()"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 sm:w-36"
+              >
+                <option *ngFor="let month of monthsList" [ngValue]="month">
+                  {{ time.monthFrenchNames[month] }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
+                for="yearFilter"
+                >Année</label
+              >
+              <select
+                id="yearFilter"
+                [(ngModel)]="givenYear"
+                (change)="updateSelection()"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 sm:w-28"
+              >
+                <option *ngFor="let year of yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+
+            <button
+              *ngIf="auth.isAdmin"
+              type="button"
+              (click)="openAddCertificateModal()"
+              class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+            >
+              <span aria-hidden="true">＋</span>
+              {{ editingSelectedCertificate ? 'Modifier les lauréats' : 'Ajouter les lauréats' }}
+            </button>
+          </div>
         </div>
-        <button
-          *ngIf="auth.isAdmin"
-          type="button"
-          (click)="openAddCertificateModal()"
-          class="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 lg:mt-0"
-        >
-          <span aria-hidden="true">＋</span>
-          {{ editingSelectedCertificate ? 'Modifier' : 'Ajouter' }}
-        </button>
       </div>
 
-      <div
-        class="flex flex-wrap items-center justify-center gap-4 rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-inset ring-slate-200 sm:justify-between"
-      >
-        <div class="flex flex-wrap items-center gap-4">
-          <label
-            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
-            for="monthFilter"
-            >Mois</label
+      <div>
+        <div class="mb-4 flex flex-col gap-2 text-center sm:text-left">
+          <p
+            class="text-xs font-bold uppercase tracking-[0.24em] text-emerald-600"
           >
-          <select
-            id="monthFilter"
-            [(ngModel)]="givenMonth"
-            (change)="updateSelection()"
-            class="w-40 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-          >
-            <option *ngFor="let month of monthsList" [ngValue]="month">
-              {{ time.monthFrenchNames[month] }}
-            </option>
-          </select>
+            Certificats du mois
+          </p>
+          <h3 class="text-2xl font-black text-slate-900">
+            Les gagnants à célébrer maintenant
+          </h3>
+          <p class="text-sm font-semibold text-slate-500">
+            Chaque carte ouvre le certificat complet quand l'image est disponible.
+          </p>
         </div>
-        <div class="flex flex-wrap items-center gap-4">
-          <label
-            class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
-            for="yearFilter"
-            >Année</label
-          >
-          <select
-            id="yearFilter"
-            [(ngModel)]="givenYear"
-            (change)="updateSelection()"
-            class="w-28 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-          >
-            <option *ngFor="let year of yearsList" [ngValue]="year">
-              {{ year }}
-            </option>
-          </select>
-        </div>
-      </div>
 
       <ng-container *ngIf="selectedBest; else emptyCertificates">
         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -246,9 +260,315 @@
           </p>
         </div>
       </ng-template>
+      </div>
+
+      <section class="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+        <div class="flex flex-col gap-4 text-center md:flex-row md:items-end md:justify-between md:text-left">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.24em] text-amber-700">
+              Historique des trophées
+            </p>
+            <h3 class="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+              Carte des trophées gagnés
+            </h3>
+            <p class="mt-1 text-sm font-semibold text-slate-500">
+              Plus un employé a de trophées, plus son bloc est grand.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+            <div class="px-4 py-3">
+              <p class="text-2xl font-black text-slate-900">
+                {{ trophyHeatmapStats.totalTrophies }}
+              </p>
+              <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Trophées
+              </p>
+            </div>
+            <div class="border-x border-slate-200 px-4 py-3">
+              <p class="text-2xl font-black text-slate-900">
+                {{ trophyHeatmapStats.employeesWithTrophies }}
+              </p>
+              <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Employés
+              </p>
+            </div>
+            <div class="px-4 py-3">
+              <p class="text-2xl font-black text-slate-900">
+                {{ trophyHeatmapStats.topCount }}
+              </p>
+              <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Max
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          *ngIf="trophyHeatmapTiles.length > 0; else noTrophyHistory"
+          class="trophy-heatmap-grid"
+        >
+          <button
+            *ngFor="let tile of trophyHeatmapTiles"
+            type="button"
+            class="trophy-heatmap-tile group flex flex-col justify-between overflow-hidden p-2 text-left text-white transition hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-slate-900 md:p-3"
+            [ngClass]="tile.colorClass"
+            [ngStyle]="tile.layoutStyle"
+            (click)="openTrophyModal(tile.employee, 'all')"
+            [title]="
+              tile.name +
+              ' — ' +
+              tile.total +
+              ' trophée(s), équipe ' +
+              tile.teamCount +
+              ', employé ' +
+              tile.employeeCount +
+              (tile.latestLabel
+                ? ', dernier: ' + tile.latestTypeLabel + ' ' + tile.latestLabel
+                : '')
+            "
+          >
+            <span class="flex min-w-0 items-start justify-between gap-1.5">
+              <span
+                class="block min-w-0 truncate text-xs font-black leading-tight md:text-base"
+              >
+                {{ tile.name }}
+              </span>
+              <span class="trophy-heatmap-avatar shrink-0">
+                <img
+                  *ngIf="tile.photoUrl; else trophyAvatarFallback"
+                  [src]="tile.photoUrl"
+                  [alt]="tile.name"
+                  class="h-full w-full rounded-full object-cover"
+                  loading="lazy"
+                />
+                <ng-template #trophyAvatarFallback>
+                  <span
+                    class="flex h-full w-full items-center justify-center rounded-full bg-white/20 text-[10px] font-black text-white md:text-xs"
+                  >
+                    {{ tile.initials }}
+                  </span>
+                </ng-template>
+              </span>
+            </span>
+            <span
+              *ngIf="tile.total === 1"
+              class="mt-1 inline-flex w-fit items-center rounded-full bg-white/20 px-2 py-0.5 text-xs font-black leading-none text-white ring-1 ring-white/35"
+            >
+              1 trophée
+            </span>
+
+            <span *ngIf="tile.total > 1" class="mt-1 flex min-w-0 flex-col gap-0.5">
+              <span class="flex items-end gap-1.5">
+                <span class="text-2xl font-black leading-none md:text-4xl">
+                  {{ tile.total }}
+                </span>
+                <span class="truncate pb-0.5 text-[10px] font-extrabold leading-tight text-white/90 md:text-xs">
+                  trophée{{ tile.total > 1 ? "s" : "" }}
+                </span>
+              </span>
+              <span class="truncate text-[10px] font-extrabold leading-tight text-white/90 md:text-xs">
+                Équipe {{ tile.teamCount }} · Employé {{ tile.employeeCount }}
+              </span>
+              <span
+                *ngIf="tile.latestLabel"
+                class="truncate text-[10px] font-extrabold leading-tight text-white/80 md:text-xs"
+              >
+                Dernier: {{ tile.latestTypeLabel }} · {{ tile.latestLabel }}
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-600">
+          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 ring-1 ring-emerald-100">
+            <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+            Majorité équipe
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 ring-1 ring-amber-100">
+            <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+            Majorité employé
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+            <span class="h-2 w-2 rounded-full bg-slate-700"></span>
+            Équilibré
+          </span>
+        </div>
+
+        <ng-template #noTrophyHistory>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+            <p class="text-sm font-bold text-slate-600">
+              {{ employeesLoading ? 'Chargement des trophées...' : 'Aucun trophée enregistré pour le moment.' }}
+            </p>
+          </div>
+        </ng-template>
+      </section>
     </div>
   </div>
 </section>
+
+<div
+  *ngIf="trophyModalVisible"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+  (click)="closeTrophyModal()"
+>
+  <div
+    class="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-full border-2 bg-white"
+          [ngClass]="{
+            'border-yellow-400': trophyModalType === 'team',
+            'border-yellow-500': trophyModalType === 'employee',
+            'border-amber-500': trophyModalType === 'all'
+          }"
+        >
+          <svg
+            *ngIf="trophyModalType === 'team' || trophyModalType === 'all'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-yellow-500"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.65 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.65 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"/>
+          </svg>
+          <svg
+            *ngIf="trophyModalType === 'employee'"
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-yellow-500"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">
+            {{ getModalTitle() }}
+          </h3>
+          <p class="text-sm text-slate-600">
+            {{ selectedTrophyModalEmployeeName }}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="closeTrophyModal()"
+        class="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+        aria-label="Fermer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+      <div class="mb-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <span class="flex h-14 w-14 shrink-0 overflow-hidden rounded-full bg-slate-100 ring-2 ring-white">
+          <img
+            *ngIf="employeePhotoUrl(trophyModalEmployee); else trophyModalAvatarFallback"
+            [src]="employeePhotoUrl(trophyModalEmployee)"
+            [alt]="selectedTrophyModalEmployeeName"
+            class="h-full w-full object-cover"
+          />
+          <ng-template #trophyModalAvatarFallback>
+            <span class="flex h-full w-full items-center justify-center text-lg font-black text-slate-600">
+              {{ employeeInitials(trophyModalEmployee) }}
+            </span>
+          </ng-template>
+        </span>
+        <div class="min-w-0 text-left">
+          <p class="truncate text-lg font-black text-slate-900">
+            {{ selectedTrophyModalEmployeeName }}
+          </p>
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Historique personnel
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+        <div class="px-3 py-3">
+          <p class="text-2xl font-black text-slate-900">
+            {{ modalTotalTrophyCount }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            Trophée{{ modalTotalTrophyCount > 1 ? "s" : "" }}
+          </p>
+        </div>
+        <div class="border-x border-slate-200 px-3 py-3">
+          <p class="text-2xl font-black text-emerald-700">
+            {{ modalTeamTrophyCount }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            Meilleure équipe
+          </p>
+        </div>
+        <div class="px-3 py-3">
+          <p class="text-2xl font-black text-amber-700">
+            {{ modalEmployeeTrophyCount }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+            Meilleur employé
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 py-4 [-webkit-overflow-scrolling:touch]">
+      <div class="space-y-3">
+        <div
+          *ngFor="let entry of getModalTrophyEntries(); let idx = index"
+          class="flex items-center gap-4 rounded-xl border-2 p-4 transition hover:shadow-md"
+          [ngClass]="getTrophyEntryClasses(entry.type)"
+        >
+          <div
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
+            [ngClass]="getTrophyEntryBadgeClasses(entry.type)"
+          >
+            {{ idx + 1 }}
+          </div>
+          <div class="flex-1">
+            <p class="text-lg font-semibold text-slate-900">
+              {{ getTrophyDate(entry.trophy) }}
+            </p>
+            <p class="text-sm text-slate-600">
+              {{ getTrophyEntryLabel(entry.type) }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        *ngIf="getModalTrophies().length === 0"
+        class="flex flex-col items-center justify-center py-12 text-center"
+      >
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-8 w-8 text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+          </svg>
+        </div>
+        <p class="text-slate-500">Aucun trophée</p>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-200 bg-slate-50 px-6 py-3">
+      <p class="text-center text-xs text-slate-500">
+        Total: {{ getModalTrophies().length }} trophée(s)
+      </p>
+    </div>
+  </div>
+</div>
 
 <div
   *ngIf="displayAddTeam"
