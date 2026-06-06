@@ -90,7 +90,12 @@
         </div>
 
       <ng-container *ngIf="selectedBest; else emptyCertificates">
-        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div
+          class="certificate-card-grid"
+          [ngClass]="{
+            'certificate-card-grid--three': selectedAwardCount >= 3
+          }"
+        >
           <article
             *ngIf="selectedBest && selectedBest.bestTeam"
             class="group flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-xl"

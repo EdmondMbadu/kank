@@ -6,6 +6,23 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.certificate-card-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 24rem));
+  justify-content: center;
+}
+
+.certificate-card-grid--three {
+  max-width: none;
+}
+
+@media (min-width: 1280px) {
+  .certificate-card-grid--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .trophy-heatmap-grid {
   position: relative;
   height: clamp(30rem, 64vw, 46rem);
