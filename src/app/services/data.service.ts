@@ -730,12 +730,12 @@ export class DataService {
       dstData.currentClients ??
       []) as string[];
 
-    if (!rawSrc.length) {
+    // De-duplicate both sides first
+    const srcUnique = Array.from(new Set(opts?.clientIds ?? rawSrc));
+    if (!srcUnique.length) {
       return 0;
     }
 
-    // De-duplicate both sides first
-    const srcUnique = Array.from(new Set(opts?.clientIds ?? rawSrc));
     const selectedIds = this.pickClientIds(
       srcUnique,
       opts?.count,
