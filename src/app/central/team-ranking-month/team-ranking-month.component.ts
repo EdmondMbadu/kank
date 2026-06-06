@@ -3529,6 +3529,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.trophyModalEmployee?.bestEmployeeTrophies?.length || 0;
   }
 
+  get selectedTrophyModalEmployeeName(): string {
+    return this.formatRankingEmployeeName(this.trophyModalEmployee);
+  }
+
   getModalTrophyEntries(): TrophyModalEntry[] {
     if (!this.trophyModalType || !this.trophyModalEmployee) return [];
 
@@ -3600,7 +3604,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return (employee?.status || '').toLowerCase().trim() === 'travaille';
   }
 
-  private employeePhotoUrl(employee: Employee): string {
+  employeePhotoUrl(employee?: Employee | null): string {
     return employee?.profilePicture?.downloadURL || '';
   }
 
