@@ -3224,6 +3224,35 @@
       </button>
     </div>
 
+    <div class="border-b border-gray-200 bg-slate-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+      <div class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div class="px-3 py-3">
+          <p class="text-2xl font-black text-slate-900 dark:text-white">
+            {{ modalTotalTrophyCount }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Trophée{{ modalTotalTrophyCount > 1 ? "s" : "" }}
+          </p>
+        </div>
+        <div class="border-x border-slate-200 px-3 py-3 dark:border-gray-700">
+          <p class="text-2xl font-black text-emerald-700 dark:text-emerald-300">
+            {{ modalTeamTrophyCount }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Meilleure équipe
+          </p>
+        </div>
+        <div class="px-3 py-3">
+          <p class="text-2xl font-black text-amber-700 dark:text-amber-300">
+            {{ modalEmployeeTrophyCount }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Meilleur employé
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Scrollable Content -->
     <div class="flex-1 overflow-y-auto px-6 py-4 [-webkit-overflow-scrolling:touch]">
       <div class="space-y-3">

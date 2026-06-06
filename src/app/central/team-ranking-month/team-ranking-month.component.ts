@@ -3517,6 +3517,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.getModalTrophyEntries().map((entry) => entry.trophy);
   }
 
+  get modalTotalTrophyCount(): number {
+    return this.modalTeamTrophyCount + this.modalEmployeeTrophyCount;
+  }
+
+  get modalTeamTrophyCount(): number {
+    return this.trophyModalEmployee?.bestTeamTrophies?.length || 0;
+  }
+
+  get modalEmployeeTrophyCount(): number {
+    return this.trophyModalEmployee?.bestEmployeeTrophies?.length || 0;
+  }
+
   getModalTrophyEntries(): TrophyModalEntry[] {
     if (!this.trophyModalType || !this.trophyModalEmployee) return [];
 
