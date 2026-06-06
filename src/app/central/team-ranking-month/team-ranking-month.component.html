@@ -175,6 +175,16 @@
         >
           Paiements du mois
         </button>
+
+        <button
+          (click)="setRankingMode('trophyHistory')"
+          class="px-4 py-2 text-sm font-medium rounded-full transition"
+          [class.bg-white]="rankingMode === 'trophyHistory'"
+          [class.text-gray-900]="rankingMode === 'trophyHistory'"
+          [class.text-gray-600]="rankingMode !== 'trophyHistory'"
+        >
+          Historique trophées
+        </button>
       </div>
     </div>
 
@@ -918,6 +928,141 @@
       </div>
     </div>
     <!-- Employee Leaderboard -->
+    <!-- TROPHY HISTORY HEATMAP -->
+    <div *ngIf="rankingMode === 'trophyHistory'" class="mx-auto max-w-6xl space-y-5">
+      <div class="flex flex-col gap-3 text-center md:flex-row md:items-end md:justify-between md:text-left">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.24em] text-amber-700">
+            Historique des trophées
+          </p>
+          <h3 class="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
+            Carte des trophées gagnés
+          </h3>
+          <p class="mt-1 text-sm font-semibold text-slate-500">
+            Plus un employé a de trophées, plus son bloc est grand.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+          <div class="px-4 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ trophyHeatmapStats.totalTrophies }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Trophées
+            </p>
+          </div>
+          <div class="border-x border-slate-200 px-4 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ trophyHeatmapStats.employeesWithTrophies }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Employés
+            </p>
+          </div>
+          <div class="px-4 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ trophyHeatmapStats.topCount }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Max
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        *ngIf="trophyHeatmapTiles.length > 0; else noTrophyHistory"
+        class="trophy-heatmap-grid"
+      >
+        <button
+          *ngFor="let tile of trophyHeatmapTiles"
+          type="button"
+          class="trophy-heatmap-tile group overflow-hidden text-left text-white transition hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+          [ngClass]="tile.colorClass"
+          [ngStyle]="tile.layoutStyle"
+          (click)="openTrophyModal(tile.employee, 'all')"
+          [title]="
+            tile.name +
+            ' — ' +
+            tile.total +
+            ' trophée(s), équipe ' +
+            tile.teamCount +
+            ', employé ' +
+            tile.employeeCount +
+            (tile.latestLabel
+              ? ', dernier: ' + tile.latestTypeLabel + ' ' + tile.latestLabel
+              : '')
+          "
+        >
+          <img
+            *ngIf="tile.photoUrl; else trophyPhotoFallback"
+            [src]="tile.photoUrl"
+            [alt]="tile.name"
+            class="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+          <ng-template #trophyPhotoFallback>
+            <span
+              class="absolute inset-0 flex items-center justify-center text-3xl font-black text-white/35 md:text-6xl"
+            >
+              {{ tile.initials }}
+            </span>
+          </ng-template>
+
+          <span class="absolute inset-0 trophy-heatmap-photo-overlay"></span>
+
+          <span
+            class="relative z-[1] flex h-full min-h-0 flex-col justify-end gap-0.5 p-2 md:p-3"
+          >
+            <span class="truncate text-xs font-black leading-tight md:text-lg">
+              {{ tile.name }}
+            </span>
+            <span class="flex items-end gap-1.5">
+              <span class="text-2xl font-black leading-none md:text-4xl">
+                {{ tile.total }}
+              </span>
+              <span class="truncate pb-0.5 text-[10px] font-extrabold leading-tight text-white/90 md:text-xs">
+                trophée{{ tile.total > 1 ? "s" : "" }}
+              </span>
+            </span>
+            <span class="truncate text-[10px] font-extrabold leading-tight text-white/90 md:text-xs">
+              Équipe {{ tile.teamCount }} · Employé {{ tile.employeeCount }}
+            </span>
+            <span
+              *ngIf="tile.latestLabel"
+              class="truncate text-[10px] font-extrabold leading-tight text-white/80 md:text-xs"
+            >
+              Dernier: {{ tile.latestTypeLabel }} · {{ tile.latestLabel }}
+            </span>
+          </span>
+        </button>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-600">
+        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 ring-1 ring-emerald-100">
+          <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+          Majorité équipe
+        </span>
+        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 ring-1 ring-amber-100">
+          <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+          Majorité employé
+        </span>
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+          <span class="h-2 w-2 rounded-full bg-slate-700"></span>
+          Équilibré
+        </span>
+      </div>
+
+      <ng-template #noTrophyHistory>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center">
+          <p class="text-sm font-bold text-slate-600">
+            Aucun trophée enregistré pour le moment.
+          </p>
+        </div>
+      </ng-template>
+    </div>
+
     <!-- PERFORMANCE SECTION -->
     <div *ngIf="rankingMode === 'performance'" class="space-y-4">
       <div class="text-center">
@@ -3027,11 +3172,12 @@
           class="flex h-10 w-10 items-center justify-center rounded-full bg-white border-2"
           [ngClass]="{
             'border-yellow-400': trophyModalType === 'team',
-            'border-yellow-500': trophyModalType === 'employee'
+            'border-yellow-500': trophyModalType === 'employee',
+            'border-amber-500': trophyModalType === 'all'
           }"
         >
           <svg
-            *ngIf="trophyModalType === 'team'"
+            *ngIf="trophyModalType === 'team' || trophyModalType === 'all'"
             xmlns="http://www.w3.org/2000/svg"
             class="h-6 w-6 text-yellow-500"
             fill="currentColor"
@@ -3074,28 +3220,22 @@
     <div class="flex-1 overflow-y-auto px-6 py-4 [-webkit-overflow-scrolling:touch]">
       <div class="space-y-3">
         <div
-          *ngFor="let trophy of getModalTrophies(); let idx = index"
+          *ngFor="let entry of getModalTrophyEntries(); let idx = index"
           class="flex items-center gap-4 rounded-xl border-2 p-4 transition hover:shadow-md"
-          [ngClass]="{
-            'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20': trophyModalType === 'team',
-            'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20': trophyModalType === 'employee'
-          }"
+          [ngClass]="getTrophyEntryClasses(entry.type)"
         >
           <div
             class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
-            [ngClass]="{
-              'bg-gradient-to-br from-amber-500 to-amber-700': trophyModalType === 'team',
-              'bg-gradient-to-br from-yellow-400 to-yellow-600': trophyModalType === 'employee'
-            }"
+            [ngClass]="getTrophyEntryBadgeClasses(entry.type)"
           >
             {{ idx + 1 }}
           </div>
           <div class="flex-1">
             <p class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ getTrophyDate(trophy) }}
+              {{ getTrophyDate(entry.trophy) }}
             </p>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              {{ trophyModalType === 'team' ? 'Meilleure Équipe' : 'Meilleur Employé' }}
+              {{ getTrophyEntryLabel(entry.type) }}
             </p>
           </div>
         </div>

@@ -27,3 +27,48 @@
   vertical-align: middle;
   text-transform: capitalize;
 }
+
+.trophy-heatmap-grid {
+  position: relative;
+  height: clamp(30rem, 64vw, 46rem);
+  border-radius: 1rem;
+  background: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.trophy-heatmap-tile {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-sizing: border-box;
+}
+
+.trophy-heatmap-photo-overlay {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0.82)),
+    linear-gradient(135deg, rgba(4, 120, 87, 0.28), rgba(180, 83, 9, 0.2));
+}
+
+.trophy-tile--team {
+  background: linear-gradient(135deg, #047857, #0f766e);
+}
+
+.trophy-tile--employee {
+  background: linear-gradient(135deg, #b45309, #d97706);
+}
+
+.trophy-tile--balanced {
+  background: linear-gradient(135deg, #334155, #475569);
+}
+
+.trophy-tile--elite {
+  background: linear-gradient(135deg, #78350f, #a16207 48%, #047857);
+}
+
+@media (max-width: 768px) {
+  .trophy-heatmap-grid {
+    height: 42rem;
+  }
+}

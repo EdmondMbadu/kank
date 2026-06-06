@@ -83,6 +83,35 @@ type EmployeePresenceWindow = {
   joinedISO: string;
   leftISO: string;
 };
+type TrophyModalType = 'team' | 'employee' | 'all';
+type TrophyModalEntry = {
+  trophy: Trophy;
+  type: Exclude<TrophyModalType, 'all'>;
+};
+type TrophyHeatmapTile = {
+  employee: Employee;
+  name: string;
+  initials: string;
+  photoUrl: string;
+  total: number;
+  teamCount: number;
+  employeeCount: number;
+  latestLabel: string;
+  latestTypeLabel: string;
+  colorClass: string;
+  layoutStyle: Record<string, string>;
+};
+type TrophyHeatmapStats = {
+  totalTrophies: number;
+  employeesWithTrophies: number;
+  topCount: number;
+};
+type TrophyHeatmapRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 @Component({
   selector: 'app-team-ranking-month',
@@ -120,14 +149,15 @@ export class TeamRankingMonthComponent implements OnDestroy {
     | 'performance'
     | 'dailyPayments'
     | 'weeklyPayments'
-    | 'monthlyPayments' = 'dailyPayments';
+    | 'monthlyPayments'
+    | 'trophyHistory' = 'dailyPayments';
   loadingDaily = false;
   loadingWeekly = false;
   todayKin: string = this.time.todaysDateKinshasFormat()
 
   // ===== Trophy Modal state =====
   trophyModalVisible = false;
-  trophyModalType: 'team' | 'employee' | null = null;
+  trophyModalType: TrophyModalType | null = null;
   trophyModalEmployee: Employee | null = null;
   employeeModalVisible = false;
   employeeModalEmployee: Employee | null = null;
@@ -203,6 +233,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private presenceBulkUnassignedCacheKey = '';
   private presenceBulkUnassignedCache: PresenceMissedDay[] = [];
   private presenceEmploymentDateCache = new Map<string, EmployeePresenceWindow>();
+  private trophyHeatmapCacheKey = '';
+  private trophyHeatmapCache: TrophyHeatmapTile[] = [];
   presenceStateOptions: PresenceStateOption[] = [
     { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
@@ -597,6 +629,36 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return Object.values(this.presenceExceptionDays).sort((a, b) =>
       a.dateISO.localeCompare(b.dateISO)
     );
+  }
+
+  get trophyHeatmapTiles(): TrophyHeatmapTile[] {
+    const employees = this.trophyHeatmapSourceEmployees();
+    const key = employees
+      .map((employee) =>
+        [
+          employee.uid || '',
+          employee.status || '',
+          this.trophyListSignature(employee.bestTeamTrophies),
+          this.trophyListSignature(employee.bestEmployeeTrophies),
+        ].join(':')
+      )
+      .join('|');
+
+    if (this.trophyHeatmapCacheKey !== key) {
+      this.trophyHeatmapCache = this.buildTrophyHeatmapTiles(employees);
+      this.trophyHeatmapCacheKey = key;
+    }
+
+    return this.trophyHeatmapCache;
+  }
+
+  get trophyHeatmapStats(): TrophyHeatmapStats {
+    const tiles = this.trophyHeatmapTiles;
+    return {
+      totalTrophies: tiles.reduce((total, tile) => total + tile.total, 0),
+      employeesWithTrophies: tiles.length,
+      topCount: tiles[0]?.total || 0,
+    };
   }
 
   get presenceMonthStartISO(): string {
@@ -2616,7 +2678,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   // team-ranking-month.component.ts (add these methods inside the class)
   setRankingMode(
-    mode: 'performance' | 'dailyPayments' | 'weeklyPayments' | 'monthlyPayments'
+    mode:
+      | 'performance'
+      | 'dailyPayments'
+      | 'weeklyPayments'
+      | 'monthlyPayments'
+      | 'trophyHistory'
   ) {
     if (this.rankingMode === mode) return;
     this.logDebug('Switching ranking mode', { from: this.rankingMode, to: mode });
@@ -2628,7 +2695,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.loadWeeklyTotalsForEmployees();
     } else if (mode === 'monthlyPayments') {
       this.loadMonthlyTotalsForEmployees();
-    } else {
+    } else if (mode === 'performance') {
       this.sortEmployeesByPerformance();
     }
   }
@@ -3409,7 +3476,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   /**
    * Open trophy modal
    */
-  openTrophyModal(employee: Employee, type: 'team' | 'employee'): void {
+  openTrophyModal(employee: Employee, type: TrophyModalType): void {
     this.trophyModalEmployee = employee;
     this.trophyModalType = type;
     this.trophyModalVisible = true;
@@ -3447,9 +3514,29 @@ export class TeamRankingMonthComponent implements OnDestroy {
    */
   getModalTrophies(): Trophy[] {
     if (!this.trophyModalType || !this.trophyModalEmployee) return [];
-    return this.trophyModalType === 'team' 
-      ? (this.trophyModalEmployee.bestTeamTrophies || [])
-      : (this.trophyModalEmployee.bestEmployeeTrophies || []);
+    return this.getModalTrophyEntries().map((entry) => entry.trophy);
+  }
+
+  getModalTrophyEntries(): TrophyModalEntry[] {
+    if (!this.trophyModalType || !this.trophyModalEmployee) return [];
+
+    const teamEntries = (this.trophyModalEmployee.bestTeamTrophies || []).map(
+      (trophy) => ({ trophy, type: 'team' as const })
+    );
+    const employeeEntries = (
+      this.trophyModalEmployee.bestEmployeeTrophies || []
+    ).map((trophy) => ({ trophy, type: 'employee' as const }));
+
+    const entries =
+      this.trophyModalType === 'team'
+        ? teamEntries
+        : this.trophyModalType === 'employee'
+        ? employeeEntries
+        : [...teamEntries, ...employeeEntries];
+
+    return entries.sort(
+      (a, b) => this.trophySortValue(b.trophy) - this.trophySortValue(a.trophy)
+    );
   }
 
   /**
@@ -3457,7 +3544,216 @@ export class TeamRankingMonthComponent implements OnDestroy {
    */
   getModalTitle(): string {
     if (!this.trophyModalType) return '';
-    return this.trophyModalType === 'team' ? 'Trophées Meilleure Équipe' : 'Trophées Meilleur Employé';
+    if (this.trophyModalType === 'all') return 'Historique des trophées';
+    return this.trophyModalType === 'team'
+      ? 'Trophées Meilleure Équipe'
+      : 'Trophées Meilleur Employé';
+  }
+
+  getTrophyEntryLabel(type: Exclude<TrophyModalType, 'all'>): string {
+    return type === 'team' ? 'Meilleure Équipe' : 'Meilleur Employé';
+  }
+
+  getTrophyEntryClasses(type: Exclude<TrophyModalType, 'all'>): string {
+    return type === 'team'
+      ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20'
+      : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20';
+  }
+
+  getTrophyEntryBadgeClasses(type: Exclude<TrophyModalType, 'all'>): string {
+    return type === 'team'
+      ? 'bg-gradient-to-br from-emerald-500 to-teal-700'
+      : 'bg-gradient-to-br from-amber-400 to-yellow-600';
+  }
+
+  private trophyHeatmapSourceEmployees(): Employee[] {
+    const source = this.allEmployeesAll?.length
+      ? this.allEmployeesAll
+      : this.allEmployees || [];
+    const seen = new Set<string>();
+    return source.filter((employee) => {
+      if (!this.isTrophyHeatmapWorkingEmployee(employee)) return false;
+      const key =
+        employee.uid ||
+        `${employee.firstName || ''}|${employee.lastName || ''}|${
+          employee.trackingId || ''
+        }`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  private isTrophyHeatmapWorkingEmployee(employee: Employee): boolean {
+    return (employee?.status || '').toLowerCase().trim() === 'travaille';
+  }
+
+  private employeePhotoUrl(employee: Employee): string {
+    return employee?.profilePicture?.downloadURL || '';
+  }
+
+  private buildTrophyHeatmapTiles(employees: Employee[]): TrophyHeatmapTile[] {
+    const tiles = employees
+      .map((employee) => {
+        const teamCount = employee.bestTeamTrophies?.length || 0;
+        const employeeCount = employee.bestEmployeeTrophies?.length || 0;
+        const total = teamCount + employeeCount;
+        const latest = this.latestTrophyEntry(employee);
+        return {
+          employee,
+          name: this.formatRankingEmployeeName(employee),
+          initials: this.employeeInitials(employee),
+          photoUrl: this.employeePhotoUrl(employee),
+          total,
+          teamCount,
+          employeeCount,
+          latestLabel: latest ? this.getTrophyDate(latest.trophy) : '',
+          latestTypeLabel: latest ? this.getTrophyEntryLabel(latest.type) : '',
+          colorClass: this.trophyHeatmapColorClass(teamCount, employeeCount, total),
+          layoutStyle: {},
+        };
+      })
+      .filter((tile) => tile.total > 0)
+      .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+
+    const rects = this.buildTrophyTreemapRects(
+      tiles.map((tile) => tile.total)
+    );
+    return tiles.map((tile, index) => ({
+      ...tile,
+      layoutStyle: this.trophyRectStyle(rects[index]),
+    }));
+  }
+
+  private trophyHeatmapColorClass(
+    teamCount: number,
+    employeeCount: number,
+    total: number
+  ): string {
+    if (total >= 10) return 'trophy-tile--elite';
+    if (employeeCount > teamCount) return 'trophy-tile--employee';
+    if (teamCount > employeeCount) return 'trophy-tile--team';
+    return 'trophy-tile--balanced';
+  }
+
+  private latestTrophyEntry(employee: Employee): TrophyModalEntry | null {
+    const entries: TrophyModalEntry[] = [
+      ...(employee.bestTeamTrophies || []).map((trophy) => ({
+        trophy,
+        type: 'team' as const,
+      })),
+      ...(employee.bestEmployeeTrophies || []).map((trophy) => ({
+        trophy,
+        type: 'employee' as const,
+      })),
+    ];
+    if (!entries.length) return null;
+    return entries.sort(
+      (a, b) => this.trophySortValue(b.trophy) - this.trophySortValue(a.trophy)
+    )[0];
+  }
+
+  private trophyListSignature(trophies?: Trophy[]): string {
+    return (trophies || [])
+      .map((trophy) => `${trophy.month || ''}-${trophy.year || ''}`)
+      .sort()
+      .join(',');
+  }
+
+  private buildTrophyTreemapRects(weights: number[]): TrophyHeatmapRect[] {
+    const rects: TrophyHeatmapRect[] = weights.map(() => ({
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    }));
+    const items = weights.map((weight, index) => ({
+      index,
+      weight: Math.max(weight, 1),
+    }));
+
+    this.partitionTrophyTreemap(items, { x: 0, y: 0, width: 100, height: 100 }, rects);
+    return rects;
+  }
+
+  private partitionTrophyTreemap(
+    items: Array<{ index: number; weight: number }>,
+    rect: TrophyHeatmapRect,
+    output: TrophyHeatmapRect[]
+  ): void {
+    if (!items.length) return;
+    if (items.length === 1) {
+      output[items[0].index] = rect;
+      return;
+    }
+
+    const total = items.reduce((sum, item) => sum + item.weight, 0);
+    const target = total / 2;
+    let splitIndex = 1;
+    let running = items[0].weight;
+
+    for (let index = 1; index < items.length - 1; index++) {
+      const next = running + items[index].weight;
+      if (Math.abs(target - next) > Math.abs(target - running)) break;
+      running = next;
+      splitIndex = index + 1;
+    }
+
+    const first = items.slice(0, splitIndex);
+    const second = items.slice(splitIndex);
+    const firstWeight = first.reduce((sum, item) => sum + item.weight, 0);
+    const ratio = total > 0 ? firstWeight / total : 0.5;
+
+    if (rect.width >= rect.height) {
+      const firstWidth = rect.width * ratio;
+      this.partitionTrophyTreemap(
+        first,
+        { ...rect, width: firstWidth },
+        output
+      );
+      this.partitionTrophyTreemap(
+        second,
+        {
+          x: rect.x + firstWidth,
+          y: rect.y,
+          width: rect.width - firstWidth,
+          height: rect.height,
+        },
+        output
+      );
+    } else {
+      const firstHeight = rect.height * ratio;
+      this.partitionTrophyTreemap(
+        first,
+        { ...rect, height: firstHeight },
+        output
+      );
+      this.partitionTrophyTreemap(
+        second,
+        {
+          x: rect.x,
+          y: rect.y + firstHeight,
+          width: rect.width,
+          height: rect.height - firstHeight,
+        },
+        output
+      );
+    }
+  }
+
+  private trophyRectStyle(rect: TrophyHeatmapRect): Record<string, string> {
+    return {
+      left: `${rect.x}%`,
+      top: `${rect.y}%`,
+      width: `${rect.width}%`,
+      height: `${rect.height}%`,
+    };
+  }
+
+  private trophySortValue(trophy: Trophy): number {
+    const year = Number(trophy?.year || 0);
+    const month = Number(trophy?.month || 0);
+    return year * 100 + month;
   }
 
   /** ---------- Employee Management Section ---------- */
