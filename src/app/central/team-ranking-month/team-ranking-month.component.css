@@ -45,10 +45,14 @@
   box-sizing: border-box;
 }
 
-.trophy-heatmap-photo-overlay {
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0.82)),
-    linear-gradient(135deg, rgba(4, 120, 87, 0.28), rgba(180, 83, 9, 0.2));
+.trophy-heatmap-avatar {
+  width: clamp(1.35rem, 3vw, 3.75rem);
+  height: clamp(1.35rem, 3vw, 3.75rem);
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
 }
 
 .trophy-tile--team {
