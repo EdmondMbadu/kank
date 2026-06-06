@@ -41,6 +41,8 @@ export class PayTodayComponent implements OnInit {
   today = this.time.todaysDateMonthDayYear();
   filteredItems?: Client[];
   trackingIds: string[] = [];
+  selectedAgentUid: string = '';
+  includeFinishedClients = false;
   constructor(
     private router: Router,
     public auth: AuthService,
@@ -67,15 +69,15 @@ export class PayTodayComponent implements OnInit {
 
   retrieveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = data;
+      this.clients = Array.isArray(data) ? data : [];
       this.findClientsWithDebts();
       this.retrieveEmployees();
-      this.filteredItems = data;
+      this.filteredItems = this.clientsWithDebts;
     });
   }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
+      this.employees = Array.isArray(data) ? data : [];
       this.addIds();
     });
   }
@@ -94,7 +96,7 @@ export class PayTodayComponent implements OnInit {
     return `${baseClasses} ${selectedClasses}`;
   }
   addIds() {
-    for (let i = 0; i < this.clients!.length; i++) {
+    for (let i = 0; i < (this.clients ?? []).length; i++) {
       this.clients![i].trackingId = `${i}`;
       this.clients![i].frenchPaymentDay =
         this.frenchPaymentDays[`${this.clients![i].paymentDay}`];
@@ -108,6 +110,10 @@ export class PayTodayComponent implements OnInit {
   setSerachCriteria(criteria: string) {
     this.searchCriteria = criteria;
     this.selectedField = criteria;
+    if (criteria === 'agent') {
+      this.searchControl.setValue('');
+      this.applyAgentFilter();
+    }
   }
 
   selectPaymentDay(day: string) {
@@ -132,6 +138,84 @@ export class PayTodayComponent implements OnInit {
         employee.middleName?.toLowerCase().includes(name)
     );
     return foundAgent ? foundAgent.uid : null;
+  }
+
+  get agents(): Employee[] {
+    return (this.employees ?? [])
+      .filter(
+        (employee) =>
+          this.isAgentRole(employee) || this.hasAssignedClients(employee)
+      )
+      .sort((a, b) =>
+        this.getEmployeeName(a).localeCompare(this.getEmployeeName(b), 'fr')
+      );
+  }
+
+  getEmployeeName(employee?: Employee): string {
+    return [
+      employee?.firstName,
+      employee?.lastName,
+      employee?.middleName,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  }
+
+  getAgentClientCount(agentUid?: string): number {
+    if (!agentUid) return 0;
+    return this.getAgentSourceClients().filter(
+      (client) => client.agent === agentUid
+    ).length;
+  }
+
+  selectAgent(agent: Employee): void {
+    this.setSerachCriteria('agent');
+    this.selectedAgentUid = agent.uid ?? '';
+    this.applyAgentFilter();
+  }
+
+  toggleIncludeFinishedClients(): void {
+    this.includeFinishedClients = !this.includeFinishedClients;
+    this.applyAgentFilter();
+  }
+
+  isAgentSelected(agent: Employee): boolean {
+    return !!agent.uid && this.selectedAgentUid === agent.uid;
+  }
+
+  private applyAgentFilter(): void {
+    if (!this.selectedAgentUid) {
+      this.totalGivenDate = this.compute.computeExpectedPerDate([]);
+      this.numberOfPeople = 0;
+      this.filteredItems = [];
+      return;
+    }
+
+    const current = this.getAgentSourceClients().filter(
+      (client) => client.agent === this.selectedAgentUid
+    );
+
+    this.totalGivenDate = this.compute.computeExpectedPerDate(current);
+    this.numberOfPeople = current.length;
+    this.filteredItems = current;
+  }
+
+  private getAgentSourceClients(): Client[] {
+    return this.includeFinishedClients
+      ? this.clients ?? []
+      : this.clientsWithDebts ?? [];
+  }
+
+  private isAgentRole(employee: Employee): boolean {
+    const role = this.normalizeSearchValue(employee.role);
+    return role === 'agent' || role.includes('agent marketing');
+  }
+
+  private hasAssignedClients(employee: Employee): boolean {
+    return !!employee.uid && (this.clients ?? []).some(
+      (client) => client.agent === employee.uid
+    );
   }
 
   // search(value: string, field: string = this.searchCriteria) {
@@ -234,7 +318,9 @@ export class PayTodayComponent implements OnInit {
   //   }
   // }
   reapplyFilter() {
-    this.search(this.searchControl.value);
+    this.search(this.searchControl.value).subscribe((results) => {
+      this.filteredItems = results;
+    });
   }
 
   private normalizeSearchValue(value: unknown): string {
@@ -249,6 +335,11 @@ export class PayTodayComponent implements OnInit {
   }
 
   search(value: string, field: string = this.searchCriteria) {
+    if (field === 'agent') {
+      this.applyAgentFilter();
+      return of(this.filteredItems ?? []);
+    }
+
     const lowerCaseValue = this.normalizeSearchValue(value);
 
     if (lowerCaseValue) {

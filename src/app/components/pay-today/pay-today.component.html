@@ -1,7 +1,7 @@
 <!-- ─── BARRE DE NAVIGATION ───────────────────────────────────────── -->
 <app-navbar
-  [email]="auth.currentUser.email"
-  [firstName]="auth.currentUser.firstName"
+  [email]="auth.currentUser?.email || ''"
+  [firstName]="auth.currentUser?.firstName || ''"
   [path]="'home'">
 </app-navbar>
 
@@ -208,7 +208,7 @@
       </h3>
 
       <div
-        *ngIf="selectedField === 'paymentDay'; else textSearchInput"
+        *ngIf="selectedField === 'paymentDay'; else searchByField"
         class="grid w-full grid-cols-2 gap-2 sm:grid-cols-3"
       >
         <button
@@ -225,6 +225,65 @@
           {{ day.label }}
         </button>
       </div>
+
+      <ng-template #searchByField>
+        <div *ngIf="selectedField === 'agent'; else textSearchInput" class="space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {{ selectedAgentUid ? 'Clients de cet agent' : 'Choisir un agent' }}
+            </p>
+
+            <button
+              type="button"
+              (click)="toggleIncludeFinishedClients()"
+              class="inline-flex items-center rounded-full border p-1 text-xs font-semibold transition-colors"
+              [ngClass]="includeFinishedClients
+                ? 'border-emerald-600 bg-emerald-600 text-white'
+                : 'border-gray-300 bg-gray-50 text-gray-700 dark:border-gray-600 dark:bg-slate-700 dark:text-gray-200'"
+              [attr.aria-pressed]="includeFinishedClients"
+            >
+              <span
+                class="rounded-full px-3 py-1"
+                [ngClass]="!includeFinishedClients ? 'bg-white shadow dark:bg-slate-600' : ''"
+              >
+                Actuels
+              </span>
+              <span
+                class="rounded-full px-3 py-1"
+                [ngClass]="includeFinishedClients ? 'bg-white text-emerald-700 shadow' : ''"
+              >
+                Tous
+              </span>
+            </button>
+          </div>
+
+          <div class="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+            <button
+              *ngFor="let agent of agents"
+              type="button"
+              (click)="selectAgent(agent)"
+              class="flex min-h-[58px] items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors"
+              [ngClass]="
+                isAgentSelected(agent)
+                  ? 'border-emerald-600 bg-emerald-600 text-white shadow'
+                  : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-emerald-50 dark:border-gray-600 dark:bg-slate-700 dark:text-gray-200 dark:hover:bg-slate-600'
+              "
+            >
+              <span class="min-w-0">
+                <span class="block truncate font-semibold">
+                  {{ getEmployeeName(agent) || 'Agent sans nom' }}
+                </span>
+                <span class="block truncate text-xs opacity-80">
+                  {{ agent.status || 'Statut inconnu' }}
+                </span>
+              </span>
+              <span class="ml-3 shrink-0 rounded-full bg-white/80 px-2 py-1 text-xs font-bold text-emerald-700">
+                {{ getAgentClientCount(agent.uid) }}
+              </span>
+            </button>
+          </div>
+        </div>
+      </ng-template>
 
       <ng-template #textSearchInput>
         <form class="relative flex-1 max-w-xs">
