@@ -1,7 +1,7 @@
 <!-- ======================= TEAM PAGE – MODERN REFRESH ======================= -->
 <app-navbar
-  [email]="auth.currentUser.email"
-  [firstName]="auth.currentUser.firstName"
+  [email]="auth.currentUser?.email || ''"
+  [firstName]="auth.currentUser?.firstName || ''"
   [path]="'home'"
   [currentEmployeePage]="true"
 ></app-navbar>
@@ -32,14 +32,43 @@
       Mise à Jour Performance
     </button>
   </div>
-
-  <span
-    class="pointer-events-none absolute -top-6 right-10 h-24 w-24 rounded-full bg-white/20 blur-3xl sm:block"
-  ></span>
-  <span
-    class="pointer-events-none absolute bottom-0 left-0 h-16 w-16 rounded-full bg-white/10 blur-2xl"
-  ></span>
 </header>
+
+<div
+  *ngIf="auth.isAdmin"
+  class="mx-auto mt-6 flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4"
+>
+  <div>
+    <p class="text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">
+      Vue employés
+    </p>
+    <p class="mt-1 text-sm text-slate-500">
+      Actuels par défaut. Tous inclut les employés quittés ou non en service.
+    </p>
+  </div>
+  <div class="inline-flex rounded-full border border-emerald-200 bg-white p-1 shadow-sm">
+    <button
+      type="button"
+      (click)="setEmployeeScope('current')"
+      class="rounded-full px-4 py-2 text-sm font-bold transition"
+      [ngClass]="employeeScope === 'current'
+        ? 'bg-emerald-600 text-white shadow'
+        : 'text-emerald-700 hover:bg-emerald-50'"
+    >
+      Actuels ({{ currentEmployeeCount }})
+    </button>
+    <button
+      type="button"
+      (click)="setEmployeeScope('all')"
+      class="rounded-full px-4 py-2 text-sm font-bold transition"
+      [ngClass]="employeeScope === 'all'
+        ? 'bg-emerald-600 text-white shadow'
+        : 'text-emerald-700 hover:bg-emerald-50'"
+    >
+      Tous ({{ allEmployeeCount }})
+    </button>
+  </div>
+</div>
 
 <!-- === EMPLOYEE GRID === -->
 <div class="mx-auto mt-12 max-w-7xl px-4">
@@ -309,7 +338,8 @@
             </span>
           </p>
           <p class="mt-1 text-sm text-gray-500 dark:text-white">
-            # Clients suivi : {{ em.currentClients?.length }}
+            # Clients suivi{{ employeeScope === 'all' ? ' (tous)' : '' }} :
+            {{ getEmployeeClientCount(em) }}
           </p>
           <p class="mt-1 text-sm text-gray-500 dark:text-white">
             Sexe : {{ em.sex }}
@@ -1075,6 +1105,67 @@
       </ng-container>
     </div>
 
+    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+      <div class="rounded-2xl border border-gray-200 p-3 dark:border-gray-700">
+        <p class="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
+          Employés disponibles
+        </p>
+        <div class="inline-flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+          <button
+            type="button"
+            (click)="setTransferEmployeeScope('current')"
+            class="rounded-full px-3 py-1.5 text-xs font-bold transition"
+            [ngClass]="transferEmployeeScope === 'current'
+              ? 'bg-emerald-600 text-white shadow'
+              : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'"
+          >
+            Actuels
+          </button>
+          <button
+            type="button"
+            (click)="setTransferEmployeeScope('all')"
+            class="rounded-full px-3 py-1.5 text-xs font-bold transition"
+            [ngClass]="transferEmployeeScope === 'all'
+              ? 'bg-emerald-600 text-white shadow'
+              : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'"
+          >
+            Tous
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 p-3 dark:border-gray-700">
+        <p class="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-gray-500">
+          Clients à utiliser
+        </p>
+        <div class="inline-flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+          <button
+            type="button"
+            (click)="setTransferClientScope('current')"
+            class="rounded-full px-3 py-1.5 text-xs font-bold transition"
+            [ngClass]="transferClientScope === 'current'
+              ? 'bg-emerald-600 text-white shadow'
+              : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'"
+          >
+            Actuels
+          </button>
+          <button
+            type="button"
+            (click)="setTransferClientScope('all')"
+            class="rounded-full px-3 py-1.5 text-xs font-bold transition"
+            [ngClass]="transferClientScope === 'all'
+              ? 'bg-emerald-600 text-white shadow'
+              : 'text-gray-600 hover:bg-white dark:text-gray-300 dark:hover:bg-gray-700'"
+          >
+            Tous
+          </button>
+        </div>
+        <p class="mt-2 text-xs text-gray-500">
+          Tous inclut les clients terminés ou anciens.
+        </p>
+      </div>
+    </div>
+
     <div class="mt-6 grid gap-4 sm:grid-cols-2">
       <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">
         Employé A (source)
@@ -1084,9 +1175,9 @@
           class="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         >
           <option [ngValue]="null">Sélectionner…</option>
-          <option *ngFor="let e of employees" [value]="e.uid">
+          <option *ngFor="let e of transferEmployees" [value]="e.uid">
             {{ e.firstName }} {{ e.lastName }} — {{ e.role }} ({{
-              e.currentClients?.length || e.clients?.length || 0
+              getTransferClientCount(e)
             }}
             clients)
           </option>
@@ -1101,9 +1192,9 @@
           class="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         >
           <option [ngValue]="null">Sélectionner…</option>
-          <option *ngFor="let e of employees" [value]="e.uid">
+          <option *ngFor="let e of transferEmployees" [value]="e.uid">
             {{ e.firstName }} {{ e.lastName }} — {{ e.role }} ({{
-              e.currentClients?.length || e.clients?.length || 0
+              getTransferClientCount(e)
             }}
             clients)
           </option>
@@ -1137,7 +1228,9 @@
             [checked]="bulkAction.subset === 'all'"
             (change)="setSubset('all')"
           />
-          <span class="font-semibold">Tous les clients</span>
+          <span class="font-semibold">
+            Tous les clients {{ transferClientScope === 'all' ? '(historique)' : 'actuels' }}
+          </span>
         </div>
         <span class="mt-2 text-xs text-gray-500">
           Déplace / copie {{ transfer.sourceClientCount }} clients.

@@ -54,6 +54,9 @@ export class TeamPageComponent implements OnInit {
     sourceClientCount: 0,
     targetClientCount: 0,
   };
+  employeeScope: 'current' | 'all' = 'current';
+  transferEmployeeScope: 'current' | 'all' = 'current';
+  transferClientScope: 'current' | 'all' = 'current';
   bulkAction = {
     activeTab: 'transfer' as 'transfer' | 'copy' | 'swap' | 'duplicates',
     subset: 'all' as 'all' | 'count',
@@ -76,6 +79,7 @@ export class TeamPageComponent implements OnInit {
   url: string = '';
   task?: AngularFireUploadTask;
   employees: Employee[] = [];
+  allEmployees: Employee[] = [];
   allClients: Client[] = [];
   clientsWithDebts: Client[] = [];
   year = new Date().getFullYear();
@@ -104,18 +108,40 @@ export class TeamPageComponent implements OnInit {
   }
   retrieveEmployees(): void {
     this.auth.getAllEmployees().subscribe((data: any) => {
-      this.employees = data;
-
-      if (this.employees !== null) {
-        this.displayEditEmployees = new Array(this.employees.length).fill(
-          false
-        );
-      }
-
-      this.addIdsToEmployees();
+      this.allEmployees = Array.isArray(data) ? data : [];
+      this.prepareEmployees(this.allEmployees);
+      this.applyEmployeeScope();
     });
   }
-  /** — NEW —  add these in your TeamPageComponent class  */
+
+  setEmployeeScope(scope: 'current' | 'all'): void {
+    if (this.employeeScope === scope) return;
+    this.employeeScope = scope;
+    this.applyEmployeeScope();
+  }
+
+  setTransferEmployeeScope(scope: 'current' | 'all'): void {
+    if (this.transferEmployeeScope === scope) return;
+    this.transferEmployeeScope = scope;
+    const allowedIds = new Set(
+      this.transferEmployees.map((employee) => employee.uid)
+    );
+    if (this.transfer.sourceId && !allowedIds.has(this.transfer.sourceId)) {
+      this.transfer.sourceId = null;
+    }
+    if (this.transfer.targetId && !allowedIds.has(this.transfer.targetId)) {
+      this.transfer.targetId = null;
+    }
+    this.refreshTransferCounts();
+    this.bulkAction.duplicateIds = [];
+  }
+
+  setTransferClientScope(scope: 'current' | 'all'): void {
+    if (this.transferClientScope === scope) return;
+    this.transferClientScope = scope;
+    this.refreshTransferCounts();
+    this.bulkAction.duplicateIds = [];
+  }
   isFullPictureVisible = false;
   fullPictureURL: string | null = null;
 
@@ -132,7 +158,7 @@ export class TeamPageComponent implements OnInit {
 
   retreiveClients(): void {
     this.auth.getAllClients().subscribe((data: any) => {
-      this.allClients = data;
+      this.allClients = Array.isArray(data) ? data : [];
       this.buildClientDictionary();
       this.findClientsWithDebts();
       this.retrieveEmployees();
@@ -177,95 +203,96 @@ export class TeamPageComponent implements OnInit {
       });
     this.toggleAddNewEmployee();
   }
-  addIdsToEmployees() {
+  private prepareEmployees(employees: Employee[]) {
     // let commonElements = this.employees[0].clients!.filter((item) =>
     //   this.employees[1].clients!.includes(item)
     // );
     // console.log('common elements', commonElements);
 
-    for (let i = 0; this.employees && i < this.employees.length; i++) {
+    for (let i = 0; employees && i < employees.length; i++) {
       // Migrate old single trophy fields to new array format
-      this.migrateTrophyData(this.employees[i]);
+      this.migrateTrophyData(employees[i]);
       // console.log(' here I am employee ', this.employees[i]);
-      this.employees[i].trackingId = `${i}`;
+      employees[i].trackingId = `${i}`;
       if (
-        this.employees[i].vacationTotalDays === undefined ||
-        this.employees[i].vacationTotalDays === null ||
-        this.employees[i].vacationTotalDays === ''
+        employees[i].vacationTotalDays === undefined ||
+        employees[i].vacationTotalDays === null ||
+        employees[i].vacationTotalDays === ''
       ) {
-        this.employees[i].vacationTotalDays = `${this.DEFAULT_VACATION_DAYS}`;
+        employees[i].vacationTotalDays = `${this.DEFAULT_VACATION_DAYS}`;
       }
-      this.employees[i].age = this.time
-        .calculateAge(this.employees[i].dateOfBirth!)
+      employees[i].age = this.time
+        .calculateAge(employees[i].dateOfBirth!)
         .toString();
 
-      this.employees[i].currentClients =
-        this.compute.filterClientsWithoutDebtFollowedByEmployee(
-          this.allClients,
-          this.employees[i]
-        );
+      employees[i].currentClients = this.getClientIdsForEmployee(
+        employees[i].uid,
+        'current'
+      );
 
-      if (this.employees[i].role === 'Manager') {
+      if (employees[i].role === 'Manager') {
         let result = this.performance.findAverageAndTotalAllEmployee(
-          this.employees
+          employees
         );
 
-        this.employees[i].averagePoints = `${result[0]} / ${result[1]}`;
-        this.employees[i].letterGrade = this.performance.findLetterGrade(
+        employees[i].averagePoints = `${result[0]} / ${result[1]}`;
+        employees[i].letterGrade = this.performance.findLetterGrade(
           result[0] / result[1]
         );
         let rounded = this.compute.roundNumber((result[0] * 100) / result[1]);
-        this.employees[i].performancePercantage = rounded.toString();
+        employees[i].performancePercantage = rounded.toString();
       } else {
-        let result = this.performance.findAverageAndTotal(this.employees[i]);
+        let result = this.performance.findAverageAndTotal(employees[i]);
 
-        this.employees[i].averagePoints = `${result[0]} / ${result[1]}`;
-        this.employees[i].letterGrade = this.performance.findLetterGrade(
+        employees[i].averagePoints = `${result[0]} / ${result[1]}`;
+        employees[i].letterGrade = this.performance.findLetterGrade(
           result[0] / result[1]
         );
         let rounded = this.compute.roundNumber((result[0] * 100) / result[1]);
-        this.employees[i].performancePercantage = rounded.toString();
+        employees[i].performancePercantage = rounded.toString();
       }
     }
-    const isAdmin = this.auth.isAdmninistrator;
+  }
+
+  private applyEmployeeScope(): void {
+    const canSeeAllStatuses = this.auth.isAdmin && this.employeeScope === 'all';
+    const scopedEmployees = canSeeAllStatuses
+      ? [...this.allEmployees]
+      : this.allEmployees.filter((employee) =>
+          this.isWorkingStatus(employee?.status)
+        );
+
+    this.employees = this.applyRoleVisibility(scopedEmployees);
+    this.displayEditEmployees = new Array(this.employees.length).fill(false);
+  }
+
+  private applyRoleVisibility(employees: Employee[]): Employee[] {
+    let visible = [...employees];
+    const isAdmin = this.auth.isAdmin;
     const isGestion = this.auth.isDistributor;
     const isInvestigator = this.auth.isInvestigator;
 
-    if (!isAdmin) {
-      if (this.employees) {
-        this.employees = this.employees.filter((emp) => {
-          return emp?.status === 'Travaille' || emp?.status === 'Vacance';
-        });
-      }
+    if (isInvestigator && !isAdmin) {
+      visible = visible.filter((emp) => this.isVerifierRole(emp.role));
     }
 
-    if (isInvestigator && !isAdmin && this.employees) {
-      this.employees = this.employees.filter((emp) =>
-        this.isVerifierRole(emp.role)
-      );
-    }
-
-    if (isGestion && !isAdmin && this.employees) {
-      if (this.employees) {
-        this.employees = this.employees.filter(
-          (emp) => !this.isVerifierRole(emp.role)
-        );
-      }
+    if (isGestion && !isAdmin) {
+      visible = visible.filter((emp) => !this.isVerifierRole(emp.role));
     }
 
     if (!isAdmin && !isGestion && !isInvestigator) {
-      if (this.employees) {
-        this.employees = this.employees.filter((emp) => {
-          return (
-            emp.role === 'Manager' ||
-            emp.role === 'Agent' ||
-            emp.role === 'Agent Marketing' ||
-            emp.role === 'Polyvalent' ||
-            emp.role === 'Stagaire'
-          );
-        });
-      }
+      visible = visible.filter((emp) => {
+        return (
+          emp.role === 'Manager' ||
+          emp.role === 'Agent' ||
+          emp.role === 'Agent Marketing' ||
+          emp.role === 'Polyvalent' ||
+          emp.role === 'Stagaire'
+        );
+      });
     }
+
+    return visible;
   }
 
   get workingEmployees(): Employee[] {
@@ -275,9 +302,36 @@ export class TeamPageComponent implements OnInit {
   }
 
   get nonWorkingEmployees(): Employee[] {
+    if (this.employeeScope !== 'all') {
+      return [];
+    }
     return (this.employees ?? []).filter(
       (employee) => !this.isWorkingStatus(employee?.status)
     );
+  }
+
+  get transferEmployees(): Employee[] {
+    const canSeeAllStatuses =
+      this.auth.isAdmin && this.transferEmployeeScope === 'all';
+    const scopedEmployees = canSeeAllStatuses
+      ? [...this.allEmployees]
+      : this.allEmployees.filter((employee) =>
+          this.isWorkingStatus(employee?.status)
+        );
+
+    return this.applyRoleVisibility(scopedEmployees);
+  }
+
+  get currentEmployeeCount(): number {
+    return this.applyRoleVisibility(
+      this.allEmployees.filter((employee) =>
+        this.isWorkingStatus(employee?.status)
+      )
+    ).length;
+  }
+
+  get allEmployeeCount(): number {
+    return this.applyRoleVisibility(this.allEmployees).length;
   }
 
   employeeDisplayIndex(employee: Employee): number {
@@ -285,6 +339,20 @@ export class TeamPageComponent implements OnInit {
       return this.employees.indexOf(employee);
     }
     return this.employees.findIndex((entry) => entry.uid === employee.uid);
+  }
+
+  getEmployeeClientCount(
+    employee: Employee,
+    scope: 'current' | 'all' = this.employeeScope
+  ): number {
+    return this.getClientIdsForEmployee(employee.uid, scope).length;
+  }
+
+  getTransferClientCount(employee: Employee): number {
+    return this.getClientIdsForEmployee(
+      employee.uid,
+      this.transferClientScope
+    ).length;
   }
 
   formatEmployeeStartDate(rawDate?: string | null): string {
@@ -370,6 +438,34 @@ export class TeamPageComponent implements OnInit {
   private isWorkingStatus(status?: string | null): boolean {
     const normalized = (status ?? '').trim().toLowerCase();
     return this.WORKING_STATUSES.includes(normalized);
+  }
+
+  private getClientIdsForEmployee(
+    employeeId: string | null | undefined,
+    scope: 'current' | 'all'
+  ): string[] {
+    if (!employeeId) return [];
+    const sourceClients =
+      scope === 'all' ? this.allClients ?? [] : this.clientsWithDebts ?? [];
+
+    return sourceClients
+      .filter((client) => client.agent === employeeId && !!client.uid)
+      .map((client) => client.uid!);
+  }
+
+  private getStoredClientIdsForEmployee(
+    employeeId: string | null | undefined,
+    scope: 'current' | 'all'
+  ): string[] {
+    if (!employeeId) return [];
+    const employee = this.allEmployees.find((entry) => entry.uid === employeeId);
+    const ids = employee?.clients ?? employee?.currentClients ?? [];
+    if (scope === 'all') {
+      return Array.from(new Set(ids));
+    }
+
+    const currentSet = new Set((this.clientsWithDebts ?? []).map((c) => c.uid));
+    return Array.from(new Set(ids)).filter((id) => currentSet.has(id));
   }
 
   findClientsWithDebts() {
@@ -612,6 +708,8 @@ export class TeamPageComponent implements OnInit {
 
   openTransferModal() {
     this.transferModalVisible = true;
+    this.transferEmployeeScope = this.employeeScope;
+    this.transferClientScope = 'current';
     this.transfer = {
       sourceId: null,
       targetId: null,
@@ -635,9 +733,10 @@ export class TeamPageComponent implements OnInit {
   }
 
   onSourceChange() {
-    const src = this.employees.find((e) => e.uid === this.transfer.sourceId);
-    this.transfer.sourceClientCount =
-      src?.currentClients?.length ?? src?.clients?.length ?? 0;
+    this.transfer.sourceClientCount = this.getClientIdsForEmployee(
+      this.transfer.sourceId,
+      this.transferClientScope
+    ).length;
     this.clampBulkCount();
     if (this.bulkAction.activeTab === 'duplicates') {
       this.bulkAction.duplicateIds = [];
@@ -652,9 +751,15 @@ export class TeamPageComponent implements OnInit {
   }
 
   private updateTargetCount() {
-    const dst = this.employees.find((e) => e.uid === this.transfer.targetId);
-    this.transfer.targetClientCount =
-      dst?.currentClients?.length ?? dst?.clients?.length ?? 0;
+    this.transfer.targetClientCount = this.getClientIdsForEmployee(
+      this.transfer.targetId,
+      this.transferClientScope
+    ).length;
+  }
+
+  private refreshTransferCounts(): void {
+    this.onSourceChange();
+    this.updateTargetCount();
   }
 
   public clampBulkCount(): void {
@@ -724,8 +829,21 @@ export class TeamPageComponent implements OnInit {
 
     let action: Promise<any>;
     if (this.bulkAction.activeTab === 'swap') {
-      action = this.data.swapClientsBetweenEmployees(sourceId!, targetId!);
+      action = this.data.swapClientsBetweenEmployees(sourceId!, targetId!, {
+        firstClientIds: this.getClientIdsForEmployee(
+          sourceId,
+          this.transferClientScope
+        ),
+        secondClientIds: this.getClientIdsForEmployee(
+          targetId,
+          this.transferClientScope
+        ),
+      });
     } else {
+      const clientIds = this.getClientIdsForEmployee(
+        sourceId,
+        this.transferClientScope
+      );
       const count =
         this.bulkAction.subset === 'count'
           ? this.bulkAction.count ?? undefined
@@ -736,10 +854,12 @@ export class TeamPageComponent implements OnInit {
           ? this.data.copyClientsToEmployee(sourceId!, targetId!, {
               count,
               randomize,
+              clientIds,
             })
           : this.data.transferCurrentClients(sourceId!, targetId!, {
               count,
               randomize,
+              clientIds,
             });
     }
 
@@ -788,7 +908,7 @@ export class TeamPageComponent implements OnInit {
     if (!id) {
       return '';
     }
-    const emp = this.employees.find((e) => e.uid === id);
+    const emp = this.allEmployees.find((e) => e.uid === id);
     if (!emp) {
       return '';
     }
@@ -805,11 +925,16 @@ export class TeamPageComponent implements OnInit {
       return;
     }
     this.bulkAction.duplicatesLoading = true;
-    const src = this.employees.find((e) => e.uid === this.transfer.sourceId);
-    const dst = this.employees.find((e) => e.uid === this.transfer.targetId);
-
-    const srcClients = src?.clients ?? src?.currentClients ?? [];
-    const dstSet = new Set(dst?.clients ?? dst?.currentClients ?? []);
+    const srcClients = this.getStoredClientIdsForEmployee(
+      this.transfer.sourceId,
+      this.transferClientScope
+    );
+    const dstSet = new Set(
+      this.getStoredClientIdsForEmployee(
+        this.transfer.targetId,
+        this.transferClientScope
+      )
+    );
     const duplicates = Array.from(new Set(srcClients)).filter((uid) =>
       dstSet.has(uid)
     );
@@ -832,7 +957,8 @@ export class TeamPageComponent implements OnInit {
       .removeDuplicateClientsBetweenEmployees(
         this.transfer.sourceId,
         this.transfer.targetId,
-        removeFrom
+        removeFrom,
+        { duplicateIds: this.bulkAction.duplicateIds }
       )
       .then((removedCount) => {
         this.isTransferring = false;

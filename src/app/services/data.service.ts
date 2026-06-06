@@ -704,7 +704,7 @@ export class DataService {
   async transferCurrentClients(
     sourceEmployeeId: string,
     targetEmployeeId: string,
-    opts?: { count?: number; randomize?: boolean }
+    opts?: { count?: number; randomize?: boolean; clientIds?: string[] }
   ): Promise<number> {
     const tenantUid = this.auth.currentUser.uid;
 
@@ -735,7 +735,7 @@ export class DataService {
     }
 
     // De-duplicate both sides first
-    const srcUnique = Array.from(new Set(rawSrc));
+    const srcUnique = Array.from(new Set(opts?.clientIds ?? rawSrc));
     const selectedIds = this.pickClientIds(
       srcUnique,
       opts?.count,
@@ -803,7 +803,8 @@ export class DataService {
    */
   async swapClientsBetweenEmployees(
     firstEmployeeId: string,
-    secondEmployeeId: string
+    secondEmployeeId: string,
+    opts?: { firstClientIds?: string[]; secondClientIds?: string[] }
   ): Promise<{ toFirst: number; toSecond: number }> {
     if (firstEmployeeId === secondEmployeeId) {
       throw new Error('Les deux employés doivent être différents.');
@@ -839,8 +840,8 @@ export class DataService {
       secondData.currentClients ??
       []) as string[];
 
-    const firstUnique = Array.from(new Set(rawFirst));
-    const secondUnique = Array.from(new Set(rawSecond));
+    const firstUnique = Array.from(new Set(opts?.firstClientIds ?? rawFirst));
+    const secondUnique = Array.from(new Set(opts?.secondClientIds ?? rawSecond));
 
     if (!firstUnique.length && !secondUnique.length) {
       return { toFirst: 0, toSecond: 0 };
@@ -849,10 +850,17 @@ export class DataService {
     const secondSet = new Set(secondUnique);
     const shared = new Set(firstUnique.filter((id) => secondSet.has(id)));
 
-    // Swap the arrays (still deduped)
+    const selectedFirstSet = new Set(firstUnique);
+    const selectedSecondSet = new Set(secondUnique);
+    const remainingFirst = rawFirst.filter((id) => !selectedFirstSet.has(id));
+    const remainingSecond = rawSecond.filter((id) => !selectedSecondSet.has(id));
+    const newFirst = Array.from(new Set([...remainingFirst, ...secondUnique]));
+    const newSecond = Array.from(new Set([...remainingSecond, ...firstUnique]));
+
+    // Swap only the selected arrays; preserve unselected clients on each employee.
     await this.afs.firestore.runTransaction(async (tx) => {
-      tx.update(firstRef, { clients: secondUnique });
-      tx.update(secondRef, { clients: firstUnique });
+      tx.update(firstRef, { clients: newFirst });
+      tx.update(secondRef, { clients: newSecond });
     });
 
     const assignToFirst = secondUnique.filter((id) => !shared.has(id));
@@ -891,7 +899,7 @@ export class DataService {
   async copyClientsToEmployee(
     sourceEmployeeId: string,
     targetEmployeeId: string,
-    opts?: { count?: number; randomize?: boolean }
+    opts?: { count?: number; randomize?: boolean; clientIds?: string[] }
   ): Promise<number> {
     const tenantUid = this.auth.currentUser.uid;
 
@@ -916,7 +924,7 @@ export class DataService {
       dstData.currentClients ??
       []) as string[];
 
-    const srcUnique = Array.from(new Set(rawSrc));
+    const srcUnique = Array.from(new Set(opts?.clientIds ?? rawSrc));
     const selectedIds = this.pickClientIds(
       srcUnique,
       opts?.count,
@@ -943,7 +951,8 @@ export class DataService {
   async removeDuplicateClientsBetweenEmployees(
     sourceEmployeeId: string,
     targetEmployeeId: string,
-    removeFrom: 'source' | 'target'
+    removeFrom: 'source' | 'target',
+    opts?: { duplicateIds?: string[] }
   ): Promise<number> {
     const tenantUid = this.auth.currentUser.uid;
 
@@ -970,7 +979,11 @@ export class DataService {
 
     const srcSet = new Set(rawSrc);
     const dstSet = new Set(rawDst);
-    const duplicates = [...srcSet].filter((id) => dstSet.has(id));
+    const duplicates = opts?.duplicateIds?.length
+      ? Array.from(new Set(opts.duplicateIds)).filter(
+          (id) => srcSet.has(id) && dstSet.has(id)
+        )
+      : [...srcSet].filter((id) => dstSet.has(id));
 
     if (!duplicates.length) {
       return 0;
