@@ -1086,7 +1086,32 @@
     </h2>
 
     <!-- new comment form -->
-    <div *ngIf="auth.isAdmin || auth.isDistributor" class="mb-10">
+    <div
+      *ngIf="canAddAuditClientComment"
+      class="mb-10 rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70"
+    >
+      <div class="mb-4">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">
+          Type de commentaire
+        </p>
+        <div class="mt-2 grid gap-2 sm:grid-cols-3">
+          <button
+            *ngFor="let type of auditClientCommentTypes"
+            type="button"
+            (click)="selectAuditClientCommentType(type.value)"
+            class="rounded-xl border px-3 py-2 text-left text-xs font-semibold transition"
+            [class.border-emerald-500]="selectedAuditClientCommentType === type.value"
+            [class.bg-emerald-50]="selectedAuditClientCommentType === type.value"
+            [class.text-emerald-800]="selectedAuditClientCommentType === type.value"
+            [class.border-slate-200]="selectedAuditClientCommentType !== type.value"
+            [class.bg-white]="selectedAuditClientCommentType !== type.value"
+            [class.text-slate-600]="selectedAuditClientCommentType !== type.value"
+          >
+            {{ type.label }}
+          </button>
+        </div>
+      </div>
+
       <label
         class="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
         >Nom de l’auteur</label
@@ -1094,34 +1119,141 @@
       <input
         [(ngModel)]="personPostingComment"
         type="text"
-        class="mb-4 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
+        [disabled]="auditClientCommentSubmitting"
+        class="mb-4 w-full rounded-lg border p-2.5 bg-white dark:bg-gray-700 dark:text-white"
         placeholder="Jeanne Kiluwa"
       />
       <textarea
         [(ngModel)]="comment"
         rows="5"
-        class="mb-4 w-full rounded-lg border p-2.5 bg-gray-50 dark:bg-gray-700 dark:text-white"
-        placeholder="Votre commentaire..."
+        [disabled]="auditClientCommentSubmitting"
+        class="mb-4 w-full rounded-lg border p-2.5 bg-white dark:bg-gray-700 dark:text-white"
+        placeholder="Ajouter les détails de l'audit..."
       ></textarea>
+
+      <div class="mb-4 rounded-2xl border border-dashed border-slate-300 bg-white p-4 dark:border-slate-700 dark:bg-slate-900/70">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+              Pièce jointe
+            </p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Photo par défaut. Audio et vidéo sont aussi acceptés.
+            </p>
+          </div>
+          <div class="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800">
+            <button
+              type="button"
+              (click)="setAuditClientCommentAttachmentKind('image')"
+              class="rounded-full px-3 py-1 text-xs font-semibold transition"
+              [class.bg-white]="auditClientCommentAttachmentKind === 'image'"
+              [class.text-emerald-700]="auditClientCommentAttachmentKind === 'image'"
+              [class.shadow]="auditClientCommentAttachmentKind === 'image'"
+            >
+              Photo
+            </button>
+            <button
+              type="button"
+              (click)="setAuditClientCommentAttachmentKind('audio')"
+              class="rounded-full px-3 py-1 text-xs font-semibold transition"
+              [class.bg-white]="auditClientCommentAttachmentKind === 'audio'"
+              [class.text-emerald-700]="auditClientCommentAttachmentKind === 'audio'"
+              [class.shadow]="auditClientCommentAttachmentKind === 'audio'"
+            >
+              Audio
+            </button>
+            <button
+              type="button"
+              (click)="setAuditClientCommentAttachmentKind('video')"
+              class="rounded-full px-3 py-1 text-xs font-semibold transition"
+              [class.bg-white]="auditClientCommentAttachmentKind === 'video'"
+              [class.text-emerald-700]="auditClientCommentAttachmentKind === 'video'"
+              [class.shadow]="auditClientCommentAttachmentKind === 'video'"
+            >
+              Vidéo
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-3">
+          <label
+            [attr.for]="auditClientCommentAttachmentInputId"
+            class="inline-flex cursor-pointer items-center justify-center rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-500 hover:bg-emerald-50 dark:bg-slate-900"
+          >
+            Ajouter {{ auditCommentAttachmentLabel() }}
+          </label>
+          <input
+            [id]="auditClientCommentAttachmentInputId"
+            type="file"
+            [accept]="auditClientCommentAttachmentAccept"
+            (change)="onAuditClientCommentAttachmentSelected($any($event.target).files)"
+            class="hidden"
+          />
+
+          <p
+            *ngIf="auditClientCommentAttachmentError"
+            class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
+          >
+            {{ auditClientCommentAttachmentError }}
+          </p>
+
+          <div
+            *ngIf="auditClientCommentAttachmentPreviewUrl"
+            class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60"
+          >
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <p class="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {{ auditClientCommentAttachmentFile?.name }}
+              </p>
+              <button
+                type="button"
+                (click)="clearAuditClientCommentAttachment()"
+                class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-red-300 hover:text-red-600"
+              >
+                Retirer
+              </button>
+            </div>
+            <img
+              *ngIf="auditClientCommentAttachmentKind === 'image'"
+              [src]="auditClientCommentAttachmentPreviewUrl"
+              alt="Aperçu de la pièce jointe"
+              class="max-h-72 w-full rounded-xl object-contain"
+            />
+            <audio
+              *ngIf="auditClientCommentAttachmentKind === 'audio'"
+              [src]="auditClientCommentAttachmentPreviewUrl"
+              controls
+              class="w-full"
+            ></audio>
+            <video
+              *ngIf="auditClientCommentAttachmentKind === 'video'"
+              [src]="auditClientCommentAttachmentPreviewUrl"
+              controls
+              class="max-h-72 w-full rounded-xl bg-black"
+            ></video>
+          </div>
+        </div>
+      </div>
+
       <button
         (click)="addComment()"
-        class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700"
+        [disabled]="auditClientCommentSubmitting"
+        class="rounded-full bg-green-600 px-6 py-2 text-sm font-medium text-white shadow hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Poster
+        {{ auditClientCommentSubmitting ? "Publication..." : "Poster" }}
       </button>
     </div>
 
     <!-- comments list -->
     <article
-      *ngFor="
-        let c of comments | slice : 0 : (auth.isAdmin ? comments.length : 2)
-      "
+      *ngFor="let c of comments"
       class="relative mb-8 rounded-3xl bg-white p-6 shadow-md dark:bg-gray-800"
     >
       <span
         class="absolute inset-y-0 left-0 w-1 rounded-l-3xl bg-gradient-to-b from-green-400 to-green-600"
       ></span>
-      <header class="mb-4 flex items-center">
+      <header class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-center">
         <div
           class="mr-3 flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300"
         >
@@ -1135,6 +1267,13 @@
             c.timeFormatted
           }}</time>
         </div>
+        </div>
+        <span
+          class="inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold ring-1"
+          [ngClass]="auditCommentCategoryClass(c)"
+        >
+          {{ auditCommentCategoryLabel(c) }}
+        </span>
       </header>
       <!-- body -->
       <blockquote
@@ -1157,6 +1296,35 @@
             controls
             class="w-full max-w-sm rounded-lg shadow dark:bg-gray-700"
           ></audio>
+        </div>
+        <div *ngIf="c.attachments?.length" class="mt-4 ml-6 space-y-3">
+          <div
+            *ngFor="let attachment of c.attachments"
+            class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800"
+          >
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {{ attachment.type === "audio" ? "Audio" : attachment.type === "video" ? "Vidéo" : "Photo" }}
+              <span *ngIf="attachment.name"> · {{ attachment.name }}</span>
+            </p>
+            <img
+              *ngIf="attachment.type === 'image'"
+              [src]="attachment.url"
+              alt="Pièce jointe du commentaire"
+              class="max-h-80 w-full rounded-lg object-contain"
+            />
+            <audio
+              *ngIf="attachment.type === 'audio'"
+              [src]="attachment.url"
+              controls
+              class="w-full"
+            ></audio>
+            <video
+              *ngIf="attachment.type === 'video'"
+              [src]="attachment.url"
+              controls
+              class="max-h-80 w-full rounded-lg bg-black"
+            ></video>
+          </div>
         </div>
       </blockquote>
     </article>

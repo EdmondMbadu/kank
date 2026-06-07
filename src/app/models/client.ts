@@ -25,6 +25,29 @@ export interface AuditConversationAudioAttachment {
   uploadedBy?: string;
 }
 
+export type AuditClientCommentTag = 'no_answer' | 'fraud' | 'other';
+
+export interface ClientCommentAttachment {
+  type: 'image' | 'video' | 'audio';
+  url: string;
+  name?: string;
+  mimeType: string;
+  size: number; // bytes
+  path?: string;
+  uploadedAt?: string;
+  uploadedBy?: string;
+  width?: number; // px (image/video)
+  height?: number; // px (image/video)
+  durationSec?: number; // audio/video
+  captureTimeOriginalISO?: string; // exact original timestamp
+  captureTimeSource?:
+    | 'exif'
+    | 'mediainfo'
+    | 'fileLastModified'
+    | 'uploadTime';
+  gps?: { lat: number; lng: number; alt?: number }; // if available from EXIF
+}
+
 export class Client {
   uid?: string;
   trackingId?: string;
@@ -92,6 +115,10 @@ export class Client {
   isPhoneCorrect?: string;
   agentVerifyingName?: string;
   agentSubmittedVerification?: string;
+  auditCommentTag?: AuditClientCommentTag | string;
+  auditCommentTagLabel?: string;
+  auditCommentTaggedAt?: string;
+  auditCommentTaggedBy?: string;
   auditConversationAudios?: AuditConversationAudioAttachment[];
   auditConversationAudioUrl?: string;
   auditConversationAudioName?: string;
@@ -131,6 +158,10 @@ export class Comment {
   starsNumber?: number;
   audioUrl?: string;
   source?: string;
+  category?: AuditClientCommentTag | string;
+  categoryLabel?: string;
+  commentType?: AuditClientCommentTag | string;
+  tag?: string;
   createdById?: string;
   createdByName?: string;
   investigationDayKey?: string;
@@ -155,20 +186,5 @@ export class Comment {
 
   [key: string]: any;
   // NEW:
-  attachments?: Array<{
-    type: 'image' | 'video';
-    url: string;
-    mimeType: string;
-    size: number; // bytes
-    width?: number; // px (image/video)
-    height?: number; // px (image/video)
-    durationSec?: number; // video only
-    captureTimeOriginalISO?: string; // exact original timestamp
-    captureTimeSource?:
-      | 'exif'
-      | 'mediainfo'
-      | 'fileLastModified'
-      | 'uploadTime';
-    gps?: { lat: number; lng: number; alt?: number }; // if available from EXIF
-  }>;
+  attachments?: ClientCommentAttachment[];
 }

@@ -13,6 +13,9 @@ import { TimeService } from 'src/app/services/time.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Audit } from 'src/app/models/management';
 
+type AuditClientCommentType = 'no_answer' | 'fraud' | 'other';
+type AuditClientCommentAttachmentKind = 'image' | 'audio' | 'video';
+
 @Component({
   selector: 'app-register-portal',
   templateUrl: './register-portal.component.html',
@@ -26,6 +29,32 @@ export class RegiserPortalComponent {
     this.auditAudioMaxSizeMb * 1024 * 1024;
   readonly auditConversationInlineInputId = 'auditConversationAudioInline';
   readonly auditConversationModalInputId = 'auditConversationAudioModal';
+  readonly auditClientCommentAttachmentInputId =
+    'auditClientCommentAttachment';
+  readonly auditClientCommentAttachmentMaxSizeMb = 40;
+  readonly auditClientCommentAttachmentMaxSizeBytes =
+    this.auditClientCommentAttachmentMaxSizeMb * 1024 * 1024;
+  readonly auditClientCommentTypes: Array<{
+    value: AuditClientCommentType;
+    label: string;
+    tone: string;
+  }> = [
+    {
+      value: 'no_answer',
+      label: "Client n'a pas répondu à l'appel",
+      tone: 'amber',
+    },
+    {
+      value: 'fraud',
+      label: 'Client fraude',
+      tone: 'red',
+    },
+    {
+      value: 'other',
+      label: 'Autres',
+      tone: 'slate',
+    },
+  ];
   private readonly supportedAudioExtensions = new Set([
     'm4a',
     'mp3',
@@ -247,9 +276,15 @@ export class RegiserPortalComponent {
     this.retrieveClient();
     this.minReturnDate = this.time.getTomorrowsDateISO();
   }
-  comment?: string = 'RAISON DU REFUS: ';
+  comment?: string = '';
 
   comments: Comment[] = [];
+  selectedAuditClientCommentType: AuditClientCommentType | '' = '';
+  auditClientCommentAttachmentKind: AuditClientCommentAttachmentKind = 'image';
+  auditClientCommentAttachmentFile?: File;
+  auditClientCommentAttachmentPreviewUrl?: string;
+  auditClientCommentAttachmentError = '';
+  auditClientCommentSubmitting = false;
   isRecording = false;
   personPostingComment?: string = '';
   mediaRecorder!: MediaRecorder;
@@ -285,6 +320,20 @@ export class RegiserPortalComponent {
     );
   }
 
+  get canAddAuditClientComment(): boolean {
+    return this.auth.isAdmin || this.auth.isDistributor;
+  }
+
+  get auditClientCommentAttachmentAccept(): string {
+    if (this.auditClientCommentAttachmentKind === 'audio') {
+      return this.auditAudioAccept;
+    }
+    if (this.auditClientCommentAttachmentKind === 'video') {
+      return 'video/*,.mp4,.mov,.m4v,.webm,.3gp,.3gpp,.3gpp2';
+    }
+    return 'image/*';
+  }
+
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       const idx = Number(this.id); // position du client courant
@@ -294,6 +343,7 @@ export class RegiserPortalComponent {
       // … (votre logique existante) …
       this.detectSuspicious(idx, data);
       console.log('the client', this.client);
+      this.ensureAuditCommentAuthor();
       this.auth.getAuditInfo().subscribe((data) => {
         // this.auditInfo = data[0];
         this.audits = data;
@@ -358,17 +408,21 @@ export class RegiserPortalComponent {
     });
   }
   setComments() {
+    this.comments = [];
     if (this.client.comments) {
-      this.comments = this.client.comments;
+      this.comments = [...this.client.comments];
       // add the formatted time
       this.comments.forEach((comment) => {
-        comment.timeFormatted = this.time.convertDateToDesiredFormat(
-          comment.time!
-        );
+        if (comment.time) {
+          comment.timeFormatted = this.time.convertDateToDesiredFormat(
+            comment.time
+          );
+        }
       });
     }
     this.comments.sort((a: any, b: any) => {
       const parseTime = (time: string) => {
+        if (!time) return 0;
         const [month, day, year, hour, minute, second] = time
           .split('-')
           .map(Number);
@@ -711,33 +765,175 @@ export class RegiserPortalComponent {
       console.error('Error removing client from pendingClients:', err);
     }
   }
-  addComment() {
-    if (this.comment === '' || this.personPostingComment === '') {
-      alert('Remplissez toutes les données.');
+  async addComment(): Promise<void> {
+    if (!this.canAddAuditClientComment || this.auditClientCommentSubmitting) {
       return;
     }
+
+    const selectedType = this.selectedAuditClientCommentType;
+    const selectedOption = this.auditClientCommentTypes.find(
+      (option) => option.value === selectedType
+    );
+    const commentText = (this.comment || '').trim();
+    const author = (this.personPostingComment || this.auditActorName()).trim();
+
+    if (!selectedOption) {
+      alert('Choisissez le type de commentaire.');
+      return;
+    }
+
+    if (!commentText && !this.auditClientCommentAttachmentFile) {
+      alert('Ajoutez un commentaire ou une pièce jointe.');
+      return;
+    }
+
+    if (!author) {
+      alert("Le nom de l'auteur est introuvable.");
+      return;
+    }
+
+    if (!this.client.uid) {
+      alert('Client introuvable.');
+      return;
+    }
+
     let conf = confirm(`Êtes-vous sûr de vouloir publier ce commentaire`);
     if (!conf) {
       return;
     }
+
+    this.auditClientCommentSubmitting = true;
     try {
-      const com = {
-        name: this.personPostingComment,
-        comment: this.comment,
+      const attachments = this.auditClientCommentAttachmentFile
+        ? [
+            await this.uploadAuditClientCommentAttachment(
+              this.auditClientCommentAttachmentFile
+            ),
+          ]
+        : [];
+      const com: Comment = {
+        name: author,
+        comment: commentText,
         time: this.time.todaysDate(),
+        category: selectedOption.value,
+        categoryLabel: selectedOption.label,
+        tag: selectedOption.label,
+        visible: true,
+        source: 'register-portal-audit',
+        createdById: this.auth.currentUser?.uid,
+        createdByName: author,
+        ...(attachments.length ? { attachments } : {}),
       };
-      this.comments?.push(com);
-      this.data
-        .addCommentToClientProfile(this.client, this.comments)
-        .then(() => {
-          this.personPostingComment = '';
-          this.comment = '';
-        });
+
+      const updatedComments = [...this.comments, com];
+      await this.data.setClientFields(this.client.uid!, {
+        comments: updatedComments,
+        auditCommentTag: selectedOption.value,
+        auditCommentTagLabel: selectedOption.label,
+        auditCommentTaggedAt: com.time,
+        auditCommentTaggedBy: author,
+      } as Partial<Client>);
+
+      this.client.comments = updatedComments;
+      this.client.auditCommentTag = selectedOption.value;
+      this.client.auditCommentTagLabel = selectedOption.label;
+      this.client.auditCommentTaggedAt = com.time;
+      this.client.auditCommentTaggedBy = author;
+      this.comment = '';
+      this.selectedAuditClientCommentType = '';
+      this.clearAuditClientCommentAttachment();
+      this.ensureAuditCommentAuthor();
+      this.setComments();
     } catch (error) {
+      console.error('Failed to publish audit client comment:', error);
       alert(
         "Une erreur s'est produite lors de la publication du commentaire. Essayer à nouveau."
       );
+    } finally {
+      this.auditClientCommentSubmitting = false;
     }
+  }
+
+  selectAuditClientCommentType(type: AuditClientCommentType): void {
+    this.selectedAuditClientCommentType = type;
+  }
+
+  setAuditClientCommentAttachmentKind(
+    kind: AuditClientCommentAttachmentKind
+  ): void {
+    if (this.auditClientCommentAttachmentKind === kind) return;
+    this.auditClientCommentAttachmentKind = kind;
+    this.clearAuditClientCommentAttachment();
+  }
+
+  onAuditClientCommentAttachmentSelected(fileList: FileList | null): void {
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    this.auditClientCommentAttachmentError = '';
+
+    if (!this.isSupportedAuditClientCommentAttachment(file)) {
+      this.clearAuditClientCommentAttachment();
+      this.auditClientCommentAttachmentError =
+        'Le type de fichier ne correspond pas au format choisi.';
+      return;
+    }
+
+    if (file.size > this.auditClientCommentAttachmentMaxSizeBytes) {
+      this.clearAuditClientCommentAttachment();
+      this.auditClientCommentAttachmentError = `Fichier trop volumineux. Maximum ${this.auditClientCommentAttachmentMaxSizeMb}MB.`;
+      return;
+    }
+
+    const normalizedFile =
+      this.auditClientCommentAttachmentKind === 'audio'
+        ? this.normalizeAudioFile(file)
+        : file;
+    this.clearAuditClientCommentAttachment(false);
+    this.auditClientCommentAttachmentFile = normalizedFile;
+    this.auditClientCommentAttachmentPreviewUrl =
+      URL.createObjectURL(normalizedFile);
+    this.resetFileInput(this.auditClientCommentAttachmentInputId);
+  }
+
+  clearAuditClientCommentAttachment(resetInput = true): void {
+    this.auditClientCommentAttachmentFile = undefined;
+    this.auditClientCommentAttachmentError = '';
+    if (this.auditClientCommentAttachmentPreviewUrl) {
+      URL.revokeObjectURL(this.auditClientCommentAttachmentPreviewUrl);
+    }
+    this.auditClientCommentAttachmentPreviewUrl = undefined;
+    if (resetInput) {
+      this.resetFileInput(this.auditClientCommentAttachmentInputId);
+    }
+  }
+
+  auditCommentCategoryLabel(comment: Comment): string {
+    const value = comment.category || comment.commentType || comment.tag;
+    const option = this.auditClientCommentTypes.find(
+      (entry) => entry.value === value || entry.label === value
+    );
+    return option?.label || comment.categoryLabel || comment.tag || 'Autres';
+  }
+
+  auditCommentCategoryClass(comment: Comment): string {
+    const value = comment.category || comment.commentType || comment.tag;
+    const option = this.auditClientCommentTypes.find(
+      (entry) => entry.value === value || entry.label === value
+    );
+    switch (option?.tone) {
+      case 'red':
+        return 'bg-red-100 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900/60';
+      case 'amber':
+        return 'bg-amber-100 text-amber-800 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900/60';
+      default:
+        return 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700';
+    }
+  }
+
+  auditCommentAttachmentLabel(): string {
+    if (this.auditClientCommentAttachmentKind === 'audio') return 'Audio';
+    if (this.auditClientCommentAttachmentKind === 'video') return 'Vidéo';
+    return 'Photo';
   }
 
   requestCancel(c: Client) {
@@ -1151,6 +1347,110 @@ export class RegiserPortalComponent {
     return recordedAt.toISOString();
   }
 
+  private async uploadAuditClientCommentAttachment(file: File): Promise<any> {
+    const normalizedFile =
+      this.auditClientCommentAttachmentKind === 'audio'
+        ? this.normalizeAudioFile(file)
+        : file;
+    const mimeType =
+      normalizedFile.type ||
+      this.inferAuditClientCommentAttachmentMimeType(normalizedFile);
+    const fileName = `${Date.now()}-${this.safeStorageFileName(
+      normalizedFile.name || this.auditClientCommentAttachmentKind
+    )}`;
+    const path = `audit-client-comments/${this.client.uid}/${fileName}`;
+
+    const uploadTask = await this.storage.upload(path, normalizedFile, {
+      contentType: mimeType,
+      customMetadata: {
+        fileName: normalizedFile.name,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: this.auditActorName(),
+        commentAttachmentType: this.auditClientCommentAttachmentKind,
+        mimeType,
+      },
+    });
+    const url = await uploadTask.ref.getDownloadURL();
+
+    return {
+      type: this.auditClientCommentAttachmentKind,
+      url,
+      name: normalizedFile.name,
+      mimeType,
+      size: uploadTask.totalBytes || normalizedFile.size,
+      path,
+      uploadedAt: this.time.todaysDate(),
+      uploadedBy: this.auditActorName(),
+    };
+  }
+
+  private isSupportedAuditClientCommentAttachment(file: File): boolean {
+    const mimeType = (file.type || '').toLowerCase();
+
+    if (this.auditClientCommentAttachmentKind === 'image') {
+      return mimeType.startsWith('image/');
+    }
+
+    if (this.auditClientCommentAttachmentKind === 'video') {
+      return (
+        mimeType.startsWith('video/') ||
+        ['mp4', 'mov', 'm4v', 'webm', '3gp', '3gpp', '3gpp2'].includes(
+          this.fileExtension(file.name)
+        )
+      );
+    }
+
+    return this.isSupportedAudioFile(file);
+  }
+
+  private inferAuditClientCommentAttachmentMimeType(file: File): string {
+    if (this.auditClientCommentAttachmentKind === 'audio') {
+      return this.inferAudioMimeType(file) || 'audio/mp4';
+    }
+
+    const extension = this.fileExtension(file.name);
+    if (this.auditClientCommentAttachmentKind === 'video') {
+      switch (extension) {
+        case 'mov':
+          return 'video/quicktime';
+        case 'webm':
+          return 'video/webm';
+        case '3gp':
+        case '3gpp':
+          return 'video/3gpp';
+        case '3gpp2':
+          return 'video/3gpp2';
+        default:
+          return 'video/mp4';
+      }
+    }
+
+    switch (extension) {
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
+      default:
+        return 'image/jpeg';
+    }
+  }
+
+  private safeStorageFileName(fileName: string): string {
+    return fileName
+      .trim()
+      .replace(/[^a-zA-Z0-9._-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 120) || 'attachment';
+  }
+
+  private ensureAuditCommentAuthor(): void {
+    if (!this.personPostingComment?.trim()) {
+      this.personPostingComment = this.auditActorName();
+    }
+  }
+
   private resetAuditConversationInputs(): void {
     this.resetFileInput(this.auditConversationInlineInputId);
     this.resetFileInput(this.auditConversationModalInputId);
@@ -1161,5 +1461,10 @@ export class RegiserPortalComponent {
     if (input) {
       input.value = '';
     }
+  }
+
+  ngOnDestroy(): void {
+    this.clearSelectedAuditAudio();
+    this.clearAuditClientCommentAttachment(false);
   }
 }
