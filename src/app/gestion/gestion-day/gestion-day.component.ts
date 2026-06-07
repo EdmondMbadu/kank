@@ -316,6 +316,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   private readonly weeklyFloorMilestoneFc = 600000;
   private readonly weeklyStretchMilestoneFc = 900000;
   gestionHeatmapMode: GestionHeatmapMode = 'paymentToday';
+  heatmapPaymentDate: string = this.time.getTodaysDateYearMonthDay();
+  heatmapPaymentDateCorrectFormat: string = this.time.todaysDateMonthDayYear();
   readonly gestionHeatmapOptions: GestionHeatmapOption[] = [
     { mode: 'paymentToday', label: 'Paiement du jour' },
     { mode: 'reserveToday', label: 'Réserve du jour' },
@@ -356,8 +358,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     return {
       title: this.activeGestionHeatmapOption.label,
       subtitle:
-        this.gestionHeatmapMode === 'paymentToday' ||
-        this.gestionHeatmapMode === 'reserveToday'
+        this.gestionHeatmapMode === 'paymentToday'
+          ? this.time.convertDateToDayMonthYear(
+              this.heatmapPaymentDateCorrectFormat
+            )
+          : this.gestionHeatmapMode === 'reserveToday'
           ? this.time.convertDateToDayMonthYear(this.requestDateCorrectFormat)
           : this.weeklyPaymentRangeLabel,
       totalValueFc,
@@ -372,6 +377,15 @@ export class GestionDayComponent implements OnInit, OnDestroy {
 
   setGestionHeatmapMode(mode: GestionHeatmapMode): void {
     this.gestionHeatmapMode = mode;
+  }
+
+  updateHeatmapPaymentDate(): void {
+    if (!this.heatmapPaymentDate) {
+      this.heatmapPaymentDate = this.time.getTodaysDateYearMonthDay();
+    }
+    this.heatmapPaymentDateCorrectFormat = this.time.convertDateToMonthDayYear(
+      this.heatmapPaymentDate
+    );
   }
 
   get reserveRevealTimeLabel(): string {
@@ -1354,25 +1368,22 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     expectedFc: number;
     detailLabel: string;
   }> {
-    if (
-      this.gestionHeatmapMode === 'paymentToday' ||
-      this.gestionHeatmapMode === 'reserveToday'
-    ) {
+    if (this.gestionHeatmapMode === 'paymentToday') {
+      return this.buildPaymentHeatmapRowsForDate(
+        this.heatmapPaymentDateCorrectFormat
+      );
+    }
+
+    if (this.gestionHeatmapMode === 'reserveToday') {
       return this.reserveTotals.map((row) => {
-        const valueFc =
-          this.gestionHeatmapMode === 'paymentToday'
-            ? Number(row.payment || 0)
-            : Number(row.actual || 0);
+        const valueFc = Number(row.actual || 0);
 
         return {
           label: row.firstName,
           valueFc,
           valueDollar: this.convertFcToDollar(valueFc),
           expectedFc: Number(row.total || 0),
-          detailLabel:
-            this.gestionHeatmapMode === 'paymentToday'
-              ? 'Attendu paiement'
-              : 'Réserve attendue',
+          detailLabel: 'Réserve attendue',
         };
       });
     }
@@ -1398,6 +1409,46 @@ export class GestionDayComponent implements OnInit, OnDestroy {
             : 'Réserve attendue',
       };
     });
+  }
+
+  private buildPaymentHeatmapRowsForDate(dateKey: string): Array<{
+    label: string;
+    valueFc: number;
+    valueDollar: number;
+    expectedFc: number;
+    detailLabel: string;
+  }> {
+    return (this.allUsers || []).map((user) => {
+      const valueFc = Number(user.dailyReimbursement?.[dateKey] || 0);
+      const safeValueFc = Number.isFinite(valueFc) ? valueFc : 0;
+      const expectedFc = this.computeExpectedPaymentTotalForUser(user, dateKey);
+
+      return {
+        label: user.firstName || 'Sans nom',
+        valueFc: safeValueFc,
+        valueDollar: this.convertFcToDollar(safeValueFc),
+        expectedFc,
+        detailLabel: 'Attendu paiement',
+      };
+    });
+  }
+
+  private computeExpectedPaymentTotalForUser(user: User, dateKey: string): number {
+    const clients = this.weeklyClientsByUser.get(user.uid || '') || [];
+    if (clients.length === 0) return 0;
+
+    const paymentDay = this.time.getDayOfWeek(dateKey);
+    const expectedClients = this.data
+      .findClientsWithDebts(clients)
+      .filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === paymentDay &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+    return this.compute.computeExpectedPerDate(expectedClients);
   }
 
   private computeWeeklyReserveTotalForUser(
