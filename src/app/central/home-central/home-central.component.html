@@ -1361,12 +1361,6 @@
                 {{ centralNotPaidGroups.length }} équipe(s) concernée(s)
               </p>
             </div>
-            <input
-              type="text"
-              [formControl]="centralNotPaidSearchControl"
-              placeholder="Rechercher client ou équipe…"
-              class="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
-            />
           </div>
 
           <div *ngIf="centralNotPaidGroups.length; else noCentralNotPaidGroups" class="mt-4 space-y-3">
@@ -1411,13 +1405,22 @@
       </div>
 
       <div class="mt-5 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/40">
-        <div class="flex items-center justify-between gap-3">
-          <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Clients concernés
-          </h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            {{ centralNotPaidResults.length }} résultat(s)
-          </p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Clients concernés
+            </h3>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {{ centralNotPaidResults.length }} résultat(s)
+            </p>
+          </div>
+          <input
+            type="search"
+            [formControl]="centralNotPaidSearchControl"
+            placeholder="Rechercher un client…"
+            aria-label="Rechercher un client concerné"
+            class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 sm:max-w-xs"
+          />
         </div>
 
         <ul *ngIf="centralNotPaidResults.length; else noCentralNotPaidClients" class="mt-3 divide-y divide-slate-200 dark:divide-slate-800">
@@ -1427,7 +1430,7 @@
           >
             <button
               type="button"
-              (click)="openClientModal(client)"
+              (click)="openCentralNotPaidStatusModal(client)"
               class="min-w-0 text-left"
             >
               <p class="truncate text-sm font-semibold text-slate-900 transition hover:text-rose-600 dark:text-slate-100 dark:hover:text-rose-300">
@@ -3784,6 +3787,97 @@
   </div>
   </details>
 </section>
+
+<!-- ==== CENTRAL NOT PAID STATUS MODAL ==== -->
+<div
+  *ngIf="centralNotPaidStatusModal.open && centralNotPaidStatusModal.client"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4"
+  aria-modal="true"
+  role="dialog"
+  (click)="closeCentralNotPaidStatusModal()"
+>
+  <div
+    class="w-full max-w-lg rounded-2xl bg-white p-5 shadow-[0_24px_70px_-24px_rgba(15,23,42,0.7)] dark:bg-slate-900"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-600 dark:text-rose-300">
+          Statut client
+        </p>
+        <h3 class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
+          {{ centralNotPaidStatusModal.client.firstName }}
+          {{ centralNotPaidStatusModal.client.lastName }}
+          {{ centralNotPaidStatusModal.client.middleName }}
+        </h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          {{ centralNotPaidStatusModal.client.locationName || "Site non indiqué" }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-rose-300 hover:text-rose-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
+        (click)="closeCentralNotPaidStatusModal()"
+        [disabled]="centralNotPaidStatusModal.saving"
+        aria-label="Fermer"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
+      <div class="flex items-center justify-between gap-3">
+        <span class="text-sm font-medium text-slate-600 dark:text-slate-300">
+          Statut actuel
+        </span>
+        <span
+          class="rounded-full px-3 py-1 text-xs font-semibold"
+          [class.bg-rose-100]="isClientQuitte(centralNotPaidStatusModal.client)"
+          [class.text-rose-700]="isClientQuitte(centralNotPaidStatusModal.client)"
+          [class.bg-emerald-100]="!isClientQuitte(centralNotPaidStatusModal.client)"
+          [class.text-emerald-700]="!isClientQuitte(centralNotPaidStatusModal.client)"
+        >
+          {{ isClientQuitte(centralNotPaidStatusModal.client) ? "Quitté" : "Actif" }}
+        </span>
+      </div>
+      <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+        Remettre un client actif efface le champ statut pour revenir au comportement normal.
+      </p>
+    </div>
+
+    <p
+      *ngIf="centralNotPaidStatusModal.error"
+      class="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
+    >
+      {{ centralNotPaidStatusModal.error }}
+    </p>
+
+    <div *ngIf="auth.isAdmin; else centralNotPaidStatusReadOnly" class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+      <button
+        type="button"
+        class="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        (click)="setCentralNotPaidClientStatus('active')"
+        [disabled]="centralNotPaidStatusModal.saving || !isClientQuitte(centralNotPaidStatusModal.client)"
+      >
+        Remettre actif
+      </button>
+      <button
+        type="button"
+        class="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+        (click)="setCentralNotPaidClientStatus('quitte')"
+        [disabled]="centralNotPaidStatusModal.saving || isClientQuitte(centralNotPaidStatusModal.client)"
+      >
+        Marquer Quitté
+      </button>
+    </div>
+
+    <ng-template #centralNotPaidStatusReadOnly>
+      <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+        Seuls les administrateurs peuvent modifier ce statut.
+      </div>
+    </ng-template>
+  </div>
+</div>
 
 <!-- ==== CLIENT QUICK VIEW MODAL ==== -->
 <div

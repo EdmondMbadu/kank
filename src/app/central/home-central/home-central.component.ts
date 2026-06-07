@@ -349,6 +349,12 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   centralNotPaidGroups: CentralNotPaidGroup[] = [];
   centralNotPaidTotalDebt = 0;
   showAllCentralNotPaidResults = false;
+  centralNotPaidStatusModal = {
+    open: false,
+    client: null as Client | null,
+    saving: false,
+    error: '',
+  };
 
   // single SMS modal
   smsModal = {
@@ -654,6 +660,64 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
         this.centralNotPaidSearchTerm = term ? String(term) : '';
         this.applyCentralNotPaidFilters();
       });
+  }
+
+  openCentralNotPaidStatusModal(client: Client): void {
+    this.centralNotPaidStatusModal = {
+      open: true,
+      client,
+      saving: false,
+      error: '',
+    };
+  }
+
+  closeCentralNotPaidStatusModal(): void {
+    if (this.centralNotPaidStatusModal.saving) return;
+    this.centralNotPaidStatusModal = {
+      open: false,
+      client: null,
+      saving: false,
+      error: '',
+    };
+  }
+
+  async setCentralNotPaidClientStatus(status: 'quitte' | 'active'): Promise<void> {
+    if (!this.auth.isAdmin || this.centralNotPaidStatusModal.saving) return;
+
+    const client = this.centralNotPaidStatusModal.client;
+    if (!client?.uid) {
+      this.centralNotPaidStatusModal.error = 'Client introuvable.';
+      return;
+    }
+
+    const ownerId = client.locationOwnerId;
+    if (!ownerId) {
+      this.centralNotPaidStatusModal.error =
+        'Le site du client est introuvable. Mise à jour impossible.';
+      return;
+    }
+
+    const vitalStatus = status === 'quitte' ? 'Quitté' : '';
+    this.centralNotPaidStatusModal.saving = true;
+    this.centralNotPaidStatusModal.error = '';
+
+    try {
+      await this.data.updateClientInvestigationFieldsForUser(ownerId, client.uid, {
+        vitalStatus,
+      });
+      this.applyClientVitalStatusLocal(client.uid, ownerId, vitalStatus);
+      this.refreshTomorrowBirthdayGroups();
+      this.applyClientFilters();
+      this.applyFinishedFilters();
+      this.applyCentralNotPaidFilters();
+      this.closeCentralNotPaidStatusModal();
+    } catch (error) {
+      console.error('Failed to update central not paid client status', error);
+      this.centralNotPaidStatusModal.error =
+        'Impossible de mettre à jour le statut du client.';
+    } finally {
+      this.centralNotPaidStatusModal.saving = false;
+    }
   }
 
   private resetCentralNotPaidLocationSelection(all = true): void {
@@ -3598,6 +3662,37 @@ Merci pour ta confiance !`;
     if (this.activeClient?.uid === clientId) {
       this.activeClient.phoneNumber = phoneNumber;
       this.activeClient.previousPhoneNumbers = [...previousPhoneNumbers];
+    }
+  }
+  private applyClientVitalStatusLocal(
+    clientId: string,
+    ownerId: string,
+    vitalStatus: string
+  ) {
+    const updateList = (list?: Client[] | null) => {
+      (list || []).forEach((client) => {
+        if (client.uid !== clientId) return;
+        if (client.locationOwnerId && client.locationOwnerId !== ownerId) return;
+        client.vitalStatus = vitalStatus;
+      });
+    };
+
+    updateList(this.allClients);
+    updateList(this.filteredItems);
+    updateList(this.finishedAll);
+    updateList(this.finishedFiltered);
+    updateList(this.allcurrentClientsWithDebts);
+    updateList(this.allCurrentClients ?? []);
+    updateList(this.allCurrentClientsWithDebtsScheduledToPayToday);
+    updateList(this.centralNotPaidResults);
+    this.centralNotPaidGroups.forEach((group) => updateList(group.clients));
+
+    if (this.activeClient?.uid === clientId) {
+      this.activeClient.vitalStatus = vitalStatus;
+    }
+
+    if (this.centralNotPaidStatusModal.client?.uid === clientId) {
+      this.centralNotPaidStatusModal.client.vitalStatus = vitalStatus;
     }
   }
   private buildPreviousPhoneNumbers(
