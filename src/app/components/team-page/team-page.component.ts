@@ -273,11 +273,15 @@ export class TeamPageComponent implements OnInit {
     const isInvestigator = this.auth.isInvestigator;
 
     if (isInvestigator && !isAdmin) {
-      visible = visible.filter((emp) => this.isVerifierRole(emp.role));
+      visible = visible.filter((emp) =>
+        this.isInvestigatorVisibleRole(emp.role)
+      );
     }
 
     if (isGestion && !isAdmin) {
-      visible = visible.filter((emp) => !this.isVerifierRole(emp.role));
+      visible = visible.filter(
+        (emp) => !this.isInvestigatorVisibleRole(emp.role)
+      );
     }
 
     if (!isAdmin && !isGestion && !isInvestigator) {
@@ -420,14 +424,16 @@ export class TeamPageComponent implements OnInit {
     return durationParts.join(' ');
   }
 
-  private isVerifierRole(role?: string): boolean {
+  private isInvestigatorVisibleRole(role?: string): boolean {
     if (!role) return false;
     const normalized = this.normalizeRoleName(role);
     return (
       normalized === 'verificateur' ||
       normalized === 'verificatrice' ||
       normalized === 'vérificateur' ||
-      normalized === 'vérificatrice'
+      normalized === 'vérificatrice' ||
+      normalized === 'stagaire polyvalent' ||
+      normalized === 'stagiaire polyvalent'
     );
   }
 
