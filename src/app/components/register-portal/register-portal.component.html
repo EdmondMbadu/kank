@@ -145,6 +145,42 @@
   </div>
 </div>
 
+<!-- latest comment attention banner -->
+<div *ngIf="latestClientComment" class="mx-auto mt-4 max-w-7xl px-4">
+  <div
+    class="overflow-hidden rounded-lg border border-red-300 bg-gradient-to-r from-red-50 via-amber-50 to-white text-red-900 shadow-lg shadow-red-100 ring-1 ring-red-200/70 sm:rounded-xl"
+  >
+    <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="text-sm font-extrabold uppercase tracking-wide text-red-700">
+            Attention
+          </p>
+          <span
+            class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ring-1"
+            [ngClass]="auditCommentCategoryClass(latestClientComment)"
+          >
+            {{ auditCommentCategoryLabel(latestClientComment) }}
+          </span>
+        </div>
+        <p class="mt-2 text-sm font-medium text-red-900">
+          Dernier commentaire audit: {{ latestClientCommentPreview }}
+        </p>
+        <p class="mt-1 text-xs text-red-700">
+          Ce client a déjà une remarque dans son dossier. Consultez les détails avant de continuer.
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="scrollToComments()"
+        class="inline-flex shrink-0 items-center justify-center rounded-full border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:border-red-500 hover:bg-red-100"
+      >
+        Voir commentaire
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- suspicious banner -->
 <div *ngIf="similarClients.length" class="mx-auto mt-4 max-w-7xl px-4">
   <div
@@ -1079,7 +1115,7 @@
 </div>
 
 <!-- === COMMENTS === -->
-<section class="bg-white dark:bg-gray-900 py-8 lg:py-16">
+<section id="client-comments" class="bg-white dark:bg-gray-900 py-8 lg:py-16 scroll-mt-24">
   <div class="mx-auto max-w-2xl px-4">
     <h2 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
       Commentaires

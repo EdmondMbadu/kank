@@ -334,6 +334,27 @@ export class RegiserPortalComponent {
     return 'image/*';
   }
 
+  get latestClientComment(): Comment | null {
+    return this.comments.length ? this.comments[0] : null;
+  }
+
+  get latestClientCommentPreview(): string {
+    const latest = this.latestClientComment;
+    const text = (latest?.comment || '').trim();
+    if (!text) {
+      return latest?.attachments?.length
+        ? 'Pièce jointe ajoutée au commentaire.'
+        : 'Commentaire ajouté au dossier.';
+    }
+    return text.length > 140 ? `${text.slice(0, 140)}...` : text;
+  }
+
+  scrollToComments(): void {
+    document
+      .getElementById('client-comments')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   retrieveClient(): void {
     this.auth.getAllClients().subscribe((data: any) => {
       const idx = Number(this.id); // position du client courant
