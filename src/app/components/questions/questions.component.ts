@@ -2,8 +2,10 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { Client } from 'src/app/models/client';
 import { Audit } from 'src/app/models/management';
+import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 
@@ -17,7 +19,7 @@ interface QuizQuestion {
   templateUrl: './questions.component.html',
   styleUrls: ['./questions.component.css'],
 })
-export class QuestionsComponent implements OnInit {
+export class QuestionsComponent implements OnInit, OnDestroy {
   constructor(
     private afs: AngularFirestore,
     public auth: AuthService,
@@ -41,6 +43,10 @@ export class QuestionsComponent implements OnInit {
   newAuditorName: string = '';
   newAuditorPhone: string = '';
   clients: Client[] = [];
+  private usersSub?: Subscription;
+  private clientSubs: Subscription[] = [];
+  private globalClientIndex = new Map<string, Client>();
+
   ngOnInit(): void {
     this.auth.getAuditInfo().subscribe((data) => {
       this.audits = Array.isArray(data)
@@ -48,6 +54,11 @@ export class QuestionsComponent implements OnInit {
         : [];
       this.retrieveClients();
     });
+  }
+
+  ngOnDestroy(): void {
+    this.usersSub?.unsubscribe();
+    this.clearClientSubscriptions();
   }
 
   onAddAudit() {
@@ -159,36 +170,329 @@ export class QuestionsComponent implements OnInit {
     }
   }
   retrieveClients(): void {
-    this.auth.getAllClients().subscribe((data: any) => {
-      this.clients = Array.isArray(data)
-        ? (data.filter(Boolean) as Client[])
-        : [];
+    this.usersSub?.unsubscribe();
+    this.clearClientSubscriptions();
+    this.clients = [];
+    this.globalClientIndex.clear();
 
-      if (!this.clients.length || !this.audits.length) {
+    if (!this.audits.length) return;
+
+    this.usersSub = this.auth.getAllUsersInfo().subscribe((users) => {
+      const scopedUsers = this.usersForPendingLocations(users || []);
+      this.clearClientSubscriptions();
+      this.clients = [];
+      this.globalClientIndex.clear();
+
+      if (!scopedUsers.length) {
+        this.matchPendingClients();
         return;
       }
 
-      // Match each pendingClient with an actual client by ID
-      this.audits.forEach((audit) => {
-        if (!Array.isArray(audit.pendingClients)) return;
-
-        audit.pendingClients.forEach((pc) => {
-          if (!pc?.clientId) return;
-
-          // Find the index of the client whose uid matches pc.clientId
-          const matchIndex = this.clients.findIndex(
-            (c) => c?.uid === pc.clientId
-          );
-
-          if (matchIndex !== -1) {
-            // Store the index as the pendingId
-            pc.pendingId = matchIndex.toString();
-          } else {
-            pc.pendingId = undefined;
-          }
+      scopedUsers.forEach((user) => {
+        if (!user.uid) return;
+        const sub = this.auth.getClientsOfAUser(user.uid).subscribe((clients) => {
+          this.replaceOwnerClients(user, clients || []);
+          this.matchPendingClients();
         });
+        this.clientSubs.push(sub);
       });
     });
+  }
+
+  private usersForPendingLocations(users: User[]): User[] {
+    const pendingLocations = new Set<string>();
+    this.audits.forEach((audit) => {
+      (audit.pendingClients || []).forEach((pc) => {
+        const location = (pc?.clientLocation || '').trim().toLowerCase();
+        if (location) pendingLocations.add(location);
+      });
+    });
+
+    if (!pendingLocations.size) {
+      return users.filter((user) => !!user.uid);
+    }
+
+    const scoped = users.filter((user) =>
+      pendingLocations.has((user.firstName || '').trim().toLowerCase())
+    );
+    return scoped.length ? scoped : users.filter((user) => !!user.uid);
+  }
+
+  private replaceOwnerClients(owner: User, clients: Client[]): void {
+    this.clients = this.clients.filter(
+      (client: any) => client.locationOwnerId !== owner.uid
+    );
+
+    const tagged = clients.filter(Boolean).map((client, index) => ({
+      ...client,
+      locationName: client.locationName || owner.firstName,
+      locationOwnerId: client.locationOwnerId || owner.uid,
+      __routeIndex: index,
+    }));
+
+    this.clients = this.clients.concat(tagged);
+    this.rebuildGlobalClientIndex();
+  }
+
+  private rebuildGlobalClientIndex(): void {
+    this.globalClientIndex.clear();
+
+    this.clients.forEach((client) => {
+      const keys = [
+        client.uid,
+        client.trackingId,
+        this.normalizePhone(client.phoneNumber),
+      ].filter(Boolean) as string[];
+
+      keys.forEach((key) => {
+        if (!this.globalClientIndex.has(key)) {
+          this.globalClientIndex.set(key, client);
+        }
+      });
+    });
+  }
+
+  private matchPendingClients(): void {
+    this.audits.forEach((audit) => {
+      if (!Array.isArray(audit.pendingClients)) return;
+
+      audit.pendingClients.forEach((pc) => {
+        if (!pc) return;
+
+        const matchedClient = this.findPendingClientMatch(pc);
+        if (matchedClient) {
+          (pc as any).__matchedClient = matchedClient;
+          const routeIndex = (matchedClient as any).__routeIndex;
+          if (routeIndex !== undefined && routeIndex !== null) {
+            pc.pendingId = String(routeIndex);
+          }
+        } else {
+          (pc as any).__matchedClient = undefined;
+        }
+      });
+    });
+  }
+
+  private findPendingClientMatch(pc: any): Client | undefined {
+    const indexed = this.clientFromPendingIndex(pc);
+    if (indexed) return indexed;
+
+    const keys = [
+      pc?.clientId,
+      pc?.trackingId,
+      this.normalizePhone(pc?.clientPhoneNumber),
+    ].filter(Boolean) as string[];
+
+    for (const key of keys) {
+      const match = this.globalClientIndex.get(String(key));
+      if (match) return match;
+    }
+
+    const pendingName = (pc?.clientName || '').trim().toLowerCase();
+    const pendingLocation = (pc?.clientLocation || '').trim().toLowerCase();
+    if (!pendingName || !pendingLocation) return undefined;
+
+    return this.clients.find((client) => {
+      const clientName = `${client.firstName || ''} ${client.lastName || ''}`
+        .trim()
+        .toLowerCase();
+      const clientLocation = (client.locationName || '').trim().toLowerCase();
+      return clientName === pendingName && clientLocation === pendingLocation;
+    });
+  }
+
+  private clearClientSubscriptions(): void {
+    this.clientSubs.forEach((sub) => sub.unsubscribe());
+    this.clientSubs = [];
+  }
+
+  pendingClientDaysPassed(pc: any): number | null {
+    const start = this.pendingClientStartDate(pc);
+    if (!start) return null;
+
+    const today = new Date();
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const startDay = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate()
+    );
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const diff = Math.floor(
+      (todayStart.getTime() - startDay.getTime()) / msPerDay
+    );
+    return diff < 0 ? null : diff;
+  }
+
+  pendingClientWaitLabel(pc: any): string {
+    const days = this.pendingClientDaysPassed(pc);
+    if (days === null) return 'Date demande manquante';
+    if (days <= 0) return "Demandé aujourd'hui";
+    return days === 1
+      ? '1 jour depuis demande'
+      : `${days} jours depuis demande`;
+  }
+
+  pendingClientUrgencyTitle(pc: any): string {
+    const days = this.pendingClientDaysPassed(pc);
+    if (days === null) {
+      return "Date de demande introuvable. Vérifiez le dossier client avant de prioriser.";
+    }
+    if (days >= 2) {
+      return `${days} jours sans vérification. Plus l'attente avance, plus le client risque d'être frustré.`;
+    }
+    if (days === 1) {
+      return "1 jour est déjà passé. À traiter avant que l'attente devienne frustrante.";
+    }
+    return "Nouveau dossier à vérifier aujourd'hui.";
+  }
+
+  isPendingClientDelayed(pc: any): boolean {
+    const days = this.pendingClientDaysPassed(pc);
+    return days !== null && days >= 2;
+  }
+
+  isPendingClientOneDay(pc: any): boolean {
+    return this.pendingClientDaysPassed(pc) === 1;
+  }
+
+  isPendingClientNewToday(pc: any): boolean {
+    return this.pendingClientDaysPassed(pc) === 0;
+  }
+
+  isPendingClientDateMissing(pc: any): boolean {
+    return this.pendingClientDaysPassed(pc) === null;
+  }
+
+  private pendingClientStartDate(pc: any): Date | null {
+    const matchedClient =
+      (pc?.__matchedClient as Client | undefined) ||
+      this.clientFromPendingIndex(pc);
+    const candidates = [
+      pc?.dateOfRequest,
+      matchedClient?.dateOfRequest,
+      pc?.requestedAt,
+      pc?.requestCreatedAt,
+      pc?.assignedAt,
+      pc?.createdAt,
+      pc?.pendingAt,
+      matchedClient?.dateJoined,
+      pc?.requestDate,
+      matchedClient?.requestDate,
+    ];
+
+    for (const candidate of candidates) {
+      const parsed = this.parsePendingDate(candidate);
+      if (parsed) return parsed;
+    }
+
+    return null;
+  }
+
+  private pendingClientIndexedMatch(pc: any): number {
+    const explicitIndex = this.pendingClientRouteIndex(pc);
+    if (explicitIndex === null) return -1;
+    return this.clients[explicitIndex] ? explicitIndex : -1;
+  }
+
+  private clientFromPendingIndex(pc: any): Client | undefined {
+    const index = this.pendingClientRouteIndex(pc);
+    if (index === null) return undefined;
+
+    const pendingLocation = (pc?.clientLocation || '').trim().toLowerCase();
+    const scopedClients = pendingLocation
+      ? this.clients
+          .filter(
+            (client) =>
+              (client.locationName || '').trim().toLowerCase() ===
+              pendingLocation
+          )
+          .sort(
+            (a: any, b: any) =>
+              Number(a.__routeIndex ?? 0) - Number(b.__routeIndex ?? 0)
+          )
+      : this.clients;
+
+    return scopedClients[index];
+  }
+
+  private pendingClientRouteIndex(pc: any): number | null {
+    const rawCandidates = [pc?.pendingId, pc?.registerPortalId, pc?.clientIndex];
+    for (const raw of rawCandidates) {
+      const parsed = this.parseNonNegativeInteger(raw);
+      if (parsed !== null) return parsed;
+    }
+
+    const clientIdIndex = this.parseNonNegativeInteger(pc?.clientId);
+    if (clientIdIndex !== null && !this.clients.some((c) => c?.uid === pc.clientId)) {
+      return clientIdIndex;
+    }
+
+    return null;
+  }
+
+  private parseNonNegativeInteger(value: any): number | null {
+    if (value === undefined || value === null || value === '') return null;
+    const text = String(value).trim();
+    if (!/^\d+$/.test(text)) return null;
+    const parsed = Number(text);
+    return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+  }
+
+  private matchesPendingClient(client: Client, pc: any): boolean {
+    if (!client || !pc) return false;
+
+    const pendingId = String(pc.clientId || '').trim();
+    if (pendingId && (client.uid === pendingId || client.trackingId === pendingId)) {
+      return true;
+    }
+
+    const pendingPhone = this.normalizePhone(pc.clientPhoneNumber);
+    const clientPhone = this.normalizePhone(client.phoneNumber);
+    if (pendingPhone && clientPhone && pendingPhone === clientPhone) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private normalizePhone(value?: string | null): string {
+    return (value || '').replace(/\D+/g, '');
+  }
+
+  private parsePendingDate(value: any): Date | null {
+    if (!value) return null;
+
+    if (typeof value?.toDate === 'function') {
+      const timestampDate = value.toDate();
+      return Number.isNaN(timestampDate.getTime()) ? null : timestampDate;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    const direct = new Date(raw);
+    if (!Number.isNaN(direct.getTime())) return direct;
+
+    const parts = raw.split(/[-/]/).map((part) => Number(part));
+    if (parts.length >= 3) {
+      const [month, day, year] = parts;
+      const hours = Number.isFinite(parts[3]) ? parts[3] : 0;
+      const minutes = Number.isFinite(parts[4]) ? parts[4] : 0;
+      const seconds = Number.isFinite(parts[5]) ? parts[5] : 0;
+      const parsed = new Date(year, month - 1, day, hours, minutes, seconds);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+
+    return null;
   }
 
   // For jumping to the client's register portal

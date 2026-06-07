@@ -142,9 +142,45 @@ class="flex flex-col md:flex-row items-start md:items-center mb-4 pb-4 border-b 
 
 <!-- Client Info -->
 <div class="flex-1">
-  <div class="font-semibold text-gray-800">{{ client.clientName }}</div>
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="font-semibold text-gray-800">{{ client.clientName }}</div>
+    <span
+      class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+      [class.border-red-200]="isPendingClientDelayed(client)"
+      [class.bg-red-50]="isPendingClientDelayed(client)"
+      [class.text-red-700]="isPendingClientDelayed(client)"
+      [class.border-amber-200]="isPendingClientOneDay(client)"
+      [class.bg-amber-50]="isPendingClientOneDay(client)"
+      [class.text-amber-700]="isPendingClientOneDay(client)"
+      [class.border-slate-200]="isPendingClientNewToday(client) || isPendingClientDateMissing(client)"
+      [class.bg-slate-50]="isPendingClientNewToday(client) || isPendingClientDateMissing(client)"
+      [class.text-slate-500]="isPendingClientNewToday(client) || isPendingClientDateMissing(client)"
+      [title]="pendingClientUrgencyTitle(client)"
+    >
+      <span
+        *ngIf="isPendingClientDelayed(client)"
+        aria-hidden="true"
+        class="text-red-600"
+      >
+        !
+      </span>
+      {{ pendingClientWaitLabel(client) }}
+    </span>
+  </div>
   <div class="text-sm text-gray-700">Location: {{ client.clientLocation }}</div>
   <div class="text-sm text-gray-700">Phone: {{ client.clientPhoneNumber }}</div>
+  <p
+    *ngIf="isPendingClientDelayed(client)"
+    class="mt-1 text-[11px] font-medium text-red-600"
+    >
+      Attention: le délai augmente le risque de frustration client.
+    </p>
+  <p
+    *ngIf="isPendingClientDateMissing(client)"
+    class="mt-1 text-[11px] font-medium text-slate-500"
+  >
+    Date de demande non trouvée sur ce dossier.
+  </p>
 </div>
 
 <!-- Action Buttons -->

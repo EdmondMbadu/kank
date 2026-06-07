@@ -108,6 +108,12 @@ export class PendingClient {
   clientId?: string;
   clientProfilePicture?: string;
   pendingId?: string;
+  dateOfRequest?: string;
+  requestDate?: string;
+  requestedAt?: string;
+  requestCreatedAt?: string;
+  assignedAt?: string;
+  createdAt?: string;
 }
 
 // models/rotation-schedule.ts
