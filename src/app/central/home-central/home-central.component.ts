@@ -175,11 +175,20 @@ type TrophyMissingFilterMode = 'all' | 'missing';
 type TopClientFocusPanel = 'birthdays' | 'trophyMissing';
 type HomeCentralSection =
   | 'clients'
+  | 'notPaid'
   | 'reminders'
   | 'relances'
   | 'contacts'
   | 'scheduled'
   | 'logs';
+type CentralNotPaidMode = 'cycle' | 'noPay';
+
+type CentralNotPaidGroup = {
+  key: string;
+  locationName: string;
+  clients: Client[];
+  totalDebt: number;
+};
 
 @Component({
   selector: 'app-home-central',
@@ -210,6 +219,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     adminOnly?: boolean;
   }> = [
     { id: 'clients', label: 'Tous les clients', eyebrow: 'Clients' },
+    { id: 'notPaid', label: 'Retards paiement', eyebrow: 'Retards' },
     { id: 'reminders', label: 'Rappel collectif', eyebrow: 'Rappel' },
     { id: 'relances', label: 'Relances multi-sites', eyebrow: 'Relances' },
     {
@@ -325,6 +335,20 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   selectAllLocations = true;
   masterSelectedLocations = new Set<string>();
   masterSelectAllLocations = true;
+  centralNotPaidSelectedLocations = new Set<string>();
+  centralNotPaidSelectAllLocations = true;
+  centralNotPaidMode: CentralNotPaidMode = 'noPay';
+  centralNotPaidMonth = this.currentMonthInputValue();
+  centralNotPaidCycleMonthsThreshold = 7;
+  centralNotPaidNoPayMonthsThreshold = 5;
+  centralNotPaidIncludeQuitte = false;
+  centralNotPaidSearchControl = new FormControl('');
+  private centralNotPaidSearchInitialized = false;
+  private centralNotPaidSearchTerm = '';
+  centralNotPaidResults: Client[] = [];
+  centralNotPaidGroups: CentralNotPaidGroup[] = [];
+  centralNotPaidTotalDebt = 0;
+  showAllCentralNotPaidResults = false;
 
   // single SMS modal
   smsModal = {
@@ -435,8 +459,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     this.buildFinishedAll();
     this.buildUniqueLocations();
     this.resetLocationSelection(true);
+    this.resetCentralNotPaidLocationSelection(true);
     this.setupFdSearch();
+    this.setupCentralNotPaidSearch();
     this.applyFinishedFilters();
+    this.applyCentralNotPaidFilters();
   }
 
   // ===== existing summary logic =====
@@ -486,6 +513,325 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200':
         !isActive,
     };
+  }
+
+  private currentMonthInputValue(): string {
+    const today = new Date();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    return `${today.getFullYear()}-${month}`;
+  }
+
+  get centralNotPaidActiveThreshold(): number {
+    return this.centralNotPaidMode === 'cycle'
+      ? this.centralNotPaidCycleMonthsThreshold
+      : this.centralNotPaidNoPayMonthsThreshold;
+  }
+
+  get centralNotPaidModeLabel(): string {
+    return this.centralNotPaidMode === 'cycle'
+      ? 'Cycle non soldé'
+      : 'Sans paiement récent';
+  }
+
+  get centralNotPaidReferenceMonthLabel(): string {
+    const reference = this.getCentralNotPaidReferenceDate();
+    return reference.toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  get centralNotPaidSelectedTeamsLabel(): string {
+    if (
+      this.centralNotPaidSelectAllLocations ||
+      this.centralNotPaidSelectedLocations.size === this.uniqueLocations.length
+    ) {
+      return 'Toutes les équipes';
+    }
+    if (this.centralNotPaidSelectedLocations.size === 0) {
+      return 'Aucune équipe sélectionnée';
+    }
+    return `${this.centralNotPaidSelectedLocations.size} équipe(s)`;
+  }
+
+  get visibleCentralNotPaidResults(): Client[] {
+    return this.showAllCentralNotPaidResults
+      ? this.centralNotPaidResults
+      : this.centralNotPaidResults.slice(0, 24);
+  }
+
+  get hasMoreCentralNotPaidResults(): boolean {
+    return (
+      this.centralNotPaidResults.length > this.visibleCentralNotPaidResults.length
+    );
+  }
+
+  get centralNotPaidTotalDebtDollar(): number {
+    return Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        this.centralNotPaidTotalDebt.toString()
+      )
+    );
+  }
+
+  get centralNotPaidAverageDebt(): number {
+    return this.centralNotPaidResults.length === 0
+      ? 0
+      : this.centralNotPaidTotalDebt / this.centralNotPaidResults.length;
+  }
+
+  get centralNotPaidActiveThresholdDescription(): string {
+    return this.centralNotPaidMode === 'cycle'
+      ? `Cycle ouvert depuis au moins ${this.centralNotPaidActiveThreshold} mois`
+      : `Aucun paiement dans les ${this.centralNotPaidActiveThreshold} derniers mois`;
+  }
+
+  setCentralNotPaidMode(mode: CentralNotPaidMode): void {
+    if (this.centralNotPaidMode === mode) return;
+    this.centralNotPaidMode = mode;
+    this.applyCentralNotPaidFilters();
+  }
+
+  isCentralNotPaidMode(mode: CentralNotPaidMode): boolean {
+    return this.centralNotPaidMode === mode;
+  }
+
+  centralNotPaidModeButtonClasses(mode: CentralNotPaidMode) {
+    return {
+      'bg-rose-600 text-white shadow-sm dark:bg-rose-500 dark:text-white':
+        this.isCentralNotPaidMode(mode),
+      'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700':
+        !this.isCentralNotPaidMode(mode),
+    };
+  }
+
+  onCentralNotPaidThresholdChange(value: string | number): void {
+    const parsed = Number(value);
+    const safeValue = Number.isFinite(parsed) && parsed >= 1 ? Math.round(parsed) : 1;
+    if (this.centralNotPaidMode === 'cycle') {
+      this.centralNotPaidCycleMonthsThreshold = safeValue;
+    } else {
+      this.centralNotPaidNoPayMonthsThreshold = safeValue;
+    }
+    this.applyCentralNotPaidFilters();
+  }
+
+  onCentralNotPaidMonthChange(value: string): void {
+    this.centralNotPaidMonth = value || this.currentMonthInputValue();
+    this.applyCentralNotPaidFilters();
+  }
+
+  toggleCentralNotPaidIncludeQuitte(): void {
+    this.centralNotPaidIncludeQuitte = !this.centralNotPaidIncludeQuitte;
+    this.applyCentralNotPaidFilters();
+  }
+
+  toggleCentralNotPaidAllLocations(): void {
+    this.centralNotPaidSelectAllLocations = !this.centralNotPaidSelectAllLocations;
+    this.resetCentralNotPaidLocationSelection(
+      this.centralNotPaidSelectAllLocations
+    );
+    this.applyCentralNotPaidFilters();
+  }
+
+  toggleCentralNotPaidLocation(location: string): void {
+    if (this.centralNotPaidSelectedLocations.has(location)) {
+      this.centralNotPaidSelectedLocations.delete(location);
+    } else {
+      this.centralNotPaidSelectedLocations.add(location);
+    }
+    this.centralNotPaidSelectAllLocations =
+      this.centralNotPaidSelectedLocations.size === this.uniqueLocations.length;
+    this.applyCentralNotPaidFilters();
+  }
+
+  private setupCentralNotPaidSearch(): void {
+    if (this.centralNotPaidSearchInitialized) return;
+    this.centralNotPaidSearchInitialized = true;
+    this.centralNotPaidSearchControl.valueChanges
+      .pipe(debounceTime(250), distinctUntilChanged())
+      .subscribe((term) => {
+        this.centralNotPaidSearchTerm = term ? String(term) : '';
+        this.applyCentralNotPaidFilters();
+      });
+  }
+
+  private resetCentralNotPaidLocationSelection(all = true): void {
+    this.centralNotPaidSelectedLocations.clear();
+    if (all) {
+      this.uniqueLocations.forEach((location) =>
+        this.centralNotPaidSelectedLocations.add(location)
+      );
+      this.centralNotPaidSelectAllLocations = true;
+    } else {
+      this.centralNotPaidSelectAllLocations = false;
+    }
+  }
+
+  private applyCentralNotPaidFilters(): void {
+    const referenceDate = this.getCentralNotPaidReferenceDate();
+    const term = this.centralNotPaidSearchTerm.trim().toLowerCase();
+
+    const results = (this.allClients ?? [])
+      .filter((client) => this.matchesCentralNotPaidLocation(client))
+      .filter((client) => this.matchesCentralNotPaidSearch(client, term))
+      .filter((client) => this.isCentralNotPaidClient(client, referenceDate))
+      .sort((a, b) => {
+        const debtDiff = this.clientDebtLeftAmount(b) - this.clientDebtLeftAmount(a);
+        if (debtDiff !== 0) return debtDiff;
+        return this.clientDisplayName(a).localeCompare(this.clientDisplayName(b));
+      });
+
+    this.centralNotPaidResults = results;
+    this.centralNotPaidTotalDebt = results.reduce(
+      (sum, client) => sum + this.clientDebtLeftAmount(client),
+      0
+    );
+    this.centralNotPaidGroups = this.buildCentralNotPaidGroups(results);
+    this.showAllCentralNotPaidResults = false;
+  }
+
+  private buildCentralNotPaidGroups(clients: Client[]): CentralNotPaidGroup[] {
+    const grouped = new Map<string, Client[]>();
+    clients.forEach((client) => {
+      const location = client.locationName || 'Sans localisation';
+      const list = grouped.get(location) || [];
+      list.push(client);
+      grouped.set(location, list);
+    });
+
+    return Array.from(grouped.entries())
+      .map(([locationName, entries]) => ({
+        key: locationName,
+        locationName,
+        clients: entries,
+        totalDebt: entries.reduce(
+          (sum, client) => sum + this.clientDebtLeftAmount(client),
+          0
+        ),
+      }))
+      .sort((a, b) => {
+        const countDiff = b.clients.length - a.clients.length;
+        return countDiff !== 0 ? countDiff : b.totalDebt - a.totalDebt;
+      });
+  }
+
+  private isCentralNotPaidClient(client: Client, referenceDate: Date): boolean {
+    if (this.clientDebtLeftAmount(client) <= 0) return false;
+    if (!this.passesCentralNotPaidVitalStatus(client)) return false;
+
+    const cycleStart = this.parseMonthDayYearDate(client.debtCycleStartDate);
+    if (!cycleStart) return false;
+
+    const ageMonths = this.monthsBetween(cycleStart, referenceDate);
+    if (ageMonths < this.centralNotPaidActiveThreshold) return false;
+
+    if (this.centralNotPaidMode === 'cycle') return true;
+
+    return !this.hasRecentPaymentWithinMonths(
+      client,
+      referenceDate,
+      this.centralNotPaidActiveThreshold
+    );
+  }
+
+  private passesCentralNotPaidVitalStatus(client: Client): boolean {
+    if (client.vitalStatus === 'Mort') return false;
+    if (!this.centralNotPaidIncludeQuitte && client.vitalStatus === 'Quitté') {
+      return false;
+    }
+    return true;
+  }
+
+  private matchesCentralNotPaidLocation(client: Client): boolean {
+    if (
+      this.centralNotPaidSelectAllLocations ||
+      this.centralNotPaidSelectedLocations.size === 0
+    ) {
+      return true;
+    }
+    return this.centralNotPaidSelectedLocations.has(client.locationName || '');
+  }
+
+  private matchesCentralNotPaidSearch(client: Client, term: string): boolean {
+    if (!term) return true;
+    return [
+      client.firstName,
+      client.lastName,
+      client.middleName,
+      client.phoneNumber,
+      client.locationName,
+    ].some((field) => (field || '').toLowerCase().includes(term));
+  }
+
+  private hasRecentPaymentWithinMonths(
+    client: Client,
+    referenceDate: Date,
+    months: number
+  ): boolean {
+    const payments = client.payments || {};
+    const cutoff = new Date(referenceDate);
+    cutoff.setMonth(cutoff.getMonth() - months);
+
+    return Object.keys(payments).some((dateKey) => {
+      const paymentDate = this.parseMonthDayYearDate(dateKey);
+      if (!paymentDate) return false;
+      return paymentDate >= cutoff && paymentDate <= referenceDate;
+    });
+  }
+
+  private getCentralNotPaidReferenceDate(): Date {
+    const [year, month] = (this.centralNotPaidMonth || this.currentMonthInputValue())
+      .split('-')
+      .map(Number);
+    const safeYear = Number.isFinite(year) ? year : new Date().getFullYear();
+    const safeMonth = Number.isFinite(month) ? month : new Date().getMonth() + 1;
+    return new Date(safeYear, safeMonth, 0, 23, 59, 59, 999);
+  }
+
+  private parseMonthDayYearDate(value?: string | null): Date | null {
+    if (!value) return null;
+    const [month, day, year] = value.split('-').map(Number);
+    if (!Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(year)) {
+      return null;
+    }
+    return new Date(year, month - 1, day);
+  }
+
+  private monthsBetween(start: Date, end: Date): number {
+    let months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+    if (end.getDate() < start.getDate()) months -= 1;
+    return Math.max(0, months);
+  }
+
+  private clientDebtLeftAmount(client: Client): number {
+    const raw = client.debtLeft ?? client.debtInProcess ?? 0;
+    const amount = Number(String(raw).replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
+  clientCentralNotPaidAgeMonths(client: Client): number {
+    const start = this.parseMonthDayYearDate(client.debtCycleStartDate);
+    if (!start) return 0;
+    return this.monthsBetween(start, this.getCentralNotPaidReferenceDate());
+  }
+
+  clientCentralNotPaidLastPaymentLabel(client: Client): string {
+    const dates = Object.keys(client.payments || {})
+      .map((key) => this.parseMonthDayYearDate(key))
+      .filter((date): date is Date => !!date)
+      .sort((a, b) => b.getTime() - a.getTime());
+
+    if (!dates.length) return 'Aucun paiement';
+    return dates[0].toLocaleDateString('fr-FR');
+  }
+
+  private clientDisplayName(client: Client): string {
+    return `${client.firstName || ''} ${client.lastName || ''} ${
+      client.middleName || ''
+    }`.trim();
   }
 
   initalizeInputs() {
