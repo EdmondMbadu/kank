@@ -279,7 +279,7 @@ export class RegiserPortalComponent {
   comment?: string = '';
 
   comments: Comment[] = [];
-  selectedAuditClientCommentType: AuditClientCommentType | '' = '';
+  selectedAuditClientCommentType: AuditClientCommentType = 'no_answer';
   auditClientCommentAttachmentKind: AuditClientCommentAttachmentKind = 'image';
   auditClientCommentAttachmentFile?: File;
   auditClientCommentAttachmentPreviewUrl?: string;
@@ -840,7 +840,7 @@ export class RegiserPortalComponent {
       this.client.auditCommentTaggedAt = com.time;
       this.client.auditCommentTaggedBy = author;
       this.comment = '';
-      this.selectedAuditClientCommentType = '';
+      this.selectedAuditClientCommentType = 'no_answer';
       this.clearAuditClientCommentAttachment();
       this.ensureAuditCommentAuthor();
       this.setComments();
