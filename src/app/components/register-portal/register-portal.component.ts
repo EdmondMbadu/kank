@@ -321,7 +321,7 @@ export class RegiserPortalComponent {
   }
 
   get canAddAuditClientComment(): boolean {
-    return this.auth.isAdmin || this.auth.isDistributor;
+    return this.auth.isAdmninistrator || this.auth.isDistributoring;
   }
 
   get auditClientCommentAttachmentAccept(): string {
