@@ -11,7 +11,6 @@ type RegisterClientListItem = Client & {
   verificationLabel: string;
   latestAuditComment?: Comment | null;
   latestAuditCommentReason?: string;
-  latestAuditCommentPreview?: string;
 };
 
 @Component({
@@ -68,9 +67,6 @@ export class InfoRegisterComponent implements OnInit {
       latestAuditComment,
       latestAuditCommentReason: latestAuditComment
         ? this.auditCommentReason(latestAuditComment)
-        : '',
-      latestAuditCommentPreview: latestAuditComment
-        ? this.commentPreview(latestAuditComment)
         : '',
     };
   }
@@ -144,14 +140,6 @@ export class InfoRegisterComponent implements OnInit {
       default:
         return value || '';
     }
-  }
-
-  private commentPreview(comment: Comment): string {
-    const text = (comment.comment || '').trim();
-    if (!text) {
-      return comment.audioUrl ? 'Audio joint au commentaire.' : 'Détails à consulter.';
-    }
-    return text.length > 90 ? `${text.slice(0, 90)}...` : text;
   }
 
   private commentTimeValue(comment: Comment): number {
