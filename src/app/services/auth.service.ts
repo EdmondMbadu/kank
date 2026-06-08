@@ -130,6 +130,7 @@ export class AuthService {
       switchMap((user) => {
         if (!user) {
           this.email = of(null);
+          this.clearRoleFlags();
           return of(null);
         }
 
@@ -1440,8 +1441,7 @@ export class AuthService {
     return this.matchingRoleDistributor(allowed);
   }
   get isInvestigator() {
-    const allowed = ['investigator'];
-    return this.matchingRoleInvestigator(allowed);
+    return this.isInvestigating;
   }
 
   private matchingRole(alloweedRoles: string[]): boolean {
@@ -1466,18 +1466,6 @@ export class AuthService {
         this.currentUser?.distributor === 'true'
     );
   }
-  private matchingRoleInvestigator(alloweedRoles: string[]): boolean {
-    if (this.isInvestigating) return true;
-    const roles = Array.isArray(this.currentUser?.roles)
-      ? this.currentUser.roles
-      : [];
-    return alloweedRoles.some(
-      (element) =>
-        roles.includes(element) ||
-        (this.currentUser as any)?.investigator === 'true'
-    );
-  }
-
   makeAdmin() {
     const userRef: AngularFirestoreDocument<User> = this.afs.doc(
       `users/${this.currentUser.uid}`
