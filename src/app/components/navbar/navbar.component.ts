@@ -29,6 +29,10 @@ export class NavbarComponent {
   @Input() currentEmployeePage: boolean = false;
   @Input() current = 'py-1 border-1 border-b-4';
 
+  get canShowVerificationNav(): boolean {
+    return this.auth.isAdmninistrator || this.auth.isInvestigating;
+  }
+
   toggleMenu() {
     if (this.hide === true) {
       this.hide = false;

@@ -1433,12 +1433,10 @@ export class AuthService {
   }
 
   get isAdmin() {
-    const allowed = ['admin'];
-    return this.matchingRole(allowed);
+    return this.isAdmninistrator;
   }
   get isDistributor() {
-    const allowed = ['distributor'];
-    return this.matchingRoleDistributor(allowed);
+    return this.isDistributoring;
   }
   get isInvestigator() {
     return this.isInvestigating;
@@ -1506,17 +1504,22 @@ export class AuthService {
   }
 
   private persistRoleFlags(): void {
-    if (typeof window === 'undefined') {
+    const storage = this.roleFlagStorage();
+    if (!storage) {
       return;
     }
 
-    localStorage.setItem(ADMIN_FLAG_KEY, String(this.isAdmninistrator));
-    localStorage.setItem(DISTRIBUTOR_FLAG_KEY, String(this.isDistributoring));
-    localStorage.setItem(INVESTIGATOR_FLAG_KEY, String(this.isInvestigating));
-    localStorage.setItem(
+    storage.setItem(ADMIN_FLAG_KEY, String(this.isAdmninistrator));
+    storage.setItem(DISTRIBUTOR_FLAG_KEY, String(this.isDistributoring));
+    storage.setItem(INVESTIGATOR_FLAG_KEY, String(this.isInvestigating));
+    storage.setItem(
       ROLE_PASSWORDS_SIGNATURE_KEY,
       this.getRolePasswordsSignature(this.rolePasswordsState)
     );
+  }
+
+  private roleFlagStorage(): Storage | null {
+    return typeof window === 'undefined' ? null : window.sessionStorage;
   }
 
   private normalizeSecret(value: string | null | undefined): string {
@@ -1624,18 +1627,19 @@ export class AuthService {
   }
 
   private restoreRoleFlags(): void {
-    if (typeof window === 'undefined') {
+    const storage = this.roleFlagStorage();
+    if (!storage) {
       this.isAdmninistrator = false;
       this.isDistributoring = false;
       this.isInvestigating = false;
       return;
     }
 
-    this.isAdmninistrator = localStorage.getItem(ADMIN_FLAG_KEY) === 'true';
+    this.isAdmninistrator = storage.getItem(ADMIN_FLAG_KEY) === 'true';
     this.isDistributoring =
-      localStorage.getItem(DISTRIBUTOR_FLAG_KEY) === 'true';
+      storage.getItem(DISTRIBUTOR_FLAG_KEY) === 'true';
     this.isInvestigating =
-      localStorage.getItem(INVESTIGATOR_FLAG_KEY) === 'true';
+      storage.getItem(INVESTIGATOR_FLAG_KEY) === 'true';
   }
 
   private clearRoleFlags(): void {
@@ -1648,10 +1652,15 @@ export class AuthService {
       return;
     }
 
-    localStorage.removeItem(ADMIN_FLAG_KEY);
-    localStorage.removeItem(DISTRIBUTOR_FLAG_KEY);
-    localStorage.removeItem(INVESTIGATOR_FLAG_KEY);
-    localStorage.removeItem(ROLE_PASSWORDS_SIGNATURE_KEY);
+    const clearStorage = (storage: Storage) => {
+      storage.removeItem(ADMIN_FLAG_KEY);
+      storage.removeItem(DISTRIBUTOR_FLAG_KEY);
+      storage.removeItem(INVESTIGATOR_FLAG_KEY);
+      storage.removeItem(ROLE_PASSWORDS_SIGNATURE_KEY);
+    };
+
+    clearStorage(window.sessionStorage);
+    clearStorage(window.localStorage);
   }
 
   private syncRoleFlagsWithRolePasswords(): void {
@@ -1660,7 +1669,8 @@ export class AuthService {
       return;
     }
 
-    if (typeof window === 'undefined') {
+    const storage = this.roleFlagStorage();
+    if (!storage) {
       return;
     }
 
@@ -1670,12 +1680,12 @@ export class AuthService {
       return;
     }
 
-    const storedSignature = localStorage.getItem(ROLE_PASSWORDS_SIGNATURE_KEY);
+    const storedSignature = storage.getItem(ROLE_PASSWORDS_SIGNATURE_KEY);
     const currentSignature = this.getRolePasswordsSignature(
       this.rolePasswordsState
     );
     if (!storedSignature || storedSignature !== currentSignature) {
-      localStorage.setItem(ROLE_PASSWORDS_SIGNATURE_KEY, currentSignature);
+      storage.setItem(ROLE_PASSWORDS_SIGNATURE_KEY, currentSignature);
     }
   }
 

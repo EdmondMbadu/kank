@@ -289,6 +289,7 @@
               >Gestion Du Jour</a
             >
             <a
+              *ngIf="canShowVerificationNav"
               routerLink="/questions"
               class="block px-6 py-2 text-lg hover:bg-slate-100"
               role="menuitem"
@@ -327,7 +328,7 @@
           </div>
 
           <button
-            *ngIf="auth.isAdmin || auth.isInvestigator"
+            *ngIf="canShowVerificationNav"
             (click)="toggle('investigationDropDown')"
             id="doubleDropdownButton"
             data-dropdown-toggle="doubleDropdown"
@@ -351,7 +352,7 @@
           </button>
 
           <div
-            *ngIf="investigationDropDown && (auth.isAdmin || auth.isInvestigator)"
+            *ngIf="investigationDropDown && canShowVerificationNav"
             id="doubleDropdown"
             class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
           >
