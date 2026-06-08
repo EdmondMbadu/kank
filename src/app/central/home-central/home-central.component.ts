@@ -342,6 +342,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   centralNotPaidCycleMonthsThreshold = 7;
   centralNotPaidNoPayMonthsThreshold = 5;
   centralNotPaidIncludeQuitte = false;
+  centralNotPaidShowAllClients = false;
   centralNotPaidSearchControl = new FormControl('');
   private centralNotPaidSearchInitialized = false;
   private centralNotPaidSearchTerm = '';
@@ -632,6 +633,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     this.applyCentralNotPaidFilters();
   }
 
+  toggleCentralNotPaidShowAllClients(): void {
+    this.centralNotPaidShowAllClients = !this.centralNotPaidShowAllClients;
+    this.applyCentralNotPaidFilters();
+  }
+
   toggleCentralNotPaidAllLocations(): void {
     this.centralNotPaidSelectAllLocations = !this.centralNotPaidSelectAllLocations;
     this.resetCentralNotPaidLocationSelection(
@@ -758,8 +764,24 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const results = (this.allClients ?? [])
       .filter((client) => this.matchesCentralNotPaidLocation(client))
       .filter((client) => this.matchesCentralNotPaidSearch(client, term))
-      .filter((client) => this.isCentralNotPaidClient(client, referenceDate))
+      .filter((client) =>
+        this.centralNotPaidShowAllClients
+          ? this.isCentralNotPaidAllModeClient(client)
+          : this.isCentralNotPaidClient(client, referenceDate)
+      )
       .sort((a, b) => {
+        if (this.centralNotPaidShowAllClients) {
+          const statusDiff = Number(this.isClientQuitte(b)) - Number(this.isClientQuitte(a));
+          if (statusDiff !== 0) return statusDiff;
+
+          const nameDiff = this.clientDisplayName(a).localeCompare(
+            this.clientDisplayName(b)
+          );
+          if (nameDiff !== 0) return nameDiff;
+
+          return (a.locationName || '').localeCompare(b.locationName || '');
+        }
+
         const debtDiff = this.clientDebtLeftAmount(b) - this.clientDebtLeftAmount(a);
         if (debtDiff !== 0) return debtDiff;
         return this.clientDisplayName(a).localeCompare(this.clientDisplayName(b));
@@ -772,6 +794,10 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     );
     this.centralNotPaidGroups = this.buildCentralNotPaidGroups(results);
     this.showAllCentralNotPaidResults = false;
+  }
+
+  private isCentralNotPaidAllModeClient(client: Client): boolean {
+    return this.normalizeVitalStatus(client.vitalStatus) !== 'mort';
   }
 
   private buildCentralNotPaidGroups(clients: Client[]): CentralNotPaidGroup[] {

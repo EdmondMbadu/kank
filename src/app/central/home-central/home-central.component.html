@@ -1407,17 +1407,40 @@
       <div class="mt-5 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-950/40">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              Clients concernés
-            </h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Clients concernés
+              </h3>
+              <button
+                type="button"
+                (click)="toggleCentralNotPaidShowAllClients()"
+                [attr.aria-pressed]="centralNotPaidShowAllClients"
+                class="rounded-full border px-3 py-1 text-[11px] font-semibold transition"
+                [ngClass]="
+                  centralNotPaidShowAllClients
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-emerald-200 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-emerald-800'
+                "
+              >
+                Tous
+              </button>
+            </div>
             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {{ centralNotPaidResults.length }} résultat(s)
+              {{
+                centralNotPaidShowAllClients
+                  ? centralNotPaidResults.length + " client(s) dans les équipes sélectionnées"
+                  : centralNotPaidResults.length + " résultat(s)"
+              }}
             </p>
           </div>
           <input
             type="search"
             [formControl]="centralNotPaidSearchControl"
-            placeholder="Rechercher un client…"
+            [placeholder]="
+              centralNotPaidShowAllClients
+                ? 'Rechercher dans tous les clients…'
+                : 'Rechercher un client…'
+            "
             aria-label="Rechercher un client concerné"
             class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 sm:max-w-xs"
           />
@@ -1436,11 +1459,17 @@
               <p class="truncate text-sm font-semibold text-slate-900 transition hover:text-rose-600 dark:text-slate-100 dark:hover:text-rose-300">
                 {{ client.firstName }} {{ client.lastName }} {{ client.middleName }}
               </p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">
+              <p *ngIf="!centralNotPaidShowAllClients; else centralNotPaidAllClientMeta" class="text-xs text-slate-500 dark:text-slate-400">
                 {{ client.locationName || "Site non indiqué" }} ·
                 {{ clientCentralNotPaidAgeMonths(client) }} mois de cycle ·
                 Dernier paiement: {{ clientCentralNotPaidLastPaymentLabel(client) }}
               </p>
+              <ng-template #centralNotPaidAllClientMeta>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                  {{ client.locationName || "Site non indiqué" }} ·
+                  {{ displayPhone(client.phoneNumber) }}
+                </p>
+              </ng-template>
             </button>
             <div class="text-left sm:text-right">
               <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
