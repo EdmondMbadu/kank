@@ -338,6 +338,24 @@ export class RegiserPortalComponent {
     return this.comments.length ? this.comments[0] : null;
   }
 
+  get isClientAuditVerified(): boolean {
+    return String(
+      this.agentSubmmittedVerification ||
+        this.client.agentSubmittedVerification ||
+        ''
+    ).toLowerCase() === 'true';
+  }
+
+  get shouldShowLatestClientCommentAttention(): boolean {
+    return !!this.latestClientComment && !this.isClientAuditVerified;
+  }
+
+  get latestClientCommentAttention(): Comment | null {
+    return this.shouldShowLatestClientCommentAttention
+      ? this.latestClientComment
+      : null;
+  }
+
   get latestClientCommentPreview(): string {
     const latest = this.latestClientComment;
     const text = (latest?.comment || '').trim();
