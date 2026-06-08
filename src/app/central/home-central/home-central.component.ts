@@ -702,6 +702,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     this.centralNotPaidStatusModal.error = '';
 
     try {
+      await this.ensureCentralStatusAdminWriteAccess();
       await this.data.updateClientInvestigationFieldsForUser(ownerId, client.uid, {
         vitalStatus,
       });
@@ -718,6 +719,24 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     } finally {
       this.centralNotPaidStatusModal.saving = false;
     }
+  }
+
+  private async ensureCentralStatusAdminWriteAccess(): Promise<void> {
+    const roles = Array.isArray(this.auth.currentUser?.roles)
+      ? this.auth.currentUser.roles
+      : [];
+    const hasPersistedAdmin =
+      this.auth.currentUser?.admin === 'true' || roles.includes('admin');
+
+    if (hasPersistedAdmin || !this.auth.isAdmninistrator) {
+      return;
+    }
+
+    await this.auth.makeAdmin();
+    this.auth.currentUser = {
+      ...this.auth.currentUser,
+      admin: 'true',
+    };
   }
 
   private resetCentralNotPaidLocationSelection(all = true): void {

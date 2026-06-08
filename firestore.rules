@@ -10,6 +10,23 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function currentUserPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function isAppAdmin() {
+      return signedIn() &&
+        !isPortalClient() &&
+        exists(currentUserPath()) &&
+        (
+          get(currentUserPath()).data.admin == 'true' ||
+          (
+            get(currentUserPath()).data.roles is list &&
+            get(currentUserPath()).data.roles.hasAny(['admin'])
+          )
+        );
+    }
+
     function isPortalClient() {
       return signedIn() &&
         ('portalClient' in request.auth.token) &&
@@ -97,7 +114,16 @@ service cloud.firestore {
           (!('debtRecognized' in request.resource.data) ||
             request.resource.data.debtRecognized is string) &&
           (!('notifiedForPolice' in request.resource.data) ||
-            request.resource.data.notifiedForPolice is bool);
+            request.resource.data.notifiedForPolice is bool) ||
+          (
+            isAppAdmin() &&
+            resource != null &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'vitalStatus'
+            ]) &&
+            (!('vitalStatus' in request.resource.data) ||
+              request.resource.data.vitalStatus is string)
+          );
       }
 
       match /investigationDays/{dayKey} {
