@@ -33,6 +33,10 @@ export class NavbarComponent {
     return this.auth.isAdmninistrator || this.auth.isInvestigating;
   }
 
+  get canShowAuditVerificationNav(): boolean {
+    return this.canShowVerificationNav || this.auth.isAuditTeamViewer;
+  }
+
   toggleMenu() {
     if (this.hide === true) {
       this.hide = false;

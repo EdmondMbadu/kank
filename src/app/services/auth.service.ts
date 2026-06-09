@@ -31,6 +31,7 @@ import {
 const ADMIN_FLAG_KEY = 'kank-admin-flag';
 const DISTRIBUTOR_FLAG_KEY = 'kank-distributor-flag';
 const INVESTIGATOR_FLAG_KEY = 'kank-investigator-flag';
+const AUDIT_TEAM_FLAG_KEY = 'kank-audit-team-flag';
 const ROLE_PASSWORDS_SIGNATURE_KEY = 'kank-role-passwords-signature';
 
 type RolePasswords = {
@@ -65,6 +66,7 @@ export class AuthService {
   public isAdmninistrator: boolean = false;
   public isDistributoring: boolean = false;
   public isInvestigating: boolean = false;
+  public isAuditTeam: boolean = false;
   clientId: string = '';
   currentClient: Client = new Client();
   private readonly defaultRolePasswords: RolePasswords = {
@@ -1441,6 +1443,9 @@ export class AuthService {
   get isInvestigator() {
     return this.isInvestigating;
   }
+  get isAuditTeamViewer() {
+    return this.isAuditTeam;
+  }
 
   private matchingRole(alloweedRoles: string[]): boolean {
     if (this.isAdmninistrator) return true;
@@ -1512,6 +1517,7 @@ export class AuthService {
     storage.setItem(ADMIN_FLAG_KEY, String(this.isAdmninistrator));
     storage.setItem(DISTRIBUTOR_FLAG_KEY, String(this.isDistributoring));
     storage.setItem(INVESTIGATOR_FLAG_KEY, String(this.isInvestigating));
+    storage.setItem(AUDIT_TEAM_FLAG_KEY, String(this.isAuditTeam));
     storage.setItem(
       ROLE_PASSWORDS_SIGNATURE_KEY,
       this.getRolePasswordsSignature(this.rolePasswordsState)
@@ -1618,6 +1624,7 @@ export class AuthService {
       normalized === this.normalizeSecret(this.auditWord);
     this.isInvestigating =
       normalized === this.normalizeSecret(rolePasswords.investigator);
+    this.isAuditTeam = normalized === this.normalizeSecret(this.auditWord);
 
     this.persistRoleFlags();
   }
@@ -1632,6 +1639,7 @@ export class AuthService {
       this.isAdmninistrator = false;
       this.isDistributoring = false;
       this.isInvestigating = false;
+      this.isAuditTeam = false;
       return;
     }
 
@@ -1640,12 +1648,14 @@ export class AuthService {
       storage.getItem(DISTRIBUTOR_FLAG_KEY) === 'true';
     this.isInvestigating =
       storage.getItem(INVESTIGATOR_FLAG_KEY) === 'true';
+    this.isAuditTeam = storage.getItem(AUDIT_TEAM_FLAG_KEY) === 'true';
   }
 
   private clearRoleFlags(): void {
     this.isAdmninistrator = false;
     this.isDistributoring = false;
     this.isInvestigating = false;
+    this.isAuditTeam = false;
     this.lastRoleWord = '';
 
     if (typeof window === 'undefined') {
@@ -1656,6 +1666,7 @@ export class AuthService {
       storage.removeItem(ADMIN_FLAG_KEY);
       storage.removeItem(DISTRIBUTOR_FLAG_KEY);
       storage.removeItem(INVESTIGATOR_FLAG_KEY);
+      storage.removeItem(AUDIT_TEAM_FLAG_KEY);
       storage.removeItem(ROLE_PASSWORDS_SIGNATURE_KEY);
     };
 
@@ -1675,7 +1686,10 @@ export class AuthService {
     }
 
     const hasRoleFlags =
-      this.isAdmninistrator || this.isDistributoring || this.isInvestigating;
+      this.isAdmninistrator ||
+      this.isDistributoring ||
+      this.isInvestigating ||
+      this.isAuditTeam;
     if (!hasRoleFlags) {
       return;
     }
