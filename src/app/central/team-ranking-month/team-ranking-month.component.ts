@@ -595,13 +595,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   get presenceMissSummaryScopeLabel(): string {
-    const nowKin = this.kinParts(new Date());
+    const today = this.presenceCutoffParts(new Date());
     const monthDelta =
       this.presenceYear * 12 +
       this.presenceMonth -
-      (nowKin.y * 12 + nowKin.m);
+      (today.y * 12 + today.m);
     if (monthDelta === 0) {
-      return `Jusqu'au ${nowKin.d} ${this.presenceMonthLabel}`;
+      return `Jusqu'au ${today.d} ${this.presenceMonthLabel}`;
     }
     if (monthDelta < 0) return 'Mois complet';
     return 'Aucun jour à résumer pour le moment';
@@ -1024,11 +1024,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
     month: number,
     year: number
   ): AttendanceMonthSummary {
-    const nowKin = this.kinParts(new Date());
-    const monthDelta = year * 12 + month - (nowKin.y * 12 + nowKin.m);
+    const today = this.presenceCutoffParts(new Date());
+    const monthDelta = year * 12 + month - (today.y * 12 + today.m);
     const daysInMonth = new Date(year, month, 0).getDate();
     const daysConsidered =
-      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? nowKin.d : 0;
+      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? today.d : 0;
 
     const counts: Record<AttendanceStateCode, number> = {
       '': 0,
@@ -1064,7 +1064,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       monthLabel,
       scopeLabel:
         monthDelta === 0
-          ? `Jusqu'au ${nowKin.d} ${monthLabel}`
+          ? `Jusqu'au ${today.d} ${monthLabel}`
           : monthDelta < 0
           ? 'Mois complet'
           : 'Aucun jour à résumer pour le moment',
@@ -1185,11 +1185,11 @@ export class TeamRankingMonthComponent implements OnDestroy {
     year: number,
     includeSaturday: boolean
   ): string[] {
-    const nowKin = this.kinParts(new Date());
-    const monthDelta = year * 12 + month - (nowKin.y * 12 + nowKin.m);
+    const today = this.presenceCutoffParts(new Date());
+    const monthDelta = year * 12 + month - (today.y * 12 + today.m);
     const daysInMonth = new Date(year, month, 0).getDate();
     const daysConsidered =
-      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? nowKin.d : 0;
+      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? today.d : 0;
     const labels: string[] = [];
 
     for (let day = 1; day <= daysConsidered; day++) {
@@ -1635,6 +1635,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(date);
+  }
+
+  private presenceCutoffParts(date: Date): { y: number; m: number; d: number } {
+    return {
+      y: date.getFullYear(),
+      m: date.getMonth() + 1,
+      d: date.getDate(),
+    };
   }
 
   private normalizeAttendanceLabel(key?: string): string {
