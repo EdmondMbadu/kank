@@ -221,6 +221,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private presenceExceptionsCacheKey = '';
   presenceBulkIncludeSaturday = false;
   presenceBulkStatus: AttendanceStateCode = 'A';
+  presenceBulkDeductVacation = true;
   presenceBulkModalOpen = false;
   presenceBulkSaving = false;
   presenceBulkMessage = '';
@@ -632,6 +633,29 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.presenceStateOptions.filter((option) => !!option.code);
   }
 
+  get presenceBulkVacationDeductionApplies(): boolean {
+    return this.presenceBulkStatus === 'V' && this.presenceBulkDeductVacation;
+  }
+
+  get presenceBulkVacationDeductionDays(): number {
+    if (!this.presenceBulkVacationDeductionApplies) return 0;
+    return Math.min(
+      this.presenceBulkUnassignedDays.length,
+      this.selectedPresenceVacationRemainingDays
+    );
+  }
+
+  get presenceBulkVacationRemainingAfterFill(): number {
+    if (!this.presenceBulkVacationDeductionApplies) {
+      return this.selectedPresenceVacationRemainingDays;
+    }
+    return Math.max(
+      0,
+      this.selectedPresenceVacationRemainingDays -
+        this.presenceBulkUnassignedDays.length
+    );
+  }
+
   get presenceBulkUnassignedDays(): PresenceMissedDay[] {
     const employee = this.selectedPresenceEmployee;
     if (!employee) return [];
@@ -782,6 +806,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   openPresenceBulkModal(): void {
     this.presenceBulkMessage = '';
+    this.presenceBulkDeductVacation = true;
     this.presenceBulkModalOpen = true;
   }
 
@@ -820,23 +845,54 @@ export class TeamRankingMonthComponent implements OnDestroy {
     targetDays.forEach((day) => {
       nextAttendance[day.label] = this.presenceBulkStatus;
     });
+    const shouldDeductVacation = this.presenceBulkVacationDeductionApplies;
+    const vacationDeductionDays = this.presenceBulkVacationDeductionDays;
+    const vacationAcceptedAfterBulk = shouldDeductVacation
+      ? this.selectedPresenceVacationAcceptedDays +
+        vacationDeductionDays
+      : this.selectedPresenceVacationAcceptedDays;
+    const employeeUpdates: Partial<Employee> = {
+      attendance: nextAttendance,
+    };
+    if (shouldDeductVacation) {
+      employeeUpdates.vacationAcceptedNumberOfDays =
+        vacationAcceptedAfterBulk.toString();
+    }
 
     this.presenceBulkSaving = true;
     this.presenceBulkMessage = '';
     try {
-      await this.data.updateEmployeeTopLevelFieldsForUser(ownerUid, employee.uid, {
-        attendance: nextAttendance,
-      });
+      await this.data.updateEmployeeTopLevelFieldsForUser(
+        ownerUid,
+        employee.uid,
+        employeeUpdates
+      );
 
       employee.attendance = nextAttendance;
+      if (shouldDeductVacation) {
+        employee.vacationAcceptedNumberOfDays =
+          vacationAcceptedAfterBulk.toString();
+      }
       const fullEmployee = this.allEmployeesAll.find((item) => item.uid === employee.uid);
       if (fullEmployee) {
         fullEmployee.attendance = nextAttendance;
+        if (shouldDeductVacation) {
+          fullEmployee.vacationAcceptedNumberOfDays =
+            vacationAcceptedAfterBulk.toString();
+        }
       }
       this.invalidatePresenceCache();
       this.presenceBulkMessage = `${targetDays.length} jour${
         targetDays.length > 1 ? 's' : ''
-      } mis à jour.`;
+      } mis à jour.${
+        shouldDeductVacation
+          ? ` ${vacationDeductionDays} jour${
+              vacationDeductionDays > 1 ? 's' : ''
+            } de vacances déduit${
+              vacationDeductionDays > 1 ? 's' : ''
+            }.`
+          : ''
+      }`;
       this.presenceBulkModalOpen = false;
 
       Promise.allSettled(
