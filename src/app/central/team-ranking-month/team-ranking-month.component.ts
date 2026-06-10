@@ -119,6 +119,7 @@ type TrophyHeatmapRect = {
   styleUrls: ['./team-ranking-month.component.css'],
 })
 export class TeamRankingMonthComponent implements OnDestroy {
+  private readonly DEFAULT_VACATION_DAYS = 7;
   averagePerformancePercentage: string = '0'; // Add this line
   currentDate = new Date();
   currentMonth = this.currentDate.getMonth() + 1;
@@ -512,6 +513,33 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.formatRankingEmployeeName(this.selectedPresenceEmployee);
   }
 
+  get selectedPresenceVacationTotalDays(): number {
+    return this.vacationDaysValue(
+      this.selectedPresenceEmployee?.vacationTotalDays,
+      this.DEFAULT_VACATION_DAYS
+    );
+  }
+
+  get selectedPresenceVacationAcceptedDays(): number {
+    return this.vacationDaysValue(
+      this.selectedPresenceEmployee?.vacationAcceptedNumberOfDays
+    );
+  }
+
+  get selectedPresenceVacationRequestedDays(): number {
+    return this.vacationDaysValue(
+      this.selectedPresenceEmployee?.vacationRequestNumberOfDays
+    );
+  }
+
+  get selectedPresenceVacationRemainingDays(): number {
+    return Math.max(
+      0,
+      this.selectedPresenceVacationTotalDays -
+        this.selectedPresenceVacationAcceptedDays
+    );
+  }
+
   get filteredPresenceEmployees(): Employee[] {
     const query = this.presenceEmployeeSearch.trim().toLowerCase();
     const employees = this.allEmployees || [];
@@ -521,6 +549,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
         this.formatRankingEmployeeName(employee).toLowerCase().includes(query)
       )
       .slice(0, 10);
+  }
+
+  private vacationDaysValue(value?: string | number | null, fallback = 0): number {
+    if (value === undefined || value === null || value === '') return fallback;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : fallback;
   }
 
   get presenceMonthLabel(): string {

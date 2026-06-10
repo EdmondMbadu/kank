@@ -440,6 +440,80 @@
             </select>
           </div>
 
+          <div
+            *ngIf="selectedPresenceEmployee as presenceEmployee"
+            class="border-b border-slate-200 bg-white px-4 py-4"
+          >
+            <div
+              class="flex flex-col gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div class="flex min-w-0 items-center gap-4">
+                <div class="shrink-0">
+                  <img
+                    *ngIf="employeePhotoUrl(presenceEmployee); else selectedPresenceAvatarFallback"
+                    [src]="employeePhotoUrl(presenceEmployee)"
+                    [alt]="'Photo de ' + selectedPresenceEmployeeName"
+                    class="h-16 w-16 rounded-full border-2 border-white object-cover shadow-sm ring-2 ring-emerald-200"
+                  />
+                  <ng-template #selectedPresenceAvatarFallback>
+                    <div
+                      class="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white bg-slate-400 text-lg font-black text-white shadow-sm ring-2 ring-emerald-200"
+                    >
+                      {{ employeeInitials(presenceEmployee) }}
+                    </div>
+                  </ng-template>
+                </div>
+
+                <div class="min-w-0">
+                  <p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
+                    Employé sélectionné
+                  </p>
+                  <h4 class="mt-1 truncate text-lg font-black text-slate-900">
+                    {{ selectedPresenceEmployeeName }}
+                  </h4>
+                  <p class="mt-0.5 text-sm font-semibold text-slate-600">
+                    {{ presenceEmployee.role || "Rôle non renseigné" }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl bg-white px-3 py-2 ring-1 ring-emerald-100">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                    Vacances restantes
+                  </p>
+                  <p class="mt-1 text-xl font-black text-emerald-700">
+                    {{ selectedPresenceVacationRemainingDays }}
+                  </p>
+                </div>
+                <div class="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                    Utilisées
+                  </p>
+                  <p class="mt-1 text-xl font-black text-slate-900">
+                    {{ selectedPresenceVacationAcceptedDays }}
+                  </p>
+                </div>
+                <div class="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                    Total
+                  </p>
+                  <p class="mt-1 text-xl font-black text-slate-900">
+                    {{ selectedPresenceVacationTotalDays }}
+                  </p>
+                </div>
+                <div class="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+                  <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                    Demandées
+                  </p>
+                  <p class="mt-1 text-xl font-black text-slate-900">
+                    {{ selectedPresenceVacationRequestedDays }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="border-b border-slate-200 bg-white px-4 py-4">
             <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
