@@ -95,10 +95,6 @@
     linear-gradient(135deg, #78350f, #a16207 48%, #047857);
 }
 
-.client-trophy-tile {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
 @media (max-width: 768px) {
   .trophy-heatmap-grid {
     height: 42rem;

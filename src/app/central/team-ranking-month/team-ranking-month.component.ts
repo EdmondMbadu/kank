@@ -131,11 +131,14 @@ type ClientTrophyStats = {
 };
 type ClientTrophyTeamRow = {
   teamName: string;
+  clients: ClientTrophyRow[];
   clientsWithStars: number;
   totalStars: number;
   topStars: number;
   topClientName: string;
   averageStars: number;
+  colorClass: string;
+  layoutStyle: Record<string, string>;
 };
 type ClientTrophyTeamStats = {
   totalStars: number;
@@ -282,6 +285,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private clientTrophyLoadKey = '';
   private clientTrophyLoaded = false;
   selectedClientTrophyRow: ClientTrophyRow | null = null;
+  selectedClientTrophyTeamRow: ClientTrophyTeamRow | null = null;
   presenceStateOptions: PresenceStateOption[] = [
     { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
@@ -799,19 +803,25 @@ export class TeamRankingMonthComponent implements OnDestroy {
       teams.set(teamName, [...(teams.get(teamName) || []), row]);
     });
 
-    return Array.from(teams.entries())
+    const sortedRows = Array.from(teams.entries())
       .map(([teamName, rows]) => {
+        const sortedClients = [...rows].sort(
+          (a, b) =>
+            b.stars - a.stars ||
+            (b.creditScore || '').localeCompare(a.creditScore || '') ||
+            a.name.localeCompare(b.name)
+        );
         const totalStars = rows.reduce((total, row) => total + row.stars, 0);
-        const topRow = [...rows].sort(
-          (a, b) => b.stars - a.stars || a.name.localeCompare(b.name)
-        )[0];
+        const topRow = sortedClients[0];
         return {
           teamName,
+          clients: sortedClients,
           clientsWithStars: rows.length,
           totalStars,
           topStars: topRow?.stars || 0,
           topClientName: topRow?.name || '—',
           averageStars: rows.length ? totalStars / rows.length : 0,
+          colorClass: '',
         };
       })
       .sort(
@@ -820,6 +830,16 @@ export class TeamRankingMonthComponent implements OnDestroy {
           b.clientsWithStars - a.clientsWithStars ||
           a.teamName.localeCompare(b.teamName)
       );
+
+    const rects = this.buildTrophyTreemapRects(
+      sortedRows.map((row) => Math.max(row.clientsWithStars, 1))
+    );
+
+    return sortedRows.map((row, index) => ({
+      ...row,
+      colorClass: this.clientTrophyTeamColorClass(index),
+      layoutStyle: this.trophyRectStyle(rects[index]),
+    }));
   }
 
   get presenceMonthStartISO(): string {
@@ -3100,6 +3120,21 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.selectedClientTrophyRow = null;
   }
 
+  openClientTrophyTeamModal(row: ClientTrophyTeamRow): void {
+    this.selectedClientTrophyTeamRow = row;
+  }
+
+  closeClientTrophyTeamModal(): void {
+    this.selectedClientTrophyTeamRow = null;
+  }
+
+  private clientTrophyTeamColorClass(index: number): string {
+    if (index === 0) return 'client-trophy-tile--legend';
+    if (index === 1) return 'client-trophy-tile--elite';
+    if (index === 2) return 'client-trophy-tile--strong';
+    return 'client-trophy-tile--one';
+  }
+
   private clientTrophyOwnerUsers(): User[] {
     const owners =
       Array.isArray(this.allUsers) && this.allUsers.length > 0
@@ -3126,6 +3161,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.clientTrophyRowsCacheKey = '';
       this.clientTrophyLoaded = false;
       this.selectedClientTrophyRow = null;
+      this.selectedClientTrophyTeamRow = null;
       this.clientTrophyError = 'Aucun site disponible pour charger les clients.';
       return;
     }
@@ -3188,6 +3224,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
           ) {
             this.selectedClientTrophyRow = null;
           }
+        }
+        if (this.selectedClientTrophyTeamRow) {
+          const selectedTeam = this.selectedClientTrophyTeamRow.teamName;
+          this.selectedClientTrophyTeamRow =
+            this.clientTrophyTeamRowsCache.find(
+              (row) => row.teamName === selectedTeam
+            ) || null;
         }
       }
       this.clientTrophyLoadKey = loadKey;
