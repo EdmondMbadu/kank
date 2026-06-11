@@ -71,6 +71,34 @@
   background: linear-gradient(135deg, #78350f, #a16207 48%, #047857);
 }
 
+.client-trophy-tile--one {
+  background: linear-gradient(135deg, #334155, #475569);
+}
+
+.client-trophy-tile--special {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.35), transparent 28%),
+    linear-gradient(135deg, #b45309, #d97706);
+}
+
+.client-trophy-tile--strong {
+  background: linear-gradient(135deg, #047857, #0f766e);
+}
+
+.client-trophy-tile--elite {
+  background: linear-gradient(135deg, #78350f, #a16207 48%, #047857);
+}
+
+.client-trophy-tile--legend {
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.35), transparent 26%),
+    linear-gradient(135deg, #78350f, #a16207 48%, #047857);
+}
+
+.client-trophy-tile {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
 @media (max-width: 768px) {
   .trophy-heatmap-grid {
     height: 42rem;

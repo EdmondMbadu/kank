@@ -1010,14 +1010,29 @@
             Historique des trophées
           </p>
           <h3 class="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
-            Carte des trophées gagnés
+            {{
+              trophyHistoryScope === "employees"
+                ? "Carte des trophées gagnés"
+                : trophyHistoryScope === "clients"
+                ? "Clients avec étoiles"
+                : "Teams clients"
+            }}
           </h3>
           <p class="mt-1 text-sm font-semibold text-slate-500">
-            Plus un employé a de trophées, plus son bloc est grand.
+            {{
+              trophyHistoryScope === "employees"
+                ? "Plus un employé a de trophées, plus son bloc est grand."
+                : trophyHistoryScope === "clients"
+                ? "Plus un client a d'étoiles, plus son bloc est grand."
+                : "Sites classés par étoiles clients."
+            }}
           </p>
         </div>
 
-        <div class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm">
+        <div
+          *ngIf="trophyHistoryScope === 'employees'"
+          class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm"
+        >
           <div class="px-4 py-3">
             <p class="text-2xl font-black text-slate-900">
               {{ trophyHeatmapStats.totalTrophies }}
@@ -1043,8 +1058,110 @@
             </p>
           </div>
         </div>
+
+        <div
+          *ngIf="trophyHistoryScope === 'clients'"
+          class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm"
+        >
+          <div class="px-3 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ clientTrophyStats.totalStars }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Étoiles
+            </p>
+          </div>
+          <div class="border-x border-slate-200 px-3 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ clientTrophyStats.clientsWithStars }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Clients
+            </p>
+          </div>
+          <div class="border-r border-slate-200 px-3 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ clientTrophyStats.topStars }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Max
+            </p>
+          </div>
+        </div>
+
+        <div
+          *ngIf="trophyHistoryScope === 'teams'"
+          class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm"
+        >
+          <div class="px-3 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ clientTrophyTeamStats.totalStars }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Étoiles
+            </p>
+          </div>
+          <div class="border-x border-slate-200 px-3 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ clientTrophyTeamStats.teamsWithStars }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Teams
+            </p>
+          </div>
+          <div class="px-3 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ clientTrophyTeamStats.topTeamStars }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Max
+            </p>
+          </div>
+        </div>
       </div>
 
+      <div class="flex justify-center md:justify-start">
+        <div class="inline-flex rounded-full border border-slate-200 bg-white p-1 text-sm font-bold shadow-sm">
+          <button
+            type="button"
+            class="rounded-full px-4 py-2 transition"
+            [ngClass]="
+              trophyHistoryScope === 'employees'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-50'
+            "
+            (click)="setTrophyHistoryScope('employees')"
+          >
+            Employés
+          </button>
+          <button
+            type="button"
+            class="rounded-full px-4 py-2 transition"
+            [ngClass]="
+              trophyHistoryScope === 'clients'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-50'
+            "
+            (click)="setTrophyHistoryScope('clients')"
+          >
+            Clients
+          </button>
+          <button
+            type="button"
+            class="rounded-full px-4 py-2 transition"
+            [ngClass]="
+              trophyHistoryScope === 'teams'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-50'
+            "
+            (click)="setTrophyHistoryScope('teams')"
+          >
+            Teams
+          </button>
+        </div>
+      </div>
+
+      <ng-container *ngIf="trophyHistoryScope === 'employees'">
       <div
         *ngIf="trophyHeatmapTiles.length > 0; else noTrophyHistory"
         class="trophy-heatmap-grid"
@@ -1143,6 +1260,214 @@
           </p>
         </div>
       </ng-template>
+      </ng-container>
+
+      <ng-container *ngIf="trophyHistoryScope === 'clients'">
+        <div
+          *ngIf="clientTrophyLoading"
+          class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center"
+        >
+          <p class="text-sm font-bold text-slate-600">
+            Chargement des clients étoilés...
+          </p>
+        </div>
+
+        <div
+          *ngIf="clientTrophyError"
+          class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700"
+        >
+          {{ clientTrophyError }}
+        </div>
+
+        <div
+          *ngIf="!clientTrophyLoading && !clientTrophyError && clientTrophyRows.length > 0; else noClientTrophyHistory"
+          class="trophy-heatmap-grid"
+        >
+          <button
+            *ngFor="let row of clientTrophyRows"
+            type="button"
+            class="trophy-heatmap-tile client-trophy-tile group flex flex-col justify-between overflow-hidden p-2 text-left text-white transition hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-slate-900 md:p-3"
+            [ngClass]="row.colorClass"
+            [ngStyle]="row.layoutStyle"
+            [attr.aria-expanded]="selectedClientTrophyRow === row"
+            (click)="openClientTrophyModal(row)"
+            [title]="
+              row.name +
+              ' — ' +
+              row.stars +
+              ' étoile(s), site ' +
+              (row.locationName || '—')
+            "
+          >
+            <span class="flex min-w-0 items-start justify-between gap-1.5">
+              <span class="block min-w-0 truncate text-xs font-black leading-tight md:text-base">
+                {{ row.name }}
+              </span>
+              <span class="trophy-heatmap-avatar shrink-0">
+                <img
+                  *ngIf="row.photoUrl; else clientTrophyAvatarFallback"
+                  [src]="row.photoUrl"
+                  [alt]="row.name"
+                  class="h-full w-full rounded-full object-cover"
+                  loading="lazy"
+                />
+                <ng-template #clientTrophyAvatarFallback>
+                  <span class="flex h-full w-full items-center justify-center rounded-full bg-white/20 text-[10px] font-black text-white md:text-xs">
+                    {{ row.initials }}
+                  </span>
+                </ng-template>
+              </span>
+            </span>
+
+            <span class="mt-1 flex min-w-0 flex-col gap-0.5">
+              <span class="flex items-end gap-1.5">
+                <span class="text-2xl font-black leading-none md:text-4xl">
+                  {{ row.stars }}
+                </span>
+                <span class="truncate pb-0.5 text-[10px] font-extrabold leading-tight text-white/90 md:text-xs">
+                  étoile{{ row.stars > 1 ? "s" : "" }}
+                </span>
+              </span>
+              <span
+                *ngIf="row.stars === 2"
+                class="inline-flex w-fit rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white ring-1 ring-white/35"
+              >
+                Spécial
+              </span>
+              <span class="truncate text-[10px] font-extrabold leading-tight text-white/90 md:text-xs">
+                {{ row.locationName || "Site non défini" }} · {{ row.phoneNumber }}
+              </span>
+              <span class="truncate text-[10px] font-extrabold leading-tight text-white/85 md:text-xs">
+                Score {{ row.creditScore || "—" }} · Dette
+                {{ row.debtLeft | number : "1.0-0" }}
+              </span>
+              <span class="truncate text-[10px] font-extrabold leading-tight text-white/80 md:text-xs">
+                <span *ngIf="row.latestAwardLabel">
+                  Dernière étoile · {{ row.latestAwardLabel }}
+                </span>
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-600">
+          <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1 ring-1 ring-slate-200">
+            <span class="h-2 w-2 rounded-full bg-slate-700"></span>
+            1 étoile
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 ring-1 ring-amber-100">
+            <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+            2 étoiles spécial
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 ring-1 ring-emerald-100">
+            <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
+            3+ étoiles
+          </span>
+        </div>
+
+        <ng-template #noClientTrophyHistory>
+          <div
+            *ngIf="!clientTrophyLoading && !clientTrophyError"
+            class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center"
+          >
+            <p class="text-sm font-bold text-slate-600">
+              Aucun client étoilé enregistré pour le moment.
+            </p>
+          </div>
+        </ng-template>
+      </ng-container>
+
+      <ng-container *ngIf="trophyHistoryScope === 'teams'">
+        <div
+          *ngIf="clientTrophyLoading"
+          class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center"
+        >
+          <p class="text-sm font-bold text-slate-600">
+            Chargement des teams...
+          </p>
+        </div>
+
+        <div
+          *ngIf="clientTrophyError"
+          class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700"
+        >
+          {{ clientTrophyError }}
+        </div>
+
+        <div
+          *ngIf="!clientTrophyLoading && !clientTrophyError && clientTrophyTeamRows.length > 0; else noTeamClientTrophyHistory"
+          class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        >
+          <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+            <div>
+              <p class="text-sm font-black text-slate-900">
+                Top teams clients
+              </p>
+              <p class="text-xs font-semibold text-slate-500">
+                Classement par étoiles clients.
+              </p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead class="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">Team</th>
+                  <th class="px-4 py-3 text-right">Étoiles</th>
+                  <th class="px-4 py-3 text-right">Clients étoilés</th>
+                  <th class="px-4 py-3 text-right">Moyenne</th>
+                  <th class="px-4 py-3">Top client</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr
+                  *ngFor="let team of clientTrophyTeamRows; let i = index"
+                  class="hover:bg-slate-50"
+                >
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                      <span class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-black text-white">
+                        {{ i + 1 }}
+                      </span>
+                      <span class="font-black text-slate-900">
+                        {{ team.teamName }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-right text-lg font-black text-slate-900">
+                    {{ team.totalStars }}
+                  </td>
+                  <td class="px-4 py-3 text-right font-bold text-slate-600">
+                    {{ team.clientsWithStars }}
+                  </td>
+                  <td class="px-4 py-3 text-right font-bold text-slate-600">
+                    {{ team.averageStars | number : "1.1-1" }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="font-bold text-slate-700">
+                      {{ team.topClientName }}
+                    </div>
+                    <div class="text-xs font-bold text-slate-400">
+                      {{ team.topStars }} étoile{{ team.topStars > 1 ? "s" : "" }}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <ng-template #noTeamClientTrophyHistory>
+          <div
+            *ngIf="!clientTrophyLoading && !clientTrophyError"
+            class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-8 text-center"
+          >
+            <p class="text-sm font-bold text-slate-600">
+              Aucun team avec clients étoilés pour le moment.
+            </p>
+          </div>
+        </ng-template>
+      </ng-container>
     </div>
 
     <!-- PERFORMANCE SECTION -->
@@ -3400,6 +3725,140 @@
     <div class="border-t border-gray-200 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/50">
       <p class="text-center text-xs text-gray-500 dark:text-gray-400">
         Total: {{ getModalTrophies().length }} trophée(s)
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- === CLIENT TROPHY MODAL === -->
+<div
+  *ngIf="selectedClientTrophyRow as selectedClient"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+  (click)="closeClientTrophyModal()"
+>
+  <div
+    class="w-full max-w-md rounded-3xl bg-white shadow-2xl dark:bg-gray-800 max-h-[85vh] flex flex-col overflow-hidden"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-amber-500 bg-white">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-yellow-500"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+            Client étoilé
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{ selectedClient.name }}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="closeClientTrophyModal()"
+        class="rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+        aria-label="Fermer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="border-b border-gray-200 bg-slate-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900/40">
+      <div class="mb-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <span class="flex h-14 w-14 shrink-0 overflow-hidden rounded-full bg-slate-100 ring-2 ring-white dark:bg-gray-700 dark:ring-gray-800">
+          <img
+            *ngIf="selectedClient.photoUrl; else clientTrophyModalAvatarFallback"
+            [src]="selectedClient.photoUrl"
+            [alt]="selectedClient.name"
+            class="h-full w-full object-cover"
+            loading="lazy"
+          />
+          <ng-template #clientTrophyModalAvatarFallback>
+            <span class="flex h-full w-full items-center justify-center text-lg font-black text-slate-600 dark:text-slate-200">
+              {{ selectedClient.initials }}
+            </span>
+          </ng-template>
+        </span>
+        <div class="min-w-0 text-left">
+          <p class="truncate text-lg font-black text-slate-900 dark:text-white">
+            {{ selectedClient.name }}
+          </p>
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            {{ selectedClient.locationName || "Site non défini" }}
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
+        <div class="px-3 py-3">
+          <p class="text-2xl font-black text-slate-900 dark:text-white">
+            {{ selectedClient.stars }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Étoiles
+          </p>
+        </div>
+        <div class="border-x border-slate-200 px-3 py-3 dark:border-gray-700">
+          <p class="text-lg font-black text-emerald-700 dark:text-emerald-300">
+            {{ selectedClient.creditScore || "—" }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Score
+          </p>
+        </div>
+        <div class="px-3 py-3">
+          <p class="text-lg font-black text-amber-700 dark:text-amber-300">
+            {{ selectedClient.debtLeft | number : "1.0-0" }}
+          </p>
+          <p class="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Dette
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 py-4 [-webkit-overflow-scrolling:touch]">
+      <div class="space-y-3">
+        <div class="rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            Téléphone
+          </p>
+          <p class="mt-1 text-sm font-black text-slate-900">
+            {{ selectedClient.phoneNumber }}
+          </p>
+        </div>
+        <div class="rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            Montant prêt
+          </p>
+          <p class="mt-1 text-sm font-black text-slate-900">
+            {{ selectedClient.loanAmount | number : "1.0-0" }}
+          </p>
+        </div>
+        <div class="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+          <p class="text-[11px] font-black uppercase tracking-wide text-amber-700">
+            Dernière étoile
+          </p>
+          <p class="mt-1 text-sm font-black text-slate-900">
+            {{ selectedClient.latestAwardLabel || "—" }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-200 bg-gray-50 px-6 py-3 dark:border-gray-700 dark:bg-gray-900/50">
+      <p class="text-center text-xs text-gray-500 dark:text-gray-400">
+        {{ selectedClient.stars }} étoile{{ selectedClient.stars > 1 ? "s" : "" }}
       </p>
     </div>
   </div>

@@ -106,6 +106,42 @@ type TrophyHeatmapStats = {
   employeesWithTrophies: number;
   topCount: number;
 };
+type TrophyHistoryScope = 'employees' | 'clients' | 'teams';
+type ClientTrophyRow = {
+  client: Client;
+  name: string;
+  initials: string;
+  photoUrl: string;
+  locationName: string;
+  phoneNumber: string;
+  stars: number;
+  trophyCount: number;
+  latestAwardLabel: string;
+  latestAwardAmount: string;
+  creditScore: string;
+  debtLeft: number;
+  loanAmount: number;
+  colorClass: string;
+  layoutStyle: Record<string, string>;
+};
+type ClientTrophyStats = {
+  totalStars: number;
+  clientsWithStars: number;
+  topStars: number;
+};
+type ClientTrophyTeamRow = {
+  teamName: string;
+  clientsWithStars: number;
+  totalStars: number;
+  topStars: number;
+  topClientName: string;
+  averageStars: number;
+};
+type ClientTrophyTeamStats = {
+  totalStars: number;
+  teamsWithStars: number;
+  topTeamStars: number;
+};
 type TrophyHeatmapRect = {
   x: number;
   y: number;
@@ -152,6 +188,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     | 'weeklyPayments'
     | 'monthlyPayments'
     | 'trophyHistory' = 'dailyPayments';
+  trophyHistoryScope: TrophyHistoryScope = 'employees';
   loadingDaily = false;
   loadingWeekly = false;
   todayKin: string = this.time.todaysDateKinshasFormat()
@@ -237,6 +274,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private presenceEmploymentDateCache = new Map<string, EmployeePresenceWindow>();
   private trophyHeatmapCacheKey = '';
   private trophyHeatmapCache: TrophyHeatmapTile[] = [];
+  clientTrophyLoading = false;
+  clientTrophyError = '';
+  private clientTrophyRowsCacheKey = '';
+  private clientTrophyRowsCache: ClientTrophyRow[] = [];
+  private clientTrophyTeamRowsCache: ClientTrophyTeamRow[] = [];
+  private clientTrophyLoadKey = '';
+  private clientTrophyLoaded = false;
+  selectedClientTrophyRow: ClientTrophyRow | null = null;
   presenceStateOptions: PresenceStateOption[] = [
     { code: '', label: 'Aucun', hint: 'Effacer la valeur' },
     { code: 'P', label: 'Présent' },
@@ -717,6 +762,64 @@ export class TeamRankingMonthComponent implements OnDestroy {
       employeesWithTrophies: tiles.length,
       topCount: tiles[0]?.total || 0,
     };
+  }
+
+  get clientTrophyRows(): ClientTrophyRow[] {
+    return this.clientTrophyRowsCache;
+  }
+
+  get clientTrophyStats(): ClientTrophyStats {
+    const rows = this.clientTrophyRows;
+    return {
+      totalStars: rows.reduce((total, row) => total + row.stars, 0),
+      clientsWithStars: rows.length,
+      topStars: rows[0]?.stars || 0,
+    };
+  }
+
+  get clientTrophyTeamRows(): ClientTrophyTeamRow[] {
+    return this.clientTrophyTeamRowsCache;
+  }
+
+  get clientTrophyTeamStats(): ClientTrophyTeamStats {
+    const rows = this.clientTrophyTeamRows;
+    return {
+      totalStars: rows.reduce((total, row) => total + row.totalStars, 0),
+      teamsWithStars: rows.length,
+      topTeamStars: rows[0]?.totalStars || 0,
+    };
+  }
+
+  private buildClientTrophyTeamRows(
+    clientRows: ClientTrophyRow[]
+  ): ClientTrophyTeamRow[] {
+    const teams = new Map<string, ClientTrophyRow[]>();
+    clientRows.forEach((row) => {
+      const teamName = row.locationName || 'Site non défini';
+      teams.set(teamName, [...(teams.get(teamName) || []), row]);
+    });
+
+    return Array.from(teams.entries())
+      .map(([teamName, rows]) => {
+        const totalStars = rows.reduce((total, row) => total + row.stars, 0);
+        const topRow = [...rows].sort(
+          (a, b) => b.stars - a.stars || a.name.localeCompare(b.name)
+        )[0];
+        return {
+          teamName,
+          clientsWithStars: rows.length,
+          totalStars,
+          topStars: topRow?.stars || 0,
+          topClientName: topRow?.name || '—',
+          averageStars: rows.length ? totalStars / rows.length : 0,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.totalStars - a.totalStars ||
+          b.clientsWithStars - a.clientsWithStars ||
+          a.teamName.localeCompare(b.teamName)
+      );
   }
 
   get presenceMonthStartISO(): string {
@@ -1969,6 +2072,147 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return parts.join(' ') || employee.middleName || 'Employé';
   }
 
+  private buildClientTrophyRows(clients: Client[]): ClientTrophyRow[] {
+    const unique = new Map<string, Client>();
+    clients.forEach((client) => {
+      const key = this.clientUniqueKey(client);
+      if (!unique.has(key)) unique.set(key, client);
+    });
+
+    const rows = Array.from(unique.values())
+      .map((client) => {
+        const latestAward = this.latestClientTrophyAward(client);
+        const stars = this.getStarsCount(client);
+        return {
+          client,
+          name: this.formatClientName(client),
+          initials: this.clientInitials(client),
+          photoUrl: this.clientPhotoUrl(client),
+          locationName: client.locationName || '',
+          phoneNumber: this.formatClientPhone(client.phoneNumber),
+          stars,
+          trophyCount: Object.keys(client.trophyAwards || {}).length,
+          latestAwardLabel: latestAward
+            ? this.formatClientTrophyAwardDate(latestAward)
+            : '',
+          latestAwardAmount: latestAward?.amountUsd || '',
+          creditScore: client.creditScore || '',
+          debtLeft: this.safeNumber(client.debtLeft),
+          loanAmount: this.safeNumber(client.loanAmount),
+          colorClass: this.clientTrophyColorClass(stars),
+          layoutStyle: {},
+        };
+      })
+      .filter((row) => row.stars > 0)
+      .sort(
+        (a, b) =>
+          b.stars - a.stars ||
+          b.trophyCount - a.trophyCount ||
+          a.name.localeCompare(b.name)
+      );
+
+    const rects = this.buildTrophyTreemapRects(
+      rows.map((row) => Math.max(row.stars, 1))
+    );
+    return rows.map((row, index) => ({
+      ...row,
+      layoutStyle: this.trophyRectStyle(rects[index]),
+    }));
+  }
+
+  private clientTrophyColorClass(stars: number): string {
+    if (stars >= 5) return 'client-trophy-tile--legend';
+    if (stars === 4) return 'client-trophy-tile--elite';
+    if (stars === 3) return 'client-trophy-tile--strong';
+    if (stars === 2) return 'client-trophy-tile--special';
+    return 'client-trophy-tile--one';
+  }
+
+  private clientPhotoUrl(client?: Client | null): string {
+    const picture = client?.profilePicture as
+      | { downloadURL?: string }
+      | string
+      | undefined;
+    if (!picture) return '';
+    return typeof picture === 'string' ? picture : picture.downloadURL || '';
+  }
+
+  getStarsCount(client: Client | null | undefined): number {
+    if (!client || client.stars === undefined || client.stars === null) return 0;
+    const count = Number(client.stars);
+    return Number.isFinite(count) && count > 0 ? count : 0;
+  }
+
+  private clientUniqueKey(client: Client): string {
+    return (
+      client.uid ||
+      client.trackingId ||
+      [
+        client.locationOwnerId || '',
+        client.firstName || '',
+        client.lastName || '',
+        client.phoneNumber || '',
+      ].join('|')
+    );
+  }
+
+  formatClientName(client?: Client | null): string {
+    if (!client) return '';
+    const parts = [client.firstName, client.lastName, client.middleName]
+      .map((value) => (value || '').trim())
+      .filter(Boolean);
+    return parts.join(' ') || client.name || 'Client';
+  }
+
+  clientInitials(client?: Client | null): string {
+    const first = (client?.firstName || client?.name || '').trim();
+    const last = (client?.lastName || '').trim();
+    const a = first ? first[0] : '';
+    const b = last ? last[0] : '';
+    return (a + b || 'C').toUpperCase();
+  }
+
+  formatClientPhone(raw?: string | null): string {
+    if (!raw) return '—';
+    const digits = `${raw}`.replace(/\D/g, '');
+    if (digits.length === 10) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    return raw;
+  }
+
+  private latestClientTrophyAward(client: Client): any | null {
+    const awards = Object.values(client.trophyAwards || {});
+    if (!awards.length) return null;
+    return awards.sort(
+      (a: any, b: any) =>
+        this.clientTrophyAwardSortValue(b) - this.clientTrophyAwardSortValue(a)
+    )[0];
+  }
+
+  private clientTrophyAwardSortValue(award: any): number {
+    const raw = award?.awardedOn || award?.createdAt || '';
+    const parsed = raw ? new Date(raw) : null;
+    return parsed && !Number.isNaN(parsed.getTime()) ? parsed.getTime() : 0;
+  }
+
+  private formatClientTrophyAwardDate(award: any): string {
+    const raw = award?.awardedOn || award?.createdAt || '';
+    if (!raw) return '';
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return raw;
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  private safeNumber(value?: string | number | null): number {
+    const numeric = Number(value || 0);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }
+
   private async copyToClipboard(text: string): Promise<void> {
     if (typeof navigator !== 'undefined' && navigator?.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
@@ -2832,6 +3076,127 @@ export class TeamRankingMonthComponent implements OnDestroy {
       this.loadMonthlyTotalsForEmployees();
     } else if (mode === 'performance') {
       this.sortEmployeesByPerformance();
+    } else if (
+      mode === 'trophyHistory' &&
+      (this.trophyHistoryScope === 'clients' || this.trophyHistoryScope === 'teams')
+    ) {
+      this.loadClientTrophyRows();
+    }
+  }
+
+  setTrophyHistoryScope(scope: TrophyHistoryScope): void {
+    if (this.trophyHistoryScope === scope) return;
+    this.trophyHistoryScope = scope;
+    if (scope === 'clients' || scope === 'teams') {
+      this.loadClientTrophyRows();
+    }
+  }
+
+  openClientTrophyModal(row: ClientTrophyRow): void {
+    this.selectedClientTrophyRow = row;
+  }
+
+  closeClientTrophyModal(): void {
+    this.selectedClientTrophyRow = null;
+  }
+
+  private clientTrophyOwnerUsers(): User[] {
+    const owners =
+      Array.isArray(this.allUsers) && this.allUsers.length > 0
+        ? this.allUsers.filter((user) => !!user?.uid)
+        : this.auth.currentUser?.uid
+        ? [this.auth.currentUser as User]
+        : [];
+    return owners;
+  }
+
+  private clientTrophyOwnerKey(): string {
+    return this.clientTrophyOwnerUsers()
+      .map((user) => user.uid || '')
+      .sort()
+      .join('|');
+  }
+
+  private async loadClientTrophyRows(): Promise<void> {
+    const owners = this.clientTrophyOwnerUsers();
+    const loadKey = this.clientTrophyOwnerKey();
+    if (!owners.length) {
+      this.clientTrophyRowsCache = [];
+      this.clientTrophyTeamRowsCache = [];
+      this.clientTrophyRowsCacheKey = '';
+      this.clientTrophyLoaded = false;
+      this.selectedClientTrophyRow = null;
+      this.clientTrophyError = 'Aucun site disponible pour charger les clients.';
+      return;
+    }
+    if (this.clientTrophyLoaded && this.clientTrophyLoadKey === loadKey) return;
+    if (this.clientTrophyLoading) return;
+
+    this.clientTrophyLoading = true;
+    this.clientTrophyError = '';
+    try {
+      const snapshots = await Promise.all(
+        owners.map(async (owner) => {
+          const snapshot = await firstValueFrom(
+            this.afs
+              .collection<Client>(`users/${owner.uid}/clients`, (ref) =>
+                ref.where('stars', '>', '0')
+              )
+              .get()
+          );
+          return { owner, snapshot };
+        })
+      );
+
+      const clients: Client[] = [];
+      snapshots.forEach(({ owner, snapshot }) => {
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data() as Client;
+          clients.push({
+            ...data,
+            uid: data.uid || doc.id,
+            locationName: data.locationName || owner.firstName || '',
+            locationOwnerId: data.locationOwnerId || owner.uid,
+          });
+        });
+      });
+
+      const key = clients
+        .map((client) =>
+          [
+            this.clientUniqueKey(client),
+            client.stars || '',
+            Object.keys(client.trophyAwards || {}).join(','),
+          ].join(':')
+        )
+        .sort()
+        .join('|');
+      if (this.clientTrophyRowsCacheKey !== key) {
+        this.clientTrophyRowsCache = this.buildClientTrophyRows(clients);
+        this.clientTrophyTeamRowsCache = this.buildClientTrophyTeamRows(
+          this.clientTrophyRowsCache
+        );
+        this.clientTrophyRowsCacheKey = key;
+        if (this.selectedClientTrophyRow) {
+          const selectedKey = this.clientUniqueKey(
+            this.selectedClientTrophyRow.client
+          );
+          if (
+            !this.clientTrophyRowsCache.some(
+              (row) => this.clientUniqueKey(row.client) === selectedKey
+            )
+          ) {
+            this.selectedClientTrophyRow = null;
+          }
+        }
+      }
+      this.clientTrophyLoadKey = loadKey;
+      this.clientTrophyLoaded = true;
+    } catch (error) {
+      console.error('Failed to load starred clients', error);
+      this.clientTrophyError = 'Impossible de charger les clients étoilés.';
+    } finally {
+      this.clientTrophyLoading = false;
     }
   }
 
