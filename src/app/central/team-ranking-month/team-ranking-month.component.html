@@ -1138,6 +1138,18 @@
             type="button"
             class="rounded-full px-4 py-2 transition"
             [ngClass]="
+              trophyHistoryScope === 'teams'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:bg-slate-50'
+            "
+            (click)="setTrophyHistoryScope('teams')"
+          >
+            Équipe
+          </button>
+          <button
+            type="button"
+            class="rounded-full px-4 py-2 transition"
+            [ngClass]="
               trophyHistoryScope === 'clients'
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'text-slate-600 hover:bg-slate-50'
@@ -1145,18 +1157,6 @@
             (click)="setTrophyHistoryScope('clients')"
           >
             Clients
-          </button>
-          <button
-            type="button"
-            class="rounded-full px-4 py-2 transition"
-            [ngClass]="
-              trophyHistoryScope === 'teams'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-50'
-            "
-            (click)="setTrophyHistoryScope('teams')"
-          >
-            Teams
           </button>
         </div>
       </div>
