@@ -1374,6 +1374,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private presenceExceptionDocPath(): string {
+    return `presenceExceptionMonths/${this.presenceExceptionMonthKey()}`;
+  }
+
+  private legacyPresenceExceptionDocPath(): string {
     const uid = this.auth.currentUser?.uid || '';
     return uid
       ? `users/${uid}/presenceExceptionMonths/${this.presenceExceptionMonthKey()}`
@@ -1396,22 +1400,34 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   private async loadPresenceExceptionDaysForSelection(): Promise<void> {
     const path = this.presenceExceptionDocPath();
-    if (!path) {
-      this.presenceExceptionDays = {};
-      this.presenceExceptionsCacheKey = '';
-      return;
-    }
-
-    const cacheKey = `${path}`;
+    const legacyPath = this.legacyPresenceExceptionDocPath();
+    const cacheKey = [path, legacyPath].filter(Boolean).join('|');
     if (this.presenceExceptionsCacheKey === cacheKey) return;
 
     this.presenceExceptionsCacheKey = cacheKey;
     this.presenceExceptionsLoading = true;
     this.presenceExceptionMessage = '';
     try {
-      const snapshot = await firstValueFrom(this.afs.doc(path).get());
+      const [snapshot, legacySnapshot] = await Promise.all([
+        firstValueFrom(this.afs.doc(path).get()),
+        legacyPath
+          ? firstValueFrom(this.afs.doc(legacyPath).get())
+          : Promise.resolve(null),
+      ]);
       const data = snapshot.data() as any;
-      this.presenceExceptionDays = data?.days || {};
+      const legacyData = legacySnapshot?.data() as any;
+      const globalDays = data?.days || {};
+      const legacyDays = legacyData?.days || {};
+      this.presenceExceptionDays = {
+        ...legacyDays,
+        ...globalDays,
+      };
+      if (
+        this.auth.isAdmin &&
+        Object.keys(legacyDays).some((dateISO) => !globalDays[dateISO])
+      ) {
+        this.promoteLegacyPresenceExceptionDays(path, this.presenceExceptionDays);
+      }
       this.invalidatePresenceCache();
     } catch (error) {
       console.error('Failed to load presence exception days', error);
@@ -1424,13 +1440,34 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
   }
 
+  private promoteLegacyPresenceExceptionDays(
+    path: string,
+    days: Record<string, PresenceExceptionDay>
+  ): void {
+    this.afs
+      .doc(path)
+      .set(
+        {
+          monthKey: this.presenceExceptionMonthKey(),
+          days,
+          updatedAt: new Date(),
+          updatedBy: this.auth.currentUser?.uid || 'unknown',
+          migratedFrom: 'legacy_user_presenceExceptionMonths',
+        },
+        { merge: true }
+      )
+      .catch((error) => {
+        console.warn('Failed to promote legacy presence exception days', error);
+      });
+  }
+
   private async savePresenceExceptionDays(
     days: Record<string, PresenceExceptionDay>,
     successMessage: string
   ): Promise<void> {
     const path = this.presenceExceptionDocPath();
     if (!path) {
-      this.presenceExceptionMessage = "Impossible d'identifier l'administrateur.";
+      this.presenceExceptionMessage = "Impossible d'identifier le calendrier.";
       return;
     }
 

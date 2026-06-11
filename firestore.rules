@@ -188,6 +188,10 @@ service cloud.firestore {
       allow read, write: if signedIn() && !isPortalClient();
     }
 
+    match /presenceExceptionMonths/{monthKey} {
+      allow read, write: if signedIn() && !isPortalClient();
+    }
+
     match /{topCollection}/{docId} {
       allow read, write: if signedIn() &&
         !isPortalClient() &&
