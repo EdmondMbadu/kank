@@ -142,6 +142,7 @@ type ClientTrophyTeamRow = {
 };
 type ClientTrophyTeamStats = {
   totalStars: number;
+  totalClients: number;
   teamsWithStars: number;
   topTeamStars: number;
 };
@@ -789,6 +790,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const rows = this.clientTrophyTeamRows;
     return {
       totalStars: rows.reduce((total, row) => total + row.totalStars, 0),
+      totalClients: rows.reduce((total, row) => total + row.clientsWithStars, 0),
       teamsWithStars: rows.length,
       topTeamStars: rows[0]?.totalStars || 0,
     };

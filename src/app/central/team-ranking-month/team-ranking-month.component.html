@@ -1091,7 +1091,7 @@
 
         <div
           *ngIf="trophyHistoryScope === 'teams'"
-          class="grid grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm"
+          class="grid grid-cols-4 overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm"
         >
           <div class="px-3 py-3">
             <p class="text-2xl font-black text-slate-900">
@@ -1099,6 +1099,14 @@
             </p>
             <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
               Étoiles
+            </p>
+          </div>
+          <div class="border-l border-slate-200 px-3 py-3">
+            <p class="text-2xl font-black text-slate-900">
+              {{ clientTrophyTeamStats.totalClients }}
+            </p>
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              Clients
             </p>
           </div>
           <div class="border-x border-slate-200 px-3 py-3">
