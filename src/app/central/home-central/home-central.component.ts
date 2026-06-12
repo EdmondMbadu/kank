@@ -1188,6 +1188,14 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     return group.key;
   }
 
+  trackTrophyMissingClient(index: number, client: Client): string {
+    return (
+      client.uid ||
+      client.trackingId ||
+      `${client.firstName || ''}-${client.lastName || ''}-${client.phoneNumber || index}`
+    );
+  }
+
   get tomorrowBirthdayDateLabel(): string {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -3380,6 +3388,14 @@ Merci pour ta confiance !`;
     const last = (client?.lastName ?? '').trim();
     const initials = `${first[0] || ''}${last[0] || ''}`.trim();
     return (initials || 'CL').toUpperCase();
+  }
+  clientProfilePictureUrl(client?: Client | null): string {
+    const picture = client?.profilePicture as
+      | { downloadURL?: string }
+      | string
+      | undefined;
+    if (!picture) return '';
+    return typeof picture === 'string' ? picture : picture.downloadURL || '';
   }
   isClientQuitte(client?: Client | null): boolean {
     const normalized = this.normalizeQuitteStatusFields(client);
