@@ -2115,7 +2115,18 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
   private isMissingTrophyClient(client: Client): boolean {
     const score = Number(client.creditScore);
-    return Number.isFinite(score) && score >= 70 && this.getStarsCount(client) === 0;
+    const expectedStars = this.expectedStarsForCreditScore(score);
+    return expectedStars > 0 && this.getStarsCount(client) < expectedStars;
+  }
+
+  pendingStarsTarget(client: Client): number {
+    return this.expectedStarsForCreditScore(Number(client.creditScore));
+  }
+
+  private expectedStarsForCreditScore(score: number): number {
+    if (!Number.isFinite(score) || score < 70) return 0;
+    if (score < 100) return 1;
+    return 2 + Math.floor((score - 100) / 50);
   }
 
   private matchesTrophyMissingFilter(client: Client): boolean {

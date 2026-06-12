@@ -445,8 +445,8 @@
               </div>
 
               <p class="text-[11px] text-amber-700/80 dark:text-amber-200/90">
-                Clients avec score de crédit supérieur ou égal à 70 et aucune étoile :
-                ils sont prêts à recevoir leur première étoile.
+                Clients dont le nombre d'étoiles est inférieur au niveau attendu :
+                70 = 1 étoile, 100 = 2, 150 = 3, 200 = 4, etc.
               </p>
 
               <p
@@ -471,7 +471,7 @@
                     Étoiles à attribuer
                   </p>
                   <p class="mt-0.5 text-xs text-amber-800/80 dark:text-amber-200/90">
-                    Clients qualifiés qui n'ont pas encore reçu d'étoile.
+                    Clients qualifiés qui n'ont pas encore toutes leurs étoiles.
                   </p>
                 </div>
                 <div
@@ -501,13 +501,13 @@
                         {{ group.locationName }}
                       </p>
                       <p class="text-xs text-slate-500 dark:text-slate-400">
-                        {{ group.clients.length }} client(s) en attente d'étoile
+                        {{ group.clients.length }} client(s) en attente d'étoile(s)
                       </p>
                     </div>
                     <span
                       class="inline-flex w-fit items-center rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
                     >
-                      Première étoile
+                      Attribution requise
                     </span>
                   </div>
 
@@ -532,11 +532,6 @@
                             {{ clientInitials(client) }}
                           </span>
                         </ng-template>
-                        <span
-                          class="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-black text-amber-950 ring-2 ring-white dark:ring-slate-900"
-                        >
-                          ★
-                        </span>
                       </span>
 
                       <span class="min-w-0 flex-1">
@@ -554,7 +549,7 @@
                           <span
                             class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
                           >
-                            Étoile en attente
+                            {{ getStarsCount(client) }}/{{ pendingStarsTarget(client) }} étoile(s)
                           </span>
                         </span>
                       </span>
