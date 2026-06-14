@@ -2541,8 +2541,7 @@
         <!--  modern block-quote style for each comment  -->
         <article
           *ngFor="
-            let c of comments
-              | slice : 0 : (auth.isAdmin ? comments.length : 2);
+            let c of comments | slice : 0 : commentsDisplayLimit;
             let i = index
           "
           class="relative mx-auto mb-6 max-w-2xl rounded-3xl bg-white shadow-lg dark:bg-gray-800"
@@ -2693,6 +2692,23 @@
             </div>
           </blockquote>
         </article>
+        <div
+          *ngIf="canShowMoreComments"
+          class="mx-auto mb-8 flex max-w-2xl justify-center"
+        >
+          <button
+            type="button"
+            (click)="showMoreComments()"
+            class="inline-flex items-center rounded-full bg-green-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          >
+            Voir plus
+            <span class="ml-2 text-xs font-medium text-green-100">
+              ({{ remainingCommentsCount }} restant{{
+                remainingCommentsCount > 1 ? "s" : ""
+              }})
+            </span>
+          </button>
+        </div>
       </div>
     </section>
 

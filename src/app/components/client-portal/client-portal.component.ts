@@ -81,6 +81,9 @@ export class ClientPortalComponent {
   personPostingComment?: string = '';
   comment?: string = '';
   comments: Comment[] = [];
+  readonly generalUserInitialCommentLimit = 2;
+  readonly commentsPageSize = 5;
+  commentsVisibleCount = this.generalUserInitialCommentLimit;
   isRecording = false;
   mediaRecorder!: MediaRecorder;
   audioChunks: BlobPart[] = []; // Will store the recorded audio data (chunks)
@@ -974,6 +977,9 @@ export class ClientPortalComponent {
     this.isFullPictureVisible = !this.isFullPictureVisible;
   }
   setComments() {
+    this.comments = [];
+    this.commentsVisibleCount = this.generalUserInitialCommentLimit;
+
     if (this.client.comments) {
       this.comments = this.client.comments;
       // add the formatted time
@@ -995,6 +1001,27 @@ export class ClientPortalComponent {
       const dateB = parseTime(b.time);
       return dateB - dateA; // Descending order
     });
+  }
+
+  get commentsDisplayLimit(): number {
+    return this.auth.isAdmin
+      ? this.comments.length
+      : Math.min(this.commentsVisibleCount, this.comments.length);
+  }
+
+  get remainingCommentsCount(): number {
+    return Math.max(this.comments.length - this.commentsDisplayLimit, 0);
+  }
+
+  get canShowMoreComments(): boolean {
+    return !this.auth.isAdmin && this.remainingCommentsCount > 0;
+  }
+
+  showMoreComments(): void {
+    this.commentsVisibleCount = Math.min(
+      this.commentsVisibleCount + this.commentsPageSize,
+      this.comments.length
+    );
   }
 
   setGraphCredit() {
