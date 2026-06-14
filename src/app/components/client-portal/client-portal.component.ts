@@ -81,9 +81,9 @@ export class ClientPortalComponent {
   personPostingComment?: string = '';
   comment?: string = '';
   comments: Comment[] = [];
-  readonly generalUserInitialCommentLimit = 2;
+  readonly initialCommentLimit = 2;
   readonly commentsPageSize = 5;
-  commentsVisibleCount = this.generalUserInitialCommentLimit;
+  commentsVisibleCount = this.initialCommentLimit;
   isRecording = false;
   mediaRecorder!: MediaRecorder;
   audioChunks: BlobPart[] = []; // Will store the recorded audio data (chunks)
@@ -978,7 +978,7 @@ export class ClientPortalComponent {
   }
   setComments() {
     this.comments = [];
-    this.commentsVisibleCount = this.generalUserInitialCommentLimit;
+    this.commentsVisibleCount = this.initialCommentLimit;
 
     if (this.client.comments) {
       this.comments = this.client.comments;
@@ -1004,9 +1004,7 @@ export class ClientPortalComponent {
   }
 
   get commentsDisplayLimit(): number {
-    return this.auth.isAdmin
-      ? this.comments.length
-      : Math.min(this.commentsVisibleCount, this.comments.length);
+    return Math.min(this.commentsVisibleCount, this.comments.length);
   }
 
   get remainingCommentsCount(): number {
@@ -1014,7 +1012,7 @@ export class ClientPortalComponent {
   }
 
   get canShowMoreComments(): boolean {
-    return !this.auth.isAdmin && this.remainingCommentsCount > 0;
+    return this.remainingCommentsCount > 0;
   }
 
   showMoreComments(): void {
