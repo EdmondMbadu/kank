@@ -1,68 +1,227 @@
+<app-navbar
+  [email]="currentUserEmail"
+  [firstName]="currentUserFirstName"
+  [path]="'home'">
+</app-navbar>
 
-<app-navbar [email]="this.auth.currentUser.email"[firstName]="this.auth.currentUser.firstName" [path]="'home'"></app-navbar>
-<div class="flex container mx-auto m-12 justify-center">
-   <h2 class="text-xl text-center m-2 md:text-2xl md:mr-8">Retracer Les Emprunts</h2>
-  
-   <button type="submit" class="text-white bg-green-700 hover:bg-green-800 font-medium rounded-full text-sm w-auto sm:w-auto  px-2 py-2 md:px-5 md:py-2.5 text-center m-2 " routerLink="/client-info">Info Client</button>
+<section class="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-green-100/40 px-4 py-8">
+  <div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <header class="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900 md:text-3xl">Retracer Les Emprunts</h1>
+          <p class="mt-1 text-sm text-gray-500">
+            Consultez les clients par mois ou par année, puis ouvrez leur profil depuis la liste.
+          </p>
+        </div>
 
+        <button
+          type="button"
+          routerLink="/client-info"
+          class="inline-flex w-fit items-center rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800">
+          Info Client
+        </button>
+      </div>
+    </header>
 
-</div>
-<div class="flex container mx-auto justify-center m-4">
-    <h2 class="text-center text-2xl font-bold ">{{numberOfPeople}} clients - Total Par Date: {{totalGivenDate | number:'1.0-0'}} FC</h2>
-</div>
-<div class="flex container mx-auto  justify-center">
-   <div class="w-full max-w-md p-4 bg-white border border-gray-200 rounded-lg shadow sm:p-8 dark:bg-gray-800 dark:border-gray-700">
-       <div class="flex items-center justify-between mb-4">
-           <h5 class="text-xl font-bold leading-none text-gray-900 dark:text-white">Retracer</h5>
-           <form class="flex items-center">   
-               <label for="simple-search" class="sr-only">Chercher</label>
-               <div class="relative w-full">
-                   <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                       <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 20">
-                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v10M3 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm12 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm0 0V6a3 3 0 0 0-3-3H9m1.5-2-2 2 2 2"/>
-                       </svg>
-                   </div>
-                   <input type="text" id="simple-search"[formControl]="searchControl"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full pl-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500" placeholder="Chercher la date..." required>
-               </div>
-               <button type="submit" class="p-2.5 ml-2 text-sm font-medium text-white bg-green-700 rounded-lg border border-green-700 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                   <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                   </svg>
-                   <span class="sr-only">Chercher</span>
-               </button>
-           </form>
-   </div>
-   <div class="flow-root">
-           <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
-               <li class="py-3 sm:py-4 hover:bg-gray-100 dark:hover:bg-gray-600" *ngFor="let c of filteredItems; let i=index  " [routerLink]="['/client-portal',c.trackingId]">
-                   <div class="flex items-center space-x-4">
-                       <div class="relative inline-flex items-center justify-center w-10 h-10 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                           <span class="font-medium text-gray-600 dark:text-gray-300">{{c.firstName?.substring(0,2)}}</span>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                           <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                           {{c.firstName}} {{c.lastName}} {{c.middleName}}
-                           </p>
-                           <p class="text-sm text-gray-500 truncate dark:text-gray-400">
-                            {{c.date}} 
-                           </p>
-                       </div>
-                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate dark:text-white" >
-                            FC {{c.loanAmount| number:'1.0-0'}}
-                      
-                        </p>
-                        <p class="text-sm ml-6 text-gray-500 truncate dark:text-gray-400">
-                        </p>
-                       </div>
-                   </div>
-               </li>
-           </ul>
-   </div>
-   </div>
+    <div class="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-lime-50 p-5 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Vue Périodique</p>
+          <h2 class="mt-1 text-xl font-bold text-gray-900">Analyse des emprunts</h2>
+          <p class="mt-1 text-sm text-gray-600">
+            Filtrez par mois ou par année, puis cherchez un client, une date ou un montant.
+          </p>
+        </div>
 
+        <div class="inline-flex rounded-xl border border-emerald-200 bg-white p-1">
+          <button
+            type="button"
+            (click)="setPeriodMode('month')"
+            [class.bg-emerald-700]="periodMode === 'month'"
+            [class.text-white]="periodMode === 'month'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-emerald-100">
+            Mois
+          </button>
+          <button
+            type="button"
+            (click)="setPeriodMode('year')"
+            [class.bg-emerald-700]="periodMode === 'year'"
+            [class.text-white]="periodMode === 'year'"
+            class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-emerald-100">
+            Année
+          </button>
+        </div>
+      </div>
 
-</div>
+      <div class="mt-5 grid gap-3 md:grid-cols-3">
+        <div class="rounded-xl border border-emerald-200 bg-white/80 px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Période active</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">{{ periodLabel }}</p>
+          <p class="mt-1 text-xs text-gray-500">
+            Les emprunts affichés ci-dessous restent groupés par mois.
+          </p>
+        </div>
 
+        <div class="rounded-xl border border-emerald-200 bg-white/80 px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Total période</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">FC {{ totalGivenDate | number : '1.0-0' }}</p>
+        </div>
 
+        <div class="rounded-xl border border-emerald-200 bg-white/80 px-4 py-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Clients visibles</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">{{ numberOfPeople }}</p>
+          <p class="text-xs text-gray-500">Profil accessible en cliquant sur un nom.</p>
+        </div>
+      </div>
 
+      <div class="mt-5 grid gap-3 lg:grid-cols-5">
+        <div *ngIf="periodMode === 'month'" class="lg:col-span-1">
+          <label for="monthSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Mois
+          </label>
+          <select
+            id="monthSelect"
+            [ngModel]="selectedMonth"
+            (ngModelChange)="onMonthChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+            <option *ngFor="let month of monthNames; let i = index" [ngValue]="i + 1">
+              {{ month }}
+            </option>
+          </select>
+        </div>
+
+        <div [ngClass]="periodMode === 'month' ? 'lg:col-span-1' : 'lg:col-span-2'">
+          <label for="yearSelect" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Année
+          </label>
+          <select
+            id="yearSelect"
+            [ngModel]="selectedYear"
+            (ngModelChange)="onYearChange($event)"
+            class="block w-full rounded-lg border border-gray-300 bg-white p-2.5 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500">
+            <option *ngFor="let year of availableYears" [ngValue]="year">
+              {{ year }}
+            </option>
+          </select>
+        </div>
+
+        <div class="lg:col-span-3">
+          <label for="lendingSearch" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600">
+            Recherche
+          </label>
+          <div class="relative">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+            </div>
+            <input
+              id="lendingSearch"
+              type="text"
+              [ngModel]="searchQuery"
+              (ngModelChange)="onSearchChange($event)"
+              class="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
+              placeholder="Nom, date, montant ou mois" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
+      <div class="flex flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-bold text-gray-900">Clients emprunteurs</h2>
+            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+              FC
+            </span>
+          </div>
+          <p class="mt-1 text-sm text-gray-500">
+            Cliquez sur un client pour ouvrir son profil.
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left lg:text-right">
+          <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Total période</p>
+          <p class="mt-1 text-lg font-bold text-gray-900">FC {{ totalGivenDate | number : '1.0-0' }}</p>
+          <p class="text-xs text-gray-500">{{ numberOfPeople }} client(s)</p>
+        </div>
+      </div>
+
+      <div class="border-t border-emerald-100 px-4 py-5 sm:px-6">
+        <div class="flex items-center justify-between">
+          <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            {{ numberOfPeople }} client(s) pour {{ periodLabel }}
+          </p>
+          <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+            Emprunts
+          </span>
+        </div>
+
+        <div class="mt-4 space-y-4" *ngIf="lendingGroups.length; else emptyLendings">
+          <section
+            *ngFor="let group of lendingGroups; trackBy: trackLendingGroup"
+            class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 class="text-base font-semibold text-gray-900">{{ group.title }}</h3>
+                <p class="text-xs text-gray-500">{{ group.entryCount }} client(s)</p>
+              </div>
+              <div class="text-left sm:text-right">
+                <p class="text-sm font-semibold text-gray-900">FC {{ group.total | number : '1.0-0' }}</p>
+              </div>
+            </div>
+
+            <ul role="list" class="mt-4 space-y-3">
+              <li
+                *ngFor="let c of group.entries; trackBy: trackLendingEntry"
+                [routerLink]="['/client-portal', c.trackingId]"
+                class="cursor-pointer rounded-2xl border border-white bg-white p-4 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  <div class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 font-semibold uppercase text-emerald-700">
+                    {{ c.firstName.substring(0, 2) || 'CL' }}
+                  </div>
+
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <p class="text-sm font-semibold text-gray-900">
+                        {{ c.firstName }} {{ c.lastName }} {{ c.middleName }}
+                      </p>
+                      <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                        Profil
+                      </span>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500">{{ c.dateLabel }}</p>
+                  </div>
+
+                  <div class="text-left sm:text-right">
+                    <p class="text-sm font-semibold text-gray-900">FC {{ c.loanAmount | number : '1.0-0' }}</p>
+                    <p *ngIf="c.paymentPeriodRange" class="text-xs text-gray-500">
+                      {{ c.paymentPeriodRange }}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <ng-template #emptyLendings>
+          <p class="py-10 text-center text-sm text-gray-500">
+            Aucun emprunt enregistré pour {{ periodLabel }}.
+          </p>
+        </ng-template>
+      </div>
+    </section>
+  </div>
+</section>
