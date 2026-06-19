@@ -1180,6 +1180,316 @@
         </div>
       </div>
     </div>
+
+    <div
+      class="rounded-2xl 2xl:max-w-3xl border border-slate-200 bg-white/70 p-5 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div class="mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-xl font-semibold tracking-tight dark:text-slate-100">
+            Classement Emprunts
+            {{
+              rankingMode === 'year'
+                ? "de l'année"
+                : rankingMode === 'all'
+                ? 'Tout le temps'
+                : 'Du Mois'
+            }}
+            <span
+              class="ml-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 bg-clip-text text-transparent"
+            >
+              <ng-container *ngIf="rankingMode === 'month'; else lendingYearLabel">
+                ({{ time.monthFrenchNames[lendingCurrentMonth - 1] }}
+                {{ lendingCurrentYear }})
+              </ng-container>
+              <ng-template #lendingYearLabel>
+                ({{ rankingMode === 'all' ? 'Depuis le début' : rankingYear }})
+              </ng-template>
+            </span>
+          </h2>
+        </div>
+
+        <div
+          class="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600 dark:text-slate-300"
+        >
+          <div
+            class="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200"
+          >
+            Total:
+            {{ toNum(lendingCurrentTotalAmount) | number : "1.0-0" }} FC ·
+            {{ toNum(lendingCurrentTotalAmountDollars) | number : "1.0-0" }} $
+          </div>
+          <div
+            class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          >
+            Croissance:
+            {{ toNum(lendingGrowthRateTotal) | number : "1.0-0" }} %
+          </div>
+          <div
+            class="rounded-full bg-cyan-50 px-2.5 py-1 text-cyan-700 ring-1 ring-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-200 dark:ring-cyan-800"
+          >
+            Barre = % du meilleur $
+          </div>
+        </div>
+
+        <ng-container *ngIf="rankingMode === 'month'; else lendingYearSelectors">
+          <div
+            class="mt-3 flex flex-wrap gap-3 text-xs text-slate-600 dark:text-slate-300"
+          >
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Mois analysé</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="lendingCurrentMonth"
+                (ngModelChange)="updateLendingTableData()"
+              >
+                <option *ngFor="let month of monthsList" [ngValue]="month">
+                  {{ time.monthFrenchNames[month - 1] }}
+                </option>
+              </select>
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="lendingCurrentYear"
+                (ngModelChange)="updateLendingTableData()"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Comparé à</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="lendingComparisonMonth"
+                (ngModelChange)="updateLendingTableData()"
+              >
+                <option *ngFor="let month of monthsList" [ngValue]="month">
+                  {{ time.monthFrenchNames[month - 1] }}
+                </option>
+              </select>
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="lendingComparisonYear"
+                (ngModelChange)="updateLendingTableData()"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #lendingYearSelectors>
+          <div
+            class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300"
+          >
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Année analysée</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-emerald-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="rankingYear"
+                (ngModelChange)="onRankingYearChange($event)"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+            <div
+              class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/80 px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800/60"
+            >
+              <span class="font-semibold text-slate-600 dark:text-slate-200"
+                >Comparé à</span
+              >
+              <select
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700 focus:border-rose-500 focus:outline-none focus:ring-rose-400 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                [(ngModel)]="rankingComparisonYear"
+                (ngModelChange)="onRankingComparisonYearChange($event)"
+              >
+                <option *ngFor="let year of time.yearsList" [ngValue]="year">
+                  {{ year }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="rounded-xl ring-1 ring-slate-200 dark:ring-slate-700">
+        <div
+          class="sm:overflow-visible -mx-4 overflow-x-auto overscroll-x-contain sm:mx-0"
+        >
+          <table
+            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
+          >
+            <thead
+              class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            >
+              <tr>
+                <th class="px-3 py-2 text-left whitespace-nowrap">Rang</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Équipe</th>
+                <th class="px-3 py-2 text-right whitespace-nowrap">
+                  Emprunts
+                </th>
+                <th class="px-3 py-2 text-right whitespace-nowrap">
+                  Moyenne/jour
+                </th>
+                <th class="px-3 py-2 text-right whitespace-nowrap">
+                  Δ Croissance
+                </th>
+              </tr>
+            </thead>
+
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+              <tr
+                *ngFor="let s of sortedLendingMonth; let i = index"
+                class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+              >
+                <td class="px-3 py-2">
+                  <span
+                    class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800':
+                        i === 0,
+                      'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700':
+                        i > 2
+                    }"
+                    [title]="'Rang ' + (i + 1)"
+                  >
+                    {{
+                      i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1
+                    }}
+                  </span>
+                </td>
+
+                <td class="px-2 py-2">
+                  <div class="font-medium text-slate-900 dark:text-slate-100">
+                    {{ s.firstName }}
+                  </div>
+                  <div
+                    class="mt-1 h-1.5 w-32 rounded-full bg-slate-200 dark:bg-slate-700"
+                    aria-hidden="true"
+                  >
+                    <div
+                      class="h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+                      [style.width.%]="
+                        percentOf(
+                          toNum(s?.totalLendingInDollars),
+                          maxLendingUSD
+                        )
+                      "
+                    ></div>
+                  </div>
+                </td>
+
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(s?.totalLendingInDollars) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(s?.totalLending) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {{
+                      percentOf(toNum(s?.totalLendingInDollars), maxLendingUSD)
+                        | number : "1.0-0"
+                    }}%
+                  </div>
+                </td>
+
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <div class="font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(s?.averageLendingUsd) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(s?.averageLending) | number : "1.0-0" }}
+                  </div>
+                </td>
+
+                <td class="px-3 py-2 text-right font-bold">
+                  <span
+                    class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] font-semibold"
+                    [ngClass]="
+                      nonNegColor(sortedGrowthRateLendingMonth[i].growthRate)
+                    "
+                  >
+                    <span>{{
+                      toNum(sortedGrowthRateLendingMonth[i].growthRate) >= 0
+                        ? "▲"
+                        : "▼"
+                    }}</span>
+                    <span
+                      >{{
+                        toNum(sortedGrowthRateLendingMonth[i].growthRate) >= 0
+                          ? "+"
+                          : ""
+                      }}{{
+                        toNum(sortedGrowthRateLendingMonth[i].growthRate)
+                          | number : "1.0-0"
+                      }}%</span
+                    >
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+
+            <tfoot
+              class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100"
+            >
+              <tr>
+                <td class="px-3 py-2 font-semibold">Total</td>
+                <td class="px-2 py-2"></td>
+                <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">
+                  <div class="text-base font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ toNum(lendingCurrentTotalAmountDollars) | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ toNum(lendingCurrentTotalAmount) | number : "1.0-0" }}
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">
+                  <div class="text-base font-semibold text-slate-900 dark:text-slate-100">
+                    ${{ lendingCurrentAverageAmountDollars | number : "1.0-0" }}
+                  </div>
+                  <div class="text-xs text-slate-500 dark:text-slate-400">
+                    FC {{ lendingCurrentAverageAmount | number : "1.0-0" }}
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right font-bold">
+                  <span
+                    class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] font-bold"
+                    [ngClass]="nonNegColor(lendingGrowthRateTotal)"
+                  >
+                    <span>{{
+                      toNum(lendingGrowthRateTotal) >= 0 ? "▲" : "▼"
+                    }}</span>
+                    <span
+                      >{{ toNum(lendingGrowthRateTotal) >= 0 ? "+" : ""
+                      }}{{ toNum(lendingGrowthRateTotal) | number : "1.0-0"
+                      }}%</span
+                    >
+                  </span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

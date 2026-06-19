@@ -113,6 +113,13 @@ export class TrackingMonthCentralComponent {
     averagePayment: number;
     averagePaymentUsd: number;
   }[] = [];
+  sortedLendingMonth: {
+    firstName: string;
+    totalLending: number;
+    totalLendingInDollars: string;
+    averageLending: number;
+    averageLendingUsd: number;
+  }[] = [];
   sortedEntrySortieMonth: {
     firstName: string;
     totalEntrySortie: number;
@@ -140,12 +147,21 @@ export class TrackingMonthCentralComponent {
   paymentCurrentYear!: number;
   paymentComparisonMonth!: number;
   paymentComparisonYear!: number;
+  lendingCurrentMonth!: number;
+  lendingCurrentYear!: number;
+  lendingComparisonMonth!: number;
+  lendingComparisonYear!: number;
   reserveCurrentTotalAmount: string = '0';
   reserveCurrentTotalAmountDollars: string = '0';
   entrySortieCurrentTotalAmount: string = '0';
   entrySortieCurrentTotalAmountDollars: string = '0';
   paymentCurrentTotalAmount: string = '0';
   paymentCurrentTotalAmountDollars: string = '0';
+  lendingCurrentTotalAmount: string = '0';
+  lendingCurrentTotalAmountDollars: string = '0';
+  lendingGrowthRateTotal: string = '0';
+  lendingCurrentAverageAmount = 0;
+  lendingCurrentAverageAmountDollars = 0;
   copyPaymentsMessage: string | null = null;
   isCopyingPayments = false;
 
@@ -154,11 +170,22 @@ export class TrackingMonthCentralComponent {
     totalPayment: number;
     totalPaymentInDollars: string;
   }[] = [];
+  sortedLendingPreviousMonth: {
+    firstName: string;
+    totalLending: number;
+    totalLendingInDollars: string;
+  }[] = [];
 
   sortedGrowthRatePaymentMonth: {
     firstName: string;
     totalPayment: number;
     totalPaymentInDollars: string;
+    growthRate: string;
+  }[] = [];
+  sortedGrowthRateLendingMonth: {
+    firstName: string;
+    totalLending: number;
+    totalLendingInDollars: string;
     growthRate: string;
   }[] = [];
 
@@ -391,9 +418,14 @@ export class TrackingMonthCentralComponent {
     this.paymentCurrentYear = this.givenYear;
     this.paymentComparisonMonth = this.previousMonth;
     this.paymentComparisonYear = this.previousYear;
+    this.lendingCurrentMonth = this.givenMonth;
+    this.lendingCurrentYear = this.givenYear;
+    this.lendingComparisonMonth = this.previousMonth;
+    this.lendingComparisonYear = this.previousYear;
 
     this.updateReserveTableData();
     this.updatePaymentTableData();
+    this.updateLendingTableData();
 
     this.updateReserveGraphics(this.rangeValueFromKey(this.reserveActiveRange));
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
@@ -411,6 +443,7 @@ export class TrackingMonthCentralComponent {
     this.rankingComparisonYear = this.rankingYear - 1;
     this.updateReserveTableData();
     this.updatePaymentTableData();
+    this.updateLendingTableData();
   }
 
   onRankingYearChange(year: number): void {
@@ -421,12 +454,14 @@ export class TrackingMonthCentralComponent {
     );
     this.updateReserveTableData();
     this.updatePaymentTableData();
+    this.updateLendingTableData();
   }
 
   onRankingComparisonYearChange(year: number): void {
     this.rankingComparisonYear = year;
     this.updateReserveTableData();
     this.updatePaymentTableData();
+    this.updateLendingTableData();
   }
 
   updateReserveTableData(): void {
@@ -757,6 +792,177 @@ export class TrackingMonthCentralComponent {
     
     // Update mini graphs after table data is updated
     this.updateMiniGraphs();
+  }
+
+  updateLendingTableData(): void {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      this.sortedLendingMonth = [];
+      this.sortedLendingPreviousMonth = [];
+      this.sortedGrowthRateLendingMonth = [];
+      this.lendingCurrentTotalAmount = '0';
+      this.lendingCurrentTotalAmountDollars = '0';
+      this.lendingGrowthRateTotal = '0';
+      this.lendingCurrentAverageAmount = 0;
+      this.lendingCurrentAverageAmountDollars = 0;
+      return;
+    }
+
+    const isYearMode = this.rankingMode === 'year';
+    const isAllMode = this.rankingMode === 'all';
+    const lendingCurrentRaw = isAllMode
+      ? this.compute.findTotalAllTimeForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyLending'
+        )
+      : isYearMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyLending',
+          this.rankingYear
+        )
+      : this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyLending',
+          this.lendingCurrentMonth,
+          this.lendingCurrentYear
+        );
+
+    const lendingPreviousRaw = isAllMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyLending',
+          this.rankingComparisonYear
+        )
+      : isYearMode
+      ? this.compute.findTotalGivenYearForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyLending',
+          this.rankingComparisonYear
+        )
+      : this.compute.findTotalGivenMonthForAllUsersSortedDescending(
+          this.allUsers,
+          'dailyLending',
+          this.lendingComparisonMonth,
+          this.lendingComparisonYear
+        );
+
+    const currentDate = new Date();
+    const workingDays = isAllMode
+      ? this.calculateWorkingDaysAllTime()
+      : isYearMode
+      ? this.calculateWorkingDaysForYear(
+          this.rankingYear,
+          this.isCurrentYear(this.rankingYear)
+        )
+      : this.calculateWorkingDays(
+          this.lendingCurrentMonth,
+          this.lendingCurrentYear,
+          this.lendingCurrentMonth === currentDate.getMonth() + 1 &&
+            this.lendingCurrentYear === currentDate.getFullYear()
+        );
+
+    this.sortedLendingMonth = lendingCurrentRaw.map((x: any) => {
+      const totalLending = x.totalReserve;
+      const averageLending = workingDays > 0 ? totalLending / workingDays : 0;
+      const averageLendingUsdStr =
+        this.compute.convertCongoleseFrancToUsDollars(
+          String(averageLending)
+        );
+      const averageLendingUsd =
+        averageLendingUsdStr === '' ? 0 : Number(averageLendingUsdStr);
+
+      return {
+        firstName: x.firstName,
+        totalLending,
+        totalLendingInDollars: x.totalReserveInDollars,
+        averageLending,
+        averageLendingUsd,
+      };
+    });
+
+    this.sortedLendingPreviousMonth = lendingPreviousRaw.map((x: any) => ({
+      firstName: x.firstName,
+      totalLending: x.totalReserve,
+      totalLendingInDollars: x.totalReserveInDollars,
+    }));
+
+    this.sortedGrowthRateLendingMonth = this.sortedLendingMonth.map((curr) => {
+      const prev = this.sortedLendingPreviousMonth.find(
+        (p) => p.firstName === curr.firstName
+      );
+      const prevVal = prev ? this.toNum(prev.totalLending) : 0;
+      const currVal = this.toNum(curr.totalLending);
+      const growth =
+        prevVal > 0
+          ? ((currVal - prevVal) / prevVal) * 100
+          : currVal > 0
+          ? 100
+          : 0;
+
+      return {
+        ...curr,
+        growthRate: growth.toString(),
+      };
+    });
+
+    const lendingCurrentTotal = isAllMode
+      ? this.compute.findTotalAllTimeForAllUsers(
+          this.allUsers,
+          'dailyLending'
+        ) ?? 0
+      : isYearMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'dailyLending',
+          this.rankingYear
+        ) ?? 0
+      : this.compute.findTotalGivenMonthForAllUsers(
+          this.allUsers,
+          'dailyLending',
+          this.lendingCurrentMonth,
+          this.lendingCurrentYear
+        ) ?? 0;
+
+    const lendingComparisonTotal = isAllMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'dailyLending',
+          this.rankingComparisonYear
+        ) ?? 0
+      : isYearMode
+      ? this.compute.findTotalGivenYearForAllUsers(
+          this.allUsers,
+          'dailyLending',
+          this.rankingComparisonYear
+        ) ?? 0
+      : this.compute.findTotalGivenMonthForAllUsers(
+          this.allUsers,
+          'dailyLending',
+          this.lendingComparisonMonth,
+          this.lendingComparisonYear
+        ) ?? 0;
+
+    this.lendingCurrentTotalAmount = `${lendingCurrentTotal}`;
+    this.lendingCurrentTotalAmountDollars = `${this.compute.convertCongoleseFrancToUsDollars(
+      this.lendingCurrentTotalAmount
+    )}`;
+
+    const totalAverage =
+      workingDays > 0 ? this.toNum(lendingCurrentTotal) / workingDays : 0;
+    const totalAverageUsd =
+      this.compute.convertCongoleseFrancToUsDollars(String(totalAverage));
+    this.lendingCurrentAverageAmount = totalAverage;
+    this.lendingCurrentAverageAmountDollars =
+      totalAverageUsd === '' ? 0 : Number(totalAverageUsd);
+
+    const prevTotal = this.toNum(lendingComparisonTotal);
+    const currTotal = this.toNum(lendingCurrentTotal);
+    this.lendingGrowthRateTotal =
+      prevTotal > 0
+        ? (((currTotal - prevTotal) / prevTotal) * 100).toString()
+        : currTotal > 0
+        ? '100'
+        : '0';
   }
 
   private updateEntrySortieTableData(
@@ -1273,6 +1479,13 @@ export class TrackingMonthCentralComponent {
   get maxPaymentUSD(): number {
     const arr = (this.sortedPaymentMonth ?? []).map((s) =>
       this.toNum(s?.totalPaymentInDollars)
+    );
+    return Math.max(1, ...arr, 1);
+  }
+
+  get maxLendingUSD(): number {
+    const arr = (this.sortedLendingMonth ?? []).map((s) =>
+      this.toNum(s?.totalLendingInDollars)
     );
     return Math.max(1, ...arr, 1);
   }
