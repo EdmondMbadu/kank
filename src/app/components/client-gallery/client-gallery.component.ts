@@ -127,6 +127,7 @@ export class ClientGalleryComponent implements OnDestroy {
   get pictures(): ClientGalleryPicture[] {
     const gallery = this.owner?.galleryPictures ?? {};
     return Object.entries(gallery)
+      .filter(([, picture]) => Boolean(picture?.url?.trim()))
       .map(([id, picture]) => this.normalizePicture(id, picture))
       .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
   }
@@ -534,48 +535,63 @@ export class ClientGalleryComponent implements OnDestroy {
     }
 
     const galleryPictures = { ...(owner.galleryPictures ?? {}) };
-    let removed = false;
-
-    Object.entries(galleryPictures).forEach(([key, storedPicture]) => {
-      if (key === picture.id || storedPicture?.id === picture.id) {
-        delete galleryPictures[key];
-        removed = true;
-      }
-    });
-
-    if (!removed) {
-      delete galleryPictures[picture.id];
-    }
+    const pictureKeysToDelete = Array.from(
+      new Set(
+        Object.entries(galleryPictures)
+          .filter(([key, storedPicture]) =>
+            this.galleryEntryMatchesPicture(key, storedPicture, picture)
+          )
+          .map(([key]) => key)
+      )
+    );
+    const nextGalleryPictures = { ...galleryPictures };
+    pictureKeysToDelete.forEach((key) => delete nextGalleryPictures[key]);
 
     this.deletingPictureId = picture.id;
     this.uploadError = '';
 
     try {
-      await this.deleteStoredPictureFile(picture);
-
       if (this.ownerType === 'card') {
-        await this.data.setCardField('galleryPictures', galleryPictures, ownerId);
+        await this.data.replaceCardGalleryPictures(
+          ownerId,
+          nextGalleryPictures
+        );
       } else {
-        await this.data.setClientField(
-          'galleryPictures',
-          galleryPictures,
-          ownerId
+        await this.data.replaceClientGalleryPictures(
+          ownerId,
+          nextGalleryPictures
         );
       }
 
-      owner.galleryPictures = galleryPictures;
+      owner.galleryPictures = nextGalleryPictures;
+
       if (this.selectedPicture?.id === picture.id) {
         this.closePicture();
       }
       if (this.editingCapturePictureId === picture.id) {
         this.cancelEditingCaptureTime();
       }
+
+      await this.deleteStoredPictureFile(picture);
     } catch (error) {
       console.error('Erreur lors de la suppression de la photo', error);
       this.uploadError = 'Impossible de supprimer la photo. Réessayez.';
     } finally {
       this.deletingPictureId = '';
     }
+  }
+
+  private galleryEntryMatchesPicture(
+    key: string,
+    storedPicture: ClientGalleryPicture | undefined,
+    picture: ClientGalleryPicture
+  ): boolean {
+    return (
+      key === picture.id ||
+      storedPicture?.id === picture.id ||
+      Boolean(picture.path && storedPicture?.path === picture.path) ||
+      Boolean(picture.url && storedPicture?.url === picture.url)
+    );
   }
 
   get selectedPictureIndex(): number {

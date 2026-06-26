@@ -431,6 +431,17 @@ export class DataService {
     return userRef.set(data, { merge: true });
   }
 
+  replaceClientGalleryPictures(
+    clientId: string,
+    galleryPictures: Client['galleryPictures']
+  ) {
+    const userRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${clientId}`
+    );
+
+    return userRef.update({ galleryPictures: galleryPictures ?? {} });
+  }
+
   setCardField(field: string, value: any, cardId: string) {
     const cardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${cardId}`
@@ -440,6 +451,18 @@ export class DataService {
     };
     return cardRef.set(data, { merge: true });
   }
+
+  replaceCardGalleryPictures(
+    cardId: string,
+    galleryPictures: Card['galleryPictures']
+  ) {
+    const cardRef: AngularFirestoreDocument<Card> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/cards/${cardId}`
+    );
+
+    return cardRef.update({ galleryPictures: galleryPictures ?? {} });
+  }
+
   clientCardPayment(clientCard: Card) {
     const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`
