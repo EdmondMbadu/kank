@@ -1,6 +1,7 @@
 import { Component, HostListener } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { firstValueFrom } from 'rxjs';
 import exifr from 'exifr';
 import {
   Client,
@@ -45,6 +46,7 @@ export class ClientGalleryComponent {
   activeCategory: GalleryFilterCategory = 'all';
   isUploading = false;
   reclassifyingPictureId = '';
+  deletingPictureId = '';
   editingCapturePictureId = '';
   captureDraftLocal = '';
   uploadCaptureLocal = '';
@@ -451,6 +453,73 @@ export class ClientGalleryComponent {
     }
   }
 
+  async deletePicture(
+    picture: ClientGalleryPicture,
+    event?: Event
+  ): Promise<void> {
+    event?.stopPropagation();
+
+    if (!this.auth.isAdmin) {
+      return;
+    }
+
+    const confirmed = confirm('Supprimer cette photo définitivement ?');
+    if (!confirmed) {
+      return;
+    }
+
+    const owner = this.owner;
+    const ownerId = owner?.uid;
+    if (!ownerId) {
+      this.uploadError = 'Client introuvable.';
+      return;
+    }
+
+    const galleryPictures = { ...(owner.galleryPictures ?? {}) };
+    let removed = false;
+
+    Object.entries(galleryPictures).forEach(([key, storedPicture]) => {
+      if (key === picture.id || storedPicture?.id === picture.id) {
+        delete galleryPictures[key];
+        removed = true;
+      }
+    });
+
+    if (!removed) {
+      delete galleryPictures[picture.id];
+    }
+
+    this.deletingPictureId = picture.id;
+    this.uploadError = '';
+
+    try {
+      await this.deleteStoredPictureFile(picture);
+
+      if (this.ownerType === 'card') {
+        await this.data.setCardField('galleryPictures', galleryPictures, ownerId);
+      } else {
+        await this.data.setClientField(
+          'galleryPictures',
+          galleryPictures,
+          ownerId
+        );
+      }
+
+      owner.galleryPictures = galleryPictures;
+      if (this.selectedPicture?.id === picture.id) {
+        this.closePicture();
+      }
+      if (this.editingCapturePictureId === picture.id) {
+        this.cancelEditingCaptureTime();
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la photo', error);
+      this.uploadError = 'Impossible de supprimer la photo. Réessayez.';
+    } finally {
+      this.deletingPictureId = '';
+    }
+  }
+
   get selectedPictureIndex(): number {
     if (!this.selectedPicture) {
       return -1;
@@ -529,6 +598,23 @@ export class ClientGalleryComponent {
     const input = document.getElementById('galleryUpload') as HTMLInputElement;
     if (input) {
       input.value = '';
+    }
+  }
+
+  private async deleteStoredPictureFile(
+    picture: ClientGalleryPicture
+  ): Promise<void> {
+    if (!picture.path) {
+      return;
+    }
+
+    try {
+      await firstValueFrom(this.storage.ref(picture.path).delete());
+    } catch (error) {
+      console.warn(
+        "Impossible de supprimer le fichier Storage; suppression des métadonnées quand même.",
+        error
+      );
     }
   }
 

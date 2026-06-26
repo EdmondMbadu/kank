@@ -241,14 +241,26 @@
             </select>
           </label>
 
-          <button
+          <div
             *ngIf="auth.isAdmin && editingCapturePictureId !== picture.id"
-            type="button"
-            class="absolute right-2 bottom-2 rounded-full bg-white/90 px-2 py-1 text-[11px] font-black text-slate-800 shadow"
-            (click)="startEditingCaptureTime(picture)"
+            class="absolute right-2 bottom-2 flex items-center gap-1"
           >
-            Date
-          </button>
+            <button
+              type="button"
+              class="rounded-full bg-white/90 px-2 py-1 text-[11px] font-black text-slate-800 shadow transition hover:bg-white"
+              (click)="$event.stopPropagation(); startEditingCaptureTime(picture)"
+            >
+              Date
+            </button>
+            <button
+              type="button"
+              class="rounded-full bg-red-600/95 px-2 py-1 text-[11px] font-black text-white shadow transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-70"
+              [disabled]="deletingPictureId === picture.id"
+              (click)="deletePicture(picture, $event)"
+            >
+              {{ deletingPictureId === picture.id ? '...' : 'Supprimer' }}
+            </button>
+          </div>
 
           <div
             *ngIf="auth.isAdmin && editingCapturePictureId === picture.id"
@@ -321,6 +333,16 @@
     decoding="async"
     (click)="$event.stopPropagation()"
   />
+
+  <button
+    *ngIf="auth.isAdmin"
+    type="button"
+    class="absolute left-5 top-5 rounded-full bg-red-600/90 px-4 py-2 text-sm font-black text-white shadow-lg transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-70"
+    [disabled]="deletingPictureId === selectedPicture.id"
+    (click)="deletePicture(selectedPicture, $event)"
+  >
+    {{ deletingPictureId === selectedPicture.id ? 'Suppression...' : 'Supprimer' }}
+  </button>
 
   <button
     *ngIf="canNavigateSelectedPicture"
