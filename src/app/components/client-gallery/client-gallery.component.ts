@@ -12,6 +12,7 @@ import { DataService } from 'src/app/services/data.service';
 
 type GalleryOwnerType = 'client' | 'card';
 type GalleryOwner = Client | Card;
+type GalleryFilterCategory = ClientGalleryCategory | 'all';
 
 @Component({
   selector: 'app-client-gallery',
@@ -28,11 +29,19 @@ export class ClientGalleryComponent {
     { id: 'trophy', label: 'Trophée', caption: 'Photos de réussite' },
     { id: 'other', label: 'Autres', caption: 'Documents visuels' },
   ];
+  readonly filterCategories: {
+    id: GalleryFilterCategory;
+    label: string;
+    caption: string;
+  }[] = [
+    { id: 'all', label: 'Tout', caption: 'Toutes les photos' },
+    ...this.categories,
+  ];
 
   id = '';
   ownerType: GalleryOwnerType = 'client';
   owner?: GalleryOwner;
-  activeCategory: ClientGalleryCategory = 'domicile';
+  activeCategory: GalleryFilterCategory = 'all';
   isUploading = false;
   reclassifyingPictureId = '';
   uploadError = '';
@@ -109,6 +118,10 @@ export class ClientGalleryComponent {
   }
 
   get activePictures(): ClientGalleryPicture[] {
+    if (this.activeCategory === 'all') {
+      return this.pictures;
+    }
+
     return this.pictures.filter(
       (picture) => picture.category === this.activeCategory
     );
@@ -116,18 +129,26 @@ export class ClientGalleryComponent {
 
   activeCategoryLabel(): string {
     return (
-      this.categories.find((category) => category.id === this.activeCategory)
+      this.filterCategories.find((category) => category.id === this.activeCategory)
         ?.label ?? 'Photos'
     );
   }
 
-  countFor(categoryId: ClientGalleryCategory): number {
+  countFor(categoryId: GalleryFilterCategory): number {
+    if (categoryId === 'all') {
+      return this.pictures.length;
+    }
+
     return this.pictures.filter((picture) => picture.category === categoryId)
       .length;
   }
 
-  setActiveCategory(categoryId: ClientGalleryCategory): void {
+  setActiveCategory(categoryId: GalleryFilterCategory): void {
     this.activeCategory = categoryId;
+  }
+
+  get uploadCategory(): ClientGalleryCategory {
+    return this.activeCategory === 'all' ? 'other' : this.activeCategory;
   }
 
   trackByPictureId(_index: number, picture: ClientGalleryPicture): string {
@@ -220,12 +241,13 @@ export class ClientGalleryComponent {
       const pictureId = `${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 8)}`;
-      const path = `client-gallery/${this.ownerType}/${ownerId}/${this.activeCategory}/${pictureId}-${this.cleanFileName(file.name)}`;
+      const uploadCategory = this.uploadCategory;
+      const path = `client-gallery/${this.ownerType}/${ownerId}/${uploadCategory}/${pictureId}-${this.cleanFileName(file.name)}`;
       const uploadTask = await this.storage.upload(path, file);
       const url = await uploadTask.ref.getDownloadURL();
       const picture: ClientGalleryPicture = {
         id: pictureId,
-        category: this.activeCategory,
+        category: uploadCategory,
         url,
         path,
         size: uploadTask.totalBytes || file.size,

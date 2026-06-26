@@ -67,22 +67,29 @@
       {{ uploadError }}
     </p>
 
-    <nav class="mt-6 grid gap-3 md:grid-cols-3" aria-label="Catégories de photos">
+    <nav
+      class="mt-5 grid grid-cols-4 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      aria-label="Catégories de photos"
+    >
       <button
-        *ngFor="let category of categories"
+        *ngFor="let category of filterCategories"
         type="button"
-        class="relative rounded-xl border bg-white p-4 pr-14 text-left dark:bg-slate-900"
+        class="flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-1.5 py-2 text-center transition sm:gap-2 sm:px-3"
         [ngClass]="
           activeCategory === category.id
-            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950'
-            : 'border-slate-200 dark:border-slate-700'
+            ? 'bg-emerald-600 text-white shadow-sm'
+            : 'bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
         "
+        [attr.aria-label]="category.label + ' - ' + category.caption"
+        [title]="category.caption"
         (click)="setActiveCategory(category.id)"
       >
         <span
-          class="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full"
+          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
           [ngClass]="
-            category.id === 'trophy'
+            activeCategory === category.id
+              ? 'bg-white/20 text-white'
+              : category.id === 'trophy'
               ? 'bg-amber-100 text-amber-700'
               : category.id === 'domicile'
               ? 'bg-emerald-100 text-emerald-700'
@@ -91,8 +98,22 @@
         >
           <ng-container [ngSwitch]="category.id">
             <svg
+              *ngSwitchCase="'all'"
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4 5h6v6H4V5zM14 5h6v6h-6V5zM4 15h6v4H4v-4zM14 15h6v4h-6v-4z"
+              />
+            </svg>
+            <svg
               *ngSwitchCase="'domicile'"
-              class="h-6 w-6"
+              class="h-5 w-5"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
@@ -111,7 +132,7 @@
             </svg>
             <svg
               *ngSwitchCase="'trophy'"
-              class="h-7 w-7"
+              class="h-6 w-6"
               fill="none"
               stroke="currentColor"
               stroke-width="1.9"
@@ -135,7 +156,7 @@
             </svg>
             <svg
               *ngSwitchDefault
-              class="h-6 w-6"
+              class="h-5 w-5"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
@@ -149,14 +170,18 @@
             </svg>
           </ng-container>
         </span>
-        <span class="block font-extrabold text-slate-900 dark:text-white">
-          {{ category.label }}
-        </span>
-        <span class="mt-1 block text-xs font-semibold text-slate-500 dark:text-slate-300">
-          {{ category.caption }}
-        </span>
-        <span class="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-extrabold text-white">
-          {{ countFor(category.id) }}
+        <span class="flex min-w-0 items-center gap-1.5 text-xs font-extrabold leading-none sm:text-sm">
+          <span class="truncate">{{ category.label }}</span>
+          <span
+            class="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-black"
+            [ngClass]="
+              activeCategory === category.id
+                ? 'bg-white text-emerald-700'
+                : 'bg-slate-900 text-white dark:bg-slate-700'
+            "
+          >
+            {{ countFor(category.id) }}
+          </span>
         </span>
       </button>
     </nav>
