@@ -6,6 +6,7 @@ import exifr from 'exifr';
 import {
   Client,
   ClientGalleryCategory,
+  ClientGalleryMediaType,
   ClientGalleryPicture,
 } from 'src/app/models/client';
 import { Card } from 'src/app/models/card';
@@ -28,7 +29,7 @@ export class ClientGalleryComponent implements OnDestroy {
     caption: string;
   }[] = [
     { id: 'domicile', label: 'Domicile', caption: 'Adresse et lieu de vie' },
-    { id: 'trophy', label: 'Trophée', caption: 'Photos de réussite' },
+    { id: 'trophy', label: 'Trophée', caption: 'Médias de réussite' },
     { id: 'other', label: 'Autres', caption: 'Documents visuels' },
   ];
   readonly filterCategories: {
@@ -36,7 +37,7 @@ export class ClientGalleryComponent implements OnDestroy {
     label: string;
     caption: string;
   }[] = [
-    { id: 'all', label: 'Tout', caption: 'Toutes les photos' },
+    { id: 'all', label: 'Tout', caption: 'Tous les médias' },
     ...this.categories,
   ];
 
@@ -154,7 +155,7 @@ export class ClientGalleryComponent implements OnDestroy {
   activeCategoryLabel(): string {
     return (
       this.filterCategories.find((category) => category.id === this.activeCategory)
-        ?.label ?? 'Photos'
+        ?.label ?? 'Médias'
     );
   }
 
@@ -175,6 +176,10 @@ export class ClientGalleryComponent implements OnDestroy {
     return this.activeCategory === 'all' ? 'other' : this.activeCategory;
   }
 
+  get pendingUploadIsVideo(): boolean {
+    return this.pendingUploadFile?.type.startsWith('video/') ?? false;
+  }
+
   trackByPictureId(_index: number, picture: ClientGalleryPicture): string {
     return picture.id;
   }
@@ -182,8 +187,12 @@ export class ClientGalleryComponent implements OnDestroy {
   categoryLabel(categoryId: ClientGalleryCategory): string {
     return (
       this.categories.find((category) => category.id === categoryId)?.label ??
-      'Photos'
+      'Médias'
     );
+  }
+
+  isVideoPicture(picture?: ClientGalleryPicture): boolean {
+    return this.resolveMediaType(picture) === 'video';
   }
 
   formatPictureDate(iso?: string): string {
@@ -218,7 +227,30 @@ export class ClientGalleryComponent implements OnDestroy {
       ...picture,
       id: picture.id || fallbackId,
       category: this.normalizeCategory(picture.category, picture.path),
+      mediaType: this.resolveMediaType(picture),
     };
+  }
+
+  private resolveMediaType(
+    picture?: Partial<ClientGalleryPicture>
+  ): ClientGalleryMediaType {
+    if (picture?.mediaType === 'video') {
+      return 'video';
+    }
+
+    const mimeType = picture?.mimeType?.toLowerCase() ?? '';
+    if (mimeType.startsWith('video/')) {
+      return 'video';
+    }
+
+    const source = `${picture?.path ?? ''} ${picture?.name ?? ''} ${
+      picture?.url ?? ''
+    }`.toLowerCase();
+    if (/\.(mp4|mov|m4v|webm|ogg)(\?|$|\s)/.test(source)) {
+      return 'video';
+    }
+
+    return 'image';
   }
 
   private normalizeCategory(
@@ -255,14 +287,19 @@ export class ClientGalleryComponent implements OnDestroy {
       return;
     }
 
-    if (file.type.split('/')[0] !== 'image') {
-      this.uploadError = 'Choisissez une image valide.';
+    const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      this.uploadError = 'Choisissez une image ou une vidéo valide.';
       this.resetFileInput();
       return;
     }
 
-    if (file.size >= 20 * 1024 * 1024) {
-      this.uploadError = "L'image est trop grande. Maximum 20MB.";
+    const maxSize = mediaType === 'video' ? 100 * 1024 * 1024 : 20 * 1024 * 1024;
+    if (file.size >= maxSize) {
+      this.uploadError =
+        mediaType === 'video'
+          ? 'La vidéo est trop grande. Maximum 100MB.'
+          : "L'image est trop grande. Maximum 20MB.";
       this.resetFileInput();
       return;
     }
@@ -283,7 +320,7 @@ export class ClientGalleryComponent implements OnDestroy {
     this.uploadError = '';
 
     try {
-      const extractedCapture = await this.extractImageCaptureTime(file);
+      const extractedCapture = await this.extractMediaCaptureTime(file);
       if (this.pendingUploadFile !== file) {
         return;
       }
@@ -296,8 +333,8 @@ export class ClientGalleryComponent implements OnDestroy {
         this.uploadCaptureSource = extractedCapture.source;
       }
     } catch (error) {
-      console.error("Erreur lors de la préparation de la photo", error);
-      this.uploadError = "Impossible de préparer la photo. Réessayez.";
+      console.error('Erreur lors de la préparation du média', error);
+      this.uploadError = 'Impossible de préparer le média. Réessayez.';
       this.clearPendingUpload(true);
     } finally {
       this.isPreparingUpload = false;
@@ -342,9 +379,14 @@ export class ClientGalleryComponent implements OnDestroy {
       const path = `client-gallery/${this.ownerType}/${ownerId}/${uploadCategory}/${pictureId}-${this.cleanFileName(file.name)}`;
       const uploadTask = await this.storage.upload(path, file);
       const url = await uploadTask.ref.getDownloadURL();
+      const mediaType: ClientGalleryMediaType = file.type.startsWith('video/')
+        ? 'video'
+        : 'image';
       const picture: ClientGalleryPicture = {
         id: pictureId,
         category: uploadCategory,
+        mediaType,
+        mimeType: file.type,
         url,
         path,
         size: uploadTask.totalBytes || file.size,
@@ -373,8 +415,8 @@ export class ClientGalleryComponent implements OnDestroy {
       owner.galleryPictures = galleryPictures;
       this.clearPendingUpload(true);
     } catch (error) {
-      console.error("Erreur lors de l'ajout de la photo", error);
-      this.uploadError = "Impossible d'ajouter la photo. Réessayez.";
+      console.error("Erreur lors de l'ajout du média", error);
+      this.uploadError = "Impossible d'ajouter le média. Réessayez.";
     } finally {
       this.isUploading = false;
     }
@@ -447,8 +489,8 @@ export class ClientGalleryComponent implements OnDestroy {
       await this.updatePictureMetadata(picture, updatedPicture);
       this.cancelEditingPicture();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de la photo', error);
-      this.uploadError = 'Impossible de modifier la photo. Réessayez.';
+      console.error('Erreur lors de la mise à jour du média', error);
+      this.uploadError = 'Impossible de modifier le média. Réessayez.';
     } finally {
       this.savingPictureId = '';
     }
@@ -464,7 +506,7 @@ export class ClientGalleryComponent implements OnDestroy {
       return;
     }
 
-    const confirmed = confirm('Supprimer cette photo définitivement ?');
+    const confirmed = confirm('Supprimer ce média définitivement ?');
     if (!confirmed) {
       return;
     }
@@ -516,8 +558,8 @@ export class ClientGalleryComponent implements OnDestroy {
 
       await this.deleteStoredPictureFile(picture);
     } catch (error) {
-      console.error('Erreur lors de la suppression de la photo', error);
-      this.uploadError = 'Impossible de supprimer la photo. Réessayez.';
+      console.error('Erreur lors de la suppression du média', error);
+      this.uploadError = 'Impossible de supprimer le média. Réessayez.';
     } finally {
       this.deletingPictureId = '';
     }
@@ -698,9 +740,16 @@ export class ClientGalleryComponent implements OnDestroy {
     }
   }
 
-  private async extractImageCaptureTime(
+  private async extractMediaCaptureTime(
     file: File
   ): Promise<{ iso: string; source: 'exif' | 'fileLastModified' }> {
+    if (file.type.startsWith('video/')) {
+      return {
+        iso: new Date(file.lastModified).toISOString(),
+        source: 'fileLastModified',
+      };
+    }
+
     try {
       const exif: any = await exifr.parse(file, {
         gps: false,

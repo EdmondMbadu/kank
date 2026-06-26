@@ -33,7 +33,7 @@
         </ng-template>
         <div>
           <p class="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
-            Galerie photos
+            Galerie médias
           </p>
           <h1 class="text-3xl font-extrabold tracking-tight sm:text-5xl">
             {{ ownerName }}
@@ -52,11 +52,11 @@
           <svg class="h-5 w-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5" />
           </svg>
-          {{ isUploading ? 'Ajout...' : isPreparingUpload ? 'Lecture...' : 'Ajouter photo' }}
+          {{ isUploading ? 'Ajout...' : isPreparingUpload ? 'Lecture...' : 'Ajouter média' }}
           <input
             id="galleryUpload"
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             class="hidden"
             [disabled]="isUploading || isPreparingUpload"
             (change)="uploadPicture($any($event.target).files)"
@@ -71,7 +71,7 @@
 
     <nav
       class="mt-5 grid grid-cols-4 gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-      aria-label="Catégories de photos"
+      aria-label="Catégories de médias"
     >
       <button
         *ngFor="let category of filterCategories"
@@ -199,20 +199,47 @@
             class="h-full w-full"
             (click)="openPicture(picture)"
           >
-            <img
-              [src]="picture.url"
-              [alt]="categoryLabel(picture.category) + ' - ' + ownerName"
-              class="h-full w-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
+            <ng-container *ngIf="isVideoPicture(picture); else galleryImageThumb">
+              <video
+                [src]="picture.url"
+                class="h-full w-full object-cover"
+                muted
+                playsinline
+                preload="metadata"
+              ></video>
+              <span class="absolute inset-0 flex items-center justify-center text-white">
+                <span class="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 shadow">
+                  <svg
+                    class="h-5 w-5 translate-x-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </span>
+            </ng-container>
+            <ng-template #galleryImageThumb>
+              <img
+                [src]="picture.url"
+                [alt]="categoryLabel(picture.category) + ' - ' + ownerName"
+                class="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
+            </ng-template>
           </button>
           <div class="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] rounded-lg bg-slate-900/75 px-2 py-1 text-[10px] font-bold leading-tight text-white">
             <p>Ajout: {{ formatPictureDate(picture.uploadedAt) }}</p>
             <p>Capture: {{ formatPictureDate(picture.captureTimeOriginalISO) }}</p>
           </div>
           <div class="absolute right-2 top-2 flex items-center gap-1">
-            <span class="inline-flex items-center gap-1 rounded-full bg-slate-900/75 px-2 py-1 text-[11px] font-black text-white">
+            <span
+              class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/75 text-white"
+              [title]="categoryLabel(picture.category)"
+              [attr.aria-label]="categoryLabel(picture.category)"
+            >
               <ng-container [ngSwitch]="picture.category">
                 <svg
                   *ngSwitchCase="'trophy'"
@@ -247,13 +274,12 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h6l2 2h8v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
                 </svg>
               </ng-container>
-              {{ categoryLabel(picture.category) }}
             </span>
             <button
               type="button"
               class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              title="Modifier la photo"
-              aria-label="Modifier la photo"
+              title="Modifier le média"
+              aria-label="Modifier le média"
               (click)="startEditingPicture(picture, $event)"
             >
               <svg
@@ -280,7 +306,7 @@
               <circle cx="12" cy="12" r="3.2" />
             </svg>
           </div>
-          <h2 class="text-xl font-bold">Aucune photo {{ activeCategoryLabel() }}</h2>
+          <h2 class="text-xl font-bold">Aucun média {{ activeCategoryLabel() }}</h2>
         </div>
       </ng-template>
     </section>
@@ -298,7 +324,7 @@
   >
     <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
       <div>
-        <h2 class="text-base font-black">Ajouter une photo</h2>
+        <h2 class="text-base font-black">Ajouter un média</h2>
         <p class="mt-0.5 max-w-[17rem] truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
           {{ pendingUploadFile.name }}
         </p>
@@ -316,11 +342,20 @@
 
     <div class="space-y-4 p-4">
       <div class="aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
-        <img
+        <video
+          *ngIf="pendingUploadIsVideo; else pendingUploadImagePreview"
           [src]="pendingUploadPreviewUrl"
-          alt="Aperçu de la photo"
           class="h-full w-full object-contain"
-        />
+          controls
+          playsinline
+        ></video>
+        <ng-template #pendingUploadImagePreview>
+          <img
+            [src]="pendingUploadPreviewUrl"
+            alt="Aperçu du média"
+            class="h-full w-full object-contain"
+          />
+        </ng-template>
       </div>
 
       <label class="block">
@@ -404,7 +439,7 @@
           </svg>
         </div>
         <div class="min-w-0">
-          <h2 class="text-base font-black">Modifier la photo</h2>
+          <h2 class="text-base font-black">Modifier le média</h2>
           <p class="truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
             {{ categoryLabel(picture.category) }} · capture {{ formatPictureDate(picture.captureTimeOriginalISO) }}
           </p>
@@ -423,11 +458,20 @@
 
     <div class="grid gap-4 p-4 sm:grid-cols-[11rem_1fr]">
       <div class="aspect-square overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
-        <img
+        <video
+          *ngIf="isVideoPicture(picture); else editImagePreview"
           [src]="picture.url"
-          alt="Photo à modifier"
           class="h-full w-full object-cover"
-        />
+          controls
+          playsinline
+        ></video>
+        <ng-template #editImagePreview>
+          <img
+            [src]="picture.url"
+            alt="Média à modifier"
+            class="h-full w-full object-cover"
+          />
+        </ng-template>
       </div>
 
       <div class="space-y-4">
@@ -545,7 +589,7 @@
     *ngIf="canNavigateSelectedPicture"
     type="button"
     class="absolute left-3 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 focus:outline-none focus:ring-4 focus:ring-white/30 sm:left-6 sm:h-14 sm:w-14"
-    aria-label="Photo précédente"
+    aria-label="Média précédent"
     (click)="showPreviousPicture($event)"
   >
     <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
@@ -553,13 +597,24 @@
     </svg>
   </button>
 
-  <img
+  <video
+    *ngIf="isVideoPicture(selectedPicture); else selectedImagePreview"
     [src]="selectedPicture.url"
-    alt="Photo du client"
     class="max-h-[90vh] max-w-[94vw] rounded-xl object-contain shadow-2xl"
-    decoding="async"
+    controls
+    autoplay
+    playsinline
     (click)="$event.stopPropagation()"
-  />
+  ></video>
+  <ng-template #selectedImagePreview>
+    <img
+      [src]="selectedPicture.url"
+      alt="Média du client"
+      class="max-h-[90vh] max-w-[94vw] rounded-xl object-contain shadow-2xl"
+      decoding="async"
+      (click)="$event.stopPropagation()"
+    />
+  </ng-template>
 
   <button
     type="button"
@@ -584,7 +639,7 @@
     *ngIf="canNavigateSelectedPicture"
     type="button"
     class="absolute right-3 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 focus:outline-none focus:ring-4 focus:ring-white/30 sm:right-6 sm:h-14 sm:w-14"
-    aria-label="Photo suivante"
+    aria-label="Média suivant"
     (click)="showNextPicture($event)"
   >
     <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">

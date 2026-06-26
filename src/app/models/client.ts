@@ -16,10 +16,13 @@ export interface ClientTrophyAward {
 }
 
 export type ClientGalleryCategory = 'domicile' | 'trophy' | 'other';
+export type ClientGalleryMediaType = 'image' | 'video';
 
 export interface ClientGalleryPicture {
   id: string;
   category: ClientGalleryCategory;
+  mediaType?: ClientGalleryMediaType;
+  mimeType?: string;
   url: string;
   path: string;
   size: number;
