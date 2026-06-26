@@ -110,10 +110,7 @@ export class ClientGalleryComponent {
   get pictures(): ClientGalleryPicture[] {
     const gallery = this.owner?.galleryPictures ?? {};
     return Object.entries(gallery)
-      .map(([id, picture]) => ({
-        ...picture,
-        id: picture.id || id,
-      }))
+      .map(([id, picture]) => this.normalizePicture(id, picture))
       .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
   }
 
@@ -162,10 +159,54 @@ export class ClientGalleryComponent {
     );
   }
 
+  private normalizePicture(
+    fallbackId: string,
+    picture: ClientGalleryPicture
+  ): ClientGalleryPicture {
+    return {
+      ...picture,
+      id: picture.id || fallbackId,
+      category: this.normalizeCategory(picture.category, picture.path),
+    };
+  }
+
+  private normalizeCategory(
+    category: string | undefined,
+    path?: string
+  ): ClientGalleryCategory {
+    if (this.isGalleryCategory(category)) {
+      return category;
+    }
+
+    const lowerPath = (path ?? '').toLowerCase();
+    if (lowerPath.includes('/domicile/')) {
+      return 'domicile';
+    }
+    if (lowerPath.includes('/trophy/') || lowerPath.includes('/trophee/')) {
+      return 'trophy';
+    }
+    if (lowerPath.includes('/other/')) {
+      return 'other';
+    }
+
+    return 'other';
+  }
+
+  private isGalleryCategory(
+    value: string | undefined
+  ): value is ClientGalleryCategory {
+    return value === 'domicile' || value === 'trophy' || value === 'other';
+  }
+
   async reclassifyPicture(
     picture: ClientGalleryPicture,
     nextCategory: ClientGalleryCategory
   ): Promise<void> {
+    if (!this.isGalleryCategory(nextCategory)) {
+      this.uploadError = 'Catégorie invalide.';
+      return;
+    }
+
     if (picture.category === nextCategory) {
       return;
     }
