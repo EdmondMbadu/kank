@@ -1,6 +1,7 @@
 import { Component, HostListener } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
+import exifr from 'exifr';
 import {
   Client,
   ClientGalleryCategory,
@@ -44,6 +45,10 @@ export class ClientGalleryComponent {
   activeCategory: GalleryFilterCategory = 'all';
   isUploading = false;
   reclassifyingPictureId = '';
+  editingCapturePictureId = '';
+  captureDraftLocal = '';
+  uploadCaptureLocal = '';
+  uploadCaptureSource: 'exif' | 'manual' | '' = '';
   uploadError = '';
   selectedPicture?: ClientGalleryPicture;
 
@@ -157,6 +162,30 @@ export class ClientGalleryComponent {
       this.categories.find((category) => category.id === categoryId)?.label ??
       'Photos'
     );
+  }
+
+  formatPictureDate(iso?: string): string {
+    if (!iso) {
+      return 'Non renseignée';
+    }
+
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) {
+      return 'Non renseignée';
+    }
+
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  onUploadCaptureInput(value: string): void {
+    this.uploadCaptureLocal = value;
+    this.uploadCaptureSource = value ? 'manual' : '';
   }
 
   private normalizePicture(
@@ -279,6 +308,19 @@ export class ClientGalleryComponent {
     this.uploadError = '';
 
     try {
+      const exifCaptureISO = await this.extractImageCaptureTimeISO(file);
+      if (this.auth.isAdmin && exifCaptureISO && !this.uploadCaptureLocal) {
+        this.uploadCaptureLocal = this.isoToDateTimeLocal(exifCaptureISO);
+        this.uploadCaptureSource = 'exif';
+      }
+
+      const manualCaptureISO = this.dateTimeLocalToISO(this.uploadCaptureLocal);
+      const captureISO = manualCaptureISO || exifCaptureISO;
+      const captureSource = manualCaptureISO
+        ? this.uploadCaptureSource || 'manual'
+        : exifCaptureISO
+        ? 'exif'
+        : undefined;
       const pictureId = `${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 8)}`;
@@ -296,6 +338,8 @@ export class ClientGalleryComponent {
         uploadedAt: new Date().toISOString(),
         uploadedBy: this.auth.currentUser?.uid,
         uploadedByName: this.auth.currentUser?.firstName,
+        ...(captureISO ? { captureTimeOriginalISO: captureISO } : {}),
+        ...(captureSource ? { captureTimeSource: captureSource } : {}),
       };
       const galleryPictures = {
         ...(owner.galleryPictures ?? {}),
@@ -313,6 +357,8 @@ export class ClientGalleryComponent {
       }
 
       owner.galleryPictures = galleryPictures;
+      this.uploadCaptureLocal = '';
+      this.uploadCaptureSource = '';
       this.resetFileInput();
     } catch (error) {
       console.error("Erreur lors de l'ajout de la photo", error);
@@ -328,6 +374,77 @@ export class ClientGalleryComponent {
 
   closePicture(): void {
     this.selectedPicture = undefined;
+  }
+
+  startEditingCaptureTime(picture: ClientGalleryPicture): void {
+    if (!this.auth.isAdmin) {
+      return;
+    }
+
+    this.editingCapturePictureId = picture.id;
+    this.captureDraftLocal = this.isoToDateTimeLocal(
+      picture.captureTimeOriginalISO
+    );
+  }
+
+  cancelEditingCaptureTime(): void {
+    this.editingCapturePictureId = '';
+    this.captureDraftLocal = '';
+  }
+
+  async savePictureCaptureTime(picture: ClientGalleryPicture): Promise<void> {
+    if (!this.auth.isAdmin) {
+      return;
+    }
+
+    const owner = this.owner;
+    const ownerId = owner?.uid;
+    if (!ownerId) {
+      this.uploadError = 'Client introuvable.';
+      return;
+    }
+
+    const captureISO = this.dateTimeLocalToISO(this.captureDraftLocal);
+    const updatedPicture: ClientGalleryPicture = {
+      ...picture,
+    };
+
+    if (captureISO) {
+      updatedPicture.captureTimeOriginalISO = captureISO;
+      updatedPicture.captureTimeSource = 'manual';
+    } else {
+      delete updatedPicture.captureTimeOriginalISO;
+      delete updatedPicture.captureTimeSource;
+    }
+
+    const galleryPictures = {
+      ...(owner.galleryPictures ?? {}),
+      [picture.id]: updatedPicture,
+    };
+
+    this.uploadError = '';
+
+    try {
+      if (this.ownerType === 'card') {
+        await this.data.setCardField('galleryPictures', galleryPictures, ownerId);
+      } else {
+        await this.data.setClientField(
+          'galleryPictures',
+          galleryPictures,
+          ownerId
+        );
+      }
+
+      owner.galleryPictures = galleryPictures;
+      if (this.selectedPicture?.id === picture.id) {
+        this.selectedPicture = updatedPicture;
+      }
+      this.cancelEditingCaptureTime();
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la date capturée', error);
+      this.uploadError =
+        'Impossible de mettre à jour la date capturée. Réessayez.';
+    }
   }
 
   get selectedPictureIndex(): number {
@@ -409,5 +526,61 @@ export class ClientGalleryComponent {
     if (input) {
       input.value = '';
     }
+  }
+
+  private async extractImageCaptureTimeISO(file: File): Promise<string> {
+    try {
+      const exif: any = await exifr.parse(file, {
+        pick: ['DateTimeOriginal', 'CreateDate', 'ModifyDate'],
+      });
+      const rawDate =
+        exif?.DateTimeOriginal || exif?.CreateDate || exif?.ModifyDate;
+      return this.dateLikeToISO(rawDate);
+    } catch (error) {
+      console.warn("Impossible de lire l'EXIF de la photo", error);
+      return '';
+    }
+  }
+
+  private dateLikeToISO(value: unknown): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = value instanceof Date ? value : new Date(value as string);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toISOString();
+  }
+
+  private isoToDateTimeLocal(iso?: string): string {
+    if (!iso) {
+      return '';
+    }
+
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    const pad = (value: number) => value.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+      date.getDate()
+    )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  private dateTimeLocalToISO(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toISOString();
   }
 }

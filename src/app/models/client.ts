@@ -27,6 +27,8 @@ export interface ClientGalleryPicture {
   uploadedAt: string;
   uploadedBy?: string;
   uploadedByName?: string;
+  captureTimeOriginalISO?: string;
+  captureTimeSource?: 'exif' | 'manual';
 }
 
 export interface AuditConversationAudioAttachment {
