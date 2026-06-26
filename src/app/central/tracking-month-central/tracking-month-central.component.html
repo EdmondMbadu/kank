@@ -1064,7 +1064,12 @@
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
                 *ngFor="let s of sortedEntrySortieMonth; let i = index"
-                class="odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60"
+                (click)="onEntrySortieLocationClick(s.firstName)"
+                [class]="
+                  selectedEntrySortieLocation === s.firstName
+                    ? 'cursor-pointer bg-emerald-100 dark:bg-emerald-900/40'
+                    : 'cursor-pointer odd:bg-white/90 even:bg-white/60 hover:bg-emerald-50/60 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30 dark:hover:bg-slate-800/60'
+                "
               >
                 <td class="px-3 py-2">
                   <span
@@ -1607,6 +1612,122 @@
           class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-300"
         >
           Aucune réserve historique disponible pour le moment.
+        </div>
+      </ng-template>
+    </div>
+
+    <div
+      class="rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+    >
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div>
+          <h2
+            class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+          >
+            Évolution Entrées / Sorties
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-200">
+            Réserve mensuelle moins investissement mensuel, converti en dollars.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            class="rounded-full border px-3 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [ngClass]="
+              !selectedEntrySortieLocation
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="onEntrySortieLocationClick('')"
+            title="Afficher toutes les locations"
+          >
+            Tous
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="entrySortieMaxRange === 0"
+            [ngClass]="
+              entrySortieActiveRange === '3M'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setEntrySortieRange('3M')"
+          >
+            3M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="entrySortieMaxRange === 0"
+            [ngClass]="
+              entrySortieActiveRange === '6M'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setEntrySortieRange('6M')"
+          >
+            6M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="entrySortieMaxRange === 0"
+            [ngClass]="
+              entrySortieActiveRange === '9M'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setEntrySortieRange('9M')"
+          >
+            9M
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="entrySortieMaxRange === 0"
+            [ngClass]="
+              entrySortieActiveRange === '1A'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setEntrySortieRange('1A')"
+          >
+            1A
+          </button>
+          <button
+            type="button"
+            class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+            [disabled]="entrySortieMaxRange === 0"
+            [ngClass]="
+              entrySortieActiveRange === 'MAX'
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+                : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+            "
+            (click)="setEntrySortieRange('MAX')"
+          >
+            Max
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner"
+        *ngIf="entrySortieMaxRange > 0; else noEntrySortieData"
+      >
+        <plotly-plot
+          [data]="entrySortieGraph.data"
+          [layout]="entrySortieGraph.layout"
+        ></plotly-plot>
+      </div>
+      <ng-template #noEntrySortieData>
+        <div
+          class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-300"
+        >
+          Aucune donnée Entrées / Sorties historique disponible pour le moment.
         </div>
       </ng-template>
     </div>

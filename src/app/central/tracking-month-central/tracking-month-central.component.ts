@@ -64,17 +64,22 @@ export class TrackingMonthCentralComponent {
 
   reserveActiveRange: RangeKey = '3M';
   paymentActiveRange: RangeKey = '3M';
+  entrySortieActiveRange: RangeKey = '3M';
 
   reserveGraph = this.createEmptyGraph('Réserve en $');
   paymentGraph = this.createEmptyGraph('Paiement en $');
+  entrySortieGraph: any = this.createEmptyGraph('Entrées / Sorties en $');
 
   reserveMaxRange = 0;
   paymentMaxRange = 0;
+  entrySortieMaxRange = 0;
 
   private reserveGraphLabels: string[] = [];
   private reserveGraphSeriesUsd: number[] = [];
   private paymentGraphLabels: string[] = [];
   private paymentGraphSeriesUsd: number[] = [];
+  private entrySortieGraphLabels: string[] = [];
+  private entrySortieGraphSeriesUsd: number[] = [];
 
   givenMonthTotalPaymentAmount: string = '';
   givenMonthTotalMobileMoneyAmount: string = '';
@@ -196,6 +201,7 @@ export class TrackingMonthCentralComponent {
   // Selected location for filtering graphs
   selectedReserveLocation: string | null = null;
   selectedPaymentLocation: string | null = null;
+  selectedEntrySortieLocation: string | null = null;
 
   setPreviousMonth() {
     if (this.givenMonth === 1) {
@@ -429,6 +435,7 @@ export class TrackingMonthCentralComponent {
 
     this.updateReserveGraphics(this.rangeValueFromKey(this.reserveActiveRange));
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
+    this.updateEntrySortieGraphics(this.rangeValueFromKey(this.entrySortieActiveRange));
     
     // Calculate average daily Reserve and Payment
     this.calculateAverageReserveAndPayment();
@@ -1054,6 +1061,11 @@ export class TrackingMonthCentralComponent {
     this.updatePaymentGraphics(this.rangeValueFromKey(key));
   }
 
+  setEntrySortieRange(key: RangeKey): void {
+    this.entrySortieActiveRange = key;
+    this.updateEntrySortieGraphics(this.rangeValueFromKey(key));
+  }
+
   onReserveLocationClick(locationName: string): void {
     // If empty string, reset to all locations
     if (locationName === '') {
@@ -1082,6 +1094,20 @@ export class TrackingMonthCentralComponent {
       }
     }
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
+  }
+
+  onEntrySortieLocationClick(locationName: string): void {
+    if (locationName === '') {
+      this.selectedEntrySortieLocation = null;
+    } else if (this.selectedEntrySortieLocation === locationName) {
+      this.selectedEntrySortieLocation = null;
+    } else {
+      this.selectedEntrySortieLocation = locationName;
+    }
+
+    this.updateEntrySortieGraphics(
+      this.rangeValueFromKey(this.entrySortieActiveRange)
+    );
   }
 
   async copyPaymentRanking(): Promise<void> {
@@ -1315,6 +1341,48 @@ export class TrackingMonthCentralComponent {
     };
   }
 
+  updateEntrySortieGraphics(range: number): void {
+    const [labels, values] = this.aggregateMonthlyEntrySortie(
+      this.selectedEntrySortieLocation
+    );
+    this.entrySortieMaxRange = labels.length;
+
+    const [selectedLabels, selectedValues] = this.sliceForRange(
+      labels,
+      values,
+      range
+    );
+
+    this.entrySortieGraphLabels = selectedLabels.map((label) =>
+      this.formatMonthYearLabel(label)
+    );
+    this.entrySortieGraphSeriesUsd = this.compute.convertToDollarsArray(
+      selectedValues
+    );
+
+    const locationPrefix = this.selectedEntrySortieLocation
+      ? `${this.selectedEntrySortieLocation} - `
+      : '';
+    const titleText = `${locationPrefix}Entrées / Sorties en $`;
+
+    this.entrySortieGraph = {
+      data: [
+        {
+          x: this.entrySortieGraphLabels,
+          y: this.entrySortieGraphSeriesUsd,
+          type: 'bar',
+          marker: {
+            color: this.entrySortieGraphSeriesUsd.map((value) =>
+              value < 0 ? '#ef4444' : '#10b981'
+            ),
+          },
+          hovertemplate: '<b>%{x}</b><br>$%{y:,.0f}<extra></extra>',
+        },
+      ],
+      layout: this.createEntrySortieGraphLayout(titleText),
+    };
+  }
+
   private aggregateMonthlyField(field: UserDailyField, selectedLocation: string | null = null): [string[], string[]] {
     if (!this.allUsers || this.allUsers.length === 0) {
       return [[], []];
@@ -1368,6 +1436,72 @@ export class TrackingMonthCentralComponent {
     return [labels, values];
   }
 
+  private aggregateMonthlyEntrySortie(
+    selectedLocation: string | null = null
+  ): [string[], string[]] {
+    if (!this.allUsers || this.allUsers.length === 0) {
+      return [[], []];
+    }
+
+    const aggregated = new Map<string, { reserve: number; investment: number }>();
+    const usersToProcess = selectedLocation
+      ? this.allUsers.filter((user) => user.firstName === selectedLocation)
+      : this.allUsers;
+
+    const addField = (field: 'reserve' | 'investments') => {
+      for (const user of usersToProcess) {
+        const dailyData = user[field];
+        if (!dailyData) continue;
+
+        for (const [rawDate, rawValue] of Object.entries(dailyData)) {
+          const parts = rawDate.split('-');
+          if (parts.length < 3) continue;
+
+          const month = parts[0];
+          const year = parts[2];
+          if (!month || !year) continue;
+
+          const numericValue = this.sanitizeNumeric(rawValue);
+          if (!Number.isFinite(numericValue)) continue;
+
+          const monthYearKey = `${month}-${year}`;
+          const current =
+            aggregated.get(monthYearKey) ?? { reserve: 0, investment: 0 };
+
+          if (field === 'reserve') {
+            current.reserve += numericValue;
+          } else {
+            current.investment += numericValue;
+          }
+
+          aggregated.set(monthYearKey, current);
+        }
+      }
+    };
+
+    addField('reserve');
+    addField('investments');
+
+    const sortedEntries = Array.from(aggregated.entries()).sort(
+      ([keyA], [keyB]) => {
+        const [monthA, yearA] = keyA.split('-').map((part) => Number(part));
+        const [monthB, yearB] = keyB.split('-').map((part) => Number(part));
+
+        const dateA = new Date(yearA || 0, (monthA || 1) - 1).getTime();
+        const dateB = new Date(yearB || 0, (monthB || 1) - 1).getTime();
+
+        return dateA - dateB;
+      }
+    );
+
+    const labels = sortedEntries.map(([key]) => key);
+    const values = sortedEntries.map(
+      ([, value]) => (value.reserve - value.investment).toString()
+    );
+
+    return [labels, values];
+  }
+
   private sliceForRange<T>(
     labels: T[],
     values: string[],
@@ -1417,6 +1551,24 @@ export class TrackingMonthCentralComponent {
       plot_bgcolor: 'rgba(0,0,0,0)',
       font: { color: '#0f172a' },
       margin: { t: 48, r: 24, l: 48, b: 64 },
+    };
+  }
+
+  private createEntrySortieGraphLayout(title: string) {
+    const values = this.entrySortieGraphSeriesUsd;
+    const minValue = Math.min(0, ...values);
+    const maxValue = Math.max(0, ...values);
+    const padding = Math.max(1, (maxValue - minValue) * 0.12);
+
+    return {
+      ...this.createGraphLayout(title),
+      yaxis: {
+        zeroline: true,
+        zerolinecolor: '#64748b',
+        zerolinewidth: 2,
+        gridcolor: '#e2e8f0',
+        range: [minValue - padding, maxValue + padding],
+      },
     };
   }
 
@@ -1671,6 +1823,7 @@ export class TrackingMonthCentralComponent {
         }
       }
     });
+
   }
 
   /**
