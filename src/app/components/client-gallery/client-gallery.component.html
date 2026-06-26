@@ -44,7 +44,7 @@
         </div>
       </div>
 
-      <div class="space-y-2">
+      <div>
         <label
           for="galleryUpload"
           class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-emerald-50 focus-within:ring-4 focus-within:ring-white/30"
@@ -52,27 +52,14 @@
           <svg class="h-5 w-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5" />
           </svg>
-          {{ isUploading ? 'Ajout...' : 'Ajouter photo' }}
+          {{ isUploading ? 'Ajout...' : isPreparingUpload ? 'Lecture...' : 'Ajouter photo' }}
           <input
             id="galleryUpload"
             type="file"
             accept="image/*"
             class="hidden"
-            [disabled]="isUploading"
+            [disabled]="isUploading || isPreparingUpload"
             (change)="uploadPicture($any($event.target).files)"
-          />
-        </label>
-
-        <label
-          *ngIf="auth.isAdmin"
-          class="block rounded-2xl bg-white/10 p-3 text-xs font-semibold text-white"
-        >
-          <span class="mb-1 block">Date capturée</span>
-          <input
-            type="datetime-local"
-            class="w-full rounded-lg border border-white/20 bg-white px-3 py-2 text-sm font-semibold text-slate-800"
-            [ngModel]="uploadCaptureLocal"
-            (ngModelChange)="onUploadCaptureInput($event)"
           />
         </label>
       </div>
@@ -308,6 +295,98 @@
     </section>
   </section>
 </main>
+
+<div
+  *ngIf="pendingUploadFile"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4"
+  (click)="cancelUploadModal()"
+>
+  <section
+    class="w-full max-w-md overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl dark:bg-slate-900 dark:text-white"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+      <div>
+        <h2 class="text-base font-black">Ajouter une photo</h2>
+        <p class="mt-0.5 max-w-[17rem] truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+          {{ pendingUploadFile.name }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="flex h-9 w-9 items-center justify-center rounded-full text-2xl font-bold text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+        aria-label="Fermer"
+        [disabled]="isUploading"
+        (click)="cancelUploadModal()"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="space-y-4 p-4">
+      <div class="aspect-[4/3] overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+        <img
+          [src]="pendingUploadPreviewUrl"
+          alt="Aperçu de la photo"
+          class="h-full w-full object-contain"
+        />
+      </div>
+
+      <label class="block">
+        <span class="mb-1 block text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+          Classification
+        </span>
+        <select
+          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-extrabold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-emerald-900/30"
+          [(ngModel)]="pendingUploadCategory"
+          [disabled]="isUploading"
+        >
+          <option
+            *ngFor="let category of categories"
+            [value]="category.id"
+          >
+            {{ category.label }}
+          </option>
+        </select>
+      </label>
+
+      <label
+        *ngIf="auth.isAdmin"
+        class="block"
+      >
+        <span class="mb-1 block text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+          Date capturée
+        </span>
+        <input
+          type="datetime-local"
+          class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-emerald-900/30"
+          [ngModel]="uploadCaptureLocal"
+          [disabled]="isUploading || isPreparingUpload"
+          (ngModelChange)="onUploadCaptureInput($event)"
+        />
+      </label>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-800">
+      <button
+        type="button"
+        class="rounded-full px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-60 dark:text-slate-300 dark:hover:bg-slate-800"
+        [disabled]="isUploading"
+        (click)="cancelUploadModal()"
+      >
+        Annuler
+      </button>
+      <button
+        type="button"
+        class="rounded-full bg-emerald-600 px-5 py-2 text-sm font-black text-white shadow transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+        [disabled]="isUploading || isPreparingUpload"
+        (click)="confirmUploadPicture()"
+      >
+        {{ isUploading ? 'Ajout...' : isPreparingUpload ? 'Lecture...' : 'Ajouter' }}
+      </button>
+    </div>
+  </section>
+</div>
 
 <div
   *ngIf="selectedPicture"

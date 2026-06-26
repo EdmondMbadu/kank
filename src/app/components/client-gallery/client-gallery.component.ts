@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { firstValueFrom } from 'rxjs';
@@ -21,7 +21,7 @@ type GalleryFilterCategory = ClientGalleryCategory | 'all';
   templateUrl: './client-gallery.component.html',
   styleUrls: ['./client-gallery.component.css'],
 })
-export class ClientGalleryComponent {
+export class ClientGalleryComponent implements OnDestroy {
   readonly categories: {
     id: ClientGalleryCategory;
     label: string;
@@ -45,6 +45,12 @@ export class ClientGalleryComponent {
   owner?: GalleryOwner;
   activeCategory: GalleryFilterCategory = 'all';
   isUploading = false;
+  isPreparingUpload = false;
+  pendingUploadFile?: File;
+  pendingUploadPreviewUrl = '';
+  pendingUploadCategory: ClientGalleryCategory = 'other';
+  pendingExtractedCaptureISO = '';
+  pendingExtractedCaptureSource: 'exif' | 'fileLastModified' | '' = '';
   reclassifyingPictureId = '';
   deletingPictureId = '';
   editingCapturePictureId = '';
@@ -66,6 +72,10 @@ export class ClientGalleryComponent {
 
   ngOnInit(): void {
     this.retrieveOwner();
+  }
+
+  ngOnDestroy(): void {
+    this.clearPendingUpload();
   }
 
   retrieveOwner(): void {
@@ -291,11 +301,61 @@ export class ClientGalleryComponent {
 
     if (file.type.split('/')[0] !== 'image') {
       this.uploadError = 'Choisissez une image valide.';
+      this.resetFileInput();
       return;
     }
 
     if (file.size >= 20 * 1024 * 1024) {
       this.uploadError = "L'image est trop grande. Maximum 20MB.";
+      this.resetFileInput();
+      return;
+    }
+
+    const owner = this.owner;
+    const ownerId = owner?.uid;
+    if (!ownerId) {
+      this.uploadError = 'Client introuvable.';
+      this.resetFileInput();
+      return;
+    }
+
+    this.clearPendingUpload();
+    this.pendingUploadFile = file;
+    this.pendingUploadPreviewUrl = URL.createObjectURL(file);
+    this.pendingUploadCategory = this.uploadCategory;
+    this.isPreparingUpload = true;
+    this.uploadError = '';
+
+    try {
+      const extractedCapture = await this.extractImageCaptureTime(file);
+      if (this.pendingUploadFile !== file) {
+        return;
+      }
+
+      this.pendingExtractedCaptureISO = extractedCapture.iso;
+      this.pendingExtractedCaptureSource = extractedCapture.source;
+
+      if (this.auth.isAdmin && extractedCapture.iso) {
+        this.uploadCaptureLocal = this.isoToDateTimeLocal(extractedCapture.iso);
+        this.uploadCaptureSource = extractedCapture.source;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la préparation de la photo", error);
+      this.uploadError = "Impossible de préparer la photo. Réessayez.";
+      this.clearPendingUpload(true);
+    } finally {
+      this.isPreparingUpload = false;
+    }
+  }
+
+  async confirmUploadPicture(): Promise<void> {
+    const file = this.pendingUploadFile;
+    if (!file) {
+      return;
+    }
+
+    if (!this.isGalleryCategory(this.pendingUploadCategory)) {
+      this.uploadError = 'Catégorie invalide.';
       return;
     }
 
@@ -310,27 +370,19 @@ export class ClientGalleryComponent {
     this.uploadError = '';
 
     try {
-      const extractedCapture = await this.extractImageCaptureTime(file);
-      if (
-        this.auth.isAdmin &&
-        extractedCapture.iso &&
-        !this.uploadCaptureLocal
-      ) {
-        this.uploadCaptureLocal = this.isoToDateTimeLocal(extractedCapture.iso);
-        this.uploadCaptureSource = extractedCapture.source;
-      }
-
-      const manualCaptureISO = this.dateTimeLocalToISO(this.uploadCaptureLocal);
-      const captureISO = manualCaptureISO || extractedCapture.iso;
+      const manualCaptureISO = this.auth.isAdmin
+        ? this.dateTimeLocalToISO(this.uploadCaptureLocal)
+        : '';
+      const captureISO = manualCaptureISO || this.pendingExtractedCaptureISO;
       const captureSource = manualCaptureISO
         ? this.uploadCaptureSource || 'manual'
-        : extractedCapture.iso
-        ? extractedCapture.source
+        : this.pendingExtractedCaptureISO
+        ? this.pendingExtractedCaptureSource
         : undefined;
       const pictureId = `${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 8)}`;
-      const uploadCategory = this.uploadCategory;
+      const uploadCategory = this.pendingUploadCategory;
       const path = `client-gallery/${this.ownerType}/${ownerId}/${uploadCategory}/${pictureId}-${this.cleanFileName(file.name)}`;
       const uploadTask = await this.storage.upload(path, file);
       const url = await uploadTask.ref.getDownloadURL();
@@ -363,15 +415,21 @@ export class ClientGalleryComponent {
       }
 
       owner.galleryPictures = galleryPictures;
-      this.uploadCaptureLocal = '';
-      this.uploadCaptureSource = '';
-      this.resetFileInput();
+      this.clearPendingUpload(true);
     } catch (error) {
       console.error("Erreur lors de l'ajout de la photo", error);
       this.uploadError = "Impossible d'ajouter la photo. Réessayez.";
     } finally {
       this.isUploading = false;
     }
+  }
+
+  cancelUploadModal(): void {
+    if (this.isUploading) {
+      return;
+    }
+
+    this.clearPendingUpload(true);
   }
 
   openPicture(picture: ClientGalleryPicture): void {
@@ -598,6 +656,24 @@ export class ClientGalleryComponent {
     const input = document.getElementById('galleryUpload') as HTMLInputElement;
     if (input) {
       input.value = '';
+    }
+  }
+
+  private clearPendingUpload(resetInput = false): void {
+    if (this.pendingUploadPreviewUrl) {
+      URL.revokeObjectURL(this.pendingUploadPreviewUrl);
+    }
+
+    this.pendingUploadFile = undefined;
+    this.pendingUploadPreviewUrl = '';
+    this.pendingUploadCategory = this.uploadCategory;
+    this.pendingExtractedCaptureISO = '';
+    this.pendingExtractedCaptureSource = '';
+    this.uploadCaptureLocal = '';
+    this.uploadCaptureSource = '';
+
+    if (resetInput) {
+      this.resetFileInput();
     }
   }
 
