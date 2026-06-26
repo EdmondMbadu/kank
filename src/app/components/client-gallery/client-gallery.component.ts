@@ -51,10 +51,11 @@ export class ClientGalleryComponent implements OnDestroy {
   pendingUploadCategory: ClientGalleryCategory = 'other';
   pendingExtractedCaptureISO = '';
   pendingExtractedCaptureSource: 'exif' | 'fileLastModified' | '' = '';
-  reclassifyingPictureId = '';
   deletingPictureId = '';
-  editingCapturePictureId = '';
-  captureDraftLocal = '';
+  editingPictureId = '';
+  editDraftCategory: ClientGalleryCategory = 'other';
+  editCaptureDraftLocal = '';
+  savingPictureId = '';
   uploadCaptureLocal = '';
   uploadCaptureSource: 'exif' | 'fileLastModified' | 'manual' | '' = '';
   uploadError = '';
@@ -140,6 +141,14 @@ export class ClientGalleryComponent implements OnDestroy {
     return this.pictures.filter(
       (picture) => picture.category === this.activeCategory
     );
+  }
+
+  get editingPicture(): ClientGalleryPicture | undefined {
+    if (!this.editingPictureId) {
+      return undefined;
+    }
+
+    return this.pictures.find((picture) => picture.id === this.editingPictureId);
   }
 
   activeCategoryLabel(): string {
@@ -238,60 +247,6 @@ export class ClientGalleryComponent implements OnDestroy {
     value: string | undefined
   ): value is ClientGalleryCategory {
     return value === 'domicile' || value === 'trophy' || value === 'other';
-  }
-
-  async reclassifyPicture(
-    picture: ClientGalleryPicture,
-    nextCategory: ClientGalleryCategory
-  ): Promise<void> {
-    if (!this.isGalleryCategory(nextCategory)) {
-      this.uploadError = 'Catégorie invalide.';
-      return;
-    }
-
-    if (picture.category === nextCategory) {
-      return;
-    }
-
-    const owner = this.owner;
-    const ownerId = owner?.uid;
-    if (!ownerId) {
-      this.uploadError = 'Client introuvable.';
-      return;
-    }
-
-    const galleryPictures = {
-      ...(owner.galleryPictures ?? {}),
-      [picture.id]: {
-        ...picture,
-        category: nextCategory,
-      },
-    };
-
-    this.reclassifyingPictureId = picture.id;
-    this.uploadError = '';
-
-    try {
-      if (this.ownerType === 'card') {
-        await this.data.setCardField('galleryPictures', galleryPictures, ownerId);
-      } else {
-        await this.data.setClientField(
-          'galleryPictures',
-          galleryPictures,
-          ownerId
-        );
-      }
-
-      owner.galleryPictures = galleryPictures;
-      if (this.selectedPicture?.id === picture.id) {
-        this.selectedPicture = galleryPictures[picture.id];
-      }
-    } catch (error) {
-      console.error('Erreur lors du reclassement de la photo', error);
-      this.uploadError = 'Impossible de reclasser la photo. Réessayez.';
-    } finally {
-      this.reclassifyingPictureId = '';
-    }
   }
 
   async uploadPicture(fileList: FileList | null): Promise<void> {
@@ -441,74 +396,61 @@ export class ClientGalleryComponent implements OnDestroy {
     this.selectedPicture = undefined;
   }
 
-  startEditingCaptureTime(picture: ClientGalleryPicture): void {
-    if (!this.auth.isAdmin) {
-      return;
-    }
-
-    this.editingCapturePictureId = picture.id;
-    this.captureDraftLocal = this.isoToDateTimeLocal(
+  startEditingPicture(picture: ClientGalleryPicture, event?: Event): void {
+    event?.stopPropagation();
+    this.editingPictureId = picture.id;
+    this.editDraftCategory = picture.category;
+    this.editCaptureDraftLocal = this.isoToDateTimeLocal(
       picture.captureTimeOriginalISO
     );
   }
 
-  cancelEditingCaptureTime(): void {
-    this.editingCapturePictureId = '';
-    this.captureDraftLocal = '';
+  cancelEditingPicture(event?: Event): void {
+    event?.stopPropagation();
+    this.editingPictureId = '';
+    this.editDraftCategory = 'other';
+    this.editCaptureDraftLocal = '';
+    this.savingPictureId = '';
   }
 
-  async savePictureCaptureTime(picture: ClientGalleryPicture): Promise<void> {
-    if (!this.auth.isAdmin) {
+  async savePictureEdits(
+    picture: ClientGalleryPicture,
+    event?: Event
+  ): Promise<void> {
+    event?.stopPropagation();
+
+    if (!this.isGalleryCategory(this.editDraftCategory)) {
+      this.uploadError = 'Catégorie invalide.';
       return;
     }
 
-    const owner = this.owner;
-    const ownerId = owner?.uid;
-    if (!ownerId) {
-      this.uploadError = 'Client introuvable.';
-      return;
-    }
-
-    const captureISO = this.dateTimeLocalToISO(this.captureDraftLocal);
     const updatedPicture: ClientGalleryPicture = {
       ...picture,
+      category: this.editDraftCategory,
     };
 
-    if (captureISO) {
-      updatedPicture.captureTimeOriginalISO = captureISO;
-      updatedPicture.captureTimeSource = 'manual';
-    } else {
-      delete updatedPicture.captureTimeOriginalISO;
-      delete updatedPicture.captureTimeSource;
+    if (this.auth.isAdmin) {
+      const captureISO = this.dateTimeLocalToISO(this.editCaptureDraftLocal);
+      if (captureISO) {
+        updatedPicture.captureTimeOriginalISO = captureISO;
+        updatedPicture.captureTimeSource = 'manual';
+      } else {
+        delete updatedPicture.captureTimeOriginalISO;
+        delete updatedPicture.captureTimeSource;
+      }
     }
 
-    const galleryPictures = {
-      ...(owner.galleryPictures ?? {}),
-      [picture.id]: updatedPicture,
-    };
-
+    this.savingPictureId = picture.id;
     this.uploadError = '';
 
     try {
-      if (this.ownerType === 'card') {
-        await this.data.setCardField('galleryPictures', galleryPictures, ownerId);
-      } else {
-        await this.data.setClientField(
-          'galleryPictures',
-          galleryPictures,
-          ownerId
-        );
-      }
-
-      owner.galleryPictures = galleryPictures;
-      if (this.selectedPicture?.id === picture.id) {
-        this.selectedPicture = updatedPicture;
-      }
-      this.cancelEditingCaptureTime();
+      await this.updatePictureMetadata(picture, updatedPicture);
+      this.cancelEditingPicture();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de la date capturée', error);
-      this.uploadError =
-        'Impossible de mettre à jour la date capturée. Réessayez.';
+      console.error('Erreur lors de la mise à jour de la photo', error);
+      this.uploadError = 'Impossible de modifier la photo. Réessayez.';
+    } finally {
+      this.savingPictureId = '';
     }
   }
 
@@ -568,8 +510,8 @@ export class ClientGalleryComponent implements OnDestroy {
       if (this.selectedPicture?.id === picture.id) {
         this.closePicture();
       }
-      if (this.editingCapturePictureId === picture.id) {
-        this.cancelEditingCaptureTime();
+      if (this.editingPictureId === picture.id) {
+        this.cancelEditingPicture();
       }
 
       await this.deleteStoredPictureFile(picture);
@@ -579,6 +521,52 @@ export class ClientGalleryComponent implements OnDestroy {
     } finally {
       this.deletingPictureId = '';
     }
+  }
+
+  private async updatePictureMetadata(
+    picture: ClientGalleryPicture,
+    updates: Partial<ClientGalleryPicture>
+  ): Promise<ClientGalleryPicture> {
+    const owner = this.owner;
+    const ownerId = owner?.uid;
+    if (!ownerId) {
+      throw new Error('Client introuvable.');
+    }
+
+    const galleryPictures = { ...(owner.galleryPictures ?? {}) };
+    const matchingKeys = Object.entries(galleryPictures)
+      .filter(([key, storedPicture]) =>
+        this.galleryEntryMatchesPicture(key, storedPicture, picture)
+      )
+      .map(([key]) => key);
+    const targetKey = matchingKeys[0] ?? picture.id;
+    const existingPicture = galleryPictures[targetKey] ?? picture;
+    const updatedPicture: ClientGalleryPicture = {
+      ...existingPicture,
+      ...updates,
+      id: existingPicture.id || picture.id || targetKey,
+    };
+    const nextGalleryPictures = {
+      ...galleryPictures,
+      [targetKey]: updatedPicture,
+    };
+
+    matchingKeys.slice(1).forEach((key) => {
+      delete nextGalleryPictures[key];
+    });
+
+    if (this.ownerType === 'card') {
+      await this.data.replaceCardGalleryPictures(ownerId, nextGalleryPictures);
+    } else {
+      await this.data.replaceClientGalleryPictures(ownerId, nextGalleryPictures);
+    }
+
+    owner.galleryPictures = nextGalleryPictures;
+    if (this.selectedPicture?.id === picture.id) {
+      this.selectedPicture = this.normalizePicture(targetKey, updatedPicture);
+    }
+
+    return updatedPicture;
   }
 
   private galleryEntryMatchesPicture(

@@ -211,72 +211,63 @@
             <p>Ajout: {{ formatPictureDate(picture.uploadedAt) }}</p>
             <p>Capture: {{ formatPictureDate(picture.captureTimeOriginalISO) }}</p>
           </div>
-          <label class="absolute right-2 top-2 max-w-[calc(100%-1rem)] rounded-full bg-slate-900/75">
-            <span class="sr-only">Reclasser la photo</span>
-            <select
-              class="max-w-28 border-0 bg-transparent px-2 py-1 text-xs font-extrabold text-white"
-              [value]="picture.category"
-              [disabled]="reclassifyingPictureId === picture.id"
-              (change)="reclassifyPicture(picture, $any($event.target).value)"
-            >
-              <option
-                *ngFor="let category of categories"
-                [value]="category.id"
-              >
-                {{ category.label }}
-              </option>
-            </select>
-          </label>
-
-          <div
-            *ngIf="auth.isAdmin && editingCapturePictureId !== picture.id"
-            class="absolute right-2 bottom-2 flex items-center gap-1"
-          >
+          <div class="absolute right-2 top-2 flex items-center gap-1">
+            <span class="inline-flex items-center gap-1 rounded-full bg-slate-900/75 px-2 py-1 text-[11px] font-black text-white">
+              <ng-container [ngSwitch]="picture.category">
+                <svg
+                  *ngSwitchCase="'trophy'"
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 4h8v3a4 4 0 01-8 0V4z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 6H5a3 3 0 003 3M16 6h3a3 3 0 01-3 3M12 11v5M9 20h6M10 16h4" />
+                </svg>
+                <svg
+                  *ngSwitchCase="'domicile'"
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 11l9-8 9 8" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 10v10h14V10M9 20v-6h6v6" />
+                </svg>
+                <svg
+                  *ngSwitchDefault
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h6l2 2h8v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
+                </svg>
+              </ng-container>
+              {{ categoryLabel(picture.category) }}
+            </span>
             <button
               type="button"
-              class="rounded-full bg-white/90 px-2 py-1 text-[11px] font-black text-slate-800 shadow transition hover:bg-white"
-              (click)="$event.stopPropagation(); startEditingCaptureTime(picture)"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              title="Modifier la photo"
+              aria-label="Modifier la photo"
+              (click)="startEditingPicture(picture, $event)"
             >
-              Date
-            </button>
-            <button
-              type="button"
-              class="rounded-full bg-red-600/95 px-2 py-1 text-[11px] font-black text-white shadow transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-70"
-              [disabled]="deletingPictureId === picture.id"
-              (click)="deletePicture(picture, $event)"
-            >
-              {{ deletingPictureId === picture.id ? '...' : 'Supprimer' }}
-            </button>
-          </div>
-
-          <div
-            *ngIf="auth.isAdmin && editingCapturePictureId === picture.id"
-            class="absolute inset-x-2 bottom-2 rounded-xl bg-white p-2 text-slate-900 shadow-xl"
-          >
-            <label class="block text-[10px] font-black uppercase text-slate-500">
-              Date capturée
-            </label>
-            <input
-              type="datetime-local"
-              class="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs font-semibold"
-              [(ngModel)]="captureDraftLocal"
-            />
-            <div class="mt-2 flex justify-end gap-1">
-              <button
-                type="button"
-                class="rounded px-2 py-1 text-[11px] font-bold text-slate-600"
-                (click)="cancelEditingCaptureTime()"
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
               >
-                Annuler
-              </button>
-              <button
-                type="button"
-                class="rounded bg-emerald-600 px-2 py-1 text-[11px] font-bold text-white"
-                (click)="savePictureCaptureTime(picture)"
-              >
-                OK
-              </button>
-            </div>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+              </svg>
+            </button>
           </div>
         </article>
       </div>
@@ -389,6 +380,163 @@
 </div>
 
 <div
+  *ngIf="editingPicture as picture"
+  class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/75 p-4"
+  (click)="cancelEditingPicture($event)"
+>
+  <section
+    class="w-full max-w-lg overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl dark:bg-slate-900 dark:text-white"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+      <div class="flex min-w-0 items-center gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200">
+          <svg
+            class="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h2 class="text-base font-black">Modifier la photo</h2>
+          <p class="truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {{ categoryLabel(picture.category) }} · capture {{ formatPictureDate(picture.captureTimeOriginalISO) }}
+          </p>
+        </div>
+      </div>
+      <button
+        type="button"
+        class="flex h-9 w-9 items-center justify-center rounded-full text-2xl font-bold text-slate-500 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-60 dark:hover:bg-slate-800"
+        aria-label="Fermer"
+        [disabled]="savingPictureId === picture.id"
+        (click)="cancelEditingPicture($event)"
+      >
+        &times;
+      </button>
+    </header>
+
+    <div class="grid gap-4 p-4 sm:grid-cols-[11rem_1fr]">
+      <div class="aspect-square overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+        <img
+          [src]="picture.url"
+          alt="Photo à modifier"
+          class="h-full w-full object-cover"
+        />
+      </div>
+
+      <div class="space-y-4">
+        <label class="block">
+          <span class="mb-1 flex items-center gap-1.5 text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h6l2 2h8v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
+            </svg>
+            Classification
+          </span>
+          <select
+            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-extrabold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-emerald-900/30"
+            [(ngModel)]="editDraftCategory"
+            [disabled]="savingPictureId === picture.id"
+          >
+            <option
+              *ngFor="let category of categories"
+              [value]="category.id"
+            >
+              {{ category.label }}
+            </option>
+          </select>
+        </label>
+
+        <label *ngIf="auth.isAdmin" class="block">
+          <span class="mb-1 flex items-center gap-1.5 text-xs font-black uppercase text-slate-500 dark:text-slate-400">
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3M16 7V3M4 11h16M6 5h12a2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z" />
+            </svg>
+            Date capturée
+          </span>
+          <input
+            type="datetime-local"
+            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 disabled:cursor-wait disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-emerald-900/30"
+            [(ngModel)]="editCaptureDraftLocal"
+            [disabled]="savingPictureId === picture.id"
+          />
+        </label>
+      </div>
+    </div>
+
+    <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-800">
+      <button
+        *ngIf="auth.isAdmin"
+        type="button"
+        class="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-70"
+        [disabled]="deletingPictureId === picture.id || savingPictureId === picture.id"
+        (click)="deletePicture(picture, $event)"
+      >
+        <svg
+          class="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15" />
+        </svg>
+        {{ deletingPictureId === picture.id ? 'Suppression...' : 'Supprimer' }}
+      </button>
+
+      <div class="ml-auto flex gap-2">
+        <button
+          type="button"
+          class="rounded-full px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-wait disabled:opacity-60 dark:text-slate-300 dark:hover:bg-slate-800"
+          [disabled]="savingPictureId === picture.id"
+          (click)="cancelEditingPicture($event)"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-black text-white shadow transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+          [disabled]="savingPictureId === picture.id"
+          (click)="savePictureEdits(picture, $event)"
+        >
+          <svg
+            class="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          {{ savingPictureId === picture.id ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<div
   *ngIf="selectedPicture"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
   (click)="closePicture()"
@@ -414,13 +562,22 @@
   />
 
   <button
-    *ngIf="auth.isAdmin"
     type="button"
-    class="absolute left-5 top-5 rounded-full bg-red-600/90 px-4 py-2 text-sm font-black text-white shadow-lg transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-70"
-    [disabled]="deletingPictureId === selectedPicture.id"
-    (click)="deletePicture(selectedPicture, $event)"
+    class="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-slate-900 shadow-lg transition hover:bg-white"
+    (click)="startEditingPicture(selectedPicture, $event); closePicture()"
   >
-    {{ deletingPictureId === selectedPicture.id ? 'Suppression...' : 'Supprimer' }}
+    <svg
+      class="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.2"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+    Modifier
   </button>
 
   <button
