@@ -125,6 +125,7 @@ export class TodayComponent {
       this.weeklyExpectedTotalDollars = this.compute
         .convertCongoleseFrancToUsDollars(this.weeklyExpectedTotalN.toString())
         .toString();
+      this.syncWeeklyExpectedProgress();
       this.updateWeekPickerTotals();
 
       this.recomputeHeaderReasons();
@@ -157,6 +158,8 @@ export class TodayComponent {
   weeklyPaymentTotalDollars: string = '0';
   weeklyExpectedTotalN: number = 0;
   weeklyExpectedTotalDollars: string = '0';
+  weeklyExpectedProgressPercent: number = 0;
+  weeklyExpectedProgressTone: WeeklyProgressTone = 'red';
   weeklyTargetFc: number = 600000;
   projectedWeeklyTargetFc: number | null = null;
   projectedWeeklyTargetEffectiveDate = '';
@@ -1165,6 +1168,7 @@ export class TodayComponent {
     this.weeklyTargetFc = this.resolveWeeklyTargetFcForDate(
       this.requestDateCorrectFormat
     );
+    this.syncWeeklyExpectedProgress();
     this.weeklyTargetReached = this.weeklyPaymentTotalN >= this.weeklyTargetFc;
     this.weeklyProgressPercent =
       this.weeklyTargetFc === 0
@@ -1183,6 +1187,16 @@ export class TodayComponent {
       this.buildWeeklyProgressMarkers(this.weeklyTargetFc);
     this.updateWeekPickerTotals();
     this.computeMonthlyWeeklyShortfalls();
+  }
+
+  private syncWeeklyExpectedProgress() {
+    const expected = Number(this.weeklyExpectedTotalN) || 0;
+    const actual = Number(this.weeklyPaymentTotalN) || 0;
+    this.weeklyExpectedProgressPercent =
+      expected <= 0 ? (actual > 0 ? 100 : 0) : Math.min(100, (actual / expected) * 100);
+    this.weeklyExpectedProgressTone = this.resolvePaymentProgressTone(
+      this.weeklyExpectedProgressPercent
+    );
   }
 
   async setWeeklyTargetForUser() {
