@@ -87,6 +87,13 @@ export class ClientGalleryComponent {
     return `${first}${last}`.toUpperCase() || 'CL';
   }
 
+  get ownerProfilePictureUrl(): string {
+    return (
+      (this.owner as Client | undefined)?.profilePicture?.downloadURL?.trim() ??
+      ''
+    );
+  }
+
   get ownerAddress(): string {
     return this.owner?.homeAddress || 'Adresse domicile';
   }

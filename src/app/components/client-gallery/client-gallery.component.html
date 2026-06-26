@@ -19,9 +19,18 @@
       </button>
 
       <div class="flex min-w-0 items-center gap-4">
-        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/20 text-xl font-black">
+        <img
+          *ngIf="ownerProfilePictureUrl; else ownerInitialsAvatar"
+          [src]="ownerProfilePictureUrl"
+          [alt]="'Photo de ' + ownerName"
+          class="h-20 w-20 shrink-0 rounded-full border-4 border-white/30 object-cover shadow-lg"
+          decoding="async"
+        />
+        <ng-template #ownerInitialsAvatar>
+        <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-white/20 bg-white/20 text-2xl font-black shadow-lg">
           {{ ownerInitials }}
         </div>
+        </ng-template>
         <div>
           <p class="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
             Galerie photos
@@ -70,6 +79,76 @@
         "
         (click)="setActiveCategory(category.id)"
       >
+        <span
+          class="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-full"
+          [ngClass]="
+            category.id === 'trophy'
+              ? 'bg-amber-100 text-amber-700'
+              : category.id === 'domicile'
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-sky-100 text-sky-700'
+          "
+        >
+          <ng-container [ngSwitch]="category.id">
+            <svg
+              *ngSwitchCase="'domicile'"
+              class="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 11l9-8 9 8"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M5 10v10h14V10M9 20v-6h6v6"
+              />
+            </svg>
+            <svg
+              *ngSwitchCase="'trophy'"
+              class="h-7 w-7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.9"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M8 4h8v3a4 4 0 01-8 0V4z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M8 6H5a3 3 0 003 3M16 6h3a3 3 0 01-3 3M12 11v5M9 20h6M10 16h4"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M10 4l2-2 2 2"
+              />
+            </svg>
+            <svg
+              *ngSwitchDefault
+              class="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4 7h6l2 2h8v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7z"
+              />
+            </svg>
+          </ng-container>
+        </span>
         <span class="block font-extrabold text-slate-900 dark:text-white">
           {{ category.label }}
         </span>
