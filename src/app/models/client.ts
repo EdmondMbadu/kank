@@ -15,6 +15,20 @@ export interface ClientTrophyAward {
   createdAt: string;
 }
 
+export type ClientGalleryCategory = 'domicile' | 'trophy' | 'other';
+
+export interface ClientGalleryPicture {
+  id: string;
+  category: ClientGalleryCategory;
+  url: string;
+  path: string;
+  size: number;
+  name?: string;
+  uploadedAt: string;
+  uploadedBy?: string;
+  uploadedByName?: string;
+}
+
 export interface AuditConversationAudioAttachment {
   url: string;
   name?: string;
@@ -132,6 +146,7 @@ export class Client {
   locationName?: string;
   locationOwnerId?: string;
   archivedAt?: string;
+  galleryPictures?: { [key: string]: ClientGalleryPicture } = {};
   bonus?: string;
   bonusHistory?: { [key: string]: ClientBonusEvent } = {};
   trophyAwards?: { [key: string]: ClientTrophyAward } = {};

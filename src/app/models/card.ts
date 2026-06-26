@@ -1,3 +1,5 @@
+import { ClientGalleryPicture } from './client';
+
 export interface CardTotalWithdrawalSnapshot {
   amountPaid?: string;
   numberOfPaymentsMade?: string;
@@ -43,5 +45,6 @@ export class Card {
   cardCycleStartDate?: string;
   clientCardStatus?: string;
   cardCycleEndDate?: string;
+  galleryPictures?: { [key: string]: ClientGalleryPicture } = {};
   totalWithdrawalSnapshot?: CardTotalWithdrawalSnapshot;
 }

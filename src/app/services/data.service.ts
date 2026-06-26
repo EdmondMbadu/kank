@@ -430,6 +430,16 @@ export class DataService {
     );
     return userRef.set(data, { merge: true });
   }
+
+  setCardField(field: string, value: any, cardId: string) {
+    const cardRef: AngularFirestoreDocument<Card> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/cards/${cardId}`
+    );
+    const data = {
+      [field]: value,
+    };
+    return cardRef.set(data, { merge: true });
+  }
   clientCardPayment(clientCard: Card) {
     const clientCardRef: AngularFirestoreDocument<Card> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/cards/${clientCard.uid}`

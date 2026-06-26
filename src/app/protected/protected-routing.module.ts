@@ -87,6 +87,7 @@ import { ReviewsComponent } from '../components/reviews/reviews.component';
 import { QuestionsComponent } from '../components/questions/questions.component';
 import { InvestigationComponent } from '../components/investigation/investigation.component';
 import { WhatsappAdminComponent } from '../components/whatsapp-admin/whatsapp-admin.component';
+import { ClientGalleryComponent } from '../components/client-gallery/client-gallery.component';
 
 const routes: Routes = [
   {
@@ -185,10 +186,20 @@ const routes: Routes = [
   { path: 'new-cycle-register/:id', component: NewCycleRegisterComponent },
   { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
+  {
+    path: 'client-gallery/:id',
+    component: ClientGalleryComponent,
+    data: { ownerType: 'client' },
+  },
   { path: 'client-cycle/:id', component: ClientCycleComponent },
   { path: 'finished-debt', component: FinishedDebtComponent },
   { path: 'register-portal/:id', component: RegiserPortalComponent },
   { path: 'client-portal-card/:id', component: ClientPortalCardComponent },
+  {
+    path: 'client-card-gallery/:id',
+    component: ClientGalleryComponent,
+    data: { ownerType: 'card' },
+  },
   { path: 'add-investment', component: AmountInvestedComponent },
   { path: 'add-expense', component: ExpensesComponent },
   { path: 'add-loss', component: LossesComponent },

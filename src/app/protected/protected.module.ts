@@ -98,6 +98,7 @@ import { QuestionsComponent } from '../components/questions/questions.component'
 import { RotationScheduleComponent } from '../components/rotation-schedule/rotation-schedule.component';
 import { InvestigationComponent } from '../components/investigation/investigation.component';
 import { WhatsappAdminComponent } from '../components/whatsapp-admin/whatsapp-admin.component';
+import { ClientGalleryComponent } from '../components/client-gallery/client-gallery.component';
 
 PlotlyModule.plotlyjs = PlotlyJS;
 
@@ -191,6 +192,7 @@ PlotlyModule.plotlyjs = PlotlyJS;
     RotationScheduleComponent,
     InvestigationComponent,
     WhatsappAdminComponent,
+    ClientGalleryComponent,
   ],
   imports: [
     CommonModule,

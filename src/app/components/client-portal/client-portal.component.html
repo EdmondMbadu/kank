@@ -224,6 +224,30 @@
   </div>
 </div>
 
+<div class="mx-auto -mt-2 mb-8 flex max-w-7xl justify-center px-4">
+  <button
+    type="button"
+    [routerLink]="['/client-gallery', id]"
+    class="inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-white px-5 py-3 text-sm font-bold text-emerald-800 shadow-md transition hover:border-emerald-300 hover:bg-emerald-50 focus:outline-none focus:ring-4 focus:ring-emerald-200 dark:border-emerald-700 dark:bg-slate-800 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+  >
+    <svg
+      class="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M3 16.5V8a2 2 0 012-2h3l1.6-2h4.8L16 6h3a2 2 0 012 2v8.5A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5z"
+      />
+      <circle cx="12" cy="12" r="3.2" />
+    </svg>
+    Galerie photos
+  </button>
+</div>
+
 <!-- full-screen modal (toggles with click) -->
 <div
   *ngIf="isFullPictureVisible"

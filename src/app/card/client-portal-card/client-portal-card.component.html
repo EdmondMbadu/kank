@@ -148,6 +148,23 @@
 
         <!-- ============ ACTION BUTTONS ============ -->
         <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <button
+            type="button"
+            [routerLink]="['/client-card-gallery', id]"
+            class="inline-flex items-center justify-center gap-2 rounded-full
+                   bg-slate-800 px-4 py-3 text-sm font-semibold text-white shadow-lg
+                   transition hover:scale-105 hover:bg-slate-900
+                   focus:outline-none focus:ring-4 focus:ring-slate-300
+                   dark:bg-slate-600 dark:hover:bg-slate-500
+                   dark:focus:ring-slate-700">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M3 16.5V8a2 2 0 012-2h3l1.6-2h4.8L16 6h3a2 2 0 012 2v8.5A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5z"/>
+              <circle cx="12" cy="12" r="3.2"/>
+            </svg>
+            Galerie photos
+          </button>
 
           <button
             (click)="addMoney()"
