@@ -65,14 +65,17 @@ export class TrackingMonthCentralComponent {
   reserveActiveRange: RangeKey = '3M';
   paymentActiveRange: RangeKey = '3M';
   entrySortieActiveRange: RangeKey = '3M';
+  lendingActiveRange: RangeKey = '3M';
 
   reserveGraph = this.createEmptyGraph('Réserve en $');
   paymentGraph = this.createEmptyGraph('Paiement en $');
   entrySortieGraph: any = this.createEmptyGraph('Entrées / Sorties en $');
+  lendingGraph = this.createEmptyGraph('Emprunts en $');
 
   reserveMaxRange = 0;
   paymentMaxRange = 0;
   entrySortieMaxRange = 0;
+  lendingMaxRange = 0;
 
   private reserveGraphLabels: string[] = [];
   private reserveGraphSeriesUsd: number[] = [];
@@ -80,6 +83,8 @@ export class TrackingMonthCentralComponent {
   private paymentGraphSeriesUsd: number[] = [];
   private entrySortieGraphLabels: string[] = [];
   private entrySortieGraphSeriesUsd: number[] = [];
+  private lendingGraphLabels: string[] = [];
+  private lendingGraphSeriesUsd: number[] = [];
 
   givenMonthTotalPaymentAmount: string = '';
   givenMonthTotalMobileMoneyAmount: string = '';
@@ -202,6 +207,7 @@ export class TrackingMonthCentralComponent {
   selectedReserveLocation: string | null = null;
   selectedPaymentLocation: string | null = null;
   selectedEntrySortieLocation: string | null = null;
+  selectedLendingLocation: string | null = null;
 
   setPreviousMonth() {
     if (this.givenMonth === 1) {
@@ -436,6 +442,7 @@ export class TrackingMonthCentralComponent {
     this.updateReserveGraphics(this.rangeValueFromKey(this.reserveActiveRange));
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
     this.updateEntrySortieGraphics(this.rangeValueFromKey(this.entrySortieActiveRange));
+    this.updateLendingGraphics(this.rangeValueFromKey(this.lendingActiveRange));
     
     // Calculate average daily Reserve and Payment
     this.calculateAverageReserveAndPayment();
@@ -1066,6 +1073,11 @@ export class TrackingMonthCentralComponent {
     this.updateEntrySortieGraphics(this.rangeValueFromKey(key));
   }
 
+  setLendingRange(key: RangeKey): void {
+    this.lendingActiveRange = key;
+    this.updateLendingGraphics(this.rangeValueFromKey(key));
+  }
+
   onReserveLocationClick(locationName: string): void {
     // If empty string, reset to all locations
     if (locationName === '') {
@@ -1108,6 +1120,18 @@ export class TrackingMonthCentralComponent {
     this.updateEntrySortieGraphics(
       this.rangeValueFromKey(this.entrySortieActiveRange)
     );
+  }
+
+  onLendingLocationClick(locationName: string): void {
+    if (locationName === '') {
+      this.selectedLendingLocation = null;
+    } else if (this.selectedLendingLocation === locationName) {
+      this.selectedLendingLocation = null;
+    } else {
+      this.selectedLendingLocation = locationName;
+    }
+
+    this.updateLendingGraphics(this.rangeValueFromKey(this.lendingActiveRange));
   }
 
   async copyPaymentRanking(): Promise<void> {
@@ -1380,6 +1404,49 @@ export class TrackingMonthCentralComponent {
         },
       ],
       layout: this.createEntrySortieGraphLayout(titleText),
+    };
+  }
+
+  updateLendingGraphics(range: number): void {
+    const [labels, values] = this.aggregateMonthlyField(
+      'dailyLending',
+      this.selectedLendingLocation
+    );
+    this.lendingMaxRange = labels.length;
+
+    const [selectedLabels, selectedValues] = this.sliceForRange(
+      labels,
+      values,
+      range
+    );
+
+    this.lendingGraphLabels = selectedLabels.map((label) =>
+      this.formatMonthYearLabel(label)
+    );
+    this.lendingGraphSeriesUsd = this.compute.convertToDollarsArray(
+      selectedValues
+    );
+
+    const color = selectedValues.length
+      ? this.compute.findColor(selectedValues)
+      : '#f59e0b';
+    const locationPrefix = this.selectedLendingLocation
+      ? `${this.selectedLendingLocation} - `
+      : '';
+    const titleText = `${locationPrefix}Emprunts en $`;
+
+    this.lendingGraph = {
+      data: [
+        {
+          x: this.lendingGraphLabels,
+          y: this.lendingGraphSeriesUsd,
+          type: 'bar',
+          mode: 'lines',
+          marker: { color },
+          line: { color: '#f59e0b' },
+        },
+      ],
+      layout: this.createGraphLayout(titleText),
     };
   }
 
