@@ -48,7 +48,7 @@ export class ClientGalleryComponent {
   editingCapturePictureId = '';
   captureDraftLocal = '';
   uploadCaptureLocal = '';
-  uploadCaptureSource: 'exif' | 'manual' | '' = '';
+  uploadCaptureSource: 'exif' | 'fileLastModified' | 'manual' | '' = '';
   uploadError = '';
   selectedPicture?: ClientGalleryPicture;
 
@@ -308,18 +308,22 @@ export class ClientGalleryComponent {
     this.uploadError = '';
 
     try {
-      const exifCaptureISO = await this.extractImageCaptureTimeISO(file);
-      if (this.auth.isAdmin && exifCaptureISO && !this.uploadCaptureLocal) {
-        this.uploadCaptureLocal = this.isoToDateTimeLocal(exifCaptureISO);
-        this.uploadCaptureSource = 'exif';
+      const extractedCapture = await this.extractImageCaptureTime(file);
+      if (
+        this.auth.isAdmin &&
+        extractedCapture.iso &&
+        !this.uploadCaptureLocal
+      ) {
+        this.uploadCaptureLocal = this.isoToDateTimeLocal(extractedCapture.iso);
+        this.uploadCaptureSource = extractedCapture.source;
       }
 
       const manualCaptureISO = this.dateTimeLocalToISO(this.uploadCaptureLocal);
-      const captureISO = manualCaptureISO || exifCaptureISO;
+      const captureISO = manualCaptureISO || extractedCapture.iso;
       const captureSource = manualCaptureISO
         ? this.uploadCaptureSource || 'manual'
-        : exifCaptureISO
-        ? 'exif'
+        : extractedCapture.iso
+        ? extractedCapture.source
         : undefined;
       const pictureId = `${Date.now()}-${Math.random()
         .toString(36)
@@ -528,18 +532,39 @@ export class ClientGalleryComponent {
     }
   }
 
-  private async extractImageCaptureTimeISO(file: File): Promise<string> {
+  private async extractImageCaptureTime(
+    file: File
+  ): Promise<{ iso: string; source: 'exif' | 'fileLastModified' }> {
     try {
       const exif: any = await exifr.parse(file, {
-        pick: ['DateTimeOriginal', 'CreateDate', 'ModifyDate'],
+        gps: false,
+        tiff: true,
+        exif: true,
+        ifd1: false,
+        xmp: true,
       });
       const rawDate =
         exif?.DateTimeOriginal || exif?.CreateDate || exif?.ModifyDate;
-      return this.dateLikeToISO(rawDate);
+
+      const offsetMin =
+        this.parseTZOffset(exif?.OffsetTimeOriginal || exif?.OffsetTime) ??
+        this.parseTimeZoneOffset(exif?.TimeZoneOffset) ??
+        60;
+      const exifISO = rawDate
+        ? this.exifLocalToISO(rawDate, offsetMin) || this.dateLikeToISO(rawDate)
+        : '';
+
+      if (exifISO) {
+        return { iso: exifISO, source: 'exif' };
+      }
     } catch (error) {
       console.warn("Impossible de lire l'EXIF de la photo", error);
-      return '';
     }
+
+    return {
+      iso: new Date(file.lastModified).toISOString(),
+      source: 'fileLastModified',
+    };
   }
 
   private dateLikeToISO(value: unknown): string {
@@ -553,6 +578,97 @@ export class ClientGalleryComponent {
     }
 
     return date.toISOString();
+  }
+
+  private parseTZOffset(str?: string): number | undefined {
+    if (!str) {
+      return undefined;
+    }
+
+    const match = str.match(/^([+-])(\d{2}):?(\d{2})?$/);
+    if (!match) {
+      return undefined;
+    }
+
+    const sign = match[1] === '-' ? -1 : 1;
+    const hours = Number(match[2]);
+    const minutes = match[3] ? Number(match[3]) : 0;
+    return sign * (hours * 60 + minutes);
+  }
+
+  private parseTimeZoneOffset(value: unknown): number | undefined {
+    if (typeof value === 'number') {
+      return value * 60;
+    }
+
+    if (Array.isArray(value) && typeof value[0] === 'number') {
+      return value[0] * 60;
+    }
+
+    return undefined;
+  }
+
+  private extractYMDHMS(value: unknown): {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+  } | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return {
+        year: value.getFullYear(),
+        month: value.getMonth() + 1,
+        day: value.getDate(),
+        hour: value.getHours(),
+        minute: value.getMinutes(),
+        second: value.getSeconds(),
+      };
+    }
+
+    const match = String(value).match(
+      /(\d{4})[:\-](\d{2})[:\-](\d{2})[ T](\d{2}):(\d{2}):(\d{2})/
+    );
+    if (!match) {
+      return null;
+    }
+
+    return {
+      year: Number(match[1]),
+      month: Number(match[2]),
+      day: Number(match[3]),
+      hour: Number(match[4]),
+      minute: Number(match[5]),
+      second: Number(match[6]),
+    };
+  }
+
+  private exifLocalToISO(
+    value: unknown,
+    assumedOffsetMinutes: number
+  ): string {
+    const parts = this.extractYMDHMS(value);
+    if (!parts) {
+      return '';
+    }
+
+    const utcMs =
+      Date.UTC(
+        parts.year,
+        parts.month - 1,
+        parts.day,
+        parts.hour,
+        parts.minute,
+        parts.second
+      ) -
+      assumedOffsetMinutes * 60 * 1000;
+
+    return new Date(utcMs).toISOString();
   }
 
   private isoToDateTimeLocal(iso?: string): string {
