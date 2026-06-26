@@ -79,11 +79,19 @@ export class GestionMonthComponent {
   day: number = 1;
   graphicsRange: number = this.compute.quarter1;
   graphicsRangeServe: number = this.compute.quarter1;
+  realGainGraphicsRange: number = this.compute.quarter1;
   maxRange = 0;
   public graph: { data: any[]; layout: any } = {
     data: [{}],
     layout: {
       title: 'Reserve Journalier en $',
+      barmode: 'stack',
+    },
+  };
+  public realGainGraph: { data: any[]; layout: any } = {
+    data: [{}],
+    layout: {
+      title: 'Bénéfice réel en $',
       barmode: 'stack',
     },
   };
@@ -396,6 +404,7 @@ export class GestionMonthComponent {
         this.givenMonthTotalOtherExpenseAmount
       )}`,
     ];
+    this.updateRealGainGraphics(this.realGainGraphicsRange);
     this.selectMonthlyPaymentSnapshot();
     this.loadMonthlyPaymentTotals();
   }
@@ -1073,6 +1082,166 @@ export class GestionMonthComponent {
     const values = sortedKeys.map((key) => aggregatedData[key].toString());
 
     return [sortedKeys, values];
+  }
+
+  updateRealGainGraphics(time: number) {
+    this.realGainGraphicsRange = time;
+    const [dates, valuesFc] = this.sortKeysAndValuesRealGain(time);
+    const valuesUsd = this.compute.convertToDollarsArray(valuesFc);
+
+    this.realGainGraph = {
+      data: [
+        {
+          x: dates,
+          y: valuesUsd,
+          type: 'bar',
+          marker: {
+            color: valuesUsd.map((value) =>
+              value < 0 ? '#ef4444' : '#10b981'
+            ),
+          },
+          hovertemplate: '<b>%{x}</b><br>$%{y:,.0f}<extra></extra>',
+          name: 'Bénéfice réel',
+        },
+      ],
+      layout: this.createRealGainGraphLayout(valuesUsd),
+    };
+  }
+
+  sortKeysAndValuesRealGain(time: number): [string[], string[]] {
+    const monthly = new Map<
+      string,
+      {
+        reserve: number;
+        served: number;
+        investment: number;
+        expense: number;
+        budgetedExpense: number;
+        exchangeLoss: number;
+        dollarTransferLossFc: number;
+        fraud: number;
+        otherExpense: number;
+      }
+    >();
+
+    const addField = (
+      source: { [key: string]: string } | undefined,
+      field:
+        | 'reserve'
+        | 'served'
+        | 'investment'
+        | 'expense'
+        | 'budgetedExpense'
+        | 'exchangeLoss'
+        | 'dollarTransferLossFc'
+        | 'fraud'
+        | 'otherExpense',
+      transform: (value: unknown) => number = (value) =>
+        this.extractAmount(value)
+    ) => {
+      for (const [key, value] of Object.entries(source || {})) {
+        const [month, , year] = key.split('-');
+        if (!month || !year) continue;
+
+        const monthYear = `${month}-${year}`;
+        const current =
+          monthly.get(monthYear) ||
+          {
+            reserve: 0,
+            served: 0,
+            investment: 0,
+            expense: 0,
+            budgetedExpense: 0,
+            exchangeLoss: 0,
+            dollarTransferLossFc: 0,
+            fraud: 0,
+            otherExpense: 0,
+          };
+
+        current[field] += transform(value);
+        monthly.set(monthYear, current);
+      }
+    };
+
+    addField(this.managementInfo?.reserve, 'reserve');
+    addField(this.managementInfo?.moneyGiven, 'served');
+    addField(this.managementInfo?.investment, 'investment');
+    addField(this.managementInfo?.expenses, 'expense');
+    addField(this.managementInfo?.budgetedExpenses, 'budgetedExpense');
+    addField(this.managementInfo?.exchangeLoss, 'exchangeLoss');
+    addField(this.managementInfo?.dollarTransferLoss, 'dollarTransferLossFc', (value) =>
+      this.toFrancsFromDollars(this.extractAmount(value))
+    );
+    addField(this.managementInfo?.fraudes, 'fraud');
+    addField(this.managementInfo?.otherExpenses, 'otherExpense');
+
+    const sortedKeys = Array.from(monthly.keys())
+      .sort((a, b) => {
+        const [monthA, yearA] = a.split('-');
+        const [monthB, yearB] = b.split('-');
+        return (
+          new Date(`${yearA}-${monthA}-01`).getTime() -
+          new Date(`${yearB}-${monthB}-01`).getTime()
+        );
+      })
+      .slice(time > 0 ? -time : 0);
+
+    const values = sortedKeys.map((key) => {
+      const item = monthly.get(key)!;
+      const realGain =
+        item.reserve -
+        item.served -
+        item.investment -
+        item.expense -
+        item.budgetedExpense -
+        item.exchangeLoss -
+        item.dollarTransferLossFc -
+        item.fraud -
+        item.otherExpense;
+
+      return realGain.toString();
+    });
+
+    return [sortedKeys, values];
+  }
+
+  private createRealGainGraphLayout(valuesUsd: number[]) {
+    const minValue = Math.min(0, ...valuesUsd);
+    const maxValue = Math.max(0, ...valuesUsd);
+    const padding = Math.max(1, (maxValue - minValue) * 0.12);
+
+    return {
+      title: 'Bénéfice réel en $',
+      barmode: 'stack',
+      hovermode: 'closest',
+      xaxis: {
+        title: 'Période (Mois-Année)',
+        showgrid: true,
+        gridcolor: 'rgba(148, 163, 184, 0.2)',
+      },
+      yaxis: {
+        title: 'Montant ($)',
+        showgrid: true,
+        gridcolor: 'rgba(148, 163, 184, 0.2)',
+        zeroline: true,
+        zerolinecolor: '#64748b',
+        zerolinewidth: 2,
+        range: [minValue - padding, maxValue + padding],
+      },
+      transition: {
+        duration: 500,
+        easing: 'cubic-in-out',
+      },
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      paper_bgcolor: 'rgba(0,0,0,0)',
+    };
+  }
+
+  private toFrancsFromDollars(amountDollar: number): number {
+    const francs = this.compute.convertUsDollarsToCongoleseFranc(
+      amountDollar.toString()
+    );
+    return Number(francs) || 0;
   }
 
   // Get monthly totals as array of {monthYear: string, value: number, monthIndex: number}

@@ -1442,4 +1442,72 @@
       <plotly-plot [data]="graph.data" [layout]="graph.layout"></plotly-plot>
     </div>
   </div>
+
+  <div
+    class="mt-8 rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+  >
+    <div class="space-y-6">
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div>
+          <h2
+            class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+          >
+            Bénéfice réel par mois
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-100">
+            Même calcul que « Bénéfice Reel Du Mois », converti en dollars américains.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            (click)="updateRealGainGraphics(compute.quarter1)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            3M
+          </button>
+          <button
+            (click)="updateRealGainGraphics(compute.quarter2)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            6M
+          </button>
+          <button
+            (click)="updateRealGainGraphics(compute.quarter3)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            9M
+          </button>
+          <button
+            (click)="updateRealGainGraphics(compute.quarter4)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            1A
+          </button>
+          <button
+            (click)="updateRealGainGraphics(maxRange)"
+            type="button"
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-emerald-400 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300"
+          >
+            Max
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner"
+      >
+        <plotly-plot
+          [data]="realGainGraph.data"
+          [layout]="realGainGraph.layout"
+        ></plotly-plot>
+      </div>
+    </div>
+  </div>
 </section>
