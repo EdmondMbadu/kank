@@ -193,6 +193,8 @@ export class TodayComponent {
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
+  monthlyEntryExitAmount: string = '0';
+  monthlyEntryExitPeriodLabel: string = '';
   dailySaving: string = '0';
   dailySavingReturns: string = '0';
   dailyFeesReturns: string = '0';
@@ -223,7 +225,7 @@ export class TodayComponent {
 
   totalPerfomance: number = 0;
 
-  linkPaths: string[] = [
+  linkPaths: (string | null)[] = [
     '/not-paid-today',
     '/daily-payments',
     '/daily-lendings',
@@ -237,6 +239,7 @@ export class TodayComponent {
     '/request-tomorrow',
     '/add-expense',
     '/add-loss',
+    null,
   ];
   summary: string[] = [
     "N'ont pas Payé Aujourdhui",
@@ -252,6 +255,23 @@ export class TodayComponent {
     'Argent Demandé Pour Demain',
     'Depense Du Jour',
     'Perte Du Jour',
+    'Entrées / Sorties Du Mois',
+  ];
+  summarySubtitles: string[] = [
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
   ];
   valuesConvertedToDollars: string[] = [];
 
@@ -269,6 +289,7 @@ export class TodayComponent {
     '../../../assets/img/request-money.png',
     '../../../assets/img/expense.svg',
     '../../../assets/img/loss.png',
+    '../../../assets/img/reserve.svg',
   ];
 
   today = this.time.todaysDateMonthDayYear();
@@ -320,6 +341,16 @@ export class TodayComponent {
   onDetailsToggle(evt: Event) {
     this.detailOpen = (evt.target as HTMLDetailsElement).open;
   }
+
+  trackBySummaryIndex(index: number) {
+    return index;
+  }
+
+  private getCurrentMonthYear(): { month: number; year: number } {
+    const today = new Date();
+    return { month: today.getMonth() + 1, year: today.getFullYear() };
+  }
+
   initalizeInputs() {
     // ➊ clef de date déjà au bon format « MM-DD-YYYY »
     this.todayKey = this.requestDateCorrectFormat;
@@ -398,6 +429,26 @@ export class TodayComponent {
         this.requestDateCorrectFormat
       )
       .toString();
+    const currentMonthYear = this.getCurrentMonthYear();
+    const monthlyReserve = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.reserve,
+      currentMonthYear.month,
+      currentMonthYear.year
+    );
+    const monthlyInvestment = this.compute.findTotalGiventMonth(
+      this.auth.currentUser.investments,
+      currentMonthYear.month,
+      currentMonthYear.year
+    );
+    this.monthlyEntryExitAmount = (
+      Number(monthlyReserve) - Number(monthlyInvestment)
+    ).toString();
+    this.monthlyEntryExitPeriodLabel = `${
+      this.time.monthFrenchNames[currentMonthYear.month - 1]
+    } ${currentMonthYear.year}`;
+    this.summarySubtitles[
+      13
+    ] = `Reserve Du Mois - Investissement Du Mois · ${this.monthlyEntryExitPeriodLabel}`;
 
     this.dailyMoneyRequests =
       this.dailyMoneyRequests === undefined ? '0' : this.dailyMoneyRequests;
@@ -419,6 +470,7 @@ export class TodayComponent {
       `${this.requestTotalTomorrow}`, // was ''
       `${this.dailyExpense}`,
       `${this.dailyLoss}`,
+      `${this.monthlyEntryExitAmount}`,
     ];
     this.dailyPaymentDollars = this.compute
       .convertCongoleseFrancToUsDollars(this.dailyPayment)
@@ -461,6 +513,9 @@ export class TodayComponent {
       )}`, // was ``
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyExpense)}`,
       `${this.compute.convertCongoleseFrancToUsDollars(this.dailyLoss)}`,
+      `${this.compute.convertCongoleseFrancToUsDollars(
+        this.monthlyEntryExitAmount
+      )}`,
     ];
     this.recomputeMoneyInHandsTrace();
     this.updatePaymentPerformanceWeeks();
