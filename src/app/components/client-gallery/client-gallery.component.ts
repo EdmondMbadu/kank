@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import {
@@ -287,6 +287,72 @@ export class ClientGalleryComponent {
 
   closePicture(): void {
     this.selectedPicture = undefined;
+  }
+
+  get selectedPictureIndex(): number {
+    if (!this.selectedPicture) {
+      return -1;
+    }
+
+    return this.activePictures.findIndex(
+      (picture) => picture.id === this.selectedPicture?.id
+    );
+  }
+
+  get canNavigateSelectedPicture(): boolean {
+    return this.activePictures.length > 1;
+  }
+
+  get selectedPicturePositionLabel(): string {
+    const index = this.selectedPictureIndex;
+    if (index < 0) {
+      return '';
+    }
+
+    return `${index + 1} / ${this.activePictures.length}`;
+  }
+
+  showPreviousPicture(event?: Event): void {
+    event?.stopPropagation();
+    this.moveSelectedPicture(-1);
+  }
+
+  showNextPicture(event?: Event): void {
+    event?.stopPropagation();
+    this.moveSelectedPicture(1);
+  }
+
+  @HostListener('document:keydown.arrowleft', ['$event'])
+  onArrowLeft(event: KeyboardEvent): void {
+    if (!this.selectedPicture || !this.canNavigateSelectedPicture) {
+      return;
+    }
+
+    event.preventDefault();
+    this.showPreviousPicture();
+  }
+
+  @HostListener('document:keydown.arrowright', ['$event'])
+  onArrowRight(event: KeyboardEvent): void {
+    if (!this.selectedPicture || !this.canNavigateSelectedPicture) {
+      return;
+    }
+
+    event.preventDefault();
+    this.showNextPicture();
+  }
+
+  private moveSelectedPicture(direction: -1 | 1): void {
+    const pictures = this.activePictures;
+    if (!this.selectedPicture || pictures.length <= 1) {
+      return;
+    }
+
+    const currentIndex = this.selectedPictureIndex;
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex =
+      (safeIndex + direction + pictures.length) % pictures.length;
+    this.selectedPicture = pictures[nextIndex];
   }
 
   private cleanFileName(fileName: string): string {

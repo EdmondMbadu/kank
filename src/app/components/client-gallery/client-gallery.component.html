@@ -247,6 +247,18 @@
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
   (click)="closePicture()"
 >
+  <button
+    *ngIf="canNavigateSelectedPicture"
+    type="button"
+    class="absolute left-3 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 focus:outline-none focus:ring-4 focus:ring-white/30 sm:left-6 sm:h-14 sm:w-14"
+    aria-label="Photo précédente"
+    (click)="showPreviousPicture($event)"
+  >
+    <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  </button>
+
   <img
     [src]="selectedPicture.url"
     alt="Photo du client"
@@ -254,6 +266,27 @@
     decoding="async"
     (click)="$event.stopPropagation()"
   />
+
+  <button
+    *ngIf="canNavigateSelectedPicture"
+    type="button"
+    class="absolute right-3 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 focus:outline-none focus:ring-4 focus:ring-white/30 sm:right-6 sm:h-14 sm:w-14"
+    aria-label="Photo suivante"
+    (click)="showNextPicture($event)"
+  >
+    <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  </button>
+
+  <div
+    *ngIf="canNavigateSelectedPicture"
+    class="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs font-bold text-white"
+    (click)="$event.stopPropagation()"
+  >
+    {{ selectedPicturePositionLabel }}
+  </div>
+
   <button
     type="button"
     class="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-3xl font-bold text-white transition hover:bg-white/25"
