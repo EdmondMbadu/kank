@@ -1,12 +1,29 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { Management } from 'src/app/models/management';
 import { User } from 'src/app/models/user';
 import { AuthService } from 'src/app/services/auth.service';
+import { DataService } from 'src/app/services/data.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { TimeService } from 'src/app/services/time.service';
+
+type AuditPaymentPerformanceMode = 'day' | 'week' | 'month';
+type AuditPaymentPerformanceTone = 'red' | 'yellow' | 'orange' | 'green';
+
+interface AuditPaymentPerformanceRow {
+  firstName: string;
+  expectedFc: number;
+  expectedDollar: number;
+  totalFc: number;
+  totalDollar: number;
+  percent: number;
+  tone: AuditPaymentPerformanceTone;
+  statusLabel: string;
+  trackingId: string;
+}
 
 @Component({
   selector: 'app-today-central',
@@ -18,7 +35,8 @@ export class TodayCentralComponent {
     private router: Router,
     public auth: AuthService,
     private time: TimeService,
-    private compute: ComputationService
+    private compute: ComputationService,
+    private data: DataService
   ) {}
 
   allUsers: User[] = [];
@@ -31,6 +49,7 @@ export class TodayCentralComponent {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.initalizeInputs();
+      this.loadAuditPaymentPerformance();
     });
     // }
   }
@@ -125,6 +144,26 @@ export class TodayCentralComponent {
   summaryContent: string[] = [];
   copyPaymentsMessage: string | null = null;
   isCopyingPayments = false;
+  auditPaymentPerformanceMode: AuditPaymentPerformanceMode = 'day';
+  readonly auditPaymentPerformanceOptions: Array<{
+    mode: AuditPaymentPerformanceMode;
+    label: string;
+  }> = [
+    { mode: 'day', label: 'Jour' },
+    { mode: 'week', label: 'Semaine' },
+    { mode: 'month', label: 'Mois' },
+  ];
+  auditPaymentPerformanceRows: AuditPaymentPerformanceRow[] = [];
+  auditPaymentPerformanceLoading = false;
+  auditPaymentPerformanceError = '';
+  auditPaymentExpectedTotalFc = 0;
+  auditPaymentExpectedTotalDollar = 0;
+  auditPaymentReceivedTotalFc = 0;
+  auditPaymentReceivedTotalDollar = 0;
+  auditPaymentTotalPercent = 0;
+  auditPaymentTotalTone: AuditPaymentPerformanceTone = 'red';
+  auditPaymentTotalStatusLabel = 'À faire';
+  private auditClientsByUser = new Map<string, Client[]>();
 
   get isAuditTeamViewer(): boolean {
     return !this.auth.isAdmin && this.auth.isDistributor;
@@ -176,6 +215,46 @@ export class TodayCentralComponent {
     const [month, day, year] = this.tomorrow.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return dayNames[date.getDay()];
+  }
+
+  get activeAuditPaymentPerformanceLabel(): string {
+    return (
+      this.auditPaymentPerformanceOptions.find(
+        (option) => option.mode === this.auditPaymentPerformanceMode
+      )?.label || 'Jour'
+    );
+  }
+
+  get auditPaymentPeriodLabel(): string {
+    if (this.auditPaymentPerformanceMode === 'day') {
+      return this.time.convertDateToDayMonthYear(this.requestDateCorrectFormat);
+    }
+
+    if (this.auditPaymentPerformanceMode === 'week') {
+      const { start, end } = this.getWeekBounds(this.requestDateCorrectFormat);
+      return `${this.formatShortDate(start)} - ${this.formatShortDate(end)}`;
+    }
+
+    const { month, year } = this.getMonthYearFromDateKey(
+      this.requestDateCorrectFormat
+    );
+    return `${this.time.monthFrenchNames[month - 1]} ${year}`;
+  }
+
+  get auditPaymentExpectedHeaderLabel(): string {
+    return this.auditPaymentPerformanceMode === 'day'
+      ? 'Attendu jour'
+      : this.auditPaymentPerformanceMode === 'week'
+      ? 'Attendu semaine'
+      : 'Attendu mois';
+  }
+
+  get auditPaymentTotalHeaderLabel(): string {
+    return this.auditPaymentPerformanceMode === 'day'
+      ? 'Total jour'
+      : this.auditPaymentPerformanceMode === 'week'
+      ? 'Total semaine'
+      : 'Total mois';
   }
   initalizeInputs() {
     this.dailyLending = this.compute
@@ -415,7 +494,281 @@ export class TodayCentralComponent {
     );
 
     this.initalizeInputs();
+    this.computeAuditPaymentPerformanceRows();
     // Graph will be updated in initalizeInputs via updateMonthlyReserveGraph
+  }
+
+  setAuditPaymentPerformanceMode(mode: AuditPaymentPerformanceMode): void {
+    this.auditPaymentPerformanceMode = mode;
+    this.computeAuditPaymentPerformanceRows();
+  }
+
+  private async loadAuditPaymentPerformance(): Promise<void> {
+    if (!this.isAuditTeamViewer || !this.allUsers.length) return;
+
+    this.auditPaymentPerformanceLoading = true;
+    this.auditPaymentPerformanceError = '';
+
+    try {
+      const clientsByUser = await Promise.all(
+        this.allUsers.map((user) =>
+          user.uid
+            ? firstValueFrom(this.auth.getClientsOfAUser(user.uid))
+            : Promise.resolve([] as Client[])
+        )
+      );
+
+      this.auditClientsByUser.clear();
+      this.allUsers.forEach((user, index) => {
+        this.auditClientsByUser.set(user.uid || '', clientsByUser[index] || []);
+      });
+      this.computeAuditPaymentPerformanceRows();
+    } catch (error) {
+      console.error('Unable to load audit payment performance', error);
+      this.auditPaymentPerformanceRows = [];
+      this.auditPaymentPerformanceError =
+        'Impossible de charger la performance paiement.';
+      this.resetAuditPaymentTotals();
+    } finally {
+      this.auditPaymentPerformanceLoading = false;
+    }
+  }
+
+  private computeAuditPaymentPerformanceRows(): void {
+    if (!this.isAuditTeamViewer || !this.allUsers.length) return;
+
+    const rows = this.allUsers.map((user) => {
+      const clients = this.auditClientsByUser.get(user.uid || '') || [];
+      const expectedFc = this.computeAuditExpectedPaymentForUser(user, clients);
+      const totalFc = this.computeAuditReceivedPaymentForUser(user);
+      const percent = this.computeAuditProgressPercent(totalFc, expectedFc);
+      const tone = this.resolveAuditProgressTone(percent);
+
+      return {
+        firstName: user.firstName || 'Sans nom',
+        expectedFc,
+        expectedDollar: this.fcToDollar(expectedFc),
+        totalFc,
+        totalDollar: this.fcToDollar(totalFc),
+        percent,
+        tone,
+        statusLabel: this.resolveAuditProgressStatusLabel(percent),
+        trackingId: user.uid || '',
+      };
+    });
+
+    this.auditPaymentPerformanceRows = rows.sort((a, b) => b.totalFc - a.totalFc);
+    this.auditPaymentExpectedTotalFc = rows.reduce(
+      (sum, row) => sum + row.expectedFc,
+      0
+    );
+    this.auditPaymentReceivedTotalFc = rows.reduce(
+      (sum, row) => sum + row.totalFc,
+      0
+    );
+    this.auditPaymentExpectedTotalDollar = this.fcToDollar(
+      this.auditPaymentExpectedTotalFc
+    );
+    this.auditPaymentReceivedTotalDollar = this.fcToDollar(
+      this.auditPaymentReceivedTotalFc
+    );
+    this.auditPaymentTotalPercent = this.computeAuditProgressPercent(
+      this.auditPaymentReceivedTotalFc,
+      this.auditPaymentExpectedTotalFc
+    );
+    this.auditPaymentTotalTone = this.resolveAuditProgressTone(
+      this.auditPaymentTotalPercent
+    );
+    this.auditPaymentTotalStatusLabel = this.resolveAuditProgressStatusLabel(
+      this.auditPaymentTotalPercent
+    );
+  }
+
+  private resetAuditPaymentTotals(): void {
+    this.auditPaymentExpectedTotalFc = 0;
+    this.auditPaymentExpectedTotalDollar = 0;
+    this.auditPaymentReceivedTotalFc = 0;
+    this.auditPaymentReceivedTotalDollar = 0;
+    this.auditPaymentTotalPercent = 0;
+    this.auditPaymentTotalTone = 'red';
+    this.auditPaymentTotalStatusLabel = 'À faire';
+  }
+
+  private computeAuditExpectedPaymentForUser(
+    _user: User,
+    clients: Client[]
+  ): number {
+    if (this.auditPaymentPerformanceMode === 'day') {
+      return this.computeExpectedPaymentForDate(clients, this.requestDateCorrectFormat);
+    }
+
+    if (this.auditPaymentPerformanceMode === 'week') {
+      const { start, end } = this.getWeekBounds(this.requestDateCorrectFormat);
+      return this.sumExpectedPaymentBetween(clients, start, end);
+    }
+
+    const { month, year } = this.getMonthYearFromDateKey(
+      this.requestDateCorrectFormat
+    );
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    return this.sumExpectedPaymentBetween(clients, start, end);
+  }
+
+  private computeAuditReceivedPaymentForUser(user: User): number {
+    if (this.auditPaymentPerformanceMode === 'day') {
+      return this.collectUserDailyFieldValue(
+        user,
+        'dailyReimbursement',
+        this.requestDateCorrectFormat
+      );
+    }
+
+    if (this.auditPaymentPerformanceMode === 'week') {
+      const { start, end } = this.getWeekBounds(this.requestDateCorrectFormat);
+      return this.sumUserPaymentBetween(user, start, end);
+    }
+
+    const { month, year } = this.getMonthYearFromDateKey(
+      this.requestDateCorrectFormat
+    );
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    return this.sumUserPaymentBetween(user, start, end);
+  }
+
+  private sumExpectedPaymentBetween(
+    clients: Client[],
+    start: Date,
+    end: Date
+  ): number {
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      total += this.computeExpectedPaymentForDate(
+        clients,
+        this.formatDateKey(cursor)
+      );
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private computeExpectedPaymentForDate(clients: Client[], dateKey: string): number {
+    const paymentDay = this.time.getDayOfWeek(dateKey);
+    const expectedClients = this.data
+      .findClientsWithDebts(clients)
+      .filter(
+        (client) =>
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === paymentDay &&
+          this.data.didClientStartThisWeek(client)
+      );
+
+    return Number(this.compute.computeExpectedPerDate(expectedClients)) || 0;
+  }
+
+  private sumUserPaymentBetween(user: User, start: Date, end: Date): number {
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      total += this.collectUserDailyFieldValue(
+        user,
+        'dailyReimbursement',
+        this.formatDateKey(cursor)
+      );
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private computeAuditProgressPercent(total: number, expected: number): number {
+    const totalValue = Number(total) || 0;
+    const expectedValue = Number(expected) || 0;
+    if (expectedValue <= 0) return totalValue > 0 ? 100 : 0;
+    return Math.min(100, (totalValue / expectedValue) * 100);
+  }
+
+  getAuditProgressBarClass(tone: AuditPaymentPerformanceTone): string {
+    if (tone === 'green') return 'bg-emerald-500';
+    if (tone === 'orange') return 'bg-orange-500';
+    if (tone === 'yellow') return 'bg-amber-400';
+    return 'bg-red-500';
+  }
+
+  getAuditProgressTextClass(
+    tone: AuditPaymentPerformanceTone
+  ): { [key: string]: boolean } {
+    return {
+      'text-red-600 dark:text-red-300': tone === 'red',
+      'text-amber-600 dark:text-amber-300': tone === 'yellow',
+      'text-orange-600 dark:text-orange-300': tone === 'orange',
+      'text-emerald-600 dark:text-emerald-300': tone === 'green',
+    };
+  }
+
+  private resolveAuditProgressTone(
+    percent: number
+  ): AuditPaymentPerformanceTone {
+    const value = Number(percent) || 0;
+    if (value >= 100) return 'green';
+    if (value >= 80) return 'orange';
+    if (value >= 50) return 'yellow';
+    return 'red';
+  }
+
+  private resolveAuditProgressStatusLabel(percent: number): string {
+    const value = Number(percent) || 0;
+    if (value >= 100) return 'Atteint';
+    if (value >= 80) return '80%+';
+    if (value >= 50) return '50%+';
+    return 'À faire';
+  }
+
+  private getWeekBounds(dateKey: string): { start: Date; end: Date } {
+    const dateObj = this.time.toDate(dateKey);
+    const dayIndex = dateObj.getDay();
+    const daysSinceMonday = (dayIndex + 6) % 7;
+    const start = new Date(dateObj);
+    start.setDate(dateObj.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(0, 0, 0, 0);
+
+    return { start, end };
+  }
+
+  private getMonthYearFromDateKey(dateKey: string): {
+    month: number;
+    year: number;
+  } {
+    const [month, , year] = dateKey.split('-').map(Number);
+    return {
+      month: Number.isFinite(month) ? month : new Date().getMonth() + 1,
+      year: Number.isFinite(year) ? year : new Date().getFullYear(),
+    };
+  }
+
+  private formatShortDate(date: Date): string {
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  }
+
+  private formatDateKey(date: Date): string {
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+  }
+
+  private fcToDollar(amountFc: number): number {
+    return Number(
+      this.compute.convertCongoleseFrancToUsDollars(
+        (Number(amountFc) || 0).toString()
+      )
+    );
   }
   async copyPaymentRanking(): Promise<void> {
     if (this.isCopyingPayments || !this.sortedPaymentToday.length) {

@@ -208,6 +208,150 @@
   </div>
 </section>
 
+<ng-template #auditPaymentPerformanceSection>
+<section
+  *ngIf="isAuditOnlyTodayCentral"
+  class="container mx-auto px-6 pb-6"
+>
+  <div
+    class="mx-auto max-w-5xl rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/70"
+  >
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Paiement attendu
+        </p>
+        <h2 class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">
+          Performance {{ activeAuditPaymentPerformanceLabel | lowercase }}
+        </h2>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          {{ auditPaymentPeriodLabel }}
+        </p>
+      </div>
+
+      <div
+        class="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800"
+      >
+        <button
+          *ngFor="let option of auditPaymentPerformanceOptions"
+          type="button"
+          class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+          [ngClass]="
+            auditPaymentPerformanceMode === option.mode
+              ? 'bg-white text-emerald-700 shadow-sm dark:bg-slate-950 dark:text-emerald-300'
+              : 'text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white'
+          "
+          (click)="setAuditPaymentPerformanceMode(option.mode)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </div>
+
+    <div
+      *ngIf="auditPaymentPerformanceLoading"
+      class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300"
+    >
+      Chargement de la performance paiement...
+    </div>
+
+    <div
+      *ngIf="auditPaymentPerformanceError && !auditPaymentPerformanceLoading"
+      class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200"
+    >
+      {{ auditPaymentPerformanceError }}
+    </div>
+
+    <div
+      *ngIf="!auditPaymentPerformanceLoading && !auditPaymentPerformanceError"
+      class="mt-4 rounded-xl ring-1 ring-slate-200/70 dark:ring-slate-700"
+    >
+      <div class="-mx-4 overflow-x-auto overscroll-x-contain sm:mx-0">
+        <table class="min-w-[520px] w-full table-auto text-sm tabular-nums">
+          <thead
+            class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          >
+            <tr>
+              <th class="px-3 py-3 text-left">Équipe</th>
+              <th class="px-4 py-3 text-right">Avancement</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr
+              *ngFor="let row of auditPaymentPerformanceRows; let i = index"
+              class="odd:bg-white/90 even:bg-white/70 dark:odd:bg-slate-900/40 dark:even:bg-slate-900/30"
+            >
+              <th class="px-3 py-3 text-left font-semibold text-slate-900 dark:text-slate-100">
+                {{ i + 1 }}. {{ row.firstName }}
+              </th>
+              <td class="px-4 py-4 text-right">
+                <div class="ml-auto w-56 max-w-full">
+                  <div
+                    class="text-2xl font-extrabold leading-none"
+                    [ngClass]="getAuditProgressTextClass(row.tone)"
+                  >
+                    {{ row.percent | number : "1.0-0" }}%
+                  </div>
+                  <div class="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div
+                      class="h-3 rounded-full transition-all duration-300"
+                      [ngClass]="getAuditProgressBarClass(row.tone)"
+                      [style.width.%]="row.percent"
+                    ></div>
+                  </div>
+                  <div
+                    class="mt-2 text-sm font-bold"
+                    [ngClass]="getAuditProgressTextClass(row.tone)"
+                  >
+                    {{ row.statusLabel }}
+                  </div>
+                  <div class="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    {{ row.totalFc | number : "1.0-0" }} FC reçu /
+                    {{ row.expectedFc | number : "1.0-0" }} FC attendu
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="bg-slate-50 text-xs dark:bg-slate-800 dark:text-slate-100">
+            <tr>
+              <td class="px-3 py-3 font-bold">Total</td>
+              <td class="px-4 py-4 text-right">
+                <div class="ml-auto w-56 max-w-full">
+                  <div
+                    class="text-2xl font-extrabold leading-none"
+                    [ngClass]="getAuditProgressTextClass(auditPaymentTotalTone)"
+                  >
+                    {{ auditPaymentTotalPercent | number : "1.0-0" }}%
+                  </div>
+                  <div class="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div
+                      class="h-3 rounded-full transition-all duration-300"
+                      [ngClass]="getAuditProgressBarClass(auditPaymentTotalTone)"
+                      [style.width.%]="auditPaymentTotalPercent"
+                    ></div>
+                  </div>
+                  <div
+                    class="mt-2 text-sm font-bold"
+                    [ngClass]="getAuditProgressTextClass(auditPaymentTotalTone)"
+                  >
+                    {{ auditPaymentTotalStatusLabel }}
+                  </div>
+                  <div class="mt-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    {{ auditPaymentReceivedTotalFc | number : "1.0-0" }} FC reçu /
+                    {{ auditPaymentExpectedTotalFc | number : "1.0-0" }} FC attendu
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+</ng-template>
+
 <section
   class="container mx-auto px-6 pb-16"
   [ngClass]="{ 'pt-4': isAuditOnlyTodayCentral }"
@@ -1031,6 +1175,8 @@
     </ng-container>
   </div>
 </section>
+
+<ng-container *ngTemplateOutlet="auditPaymentPerformanceSection"></ng-container>
 
 <!-- Monthly Graphs Section -->
 <section *ngIf="auth.isAdmin" class="container mx-auto px-6 pb-16">
