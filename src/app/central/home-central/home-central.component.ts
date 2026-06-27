@@ -3692,6 +3692,71 @@ Merci pour ta confiance !`;
     }
     return raw;
   }
+  clientDebtCycleStartLabel(client?: Client | null): string {
+    return this.formatDebtCycleDisplayDate(client?.debtCycleStartDate);
+  }
+  clientDebtCycleEndLabel(client?: Client | null): string {
+    const computedEnd = this.computeClientDebtCycleEndDate(client);
+    if (computedEnd) return this.formatDebtCycleDateObject(computedEnd);
+    return this.formatDebtCycleDisplayDate(client?.debtCycleEndDate);
+  }
+  isClientDebtOverdue(client?: Client | null): boolean {
+    if (!client || this.clientDebtLeftAmount(client) <= 0) return false;
+    const endDate =
+      this.computeClientDebtCycleEndDate(client) ||
+      this.parseDebtCycleDate(client.debtCycleEndDate);
+    if (!endDate) return false;
+    const endOfDay = new Date(endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    return new Date() > endOfDay;
+  }
+  private computeClientDebtCycleEndDate(client?: Client | null): Date | null {
+    const start = this.parseDebtCycleDate(client?.debtCycleStartDate);
+    if (!start) return null;
+    const end = new Date(start);
+    end.setDate(
+      end.getDate() + (Number(client?.paymentPeriodRange) === 8 ? 56 : 28)
+    );
+    return end;
+  }
+  private formatDebtCycleDisplayDate(value?: string | null): string {
+    const date = this.parseDebtCycleDate(value);
+    if (!date) return this.formatDebtDate(value);
+    return this.formatDebtCycleDateObject(date);
+  }
+  private formatDebtCycleDateObject(date: Date): string {
+    const month = this.time.monthFrenchNames[date.getMonth()] ?? '';
+    return `${date.getDate()} ${month} ${date.getFullYear()}`.trim();
+  }
+  private parseDebtCycleDate(value?: string | null): Date | null {
+    const raw = (value ?? '').toString().trim();
+    if (!raw) return null;
+
+    let day: number | undefined;
+    let month: number | undefined;
+    let year: number | undefined;
+    const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+      year = Number(isoMatch[1]);
+      month = Number(isoMatch[2]);
+      day = Number(isoMatch[3]);
+    } else if (raw.includes('/')) {
+      [day, month, year] = raw.split('/').map((part) => Number(part));
+    } else {
+      [month, day, year] = raw.split('-').map((part) => Number(part));
+    }
+
+    if (
+      !Number.isFinite(day) ||
+      !Number.isFinite(month) ||
+      !Number.isFinite(year)
+    ) {
+      return null;
+    }
+
+    const date = new Date(year!, month! - 1, day);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
   fcToUsdDisplay(value: number | string | null | undefined): string {
     const num = Number(value ?? 0);
     if (!Number.isFinite(num) || num <= 0) return '0';

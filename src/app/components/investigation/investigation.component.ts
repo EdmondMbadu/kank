@@ -1688,6 +1688,12 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return num.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
   }
 
+  private clientDebtLeftAmount(client: Client): number {
+    const raw = client.debtLeft ?? client.debtInProcess ?? 0;
+    const amount = Number(String(raw).replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
   displayPhone(value?: string): string {
     const raw = (value ?? '').toString().trim();
     return raw.length ? raw : 'numero indisponible';
@@ -1847,6 +1853,71 @@ export class InvestigationComponent implements OnInit, OnDestroy {
       if (month && day && year) return `${day}/${month}/${year}`;
     }
     return raw;
+  }
+  clientDebtCycleStartLabel(client?: Client): string {
+    return this.formatDebtCycleDisplayDate(client?.debtCycleStartDate);
+  }
+  clientDebtCycleEndLabel(client?: Client): string {
+    const computedEnd = this.computeClientDebtCycleEndDate(client);
+    if (computedEnd) return this.formatDebtCycleDateObject(computedEnd);
+    return this.formatDebtCycleDisplayDate(client?.debtCycleEndDate);
+  }
+  isClientDebtOverdue(client?: Client): boolean {
+    if (!client || this.clientDebtLeftAmount(client) <= 0) return false;
+    const endDate =
+      this.computeClientDebtCycleEndDate(client) ||
+      this.parseDebtCycleDate(client.debtCycleEndDate);
+    if (!endDate) return false;
+    const endOfDay = new Date(endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    return new Date() > endOfDay;
+  }
+  private computeClientDebtCycleEndDate(client?: Client): Date | null {
+    const start = this.parseDebtCycleDate(client?.debtCycleStartDate);
+    if (!start) return null;
+    const end = new Date(start);
+    end.setDate(
+      end.getDate() + (Number(client?.paymentPeriodRange) === 8 ? 56 : 28)
+    );
+    return end;
+  }
+  private formatDebtCycleDisplayDate(value?: string): string {
+    const date = this.parseDebtCycleDate(value);
+    if (!date) return this.formatDebtDate(value);
+    return this.formatDebtCycleDateObject(date);
+  }
+  private formatDebtCycleDateObject(date: Date): string {
+    const month = this.time.monthFrenchNames[date.getMonth()] ?? '';
+    return `${date.getDate()} ${month} ${date.getFullYear()}`.trim();
+  }
+  private parseDebtCycleDate(value?: string): Date | null {
+    const raw = (value ?? '').toString().trim();
+    if (!raw) return null;
+
+    let day: number | undefined;
+    let month: number | undefined;
+    let year: number | undefined;
+    const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+      year = Number(isoMatch[1]);
+      month = Number(isoMatch[2]);
+      day = Number(isoMatch[3]);
+    } else if (raw.includes('/')) {
+      [day, month, year] = raw.split('/').map((part) => Number(part));
+    } else {
+      [month, day, year] = raw.split('-').map((part) => Number(part));
+    }
+
+    if (
+      !Number.isFinite(day) ||
+      !Number.isFinite(month) ||
+      !Number.isFinite(year)
+    ) {
+      return null;
+    }
+
+    const date = new Date(year!, month! - 1, day);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   clientInitials(client: Client): string {

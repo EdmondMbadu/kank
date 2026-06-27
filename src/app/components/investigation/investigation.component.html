@@ -2634,20 +2634,30 @@
                 {{ formatAmount(activeClient.savings) }} FC
               </p>
             </div>
-            <div class="rounded-lg border border-emerald-100 bg-white px-3 py-2">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">
-                Début dette
+            <div
+              class="rounded-lg border px-3 py-2 sm:col-span-2"
+              [ngClass]="isClientDebtOverdue(activeClient)
+                ? 'border-rose-300 bg-rose-50 shadow-sm'
+                : 'border-emerald-100 bg-white'"
+            >
+              <p
+                class="text-[11px] font-semibold uppercase tracking-wide"
+                [ngClass]="isClientDebtOverdue(activeClient) ? 'text-rose-700' : 'text-emerald-600'"
+              >
+                Cycle de Dette
               </p>
-              <p class="mt-1 text-base font-semibold text-slate-900">
-                {{ formatDebtDate(activeClient.debtCycleStartDate) }}
+              <p class="mt-1 text-xl font-extrabold text-slate-900">
+                {{ activeClient.debtCycle || "-" }}
               </p>
-            </div>
-            <div class="rounded-lg border border-amber-100 bg-white px-3 py-2">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-amber-700">
-                Date prévue fin de dette
+              <p class="mt-1 text-sm font-semibold text-slate-600">
+                {{ clientDebtCycleStartLabel(activeClient) }} &rarr;
+                {{ clientDebtCycleEndLabel(activeClient) }}
               </p>
-              <p class="mt-1 text-base font-semibold text-slate-900">
-                {{ formatDebtDate(activeClient.debtCycleEndDate) }}
+              <p
+                *ngIf="isClientDebtOverdue(activeClient)"
+                class="mt-2 inline-flex rounded-full bg-rose-600 px-3 py-1 text-xs font-bold text-white"
+              >
+                En retard — Payer immédiatement
               </p>
             </div>
             <div>
