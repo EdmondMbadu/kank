@@ -4154,6 +4154,12 @@
                 {{ formatAmount(activeClient.savings) }} FC
               </p>
             </div>
+            <div>
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Score crédit</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {{ activeClient.creditScore || "-" }}
+              </p>
+            </div>
             <div
               class="sm:col-span-2 rounded-2xl border p-4"
               [ngClass]="isClientDebtOverdue(activeClient)
