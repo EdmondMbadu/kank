@@ -2929,7 +2929,7 @@
     >
       <!-- ── PAIEMENTS EMPLOYÉ·E ───────────────────────────────────────── -->
       <div
-        class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
+        class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white lg:col-span-2"
       >
         <!-- Card header (click to toggle) -->
         <header
@@ -2960,15 +2960,19 @@
             </h2>
           </div>
           <span class="text-xs text-slate-500 dark:text-slate-400"
-            >Vue mensuelle</span
+            >Net mensuel calculé</span
           >
         </header>
 
         <!-- Collapsible body -->
         <div class="px-4 pb-4" [class.hidden]="!collapse.payroll">
+          <div class="mb-3 mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
+            Calcul admin seulement: salaire de base + ajouts - retenues du mois
+            sélectionné.
+          </div>
           <div class="w-full overflow-x-auto">
             <table
-              class="min-w-[420px] w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
+              class="min-w-[960px] w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
             >
             <thead
               class="select-none text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
@@ -2977,13 +2981,25 @@
                 <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
                 <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
                 <th scope="col" class="px-3 py-2 text-right font-medium">
-                  Salaire&nbsp;($)
+                  Base&nbsp;($)
+                </th>
+                <th scope="col" class="px-3 py-2 text-right font-medium">
+                  Ajouts&nbsp;($)
+                </th>
+                <th scope="col" class="px-3 py-2 text-right font-medium">
+                  Retenues&nbsp;($)
+                </th>
+                <th scope="col" class="px-3 py-2 text-right font-medium">
+                  Net&nbsp;($)
+                </th>
+                <th scope="col" class="px-3 py-2 text-left font-medium">
+                  Raisons
                 </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
               <tr
-                *ngFor="let em of allEmployees; let i = index"
+                *ngFor="let row of payrollRows; let i = index"
                 class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors"
               >
                 <td class="px-3 py-2">
@@ -2996,12 +3012,63 @@
                 <td
                   class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100"
                 >
-                  {{ em.firstName }} {{ em.lastName }}
+                  <div>{{ row.name || "Employé" }}</div>
+                  <div class="text-[11px] font-normal text-slate-500">
+                    {{ row.role }}
+                    <span *ngIf="row.attendanceOnly">· présence seulement</span>
+                  </div>
                 </td>
                 <td
                   class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50"
                 >
-                  {{ em.paymentAmount | number : "1.0-0" }} $
+                  {{ row.base | number : "1.0-0" }} $
+                </td>
+                <td class="px-3 py-2 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
+                  <div class="font-semibold">
+                    +{{ row.additionsTotal | number : "1.0-0" }} $
+                  </div>
+                  <div class="text-[11px] text-slate-500">
+                    <span *ngIf="row.bankFee">Virement {{ row.bankFee | number : "1.0-0" }}$</span>
+                    <span *ngIf="row.experience"> Exp. {{ row.experience | number : "1.0-0" }}$</span>
+                    <span *ngIf="row.manualAddition"> Ajout {{ row.manualAddition | number : "1.0-0" }}$</span>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-300">
+                  <div class="font-semibold">
+                    -{{ row.deductionsTotal | number : "1.0-0" }} $
+                  </div>
+                  <div class="text-[11px] text-slate-500">
+                    <span *ngIf="row.absent">Abs. {{ row.absent | number : "1.0-0" }}$</span>
+                    <span *ngIf="row.late"> Ret. {{ row.late | number : "1.0-0" }}$</span>
+                    <span *ngIf="row.objective"> Sem. {{ row.objective | number : "1.0-0" }}$</span>
+                  </div>
+                </td>
+                <td
+                  class="px-3 py-2 text-right tabular-nums text-base font-bold"
+                  [ngClass]="row.net < 0 ? 'text-red-600 dark:text-red-300' : 'text-slate-950 dark:text-white'"
+                >
+                  {{ row.net | number : "1.0-0" }} $
+                </td>
+                <td class="px-3 py-2">
+                  <div
+                    *ngIf="row.reasons.length > 0; else noPayrollReasons"
+                    class="flex flex-wrap gap-1.5"
+                  >
+                    <span
+                      *ngFor="let reason of row.reasons"
+                      class="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      {{ reason }}
+                    </span>
+                  </div>
+                  <ng-template #noPayrollReasons>
+                    <span class="text-xs text-slate-400">Aucune retenue</span>
+                  </ng-template>
+                </td>
+              </tr>
+              <tr *ngIf="payrollRows.length === 0">
+                <td colspan="7" class="px-3 py-6 text-center text-sm text-slate-400">
+                  Aucun employé à calculer pour ce mois.
                 </td>
               </tr>
             </tbody>
@@ -3011,13 +3078,23 @@
               >
                 <td class="px-3 py-2"></td>
                 <td class="px-3 py-2 text-right text-[13px] font-semibold">
-                  Salaire total
+                  Totaux
                 </td>
                 <td
                   class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums"
                 >
+                  {{ totalPayrollBase | number : "1.0-0" }} $
+                </td>
+                <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+                  +{{ totalPayrollAdditions | number : "1.0-0" }} $
+                </td>
+                <td class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums text-red-600 dark:text-red-300">
+                  -{{ totalPayrollDeductions | number : "1.0-0" }} $
+                </td>
+                <td class="px-3 py-2 text-right text-[13px] font-bold tabular-nums">
                   {{ totalSalary | number : "1.0-0" }} $
                 </td>
+                <td class="px-3 py-2 text-xs text-slate-500">Net à payer</td>
               </tr>
             </tfoot>
             </table>

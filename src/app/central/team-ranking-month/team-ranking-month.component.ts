@@ -2,7 +2,12 @@ import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 
 import { Client } from 'src/app/models/client';
-import { AttendanceAttachment, Employee, Trophy } from 'src/app/models/employee';
+import {
+  AttendanceAttachment,
+  Employee,
+  Trophy,
+  WeeklyObjectiveDeduction,
+} from 'src/app/models/employee';
 import { User } from 'src/app/models/user';
 import { IdeaSubmission } from 'src/app/models/idea';
 import { AuthService } from 'src/app/services/auth.service';
@@ -145,6 +150,27 @@ type ClientTrophyTeamStats = {
   totalClients: number;
   teamsWithStars: number;
   topTeamStars: number;
+};
+type PayrollBreakdownRow = {
+  employee: Employee;
+  name: string;
+  role: string;
+  base: number;
+  bankFee: number;
+  experience: number;
+  manualAddition: number;
+  additionsTotal: number;
+  absent: number;
+  nothing: number;
+  late: number;
+  objective: number;
+  manualWithdrawal: number;
+  deductionsTotal: number;
+  net: number;
+  reasons: string[];
+  configured: boolean;
+  attendanceOnly: boolean;
+  objectiveDeductions: WeeklyObjectiveDeduction[];
 };
 type TrophyHeatmapRect = {
   x: number;
@@ -318,6 +344,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   };
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
+  payrollRows: PayrollBreakdownRow[] = [];
   showMonthlyAmounts = false;
   showDailyAmounts = false;
   showWeeklyAmounts = false;
@@ -2049,6 +2076,336 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return usd === '' ? 0 : usd;
   }
 
+  get totalPayrollBase(): number {
+    return this.payrollRows.reduce((sum, row) => sum + row.base, 0);
+  }
+
+  get totalPayrollAdditions(): number {
+    return this.payrollRows.reduce((sum, row) => sum + row.additionsTotal, 0);
+  }
+
+  get totalPayrollDeductions(): number {
+    return this.payrollRows.reduce((sum, row) => sum + row.deductionsTotal, 0);
+  }
+
+  private recomputePayrollRowsForAdmin(): void {
+    if (!this.auth.isAdmninistrator) {
+      this.payrollRows = [];
+      this.totalSalary = '0';
+      this.total = String(Number(this.totalHouse || 0));
+      return;
+    }
+
+    this.payrollRows = this.allEmployees.map((employee) =>
+      this.buildPayrollBreakdownRow(employee)
+    );
+
+    const netSalaryTotal = this.payrollRows.reduce(
+      (sum, row) => sum + row.net,
+      0
+    );
+    this.totalSalary = netSalaryTotal.toString();
+    this.total = (netSalaryTotal + Number(this.totalHouse || 0)).toString();
+  }
+
+  private buildPayrollBreakdownRow(employee: Employee): PayrollBreakdownRow {
+    const base = this.numberFrom(employee.paymentAmount);
+    const bankFee = this.numberFrom(employee.paymentBankFee);
+    const experience = this.numberFrom(employee.paymentIncreaseYears);
+    const configured = this.employeePaymentConfiguredForSelectedMonth(employee);
+    const attendanceOnly = this.employeeUsesAttendanceOnlyPayroll(employee);
+
+    const attendanceDeductions = configured
+      ? {
+          absent: this.numberFrom(employee.paymentAbsent),
+          nothing: this.numberFrom(employee.paymentNothing),
+          late: this.numberFrom(employee.paymentLate),
+        }
+      : this.computeAttendanceDeductionsForPayroll(employee);
+
+    const manualAddition = configured
+      ? Math.max(this.numberFrom(employee.paymentManualAddition), 0)
+      : 0;
+    const manualWithdrawal = configured
+      ? Math.max(this.numberFrom(employee.paymentManualWithdrawal), 0)
+      : 0;
+    const objectiveDeductions = attendanceOnly
+      ? []
+      : configured
+      ? this.filterPayrollObjectiveDeductionsForSelectedMonth(
+          employee.paymentObjectiveWeekDeductions || []
+        )
+      : this.computePayrollWeeklyShortfallDeductions(employee);
+    const savedObjectiveTotal = this.numberFrom(
+      employee.paymentObjectiveWeekDeductionTotal
+    );
+    const objective = attendanceOnly
+      ? 0
+      : configured && savedObjectiveTotal > 0
+        ? savedObjectiveTotal
+        : objectiveDeductions.reduce(
+            (sum, item) => sum + this.numberFrom(item.amount),
+            0
+          );
+    const additionsTotal = bankFee + experience + manualAddition;
+    const deductionsTotal =
+      attendanceDeductions.absent +
+      attendanceDeductions.nothing +
+      attendanceDeductions.late +
+      objective +
+      manualWithdrawal;
+    const net = base + additionsTotal - deductionsTotal;
+
+    return {
+      employee,
+      name: `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim(),
+      role: employee.role || 'Employé',
+      base,
+      bankFee,
+      experience,
+      manualAddition,
+      additionsTotal,
+      absent: attendanceDeductions.absent,
+      nothing: attendanceDeductions.nothing,
+      late: attendanceDeductions.late,
+      objective,
+      manualWithdrawal,
+      deductionsTotal,
+      net,
+      reasons: this.buildPayrollReasonLabels({
+        employee,
+        absent: attendanceDeductions.absent,
+        nothing: attendanceDeductions.nothing,
+        late: attendanceDeductions.late,
+        objective,
+        manualWithdrawal,
+        attendanceOnly,
+      }),
+      configured,
+      attendanceOnly,
+      objectiveDeductions,
+    };
+  }
+
+  private buildPayrollReasonLabels(input: {
+    employee: Employee;
+    absent: number;
+    nothing: number;
+    late: number;
+    objective: number;
+    manualWithdrawal: number;
+    attendanceOnly: boolean;
+  }): string[] {
+    const reasons: string[] = [];
+    if (input.absent > 0) reasons.push(`Absent -${input.absent}$`);
+    if (input.nothing > 0) reasons.push(`Néant -${input.nothing}$`);
+    if (input.late > 0) reasons.push(`Retard -${input.late}$`);
+    if (input.objective > 0) reasons.push(`Semaines -${input.objective}$`);
+    if (input.manualWithdrawal > 0) {
+      const reason = (input.employee.paymentManualWithdrawalReason || '').trim();
+      reasons.push(
+        reason
+          ? `Retrait -${input.manualWithdrawal}$ (${reason})`
+          : `Retrait -${input.manualWithdrawal}$`
+      );
+    }
+    if (input.attendanceOnly && input.objective <= 0) {
+      reasons.push('Règles: présence seulement');
+    }
+    return reasons;
+  }
+
+  private computeAttendanceDeductionsForPayroll(employee: Employee): {
+    absent: number;
+    nothing: number;
+    late: number;
+  } {
+    const attendance = employee.attendance || {};
+    const byDate = new Map<string, string>();
+    Object.entries(attendance).forEach(([key, value]) => {
+      const label = this.normalizeAttendanceLabel(key);
+      if (label) byDate.set(label, String(value));
+    });
+
+    let absentCount = 0;
+    let nothingCount = 0;
+    let lateCount = 0;
+
+    for (const [label, value] of byDate.entries()) {
+      const parts = this.attendanceLabelDateParts(label);
+      if (!parts) continue;
+      if (parts.month !== Number(this.givenMonth)) continue;
+      if (parts.year !== Number(this.givenYear)) continue;
+      if (value === 'A') absentCount += 1;
+      if (value === 'N') nothingCount += 1;
+      if (value === 'L') lateCount += 1;
+    }
+
+    return {
+      absent: absentCount * 3,
+      nothing: nothingCount * 3,
+      late: lateCount,
+    };
+  }
+
+  private computePayrollWeeklyShortfallDeductions(
+    employee: Employee
+  ): WeeklyObjectiveDeduction[] {
+    const owner = employee.tempUser || this.auth.currentUser;
+    if (!owner) return [];
+
+    const month = Number(this.givenMonth);
+    const year = Number(this.givenYear);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lastDay = new Date(year, month, 0);
+    const deductions: WeeklyObjectiveDeduction[] = [];
+
+    for (let day = 1; day <= lastDay.getDate(); day += 1) {
+      const end = new Date(year, month - 1, day);
+      if (end.getDay() !== 0) continue;
+
+      const start = new Date(end);
+      start.setDate(end.getDate() - 6);
+      if (!this.payrollWeekIsReadyForDeduction(start, end, today)) continue;
+      if (this.isSundayOnlyCarryoverWeek(start, end)) continue;
+
+      const startKey = this.formatDateKey(start);
+      const weeklyTargetFc = this.resolvePayrollWeeklyTargetFc(owner, startKey);
+      const totalFc = this.computeWeeklyPaymentTotalForPayroll(owner, startKey);
+      if (totalFc >= weeklyTargetFc) continue;
+
+      const amount = this.compute.computeWeeklyObjectiveDeductionUsd(
+        totalFc,
+        weeklyTargetFc
+      );
+      if (amount <= 0) continue;
+
+      deductions.push({
+        start: this.formatIsoDate(start),
+        end: this.formatIsoDate(end),
+        amount,
+      });
+    }
+
+    return deductions;
+  }
+
+  private payrollWeekIsReadyForDeduction(
+    start: Date,
+    end: Date,
+    today: Date
+  ): boolean {
+    if (today > end) return true;
+    if (today < start) return false;
+
+    const saturday = new Date(end);
+    saturday.setDate(end.getDate() - 1);
+    saturday.setHours(0, 0, 0, 0);
+
+    return today >= saturday;
+  }
+
+  private filterPayrollObjectiveDeductionsForSelectedMonth(
+    deductions: WeeklyObjectiveDeduction[]
+  ): WeeklyObjectiveDeduction[] {
+    const month = Number(this.givenMonth);
+    const year = Number(this.givenYear);
+    return (deductions || [])
+      .map((item) => this.normalizePayrollObjectiveDeduction(item))
+      .filter((item) => {
+        const end = this.parseIsoDate(item.end);
+        return end.getMonth() + 1 === month && end.getFullYear() === year;
+      });
+  }
+
+  private normalizePayrollObjectiveDeduction(
+    deduction: WeeklyObjectiveDeduction
+  ): WeeklyObjectiveDeduction {
+    return {
+      start: deduction?.start || '',
+      end: deduction?.end || deduction?.start || '',
+      amount: this.numberFrom(deduction?.amount),
+    };
+  }
+
+  private computeWeeklyPaymentTotalForPayroll(owner: User, dateKey: string): number {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const payments = owner.dailyReimbursement || {};
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const key = this.formatDateKey(cursor);
+      const amount = Number((payments as any)[key] ?? 0);
+      if (!Number.isNaN(amount)) {
+        total += amount;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private resolvePayrollWeeklyTargetFc(owner: User, dateKey: string): number {
+    const { start } = this.getWeekBounds(dateKey);
+    return this.auth.resolveWeeklyPaymentTargetForDate(
+      this.formatDateKey(start),
+      owner
+    );
+  }
+
+  private employeePaymentConfiguredForSelectedMonth(employee: Employee): boolean {
+    return (
+      (employee.paymentConfiguredMonthKey || '') ===
+      `${this.givenYear}-${String(this.givenMonth).padStart(2, '0')}`
+    );
+  }
+
+  private employeeUsesAttendanceOnlyPayroll(employee: Employee): boolean {
+    const role = this.normalizeRole(employee.role);
+    return (
+      role.includes('auditr') ||
+      role.includes('investig') ||
+      role.includes('region')
+    );
+  }
+
+  private attendanceLabelDateParts(
+    label: string
+  ): { month: number; day: number; year: number } | null {
+    const [month, day, year] = label.split('-').map(Number);
+    if (!month || !day || !year) return null;
+    return { month, day, year };
+  }
+
+  private isSundayOnlyCarryoverWeek(start: Date, end: Date): boolean {
+    return (
+      start.getFullYear() !== end.getFullYear() ||
+      start.getMonth() !== end.getMonth()
+    )
+      ? end.getDate() === 1
+      : false;
+  }
+
+  private parseIsoDate(value: string): Date {
+    const [year, month, day] = (value || '').split('-').map(Number);
+    if (!year || !month || !day) return new Date(0);
+    return new Date(year, month - 1, day);
+  }
+
+  private formatIsoDate(date: Date): string {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  private numberFrom(value: unknown): number {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }
+
   async copyMonthlyPaymentsRanking(): Promise<void> {
     if (
       !this.auth.isAdmin ||
@@ -2452,6 +2809,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.totalSalary = '0';
     this.totalHouse = '0';
     this.totalBonus = '0';
+    this.payrollRows = [];
 
     // 1) sum loyer
     owners.forEach((user) => {
@@ -5293,14 +5651,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
     this.setGraphics();
 
-    const salarySum = this.allEmployees.reduce(
-      (sum: number, e: any) => sum + Number(e?.paymentAmount || 0),
-      0
-    );
-    this.totalSalary = salarySum.toString();
-
-    const totalHouseValue = Number(this.totalHouse || 0);
-    this.total = (salarySum + totalHouseValue).toString();
+    this.recomputePayrollRowsForAdmin();
   }
 
 }
