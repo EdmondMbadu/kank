@@ -195,6 +195,10 @@ type PayrollEditDraft = {
   paymentSignNote: string;
   objectiveDeductions: WeeklyObjectiveDeduction[];
   deductionDetails: PayrollDeductionDetail[];
+  weekObjectiveStartDate: string;
+  weekObjectiveEndDate: string;
+  weekObjectiveEndLabel: string;
+  weekObjectiveAmount: number;
   bonusAmount: number;
   bonusPercentage: number;
   bestTeamBonusAmount: number;
@@ -2218,6 +2222,38 @@ export class TeamRankingMonthComponent implements OnDestroy {
     draft.deductionDetails.splice(index, 1);
   }
 
+  onPayrollWeekObjectiveStartChange(row: PayrollBreakdownRow): void {
+    this.updatePayrollWeekObjectivePreview(row);
+  }
+
+  addPayrollDraftObjectiveDeduction(row: PayrollBreakdownRow): void {
+    const draft = this.payrollEditDraft;
+    if (!draft || row.attendanceOnly) return;
+
+    this.updatePayrollWeekObjectivePreview(row);
+    const amount = this.numberFrom(draft.weekObjectiveAmount);
+    if (!draft.weekObjectiveStartDate || !draft.weekObjectiveEndDate || amount <= 0) {
+      return;
+    }
+
+    const entry: WeeklyObjectiveDeduction = {
+      start: draft.weekObjectiveStartDate,
+      end: draft.weekObjectiveEndDate,
+      amount,
+    };
+    const existingIndex = draft.objectiveDeductions.findIndex(
+      (item) => item.start === entry.start && item.end === entry.end
+    );
+
+    if (existingIndex >= 0) {
+      draft.objectiveDeductions[existingIndex] = entry;
+    } else {
+      draft.objectiveDeductions.push(entry);
+    }
+
+    this.recomputePayrollDraftObjectiveDeductions();
+  }
+
   async savePayrollEdit(row: PayrollBreakdownRow): Promise<void> {
     const draft = this.payrollEditDraft;
     if (!this.auth.isAdmninistrator || !draft || !row?.employee?.uid) return;
@@ -2382,7 +2418,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   private buildPayrollEditDraft(row: PayrollBreakdownRow): PayrollEditDraft {
     const employee = row.employee;
-    return {
+    const draft: PayrollEditDraft = {
       base: row.base,
       experience: row.experience,
       bankFee: row.bankFee,
@@ -2401,6 +2437,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
         amount: Number(item.amount) || 0,
       })),
       deductionDetails: row.deductionDetails.map((item) => ({ ...item })),
+      weekObjectiveStartDate: this.time.getTodaysDateYearMonthDay(),
+      weekObjectiveEndDate: '',
+      weekObjectiveEndLabel: '',
+      weekObjectiveAmount: 0,
       bonusAmount: this.numberFrom(employee.bonusAmount),
       bonusPercentage: this.numberFrom(employee.bonusPercentage),
       bestTeamBonusAmount: this.numberFrom(employee.bestTeamBonusAmount),
@@ -2412,6 +2452,81 @@ export class TeamRankingMonthComponent implements OnDestroy {
       ),
       bonusSignNote: employee.bonusSignNote || '',
     };
+    this.updatePayrollWeekObjectivePreview(row, draft);
+    return draft;
+  }
+
+  private updatePayrollWeekObjectivePreview(
+    row: PayrollBreakdownRow,
+    targetDraft: PayrollEditDraft | null = this.payrollEditDraft
+  ): void {
+    const draft = targetDraft;
+    if (!draft || row.attendanceOnly || !draft.weekObjectiveStartDate) {
+      if (draft) {
+        draft.weekObjectiveEndDate = '';
+        draft.weekObjectiveEndLabel = '';
+        draft.weekObjectiveAmount = 0;
+      }
+      return;
+    }
+
+    const start = this.parseIsoDate(draft.weekObjectiveStartDate);
+    if (start.getTime() === 0) {
+      draft.weekObjectiveEndDate = '';
+      draft.weekObjectiveEndLabel = '';
+      draft.weekObjectiveAmount = 0;
+      return;
+    }
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    draft.weekObjectiveEndDate = this.formatIsoDate(end);
+    draft.weekObjectiveEndLabel = this.formatWeekDate(end);
+
+    const owner = row.employee.tempUser || this.auth.currentUser;
+    if (!owner) {
+      draft.weekObjectiveAmount = 0;
+      return;
+    }
+
+    const dateKey = this.formatDateKey(start);
+    const weeklyTotalFc = this.computeWeeklyPaymentTotalForPayroll(owner, dateKey);
+    const weeklyTargetFc = this.resolvePayrollWeeklyTargetFc(owner, dateKey);
+    draft.weekObjectiveAmount =
+      this.compute.computeWeeklyObjectiveDeductionUsd(
+        weeklyTotalFc,
+        weeklyTargetFc
+      );
+  }
+
+  private recomputePayrollDraftObjectiveDeductions(): void {
+    const draft = this.payrollEditDraft;
+    if (!draft) return;
+
+    draft.objectiveDeductions = draft.objectiveDeductions
+      .map((item) => ({
+        start: item.start,
+        end: item.end,
+        amount: Number(item.amount) || 0,
+      }))
+      .filter((item) => item.start && item.end && item.amount > 0)
+      .sort((a, b) => a.start.localeCompare(b.start));
+    draft.objective = draft.objectiveDeductions.reduce(
+      (sum, item) => sum + this.numberFrom(item.amount),
+      0
+    );
+    draft.deductionDetails = draft.deductionDetails.filter(
+      (detail) => detail.kind !== 'objective'
+    );
+    draft.objectiveDeductions.forEach((item) => {
+      draft.deductionDetails.push({
+        kind: 'objective',
+        label: this.formatPayrollObjectiveLabel(item),
+        amount: Number(item.amount) || 0,
+        start: item.start,
+        end: item.end,
+      });
+    });
   }
 
   private payrollPaymentMonthKey(): string {
