@@ -151,6 +151,13 @@ type ClientTrophyTeamStats = {
   teamsWithStars: number;
   topTeamStars: number;
 };
+type PayrollDeductionDetail = {
+  kind: 'absent' | 'nothing' | 'late' | 'objective' | 'manualWithdrawal';
+  label: string;
+  amount: number;
+  start?: string;
+  end?: string;
+};
 type PayrollBreakdownRow = {
   employee: Employee;
   name: string;
@@ -171,6 +178,7 @@ type PayrollBreakdownRow = {
   configured: boolean;
   attendanceOnly: boolean;
   objectiveDeductions: WeeklyObjectiveDeduction[];
+  deductionDetails: PayrollDeductionDetail[];
 };
 type PayrollEditDraft = {
   base: number;
@@ -185,6 +193,8 @@ type PayrollEditDraft = {
   manualWithdrawal: number;
   manualWithdrawalReason: string;
   paymentSignNote: string;
+  objectiveDeductions: WeeklyObjectiveDeduction[];
+  deductionDetails: PayrollDeductionDetail[];
   bonusAmount: number;
   bonusPercentage: number;
   bestTeamBonusAmount: number;
@@ -2181,6 +2191,33 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
   }
 
+  removePayrollDraftDeduction(index: number): void {
+    const draft = this.payrollEditDraft;
+    const detail = draft?.deductionDetails?.[index];
+    if (!draft || !detail) return;
+
+    if (detail.kind === 'absent') {
+      draft.absent = Math.max(0, this.numberFrom(draft.absent) - detail.amount);
+    } else if (detail.kind === 'nothing') {
+      draft.nothing = Math.max(0, this.numberFrom(draft.nothing) - detail.amount);
+    } else if (detail.kind === 'late') {
+      draft.late = Math.max(0, this.numberFrom(draft.late) - detail.amount);
+    } else if (detail.kind === 'objective') {
+      draft.objective = Math.max(
+        0,
+        this.numberFrom(draft.objective) - detail.amount
+      );
+      draft.objectiveDeductions = draft.objectiveDeductions.filter(
+        (item) => item.start !== detail.start || item.end !== detail.end
+      );
+    } else if (detail.kind === 'manualWithdrawal') {
+      draft.manualWithdrawal = 0;
+      draft.manualWithdrawalReason = '';
+    }
+
+    draft.deductionDetails.splice(index, 1);
+  }
+
   async savePayrollEdit(row: PayrollBreakdownRow): Promise<void> {
     const draft = this.payrollEditDraft;
     if (!this.auth.isAdmninistrator || !draft || !row?.employee?.uid) return;
@@ -2195,7 +2232,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const bonusTotal = this.payrollEditBonusPreview();
     const paymentDeductions = row.attendanceOnly
       ? []
-      : row.objectiveDeductions.map((item) => ({
+      : draft.objectiveDeductions.map((item) => ({
           start: item.start,
           end: item.end,
           amount: Number(item.amount) || 0,
@@ -2358,6 +2395,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
       manualWithdrawal: row.manualWithdrawal,
       manualWithdrawalReason: employee.paymentManualWithdrawalReason || '',
       paymentSignNote: employee.paymentSignNote || '',
+      objectiveDeductions: row.objectiveDeductions.map((item) => ({
+        start: item.start,
+        end: item.end,
+        amount: Number(item.amount) || 0,
+      })),
+      deductionDetails: row.deductionDetails.map((item) => ({ ...item })),
       bonusAmount: this.numberFrom(employee.bonusAmount),
       bonusPercentage: this.numberFrom(employee.bonusPercentage),
       bestTeamBonusAmount: this.numberFrom(employee.bestTeamBonusAmount),
@@ -2422,6 +2465,15 @@ export class TeamRankingMonthComponent implements OnDestroy {
       objective +
       manualWithdrawal;
     const net = base + additionsTotal - deductionsTotal;
+    const deductionDetails = this.buildPayrollDeductionDetails({
+      employee,
+      absent: attendanceDeductions.absent,
+      nothing: attendanceDeductions.nothing,
+      late: attendanceDeductions.late,
+      objectiveDeductions,
+      objective,
+      manualWithdrawal,
+    });
 
     return {
       employee,
@@ -2451,7 +2503,85 @@ export class TeamRankingMonthComponent implements OnDestroy {
       configured,
       attendanceOnly,
       objectiveDeductions,
+      deductionDetails,
     };
+  }
+
+  private buildPayrollDeductionDetails(input: {
+    employee: Employee;
+    absent: number;
+    nothing: number;
+    late: number;
+    objectiveDeductions: WeeklyObjectiveDeduction[];
+    objective: number;
+    manualWithdrawal: number;
+  }): PayrollDeductionDetail[] {
+    const details: PayrollDeductionDetail[] = [];
+    const attendanceDetails = this.computeAttendanceDeductionDetailsForPayroll(
+      input.employee
+    );
+    const pushWithinTotal = (
+      kind: PayrollDeductionDetail['kind'],
+      targetTotal: number
+    ) => {
+      let remaining = this.numberFrom(targetTotal);
+      for (const detail of attendanceDetails.filter((item) => item.kind === kind)) {
+        if (remaining <= 0) break;
+        const amount = Math.min(detail.amount, remaining);
+        details.push({ ...detail, amount });
+        remaining -= amount;
+      }
+      if (remaining > 0) {
+        details.push({
+          kind,
+          label:
+            kind === 'absent'
+              ? 'Absent manuel'
+              : kind === 'nothing'
+              ? 'Néant manuel'
+              : 'Retard manuel',
+          amount: remaining,
+        });
+      }
+    };
+
+    pushWithinTotal('absent', input.absent);
+    pushWithinTotal('nothing', input.nothing);
+    pushWithinTotal('late', input.late);
+
+    if (input.objective > 0) {
+      let remainingObjective = this.numberFrom(input.objective);
+      for (const item of input.objectiveDeductions) {
+        if (remainingObjective <= 0) break;
+        const amount = Math.min(this.numberFrom(item.amount), remainingObjective);
+        details.push({
+          kind: 'objective',
+          label: this.formatPayrollObjectiveLabel(item),
+          amount,
+          start: item.start,
+          end: item.end,
+        });
+        remainingObjective -= amount;
+      }
+      if (remainingObjective > 0) {
+        details.push({
+          kind: 'objective',
+          label: 'Objectif semaine manuel',
+          amount: remainingObjective,
+        });
+      }
+    }
+
+    if (input.manualWithdrawal > 0) {
+      const reason = (input.employee.paymentManualWithdrawalReason || '').trim();
+      details.push({
+        kind: 'manualWithdrawal',
+        label: reason ? `Retrait manuel: ${reason}` : 'Retrait manuel',
+        amount: input.manualWithdrawal,
+      });
+    }
+
+    return details;
   }
 
   private buildPayrollReasonLabels(input: {
@@ -2513,6 +2643,40 @@ export class TeamRankingMonthComponent implements OnDestroy {
       nothing: nothingCount * 3,
       late: lateCount,
     };
+  }
+
+  private computeAttendanceDeductionDetailsForPayroll(
+    employee: Employee
+  ): PayrollDeductionDetail[] {
+    const attendance = employee.attendance || {};
+    const byDate = new Map<string, string>();
+    Object.entries(attendance).forEach(([key, value]) => {
+      const label = this.normalizeAttendanceLabel(key);
+      if (label) byDate.set(label, String(value));
+    });
+
+    return Array.from(byDate.entries())
+      .map(([label, value]) => ({ label, value, parts: this.attendanceLabelDateParts(label) }))
+      .filter(
+        (item) =>
+          !!item.parts &&
+          item.parts.month === Number(this.givenMonth) &&
+          item.parts.year === Number(this.givenYear)
+      )
+      .sort((a, b) => (a.parts?.day || 0) - (b.parts?.day || 0))
+      .flatMap((item): PayrollDeductionDetail[] => {
+        const display = this.presenceDayDisplay(item.label);
+        if (item.value === 'A') {
+          return [{ kind: 'absent', label: `Absent - ${display}`, amount: 3 }];
+        }
+        if (item.value === 'N') {
+          return [{ kind: 'nothing', label: `Néant - ${display}`, amount: 3 }];
+        }
+        if (item.value === 'L') {
+          return [{ kind: 'late', label: `Retard - ${display}`, amount: 1 }];
+        }
+        return [];
+      });
   }
 
   private computePayrollWeeklyShortfallDeductions(
@@ -2594,6 +2758,15 @@ export class TeamRankingMonthComponent implements OnDestroy {
       end: deduction?.end || deduction?.start || '',
       amount: this.numberFrom(deduction?.amount),
     };
+  }
+
+  private formatPayrollObjectiveLabel(deduction: WeeklyObjectiveDeduction): string {
+    const start = this.parseIsoDate(deduction.start);
+    const end = this.parseIsoDate(deduction.end);
+    if (start.getTime() === 0 || end.getTime() === 0) {
+      return 'Objectif semaine';
+    }
+    return `Semaine ${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
   }
 
   private computeWeeklyPaymentTotalForPayroll(owner: User, dateKey: string): number {
