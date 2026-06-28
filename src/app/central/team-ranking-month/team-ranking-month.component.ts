@@ -345,6 +345,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
   payrollRows: PayrollBreakdownRow[] = [];
+  payrollControlRowKey = '';
+  payrollVisibilitySavingKey = '';
   showMonthlyAmounts = false;
   showDailyAmounts = false;
   showWeeklyAmounts = false;
@@ -2088,6 +2090,48 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.payrollRows.reduce((sum, row) => sum + row.deductionsTotal, 0);
   }
 
+  payrollEmployeeInitials(employee: Employee): string {
+    const first = (employee.firstName || '?').charAt(0);
+    const last = (employee.lastName || '').charAt(0);
+    return `${first}${last}`.toUpperCase();
+  }
+
+  payrollRowIsOpen(row: PayrollBreakdownRow): boolean {
+    return this.payrollControlRowKey === this.payrollRowKey(row);
+  }
+
+  togglePayrollControl(row: PayrollBreakdownRow): void {
+    const key = this.payrollRowKey(row);
+    this.payrollControlRowKey =
+      this.payrollControlRowKey === key ? '' : key;
+  }
+
+  payrollVisibilitySaving(row: PayrollBreakdownRow, field: 'payment' | 'bonus'): boolean {
+    return this.payrollVisibilitySavingKey === `${this.payrollRowKey(row)}:${field}`;
+  }
+
+  payrollPaymentVisible(employee: Employee): boolean {
+    return employee.paymentCheckVisible === 'true';
+  }
+
+  payrollBonusVisible(employee: Employee): boolean {
+    return employee.checkVisible === 'true';
+  }
+
+  async setPayrollPaymentVisible(
+    row: PayrollBreakdownRow,
+    visible: boolean
+  ): Promise<void> {
+    await this.setPayrollVisibility(row, 'paymentCheckVisible', visible);
+  }
+
+  async setPayrollBonusVisible(
+    row: PayrollBreakdownRow,
+    visible: boolean
+  ): Promise<void> {
+    await this.setPayrollVisibility(row, 'checkVisible', visible);
+  }
+
   private recomputePayrollRowsForAdmin(): void {
     if (!this.auth.isAdmninistrator) {
       this.payrollRows = [];
@@ -2106,6 +2150,44 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
     this.totalSalary = netSalaryTotal.toString();
     this.total = (netSalaryTotal + Number(this.totalHouse || 0)).toString();
+  }
+
+  private async setPayrollVisibility(
+    row: PayrollBreakdownRow,
+    field: 'paymentCheckVisible' | 'checkVisible',
+    visible: boolean
+  ): Promise<void> {
+    if (!this.auth.isAdmninistrator || !row?.employee?.uid) return;
+
+    const ownerUid = row.employee.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      alert("Impossible d'identifier la localisation de cet employé.");
+      return;
+    }
+
+    const savingType = field === 'paymentCheckVisible' ? 'payment' : 'bonus';
+    this.payrollVisibilitySavingKey = `${this.payrollRowKey(row)}:${savingType}`;
+    const previousValue = row.employee[field];
+    const nextValue = visible ? 'true' : 'false';
+    row.employee[field] = nextValue;
+
+    try {
+      await this.data.updateEmployeeFieldsForUser(ownerUid, row.employee.uid, {
+        [field]: nextValue,
+      } as Partial<Employee>);
+    } catch (error) {
+      row.employee[field] = previousValue;
+      console.error('Failed to update payroll visibility', error);
+      alert("Impossible de changer la visibilité pour cet employé.");
+    } finally {
+      this.payrollVisibilitySavingKey = '';
+    }
+  }
+
+  private payrollRowKey(row: PayrollBreakdownRow): string {
+    return `${row.employee.tempUser?.uid || this.auth.currentUser?.uid || 'local'}:${
+      row.employee.uid || row.name
+    }`;
   }
 
   private buildPayrollBreakdownRow(employee: Employee): PayrollBreakdownRow {
