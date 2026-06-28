@@ -351,6 +351,8 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   taskMonthEmployeeUid = '';
   taskMonthAutoAssigning = false;
   paymentPerformanceDate = '';
+  readonly weeklyPaymentProgressMinimumPercent = 50;
+  readonly weeklyPaymentProgressGoalPercent = 100;
   dailyPaymentPerformancePercent = 0;
   dailyPaymentPerformanceTone: WeeklyExpectedProgressTone = 'red';
   dailyPaymentPerformanceLabel = '';
@@ -1085,6 +1087,119 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.weeklyExpectedProgressTone = currentWeekProgress.tone;
     this.previousWeeklyExpectedProgressPercent = previousWeekProgress.percent;
     this.previousWeeklyExpectedProgressTone = previousWeekProgress.tone;
+  }
+
+  get paymentPerformanceCardClasses(): string {
+    const current = this.weeklyExpectedProgressPercent || 0;
+    const previous = this.previousWeeklyExpectedProgressPercent || 0;
+
+    if (current < this.weeklyPaymentProgressMinimumPercent || previous > current) {
+      return 'border-red-200 bg-gradient-to-br from-white to-red-50/80 shadow-red-100/70';
+    }
+
+    if (current < 80) {
+      return 'border-amber-200 bg-gradient-to-br from-white to-amber-50/70 shadow-amber-100/60';
+    }
+
+    return 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/70 shadow-emerald-100/60';
+  }
+
+  get paymentPerformanceStatusClasses(): string {
+    const daily = this.dailyPaymentPerformancePercent || 0;
+
+    if (daily < this.weeklyPaymentProgressMinimumPercent) {
+      return 'border-red-200 bg-red-50 text-red-800';
+    }
+
+    if (daily < 80) {
+      return 'border-amber-200 bg-amber-50 text-amber-800';
+    }
+
+    return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+  }
+
+  get paymentPerformanceStatusDotClasses(): string {
+    const daily = this.dailyPaymentPerformancePercent || 0;
+
+    if (daily < this.weeklyPaymentProgressMinimumPercent) {
+      return 'bg-red-500';
+    }
+
+    if (daily < 80) {
+      return 'bg-amber-500';
+    }
+
+    return 'bg-emerald-500';
+  }
+
+  get paymentPerformanceStatusMessage(): string {
+    const daily = Math.round(this.dailyPaymentPerformancePercent || 0);
+
+    if (daily >= 100) {
+      return `Aujourd'hui: objectif atteint.`;
+    }
+
+    if (daily < this.weeklyPaymentProgressMinimumPercent) {
+      return `Pas encore aujourd'hui, continuez.`;
+    }
+
+    return `Aujourd'hui avance bien.`;
+  }
+
+  get weeklyPaymentPerformanceStatusClasses(): string {
+    const weekly = this.weeklyExpectedProgressPercent || 0;
+    const previous = this.previousWeeklyExpectedProgressPercent || 0;
+
+    if (weekly < this.weeklyPaymentProgressMinimumPercent) {
+      return 'border-red-200 bg-red-50 text-red-800';
+    }
+
+    if (weekly < this.weeklyPaymentProgressGoalPercent || previous > weekly) {
+      return 'border-amber-200 bg-amber-50 text-amber-800';
+    }
+
+    return 'border-emerald-200 bg-emerald-50 text-emerald-800';
+  }
+
+  get weeklyPaymentPerformanceStatusDotClasses(): string {
+    const weekly = this.weeklyExpectedProgressPercent || 0;
+    const previous = this.previousWeeklyExpectedProgressPercent || 0;
+
+    if (weekly < this.weeklyPaymentProgressMinimumPercent) {
+      return 'bg-red-500';
+    }
+
+    if (weekly < this.weeklyPaymentProgressGoalPercent || previous > weekly) {
+      return 'bg-amber-500';
+    }
+
+    return 'bg-emerald-500';
+  }
+
+  get weeklyPaymentPerformanceStatusMessage(): string {
+    const weekly = Math.round(this.weeklyExpectedProgressPercent || 0);
+    const previous = Math.round(this.previousWeeklyExpectedProgressPercent || 0);
+    const isBehindPreviousWeek = previous > weekly;
+
+    if (weekly >= this.weeklyPaymentProgressGoalPercent) {
+      return 'Objectif semaine atteint.';
+    }
+
+    if (weekly < this.weeklyPaymentProgressMinimumPercent) {
+      return isBehindPreviousWeek
+        ? 'Pas encore, semaine passée meilleure.'
+        : 'Pas encore, viser 50%.';
+    }
+
+    if (isBehindPreviousWeek) {
+      return 'Minimum atteint, rattraper la semaine passée.';
+    }
+
+    if (weekly >= 80) {
+      return 'Très bon rythme, viser 100%.';
+    }
+
+    return 'Minimum atteint, viser 100%.';
   }
 
   private selectedLocationUser(): User | undefined {
