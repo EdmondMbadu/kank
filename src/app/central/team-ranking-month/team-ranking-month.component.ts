@@ -379,6 +379,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   loadingMonthly = false;
   paidEmployeesMonth: any[] = [];
   payrollRows: PayrollBreakdownRow[] = [];
+  payrollSearchTerm = '';
   payrollControlRowKey = '';
   payrollVisibilitySavingKey = '';
   payrollEditRowKey = '';
@@ -2115,16 +2116,83 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return usd === '' ? 0 : usd;
   }
 
+  get filteredPayrollRows(): PayrollBreakdownRow[] {
+    const query = this.normalizePayrollSearch(this.payrollSearchTerm);
+    if (!query) return this.payrollRows;
+
+    return this.payrollRows.filter((row) =>
+      this.payrollSearchText(row).includes(query)
+    );
+  }
+
   get totalPayrollBase(): number {
-    return this.payrollRows.reduce((sum, row) => sum + row.base, 0);
+    return this.filteredPayrollRows.reduce((sum, row) => sum + row.base, 0);
   }
 
   get totalPayrollAdditions(): number {
-    return this.payrollRows.reduce((sum, row) => sum + row.additionsTotal, 0);
+    return this.filteredPayrollRows.reduce(
+      (sum, row) => sum + row.additionsTotal,
+      0
+    );
   }
 
   get totalPayrollDeductions(): number {
-    return this.payrollRows.reduce((sum, row) => sum + row.deductionsTotal, 0);
+    return this.filteredPayrollRows.reduce(
+      (sum, row) => sum + row.deductionsTotal,
+      0
+    );
+  }
+
+  get totalFilteredPayrollNet(): number {
+    return this.filteredPayrollRows.reduce((sum, row) => sum + row.net, 0);
+  }
+
+  clearPayrollSearch(): void {
+    this.payrollSearchTerm = '';
+  }
+
+  private payrollSearchText(row: PayrollBreakdownRow): string {
+    const employee = row.employee;
+    const paymentVisible = this.payrollPaymentVisible(employee)
+      ? 'paiement visible'
+      : 'paiement masque paiement masqué';
+    const bonusVisible = this.payrollBonusVisible(employee)
+      ? 'bonus visible'
+      : 'bonus masque bonus masqué';
+    const paymentSigned = employee.signedPaymentThisMonth
+      ? 'paiement signe paiement signé'
+      : 'paiement non signe paiement non signé';
+    const bonusSigned = employee.signedBonusThisMonth
+      ? 'bonus signe bonus signé'
+      : 'bonus non signe bonus non signé';
+
+    return this.normalizePayrollSearch(
+      [
+        row.name,
+        row.role,
+        employee.firstName,
+        employee.middleName,
+        employee.lastName,
+        employee.uid,
+        employee.trackingId,
+        employee.phoneNumber,
+        paymentVisible,
+        bonusVisible,
+        paymentSigned,
+        bonusSigned,
+        ...row.reasons,
+      ]
+        .filter(Boolean)
+        .join(' ')
+    );
+  }
+
+  private normalizePayrollSearch(value: string | null | undefined): string {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   payrollEmployeeInitials(employee: Employee): string {
