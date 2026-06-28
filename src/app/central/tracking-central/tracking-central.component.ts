@@ -49,6 +49,10 @@ export class TrackingCentralComponent {
   teamWeeklyBonusThresholdInput = '';
   teamWeeklyBonusThresholdSaving = false;
   teamWeeklyBonusThresholdSaved = false;
+  profitabilityThresholdUsd = 3000;
+  profitabilityThresholdInput = '';
+  profitabilityThresholdSaving = false;
+  profitabilityThresholdSaved = false;
   projectedWeeklyPaymentTargetFc: number | null = null;
   projectedWeeklyPaymentEffectiveDate = '';
   projectedWeeklyPaymentTargetInput = '';
@@ -81,6 +85,9 @@ export class TrackingCentralComponent {
     });
     this.auth.teamWeeklyBonusConfig$.subscribe((config) => {
       this.teamWeeklyBonusThresholdFc = config.thresholdFc;
+    });
+    this.auth.profitabilityConfig$.subscribe((config) => {
+      this.profitabilityThresholdUsd = config.thresholdUsd;
     });
     this.auth.weeklyPaymentProjection$.subscribe(
       (projection: WeeklyPaymentProjection) => {
@@ -359,6 +366,32 @@ export class TrackingCentralComponent {
       })
       .finally(() => {
         this.teamWeeklyBonusThresholdSaving = false;
+      });
+  }
+
+  saveProfitabilityThresholdGlobal(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.profitabilityThresholdSaving) return;
+    const value = Number(this.profitabilityThresholdInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      alert('Entrez un seuil de rentabilité valide.');
+      return;
+    }
+
+    this.profitabilityThresholdSaving = true;
+    this.profitabilityThresholdSaved = false;
+    this.auth
+      .updateProfitabilityThresholdGlobal(value)
+      .then(() => {
+        this.profitabilityThresholdSaved = true;
+        this.profitabilityThresholdInput = '';
+      })
+      .catch((err) => {
+        console.error('Failed to update profitability threshold:', err);
+        alert("Impossible d'enregistrer le seuil de rentabilité.");
+      })
+      .finally(() => {
+        this.profitabilityThresholdSaving = false;
       });
   }
 

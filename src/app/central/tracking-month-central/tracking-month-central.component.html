@@ -1504,6 +1504,165 @@
 </div>
 
 <section class="container mx-auto px-6 pb-16">
+  <div
+    class="mb-8 rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"
+  >
+    <div
+      class="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between"
+    >
+      <div>
+        <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
+          Rentabilité
+        </p>
+        <h2
+          class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100"
+        >
+          Graphique de profit
+        </h2>
+        <p class="mt-2 max-w-2xl text-sm text-slate-500 dark:text-slate-200">
+          Le solde Entrées / Sorties est comparé au seuil de profit. Les mois
+          au-dessus du seuil montent en vert, les mois en dessous descendent en
+          rouge.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div
+          class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/70"
+        >
+          <p class="text-[11px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300">
+            Seuil
+          </p>
+          <p class="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">
+            ${{ profitabilityThresholdUsd | number : "1.0-0" }}
+          </p>
+        </div>
+
+        <div
+          class="rounded-2xl border px-4 py-3"
+          [ngClass]="
+            currentProfitabilityDeltaUsd >= 0
+              ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/30'
+              : 'border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-900/30'
+          "
+        >
+          <p
+            class="text-[11px] uppercase tracking-[0.2em]"
+            [ngClass]="
+              currentProfitabilityDeltaUsd >= 0
+                ? 'text-emerald-600 dark:text-emerald-200'
+                : 'text-rose-600 dark:text-rose-200'
+            "
+          >
+            Ce mois
+          </p>
+          <p
+            class="mt-1 text-xl font-semibold"
+            [ngClass]="
+              currentProfitabilityDeltaUsd >= 0
+                ? 'text-emerald-700 dark:text-emerald-100'
+                : 'text-rose-700 dark:text-rose-100'
+            "
+          >
+            {{ currentProfitabilityDeltaUsd >= 0 ? "+$" : "-$" }}{{
+              absNumber(currentProfitabilityDeltaUsd) | number : "1.0-0"
+            }}
+          </p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-300">
+            Entrées / Sorties: ${{ currentEntrySortieUsd | number : "1.0-0" }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+        [disabled]="profitabilityMaxRange === 0"
+        [ngClass]="
+          profitabilityActiveRange === '3M'
+            ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+            : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+        "
+        (click)="setProfitabilityRange('3M')"
+      >
+        3M
+      </button>
+      <button
+        type="button"
+        class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+        [disabled]="profitabilityMaxRange === 0"
+        [ngClass]="
+          profitabilityActiveRange === '6M'
+            ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+            : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+        "
+        (click)="setProfitabilityRange('6M')"
+      >
+        6M
+      </button>
+      <button
+        type="button"
+        class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+        [disabled]="profitabilityMaxRange === 0"
+        [ngClass]="
+          profitabilityActiveRange === '9M'
+            ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+            : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+        "
+        (click)="setProfitabilityRange('9M')"
+      >
+        9M
+      </button>
+      <button
+        type="button"
+        class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+        [disabled]="profitabilityMaxRange === 0"
+        [ngClass]="
+          profitabilityActiveRange === '1A'
+            ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+            : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+        "
+        (click)="setProfitabilityRange('1A')"
+      >
+        1A
+      </button>
+      <button
+        type="button"
+        class="rounded-full border px-4 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-400 dark:focus:ring-emerald-500"
+        [disabled]="profitabilityMaxRange === 0"
+        [ngClass]="
+          profitabilityActiveRange === 'MAX'
+            ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-200'
+            : 'border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 dark:border-slate-700 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-300'
+        "
+        (click)="setProfitabilityRange('MAX')"
+      >
+        Max
+      </button>
+    </div>
+
+    <div
+      class="mt-6 overflow-hidden rounded-2xl bg-white p-4 shadow-inner"
+      *ngIf="profitabilityMaxRange > 0; else noProfitabilityData"
+    >
+      <plotly-plot
+        [data]="profitabilityGraph.data"
+        [layout]="profitabilityGraph.layout"
+        [config]="profitabilityGraph.config"
+      ></plotly-plot>
+    </div>
+
+    <ng-template #noProfitabilityData>
+      <div
+        class="mt-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-300"
+      >
+        Aucune donnée de rentabilité disponible pour le moment.
+      </div>
+    </ng-template>
+  </div>
+
   <div class="grid grid-cols-1 gap-8 xl:grid-cols-2">
     <div
       class="order-1 rounded-3xl border border-slate-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/60"

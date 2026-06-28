@@ -48,6 +48,10 @@ export type WeeklyPaymentProjection = {
 export type TeamWeeklyBonusConfig = {
   thresholdFc: number;
 };
+
+export type ProfitabilityConfig = {
+  thresholdUsd: number;
+};
 @Injectable({
   providedIn: 'root',
 })
@@ -88,6 +92,9 @@ export class AuthService {
   private readonly defaultTeamWeeklyBonusConfig: TeamWeeklyBonusConfig = {
     thresholdFc: 1500000,
   };
+  private readonly defaultProfitabilityConfig: ProfitabilityConfig = {
+    thresholdUsd: 3000,
+  };
   private weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
   private weeklyPaymentTargetSubject = new BehaviorSubject<number>(
     this.weeklyPaymentTargetState
@@ -116,6 +123,12 @@ export class AuthService {
       this.teamWeeklyBonusConfigState
     );
   teamWeeklyBonusConfig$ = this.teamWeeklyBonusConfigSubject.asObservable();
+  private profitabilityConfigState: ProfitabilityConfig = {
+    ...this.defaultProfitabilityConfig,
+  };
+  private profitabilityConfigSubject =
+    new BehaviorSubject<ProfitabilityConfig>(this.profitabilityConfigState);
+  profitabilityConfig$ = this.profitabilityConfigSubject.asObservable();
   private managementDocId: string = '';
   private lastRoleWord = '';
 
@@ -1552,6 +1565,10 @@ export class AuthService {
     return this.teamWeeklyBonusConfigState.thresholdFc;
   }
 
+  public get profitabilityThresholdUsd(): number {
+    return this.profitabilityConfigState.thresholdUsd;
+  }
+
   private normalizeWeeklyPaymentTarget(value: any): number {
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed > 0
@@ -1572,6 +1589,13 @@ export class AuthService {
       parsed % 100000 === 0
       ? parsed
       : this.defaultTeamWeeklyBonusConfig.thresholdFc;
+  }
+
+  private normalizeProfitabilityThresholdUsd(value: any): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0
+      ? parsed
+      : this.defaultProfitabilityConfig.thresholdUsd;
   }
 
   private normalizeWeeklyPaymentProjection(
@@ -1727,6 +1751,10 @@ export class AuthService {
           this.teamWeeklyBonusConfigSubject.next(
             this.teamWeeklyBonusConfigState
           );
+          this.profitabilityConfigState = {
+            ...this.defaultProfitabilityConfig,
+          };
+          this.profitabilityConfigSubject.next(this.profitabilityConfigState);
           this.weeklyPaymentProjectionState = {
             ...this.defaultWeeklyPaymentProjection,
           };
@@ -1761,6 +1789,12 @@ export class AuthService {
           ),
         };
         this.teamWeeklyBonusConfigSubject.next(this.teamWeeklyBonusConfigState);
+        this.profitabilityConfigState = {
+          thresholdUsd: this.normalizeProfitabilityThresholdUsd(
+            data.profitabilityThresholdUsd
+          ),
+        };
+        this.profitabilityConfigSubject.next(this.profitabilityConfigState);
         this.weeklyPaymentProjectionState =
           this.normalizeWeeklyPaymentProjection(
             data.projectedWeeklyPaymentTargetFc,
@@ -1864,6 +1898,23 @@ export class AuthService {
           thresholdFc: normalizedThreshold,
         };
         this.teamWeeklyBonusConfigSubject.next(this.teamWeeklyBonusConfigState);
+      });
+  }
+
+  updateProfitabilityThresholdGlobal(thresholdUsd: number): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const normalizedThreshold =
+      this.normalizeProfitabilityThresholdUsd(thresholdUsd);
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set({ profitabilityThresholdUsd: normalizedThreshold }, { merge: true })
+      .then(() => {
+        this.profitabilityConfigState = {
+          thresholdUsd: normalizedThreshold,
+        };
+        this.profitabilityConfigSubject.next(this.profitabilityConfigState);
       });
   }
 

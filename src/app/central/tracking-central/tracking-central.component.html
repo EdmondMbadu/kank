@@ -354,11 +354,62 @@
         </label>
       </div>
 
+    <p
+      *ngIf="teamWeeklyBonusThresholdSaved"
+      class="mt-4 text-sm text-emerald-600"
+    >
+      Seuil du bonus d’équipe mis à jour.
+    </p>
+  </div>
+
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
+            Rentabilité
+          </p>
+          <h3 class="mt-2 text-xl font-semibold text-slate-900">
+            Seuil mensuel de profit
+          </h3>
+          <p class="mt-2 text-sm text-slate-600">
+            Valeur actuelle :
+            <strong>${{ profitabilityThresholdUsd | number : "1.0-0" }}</strong>
+          </p>
+          <p class="mt-1 text-xs text-slate-500">
+            Le graphique mensuel considère ce montant comme le point zéro.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="saveProfitabilityThresholdGlobal()"
+          [disabled]="profitabilityThresholdSaving"
+          class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {{
+            profitabilityThresholdSaving ? 'Sauvegarde...' : 'Enregistrer'
+          }}
+        </button>
+      </div>
+
+      <div class="mt-6">
+        <label class="text-sm font-semibold text-slate-700">
+          Seuil mensuel ($)
+          <input
+            [(ngModel)]="profitabilityThresholdInput"
+            type="number"
+            min="1"
+            step="100"
+            class="mt-2 w-full max-w-xs rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            placeholder="3000"
+          />
+        </label>
+      </div>
+
       <p
-        *ngIf="teamWeeklyBonusThresholdSaved"
+        *ngIf="profitabilityThresholdSaved"
         class="mt-4 text-sm text-emerald-600"
       >
-        Seuil du bonus d’équipe mis à jour.
+        Seuil de rentabilité mis à jour.
       </p>
     </div>
 

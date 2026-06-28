@@ -23,6 +23,7 @@ export class Management {
   weeklyPaymentTargetFc?: number;
   weeklyPaymentTargetPeriods?: WeeklyPaymentTargetPeriod[];
   teamWeeklyBonusThresholdFc?: number;
+  profitabilityThresholdUsd?: number;
   projectedWeeklyPaymentTargetFc?: number;
   projectedWeeklyPaymentEffectiveDate?: string;
   monthlyPaymentSnapshots?: { [monthYear: string]: MonthlyPaymentSnapshot };

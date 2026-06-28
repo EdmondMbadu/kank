@@ -34,6 +34,12 @@ export class TrackingMonthCentralComponent {
         this.allUsers = data;
         this.initalizeInputs();
       });
+      this.auth.profitabilityConfig$.subscribe((config) => {
+        this.profitabilityThresholdUsd = config.thresholdUsd;
+        this.updateProfitabilityGraphics(
+          this.rangeValueFromKey(this.profitabilityActiveRange)
+        );
+      });
     }
   }
 
@@ -66,16 +72,19 @@ export class TrackingMonthCentralComponent {
   paymentActiveRange: RangeKey = '3M';
   entrySortieActiveRange: RangeKey = '3M';
   lendingActiveRange: RangeKey = '3M';
+  profitabilityActiveRange: RangeKey = '1A';
 
   reserveGraph = this.createEmptyGraph('Réserve en $');
   paymentGraph = this.createEmptyGraph('Paiement en $');
   entrySortieGraph: any = this.createEmptyGraph('Entrées / Sorties en $');
   lendingGraph = this.createEmptyGraph('Emprunts en $');
+  profitabilityGraph: any = this.createEmptyGraph('Rentabilité en $');
 
   reserveMaxRange = 0;
   paymentMaxRange = 0;
   entrySortieMaxRange = 0;
   lendingMaxRange = 0;
+  profitabilityMaxRange = 0;
 
   private reserveGraphLabels: string[] = [];
   private reserveGraphSeriesUsd: number[] = [];
@@ -85,6 +94,9 @@ export class TrackingMonthCentralComponent {
   private entrySortieGraphSeriesUsd: number[] = [];
   private lendingGraphLabels: string[] = [];
   private lendingGraphSeriesUsd: number[] = [];
+  private profitabilityGraphLabels: string[] = [];
+  private profitabilityEntrySortieSeriesUsd: number[] = [];
+  private profitabilityDeltaSeriesUsd: number[] = [];
 
   givenMonthTotalPaymentAmount: string = '';
   givenMonthTotalMobileMoneyAmount: string = '';
@@ -99,6 +111,7 @@ export class TrackingMonthCentralComponent {
   givenMonthTotalFeesAmount: string = '';
   givenMonthTotalInvestmentAmount: string = '';
   givenMonthBudget: string = '';
+  profitabilityThresholdUsd = 3000;
   
   // Average Reserve and Payment properties
   averageDailyReserve: number = 0;
@@ -443,6 +456,9 @@ export class TrackingMonthCentralComponent {
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));
     this.updateEntrySortieGraphics(this.rangeValueFromKey(this.entrySortieActiveRange));
     this.updateLendingGraphics(this.rangeValueFromKey(this.lendingActiveRange));
+    this.updateProfitabilityGraphics(
+      this.rangeValueFromKey(this.profitabilityActiveRange)
+    );
     
     // Calculate average daily Reserve and Payment
     this.calculateAverageReserveAndPayment();
@@ -1078,6 +1094,11 @@ export class TrackingMonthCentralComponent {
     this.updateLendingGraphics(this.rangeValueFromKey(key));
   }
 
+  setProfitabilityRange(key: RangeKey): void {
+    this.profitabilityActiveRange = key;
+    this.updateProfitabilityGraphics(this.rangeValueFromKey(key));
+  }
+
   onReserveLocationClick(locationName: string): void {
     // If empty string, reset to all locations
     if (locationName === '') {
@@ -1450,6 +1471,51 @@ export class TrackingMonthCentralComponent {
     };
   }
 
+  updateProfitabilityGraphics(range: number): void {
+    const [labels, values] = this.aggregateMonthlyEntrySortieUsd();
+    this.profitabilityMaxRange = labels.length;
+
+    const [selectedLabels, selectedValues] = this.sliceForRange(
+      labels,
+      values,
+      range
+    );
+
+    this.profitabilityGraphLabels = selectedLabels.map((label) =>
+      this.formatMonthYearLabel(label)
+    );
+    this.profitabilityEntrySortieSeriesUsd = selectedValues.map((value) =>
+      this.toNum(value)
+    );
+    this.profitabilityDeltaSeriesUsd =
+      this.profitabilityEntrySortieSeriesUsd.map(
+        (value) => value - this.profitabilityThresholdUsd
+      );
+
+    this.profitabilityGraph = {
+      data: [
+        {
+          x: this.profitabilityGraphLabels,
+          y: this.profitabilityDeltaSeriesUsd,
+          type: 'bar',
+          marker: {
+            color: this.profitabilityDeltaSeriesUsd.map((value) =>
+              value < 0 ? '#ef4444' : '#10b981'
+            ),
+          },
+          customdata: this.profitabilityEntrySortieSeriesUsd,
+          hovertemplate:
+            '<b>%{x}</b><br>Entrées / Sorties: %{customdata:$,.0f}<br>Écart: %{y:$,.0f}<extra></extra>',
+        },
+      ],
+      layout: this.createProfitabilityGraphLayout('Rentabilité vs seuil'),
+      config: {
+        responsive: true,
+        displayModeBar: false,
+      },
+    };
+  }
+
   private aggregateMonthlyField(field: UserDailyField, selectedLocation: string | null = null): [string[], string[]] {
     if (!this.allUsers || this.allUsers.length === 0) {
       return [[], []];
@@ -1501,6 +1567,19 @@ export class TrackingMonthCentralComponent {
     const values = sortedEntries.map(([, value]) => value.toString());
 
     return [labels, values];
+  }
+
+  private aggregateMonthlyEntrySortieUsd(): [string[], string[]] {
+    const [labels, entrySortieValues] = this.aggregateMonthlyEntrySortie();
+
+    const entrySortieValuesUsd = entrySortieValues.map((entrySortieValue) => {
+      const entrySortieFc = this.toNum(entrySortieValue);
+      return `${this.toNum(
+        this.compute.convertCongoleseFrancToUsDollars(entrySortieFc.toString())
+      )}`;
+    });
+
+    return [labels, entrySortieValuesUsd];
   }
 
   private aggregateMonthlyEntrySortie(
@@ -1639,6 +1718,59 @@ export class TrackingMonthCentralComponent {
     };
   }
 
+  private createProfitabilityGraphLayout(title: string) {
+    const values = this.profitabilityDeltaSeriesUsd;
+    const minValue = Math.min(0, ...values);
+    const maxValue = Math.max(0, ...values);
+    const padding = Math.max(250, (maxValue - minValue) * 0.18);
+
+    return {
+      ...this.createGraphLayout(title),
+      height: 420,
+      margin: { t: 56, r: 24, l: 64, b: 72 },
+      yaxis: {
+        title: 'Écart au seuil ($)',
+        zeroline: true,
+        zerolinecolor: '#0f172a',
+        zerolinewidth: 3,
+        gridcolor: '#e2e8f0',
+        range: [minValue - padding, maxValue + padding],
+      },
+      shapes: [
+        {
+          type: 'line',
+          xref: 'paper',
+          x0: 0,
+          x1: 1,
+          y0: 0,
+          y1: 0,
+          line: {
+            color: '#0f172a',
+            width: 2,
+          },
+        },
+      ],
+      annotations: [
+        {
+          xref: 'paper',
+          x: 1,
+          y: 0,
+          xanchor: 'right',
+          yanchor: 'bottom',
+          text: `Seuil: $${this.profitabilityThresholdUsd.toLocaleString(
+            'en-US',
+            { maximumFractionDigits: 0 }
+          )}`,
+          showarrow: false,
+          bgcolor: '#f8fafc',
+          bordercolor: '#cbd5e1',
+          borderpad: 4,
+          font: { color: '#0f172a', size: 12 },
+        },
+      ],
+    };
+  }
+
   private createEmptyGraph(title: string) {
     return {
       data: [
@@ -1678,6 +1810,18 @@ export class TrackingMonthCentralComponent {
 
   isNegativeValue(value: any): boolean {
     return this.toNum(value) < 0;
+  }
+
+  absNumber(value: any): number {
+    return Math.abs(this.toNum(value));
+  }
+
+  get currentEntrySortieUsd(): number {
+    return this.toNum(this.entrySortieCurrentTotalAmountDollars);
+  }
+
+  get currentProfitabilityDeltaUsd(): number {
+    return this.currentEntrySortieUsd - this.profitabilityThresholdUsd;
   }
 
   nonNegColor(rate: any): string {
