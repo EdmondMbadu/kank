@@ -162,6 +162,9 @@ type PayrollBreakdownRow = {
   employee: Employee;
   name: string;
   role: string;
+  tenureLabel: string;
+  locationLabel: string;
+  managerLabel: string;
   base: number;
   bankFee: number;
   experience: number;
@@ -2176,6 +2179,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
         employee.uid,
         employee.trackingId,
         employee.phoneNumber,
+        row.tenureLabel,
+        row.locationLabel,
+        row.managerLabel,
         paymentVisible,
         bonusVisible,
         paymentSigned,
@@ -2662,6 +2668,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
       employee,
       name: `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim(),
       role: employee.role || 'Employé',
+      tenureLabel: this.formatPayrollTenure(employee.dateJoined),
+      locationLabel: this.getPayrollLocationLabel(employee),
+      managerLabel: this.getPayrollManagerLabel(employee),
       base,
       bankFee,
       experience,
@@ -2688,6 +2697,68 @@ export class TeamRankingMonthComponent implements OnDestroy {
       objectiveDeductions,
       deductionDetails,
     };
+  }
+
+  private formatPayrollTenure(rawDate?: string | null): string {
+    const parsed = this.parsePayrollDate(rawDate);
+    if (!parsed) return '';
+
+    const today = new Date();
+    let totalMonths =
+      (today.getFullYear() - parsed.getFullYear()) * 12 +
+      (today.getMonth() - parsed.getMonth());
+
+    if (today.getDate() < parsed.getDate()) {
+      totalMonths -= 1;
+    }
+
+    const safeTotalMonths = Math.max(0, totalMonths);
+    const years = Math.floor(safeTotalMonths / 12);
+    const months = safeTotalMonths % 12;
+    const parts: string[] = [];
+
+    if (years > 0) {
+      parts.push(`${years} ${years > 1 ? 'ans' : 'an'}`);
+    }
+    if (months > 0 || parts.length === 0) {
+      parts.push(`${months} mois`);
+    }
+
+    return parts.join(' ');
+  }
+
+  private parsePayrollDate(rawDate?: string | null): Date | null {
+    if (!rawDate) return null;
+
+    const dateParts = rawDate.split(/[-/]/);
+    let normalized = rawDate.trim();
+
+    if (dateParts.length === 3 && dateParts[0].length !== 4) {
+      const [month, day, year] = dateParts;
+      normalized = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private getPayrollLocationLabel(employee: Employee): string {
+    const owner = employee.tempUser;
+    const label =
+      employee.tempLocationHolder ||
+      [owner?.firstName, owner?.lastName].filter(Boolean).join(' ').trim();
+
+    return label || 'Site non défini';
+  }
+
+  private getPayrollManagerLabel(employee: Employee): string {
+    const manager = this.getTeamManager(employee.tempUser || this.auth.currentUser);
+    const name = [manager?.firstName, manager?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return name || 'Manager non trouvé';
   }
 
   private buildPayrollDeductionDetails(input: {
