@@ -3065,6 +3065,42 @@
                         >
                           Bonus {{ payrollBonusVisible(row.employee) ? "visible" : "masqué" }}
                         </span>
+                        <span
+                          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                          [ngClass]="
+                            row.employee.signedPaymentThisMonth
+                              ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100'
+                              : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100'
+                          "
+                          [title]="
+                            row.employee.signedPaymentThisMonth
+                              ? 'Paiement signé' +
+                                (row.employee.lastPaymentSignatureLabelThisMonth
+                                  ? ' · ' + row.employee.lastPaymentSignatureLabelThisMonth
+                                  : '')
+                              : 'Paiement non signé'
+                          "
+                        >
+                          Paiement {{ row.employee.signedPaymentThisMonth ? "signé" : "non signé" }}
+                        </span>
+                        <span
+                          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                          [ngClass]="
+                            row.employee.signedBonusThisMonth
+                              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100'
+                              : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100'
+                          "
+                          [title]="
+                            row.employee.signedBonusThisMonth
+                              ? 'Bonus signé' +
+                                (row.employee.lastBonusSignatureLabelThisMonth
+                                  ? ' · ' + row.employee.lastBonusSignatureLabelThisMonth
+                                  : '')
+                              : 'Bonus non signé'
+                          "
+                        >
+                          Bonus {{ row.employee.signedBonusThisMonth ? "signé" : "non signé" }}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -3178,6 +3214,39 @@
                             {{ payrollVisibilitySaving(row, 'bonus') ? "..." : payrollBonusVisible(row.employee) ? "Visible" : "Masqué" }}
                           </span>
                         </button>
+                      </div>
+
+                      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                        <div
+                          class="rounded-xl border px-3 py-2 text-xs"
+                          [ngClass]="
+                            row.employee.signedPaymentThisMonth
+                              ? 'border-indigo-200 bg-indigo-50 text-indigo-800'
+                              : 'border-amber-200 bg-amber-50 text-amber-800'
+                          "
+                        >
+                          <div class="font-bold">
+                            Paiement {{ row.employee.signedPaymentThisMonth ? "signé" : "non signé" }}
+                          </div>
+                          <div class="mt-0.5 text-[11px] opacity-80">
+                            {{ row.employee.lastPaymentSignatureLabelThisMonth || "Aucune signature ce mois" }}
+                          </div>
+                        </div>
+                        <div
+                          class="rounded-xl border px-3 py-2 text-xs"
+                          [ngClass]="
+                            row.employee.signedBonusThisMonth
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                              : 'border-amber-200 bg-amber-50 text-amber-800'
+                          "
+                        >
+                          <div class="font-bold">
+                            Bonus {{ row.employee.signedBonusThisMonth ? "signé" : "non signé" }}
+                          </div>
+                          <div class="mt-0.5 text-[11px] opacity-80">
+                            {{ row.employee.lastBonusSignatureLabelThisMonth || "Aucune signature ce mois" }}
+                          </div>
+                        </div>
                       </div>
 
                       <div class="mt-3 flex flex-wrap items-center gap-2">
