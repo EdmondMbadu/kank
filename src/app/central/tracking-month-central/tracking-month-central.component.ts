@@ -112,6 +112,9 @@ export class TrackingMonthCentralComponent {
   givenMonthTotalInvestmentAmount: string = '';
   givenMonthBudget: string = '';
   profitabilityThresholdUsd = 3000;
+  profitabilityThresholdInput = '';
+  profitabilityThresholdSaving = false;
+  profitabilityThresholdSaved = false;
   
   // Average Reserve and Payment properties
   averageDailyReserve: number = 0;
@@ -1814,6 +1817,35 @@ export class TrackingMonthCentralComponent {
 
   absNumber(value: any): number {
     return Math.abs(this.toNum(value));
+  }
+
+  saveProfitabilityThreshold(): void {
+    if (!this.auth.isAdmin || this.profitabilityThresholdSaving) {
+      return;
+    }
+
+    const value = Number(this.profitabilityThresholdInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      alert('Entrez un seuil de profit valide.');
+      return;
+    }
+
+    this.profitabilityThresholdSaving = true;
+    this.profitabilityThresholdSaved = false;
+
+    this.auth
+      .updateProfitabilityThresholdGlobal(value)
+      .then(() => {
+        this.profitabilityThresholdSaved = true;
+        this.profitabilityThresholdInput = '';
+      })
+      .catch((err) => {
+        console.error('Failed to update profitability threshold:', err);
+        alert("Impossible d'enregistrer le seuil de profit.");
+      })
+      .finally(() => {
+        this.profitabilityThresholdSaving = false;
+      });
   }
 
   get currentEntrySortieUsd(): number {
