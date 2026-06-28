@@ -172,6 +172,26 @@ type PayrollBreakdownRow = {
   attendanceOnly: boolean;
   objectiveDeductions: WeeklyObjectiveDeduction[];
 };
+type PayrollEditDraft = {
+  base: number;
+  experience: number;
+  bankFee: number;
+  manualAddition: number;
+  manualAdditionReason: string;
+  absent: number;
+  nothing: number;
+  late: number;
+  objective: number;
+  manualWithdrawal: number;
+  manualWithdrawalReason: string;
+  paymentSignNote: string;
+  bonusAmount: number;
+  bonusPercentage: number;
+  bestTeamBonusAmount: number;
+  bestEmployeeBonusAmount: number;
+  bestManagerBonusAmount: number;
+  bonusSignNote: string;
+};
 type TrophyHeatmapRect = {
   x: number;
   y: number;
@@ -347,6 +367,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
   payrollRows: PayrollBreakdownRow[] = [];
   payrollControlRowKey = '';
   payrollVisibilitySavingKey = '';
+  payrollEditRowKey = '';
+  payrollEditDraft: PayrollEditDraft | null = null;
+  payrollEditSaving = false;
   showMonthlyAmounts = false;
   showDailyAmounts = false;
   showWeeklyAmounts = false;
@@ -2110,6 +2133,136 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.payrollVisibilitySavingKey === `${this.payrollRowKey(row)}:${field}`;
   }
 
+  payrollRowIsEditing(row: PayrollBreakdownRow): boolean {
+    return this.payrollEditRowKey === this.payrollRowKey(row);
+  }
+
+  openPayrollEdit(row: PayrollBreakdownRow): void {
+    const key = this.payrollRowKey(row);
+    if (this.payrollEditRowKey === key) {
+      this.closePayrollEdit();
+      return;
+    }
+
+    this.payrollEditRowKey = key;
+    this.payrollEditDraft = this.buildPayrollEditDraft(row);
+  }
+
+  closePayrollEdit(): void {
+    if (this.payrollEditSaving) return;
+    this.payrollEditRowKey = '';
+    this.payrollEditDraft = null;
+  }
+
+  payrollEditNetPreview(): number {
+    const draft = this.payrollEditDraft;
+    if (!draft) return 0;
+    return (
+      this.numberFrom(draft.base) +
+      this.numberFrom(draft.experience) +
+      this.numberFrom(draft.bankFee) +
+      Math.max(this.numberFrom(draft.manualAddition), 0) -
+      this.numberFrom(draft.absent) -
+      this.numberFrom(draft.nothing) -
+      this.numberFrom(draft.late) -
+      this.numberFrom(draft.objective) -
+      Math.max(this.numberFrom(draft.manualWithdrawal), 0)
+    );
+  }
+
+  payrollEditBonusPreview(): number {
+    const draft = this.payrollEditDraft;
+    if (!draft) return 0;
+    return (
+      this.numberFrom(draft.bonusAmount) +
+      this.numberFrom(draft.bestTeamBonusAmount) +
+      this.numberFrom(draft.bestEmployeeBonusAmount) +
+      this.numberFrom(draft.bestManagerBonusAmount)
+    );
+  }
+
+  async savePayrollEdit(row: PayrollBreakdownRow): Promise<void> {
+    const draft = this.payrollEditDraft;
+    if (!this.auth.isAdmninistrator || !draft || !row?.employee?.uid) return;
+
+    const ownerUid = row.employee.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      alert("Impossible d'identifier la localisation de cet employé.");
+      return;
+    }
+
+    const net = this.payrollEditNetPreview();
+    const bonusTotal = this.payrollEditBonusPreview();
+    const paymentDeductions = row.attendanceOnly
+      ? []
+      : row.objectiveDeductions.map((item) => ({
+          start: item.start,
+          end: item.end,
+          amount: Number(item.amount) || 0,
+        }));
+    const fields: Partial<Employee> = {
+      paymentAmount: this.numberFrom(draft.base).toString(),
+      paymentIncreaseYears: this.numberFrom(draft.experience).toString(),
+      paymentBankFee: this.numberFrom(draft.bankFee).toString(),
+      paymentManualAddition: Math.max(
+        this.numberFrom(draft.manualAddition),
+        0
+      ).toString(),
+      paymentManualAdditionReason: (draft.manualAdditionReason || '').trim(),
+      paymentAbsent: this.numberFrom(draft.absent).toString(),
+      paymentNothing: this.numberFrom(draft.nothing).toString(),
+      paymentLate: this.numberFrom(draft.late).toString(),
+      paymentObjectiveWeekDeductionTotal: row.attendanceOnly
+        ? '0'
+        : this.numberFrom(draft.objective).toString(),
+      paymentObjectiveWeekDeductions: paymentDeductions,
+      paymentManualWithdrawal: Math.max(
+        this.numberFrom(draft.manualWithdrawal),
+        0
+      ).toString(),
+      paymentManualWithdrawalReason: (
+        draft.manualWithdrawalReason || ''
+      ).trim(),
+      paymentSignNote: (draft.paymentSignNote || '').trim(),
+      paymentConfiguredMonthKey: this.payrollPaymentMonthKey(),
+      totalPayments: net.toString(),
+      bonusAmount: this.numberFrom(draft.bonusAmount).toString(),
+      bonusPercentage: this.numberFrom(draft.bonusPercentage).toString(),
+      bestTeamBonusAmount: this.numberFrom(
+        draft.bestTeamBonusAmount
+      ).toString(),
+      bestEmployeeBonusAmount: this.numberFrom(
+        draft.bestEmployeeBonusAmount
+      ).toString(),
+      bestManagerBonusAmount: this.numberFrom(
+        draft.bestManagerBonusAmount
+      ).toString(),
+      bonusSignNote: (draft.bonusSignNote || '').trim(),
+      totalBonusThisMonth: bonusTotal.toString(),
+    };
+
+    this.payrollEditSaving = true;
+    try {
+      await this.data.updateEmployeeFieldsForUser(
+        ownerUid,
+        row.employee.uid,
+        fields
+      );
+      Object.assign(row.employee, fields);
+      this.recomputePayrollRowsForAdmin();
+      this.payrollEditDraft = this.buildPayrollEditDraft(
+        this.payrollRows.find(
+          (candidate) => this.payrollRowKey(candidate) === this.payrollEditRowKey
+        ) || row
+      );
+    } catch (error) {
+      console.error('Failed to save payroll details', error);
+      alert("Impossible d'enregistrer les valeurs de paiement.");
+    } finally {
+      this.payrollEditSaving = false;
+    }
+  }
+
   payrollPaymentVisible(employee: Employee): boolean {
     return employee.paymentCheckVisible === 'true';
   }
@@ -2188,6 +2341,38 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return `${row.employee.tempUser?.uid || this.auth.currentUser?.uid || 'local'}:${
       row.employee.uid || row.name
     }`;
+  }
+
+  private buildPayrollEditDraft(row: PayrollBreakdownRow): PayrollEditDraft {
+    const employee = row.employee;
+    return {
+      base: row.base,
+      experience: row.experience,
+      bankFee: row.bankFee,
+      manualAddition: row.manualAddition,
+      manualAdditionReason: employee.paymentManualAdditionReason || '',
+      absent: row.absent,
+      nothing: row.nothing,
+      late: row.late,
+      objective: row.objective,
+      manualWithdrawal: row.manualWithdrawal,
+      manualWithdrawalReason: employee.paymentManualWithdrawalReason || '',
+      paymentSignNote: employee.paymentSignNote || '',
+      bonusAmount: this.numberFrom(employee.bonusAmount),
+      bonusPercentage: this.numberFrom(employee.bonusPercentage),
+      bestTeamBonusAmount: this.numberFrom(employee.bestTeamBonusAmount),
+      bestEmployeeBonusAmount: this.numberFrom(
+        employee.bestEmployeeBonusAmount
+      ),
+      bestManagerBonusAmount: this.numberFrom(
+        employee.bestManagerBonusAmount
+      ),
+      bonusSignNote: employee.bonusSignNote || '',
+    };
+  }
+
+  private payrollPaymentMonthKey(): string {
+    return `${this.givenYear}-${String(this.givenMonth).padStart(2, '0')}`;
   }
 
   private buildPayrollBreakdownRow(employee: Employee): PayrollBreakdownRow {
