@@ -1037,7 +1037,8 @@
           <div
             class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            Barre = % du meilleur |$|
+            Croissance:
+            {{ toNum(entrySortieGrowthRateTotal) | number : "1.0-0" }} %
           </div>
         </div>
       </div>
@@ -1047,7 +1048,7 @@
           class="sm:overflow-visible -mx-4 overflow-x-auto overscroll-x-contain sm:mx-0"
         >
           <table
-            class="min-w-[560px] w-full table-auto text-sm tabular-nums sm:min-w-0"
+            class="min-w-[760px] w-full table-auto text-sm tabular-nums sm:min-w-0"
           >
             <thead
               class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -1057,6 +1058,12 @@
                 <th class="px-2 py-2 text-left whitespace-nowrap">Équipe</th>
                 <th class="px-3 py-2 text-right whitespace-nowrap">
                   Entrées / Sorties
+                </th>
+                <th class="px-3 py-2 text-right whitespace-nowrap">
+                  Moyenne/jour
+                </th>
+                <th class="px-3 py-2 text-right whitespace-nowrap">
+                  Δ Croissance
                 </th>
               </tr>
             </thead>
@@ -1148,6 +1155,44 @@
                     }}%
                   </div>
                 </td>
+
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <div
+                    class="font-semibold"
+                    [ngClass]="
+                      isNegativeValue(s?.averageEntrySortie)
+                        ? 'text-rose-600 dark:text-rose-300'
+                        : 'text-slate-900 dark:text-slate-100'
+                    "
+                  >
+                    ${{ toNum(s?.averageEntrySortieUsd) | number : "1.0-0" }}
+                  </div>
+                  <div
+                    class="text-xs"
+                    [ngClass]="
+                      isNegativeValue(s?.averageEntrySortie)
+                        ? 'text-rose-500 dark:text-rose-300'
+                        : 'text-slate-500 dark:text-slate-400'
+                    "
+                  >
+                    FC {{ toNum(s?.averageEntrySortie) | number : "1.0-0" }}
+                  </div>
+                </td>
+
+                <td class="px-3 py-2 text-right font-bold">
+                  <span
+                    class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] font-semibold"
+                    [ngClass]="nonNegColor(s.growthRate)"
+                  >
+                    <span>{{
+                      toNum(s.growthRate) >= 0 ? "▲" : "▼"
+                    }}</span>
+                    <span
+                      >{{ toNum(s.growthRate) >= 0 ? "+" : ""
+                      }}{{ toNum(s.growthRate) | number : "1.0-0" }}%</span
+                    >
+                  </span>
+                </td>
               </tr>
             </tbody>
 
@@ -1178,6 +1223,44 @@
                   >
                     FC {{ toNum(entrySortieCurrentTotalAmount) | number : "1.0-0" }}
                   </div>
+                </td>
+                <td class="px-3 py-2 text-right font-semibold whitespace-nowrap">
+                  <div
+                    class="text-base font-semibold"
+                    [ngClass]="
+                      isNegativeValue(entrySortieCurrentAverageAmount)
+                        ? 'text-rose-600 dark:text-rose-300'
+                        : 'text-slate-900 dark:text-slate-100'
+                    "
+                  >
+                    ${{ entrySortieCurrentAverageAmountDollars | number : "1.0-0" }}
+                  </div>
+                  <div
+                    class="text-xs"
+                    [ngClass]="
+                      isNegativeValue(entrySortieCurrentAverageAmount)
+                        ? 'text-rose-500 dark:text-rose-300'
+                        : 'text-slate-500 dark:text-slate-400'
+                    "
+                  >
+                    FC {{ entrySortieCurrentAverageAmount | number : "1.0-0" }}
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right font-bold">
+                  <span
+                    class="inline-flex items-center justify-end gap-1 rounded-full px-2 py-1 text-[11px] font-bold"
+                    [ngClass]="nonNegColor(entrySortieGrowthRateTotal)"
+                  >
+                    <span>{{
+                      toNum(entrySortieGrowthRateTotal) >= 0 ? "▲" : "▼"
+                    }}</span>
+                    <span
+                      >{{ toNum(entrySortieGrowthRateTotal) >= 0 ? "+" : ""
+                      }}{{
+                        toNum(entrySortieGrowthRateTotal) | number : "1.0-0"
+                      }}%</span
+                    >
+                  </span>
                 </td>
               </tr>
             </tfoot>

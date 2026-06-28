@@ -150,6 +150,9 @@ export class TrackingMonthCentralComponent {
     firstName: string;
     totalEntrySortie: number;
     totalEntrySortieInDollars: string;
+    averageEntrySortie: number;
+    averageEntrySortieUsd: number;
+    growthRate: string;
   }[] = [];
   sortedReservePreviousMonth: {
     firstName: string;
@@ -181,6 +184,9 @@ export class TrackingMonthCentralComponent {
   reserveCurrentTotalAmountDollars: string = '0';
   entrySortieCurrentTotalAmount: string = '0';
   entrySortieCurrentTotalAmountDollars: string = '0';
+  entrySortieCurrentAverageAmount = 0;
+  entrySortieCurrentAverageAmountDollars = 0;
+  entrySortieGrowthRateTotal = '0';
   paymentCurrentTotalAmount: string = '0';
   paymentCurrentTotalAmountDollars: string = '0';
   lendingCurrentTotalAmount: string = '0';
@@ -507,6 +513,9 @@ export class TrackingMonthCentralComponent {
       this.reserveCurrentTotalAmountDollars = '0';
       this.entrySortieCurrentTotalAmount = '0';
       this.entrySortieCurrentTotalAmountDollars = '0';
+      this.entrySortieCurrentAverageAmount = 0;
+      this.entrySortieCurrentAverageAmountDollars = 0;
+      this.entrySortieGrowthRateTotal = '0';
       this.reserveGrowthRateTotal = '0';
       this.updateMiniGraphs();
       return;
@@ -1002,14 +1011,73 @@ export class TrackingMonthCentralComponent {
     isYearMode: boolean = this.rankingMode === 'year',
     isAllMode: boolean = this.rankingMode === 'all'
   ): void {
+    const currentDate = new Date();
+    const workingDays = isAllMode
+      ? this.calculateWorkingDaysAllTime()
+      : isYearMode
+      ? this.calculateWorkingDaysForYear(
+          this.rankingYear,
+          this.isCurrentYear(this.rankingYear)
+        )
+      : this.calculateWorkingDays(
+          this.reserveCurrentMonth,
+          this.reserveCurrentYear,
+          this.reserveCurrentMonth === currentDate.getMonth() + 1 &&
+            this.reserveCurrentYear === currentDate.getFullYear()
+        );
+
+    const previousRows = this.allUsers.map((user) => {
+      const reserveTotal = this.sumUserFieldForEntrySortiePeriod(
+        user,
+        'reserve',
+        false,
+        isYearMode,
+        isAllMode
+      );
+      const investmentTotal = this.sumUserFieldForEntrySortiePeriod(
+        user,
+        'investments',
+        false,
+        isYearMode,
+        isAllMode
+      );
+
+      return {
+        firstName: user.firstName || '',
+        totalEntrySortie: reserveTotal - investmentTotal,
+      };
+    });
+
     const rows = this.allUsers
       .map((user) => {
-        const reserveTotal = this.sumUserFieldForRankingPeriod(user, 'reserve');
-        const investmentTotal = this.sumUserFieldForRankingPeriod(
+        const reserveTotal = this.sumUserFieldForEntrySortiePeriod(
           user,
-          'investments'
+          'reserve',
+          true,
+          isYearMode,
+          isAllMode
+        );
+        const investmentTotal = this.sumUserFieldForEntrySortiePeriod(
+          user,
+          'investments',
+          true,
+          isYearMode,
+          isAllMode
         );
         const totalEntrySortie = reserveTotal - investmentTotal;
+        const averageEntrySortie =
+          workingDays > 0 ? totalEntrySortie / workingDays : 0;
+        const averageEntrySortieUsdStr =
+          this.compute.convertCongoleseFrancToUsDollars(
+            averageEntrySortie.toString()
+          );
+        const previous = previousRows.find(
+          (row) => row.firstName === user.firstName
+        );
+        const growthRate = this.calculateEntrySortieGrowthRate(
+          totalEntrySortie,
+          previous?.totalEntrySortie ?? 0
+        );
 
         return {
           firstName: user.firstName || '',
@@ -1017,6 +1085,12 @@ export class TrackingMonthCentralComponent {
           totalEntrySortieInDollars: `${this.compute.convertCongoleseFrancToUsDollars(
             totalEntrySortie.toString()
           ) || '0'}`,
+          averageEntrySortie,
+          averageEntrySortieUsd:
+            averageEntrySortieUsdStr === ''
+              ? 0
+              : Number(averageEntrySortieUsdStr),
+          growthRate: growthRate.toString(),
         };
       })
       .filter((row) => row.firstName && row.totalEntrySortie !== 0)
@@ -1051,11 +1125,75 @@ export class TrackingMonthCentralComponent {
     this.entrySortieCurrentTotalAmountDollars = `${this.compute.convertCongoleseFrancToUsDollars(
       this.entrySortieCurrentTotalAmount
     ) || '0'}`;
+
+    const reserveComparisonTotal = isAllMode
+      ? this.toNum(
+          this.compute.findTotalGivenYearForAllUsers(
+            this.allUsers,
+            'reserve',
+            this.rankingComparisonYear
+          )
+        )
+      : isYearMode
+      ? this.toNum(
+          this.compute.findTotalGivenYearForAllUsers(
+            this.allUsers,
+            'reserve',
+            this.rankingComparisonYear
+          )
+        )
+      : this.toNum(
+          this.compute.findTotalGivenMonthForAllUsers(
+            this.allUsers,
+            'reserve',
+            this.reserveComparisonMonth,
+            this.reserveComparisonYear
+          )
+        );
+    const investmentComparisonTotal = isAllMode
+      ? this.toNum(
+          this.compute.findTotalGivenYearForAllUsers(
+            this.allUsers,
+            'investments',
+            this.rankingComparisonYear
+          )
+        )
+      : isYearMode
+      ? this.toNum(
+          this.compute.findTotalGivenYearForAllUsers(
+            this.allUsers,
+            'investments',
+            this.rankingComparisonYear
+          )
+        )
+      : this.toNum(
+          this.compute.findTotalGivenMonthForAllUsers(
+            this.allUsers,
+            'investments',
+            this.reserveComparisonMonth,
+            this.reserveComparisonYear
+          )
+        );
+
+    const comparisonTotal = reserveComparisonTotal - investmentComparisonTotal;
+    const totalAverage = workingDays > 0 ? currentTotal / workingDays : 0;
+    const totalAverageUsd =
+      this.compute.convertCongoleseFrancToUsDollars(totalAverage.toString());
+    this.entrySortieCurrentAverageAmount = totalAverage;
+    this.entrySortieCurrentAverageAmountDollars =
+      totalAverageUsd === '' ? 0 : Number(totalAverageUsd);
+    this.entrySortieGrowthRateTotal = this.calculateEntrySortieGrowthRate(
+      currentTotal,
+      comparisonTotal
+    ).toString();
   }
 
-  private sumUserFieldForRankingPeriod(
+  private sumUserFieldForEntrySortiePeriod(
     user: User,
-    field: 'reserve' | 'investments'
+    field: 'reserve' | 'investments',
+    isCurrentPeriod: boolean,
+    isYearMode: boolean,
+    isAllMode: boolean
   ): number {
     const values = user[field] || {};
 
@@ -1064,17 +1202,48 @@ export class TrackingMonthCentralComponent {
       const numericAmount = parseInt(String(amount).split(':')[0], 10) || 0;
 
       if (this.rankingMode === 'all') {
-        return sum + numericAmount;
+        return isCurrentPeriod || year === this.rankingComparisonYear
+          ? sum + numericAmount
+          : sum;
       }
 
-      if (this.rankingMode === 'year') {
-        return year === this.rankingYear ? sum + numericAmount : sum;
+      if (isYearMode) {
+        const targetYear = isCurrentPeriod
+          ? this.rankingYear
+          : this.rankingComparisonYear;
+        return year === targetYear ? sum + numericAmount : sum;
       }
 
-      return month === this.reserveCurrentMonth && year === this.reserveCurrentYear
+      const targetMonth = isCurrentPeriod
+        ? this.reserveCurrentMonth
+        : this.reserveComparisonMonth;
+      const targetYear = isCurrentPeriod
+        ? this.reserveCurrentYear
+        : this.reserveComparisonYear;
+
+      return month === targetMonth && year === targetYear
         ? sum + numericAmount
         : sum;
     }, 0);
+  }
+
+  private calculateEntrySortieGrowthRate(current: number, previous: number): number {
+    const currVal = this.toNum(current);
+    const prevVal = this.toNum(previous);
+
+    if (prevVal !== 0) {
+      return ((currVal - prevVal) / Math.abs(prevVal)) * 100;
+    }
+
+    if (currVal > 0) {
+      return 100;
+    }
+
+    if (currVal < 0) {
+      return -100;
+    }
+
+    return 0;
   }
 
   setReserveRange(key: RangeKey): void {
