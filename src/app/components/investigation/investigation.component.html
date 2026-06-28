@@ -1746,6 +1746,18 @@
             <p class="mt-0.5 text-[11px] text-slate-500">
               Jour sélectionné puis comparaison hebdomadaire.
             </p>
+            <div class="mt-2">
+              <span
+                class="inline-flex max-w-full items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold"
+                [ngClass]="weeklyPaymentPerformanceStatusClasses"
+              >
+                <span
+                  class="h-2 w-2 shrink-0 rounded-full"
+                  [ngClass]="weeklyPaymentPerformanceStatusDotClasses"
+                ></span>
+                <span class="min-w-0">{{ weeklyPaymentPerformanceStatusMessage }}</span>
+              </span>
+            </div>
             <div class="mt-3 flex flex-wrap items-end gap-2">
               <label class="block w-fit text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Date
@@ -1868,19 +1880,7 @@
                   'text-emerald-600': weeklyExpectedProgressTone === 'green'
                 }"
               >
-                <span class="flex flex-wrap items-center gap-2">
-                  <span>Cette semaine</span>
-                  <span
-                    class="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
-                    [ngClass]="weeklyPaymentPerformanceStatusClasses"
-                  >
-                    <span
-                      class="h-1.5 w-1.5 rounded-full"
-                      [ngClass]="weeklyPaymentPerformanceStatusDotClasses"
-                    ></span>
-                    <span>{{ weeklyPaymentPerformanceStatusMessage }}</span>
-                  </span>
-                </span>
+                <span>Cette semaine</span>
                 <span>{{ weeklyExpectedProgressPercent || 0 | number : "1.0-0" }}%</span>
               </div>
               <div
