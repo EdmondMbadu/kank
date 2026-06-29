@@ -131,6 +131,8 @@ export interface WeeklyObjectiveDeduction {
   start: string; // YYYY-MM-DD
   end: string; // YYYY-MM-DD
   amount: number; // dollars
+  weeklyTotalFc?: number;
+  weeklyTargetFc?: number;
 }
 
 export interface FoundationWithdrawalRequest {

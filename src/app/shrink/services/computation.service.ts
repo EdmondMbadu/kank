@@ -1877,7 +1877,13 @@ export class ComputationService {
       noneDed?: number;
       late?: number;
       objectiveDed?: number;
-      objectiveWeeks?: Array<{ start: string; end: string; amount: number }>;
+      objectiveWeeks?: Array<{
+        start: string;
+        end: string;
+        amount: number;
+        weeklyTotalFc?: number;
+        weeklyTargetFc?: number;
+      }>;
       manualWithdrawal?: number;
       manualWithdrawalReason?: string;
       manualAddition?: number;
@@ -1897,6 +1903,7 @@ export class ComputationService {
       return `${start} au ${endLabel}`;
     };
     const formatWeekAmount = (value: number) => `$${safeNumber(value)}`;
+    const formatFrancs = (value: number) => `${safeNumber(value)} FC`;
 
     const attendanceSummary = await this.buildPaymentAttendanceSummary(employee);
     const stats = attendanceSummary.stats;
@@ -1997,6 +2004,8 @@ export class ComputationService {
             start: string;
             end: string;
             amount: number;
+            weeklyTotalFc?: number;
+            weeklyTargetFc?: number;
           }>)
         : Array.isArray(employee.paymentObjectiveWeekDeductions)
         ? employee.paymentObjectiveWeekDeductions
@@ -2071,6 +2080,8 @@ export class ComputationService {
           .map((w) => ({
             range: formatWeekRange(w.start, w.end),
             amount: Math.max(Number(w.amount) || 0, 0),
+            weeklyTotalFc: Number(w.weeklyTotalFc),
+            weeklyTargetFc: Number(w.weeklyTargetFc),
           }))
           .filter((w) => w.range);
 
@@ -2088,9 +2099,21 @@ export class ComputationService {
         ]);
 
         normalizedObjectiveWeeks.forEach((week, index) => {
+          const hasWeeklyProgress =
+            Number.isFinite(week.weeklyTotalFc) &&
+            Number.isFinite(week.weeklyTargetFc) &&
+            (week.weeklyTotalFc > 0 || week.weeklyTargetFc > 0);
+          const progressLabel = hasWeeklyProgress
+            ? ` - Réalisé: ${formatFrancs(
+                week.weeklyTotalFc
+              )} / Objectif: ${formatFrancs(week.weeklyTargetFc)}`
+            : '';
+
           tableRows.splice(tableRows.length - 1, 0, [
             {
-              text: `Semaine ${index + 1}: ${week.range} - objectif non atteint`,
+              text: `Semaine ${index + 1}: ${
+                week.range
+              } - objectif non atteint${progressLabel}`,
               style: 'objectiveWeekLabel',
             } as any,
             {

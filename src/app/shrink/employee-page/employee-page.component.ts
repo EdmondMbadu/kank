@@ -2982,13 +2982,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       end: this.weekObjectiveEndDate,
       amount,
     };
+    const normalizedEntry = this.normalizeObjectiveDeduction(entry);
     const existingIndex = this.paymentObjectiveWeekDeductions.findIndex(
-      (d) => d.start === entry.start && d.end === entry.end
+      (d) => d.start === normalizedEntry.start && d.end === normalizedEntry.end
     );
     if (existingIndex >= 0) {
-      this.paymentObjectiveWeekDeductions[existingIndex] = entry;
+      this.paymentObjectiveWeekDeductions[existingIndex] = normalizedEntry;
     } else {
-      this.paymentObjectiveWeekDeductions.push(entry);
+      this.paymentObjectiveWeekDeductions.push(normalizedEntry);
     }
     this.recomputeObjectiveWeekDeductionTotal();
     this.computeTotalPayment();
@@ -3126,6 +3127,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         start: this.formatIsoDate(start),
         end: this.formatIsoDate(end),
         amount,
+        weeklyTotalFc: totalFc,
+        weeklyTargetFc,
       });
     }
 
@@ -3169,10 +3172,21 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const endDate = d.end
       ? this.parseIsoDate(d.end)
       : new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6);
+    const dateKey = this.formatDateKey(startDate);
+    const computedWeeklyTotalFc = this.computeWeeklyPaymentTotalForLocation(dateKey);
+    const computedWeeklyTargetFc = this.resolveWeeklyTargetFcForDate(dateKey);
+    const weeklyTotalFc = Number.isFinite(Number(d.weeklyTotalFc))
+      ? Number(d.weeklyTotalFc)
+      : computedWeeklyTotalFc;
+    const weeklyTargetFc = Number.isFinite(Number(d.weeklyTargetFc)) && Number(d.weeklyTargetFc) > 0
+      ? Number(d.weeklyTargetFc)
+      : computedWeeklyTargetFc;
     return {
       start: d.start,
       end: this.formatIsoDate(endDate),
       amount: Number(d.amount) || 0,
+      weeklyTotalFc,
+      weeklyTargetFc,
     };
   }
 
@@ -4885,11 +4899,16 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.employee.paymentObjectiveWeekDeductionTotal = p(
       this.paymentObjectiveWeekDeductionTotal
     ).toString();
+    this.paymentObjectiveWeekDeductions = this.paymentObjectiveWeekDeductions.map(
+      (d) => this.normalizeObjectiveDeduction(d)
+    );
     this.employee.paymentObjectiveWeekDeductions =
       this.paymentObjectiveWeekDeductions.map((d) => ({
         start: d.start,
         end: d.end,
         amount: Number(d.amount) || 0,
+        weeklyTotalFc: Number(d.weeklyTotalFc) || 0,
+        weeklyTargetFc: Number(d.weeklyTargetFc) || 0,
       }));
     this.employee.totalPayments = this.computeTotalPayment().toString();
   }
@@ -4915,6 +4934,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             start: d.start,
             end: d.end,
             amount: Number(d.amount) || 0,
+            weeklyTotalFc: Number(d.weeklyTotalFc) || 0,
+            weeklyTargetFc: Number(d.weeklyTargetFc) || 0,
           })),
           manualWithdrawal: Math.max(
             Number(this.paymentManualWithdrawal) || 0,

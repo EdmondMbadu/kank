@@ -2711,14 +2711,16 @@ export class TeamRankingMonthComponent implements OnDestroy {
       end: draft.weekObjectiveEndDate,
       amount,
     };
+    const owner = row.employee.tempUser || this.auth.currentUser;
+    const normalizedEntry = this.normalizePayrollObjectiveDeduction(entry, owner);
     const existingIndex = draft.objectiveDeductions.findIndex(
-      (item) => item.start === entry.start && item.end === entry.end
+      (item) => item.start === normalizedEntry.start && item.end === normalizedEntry.end
     );
 
     if (existingIndex >= 0) {
-      draft.objectiveDeductions[existingIndex] = entry;
+      draft.objectiveDeductions[existingIndex] = normalizedEntry;
     } else {
-      draft.objectiveDeductions.push(entry);
+      draft.objectiveDeductions.push(normalizedEntry);
     }
 
     this.recomputePayrollDraftObjectiveDeductions();
@@ -2738,11 +2740,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const bonusTotal = this.payrollEditBonusPreview();
     const paymentDeductions = row.attendanceOnly
       ? []
-      : draft.objectiveDeductions.map((item) => ({
-          start: item.start,
-          end: item.end,
-          amount: Number(item.amount) || 0,
-        }));
+      : draft.objectiveDeductions.map((item) =>
+          this.normalizePayrollObjectiveDeduction(
+            item,
+            row.employee.tempUser || this.auth.currentUser
+          )
+        );
     const fields: Partial<Employee> = {
       paymentAmount: this.numberFrom(draft.base).toString(),
       paymentIncreaseYears: this.numberFrom(draft.experience).toString(),
@@ -3071,6 +3074,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         start: item.start,
         end: item.end,
         amount: Number(item.amount) || 0,
+        weeklyTotalFc: Number(item.weeklyTotalFc) || 0,
+        weeklyTargetFc: Number(item.weeklyTargetFc) || 0,
       })),
       deductionDetails: row.deductionDetails.map((item) => ({ ...item })),
       weekObjectiveStartDate: this.time.getTodaysDateYearMonthDay(),
@@ -3144,6 +3149,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         start: item.start,
         end: item.end,
         amount: Number(item.amount) || 0,
+        weeklyTotalFc: Number(item.weeklyTotalFc) || 0,
+        weeklyTargetFc: Number(item.weeklyTargetFc) || 0,
       }))
       .filter((item) => item.start && item.end && item.amount > 0)
       .sort((a, b) => a.start.localeCompare(b.start));
@@ -3194,6 +3201,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
       ? []
       : configured
       ? this.filterPayrollObjectiveDeductionsForSelectedMonth(
+          employee,
           employee.paymentObjectiveWeekDeductions || []
         )
       : this.computePayrollWeeklyShortfallDeductions(employee);
@@ -3534,6 +3542,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
         start: this.formatIsoDate(start),
         end: this.formatIsoDate(end),
         amount,
+        weeklyTotalFc: totalFc,
+        weeklyTargetFc,
       });
     }
 
@@ -3556,12 +3566,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private filterPayrollObjectiveDeductionsForSelectedMonth(
+    employee: Employee,
     deductions: WeeklyObjectiveDeduction[]
   ): WeeklyObjectiveDeduction[] {
     const month = Number(this.givenMonth);
     const year = Number(this.givenYear);
+    const owner = employee.tempUser || this.auth.currentUser;
     return (deductions || [])
-      .map((item) => this.normalizePayrollObjectiveDeduction(item))
+      .map((item) => this.normalizePayrollObjectiveDeduction(item, owner))
       .filter((item) => {
         const end = this.parseIsoDate(item.end);
         return end.getMonth() + 1 === month && end.getFullYear() === year;
@@ -3569,12 +3581,31 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   private normalizePayrollObjectiveDeduction(
-    deduction: WeeklyObjectiveDeduction
+    deduction: WeeklyObjectiveDeduction,
+    owner?: User
   ): WeeklyObjectiveDeduction {
+    const start = deduction?.start || '';
+    const startDate = this.parseIsoDate(start);
+    const dateKey = startDate.getTime() === 0 ? '' : this.formatDateKey(startDate);
+    const computedWeeklyTotalFc =
+      owner && dateKey ? this.computeWeeklyPaymentTotalForPayroll(owner, dateKey) : 0;
+    const computedWeeklyTargetFc =
+      owner && dateKey ? this.resolvePayrollWeeklyTargetFc(owner, dateKey) : 0;
+    const weeklyTotalFc = Number.isFinite(Number(deduction?.weeklyTotalFc))
+      ? Number(deduction?.weeklyTotalFc)
+      : computedWeeklyTotalFc;
+    const weeklyTargetFc =
+      Number.isFinite(Number(deduction?.weeklyTargetFc)) &&
+      Number(deduction?.weeklyTargetFc) > 0
+        ? Number(deduction?.weeklyTargetFc)
+        : computedWeeklyTargetFc;
+
     return {
-      start: deduction?.start || '',
+      start,
       end: deduction?.end || deduction?.start || '',
       amount: this.numberFrom(deduction?.amount),
+      weeklyTotalFc,
+      weeklyTargetFc,
     };
   }
 
