@@ -3101,7 +3101,7 @@
                 </select>
               </label>
               <label class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Statut
+                Paiement
                 <select
                   [(ngModel)]="payrollPaidFilter"
                   class="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs font-semibold normal-case tracking-normal text-slate-800 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
@@ -3109,6 +3109,17 @@
                   <option value="">Tous</option>
                   <option value="paid">Déjà payés</option>
                   <option value="unpaid">Non payés</option>
+                </select>
+              </label>
+              <label class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Signature
+                <select
+                  [(ngModel)]="payrollSignedFilter"
+                  class="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs font-semibold normal-case tracking-normal text-slate-800 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                >
+                  <option value="">Toutes</option>
+                  <option value="signed">Signés</option>
+                  <option value="unsigned">Non signés</option>
                 </select>
               </label>
               <div class="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -3166,7 +3177,16 @@
                     ? "Déjà payés"
                     : payrollPaidFilter === "unpaid"
                     ? "Non payés"
-                    : "Tous statuts"
+                    : "Tous paiements"
+                }}
+              </div>
+              <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                {{
+                  payrollSignedFilter === "signed"
+                    ? "Signés"
+                    : payrollSignedFilter === "unsigned"
+                    ? "Non signés"
+                    : "Toutes signatures"
                 }}
               </div>
             </div>
@@ -3295,6 +3315,24 @@
                         <span
                           class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
                           [ngClass]="
+                            row.employee.paidPaymentThisMonth
+                              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100'
+                              : 'bg-rose-50 text-rose-700 ring-1 ring-rose-100'
+                          "
+                          [title]="
+                            row.employee.paidPaymentThisMonth
+                              ? 'Paiement payé' +
+                                (row.employee.lastPaymentPaidLabelThisMonth
+                                  ? ' · ' + row.employee.lastPaymentPaidLabelThisMonth
+                                  : '')
+                              : 'Paiement non payé'
+                          "
+                        >
+                          Paiement {{ row.employee.paidPaymentThisMonth ? "payé" : "non payé" }}
+                        </span>
+                        <span
+                          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                          [ngClass]="
                             row.employee.signedBonusThisMonth
                               ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100'
                               : 'bg-amber-50 text-amber-700 ring-1 ring-amber-100'
@@ -3349,12 +3387,12 @@
                   <div
                     class="font-bold"
                     [ngClass]="
-                      row.employee.signedPaymentThisMonth
+                      row.employee.paidPaymentThisMonth
                         ? 'text-indigo-700 dark:text-indigo-300'
                         : 'text-amber-700 dark:text-amber-300'
                     "
                   >
-                    <ng-container *ngIf="row.employee.signedPaymentThisMonth; else payrollLeftAmountTpl">
+                    <ng-container *ngIf="row.employee.paidPaymentThisMonth; else payrollLeftAmountTpl">
                       Payé
                     </ng-container>
                     <ng-template #payrollLeftAmountTpl>
@@ -3362,7 +3400,7 @@
                     </ng-template>
                   </div>
                   <div class="text-[11px] text-slate-500">
-                    {{ row.employee.signedPaymentThisMonth ? "0 $ restant" : "À payer" }}
+                    {{ row.employee.paidPaymentThisMonth ? "0 $ restant" : "À payer" }}
                   </div>
                 </td>
                 <td class="px-3 py-2">
@@ -3473,7 +3511,7 @@
                         </div>
                       </div>
 
-                      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                      <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                         <div
                           class="rounded-xl border px-3 py-2 text-xs"
                           [ngClass]="
@@ -3487,6 +3525,21 @@
                           </div>
                           <div class="mt-0.5 text-[11px] opacity-80">
                             {{ row.employee.lastPaymentSignatureLabelThisMonth || "Aucune signature ce mois" }}
+                          </div>
+                        </div>
+                        <div
+                          class="rounded-xl border px-3 py-2 text-xs"
+                          [ngClass]="
+                            row.employee.paidPaymentThisMonth
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                              : 'border-rose-200 bg-rose-50 text-rose-800'
+                          "
+                        >
+                          <div class="font-bold">
+                            Paiement {{ row.employee.paidPaymentThisMonth ? "payé" : "non payé" }}
+                          </div>
+                          <div class="mt-0.5 text-[11px] opacity-80">
+                            {{ row.employee.lastPaymentPaidLabelThisMonth || "Aucun reçu ce mois" }}
                           </div>
                         </div>
                         <div

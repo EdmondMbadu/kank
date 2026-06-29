@@ -405,6 +405,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   payrollSearchTerm = '';
   payrollBankFilter: '' | 'rawbank' | 'equity' = '';
   payrollPaidFilter: '' | 'paid' | 'unpaid' = '';
+  payrollSignedFilter: '' | 'signed' | 'unsigned' = '';
   payrollControlRowKey = '';
   payrollVisibilitySavingKey = '';
   payrollBankSavingKey = '';
@@ -2286,15 +2287,20 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const query = this.normalizePayrollSearch(this.payrollSearchTerm);
     const bankFilter = this.payrollBankFilter;
     const paidFilter = this.payrollPaidFilter;
+    const signedFilter = this.payrollSignedFilter;
 
     return this.payrollRows.filter((row) => {
       const matchesSearch = !query || this.payrollSearchText(row).includes(query);
       const matchesBank = !bankFilter || row.bankKey === bankFilter;
       const matchesPaid =
         !paidFilter ||
-        (paidFilter === 'paid' && row.employee.signedPaymentThisMonth) ||
-        (paidFilter === 'unpaid' && !row.employee.signedPaymentThisMonth);
-      return matchesSearch && matchesBank && matchesPaid;
+        (paidFilter === 'paid' && row.employee.paidPaymentThisMonth) ||
+        (paidFilter === 'unpaid' && !row.employee.paidPaymentThisMonth);
+      const matchesSigned =
+        !signedFilter ||
+        (signedFilter === 'signed' && row.employee.signedPaymentThisMonth) ||
+        (signedFilter === 'unsigned' && !row.employee.signedPaymentThisMonth);
+      return matchesSearch && matchesBank && matchesPaid && matchesSigned;
     });
   }
 
@@ -2323,7 +2329,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   get totalPayrollPaidAmount(): number {
     return this.filteredPayrollRows.reduce(
       (sum, row) =>
-        row.employee.signedPaymentThisMonth ? sum + Math.max(row.net, 0) : sum,
+        row.employee.paidPaymentThisMonth ? sum + Math.max(row.net, 0) : sum,
       0
     );
   }
@@ -2331,20 +2337,20 @@ export class TeamRankingMonthComponent implements OnDestroy {
   get totalPayrollLeftAmount(): number {
     return this.filteredPayrollRows.reduce(
       (sum, row) =>
-        row.employee.signedPaymentThisMonth ? sum : sum + Math.max(row.net, 0),
+        row.employee.paidPaymentThisMonth ? sum : sum + Math.max(row.net, 0),
       0
     );
   }
 
   get totalPayrollPaidPeople(): number {
     return this.filteredPayrollRows.filter(
-      (row) => row.employee.signedPaymentThisMonth
+      (row) => row.employee.paidPaymentThisMonth
     ).length;
   }
 
   get totalPayrollLeftPeople(): number {
     return this.filteredPayrollRows.filter(
-      (row) => !row.employee.signedPaymentThisMonth
+      (row) => !row.employee.paidPaymentThisMonth
     ).length;
   }
 
@@ -2363,6 +2369,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const paymentSigned = employee.signedPaymentThisMonth
       ? 'paiement signe paiement signé'
       : 'paiement non signe paiement non signé';
+    const paymentPaid = employee.paidPaymentThisMonth
+      ? 'paiement paye paiement payé'
+      : 'paiement non paye paiement non payé';
     const bonusSigned = employee.signedBonusThisMonth
       ? 'bonus signe bonus signé'
       : 'bonus non signe bonus non signé';
@@ -2384,6 +2393,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         paymentVisible,
         bonusVisible,
         paymentSigned,
+        paymentPaid,
         bonusSigned,
         ...row.reasons,
       ]
@@ -2401,7 +2411,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   }
 
   payrollLeftAmount(row: PayrollBreakdownRow): number {
-    return row.employee.signedPaymentThisMonth ? 0 : Math.max(row.net, 0);
+    return row.employee.paidPaymentThisMonth ? 0 : Math.max(row.net, 0);
   }
 
   latestPayrollPaymentHistory(
