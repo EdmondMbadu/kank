@@ -7,7 +7,7 @@ import { Employee, FoundationWithdrawalRequest } from '../../models/employee';
 import { User, UserDailyField } from '../../models/user';
 import { AuthService } from '../../services/auth.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, map, catchError, of, firstValueFrom } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 // (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 @Injectable({
@@ -1229,6 +1229,249 @@ export class ComputationService {
   //   }
   // }
 
+  private async buildPaymentAttendanceSummary(employee: Employee): Promise<{
+    periodLabel: string;
+    scopeLabel: string;
+    daysConsidered: number;
+    recordedDays: number;
+    stats: Record<string, number>;
+  }> {
+    const { month, year } = this.resolvePaymentAttendanceMonth(employee);
+    const today = this.kinParts(new Date());
+    const monthDelta = year * 12 + month - (today.y * 12 + today.m);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const daysConsidered =
+      monthDelta < 0 ? daysInMonth : monthDelta === 0 ? today.d : 0;
+    const monthLabel = this.time.monthFrenchNames?.[month - 1] || `Mois ${month}`;
+    const stats = { P: 0, A: 0, L: 0, N: 0, V: 0, VP: 0, F: 0 } as Record<
+      string,
+      number
+    >;
+    const exceptionDays = await this.loadPaymentPresenceExceptionDays(month, year);
+
+    let eligibleDays = 0;
+    for (let day = 1; day <= daysConsidered; day++) {
+      if (new Date(year, month - 1, day).getDay() === 0) continue;
+      const label = `${month}-${day}-${year}`;
+      const dateISO = this.paymentAttendanceIsoFromLabel(label);
+      if (dateISO && exceptionDays[dateISO]) continue;
+      if (!this.isPaymentAttendanceDayInsideEmployment(employee, label)) {
+        continue;
+      }
+
+      eligibleDays += 1;
+      const status = this.getLatestPaymentAttendanceStatus(employee, label);
+      if (stats[status] !== undefined) {
+        stats[status] += 1;
+      }
+    }
+
+    const recordedDays =
+      stats['P'] +
+      stats['A'] +
+      stats['L'] +
+      stats['V'] +
+      stats['VP'] +
+      stats['N'] +
+      stats['F'];
+
+    return {
+      periodLabel: `${monthLabel} ${year}`,
+      scopeLabel:
+        monthDelta === 0
+          ? `Jusqu'au ${Math.min(today.d, daysInMonth)} ${monthLabel}`
+          : monthDelta < 0
+          ? 'Mois complet'
+          : 'Aucun jour à résumer pour le moment',
+      daysConsidered: eligibleDays,
+      recordedDays,
+      stats,
+    };
+  }
+
+  private resolvePaymentAttendanceMonth(employee: Employee): {
+    month: number;
+    year: number;
+  } {
+    const configured = String(employee?.paymentConfiguredMonthKey || '').trim();
+    const match = configured.match(/^(\d{4})-(\d{1,2})$/);
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        month >= 1 &&
+        month <= 12
+      ) {
+        return { month, year };
+      }
+    }
+
+    const today = this.kinParts(new Date());
+    return { month: today.m, year: today.y };
+  }
+
+  private async loadPaymentPresenceExceptionDays(
+    month: number,
+    year: number
+  ): Promise<Record<string, unknown>> {
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    try {
+      const snapshot = await firstValueFrom(
+        this.afs.doc(`presenceExceptionMonths/${monthKey}`).get()
+      );
+      return ((snapshot.data() as any)?.days || {}) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+
+  private kinParts(date: Date): { y: number; m: number; d: number } {
+    const parts = new Intl.DateTimeFormat('fr-CD', {
+      timeZone: 'Africa/Kinshasa',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const map: Record<string, string> = {};
+    parts.forEach((part) => {
+      map[part.type] = part.value;
+    });
+    return {
+      y: Number(map['year']),
+      m: Number(map['month']),
+      d: Number(map['day']),
+    };
+  }
+
+  private getLatestPaymentAttendanceStatus(
+    employee: Employee,
+    baseLabel: string
+  ): string {
+    const attendance = employee?.attendance || {};
+    const matches = Object.keys(attendance)
+      .filter((key) => this.normalizePaymentAttendanceLabel(key) === baseLabel)
+      .map((key) => ({
+        status: this.normalizePaymentAttendanceCode(attendance[key]),
+        seconds: this.paymentAttendanceKeySeconds(key),
+      }));
+
+    if (!matches.length) return '';
+    matches.sort((a, b) => b.seconds - a.seconds);
+    return matches[0].status;
+  }
+
+  private normalizePaymentAttendanceLabel(key?: string): string {
+    if (!key) return '';
+    const parts = key.split('-');
+    if (parts.length < 3) return '';
+    if (parts[0].length === 4) {
+      return `${Number(parts[1])}-${Number(parts[2])}-${parts[0]}`;
+    }
+    return `${Number(parts[0])}-${Number(parts[1])}-${parts[2]}`;
+  }
+
+  private normalizePaymentAttendanceCode(value: unknown): string {
+    const code = String(value || '').trim().toUpperCase();
+    return ['P', 'A', 'L', 'N', 'V', 'VP', 'F'].includes(code) ? code : '';
+  }
+
+  private paymentAttendanceKeySeconds(key: string): number {
+    const parts = key.split('-');
+    const offset = parts[0]?.length === 4 ? 3 : 3;
+    const hh = Number(parts[offset] || 0);
+    const mm = Number(parts[offset + 1] || 0);
+    const ss = Number(parts[offset + 2] || 0);
+    return hh * 3600 + mm * 60 + ss;
+  }
+
+  private isPaymentAttendanceDayInsideEmployment(
+    employee: Employee,
+    label: string
+  ): boolean {
+    const dateISO = this.paymentAttendanceIsoFromLabel(label);
+    if (!dateISO) return true;
+
+    const joinedISO = this.parsePaymentEmploymentDateISO(employee?.dateJoined);
+    const leftISO = this.parsePaymentEmploymentDateISO(employee?.dateLeft);
+    if (joinedISO && dateISO < joinedISO) return false;
+    if (leftISO && dateISO > leftISO) return false;
+    return true;
+  }
+
+  private paymentAttendanceIsoFromLabel(label: string): string {
+    const [month, day, year] = label.split('-').map(Number);
+    if (!month || !day || !year) return '';
+    return this.paymentAttendanceIsoFromParts(month, day, year);
+  }
+
+  private paymentAttendanceIsoFromParts(
+    month: number,
+    day: number,
+    year: number
+  ): string {
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(
+      2,
+      '0'
+    )}`;
+  }
+
+  private parsePaymentEmploymentDateISO(rawDate?: unknown): string {
+    if (!rawDate) return '';
+
+    if (rawDate instanceof Date) {
+      return this.paymentAttendanceIsoFromParts(
+        rawDate.getMonth() + 1,
+        rawDate.getDate(),
+        rawDate.getFullYear()
+      );
+    }
+
+    const timestampLike = rawDate as { toDate?: () => Date; seconds?: number };
+    if (typeof timestampLike.toDate === 'function') {
+      return this.parsePaymentEmploymentDateISO(timestampLike.toDate());
+    }
+    if (typeof timestampLike.seconds === 'number') {
+      return this.parsePaymentEmploymentDateISO(
+        new Date(timestampLike.seconds * 1000)
+      );
+    }
+
+    if (typeof rawDate !== 'string') return '';
+    const trimmed = rawDate.trim();
+    if (!trimmed) return '';
+
+    const parts = trimmed.split(/[-/]/).map((part) => part.trim());
+    if (parts.length === 3) {
+      const yearFirst = parts[0].length === 4;
+      const year = Number(yearFirst ? parts[0] : parts[2]);
+      const month = Number(yearFirst ? parts[1] : parts[0]);
+      const day = Number(yearFirst ? parts[2] : parts[1]);
+      const parsed = new Date(year, month - 1, day);
+
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day) &&
+        !Number.isNaN(parsed.getTime()) &&
+        parsed.getFullYear() === year &&
+        parsed.getMonth() === month - 1 &&
+        parsed.getDate() === day
+      ) {
+        return this.paymentAttendanceIsoFromParts(month, day, year);
+      }
+    }
+
+    const fallback = new Date(trimmed);
+    if (Number.isNaN(fallback.getTime())) return '';
+    return this.paymentAttendanceIsoFromParts(
+      fallback.getMonth() + 1,
+      fallback.getDate(),
+      fallback.getFullYear()
+    );
+  }
+
   async generateBonusCheck(
     employee: Employee,
     title: string = 'Bonus' // shown in the big heading
@@ -1244,10 +1487,10 @@ export class ComputationService {
       }
     };
 
+    const attendanceSummary = await this.buildPaymentAttendanceSummary(employee);
+    const stats = attendanceSummary.stats;
     const todayFr = this.time.getTodaysDateInFrench();
-    const periodFr = `${
-      this.time.monthFrenchNames[new Date().getMonth()]
-    } ${new Date().getFullYear()}`;
+    const periodFr = attendanceSummary.periodLabel;
     const invoice = employee.payments
       ? (Object.keys(employee.payments).length + 1).toString()
       : '1';
@@ -1273,16 +1516,6 @@ export class ComputationService {
         { text: fmt(total), style: 'total', alignment: 'right' },
       ],
     ];
-
-    /* ── attendance résumé (current month) ───────────────────────────── */
-    const stats = { P: 0, A: 0, L: 0, N: 0 } as Record<string, number>;
-    const ymKey = `${new Date().getMonth() + 1}-`;
-    Object.keys(employee.attendance || {}).forEach((k) => {
-      if (k.startsWith(ymKey)) {
-        const v = (employee.attendance as any)[k];
-        if (stats[v] !== undefined) stats[v] += 1;
-      }
-    });
 
     /* ── branding ────────────────────────────────────────────────────── */
     const logo = await this.fetchImageAsBase64(
@@ -1373,10 +1606,14 @@ export class ComputationService {
         },
         {
           ul: [
+            `${attendanceSummary.scopeLabel} : ${attendanceSummary.recordedDays} jours renseignés sur ${attendanceSummary.daysConsidered}`,
             `Présent : ${stats['P']} jours`,
             `Retard : ${stats['L']} jours`,
             `Absent : ${stats['A']} jours`,
             `Néant : ${stats['N']} jours`,
+            `Vacance : ${stats['V']} jours`,
+            `Vacance en cours : ${stats['VP']} jours`,
+            `Anomalie : ${stats['F']} jours`,
           ],
           margin: [0, 0, 0, 20],
         },
@@ -1660,10 +1897,10 @@ export class ComputationService {
       return `${start} au ${endLabel}`;
     };
 
+    const attendanceSummary = await this.buildPaymentAttendanceSummary(employee);
+    const stats = attendanceSummary.stats;
     const todayFr = this.time.getTodaysDateInFrench();
-    const periodFr = `${
-      this.time.monthFrenchNames[new Date().getMonth()]
-    } ${new Date().getFullYear()}`;
+    const periodFr = attendanceSummary.periodLabel;
     const invoiceNum = employee.payments
       ? (Object.keys(employee.payments).length + 1).toString()
       : '1';
@@ -1844,17 +2081,6 @@ export class ComputationService {
       }
     }
 
-    /* ---------- Attendance stats (kept for both) ------------------------*/
-    const stats = { P: 0, A: 0, L: 0, N: 0 } as Record<string, number>;
-    const now = new Date();
-    const ymKey = `${now.getMonth() + 1}-`;
-    Object.keys(employee.attendance || {}).forEach((k) => {
-      if (k.startsWith(ymKey)) {
-        const v = (employee.attendance as any)[k];
-        if (stats[v] !== undefined) stats[v] += 1;
-      }
-    });
-
     /* ---------- Branding -------------------------------------------------*/
     const base64Logo = await this.fetchImageAsBase64(
       '../../../assets/img/gervais.png'
@@ -1947,10 +2173,14 @@ export class ComputationService {
         },
         {
           ul: [
+            `${attendanceSummary.scopeLabel} : ${attendanceSummary.recordedDays} jours renseignés sur ${attendanceSummary.daysConsidered}`,
             `Présent : ${stats['P']} jours`,
             `Retard : ${stats['L']} jours`,
             `Absent : ${stats['A']} jours`,
             `Néant : ${stats['N']} jours`,
+            `Vacance : ${stats['V']} jours`,
+            `Vacance en cours : ${stats['VP']} jours`,
+            `Anomalie : ${stats['F']} jours`,
           ],
           margin: [0, 0, 0, 20],
         },
