@@ -395,6 +395,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   payrollRows: PayrollBreakdownRow[] = [];
   payrollSearchTerm = '';
   payrollBankFilter: '' | 'rawbank' | 'equity' = '';
+  payrollPaidFilter: '' | 'paid' | 'unpaid' = '';
   payrollControlRowKey = '';
   payrollVisibilitySavingKey = '';
   payrollBankSavingKey = '';
@@ -2268,11 +2269,16 @@ export class TeamRankingMonthComponent implements OnDestroy {
   get filteredPayrollRows(): PayrollBreakdownRow[] {
     const query = this.normalizePayrollSearch(this.payrollSearchTerm);
     const bankFilter = this.payrollBankFilter;
+    const paidFilter = this.payrollPaidFilter;
 
     return this.payrollRows.filter((row) => {
       const matchesSearch = !query || this.payrollSearchText(row).includes(query);
       const matchesBank = !bankFilter || row.bankKey === bankFilter;
-      return matchesSearch && matchesBank;
+      const matchesPaid =
+        !paidFilter ||
+        (paidFilter === 'paid' && row.employee.signedPaymentThisMonth) ||
+        (paidFilter === 'unpaid' && !row.employee.signedPaymentThisMonth);
+      return matchesSearch && matchesBank && matchesPaid;
     });
   }
 
