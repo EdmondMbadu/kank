@@ -65,6 +65,7 @@ export class Employee {
   vacationAcceptedNumberOfDays?: string;
   vacationTotalDays?: string;
   bank?: string;
+  paymentBankProvider?: string;
   tempUser?: User;
   showAttendance?: boolean;
   receipts?: string[];

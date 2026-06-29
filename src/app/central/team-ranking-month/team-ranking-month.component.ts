@@ -166,6 +166,8 @@ type PayrollBreakdownRow = {
   tenureLabel: string;
   locationLabel: string;
   managerLabel: string;
+  bankLabel: string;
+  bankKey: string;
   base: number;
   bankFee: number;
   experience: number;
@@ -392,8 +394,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
   paidEmployeesMonth: any[] = [];
   payrollRows: PayrollBreakdownRow[] = [];
   payrollSearchTerm = '';
+  payrollBankFilter: '' | 'rawbank' | 'equity' = '';
   payrollControlRowKey = '';
   payrollVisibilitySavingKey = '';
+  payrollBankSavingKey = '';
   payrollEditRowKey = '';
   payrollEditDraft: PayrollEditDraft | null = null;
   payrollEditSaving = false;
@@ -2263,11 +2267,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   get filteredPayrollRows(): PayrollBreakdownRow[] {
     const query = this.normalizePayrollSearch(this.payrollSearchTerm);
-    if (!query) return this.payrollRows;
+    const bankFilter = this.payrollBankFilter;
 
-    return this.payrollRows.filter((row) =>
-      this.payrollSearchText(row).includes(query)
-    );
+    return this.payrollRows.filter((row) => {
+      const matchesSearch = !query || this.payrollSearchText(row).includes(query);
+      const matchesBank = !bankFilter || row.bankKey === bankFilter;
+      return matchesSearch && matchesBank;
+    });
   }
 
   get totalPayrollBase(): number {
@@ -2290,6 +2296,34 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   get totalFilteredPayrollNet(): number {
     return this.filteredPayrollRows.reduce((sum, row) => sum + row.net, 0);
+  }
+
+  get totalPayrollPaidAmount(): number {
+    return this.filteredPayrollRows.reduce(
+      (sum, row) =>
+        row.employee.signedPaymentThisMonth ? sum + Math.max(row.net, 0) : sum,
+      0
+    );
+  }
+
+  get totalPayrollLeftAmount(): number {
+    return this.filteredPayrollRows.reduce(
+      (sum, row) =>
+        row.employee.signedPaymentThisMonth ? sum : sum + Math.max(row.net, 0),
+      0
+    );
+  }
+
+  get totalPayrollPaidPeople(): number {
+    return this.filteredPayrollRows.filter(
+      (row) => row.employee.signedPaymentThisMonth
+    ).length;
+  }
+
+  get totalPayrollLeftPeople(): number {
+    return this.filteredPayrollRows.filter(
+      (row) => !row.employee.signedPaymentThisMonth
+    ).length;
   }
 
   clearPayrollSearch(): void {
@@ -2324,6 +2358,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
         row.tenureLabel,
         row.locationLabel,
         row.managerLabel,
+        row.bankLabel,
         paymentVisible,
         bonusVisible,
         paymentSigned,
@@ -2341,6 +2376,28 @@ export class TeamRankingMonthComponent implements OnDestroy {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim();
+  }
+
+  payrollLeftAmount(row: PayrollBreakdownRow): number {
+    return row.employee.signedPaymentThisMonth ? 0 : Math.max(row.net, 0);
+  }
+
+  private payrollBankLabel(employee: Employee): string {
+    const raw = String(employee.paymentBankProvider || '').trim();
+    if (!raw) return 'Banque non définie';
+    const normalized = this.normalizePayrollSearch(raw);
+    if (normalized.includes('raw')) return 'Rawbank';
+    if (normalized.includes('equity')) return 'Equity';
+    return raw;
+  }
+
+  private payrollBankKey(employee: Employee): string {
+    const normalized = this.normalizePayrollSearch(
+      employee.paymentBankProvider || ''
+    );
+    if (normalized.includes('raw')) return 'rawbank';
+    if (normalized.includes('equity')) return 'equity';
+    return '';
   }
 
   payrollEmployeeInitials(employee: Employee): string {
@@ -2361,6 +2418,10 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   payrollVisibilitySaving(row: PayrollBreakdownRow, field: 'payment' | 'bonus'): boolean {
     return this.payrollVisibilitySavingKey === `${this.payrollRowKey(row)}:${field}`;
+  }
+
+  payrollBankSaving(row: PayrollBreakdownRow): boolean {
+    return this.payrollBankSavingKey === this.payrollRowKey(row);
   }
 
   payrollRowIsEditing(row: PayrollBreakdownRow): boolean {
@@ -2572,6 +2633,44 @@ export class TeamRankingMonthComponent implements OnDestroy {
     visible: boolean
   ): Promise<void> {
     await this.setPayrollVisibility(row, 'checkVisible', visible);
+  }
+
+  async setPayrollBank(
+    row: PayrollBreakdownRow,
+    bankKey: string
+  ): Promise<void> {
+    if (!this.auth.isAdmninistrator || !row?.employee?.uid) return;
+
+    const ownerUid = row.employee.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      alert("Impossible d'identifier la localisation de cet employé.");
+      return;
+    }
+
+    const previousBank = row.employee.paymentBankProvider || '';
+    const previousLabel = row.bankLabel;
+    const previousKey = row.bankKey;
+    const nextBank =
+      bankKey === 'rawbank' ? 'Rawbank' : bankKey === 'equity' ? 'Equity' : '';
+
+    this.payrollBankSavingKey = this.payrollRowKey(row);
+    row.employee.paymentBankProvider = nextBank;
+    row.bankLabel = this.payrollBankLabel(row.employee);
+    row.bankKey = this.payrollBankKey(row.employee);
+
+    try {
+      await this.data.updateEmployeeFieldsForUser(ownerUid, row.employee.uid, {
+        paymentBankProvider: nextBank,
+      });
+    } catch (error) {
+      row.employee.paymentBankProvider = previousBank;
+      row.bankLabel = previousLabel;
+      row.bankKey = previousKey;
+      console.error('Failed to update payroll bank', error);
+      alert("Impossible de changer la banque pour cet employé.");
+    } finally {
+      this.payrollBankSavingKey = '';
+    }
   }
 
   payrollSmsSending(
@@ -2941,6 +3040,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
       tenureLabel: this.formatPayrollTenure(employee.dateJoined),
       locationLabel: this.getPayrollLocationLabel(employee),
       managerLabel: this.getPayrollManagerLabel(employee),
+      bankLabel: this.payrollBankLabel(employee),
+      bankKey: this.payrollBankKey(employee),
       base,
       bankFee,
       experience,
