@@ -1896,6 +1896,7 @@ export class ComputationService {
       const endLabel = end || start;
       return `${start} au ${endLabel}`;
     };
+    const formatWeekAmount = (value: number) => `$${safeNumber(value)}`;
 
     const attendanceSummary = await this.buildPaymentAttendanceSummary(employee);
     const stats = attendanceSummary.stats;
@@ -2066,18 +2067,39 @@ export class ComputationService {
       ];
 
       if (objectiveWeeks.length > 0) {
-        const weekLabel = objectiveWeeks
-          .map((w) => formatWeekRange(w.start, w.end))
-          .filter((v) => v)
-          .join(' | ');
+        const normalizedObjectiveWeeks = objectiveWeeks
+          .map((w) => ({
+            range: formatWeekRange(w.start, w.end),
+            amount: Math.max(Number(w.amount) || 0, 0),
+          }))
+          .filter((w) => w.range);
+
         tableRows.splice(tableRows.length - 1, 0, [
           {
-            text: `Semaines concernées: ${weekLabel}`,
+            text: `Détail objectif semaine non atteint (${normalizedObjectiveWeeks.length} semaine${
+              normalizedObjectiveWeeks.length > 1 ? 's' : ''
+            })`,
             colSpan: 2,
             style: 'tiny',
+            color: '#B91C1C',
+            bold: true,
           } as any,
           '' as any,
         ]);
+
+        normalizedObjectiveWeeks.forEach((week, index) => {
+          tableRows.splice(tableRows.length - 1, 0, [
+            {
+              text: `Semaine ${index + 1}: ${week.range} - objectif non atteint`,
+              style: 'objectiveWeekLabel',
+            } as any,
+            {
+              text: `Montant retenu: -${formatWeekAmount(week.amount)}`,
+              alignment: 'right',
+              style: 'objectiveWeekAmount',
+            } as any,
+          ]);
+        });
       }
     }
 
@@ -2220,6 +2242,17 @@ export class ComputationService {
         subHeader: { fontSize: 12, bold: true },
         table: { margin: [0, 0, 0, 10] },
         th: { bold: true, fillColor: '#ECEFF1', margin: [0, 3, 0, 3] },
+        objectiveWeekLabel: {
+          fontSize: 8,
+          color: '#991B1B',
+          margin: [12, 2, 0, 2],
+        },
+        objectiveWeekAmount: {
+          fontSize: 8,
+          bold: true,
+          color: '#B91C1C',
+          margin: [0, 2, 0, 2],
+        },
         totalLabel: { bold: true, margin: [0, 3, 0, 3] },
         total: { bold: true, fontSize: 12, margin: [0, 3, 0, 3] },
 
