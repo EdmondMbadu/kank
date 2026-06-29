@@ -19,6 +19,7 @@ import exifr from 'exifr';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -158,6 +159,14 @@ type PayrollDeductionDetail = {
   amount: number;
   start?: string;
   end?: string;
+};
+type PayrollPaymentHistoryEntry = {
+  rawKey: string;
+  date: Date;
+  dateLabel: string;
+  amount: number;
+  kind: 'paiement' | 'bonus';
+  sourceIndex: number;
 };
 type PayrollBreakdownRow = {
   employee: Employee;
@@ -411,6 +420,13 @@ export class TeamRankingMonthComponent implements OnDestroy {
     sending: false,
     result: null as { ok: boolean; text: string } | null,
   };
+  payrollReceiptTarget: {
+    rowKey: string;
+    employeeUid: string;
+    ownerUid: string;
+    sourceIndex: number;
+  } | null = null;
+  payrollReceiptSavingKey = '';
   showMonthlyAmounts = false;
   showDailyAmounts = false;
   showWeeklyAmounts = false;
@@ -2388,6 +2404,167 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return row.employee.signedPaymentThisMonth ? 0 : Math.max(row.net, 0);
   }
 
+  latestPayrollPaymentHistory(
+    row: PayrollBreakdownRow
+  ): PayrollPaymentHistoryEntry[] {
+    const salaryEntries = Object.entries(row.employee.payments || {});
+    salaryEntries.sort(([rawA], [rawB]) => {
+      const dateA = this.time.parseFlexibleDateTime(rawA);
+      const dateB = this.time.parseFlexibleDateTime(rawB);
+      return dateB.getTime() - dateA.getTime();
+    });
+
+    return salaryEntries
+      .map(([rawKey, rawAmount], displayIndex, array) => {
+        const amount = Number(rawAmount ?? 0);
+        return {
+          rawKey,
+          date: this.time.parseFlexibleDateTime(rawKey),
+          dateLabel: this.time.convertTimeFormat(rawKey),
+          amount: Number.isFinite(amount) ? amount : 0,
+          kind: this.resolvePaymentKind(rawKey),
+          sourceIndex: array.length - 1 - displayIndex,
+        };
+      })
+      .filter(
+        (entry) => entry.date instanceof Date && !Number.isNaN(entry.date.getTime())
+      )
+      .slice(0, 2);
+  }
+
+  payrollHistoryKindLabel(entry: PayrollPaymentHistoryEntry): string {
+    return entry.kind === 'bonus' ? 'Bonus' : 'Paiement';
+  }
+
+  payrollHistoryInvoiceUrl(
+    row: PayrollBreakdownRow,
+    entry: PayrollPaymentHistoryEntry
+  ): string {
+    return row.employee.paymentsPicturePath?.[entry.sourceIndex] || '';
+  }
+
+  payrollHistoryReceiptUrl(
+    row: PayrollBreakdownRow,
+    entry: PayrollPaymentHistoryEntry
+  ): string {
+    return row.employee.receipts?.[entry.sourceIndex] || '';
+  }
+
+  payrollHistoryReceiptSaving(
+    row: PayrollBreakdownRow,
+    entry: PayrollPaymentHistoryEntry
+  ): boolean {
+    return (
+      this.payrollReceiptSavingKey ===
+      `${this.payrollRowKey(row)}:${entry.sourceIndex}`
+    );
+  }
+
+  openPayrollReceiptPicker(
+    row: PayrollBreakdownRow,
+    entry: PayrollPaymentHistoryEntry
+  ): void {
+    if (!this.auth.isAdmninistrator || !row?.employee?.uid) return;
+    const ownerUid = row.employee.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      alert("Impossible d'identifier la localisation de cet employé.");
+      return;
+    }
+
+    this.payrollReceiptTarget = {
+      rowKey: this.payrollRowKey(row),
+      employeeUid: row.employee.uid,
+      ownerUid,
+      sourceIndex: entry.sourceIndex,
+    };
+
+    const fileInput = document.getElementById(
+      'payrollReceiptFileInput'
+    ) as HTMLInputElement | null;
+    fileInput?.click();
+  }
+
+  async onPayrollReceiptFileSelected(fileList: FileList): Promise<void> {
+    const file = fileList?.item(0);
+    const target = this.payrollReceiptTarget;
+    if (!file || !target) return;
+
+    if (
+      !['image', 'application/pdf'].includes(file.type.split('/')[0]) &&
+      file.type !== 'application/pdf'
+    ) {
+      alert('Seuls les fichiers image ou PDF sont acceptés');
+      return;
+    }
+
+    if (file.size >= 5_000_000) {
+      alert('Le fichier est trop grand (max 5MB).');
+      return;
+    }
+
+    const row = this.payrollRows.find(
+      (candidate) => this.payrollRowKey(candidate) === target.rowKey
+    );
+    if (!row) {
+      alert("Impossible de retrouver l'employé sélectionné.");
+      this.payrollReceiptTarget = null;
+      return;
+    }
+
+    let fileToUpload = file;
+    if (file.type === 'image/heic') {
+      try {
+        const heic2any = (await import('heic2any')).default;
+        const convertedBlob: any = await heic2any({
+          blob: file,
+          toType: 'image/png',
+          quality: 0.7,
+        });
+        fileToUpload = new File([convertedBlob], `${file.name}.png`, {
+          type: 'image/png',
+        });
+      } catch (error) {
+        console.error('Erreur de conversion HEIC -> PNG :', error);
+        alert("Impossible de convertir l'image HEIC.");
+        return;
+      }
+    }
+
+    this.payrollReceiptSavingKey = `${target.rowKey}:${target.sourceIndex}`;
+    try {
+      const path = `receipts/${row.employee.firstName}-${row.employee.lastName}-receipt${target.sourceIndex}`;
+      const uploadTask = await this.storage.upload(path, fileToUpload);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+      const receipts = [...(row.employee.receipts || [])];
+      while (receipts.length <= target.sourceIndex) {
+        receipts.push('');
+      }
+      receipts[target.sourceIndex] = downloadURL;
+
+      await this.data.updateEmployeeFieldsForUser(
+        target.ownerUid,
+        target.employeeUid,
+        { receipts }
+      );
+      row.employee.receipts = receipts;
+      const fullEmployee = this.allEmployeesAll.find(
+        (employee) =>
+          employee.uid === target.employeeUid &&
+          (employee.tempUser?.uid || this.auth.currentUser?.uid) === target.ownerUid
+      );
+      if (fullEmployee) {
+        fullEmployee.receipts = receipts;
+      }
+      alert('Reçu ajouté/modifié avec succès!');
+    } catch (error) {
+      console.error('Failed to upload payroll receipt', error);
+      alert("Impossible d'ajouter le reçu. Réessayez.");
+    } finally {
+      this.payrollReceiptSavingKey = '';
+      this.payrollReceiptTarget = null;
+    }
+  }
+
   private payrollBankLabel(employee: Employee): string {
     const raw = String(employee.paymentBankProvider || '').trim();
     if (!raw) return 'Banque non définie';
@@ -3735,7 +3912,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     private compute: ComputationService,
     private data: DataService,
     private afs: AngularFirestore,
-    private fns: AngularFireFunctions
+    private fns: AngularFireFunctions,
+    private storage: AngularFireStorage
   ) {}
   isFetchingClients = false;
   currentEmployees: any = [];
