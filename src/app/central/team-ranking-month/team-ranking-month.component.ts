@@ -18,6 +18,7 @@ import { DataService } from 'src/app/services/data.service';
 import exifr from 'exifr';
 import { firstValueFrom, Subscription } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { AngularFireFunctions } from '@angular/fire/compat/functions';
 
 type AttendanceQuickCode = 'P' | 'A' | 'L' | '';
 type AttendanceStateCode = '' | 'P' | 'A' | 'L' | 'V' | 'VP' | 'N' | 'F';
@@ -388,6 +389,15 @@ export class TeamRankingMonthComponent implements OnDestroy {
   payrollEditRowKey = '';
   payrollEditDraft: PayrollEditDraft | null = null;
   payrollEditSaving = false;
+  payrollSmsSendingKey = '';
+  payrollSmsModal = {
+    open: false,
+    row: null as PayrollBreakdownRow | null,
+    phone: '',
+    message: '',
+    sending: false,
+    result: null as { ok: boolean; text: string } | null,
+  };
   showMonthlyAmounts = false;
   showDailyAmounts = false;
   showWeeklyAmounts = false;
@@ -2432,6 +2442,134 @@ export class TeamRankingMonthComponent implements OnDestroy {
     await this.setPayrollVisibility(row, 'checkVisible', visible);
   }
 
+  payrollSmsSending(
+    row: PayrollBreakdownRow,
+    type: 'bonus' | 'paiement'
+  ): boolean {
+    return this.payrollSmsSendingKey === `${this.payrollRowKey(row)}:${type}`;
+  }
+
+  async sendPayrollReminderSms(
+    row: PayrollBreakdownRow,
+    type: 'bonus' | 'paiement'
+  ): Promise<void> {
+    if (!this.auth.isAdmninistrator || !row?.employee) return;
+    if (!row.employee.phoneNumber) {
+      alert("Numéro de téléphone manquant pour cet employé.");
+      return;
+    }
+
+    this.payrollSmsSendingKey = `${this.payrollRowKey(row)}:${type}`;
+    try {
+      const callable = this.fns.httpsCallable('sendEmployeePayRemindersSMS');
+      const res: any = await firstValueFrom(
+        callable({
+          type,
+          employees: [
+            {
+              phoneNumber: row.employee.phoneNumber,
+              firstName: row.employee.firstName,
+              lastName: row.employee.lastName,
+            },
+          ],
+        })
+      );
+      alert(`SMS envoyé : ${res?.sent ?? 0}/1`);
+    } catch (error: any) {
+      console.error('Payroll reminder SMS failed', error);
+      alert('Erreur SMS : ' + (error?.message || "Impossible d'envoyer le SMS."));
+    } finally {
+      this.payrollSmsSendingKey = '';
+    }
+  }
+
+  openPayrollSmsModal(row: PayrollBreakdownRow): void {
+    if (!this.auth.isAdmninistrator || !row?.employee) return;
+    this.payrollSmsModal = {
+      open: true,
+      row,
+      phone: row.employee.phoneNumber || '',
+      message: this.buildPayrollSmsTemplate(row),
+      sending: false,
+      result: null,
+    };
+  }
+
+  closePayrollSmsModal(): void {
+    if (this.payrollSmsModal.sending) return;
+    this.payrollSmsModal.open = false;
+  }
+
+  payrollSmsSegments(): number {
+    const len = (this.payrollSmsModal.message || '').trim().length;
+    return len ? Math.ceil(len / 160) : 0;
+  }
+
+  async sendPayrollCustomSms(): Promise<void> {
+    if (!this.auth.isAdmninistrator || this.payrollSmsModal.sending) return;
+    const row = this.payrollSmsModal.row;
+    const phoneNumber = (this.payrollSmsModal.phone || '').trim();
+    const message = (this.payrollSmsModal.message || '').trim();
+
+    if (!row || !phoneNumber || !message) {
+      this.payrollSmsModal.result = {
+        ok: false,
+        text: 'Numéro et message requis.',
+      };
+      return;
+    }
+
+    this.payrollSmsModal.sending = true;
+    this.payrollSmsModal.result = null;
+    try {
+      const callable = this.fns.httpsCallable('sendCustomSMS');
+      await firstValueFrom(
+        callable({
+          phoneNumber,
+          message,
+          metadata: {
+            type: 'employee_generic_sms',
+            employeeId: row.employee?.uid || null,
+            ownerUid: row.employee?.tempUser?.uid || this.auth.currentUser?.uid || null,
+            source: 'team_ranking_month_payroll',
+            template: 'paiement_libre',
+          },
+        })
+      );
+      this.payrollSmsModal.result = {
+        ok: true,
+        text: 'SMS envoyé avec succès.',
+      };
+    } catch (error: any) {
+      console.error('Payroll custom SMS failed', error);
+      this.payrollSmsModal.result = {
+        ok: false,
+        text: error?.message || "Échec de l'envoi du SMS.",
+      };
+    } finally {
+      this.payrollSmsModal.sending = false;
+    }
+  }
+
+  private buildPayrollSmsTemplate(row: PayrollBreakdownRow): string {
+    const firstName = row.employee?.firstName || '';
+    const lastName = row.employee?.lastName || '';
+    const visibleItems: string[] = [];
+    if (this.payrollPaymentVisible(row.employee)) visibleItems.push('paiement');
+    if (this.payrollBonusVisible(row.employee)) visibleItems.push('bonus');
+    const itemLabel =
+      visibleItems.length === 2
+        ? 'paiement et votre bonus'
+        : visibleItems[0] || 'paiement';
+
+    return (
+      `FONDATION GERVAIS : ${firstName} ${lastName}, ` +
+      `votre ${itemLabel} est disponible. ` +
+      `Allez le SIGNER dans l’appli pour déclencher le virement. ` +
+      `Montant incorrect? Contactez +1 2156877614.`
+    );
+  }
+
   private recomputePayrollRowsForAdmin(): void {
     if (!this.auth.isAdmninistrator) {
       this.payrollRows = [];
@@ -3357,7 +3495,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     private performance: PerformanceService,
     private compute: ComputationService,
     private data: DataService,
-    private afs: AngularFirestore
+    private afs: AngularFirestore,
+    private fns: AngularFireFunctions
   ) {}
   isFetchingClients = false;
   currentEmployees: any = [];
