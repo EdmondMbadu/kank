@@ -311,6 +311,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   selectedPresenceEmployeeId = '';
   presenceEmployeeSearch = '';
   presenceEmployeeSearchOpen = false;
+  presenceEmployeeAdminDraft = {
+    vacationAcceptedNumberOfDays: '',
+    vacationTotalDays: '',
+    arrivalHour: '',
+    arrivalMinute: '',
+  };
+  presenceEmployeeAdminSaving = false;
+  presenceEmployeeAdminMessage = '';
   presenceSummaryIncludeSaturday = false;
   presenceSummaryIncludeAbsent = false;
   presenceSummaryIncludeAnomaly = false;
@@ -671,6 +679,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
   }
 
+  get presenceEmployeeAdminDraftRemainingDays(): number {
+    const total = this.nonNegativeNumberFromDraft(
+      this.presenceEmployeeAdminDraft.vacationTotalDays,
+      this.DEFAULT_VACATION_DAYS
+    );
+    const accepted = this.nonNegativeNumberFromDraft(
+      this.presenceEmployeeAdminDraft.vacationAcceptedNumberOfDays
+    );
+    return Math.max(0, total - accepted);
+  }
+
   get filteredPresenceEmployees(): Employee[] {
     const query = this.presenceEmployeeSearch.trim().toLowerCase();
     const employees = this.allEmployees || [];
@@ -686,6 +705,58 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (value === undefined || value === null || value === '') return fallback;
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : fallback;
+  }
+
+  private nonNegativeNumberFromDraft(value: string, fallback = 0): number {
+    if (value === undefined || value === null || value === '') return fallback;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? Math.max(0, numeric) : fallback;
+  }
+
+  private normalizePresenceTimePart(
+    value: string,
+    max: number,
+    label: string
+  ): string | null {
+    const trimmed = String(value || '').trim();
+    if (!trimmed) return '';
+    const numeric = Number(trimmed);
+    if (!Number.isInteger(numeric) || numeric < 0 || numeric > max) {
+      this.presenceEmployeeAdminMessage = `${label} doit être entre 0 et ${max}.`;
+      return null;
+    }
+    return numeric.toString();
+  }
+
+  private syncPresenceEmployeeAdminDraft(): void {
+    const employee = this.selectedPresenceEmployee;
+    this.presenceEmployeeAdminDraft = {
+      vacationAcceptedNumberOfDays:
+        employee?.vacationAcceptedNumberOfDays?.toString() || '0',
+      vacationTotalDays:
+        employee?.vacationTotalDays?.toString() ||
+        this.DEFAULT_VACATION_DAYS.toString(),
+      arrivalHour: employee?.arrivalHour?.toString() || '',
+      arrivalMinute: employee?.arrivalMinute?.toString() || '',
+    };
+    this.presenceEmployeeAdminMessage = '';
+  }
+
+  private applyPresenceEmployeeAdminFields(
+    selectedEmployee: Employee,
+    ownerUid: string,
+    fields: Partial<Employee>
+  ): void {
+    Object.assign(selectedEmployee, fields);
+    const applyTo = (employee: Employee) => {
+      const candidateOwnerUid = employee.tempUser?.uid || this.auth.currentUser?.uid;
+      if (candidateOwnerUid === ownerUid && employee.uid === selectedEmployee.uid) {
+        Object.assign(employee, fields);
+      }
+    };
+    (this.allEmployees || []).forEach(applyTo);
+    (this.allEmployeesAll || []).forEach(applyTo);
+    this.syncPresenceEmployeeAdminDraft();
   }
 
   get presenceMonthLabel(): string {
@@ -984,8 +1055,67 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.presenceEmployeeSearch = this.formatRankingEmployeeName(employee);
     this.presenceEmployeeSearchOpen = false;
     this.presenceBulkMessage = '';
+    this.syncPresenceEmployeeAdminDraft();
     this.invalidatePresenceCache();
     this.loadPresenceAttachmentsForSelection();
+  }
+
+  async saveSelectedPresenceEmployeeAdminFields(): Promise<void> {
+    if (!this.auth.isAdmin || this.presenceEmployeeAdminSaving) return;
+    const employee = this.selectedPresenceEmployee;
+    if (!employee?.uid) {
+      this.presenceEmployeeAdminMessage = 'Aucun employé sélectionné.';
+      return;
+    }
+
+    const ownerUid = employee.tempUser?.uid || this.auth.currentUser?.uid;
+    if (!ownerUid) {
+      this.presenceEmployeeAdminMessage =
+        "Impossible d'identifier la localisation de cet employé.";
+      return;
+    }
+
+    const vacationAccepted = this.nonNegativeNumberFromDraft(
+      this.presenceEmployeeAdminDraft.vacationAcceptedNumberOfDays
+    );
+    const vacationTotal = this.nonNegativeNumberFromDraft(
+      this.presenceEmployeeAdminDraft.vacationTotalDays,
+      this.DEFAULT_VACATION_DAYS
+    );
+    const arrivalHour = this.normalizePresenceTimePart(
+      this.presenceEmployeeAdminDraft.arrivalHour,
+      23,
+      'Heure arrivée'
+    );
+    const arrivalMinute = this.normalizePresenceTimePart(
+      this.presenceEmployeeAdminDraft.arrivalMinute,
+      59,
+      'Minute arrivée'
+    );
+
+    if (arrivalHour === null || arrivalMinute === null) return;
+
+    const fields: Partial<Employee> = {
+      vacationAcceptedNumberOfDays: vacationAccepted.toString(),
+      vacationTotalDays: vacationTotal.toString(),
+      arrivalHour,
+      arrivalMinute,
+    };
+
+    this.presenceEmployeeAdminSaving = true;
+    this.presenceEmployeeAdminMessage = '';
+    try {
+      await this.data.updateEmployeeFieldsForUser(ownerUid, employee.uid, fields);
+      this.applyPresenceEmployeeAdminFields(employee, ownerUid, fields);
+      this.invalidatePresenceCache();
+      this.presenceEmployeeAdminMessage = 'Informations mises à jour.';
+    } catch (error) {
+      console.error('Failed to update selected presence employee', error);
+      this.presenceEmployeeAdminMessage =
+        "Impossible d'enregistrer ces informations.";
+    } finally {
+      this.presenceEmployeeAdminSaving = false;
+    }
   }
 
   onPresencePeriodChange(): void {
@@ -1269,6 +1399,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (!this.allEmployees?.length) {
       this.selectedPresenceEmployeeId = '';
       this.presenceEmployeeSearch = '';
+      this.syncPresenceEmployeeAdminDraft();
       return;
     }
 
@@ -1278,6 +1409,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     if (!stillExists) {
       this.selectedPresenceEmployeeId = this.allEmployees[0].uid || '';
     }
+    this.syncPresenceEmployeeAdminDraft();
   }
 
   private buildPresenceMonthSummary(
