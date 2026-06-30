@@ -115,6 +115,7 @@ export class TodayComponent {
       (projection: WeeklyPaymentProjection) => {
         this.projectedWeeklyTargetFc = projection.projectedTargetFc;
         this.projectedWeeklyTargetEffectiveDate = projection.effectiveDateIso;
+        this.projectedWeeklyTargetVisible = projection.isVisible;
       }
     );
     this.auth.getAllClients().subscribe((data: any) => {
@@ -163,6 +164,7 @@ export class TodayComponent {
   weeklyTargetFc: number = 600000;
   projectedWeeklyTargetFc: number | null = null;
   projectedWeeklyTargetEffectiveDate = '';
+  projectedWeeklyTargetVisible = false;
   weeklyTargetInput: string = '';
   weeklyTargetPeriodStartDateInput = '';
   weeklyTargetPeriodEndDateInput = '';
@@ -1086,6 +1088,7 @@ export class TodayComponent {
 
   get hasProjectedWeeklyTarget(): boolean {
     return (
+      this.projectedWeeklyTargetVisible &&
       this.projectedWeeklyTargetFc != null &&
       Number.isFinite(this.projectedWeeklyTargetFc) &&
       this.projectedWeeklyTargetFc > 0 &&

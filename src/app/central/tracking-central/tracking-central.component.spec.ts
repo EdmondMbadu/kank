@@ -6,8 +6,20 @@ describe('TrackingCentralComponent', () => {
       isAdmin: true,
       weeklyPaymentTargetFc: 900000,
       weeklyPaymentTargetPeriods: [],
+      weeklyPaymentTarget$: { subscribe: () => {} },
+      weeklyPaymentTargetPeriods$: { subscribe: () => {} },
+      teamWeeklyBonusConfig$: { subscribe: () => {} },
+      profitabilityConfig$: { subscribe: () => {} },
+      weeklyPaymentProjection$: { subscribe: () => {} },
+      weeklyObjectiveDeductionConfig$: { subscribe: () => {} },
       updateWeeklyPaymentTargetPeriodsGlobal: jasmine
         .createSpy('updateWeeklyPaymentTargetPeriodsGlobal')
+        .and.returnValue(Promise.resolve()),
+      updateWeeklyPaymentTargetGlobal: jasmine
+        .createSpy('updateWeeklyPaymentTargetGlobal')
+        .and.returnValue(Promise.resolve()),
+      clearWeeklyPaymentTargetOverridesForUsers: jasmine
+        .createSpy('clearWeeklyPaymentTargetOverridesForUsers')
         .and.returnValue(Promise.resolve()),
       ...authOverrides,
     };
@@ -111,5 +123,44 @@ describe('TrackingCentralComponent', () => {
     expect(window.alert).toHaveBeenCalledWith(
       'Ces périodes se chevauchent. Corrigez les dates pour garder des intervalles distincts.'
     );
+  });
+
+  it('global weekly minimum save clears dated and user-specific minimum rules', async () => {
+    const updateGlobal = jasmine
+      .createSpy('updateWeeklyPaymentTargetGlobal')
+      .and.returnValue(Promise.resolve());
+    const clearUserOverrides = jasmine
+      .createSpy('clearWeeklyPaymentTargetOverridesForUsers')
+      .and.returnValue(Promise.resolve());
+    const { component } = createComponent({
+      updateWeeklyPaymentTargetGlobal: updateGlobal,
+      clearWeeklyPaymentTargetOverridesForUsers: clearUserOverrides,
+    });
+    component.allUsers = [
+      { uid: 'site-1', weeklyPaymentTargetFc: '900000' } as any,
+      { uid: 'site-2', weeklyPaymentTargetPeriods: [] } as any,
+    ];
+    component.weeklyPaymentTargetPeriods = [
+      {
+        startDateIso: '2026-05-01',
+        endDateIso: '2026-06-27',
+        targetFc: 900000,
+      },
+    ];
+    component.projectedWeeklyPaymentTargetFc = 1200000;
+    component.projectedWeeklyPaymentEffectiveDate = '2026-07-01';
+    component.projectedWeeklyPaymentVisible = true;
+    component.weeklyPaymentTargetInput = '1200000';
+
+    component.saveWeeklyPaymentTargetGlobal();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(updateGlobal).toHaveBeenCalledWith(1200000);
+    expect(clearUserOverrides).toHaveBeenCalledWith(['site-1', 'site-2']);
+    expect(component.weeklyPaymentTargetPeriods).toEqual([]);
+    expect(component.projectedWeeklyPaymentTargetFc).toBeNull();
+    expect(component.projectedWeeklyPaymentEffectiveDate).toBe('');
+    expect(component.projectedWeeklyPaymentVisible).toBeFalse();
   });
 });

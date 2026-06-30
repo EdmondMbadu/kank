@@ -26,6 +26,12 @@ export class Management {
   profitabilityThresholdUsd?: number;
   projectedWeeklyPaymentTargetFc?: number;
   projectedWeeklyPaymentEffectiveDate?: string;
+  projectedWeeklyPaymentVisible?: boolean;
+  weeklyObjectiveDeductionConfig?: {
+    bandFc?: number;
+    floorFc?: number;
+    basePenaltyUsd?: number;
+  };
   monthlyPaymentSnapshots?: { [monthYear: string]: MonthlyPaymentSnapshot };
   rolePasswords?: {
     admin?: string;

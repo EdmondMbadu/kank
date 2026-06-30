@@ -172,19 +172,35 @@
     <p *ngIf="rolePasswordsSaved" class="mt-4 text-sm text-emerald-600">
       Mots de passe mis à jour.
     </p>
+  </div>
 
-    <div class="mt-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <div class="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
+    <div class="flex flex-col gap-2">
+      <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
+        Minimum hebdomadaire
+      </p>
+      <h2 class="text-2xl font-semibold text-slate-900">
+        Objectif de paiement
+      </h2>
+      <p class="max-w-3xl text-sm text-slate-600">
+        Le global est la règle principale. Quand il est enregistré, il remplace
+        les périodes spécifiques, les objectifs par site et masque l’ancienne
+        projection.
+      </p>
+    </div>
+
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
-            Parametre Global
-          </p>
-          <h3 class="mt-2 text-xl font-semibold text-slate-900">
-            Paiement de la semaine (global)
+          <h3 class="text-xl font-semibold text-slate-900">
+            Minimum global
           </h3>
           <p class="mt-2 text-sm text-slate-600">
             Valeur actuelle :
             <strong>{{ weeklyPaymentTargetFc | number : "1.0-0" }} FC</strong>
+          </p>
+          <p class="mt-2 max-w-2xl text-xs text-slate-500">
+            {{ nextGlobalWeeklyMinimumPreviewLabel }}
           </p>
         </div>
         <button
@@ -206,110 +222,110 @@
             [(ngModel)]="weeklyPaymentTargetInput"
             type="number"
             class="mt-2 w-full max-w-xs rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-            placeholder="600000"
+            placeholder="1200000"
           />
         </label>
       </div>
-
-    <p
-      *ngIf="weeklyPaymentTargetSaved"
-      class="mt-4 text-sm text-emerald-600"
-    >
-      Montant global mis à jour.
-    </p>
-
-    <div class="mt-8 border-t border-slate-100 pt-6">
-      <h4 class="text-base font-semibold text-slate-900">
-        Périodes spécifiques
-      </h4>
-      <p class="mt-2 text-sm text-slate-600">
-        La semaine utilise la valeur active au lundi de cette semaine. En dehors
-        des périodes ci-dessous, la valeur globale actuelle reste utilisée.
-      </p>
-
-      <div class="mt-4 grid gap-4 lg:grid-cols-3">
-        <label class="text-sm font-semibold text-slate-700">
-          Début
-          <input
-            [(ngModel)]="weeklyPaymentTargetPeriodStartDateInput"
-            type="date"
-            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-          />
-        </label>
-
-        <label class="text-sm font-semibold text-slate-700">
-          Fin
-          <input
-            [(ngModel)]="weeklyPaymentTargetPeriodEndDateInput"
-            type="date"
-            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-          />
-        </label>
-
-        <label class="text-sm font-semibold text-slate-700">
-          Montant (FC)
-          <input
-            [(ngModel)]="weeklyPaymentTargetPeriodAmountInput"
-            type="number"
-            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-            placeholder="600000"
-          />
-        </label>
-      </div>
-
-      <div class="mt-4 flex flex-wrap gap-3">
-        <button
-          type="button"
-          (click)="saveWeeklyPaymentTargetPeriodGlobal()"
-          [disabled]="weeklyPaymentTargetPeriodsSaving"
-          class="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {{
-            weeklyPaymentTargetPeriodsSaving ? 'Sauvegarde...' : 'Ajouter la période'
-          }}
-        </button>
-      </div>
-
-      <div class="mt-5 space-y-3" *ngIf="weeklyPaymentTargetPeriods.length > 0; else noWeeklyTargetPeriods">
-        <div
-          *ngFor="let period of weeklyPaymentTargetPeriods; let i = index"
-          class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 md:flex-row md:items-center md:justify-between"
-        >
-          <div>
-            <p class="text-sm font-semibold text-slate-900">
-              {{ formatWeeklyTargetPeriodLabel(period) }}
-            </p>
-            <p class="mt-1 text-sm text-slate-600">
-              Minimum appliqué :
-              <strong>{{ period.targetFc | number : "1.0-0" }} FC</strong>
-            </p>
-          </div>
-
-          <button
-            type="button"
-            (click)="removeWeeklyPaymentTargetPeriodGlobal(i)"
-            [disabled]="weeklyPaymentTargetPeriodsSaving"
-            class="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            Supprimer
-          </button>
-        </div>
-      </div>
-
-      <ng-template #noWeeklyTargetPeriods>
-        <p class="mt-5 text-sm text-slate-500">
-          Aucune période spécifique enregistrée.
-        </p>
-      </ng-template>
 
       <p
-        *ngIf="weeklyPaymentTargetPeriodsSaved"
+        *ngIf="weeklyPaymentTargetSaved"
         class="mt-4 text-sm text-emerald-600"
       >
-        Périodes globales mises à jour.
+        Minimum global appliqué et anciennes règles remises à zéro.
       </p>
+
+      <details class="mt-8 rounded-2xl border border-slate-200 bg-white p-4">
+        <summary class="cursor-pointer text-base font-semibold text-slate-900">
+          Exceptions datées
+        </summary>
+        <p class="mt-2 text-sm text-slate-600">
+          À utiliser seulement pour une période spéciale. La semaine utilise la
+          valeur active au lundi de cette semaine.
+        </p>
+
+        <div class="mt-4 grid gap-4 lg:grid-cols-3">
+          <label class="text-sm font-semibold text-slate-700">
+            Début
+            <input
+              [(ngModel)]="weeklyPaymentTargetPeriodStartDateInput"
+              type="date"
+              class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+          </label>
+
+          <label class="text-sm font-semibold text-slate-700">
+            Fin
+            <input
+              [(ngModel)]="weeklyPaymentTargetPeriodEndDateInput"
+              type="date"
+              class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+          </label>
+
+          <label class="text-sm font-semibold text-slate-700">
+            Montant (FC)
+            <input
+              [(ngModel)]="weeklyPaymentTargetPeriodAmountInput"
+              type="number"
+              class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+              placeholder="600000"
+            />
+          </label>
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            (click)="saveWeeklyPaymentTargetPeriodGlobal()"
+            [disabled]="weeklyPaymentTargetPeriodsSaving"
+            class="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {{
+              weeklyPaymentTargetPeriodsSaving ? 'Sauvegarde...' : 'Ajouter la période'
+            }}
+          </button>
+        </div>
+
+        <div class="mt-5 space-y-3" *ngIf="weeklyPaymentTargetPeriods.length > 0; else noWeeklyTargetPeriods">
+          <div
+            *ngFor="let period of weeklyPaymentTargetPeriods; let i = index"
+            class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 md:flex-row md:items-center md:justify-between"
+          >
+            <div>
+              <p class="text-sm font-semibold text-slate-900">
+                {{ formatWeeklyTargetPeriodLabel(period) }}
+              </p>
+              <p class="mt-1 text-sm text-slate-600">
+                Minimum appliqué :
+                <strong>{{ period.targetFc | number : "1.0-0" }} FC</strong>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              (click)="removeWeeklyPaymentTargetPeriodGlobal(i)"
+              [disabled]="weeklyPaymentTargetPeriodsSaving"
+              class="rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              Supprimer
+            </button>
+          </div>
+        </div>
+
+        <ng-template #noWeeklyTargetPeriods>
+          <p class="mt-5 text-sm text-slate-500">
+            Aucune exception enregistrée.
+          </p>
+        </ng-template>
+
+        <p
+          *ngIf="weeklyPaymentTargetPeriodsSaved"
+          class="mt-4 text-sm text-emerald-600"
+        >
+          Exceptions mises à jour.
+        </p>
+      </details>
     </div>
-  </div>
 
     <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -436,17 +452,33 @@
             Date effective :
             <strong>{{ projectedWeeklyPaymentEffectiveDate || "—" }}</strong>
           </p>
+          <p class="mt-1 text-sm text-slate-600">
+            Affichage sur Today :
+            <strong>{{ projectedWeeklyPaymentStatusLabel }}</strong>
+          </p>
         </div>
-        <button
-          type="button"
-          (click)="saveProjectedWeeklyPaymentTargetGlobal()"
-          [disabled]="projectedWeeklyPaymentSaving"
-          class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {{
-            projectedWeeklyPaymentSaving ? 'Sauvegarde...' : 'Enregistrer'
-          }}
-        </button>
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+            <input
+              [(ngModel)]="projectedWeeklyPaymentVisible"
+              (ngModelChange)="toggleProjectedWeeklyPaymentVisibility($event)"
+              [disabled]="projectedWeeklyPaymentVisibilitySaving"
+              type="checkbox"
+              class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            Visible
+          </label>
+          <button
+            type="button"
+            (click)="saveProjectedWeeklyPaymentTargetGlobal()"
+            [disabled]="projectedWeeklyPaymentSaving"
+            class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {{
+              projectedWeeklyPaymentSaving ? 'Sauvegarde...' : 'Enregistrer'
+            }}
+          </button>
+        </div>
       </div>
 
       <div class="mt-6 grid gap-4 md:grid-cols-2">
@@ -474,6 +506,99 @@
         class="mt-4 text-sm text-emerald-600"
       >
         Projection enregistrée.
+      </p>
+    </div>
+
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">
+            Retenues objectif
+          </p>
+          <h3 class="mt-2 text-xl font-semibold text-slate-900">
+            Barème appliqué à la paie
+          </h3>
+          <p class="mt-2 max-w-3xl text-sm text-slate-600">
+            Aperçu basé sur le minimum global actuel. Ce barème est utilisé pour
+            calculer la retenue par employé quand une semaine complète reste en
+            dessous de l’objectif.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="saveWeeklyObjectiveDeductionConfigGlobal()"
+          [disabled]="weeklyObjectiveDeductionSaving"
+          class="rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {{
+            weeklyObjectiveDeductionSaving ? 'Sauvegarde...' : 'Enregistrer'
+          }}
+        </button>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <label class="text-sm font-semibold text-slate-700">
+          Tranche manquante (FC)
+          <input
+            [(ngModel)]="weeklyObjectiveDeductionBandInput"
+            type="number"
+            min="100000"
+            step="100000"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">
+          Plancher renforcé (FC)
+          <input
+            [(ngModel)]="weeklyObjectiveDeductionFloorInput"
+            type="number"
+            min="100000"
+            step="100000"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+        <label class="text-sm font-semibold text-slate-700">
+          Retenue renforcée ($)
+          <input
+            [(ngModel)]="weeklyObjectiveDeductionPenaltyInput"
+            type="number"
+            min="1"
+            step="1"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          />
+        </label>
+      </div>
+
+      <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Paiement semaine</th>
+              <th class="px-4 py-3">Retenue</th>
+              <th class="px-4 py-3">Note</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <tr *ngFor="let row of weeklyDeductionPreviewRows">
+              <td class="px-4 py-3 font-medium text-slate-900">
+                {{ row.label }}
+              </td>
+              <td class="px-4 py-3 font-semibold text-slate-900">
+                $ {{ row.deductionUsd | number : "1.0-0" }}
+              </td>
+              <td class="px-4 py-3 text-slate-600">
+                {{ row.note || 'Par tranche manquante' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p
+        *ngIf="weeklyObjectiveDeductionSaved"
+        class="mt-4 text-sm text-emerald-600"
+      >
+        Barème de retenue mis à jour.
       </p>
     </div>
 

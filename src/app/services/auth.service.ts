@@ -43,6 +43,7 @@ type RolePasswords = {
 export type WeeklyPaymentProjection = {
   projectedTargetFc: number | null;
   effectiveDateIso: string;
+  isVisible: boolean;
 };
 
 export type TeamWeeklyBonusConfig = {
@@ -51,6 +52,12 @@ export type TeamWeeklyBonusConfig = {
 
 export type ProfitabilityConfig = {
   thresholdUsd: number;
+};
+
+export type WeeklyObjectiveDeductionConfig = {
+  bandFc: number;
+  floorFc: number;
+  basePenaltyUsd: number;
 };
 @Injectable({
   providedIn: 'root',
@@ -88,6 +95,7 @@ export class AuthService {
   private readonly defaultWeeklyPaymentProjection: WeeklyPaymentProjection = {
     projectedTargetFc: null,
     effectiveDateIso: '',
+    isVisible: false,
   };
   private readonly defaultTeamWeeklyBonusConfig: TeamWeeklyBonusConfig = {
     thresholdFc: 1500000,
@@ -95,6 +103,12 @@ export class AuthService {
   private readonly defaultProfitabilityConfig: ProfitabilityConfig = {
     thresholdUsd: 3000,
   };
+  private readonly defaultWeeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig =
+    {
+      bandFc: 100000,
+      floorFc: 600000,
+      basePenaltyUsd: 5,
+    };
   private weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
   private weeklyPaymentTargetSubject = new BehaviorSubject<number>(
     this.weeklyPaymentTargetState
@@ -129,6 +143,16 @@ export class AuthService {
   private profitabilityConfigSubject =
     new BehaviorSubject<ProfitabilityConfig>(this.profitabilityConfigState);
   profitabilityConfig$ = this.profitabilityConfigSubject.asObservable();
+  private weeklyObjectiveDeductionConfigState: WeeklyObjectiveDeductionConfig =
+    {
+      ...this.defaultWeeklyObjectiveDeductionConfig,
+    };
+  private weeklyObjectiveDeductionConfigSubject =
+    new BehaviorSubject<WeeklyObjectiveDeductionConfig>(
+      this.weeklyObjectiveDeductionConfigState
+    );
+  weeklyObjectiveDeductionConfig$ =
+    this.weeklyObjectiveDeductionConfigSubject.asObservable();
   private managementDocId: string = '';
   private lastRoleWord = '';
 
@@ -1600,7 +1624,8 @@ export class AuthService {
 
   private normalizeWeeklyPaymentProjection(
     targetFc: any,
-    effectiveDateIso: any
+    effectiveDateIso: any,
+    isVisible: any
   ): WeeklyPaymentProjection {
     const parsedTarget = Number(targetFc);
     const normalizedTarget =
@@ -1610,6 +1635,32 @@ export class AuthService {
     return {
       projectedTargetFc: normalizedTarget,
       effectiveDateIso: normalizedDate,
+      isVisible:
+        typeof isVisible === 'boolean'
+          ? isVisible
+          : !!normalizedTarget && !!normalizedDate,
+    };
+  }
+
+  private normalizeWeeklyObjectiveDeductionConfig(
+    value: any
+  ): WeeklyObjectiveDeductionConfig {
+    const bandFc = Number(value?.bandFc);
+    const floorFc = Number(value?.floorFc);
+    const basePenaltyUsd = Number(value?.basePenaltyUsd);
+    return {
+      bandFc:
+        Number.isFinite(bandFc) && bandFc >= 100000 && bandFc % 100000 === 0
+          ? bandFc
+          : this.defaultWeeklyObjectiveDeductionConfig.bandFc,
+      floorFc:
+        Number.isFinite(floorFc) && floorFc >= 100000 && floorFc % 100000 === 0
+          ? floorFc
+          : this.defaultWeeklyObjectiveDeductionConfig.floorFc,
+      basePenaltyUsd:
+        Number.isFinite(basePenaltyUsd) && basePenaltyUsd > 0
+          ? basePenaltyUsd
+          : this.defaultWeeklyObjectiveDeductionConfig.basePenaltyUsd,
     };
   }
 
@@ -1761,6 +1812,12 @@ export class AuthService {
           this.weeklyPaymentProjectionSubject.next(
             this.weeklyPaymentProjectionState
           );
+          this.weeklyObjectiveDeductionConfigState = {
+            ...this.defaultWeeklyObjectiveDeductionConfig,
+          };
+          this.weeklyObjectiveDeductionConfigSubject.next(
+            this.weeklyObjectiveDeductionConfigState
+          );
           return;
         }
         const action = actions[0];
@@ -1798,10 +1855,18 @@ export class AuthService {
         this.weeklyPaymentProjectionState =
           this.normalizeWeeklyPaymentProjection(
             data.projectedWeeklyPaymentTargetFc,
-            data.projectedWeeklyPaymentEffectiveDate
+            data.projectedWeeklyPaymentEffectiveDate,
+            data.projectedWeeklyPaymentVisible
           );
         this.weeklyPaymentProjectionSubject.next(
           this.weeklyPaymentProjectionState
+        );
+        this.weeklyObjectiveDeductionConfigState =
+          this.normalizeWeeklyObjectiveDeductionConfig(
+            data.weeklyObjectiveDeductionConfig
+          );
+        this.weeklyObjectiveDeductionConfigSubject.next(
+          this.weeklyObjectiveDeductionConfigState
         );
         this.syncRoleFlagsWithRolePasswords();
       });
@@ -1835,10 +1900,31 @@ export class AuthService {
     }
     const docRef = this.afs.doc(`management/${this.managementDocId}`);
     return docRef
-      .set({ weeklyPaymentTargetFc: targetFc }, { merge: true })
+      .set(
+        {
+          weeklyPaymentTargetFc: targetFc,
+          weeklyPaymentTargetPeriods: [],
+          projectedWeeklyPaymentTargetFc:
+            firebase.firestore.FieldValue.delete(),
+          projectedWeeklyPaymentEffectiveDate:
+            firebase.firestore.FieldValue.delete(),
+          projectedWeeklyPaymentVisible: false,
+        },
+        { merge: true }
+      )
       .then(() => {
         this.weeklyPaymentTargetBaseState = this.normalizeWeeklyPaymentTarget(
           targetFc
+        );
+        this.weeklyPaymentTargetPeriodsState = [];
+        this.weeklyPaymentTargetPeriodsSubject.next(
+          this.weeklyPaymentTargetPeriodsState
+        );
+        this.weeklyPaymentProjectionState = {
+          ...this.defaultWeeklyPaymentProjection,
+        };
+        this.weeklyPaymentProjectionSubject.next(
+          this.weeklyPaymentProjectionState
         );
         this.syncCurrentGlobalWeeklyPaymentTargetState();
       });
@@ -1920,7 +2006,8 @@ export class AuthService {
 
   updateWeeklyPaymentProjectionGlobal(
     projectedTargetFc: number,
-    effectiveDateIso: string
+    effectiveDateIso: string,
+    isVisible = true
   ): Promise<void> {
     if (!this.managementDocId) {
       return Promise.reject('Aucun document management trouvé.');
@@ -1931,10 +2018,63 @@ export class AuthService {
         {
           projectedWeeklyPaymentTargetFc: projectedTargetFc,
           projectedWeeklyPaymentEffectiveDate: effectiveDateIso,
+          projectedWeeklyPaymentVisible: isVisible,
         },
         { merge: true }
       )
-      .then(() => {});
+      .then(() => {
+        this.weeklyPaymentProjectionState =
+          this.normalizeWeeklyPaymentProjection(
+            projectedTargetFc,
+            effectiveDateIso,
+            isVisible
+          );
+        this.weeklyPaymentProjectionSubject.next(
+          this.weeklyPaymentProjectionState
+        );
+      });
+  }
+
+  updateWeeklyPaymentProjectionVisibilityGlobal(
+    isVisible: boolean
+  ): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set({ projectedWeeklyPaymentVisible: isVisible }, { merge: true })
+      .then(() => {
+        this.weeklyPaymentProjectionState = {
+          ...this.weeklyPaymentProjectionState,
+          isVisible,
+        };
+        this.weeklyPaymentProjectionSubject.next(
+          this.weeklyPaymentProjectionState
+        );
+      });
+  }
+
+  updateWeeklyObjectiveDeductionConfigGlobal(
+    config: WeeklyObjectiveDeductionConfig
+  ): Promise<void> {
+    if (!this.managementDocId) {
+      return Promise.reject('Aucun document management trouvé.');
+    }
+    const normalizedConfig =
+      this.normalizeWeeklyObjectiveDeductionConfig(config);
+    const docRef = this.afs.doc(`management/${this.managementDocId}`);
+    return docRef
+      .set(
+        { weeklyObjectiveDeductionConfig: normalizedConfig },
+        { merge: true }
+      )
+      .then(() => {
+        this.weeklyObjectiveDeductionConfigState = normalizedConfig;
+        this.weeklyObjectiveDeductionConfigSubject.next(
+          this.weeklyObjectiveDeductionConfigState
+        );
+      });
   }
 
   updateUserFieldForUserId(
@@ -1967,6 +2107,32 @@ export class AuthService {
       slice.forEach((id) => {
         const ref = this.afs.doc(`users/${id}`).ref;
         batch.set(ref, { [field]: value }, { merge: true });
+      });
+      await batch.commit();
+    }
+  }
+
+  async clearWeeklyPaymentTargetOverridesForUsers(
+    userIds: string[]
+  ): Promise<void> {
+    const ids = (userIds || []).filter((id) => !!id);
+    if (!ids.length) {
+      return;
+    }
+    const chunkSize = 400; // stay under Firestore 500 ops per batch
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const batch = this.afs.firestore.batch();
+      const slice = ids.slice(i, i + chunkSize);
+      slice.forEach((id) => {
+        const ref = this.afs.doc(`users/${id}`).ref;
+        batch.set(
+          ref,
+          {
+            weeklyPaymentTargetFc: firebase.firestore.FieldValue.delete(),
+            weeklyPaymentTargetPeriods: firebase.firestore.FieldValue.delete(),
+          },
+          { merge: true }
+        );
       });
       await batch.commit();
     }

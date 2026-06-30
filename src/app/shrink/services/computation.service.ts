@@ -14,9 +14,9 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
   providedIn: 'root',
 })
 export class ComputationService {
-  private readonly weeklyObjectiveBandFc = 100000;
-  private readonly weeklyObjectiveFloorFc = 600000;
-  private readonly weeklyObjectiveBasePenaltyUsd = 5;
+  private weeklyObjectiveBandFc = 100000;
+  private weeklyObjectiveFloorFc = 600000;
+  private weeklyObjectiveBasePenaltyUsd = 5;
 
   constructor(
     private time: TimeService,
@@ -24,6 +24,7 @@ export class ComputationService {
     private afs: AngularFirestore
   ) {
     this.initRatesFromFirestore();
+    this.initWeeklyObjectiveDeductionConfigFromFirestore();
   }
   colorPositive: string = '#008080';
   colorNegative: string = '#ff0000';
@@ -112,6 +113,50 @@ export class ComputationService {
       });
     } catch {
       // swallow and keep defaults
+    }
+  }
+
+  private initWeeklyObjectiveDeductionConfigFromFirestore() {
+    try {
+      this.afs
+        .collection('management')
+        .snapshotChanges()
+        .subscribe((actions: any[]) => {
+          const data = actions?.[0]?.payload?.doc?.data?.() || {};
+          this.setWeeklyObjectiveDeductionConfig(
+            data.weeklyObjectiveDeductionConfig || {}
+          );
+        });
+    } catch {
+      // Keep default deduction rules if management settings are unavailable.
+    }
+  }
+
+  private setWeeklyObjectiveDeductionConfig(config: {
+    bandFc?: number;
+    floorFc?: number;
+    basePenaltyUsd?: number;
+  }) {
+    const bandFc = Number(config?.bandFc);
+    const floorFc = Number(config?.floorFc);
+    const basePenaltyUsd = Number(config?.basePenaltyUsd);
+
+    if (
+      Number.isFinite(bandFc) &&
+      bandFc >= 100000 &&
+      bandFc % 100000 === 0
+    ) {
+      this.weeklyObjectiveBandFc = bandFc;
+    }
+    if (
+      Number.isFinite(floorFc) &&
+      floorFc >= 100000 &&
+      floorFc % 100000 === 0
+    ) {
+      this.weeklyObjectiveFloorFc = floorFc;
+    }
+    if (Number.isFinite(basePenaltyUsd) && basePenaltyUsd > 0) {
+      this.weeklyObjectiveBasePenaltyUsd = basePenaltyUsd;
     }
   }
 

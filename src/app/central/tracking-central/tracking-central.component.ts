@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { User } from 'src/app/models/user';
 import {
   AuthService,
+  WeeklyObjectiveDeductionConfig,
   WeeklyPaymentProjection,
 } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -14,6 +15,12 @@ import {
   normalizeWeeklyPaymentTargetPeriods,
   parseWeeklyPaymentTargetDate,
 } from 'src/app/utils/weekly-payment-target.util';
+
+type WeeklyDeductionPreviewRow = {
+  label: string;
+  deductionUsd: number;
+  note?: string;
+};
 
 @Component({
   selector: 'app-tracking-central',
@@ -55,10 +62,22 @@ export class TrackingCentralComponent {
   profitabilityThresholdSaved = false;
   projectedWeeklyPaymentTargetFc: number | null = null;
   projectedWeeklyPaymentEffectiveDate = '';
+  projectedWeeklyPaymentVisible = false;
   projectedWeeklyPaymentTargetInput = '';
   projectedWeeklyPaymentEffectiveDateInput = '';
   projectedWeeklyPaymentSaving = false;
   projectedWeeklyPaymentSaved = false;
+  projectedWeeklyPaymentVisibilitySaving = false;
+  weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
+    bandFc: 100000,
+    floorFc: 600000,
+    basePenaltyUsd: 5,
+  };
+  weeklyObjectiveDeductionBandInput = '100000';
+  weeklyObjectiveDeductionFloorInput = '600000';
+  weeklyObjectiveDeductionPenaltyInput = '5';
+  weeklyObjectiveDeductionSaving = false;
+  weeklyObjectiveDeductionSaved = false;
   monthlyBudgetGlobalInput = '';
   monthlyBudgetGlobalSaving = false;
   monthlyBudgetGlobalSaved = false;
@@ -93,8 +112,16 @@ export class TrackingCentralComponent {
       (projection: WeeklyPaymentProjection) => {
         this.projectedWeeklyPaymentTargetFc = projection.projectedTargetFc;
         this.projectedWeeklyPaymentEffectiveDate = projection.effectiveDateIso;
+        this.projectedWeeklyPaymentVisible = projection.isVisible;
       }
     );
+    this.auth.weeklyObjectiveDeductionConfig$.subscribe((config) => {
+      this.weeklyObjectiveDeductionConfig = { ...config };
+      this.weeklyObjectiveDeductionBandInput = config.bandFc.toString();
+      this.weeklyObjectiveDeductionFloorInput = config.floorFc.toString();
+      this.weeklyObjectiveDeductionPenaltyInput =
+        config.basePenaltyUsd.toString();
+    });
   }
 
   totalPerfomance: number = 0;
@@ -227,11 +254,29 @@ export class TrackingCentralComponent {
 
     this.weeklyPaymentTargetSaving = true;
     this.weeklyPaymentTargetSaved = false;
+    const userIds = this.allUsers.map((user) => user.uid || '').filter(Boolean);
+    const overwriteUserMinimums = () =>
+      userIds.length
+        ? this.auth.clearWeeklyPaymentTargetOverridesForUsers(userIds)
+        : Promise.resolve();
     this.auth
       .updateWeeklyPaymentTargetGlobal(value)
+      .then(() => overwriteUserMinimums())
       .then(() => {
         this.weeklyPaymentTargetSaved = true;
         this.weeklyPaymentTargetInput = '';
+        this.weeklyPaymentTargetPeriods = [];
+        this.projectedWeeklyPaymentTargetFc = null;
+        this.projectedWeeklyPaymentEffectiveDate = '';
+        this.projectedWeeklyPaymentVisible = false;
+        this.allUsers = this.allUsers.map((user) => {
+          const {
+            weeklyPaymentTargetFc: _weeklyPaymentTargetFc,
+            weeklyPaymentTargetPeriods: _weeklyPaymentTargetPeriods,
+            ...rest
+          } = user;
+          return rest as User;
+        });
       })
       .catch((err) => {
         console.error('Failed to update weekly payment target:', err);
@@ -341,6 +386,92 @@ export class TrackingCentralComponent {
     return `${fmt(start)} - ${fmt(end)}`;
   }
 
+  get nextGlobalWeeklyMinimumPreviewLabel(): string {
+    if (!this.weeklyPaymentTargetInput) {
+      return 'Saisissez un montant pour remplacer le minimum global, les périodes spécifiques et les objectifs par site.';
+    }
+    const value = Number(this.weeklyPaymentTargetInput);
+    if (!Number.isFinite(value) || value <= 0) {
+      return 'Montant global invalide.';
+    }
+    return `Enregistrer remplacera le minimum par ${this.formatFc(
+      value
+    )} FC et remettra les exceptions à zéro.`;
+  }
+
+  get projectedWeeklyPaymentStatusLabel(): string {
+    return this.projectedWeeklyPaymentVisible ? 'Visible' : 'Masquée';
+  }
+
+  get weeklyDeductionPreviewRows(): WeeklyDeductionPreviewRow[] {
+    const targetFc =
+      Number.isFinite(Number(this.weeklyPaymentTargetFc)) &&
+      Number(this.weeklyPaymentTargetFc) > 0
+        ? Number(this.weeklyPaymentTargetFc)
+        : 600000;
+    const rows: WeeklyDeductionPreviewRow[] = [
+      {
+        label: `${this.formatFc(targetFc)} FC ou plus`,
+        deductionUsd: 0,
+        note: 'Aucune retenue',
+      },
+    ];
+
+    const bandFc = this.weeklyObjectiveDeductionConfig.bandFc;
+    const floorFc = this.weeklyObjectiveDeductionConfig.floorFc;
+    for (
+      let lowerBound = targetFc - bandFc;
+      lowerBound >= floorFc;
+      lowerBound -= bandFc
+    ) {
+      const upperBound = Math.min(targetFc - 1, lowerBound + bandFc - 1);
+      const deductionUsd = this.computeWeeklyObjectiveDeductionUsd(
+        lowerBound,
+        targetFc
+      );
+      if (deductionUsd <= 0) continue;
+      rows.push({
+        label: `${this.formatFc(lowerBound)} - ${this.formatFc(
+          upperBound
+        )} FC`,
+        deductionUsd,
+      });
+    }
+
+    rows.push({
+      label: `Moins de ${this.formatFc(floorFc)} FC`,
+      deductionUsd: this.computeWeeklyObjectiveDeductionUsd(
+        floorFc - 1,
+        targetFc
+      ),
+      note: 'Retenue maximale',
+    });
+
+    return rows;
+  }
+
+  private computeWeeklyObjectiveDeductionUsd(
+    weeklyTotalFc: number,
+    weeklyTargetFc: number
+  ): number {
+    const total = Number(weeklyTotalFc) || 0;
+    const target = Number(weeklyTargetFc) || 0;
+    const { bandFc, floorFc, basePenaltyUsd } =
+      this.weeklyObjectiveDeductionConfig;
+
+    if (!Number.isFinite(target) || target <= 0 || total >= target) {
+      return 0;
+    }
+    if (total >= floorFc) {
+      return Math.max(1, Math.ceil((target - total) / bandFc));
+    }
+    return Math.max(1, Math.floor(target / floorFc)) * basePenaltyUsd;
+  }
+
+  private formatFc(value: number): string {
+    return new Intl.NumberFormat('fr-FR').format(value);
+  }
+
   saveTeamWeeklyBonusThresholdGlobal(): void {
     if (!this.auth.isAdmin) return;
     if (this.teamWeeklyBonusThresholdSaving) return;
@@ -415,7 +546,11 @@ export class TrackingCentralComponent {
     this.projectedWeeklyPaymentSaving = true;
     this.projectedWeeklyPaymentSaved = false;
     this.auth
-      .updateWeeklyPaymentProjectionGlobal(value, effectiveDate)
+      .updateWeeklyPaymentProjectionGlobal(
+        value,
+        effectiveDate,
+        this.projectedWeeklyPaymentVisible
+      )
       .then(() => {
         this.projectedWeeklyPaymentSaved = true;
         this.projectedWeeklyPaymentTargetInput = '';
@@ -427,6 +562,72 @@ export class TrackingCentralComponent {
       })
       .finally(() => {
         this.projectedWeeklyPaymentSaving = false;
+      });
+  }
+
+  toggleProjectedWeeklyPaymentVisibility(isVisible: boolean): void {
+    if (!this.auth.isAdmin) return;
+    if (this.projectedWeeklyPaymentVisibilitySaving) return;
+    this.projectedWeeklyPaymentVisibilitySaving = true;
+    this.projectedWeeklyPaymentSaved = false;
+    this.auth
+      .updateWeeklyPaymentProjectionVisibilityGlobal(isVisible)
+      .then(() => {
+        this.projectedWeeklyPaymentVisible = isVisible;
+        this.projectedWeeklyPaymentSaved = true;
+      })
+      .catch((err) => {
+        console.error('Failed to update projection visibility:', err);
+        this.projectedWeeklyPaymentVisible = !isVisible;
+        alert("Impossible de modifier la visibilité de la projection.");
+      })
+      .finally(() => {
+        this.projectedWeeklyPaymentVisibilitySaving = false;
+      });
+  }
+
+  saveWeeklyObjectiveDeductionConfigGlobal(): void {
+    if (!this.auth.isAdmin) return;
+    if (this.weeklyObjectiveDeductionSaving) return;
+
+    const bandFc = Number(this.weeklyObjectiveDeductionBandInput);
+    const floorFc = Number(this.weeklyObjectiveDeductionFloorInput);
+    const basePenaltyUsd = Number(this.weeklyObjectiveDeductionPenaltyInput);
+
+    if (!Number.isFinite(bandFc) || bandFc < 100000 || bandFc % 100000 !== 0) {
+      alert('Entrez une tranche valide en FC (minimum 100 000 FC).');
+      return;
+    }
+    if (
+      !Number.isFinite(floorFc) ||
+      floorFc < 100000 ||
+      floorFc % 100000 !== 0
+    ) {
+      alert('Entrez un plancher valide en FC (minimum 100 000 FC).');
+      return;
+    }
+    if (!Number.isFinite(basePenaltyUsd) || basePenaltyUsd <= 0) {
+      alert('Entrez une retenue maximale valide en dollars.');
+      return;
+    }
+
+    this.weeklyObjectiveDeductionSaving = true;
+    this.weeklyObjectiveDeductionSaved = false;
+    this.auth
+      .updateWeeklyObjectiveDeductionConfigGlobal({
+        bandFc,
+        floorFc,
+        basePenaltyUsd,
+      })
+      .then(() => {
+        this.weeklyObjectiveDeductionSaved = true;
+      })
+      .catch((err) => {
+        console.error('Failed to update weekly deduction config:', err);
+        alert("Impossible d'enregistrer le barème de retenue.");
+      })
+      .finally(() => {
+        this.weeklyObjectiveDeductionSaving = false;
       });
   }
 

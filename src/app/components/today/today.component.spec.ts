@@ -21,6 +21,7 @@ describe('TodayComponent', () => {
       weeklyPaymentProjection$: of({
         projectedTargetFc: null,
         effectiveDateIso: '',
+        isVisible: false,
       }),
       getAllClients: () => of([]),
       getAllClientsCard: () => of([]),
@@ -60,12 +61,39 @@ describe('TodayComponent', () => {
         return new Date(year, month - 1, day);
       },
       getDayOfWeek: () => 'Wednesday',
+      monthFrenchNames: [
+        'Janvier',
+        'Février',
+        'Mars',
+        'Avril',
+        'Mai',
+        'Juin',
+        'Juillet',
+        'Août',
+        'Septembre',
+        'Octobre',
+        'Novembre',
+        'Décembre',
+      ],
     } as any;
 
     const compute = {
       convertCongoleseFrancToUsDollars: (value: string) =>
         (Number(value || 0) / 2900).toString(),
       computeWeeklyObjectiveDeductionUsd: () => 5,
+      findTotalForToday: (entries: Record<string, any> = {}, dateKey: string) =>
+        Object.keys(entries || {})
+          .filter((key) => key.startsWith(`${dateKey}-`))
+          .reduce((total, key) => total + Number(entries[key] || 0), 0)
+          .toFixed(2),
+      findTotalGiventMonth: () => 0,
+      computeExpectedPerDate: () => 0,
+      isNumber: (value: any) => Number.isFinite(Number(value)),
+    } as any;
+
+    const data = {
+      findClientsWithDebts: (clients: any[]) => clients || [],
+      didClientStartThisWeek: () => true,
     } as any;
 
     const component = new TodayComponent(
@@ -73,7 +101,7 @@ describe('TodayComponent', () => {
       auth,
       time,
       compute,
-      {} as any,
+      data,
       {} as any,
       {} as any
     );
@@ -240,5 +268,37 @@ describe('TodayComponent', () => {
 
     expect(component.showInvestmentMoneyInHandsModal).toBeTrue();
     expect(component.pendingInvestmentValue).toBe('200000');
+  });
+
+  it('hides the projected weekly target when projection visibility is off', () => {
+    const { component } = createComponent({
+      weeklyPaymentProjection$: of({
+        projectedTargetFc: 1200000,
+        effectiveDateIso: '2026-07-01',
+        isVisible: false,
+      }),
+    });
+
+    component.projectedWeeklyTargetFc = 1200000;
+    component.projectedWeeklyTargetEffectiveDate = '2026-07-01';
+    component.projectedWeeklyTargetVisible = false;
+
+    expect(component.hasProjectedWeeklyTarget).toBeFalse();
+  });
+
+  it('shows the projected weekly target when projection visibility is on', () => {
+    const { component } = createComponent({
+      weeklyPaymentProjection$: of({
+        projectedTargetFc: 1200000,
+        effectiveDateIso: '2026-07-01',
+        isVisible: true,
+      }),
+    });
+
+    component.projectedWeeklyTargetFc = 1200000;
+    component.projectedWeeklyTargetEffectiveDate = '2026-07-01';
+    component.projectedWeeklyTargetVisible = true;
+
+    expect(component.hasProjectedWeeklyTarget).toBeTrue();
   });
 });
