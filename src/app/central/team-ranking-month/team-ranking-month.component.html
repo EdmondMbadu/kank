@@ -3044,19 +3044,19 @@
               />
             </svg>
             <h2 class="text-base font-semibold tracking-tight">
-              Paiements Employé·e
+              Paie du mois
             </h2>
           </div>
           <span class="text-xs text-slate-500 dark:text-slate-400"
-            >Net mensuel calculé</span
+            >Salaire + bonus</span
           >
         </header>
 
         <!-- Collapsible body -->
         <div class="px-4 pb-4" [class.hidden]="!collapse.payroll">
           <div class="mb-3 mt-3 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-100">
-            Calcul admin seulement: salaire de base + ajouts - retenues du mois
-            sélectionné.
+            Calcul admin seulement: salaire net + bonus du mois sélectionné,
+            avec signatures et reçus séparés.
           </div>
           <div class="mb-3 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-900 lg:flex-row lg:items-center lg:justify-between">
             <label class="relative block min-w-0 flex-1">
@@ -3076,7 +3076,7 @@
               <input
                 type="search"
                 [(ngModel)]="payrollSearchTerm"
-                placeholder="Rechercher par nom, rôle, paiement signé, bonus non signé..."
+                placeholder="Rechercher par nom, rôle, statut paiement, statut bonus..."
                 class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-24 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:bg-slate-900 dark:focus:ring-indigo-900/40"
               />
               <button
@@ -3101,14 +3101,14 @@
                 </select>
               </label>
               <label class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Paiement
+                Statut
                 <select
                   [(ngModel)]="payrollPaidFilter"
                   class="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs font-semibold normal-case tracking-normal text-slate-800 outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 >
                   <option value="">Tous</option>
-                  <option value="paid">Déjà payés</option>
-                  <option value="unpaid">Non payés</option>
+                  <option value="paid">Tout payé</option>
+                  <option value="unpaid">Reste à payer</option>
                 </select>
               </label>
               <label class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
@@ -3127,13 +3127,29 @@
               </div>
             </div>
           </div>
-          <div class="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
             <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
               <div class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                Total à payer
+                Total à sortir
+              </div>
+              <div class="mt-1 text-lg font-black text-slate-900 dark:text-white">
+                {{ totalFilteredPayrollDue | number : "1.0-0" }} $
+              </div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+              <div class="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                Salaire net
               </div>
               <div class="mt-1 text-lg font-black text-slate-900 dark:text-white">
                 {{ totalFilteredPayrollNet | number : "1.0-0" }} $
+              </div>
+            </div>
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/50 dark:bg-emerald-900/20">
+              <div class="text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-200">
+                Bonus
+              </div>
+              <div class="mt-1 text-lg font-black text-emerald-800 dark:text-emerald-100">
+                {{ totalFilteredPayrollBonus | number : "1.0-0" }} $
               </div>
             </div>
             <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 dark:border-indigo-900/50 dark:bg-indigo-900/20">
@@ -3174,10 +3190,10 @@
               <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                 {{
                   payrollPaidFilter === "paid"
-                    ? "Déjà payés"
+                    ? "Tout payé"
                     : payrollPaidFilter === "unpaid"
-                    ? "Non payés"
-                    : "Tous paiements"
+                    ? "Reste à payer"
+                    : "Tous statuts"
                 }}
               </div>
               <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
@@ -3193,7 +3209,7 @@
           </div>
           <div class="w-full overflow-x-auto">
             <table
-              class="min-w-[1080px] w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
+              class="min-w-[1280px] w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
             >
             <thead
               class="select-none text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
@@ -3212,6 +3228,12 @@
                 </th>
                 <th scope="col" class="px-3 py-2 text-right font-medium">
                   Net&nbsp;($)
+                </th>
+                <th scope="col" class="px-3 py-2 text-right font-medium">
+                  Bonus&nbsp;($)
+                </th>
+                <th scope="col" class="px-3 py-2 text-right font-medium">
+                  Total&nbsp;($)
                 </th>
                 <th scope="col" class="px-3 py-2 text-right font-medium">
                   Reste&nbsp;($)
@@ -3348,6 +3370,34 @@
                         >
                           Bonus {{ row.employee.signedBonusThisMonth ? "signé" : "non signé" }}
                         </span>
+                        <span
+                          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+                          [ngClass]="
+                            row.employee.paidBonusThisMonth
+                              ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100'
+                              : row.bonusTotal > 0
+                              ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-100'
+                              : 'bg-slate-100 text-slate-500 ring-1 ring-slate-200'
+                          "
+                          [title]="
+                            row.employee.paidBonusThisMonth
+                              ? 'Bonus payé' +
+                                (row.employee.lastBonusPaidLabelThisMonth
+                                  ? ' · ' + row.employee.lastBonusPaidLabelThisMonth
+                                  : '')
+                              : row.bonusTotal > 0
+                              ? 'Bonus non payé'
+                              : 'Aucun bonus ce mois'
+                          "
+                        >
+                          Bonus {{
+                            row.employee.paidBonusThisMonth
+                              ? "payé"
+                              : row.bonusTotal > 0
+                              ? "non payé"
+                              : "0 $"
+                          }}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -3383,24 +3433,44 @@
                 >
                   {{ row.net | number : "1.0-0" }} $
                 </td>
+                <td class="px-3 py-2 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
+                  <div class="font-semibold">
+                    {{ row.bonusTotal | number : "1.0-0" }} $
+                  </div>
+                  <div class="text-[11px] text-slate-500">
+                    <ng-container *ngIf="row.bonusTotal > 0; else noPayrollBonus">
+                      <span *ngIf="row.bonusPerformance">Perf. {{ row.bonusPerformance | number : "1.0-0" }}$</span>
+                      <span *ngIf="row.bonusTeam"> Équipe {{ row.bonusTeam | number : "1.0-0" }}$</span>
+                      <span *ngIf="row.bonusEmployee"> Employé {{ row.bonusEmployee | number : "1.0-0" }}$</span>
+                      <span *ngIf="row.bonusManager"> Manager {{ row.bonusManager | number : "1.0-0" }}$</span>
+                    </ng-container>
+                    <ng-template #noPayrollBonus>—</ng-template>
+                  </div>
+                </td>
+                <td
+                  class="px-3 py-2 text-right tabular-nums text-base font-black text-slate-950 dark:text-white"
+                >
+                  {{ row.totalDue | number : "1.0-0" }} $
+                </td>
                 <td class="px-3 py-2 text-right tabular-nums">
                   <div
                     class="font-bold"
                     [ngClass]="
-                      row.employee.paidPaymentThisMonth
+                      payrollRowFullyPaid(row)
                         ? 'text-indigo-700 dark:text-indigo-300'
                         : 'text-amber-700 dark:text-amber-300'
                     "
                   >
-                    <ng-container *ngIf="row.employee.paidPaymentThisMonth; else payrollLeftAmountTpl">
-                      Payé
+                    <ng-container *ngIf="payrollRowFullyPaid(row); else payrollLeftAmountTpl">
+                      Tout payé
                     </ng-container>
                     <ng-template #payrollLeftAmountTpl>
-                      {{ payrollLeftAmount(row) | number : "1.0-0" }} $
+                      {{ row.remainingTotal | number : "1.0-0" }} $
                     </ng-template>
                   </div>
                   <div class="text-[11px] text-slate-500">
-                    {{ row.employee.paidPaymentThisMonth ? "0 $ restant" : "À payer" }}
+                    Sal. {{ row.salaryRemaining | number : "1.0-0" }}$ · Bon.
+                    {{ row.bonusRemaining | number : "1.0-0" }}$
                   </div>
                 </td>
                 <td class="px-3 py-2">
@@ -3421,7 +3491,7 @@
                 </td>
               </tr>
               <tr *ngIf="payrollRowIsOpen(row)">
-                <td colspan="8" class="bg-slate-50/80 px-4 py-4 dark:bg-slate-800/40">
+                <td colspan="10" class="bg-slate-50/80 px-4 py-4 dark:bg-slate-800/40">
                   <div class="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
                     <div class="min-w-0">
                       <div class="flex items-center gap-3">
@@ -3511,7 +3581,7 @@
                         </div>
                       </div>
 
-                      <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         <div
                           class="rounded-xl border px-3 py-2 text-xs"
                           [ngClass]="
@@ -3555,6 +3625,29 @@
                           </div>
                           <div class="mt-0.5 text-[11px] opacity-80">
                             {{ row.employee.lastBonusSignatureLabelThisMonth || "Aucune signature ce mois" }}
+                          </div>
+                        </div>
+                        <div
+                          class="rounded-xl border px-3 py-2 text-xs"
+                          [ngClass]="
+                            row.employee.paidBonusThisMonth
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                              : row.bonusTotal > 0
+                              ? 'border-rose-200 bg-rose-50 text-rose-800'
+                              : 'border-slate-200 bg-slate-50 text-slate-600'
+                          "
+                        >
+                          <div class="font-bold">
+                            Bonus {{
+                              row.employee.paidBonusThisMonth
+                                ? "payé"
+                                : row.bonusTotal > 0
+                                ? "non payé"
+                                : "0 $"
+                            }}
+                          </div>
+                          <div class="mt-0.5 text-[11px] opacity-80">
+                            {{ row.employee.lastBonusPaidLabelThisMonth || "Aucun reçu bonus ce mois" }}
                           </div>
                         </div>
                       </div>
@@ -3945,6 +4038,18 @@
                           <span>Net</span>
                           <span class="tabular-nums">{{ row.net | number : "1.0-0" }} $</span>
                         </div>
+                        <div class="flex justify-between gap-3 text-emerald-700 dark:text-emerald-300">
+                          <span>Bonus</span>
+                          <span class="font-semibold tabular-nums">+{{ row.bonusTotal | number : "1.0-0" }} $</span>
+                        </div>
+                        <div class="flex justify-between gap-3 text-amber-700 dark:text-amber-300">
+                          <span>Reste</span>
+                          <span class="font-semibold tabular-nums">{{ row.remainingTotal | number : "1.0-0" }} $</span>
+                        </div>
+                        <div class="mt-2 flex justify-between gap-3 border-t border-slate-200 pt-2 text-sm font-black text-slate-900 dark:border-slate-700 dark:text-white">
+                          <span>Total salaire + bonus</span>
+                          <span class="tabular-nums">{{ row.totalDue | number : "1.0-0" }} $</span>
+                        </div>
                       </div>
                       <div *ngIf="row.reasons.length > 0" class="mt-3 flex flex-wrap gap-1.5">
                         <span
@@ -3978,12 +4083,12 @@
               </tr>
               </ng-container>
               <tr *ngIf="payrollRows.length === 0">
-                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-400">
+                <td colspan="10" class="px-3 py-6 text-center text-sm text-slate-400">
                   Aucun employé à calculer pour ce mois.
                 </td>
               </tr>
               <tr *ngIf="payrollRows.length > 0 && filteredPayrollRows.length === 0">
-                <td colspan="8" class="px-3 py-6 text-center text-sm text-slate-400">
+                <td colspan="10" class="px-3 py-6 text-center text-sm text-slate-400">
                   Aucun employé ne correspond à cette recherche.
                 </td>
               </tr>
@@ -4010,13 +4115,19 @@
                 <td class="px-3 py-2 text-right text-[13px] font-bold tabular-nums">
                   {{ totalFilteredPayrollNet | number : "1.0-0" }} $
                 </td>
+                <td class="px-3 py-2 text-right text-[13px] font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
+                  {{ totalFilteredPayrollBonus | number : "1.0-0" }} $
+                </td>
+                <td class="px-3 py-2 text-right text-[13px] font-black tabular-nums">
+                  {{ totalFilteredPayrollDue | number : "1.0-0" }} $
+                </td>
                 <td class="px-3 py-2 text-right text-[13px] font-bold tabular-nums text-amber-700 dark:text-amber-300">
                   {{ totalPayrollLeftAmount | number : "1.0-0" }} $
                   <div class="text-[11px] font-semibold text-amber-700/80 dark:text-amber-300/80">
                     {{ totalPayrollLeftPeople }} restant{{ totalPayrollLeftPeople > 1 ? "s" : "" }}
                   </div>
                 </td>
-                <td class="px-3 py-2 text-xs text-slate-500">Net à payer</td>
+                <td class="px-3 py-2 text-xs text-slate-500">Salaire + bonus</td>
               </tr>
             </tfoot>
             </table>
@@ -4126,102 +4237,6 @@
                 </table>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── BONUS EMPLOYÉ·E ──────────────────────────────────────────── -->
-      <div
-        class="rounded-2xl border border-slate-200 bg-white/80 shadow-sm ring-1 ring-black/5 dark:border-slate-800 dark:bg-slate-900/70 dark:text-white"
-      >
-        <header
-          role="button"
-          tabindex="0"
-          (click)="toggle('bonus')"
-          (keydown.enter)="toggle('bonus')"
-          (keydown.space)="toggle('bonus')"
-          [attr.aria-expanded]="collapse.bonus"
-          class="flex items-center justify-between gap-3 rounded-t-2xl cursor-pointer select-none bg-gradient-to-r from-slate-50 to-white px-5 py-4 dark:from-slate-800 dark:to-slate-900"
-        >
-          <div class="flex items-center gap-2">
-            <svg
-              class="h-4 w-4 transition-transform duration-200"
-              [class.rotate-90]="collapse.bonus"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
-            <h2 class="text-base font-semibold tracking-tight">
-              Bonus Employé·e
-            </h2>
-          </div>
-          <span class="text-xs text-slate-500 dark:text-slate-400"
-            >Ce mois</span
-          >
-        </header>
-
-        <div class="px-4 pb-4" [class.hidden]="!collapse.bonus">
-          <div class="w-full overflow-x-auto">
-            <table
-              class="min-w-[420px] w-full table-auto border-collapse text-[13px] text-slate-600 dark:text-slate-300"
-            >
-            <thead
-              class="select-none text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
-            >
-              <tr class="border-b border-slate-200 dark:border-slate-800">
-                <th scope="col" class="px-3 py-2 text-left font-medium">#</th>
-                <th scope="col" class="px-3 py-2 text-left font-medium">Nom</th>
-                <th scope="col" class="px-3 py-2 text-right font-medium">
-                  Bonus&nbsp;($)
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-              <tr
-                *ngFor="let em of allEmployees; let i = index"
-                class="hover:bg-slate-50/60 dark:hover:bg-slate-800/60 transition-colors"
-              >
-                <td class="px-3 py-2">
-                  <span
-                    class="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded-full bg-emerald-100 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
-                  >
-                    {{ i + 1 }}
-                  </span>
-                </td>
-                <td
-                  class="px-3 py-2 font-medium text-slate-800 dark:text-slate-100"
-                >
-                  {{ em.firstName }} {{ em.lastName }}
-                </td>
-                <td
-                  class="px-3 py-2 text-right tabular-nums font-semibold text-slate-900 dark:text-slate-50"
-                >
-                  {{ em.totalBonusThisMonth | number : "1.0-0" }} $
-                </td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr
-                class="border-t border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/40"
-              >
-                <td class="px-3 py-2"></td>
-                <td class="px-3 py-2 text-right text-[13px] font-semibold">
-                  Total
-                </td>
-                <td
-                  class="px-3 py-2 text-right text-[13px] font-semibold tabular-nums"
-                >
-                  {{ totalBonus | number : "1.0-0" }} $
-                </td>
-              </tr>
-            </tfoot>
-            </table>
           </div>
         </div>
       </div>

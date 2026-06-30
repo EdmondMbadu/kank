@@ -189,6 +189,17 @@ type PayrollBreakdownRow = {
   manualWithdrawal: number;
   deductionsTotal: number;
   net: number;
+  salaryDue: number;
+  salaryRemaining: number;
+  bonusPerformance: number;
+  bonusTeam: number;
+  bonusEmployee: number;
+  bonusManager: number;
+  bonusTotal: number;
+  bonusRemaining: number;
+  totalDue: number;
+  paidTotal: number;
+  remainingTotal: number;
   reasons: string[];
   configured: boolean;
   attendanceOnly: boolean;
@@ -436,9 +447,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
   performanceEmployees: Employee[] = [];
 
   // state: all closed initially
-  collapse: Record<'payroll' | 'bonus' | 'loyer', boolean> = {
+  collapse: Record<'payroll' | 'loyer', boolean> = {
     payroll: false,
-    bonus: false,
     loyer: false,
   };
 
@@ -513,7 +523,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   private employeeMergeSubs: Subscription[] = [];
 
   // single toggle function
-  toggle(section: 'payroll' | 'bonus' | 'loyer') {
+  toggle(section: 'payroll' | 'loyer') {
     this.collapse[section] = !this.collapse[section];
   }
   /** Small helper so all logs share same prefix */
@@ -2294,12 +2304,12 @@ export class TeamRankingMonthComponent implements OnDestroy {
       const matchesBank = !bankFilter || row.bankKey === bankFilter;
       const matchesPaid =
         !paidFilter ||
-        (paidFilter === 'paid' && row.employee.paidPaymentThisMonth) ||
-        (paidFilter === 'unpaid' && !row.employee.paidPaymentThisMonth);
+        (paidFilter === 'paid' && this.payrollRowFullyPaid(row)) ||
+        (paidFilter === 'unpaid' && row.remainingTotal > 0);
       const matchesSigned =
         !signedFilter ||
-        (signedFilter === 'signed' && row.employee.signedPaymentThisMonth) ||
-        (signedFilter === 'unsigned' && !row.employee.signedPaymentThisMonth);
+        (signedFilter === 'signed' && this.payrollRowFullySigned(row)) ||
+        (signedFilter === 'unsigned' && !this.payrollRowFullySigned(row));
       return matchesSearch && matchesBank && matchesPaid && matchesSigned;
     });
   }
@@ -2326,31 +2336,37 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.filteredPayrollRows.reduce((sum, row) => sum + row.net, 0);
   }
 
+  get totalFilteredPayrollBonus(): number {
+    return this.filteredPayrollRows.reduce((sum, row) => sum + row.bonusTotal, 0);
+  }
+
+  get totalFilteredPayrollDue(): number {
+    return this.filteredPayrollRows.reduce((sum, row) => sum + row.totalDue, 0);
+  }
+
   get totalPayrollPaidAmount(): number {
     return this.filteredPayrollRows.reduce(
-      (sum, row) =>
-        row.employee.paidPaymentThisMonth ? sum + Math.max(row.net, 0) : sum,
+      (sum, row) => sum + row.paidTotal,
       0
     );
   }
 
   get totalPayrollLeftAmount(): number {
     return this.filteredPayrollRows.reduce(
-      (sum, row) =>
-        row.employee.paidPaymentThisMonth ? sum : sum + Math.max(row.net, 0),
+      (sum, row) => sum + row.remainingTotal,
       0
     );
   }
 
   get totalPayrollPaidPeople(): number {
     return this.filteredPayrollRows.filter(
-      (row) => row.employee.paidPaymentThisMonth
+      (row) => this.payrollRowFullyPaid(row)
     ).length;
   }
 
   get totalPayrollLeftPeople(): number {
     return this.filteredPayrollRows.filter(
-      (row) => !row.employee.paidPaymentThisMonth
+      (row) => row.remainingTotal > 0
     ).length;
   }
 
@@ -2375,6 +2391,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
     const bonusSigned = employee.signedBonusThisMonth
       ? 'bonus signe bonus signé'
       : 'bonus non signe bonus non signé';
+    const bonusPaid = employee.paidBonusThisMonth
+      ? 'bonus paye bonus payé'
+      : 'bonus non paye bonus non payé';
 
     return this.normalizePayrollSearch(
       [
@@ -2395,6 +2414,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
         paymentSigned,
         paymentPaid,
         bonusSigned,
+        bonusPaid,
+        row.bonusTotal ? `bonus ${row.bonusTotal}` : '',
+        row.totalDue ? `total ${row.totalDue}` : '',
         ...row.reasons,
       ]
         .filter(Boolean)
@@ -2410,8 +2432,19 @@ export class TeamRankingMonthComponent implements OnDestroy {
       .trim();
   }
 
-  payrollLeftAmount(row: PayrollBreakdownRow): number {
-    return row.employee.paidPaymentThisMonth ? 0 : Math.max(row.net, 0);
+  payrollRowFullyPaid(row: PayrollBreakdownRow): boolean {
+    return row.totalDue > 0 && row.remainingTotal <= 0;
+  }
+
+  payrollRowFullySigned(row: PayrollBreakdownRow): boolean {
+    const salaryNeedsSignature = row.salaryDue > 0;
+    const bonusNeedsSignature = row.bonusTotal > 0;
+    if (!salaryNeedsSignature && !bonusNeedsSignature) return false;
+
+    const salarySigned =
+      !salaryNeedsSignature || !!row.employee.signedPaymentThisMonth;
+    const bonusSigned = !bonusNeedsSignature || !!row.employee.signedBonusThisMonth;
+    return salarySigned && bonusSigned;
   }
 
   latestPayrollPaymentHistory(
@@ -3224,6 +3257,25 @@ export class TeamRankingMonthComponent implements OnDestroy {
       objective +
       manualWithdrawal;
     const net = base + additionsTotal - deductionsTotal;
+    const salaryDue = Math.max(net, 0);
+    const bonusPerformance = this.numberFrom(employee.bonusAmount);
+    const bonusTeam = this.numberFrom(employee.bestTeamBonusAmount);
+    const bonusEmployee = this.numberFrom(employee.bestEmployeeBonusAmount);
+    const bonusManager = this.numberFrom(employee.bestManagerBonusAmount);
+    const savedBonusTotal = this.numberFrom(employee.totalBonusThisMonth);
+    const computedBonusTotal =
+      bonusPerformance + bonusTeam + bonusEmployee + bonusManager;
+    const bonusTotal =
+      savedBonusTotal > 0 || computedBonusTotal <= 0
+        ? Math.max(savedBonusTotal, 0)
+        : computedBonusTotal;
+    const salaryRemaining = employee.paidPaymentThisMonth ? 0 : salaryDue;
+    const bonusRemaining = employee.paidBonusThisMonth ? 0 : bonusTotal;
+    const totalDue = salaryDue + bonusTotal;
+    const paidTotal =
+      (employee.paidPaymentThisMonth ? salaryDue : 0) +
+      (employee.paidBonusThisMonth ? bonusTotal : 0);
+    const remainingTotal = salaryRemaining + bonusRemaining;
     const deductionDetails = this.buildPayrollDeductionDetails({
       employee,
       absent: attendanceDeductions.absent,
@@ -3255,6 +3307,17 @@ export class TeamRankingMonthComponent implements OnDestroy {
       manualWithdrawal,
       deductionsTotal,
       net,
+      salaryDue,
+      salaryRemaining,
+      bonusPerformance,
+      bonusTeam,
+      bonusEmployee,
+      bonusManager,
+      bonusTotal,
+      bonusRemaining,
+      totalDue,
+      paidTotal,
+      remainingTotal,
       reasons: this.buildPayrollReasonLabels({
         employee,
         absent: attendanceDeductions.absent,
