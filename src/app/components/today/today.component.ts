@@ -2,6 +2,7 @@ import { Component, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   AuthService,
+  WeeklyObjectiveDeductionConfig,
   WeeklyPaymentProjection,
 } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -35,6 +36,11 @@ interface WeeklyShortfall {
   totalUsd: number;
   deductionUsd: number;
   isComplete: boolean;
+}
+interface WeeklyShortfallDeductionBand {
+  label: string;
+  deductionUsd: number;
+  isCurrent: boolean;
 }
 type WeeklyProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 type PaymentPerformanceMode = 'day' | 'week';
@@ -118,6 +124,11 @@ export class TodayComponent {
         this.projectedWeeklyTargetVisible = projection.isVisible;
       }
     );
+    this.auth.weeklyObjectiveDeductionConfig$.subscribe(
+      (config: WeeklyObjectiveDeductionConfig) => {
+        this.weeklyObjectiveDeductionConfig = { ...config };
+      }
+    );
     this.auth.getAllClients().subscribe((data: any) => {
       this.clients = data;
       this.weeklyExpectedTotalN = this.computeWeeklyExpectedTotal(
@@ -195,6 +206,12 @@ export class TodayComponent {
   weekPickerProgressMarkers: WeeklyProgressMarker[] = [];
   weeklyShortfalls: WeeklyShortfall[] = [];
   selectedShortfallMonth = '';
+  selectedWeeklyShortfall: WeeklyShortfall | null = null;
+  showWeeklyShortfallDeductionModal = false;
+  weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
+    bandFc: 100000,
+    penaltyPerBandUsd: 1,
+  };
   dailyFees: string = '0';
   dailyReserve: string = '0';
   dailyInvestment: string = '0';
@@ -672,6 +689,10 @@ export class TodayComponent {
     return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
   }
 
+  private formatFc(value: number): string {
+    return new Intl.NumberFormat('fr-FR').format(value);
+  }
+
   private formatWeekShortLabel(start: Date, end: Date): string {
     const months = [
       'Janvier',
@@ -768,6 +789,65 @@ export class TodayComponent {
       this.selectedShortfallMonth = this.currentMonthKey();
     }
     this.computeMonthlyWeeklyShortfalls();
+  }
+
+  openWeeklyShortfallDeductionModal(shortfall?: WeeklyShortfall): void {
+    this.selectedWeeklyShortfall = shortfall || this.weeklyShortfalls[0] || null;
+    this.showWeeklyShortfallDeductionModal = true;
+  }
+
+  closeWeeklyShortfallDeductionModal(): void {
+    this.showWeeklyShortfallDeductionModal = false;
+    this.selectedWeeklyShortfall = null;
+  }
+
+  get weeklyObjectiveDeductionHeaderLabel(): string {
+    return `-$${this.weeklyObjectiveDeductionConfig.penaltyPerBandUsd} / tranche / personne`;
+  }
+
+  get selectedShortfallMissingFc(): number {
+    const row = this.selectedWeeklyShortfall;
+    if (!row) return 0;
+    return Math.max(0, Number(row.targetFc || 0) - Number(row.totalFc || 0));
+  }
+
+  get selectedShortfallBandCount(): number {
+    const bandFc = Number(this.weeklyObjectiveDeductionConfig.bandFc) || 100000;
+    return Math.ceil(this.selectedShortfallMissingFc / bandFc);
+  }
+
+  get selectedShortfallDeductionBands(): WeeklyShortfallDeductionBand[] {
+    const row = this.selectedWeeklyShortfall;
+    const targetFc = Number(row?.targetFc || this.weeklyTargetFc || 0);
+    const totalFc = Math.max(0, Number(row?.totalFc || 0));
+    const bandFc = Number(this.weeklyObjectiveDeductionConfig.bandFc) || 100000;
+    const bands: WeeklyShortfallDeductionBand[] = [];
+
+    if (!Number.isFinite(targetFc) || targetFc <= 0 || bandFc <= 0) {
+      return bands;
+    }
+
+    bands.push({
+      label: `${this.formatFc(targetFc)} FC ou plus`,
+      deductionUsd: 0,
+      isCurrent: totalFc >= targetFc,
+    });
+
+    for (let upperBound = targetFc - 1; upperBound >= 0; upperBound -= bandFc) {
+      const lowerBound = Math.max(0, upperBound - bandFc + 1);
+      bands.push({
+        label: `${this.formatFc(lowerBound)} - ${this.formatFc(
+          upperBound
+        )} FC`,
+        deductionUsd: this.compute.computeWeeklyObjectiveDeductionUsd(
+          lowerBound,
+          targetFc
+        ),
+        isCurrent: totalFc >= lowerBound && totalFc <= upperBound,
+      });
+    }
+
+    return bands;
   }
 
   private currentMonthKey(): string {

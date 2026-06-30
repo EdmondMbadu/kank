@@ -23,6 +23,10 @@ describe('TodayComponent', () => {
         effectiveDateIso: '',
         isVisible: false,
       }),
+      weeklyObjectiveDeductionConfig$: of({
+        bandFc: 100000,
+        penaltyPerBandUsd: 1,
+      }),
       getAllClients: () => of([]),
       getAllClientsCard: () => of([]),
       loadReceipts: () => Promise.resolve([]),
