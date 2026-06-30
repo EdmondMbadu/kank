@@ -70,12 +70,10 @@ export class TrackingCentralComponent {
   projectedWeeklyPaymentVisibilitySaving = false;
   weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
     bandFc: 100000,
-    floorFc: 600000,
-    basePenaltyUsd: 5,
+    penaltyPerBandUsd: 1,
   };
   weeklyObjectiveDeductionBandInput = '100000';
-  weeklyObjectiveDeductionFloorInput = '600000';
-  weeklyObjectiveDeductionPenaltyInput = '5';
+  weeklyObjectiveDeductionPenaltyInput = '1';
   weeklyObjectiveDeductionSaving = false;
   weeklyObjectiveDeductionSaved = false;
   monthlyBudgetGlobalInput = '';
@@ -118,9 +116,8 @@ export class TrackingCentralComponent {
     this.auth.weeklyObjectiveDeductionConfig$.subscribe((config) => {
       this.weeklyObjectiveDeductionConfig = { ...config };
       this.weeklyObjectiveDeductionBandInput = config.bandFc.toString();
-      this.weeklyObjectiveDeductionFloorInput = config.floorFc.toString();
       this.weeklyObjectiveDeductionPenaltyInput =
-        config.basePenaltyUsd.toString();
+        config.penaltyPerBandUsd.toString();
     });
   }
 
@@ -418,13 +415,8 @@ export class TrackingCentralComponent {
     ];
 
     const bandFc = this.weeklyObjectiveDeductionConfig.bandFc;
-    const floorFc = this.weeklyObjectiveDeductionConfig.floorFc;
-    for (
-      let lowerBound = targetFc - bandFc;
-      lowerBound >= floorFc;
-      lowerBound -= bandFc
-    ) {
-      const upperBound = Math.min(targetFc - 1, lowerBound + bandFc - 1);
+    for (let upperBound = targetFc - 1; upperBound >= 0; upperBound -= bandFc) {
+      const lowerBound = Math.max(0, upperBound - bandFc + 1);
       const deductionUsd = this.computeWeeklyObjectiveDeductionUsd(
         lowerBound,
         targetFc
@@ -438,15 +430,6 @@ export class TrackingCentralComponent {
       });
     }
 
-    rows.push({
-      label: `Moins de ${this.formatFc(floorFc)} FC`,
-      deductionUsd: this.computeWeeklyObjectiveDeductionUsd(
-        floorFc - 1,
-        targetFc
-      ),
-      note: 'Retenue maximale',
-    });
-
     return rows;
   }
 
@@ -456,16 +439,15 @@ export class TrackingCentralComponent {
   ): number {
     const total = Number(weeklyTotalFc) || 0;
     const target = Number(weeklyTargetFc) || 0;
-    const { bandFc, floorFc, basePenaltyUsd } =
+    const { bandFc, penaltyPerBandUsd } =
       this.weeklyObjectiveDeductionConfig;
 
     if (!Number.isFinite(target) || target <= 0 || total >= target) {
       return 0;
     }
-    if (total >= floorFc) {
-      return Math.max(1, Math.ceil((target - total) / bandFc));
-    }
-    return Math.max(1, Math.floor(target / floorFc)) * basePenaltyUsd;
+    const boundedTotal = Math.max(0, total);
+    const missingBands = Math.ceil((target - boundedTotal) / bandFc);
+    return Math.max(1, missingBands) * penaltyPerBandUsd;
   }
 
   private formatFc(value: number): string {
@@ -591,23 +573,14 @@ export class TrackingCentralComponent {
     if (this.weeklyObjectiveDeductionSaving) return;
 
     const bandFc = Number(this.weeklyObjectiveDeductionBandInput);
-    const floorFc = Number(this.weeklyObjectiveDeductionFloorInput);
-    const basePenaltyUsd = Number(this.weeklyObjectiveDeductionPenaltyInput);
+    const penaltyPerBandUsd = Number(this.weeklyObjectiveDeductionPenaltyInput);
 
     if (!Number.isFinite(bandFc) || bandFc < 100000 || bandFc % 100000 !== 0) {
       alert('Entrez une tranche valide en FC (minimum 100 000 FC).');
       return;
     }
-    if (
-      !Number.isFinite(floorFc) ||
-      floorFc < 100000 ||
-      floorFc % 100000 !== 0
-    ) {
-      alert('Entrez un plancher valide en FC (minimum 100 000 FC).');
-      return;
-    }
-    if (!Number.isFinite(basePenaltyUsd) || basePenaltyUsd <= 0) {
-      alert('Entrez une retenue maximale valide en dollars.');
+    if (!Number.isFinite(penaltyPerBandUsd) || penaltyPerBandUsd <= 0) {
+      alert('Entrez une retenue par tranche valide en dollars.');
       return;
     }
 
@@ -616,8 +589,7 @@ export class TrackingCentralComponent {
     this.auth
       .updateWeeklyObjectiveDeductionConfigGlobal({
         bandFc,
-        floorFc,
-        basePenaltyUsd,
+        penaltyPerBandUsd,
       })
       .then(() => {
         this.weeklyObjectiveDeductionSaved = true;

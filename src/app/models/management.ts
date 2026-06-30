@@ -29,7 +29,7 @@ export class Management {
   projectedWeeklyPaymentVisible?: boolean;
   weeklyObjectiveDeductionConfig?: {
     bandFc?: number;
-    floorFc?: number;
+    penaltyPerBandUsd?: number;
     basePenaltyUsd?: number;
   };
   monthlyPaymentSnapshots?: { [monthYear: string]: MonthlyPaymentSnapshot };

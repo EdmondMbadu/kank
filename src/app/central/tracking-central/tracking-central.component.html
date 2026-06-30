@@ -519,9 +519,8 @@
             Barème appliqué à la paie
           </h3>
           <p class="mt-2 max-w-3xl text-sm text-slate-600">
-            Aperçu basé sur le minimum global actuel. Ce barème est utilisé pour
-            calculer la retenue par employé quand une semaine complète reste en
-            dessous de l’objectif.
+            Aperçu basé sur le minimum global actuel. Chaque tranche manquante
+            retire le même montant par employé, jusqu’à zéro paiement.
           </p>
         </div>
         <button
@@ -536,7 +535,7 @@
         </button>
       </div>
 
-      <div class="mt-6 grid gap-4 md:grid-cols-3">
+      <div class="mt-6 grid gap-4 md:grid-cols-2">
         <label class="text-sm font-semibold text-slate-700">
           Tranche manquante (FC)
           <input
@@ -548,17 +547,7 @@
           />
         </label>
         <label class="text-sm font-semibold text-slate-700">
-          Plancher renforcé (FC)
-          <input
-            [(ngModel)]="weeklyObjectiveDeductionFloorInput"
-            type="number"
-            min="100000"
-            step="100000"
-            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-          />
-        </label>
-        <label class="text-sm font-semibold text-slate-700">
-          Retenue renforcée ($)
+          Retenue par tranche ($)
           <input
             [(ngModel)]="weeklyObjectiveDeductionPenaltyInput"
             type="number"
@@ -587,7 +576,7 @@
                 $ {{ row.deductionUsd | number : "1.0-0" }}
               </td>
               <td class="px-4 py-3 text-slate-600">
-                {{ row.note || 'Par tranche manquante' }}
+                {{ row.note || 'Tranche manquante' }}
               </td>
             </tr>
           </tbody>

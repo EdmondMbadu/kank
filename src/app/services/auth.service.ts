@@ -56,8 +56,7 @@ export type ProfitabilityConfig = {
 
 export type WeeklyObjectiveDeductionConfig = {
   bandFc: number;
-  floorFc: number;
-  basePenaltyUsd: number;
+  penaltyPerBandUsd: number;
 };
 @Injectable({
   providedIn: 'root',
@@ -106,8 +105,7 @@ export class AuthService {
   private readonly defaultWeeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig =
     {
       bandFc: 100000,
-      floorFc: 600000,
-      basePenaltyUsd: 5,
+      penaltyPerBandUsd: 1,
     };
   private weeklyPaymentTargetState = this.defaultWeeklyPaymentTargetFc;
   private weeklyPaymentTargetSubject = new BehaviorSubject<number>(
@@ -1646,21 +1644,18 @@ export class AuthService {
     value: any
   ): WeeklyObjectiveDeductionConfig {
     const bandFc = Number(value?.bandFc);
-    const floorFc = Number(value?.floorFc);
-    const basePenaltyUsd = Number(value?.basePenaltyUsd);
+    const penaltyPerBandUsd = Number(
+      value?.penaltyPerBandUsd ?? value?.basePenaltyUsd
+    );
     return {
       bandFc:
         Number.isFinite(bandFc) && bandFc >= 100000 && bandFc % 100000 === 0
           ? bandFc
           : this.defaultWeeklyObjectiveDeductionConfig.bandFc,
-      floorFc:
-        Number.isFinite(floorFc) && floorFc >= 100000 && floorFc % 100000 === 0
-          ? floorFc
-          : this.defaultWeeklyObjectiveDeductionConfig.floorFc,
-      basePenaltyUsd:
-        Number.isFinite(basePenaltyUsd) && basePenaltyUsd > 0
-          ? basePenaltyUsd
-          : this.defaultWeeklyObjectiveDeductionConfig.basePenaltyUsd,
+      penaltyPerBandUsd:
+        Number.isFinite(penaltyPerBandUsd) && penaltyPerBandUsd > 0
+          ? penaltyPerBandUsd
+          : this.defaultWeeklyObjectiveDeductionConfig.penaltyPerBandUsd,
     };
   }
 

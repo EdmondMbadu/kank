@@ -163,4 +163,34 @@ describe('TrackingCentralComponent', () => {
     expect(component.projectedWeeklyPaymentEffectiveDate).toBe('');
     expect(component.projectedWeeklyPaymentVisible).toBeFalse();
   });
+
+  it('previews one uniform payroll deduction per missing tranche down to zero', () => {
+    const { component } = createComponent();
+    component.weeklyPaymentTargetFc = 1200000;
+    component.weeklyObjectiveDeductionConfig = {
+      bandFc: 100000,
+      penaltyPerBandUsd: 1,
+    };
+
+    const rows = component.weeklyDeductionPreviewRows;
+
+    expect(rows[0]).toEqual(
+      jasmine.objectContaining({
+        label: '1 200 000 FC ou plus',
+        deductionUsd: 0,
+      })
+    );
+    expect(rows[1]).toEqual(
+      jasmine.objectContaining({
+        label: '1 100 000 - 1 199 999 FC',
+        deductionUsd: 1,
+      })
+    );
+    expect(rows[rows.length - 1]).toEqual(
+      jasmine.objectContaining({
+        label: '0 - 99 999 FC',
+        deductionUsd: 12,
+      })
+    );
+  });
 });

@@ -262,8 +262,8 @@ export class TutorialComponent implements OnInit, OnDestroy {
       },
     ];
 
-    for (let lowerBound = targetFc - 100000; lowerBound >= 600000; lowerBound -= 100000) {
-      const upperBound = Math.min(targetFc - 1, lowerBound + 99999);
+    for (let upperBound = targetFc - 1; upperBound >= 0; upperBound -= 100000) {
+      const lowerBound = Math.max(0, upperBound - 99999);
       const deductionUsd = this.compute.computeWeeklyObjectiveDeductionUsd(
         lowerBound,
         targetFc
@@ -275,16 +275,9 @@ export class TutorialComponent implements OnInit, OnDestroy {
       rows.push({
         label: `${this.formatFc(lowerBound)} - ${this.formatFc(upperBound)} FC`,
         deductionUsd,
-        tone: 'warning',
+        tone: lowerBound === 0 ? 'danger' : 'warning',
       });
     }
-
-    rows.push({
-      label: `Moins de ${this.formatFc(600000)} FC`,
-      deductionUsd: this.compute.computeWeeklyObjectiveDeductionUsd(599999, targetFc),
-      tone: 'danger',
-      note: targetFc >= 1200000 ? 'Retenue renforcée' : 'Retenue maximale',
-    });
 
     return rows;
   }

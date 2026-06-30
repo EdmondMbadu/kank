@@ -15,8 +15,7 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 })
 export class ComputationService {
   private weeklyObjectiveBandFc = 100000;
-  private weeklyObjectiveFloorFc = 600000;
-  private weeklyObjectiveBasePenaltyUsd = 5;
+  private weeklyObjectivePenaltyPerBandUsd = 1;
 
   constructor(
     private time: TimeService,
@@ -134,12 +133,13 @@ export class ComputationService {
 
   private setWeeklyObjectiveDeductionConfig(config: {
     bandFc?: number;
-    floorFc?: number;
+    penaltyPerBandUsd?: number;
     basePenaltyUsd?: number;
   }) {
     const bandFc = Number(config?.bandFc);
-    const floorFc = Number(config?.floorFc);
-    const basePenaltyUsd = Number(config?.basePenaltyUsd);
+    const penaltyPerBandUsd = Number(
+      config?.penaltyPerBandUsd ?? config?.basePenaltyUsd
+    );
 
     if (
       Number.isFinite(bandFc) &&
@@ -148,15 +148,8 @@ export class ComputationService {
     ) {
       this.weeklyObjectiveBandFc = bandFc;
     }
-    if (
-      Number.isFinite(floorFc) &&
-      floorFc >= 100000 &&
-      floorFc % 100000 === 0
-    ) {
-      this.weeklyObjectiveFloorFc = floorFc;
-    }
-    if (Number.isFinite(basePenaltyUsd) && basePenaltyUsd > 0) {
-      this.weeklyObjectiveBasePenaltyUsd = basePenaltyUsd;
+    if (Number.isFinite(penaltyPerBandUsd) && penaltyPerBandUsd > 0) {
+      this.weeklyObjectivePenaltyPerBandUsd = penaltyPerBandUsd;
     }
   }
 
@@ -240,17 +233,11 @@ export class ComputationService {
       return 0;
     }
 
-    if (total >= this.weeklyObjectiveFloorFc) {
-      return Math.max(
-        1,
-        Math.ceil((target - total) / this.weeklyObjectiveBandFc)
-      );
-    }
-
-    return (
-      Math.max(1, Math.floor(target / this.weeklyObjectiveFloorFc)) *
-      this.weeklyObjectiveBasePenaltyUsd
+    const boundedTotal = Math.max(0, total);
+    const missingBands = Math.ceil(
+      (target - boundedTotal) / this.weeklyObjectiveBandFc
     );
+    return Math.max(1, missingBands) * this.weeklyObjectivePenaltyPerBandUsd;
   }
   salaries: any[] = [
     [
