@@ -3491,6 +3491,22 @@
               >
                 Performance
               </h1>
+              <div
+                *ngIf="usesInvestigationPaymentPerformance"
+                class="-mt-3 mb-4 flex flex-col items-center gap-2 px-4 text-center"
+              >
+                <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                  Moyenne actuelle :
+                  {{ investigationMonthlyPerformancePercent | number : "1.0-0" }}%
+                </p>
+                <button
+                  type="button"
+                  class="rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black text-indigo-700 transition hover:border-indigo-300 hover:bg-indigo-100 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-200"
+                  (click)="showInvestigationPerformanceExplanation = true"
+                >
+                  Comment c’est calculé
+                </button>
+              </div>
 
             <div
               class="flex flex-wrap items-center justify-center gap-2 px-4 mb-4"
@@ -3583,6 +3599,112 @@
       </div>
     </main>
   </div>
+</div>
+
+<div
+  *ngIf="showInvestigationPerformanceExplanation"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"
+  (click)="showInvestigationPerformanceExplanation = false"
+>
+  <section
+    class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white text-slate-900 shadow-2xl dark:bg-slate-900 dark:text-slate-100"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+      <div>
+        <h2 class="text-lg font-black">Comment c’est calculé</h2>
+        <p class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
+          Vérificateur et Stagaire Polyvalent uniquement.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="flex h-9 w-9 items-center justify-center rounded-full text-2xl font-bold text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+        aria-label="Fermer"
+        (click)="showInvestigationPerformanceExplanation = false"
+      >
+        &times;
+      </button>
+    </header>
+
+    <div class="space-y-4 p-5">
+      <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-sm font-semibold text-indigo-900 dark:border-indigo-900/50 dark:bg-indigo-950/30 dark:text-indigo-100">
+        Chaque semaine planifiée compte une fois. On calcule la performance du site affecté, puis on fait la moyenne des pourcentages. Les semaines futures ne sont pas incluses. La semaine en cours utilise seulement les jours déjà arrivés.
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div class="rounded-xl border border-slate-200 p-3 text-center dark:border-slate-700">
+          <p class="text-2xl font-black">
+            {{ investigationMonthlyPerformancePercent | number : "1.0-0" }}%
+          </p>
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            moyenne du mois
+          </p>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-3 text-center dark:border-slate-700">
+          <p class="text-2xl font-black">
+            {{ investigationMonthlyPerformanceWeeks.length }}
+          </p>
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            semaine(s)
+          </p>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-3 text-center dark:border-slate-700">
+          <p class="text-2xl font-black">
+            {{ time.monthFrenchNames[givenMonth - 1] }}
+          </p>
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-500">
+            {{ givenYear }}
+          </p>
+        </div>
+      </div>
+
+      <div
+        *ngIf="investigationMonthlyPerformanceWeeks.length; else noInvestigationPerformanceWeeks"
+        class="max-h-80 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700"
+      >
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+            <tr>
+              <th class="px-3 py-2">Semaine</th>
+              <th class="px-3 py-2">Site</th>
+              <th class="px-3 py-2 text-right">Performance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let week of investigationMonthlyPerformanceWeeks"
+              class="border-t border-slate-100 dark:border-slate-800"
+            >
+              <td class="px-3 py-2">
+                <div class="font-bold">{{ week.weekLabel }}</div>
+                <div
+                  *ngIf="week.currentWeek"
+                  class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-300"
+                >
+                  semaine en cours
+                </div>
+              </td>
+              <td class="px-3 py-2 font-semibold">{{ week.locationName }}</td>
+              <td class="px-3 py-2 text-right font-black">
+                {{ week.percent | number : "1.0-0" }}%
+                <div class="text-[11px] font-semibold text-slate-500">
+                  {{ week.paidFc | number : "1.0-0" }} /
+                  {{ week.expectedFc | number : "1.0-0" }} FC
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noInvestigationPerformanceWeeks>
+        <div class="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm font-semibold text-slate-500 dark:border-slate-700 dark:text-slate-300">
+          Aucune semaine planifiée avec objectif payable pour ce mois.
+        </div>
+      </ng-template>
+    </div>
+  </section>
 </div>
 
 <div class="mt-10">

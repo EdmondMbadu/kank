@@ -21,6 +21,9 @@ export class Employee {
   letterGrade?: string;
   performancePercantage?: string;
   performancePercentageMonth?: string;
+  investigationPerformanceMonthly?: {
+    [monthKey: string]: InvestigationPerformanceMonth;
+  };
   dateOfBirth?: string;
   dateJoined?: string;
   status?: string;
@@ -123,6 +126,25 @@ export class Employee {
   _dailyCount?: number;
 
   originLocation?: string;
+}
+
+export interface InvestigationPerformanceWeek {
+  weekId: string;
+  weekLabel: string;
+  locationName: string;
+  percent: number;
+  paidFc: number;
+  expectedFc: number;
+  daysIncluded: number;
+  currentWeek: boolean;
+}
+
+export interface InvestigationPerformanceMonth {
+  month: number;
+  year: number;
+  percent: number;
+  updatedAt: string;
+  weeks: InvestigationPerformanceWeek[];
 }
 
 export type FoundationAttendanceRuleCountMode = 'present' | 'marked_workday';

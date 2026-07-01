@@ -13,6 +13,8 @@ import {
   FoundationManualBonusEntry,
   FoundationMonthDeduction,
   FoundationWithdrawalRequest,
+  InvestigationPerformanceMonth,
+  InvestigationPerformanceWeek,
   Trophy,
   WeeklyObjectiveDeduction,
 } from 'src/app/models/employee';
@@ -336,6 +338,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     {};
   taskForceLocationsByDateLabel: Record<string, string[]> = {};
   allLocations: User[] = [];
+  private investigationPerformanceClientsCache = new Map<string, Client[]>();
+  private investigationPerformanceClientsPromises = new Map<
+    string,
+    Promise<Client[]>
+  >();
+  private lastSavedInvestigationPerformanceSignature = '';
   private foundationAutomaticAttendanceCacheKey = '';
   private foundationAutomaticAttendanceCache: FoundationMonthDeduction[] = [];
 
@@ -551,6 +559,9 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   employeePaymentPerformanceLocation?: User;
   employeePaymentPerformanceLocationLabel = 'Site';
   employeePaymentPerformanceClients: Client[] = [];
+  investigationMonthlyPerformancePercent = 0;
+  investigationMonthlyPerformanceWeeks: InvestigationPerformanceWeek[] = [];
+  showInvestigationPerformanceExplanation = false;
   private weeklyTargetSub?: Subscription;
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
@@ -612,6 +623,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.allUsersSub = this.auth.getAllUsersInfo().subscribe((data) => {
       this.allLocations = Array.isArray(data) ? (data as User[]) : [];
       this.updateEmployeePaymentPerformanceLocation();
+      this.recomputeInvestigationMonthlyPerformance();
     });
     if (this.auth.isAdmninistrator) this.isAuthorized = true;
     this.attendanceTargetDate = this.resolveAttendanceTargetDate('today');
@@ -3087,6 +3099,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     const year = date.getFullYear();
     const key = `${year}-${month}`;
 
+    if (month !== this.givenMonth || year !== this.givenYear) {
+      return;
+    }
+
     if (this.paymentPerformanceScheduleMonthKey === key) {
       return;
     }
@@ -3703,6 +3719,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.individualReviewsSub = undefined;
     this.individualReviewsLoading = false;
     this.resetEmployeePaymentPerformance();
+    this.resetInvestigationMonthlyPerformance();
   }
   async retrieveEmployees(): Promise<void> {
     this.employeesSub?.unsubscribe();
@@ -4023,6 +4040,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     return result;
   }
   private aggregatePerformanceByMonth(): [string[], string[]] {
+    if (this.usesInvestigationPaymentPerformance) {
+      const history = this.employee?.investigationPerformanceMonthly || {};
+      const sortedEntries = Object.entries(history)
+        .filter(([, value]) => Number.isFinite(Number(value?.percent)))
+        .sort(([keyA], [keyB]) => {
+          const [monthA, yearA] = keyA.split('-').map(Number);
+          const [monthB, yearB] = keyB.split('-').map(Number);
+          const dateA = new Date(yearA || 0, (monthA || 1) - 1).getTime();
+          const dateB = new Date(yearB || 0, (monthB || 1) - 1).getTime();
+          return dateA - dateB;
+        });
+
+      return [
+        sortedEntries.map(([key]) => key),
+        sortedEntries.map(([, value]) => String(value.percent || 0)),
+      ];
+    }
+
     const aggregates = new Map<string, { achieved: number; total: number }>();
 
     const accumulate = (
@@ -4752,6 +4787,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     if (!this.shouldShowTaskForceLocationsOnAttendance()) {
       this.updateEmployeePaymentPerformanceLocation();
+      this.resetInvestigationMonthlyPerformance();
       return;
     }
 
@@ -4762,9 +4798,325 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.rebuildTaskForceAttendanceLocations(month, year);
         this.generateAttendanceTable(month, year);
         this.updateEmployeePaymentPerformanceLocation();
+        this.recomputeInvestigationMonthlyPerformance();
       });
       this.taskForceAttendanceSubs.push(sub);
     });
+  }
+
+  private async recomputeInvestigationMonthlyPerformance(): Promise<void> {
+    if (!this.usesInvestigationPaymentPerformance || !this.employee?.uid) {
+      this.resetInvestigationMonthlyPerformance();
+      return;
+    }
+
+    if (!this.allLocations.length) {
+      return;
+    }
+
+    const month = this.givenMonth;
+    const year = this.givenYear;
+    const assignments = this.investigationMonthlyAssignments(month, year);
+
+    if (!assignments.length) {
+      this.investigationMonthlyPerformancePercent = 0;
+      this.investigationMonthlyPerformanceWeeks = [];
+      this.performancePercentageMonth = '0';
+      this.updatePerformanceGraphics(
+        this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+      );
+      return;
+    }
+
+    const weeks: InvestigationPerformanceWeek[] = [];
+
+    for (const assignment of assignments) {
+      const location = this.resolveLocationUserByLabel(assignment.locationName);
+      if (!location?.uid) {
+        continue;
+      }
+
+      const clients = await this.loadInvestigationPerformanceClients(location);
+      const range = this.assignmentPerformanceRange(
+        assignment.anchorDate,
+        month,
+        year
+      );
+
+      if (!range || range.start > range.end) {
+        continue;
+      }
+
+      const { paidFc, expectedFc, daysIncluded } =
+        this.computeLocationPerformanceForDateRange(
+          location,
+          clients,
+          range.start,
+          range.end
+        );
+
+      if (expectedFc <= 0) {
+        continue;
+      }
+
+      const percent = Math.min(100, (paidFc / expectedFc) * 100);
+      weeks.push({
+        weekId: assignment.weekId,
+        weekLabel: this.formatAssignmentWeekLabel(range.start, range.end),
+        locationName: location.firstName || location.email || assignment.locationName,
+        percent: Math.round(percent * 100) / 100,
+        paidFc,
+        expectedFc,
+        daysIncluded,
+        currentWeek: range.currentWeek,
+      });
+    }
+
+    const percent = weeks.length
+      ? weeks.reduce((sum, week) => sum + week.percent, 0) / weeks.length
+      : 0;
+
+    if (!weeks.length) {
+      this.investigationMonthlyPerformancePercent = 0;
+      this.investigationMonthlyPerformanceWeeks = [];
+      this.performancePercentageMonth = '0';
+      this.updatePerformanceGraphics(
+        this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+      );
+      return;
+    }
+
+    this.applyInvestigationMonthlyPerformance({
+      month,
+      year,
+      percent: Math.round(percent * 100) / 100,
+      updatedAt: new Date().toISOString(),
+      weeks,
+    });
+  }
+
+  private resetInvestigationMonthlyPerformance(): void {
+    this.investigationMonthlyPerformancePercent = 0;
+    this.investigationMonthlyPerformanceWeeks = [];
+    this.lastSavedInvestigationPerformanceSignature = '';
+    this.updatePerformanceGraphics(
+      this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+    );
+  }
+
+  private applyInvestigationMonthlyPerformance(
+    monthly: InvestigationPerformanceMonth
+  ): void {
+    this.investigationMonthlyPerformancePercent = monthly.percent;
+    this.investigationMonthlyPerformanceWeeks = monthly.weeks;
+    this.performancePercentageMonth = String(Math.round(monthly.percent));
+
+    const key = this.performanceMonthKey(monthly.month, monthly.year);
+    const nextHistory = {
+      ...(this.employee.investigationPerformanceMonthly || {}),
+      [key]: monthly,
+    };
+    this.employee.investigationPerformanceMonthly = nextHistory;
+    this.updatePerformanceGraphics(
+      this.rangeValueFromPerformanceKey(this.performanceActiveRange)
+    );
+    this.saveInvestigationMonthlyPerformanceIfChanged(key, monthly);
+  }
+
+  private saveInvestigationMonthlyPerformanceIfChanged(
+    key: string,
+    monthly: InvestigationPerformanceMonth
+  ): void {
+    if (!this.employee?.uid) {
+      return;
+    }
+
+    const signature = JSON.stringify({
+      key,
+      percent: monthly.percent,
+      weeks: monthly.weeks.map((week) => ({
+        weekId: week.weekId,
+        locationName: week.locationName,
+        percent: week.percent,
+        paidFc: week.paidFc,
+        expectedFc: week.expectedFc,
+        daysIncluded: week.daysIncluded,
+      })),
+    });
+
+    if (signature === this.lastSavedInvestigationPerformanceSignature) {
+      return;
+    }
+
+    this.lastSavedInvestigationPerformanceSignature = signature;
+    this.data
+      .updateEmployeeField(
+        this.employee.uid,
+        'investigationPerformanceMonthly',
+        this.employee.investigationPerformanceMonthly || {}
+      )
+      .catch((error) => {
+        console.error(
+          'Impossible de sauvegarder la performance investigation',
+          error
+        );
+        this.lastSavedInvestigationPerformanceSignature = '';
+      });
+  }
+
+  private investigationMonthlyAssignments(
+    month: number,
+    year: number
+  ): { weekId: string; locationName: string; anchorDate: Date }[] {
+    const employeeUid = this.employee?.uid;
+    if (!employeeUid) {
+      return [];
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const assignments = new Map<
+      string,
+      { weekId: string; locationName: string; anchorDate: Date }
+    >();
+
+    Object.entries(this.taskForceAttendanceDaysByWeek).forEach(
+      ([weekId, days]) => {
+        Object.entries(days || {}).forEach(([isoDay, rawEntries]) => {
+          const day = this.localDateFromIsoDay(isoDay);
+          if (
+            !day ||
+            day.getFullYear() !== year ||
+            day.getMonth() + 1 !== month ||
+            day > today
+          ) {
+            return;
+          }
+
+          this.taskForceEntriesFromDayValue(rawEntries).forEach((entry) => {
+            if (!(entry.employees || []).includes(employeeUid)) {
+              return;
+            }
+
+            const locationName = entry.loc.trim();
+            if (!locationName) {
+              return;
+            }
+
+            const key = `${weekId}:${this.slugLocation(locationName)}`;
+            const existing = assignments.get(key);
+            if (!existing || day < existing.anchorDate) {
+              assignments.set(key, {
+                weekId,
+                locationName,
+                anchorDate: new Date(day),
+              });
+            }
+          });
+        });
+      }
+    );
+
+    return Array.from(assignments.values()).sort(
+      (a, b) => a.anchorDate.getTime() - b.anchorDate.getTime()
+    );
+  }
+
+  private assignmentPerformanceRange(
+    anchorDate: Date,
+    month: number,
+    year: number
+  ): { start: Date; end: Date; currentWeek: boolean } | null {
+    const { start, end } = this.getWeekBounds(this.formatDateKey(anchorDate));
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const scopedStart = new Date(
+      Math.max(start.getTime(), monthStart.getTime())
+    );
+    const scopedEnd = new Date(
+      Math.min(end.getTime(), monthEnd.getTime(), today.getTime())
+    );
+
+    if (scopedStart > scopedEnd) {
+      return null;
+    }
+
+    return {
+      start: scopedStart,
+      end: scopedEnd,
+      currentWeek: today >= start && today <= end,
+    };
+  }
+
+  private async loadInvestigationPerformanceClients(
+    location: User
+  ): Promise<Client[]> {
+    if (!location.uid) {
+      return [];
+    }
+
+    const cached = this.investigationPerformanceClientsCache.get(location.uid);
+    if (cached) {
+      return cached;
+    }
+
+    const existingPromise = this.investigationPerformanceClientsPromises.get(
+      location.uid
+    );
+    if (existingPromise) {
+      return existingPromise;
+    }
+
+    const promise = firstValueFrom(this.auth.getClientsOfAUser(location.uid)).then(
+      (data) => {
+        const clients = Array.isArray(data)
+          ? (data.filter(Boolean) as Client[]).map((client) => ({
+              ...client,
+              locationName: location.firstName || location.email || 'Site',
+              locationOwnerId: location.uid,
+            }))
+          : [];
+        this.investigationPerformanceClientsCache.set(location.uid!, clients);
+        this.investigationPerformanceClientsPromises.delete(location.uid!);
+        return clients;
+      }
+    );
+
+    this.investigationPerformanceClientsPromises.set(location.uid, promise);
+    return promise;
+  }
+
+  private computeLocationPerformanceForDateRange(
+    location: User,
+    clients: Client[],
+    start: Date,
+    end: Date
+  ): { paidFc: number; expectedFc: number; daysIncluded: number } {
+    let paidFc = 0;
+    let expectedFc = 0;
+    let daysIncluded = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const dateKey = this.formatDateKey(cursor);
+      paidFc += this.computeDailyPaymentTotalForUser(location, dateKey);
+      expectedFc += this.computeDailyExpectedTotalForClients(clients, dateKey);
+      daysIncluded += 1;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return { paidFc, expectedFc, daysIncluded };
+  }
+
+  private formatAssignmentWeekLabel(start: Date, end: Date): string {
+    return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
+  }
+
+  private performanceMonthKey(month: number, year: number): string {
+    return `${month}-${year}`;
   }
 
   private clearTaskForceAttendanceSubscriptions(): void {
