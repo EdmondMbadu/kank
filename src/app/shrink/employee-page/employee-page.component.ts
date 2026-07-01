@@ -161,6 +161,11 @@ type FoundationDeductionDraft = {
   reason: string;
 };
 
+type TaskForceScheduleEntry = {
+  loc: string;
+  employees: string[];
+};
+
 @Component({
   selector: 'app-employee-page',
   templateUrl: './employee-page.component.html',
@@ -320,6 +325,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     presentDaysByMonth: Map<string, number>;
     markedWorkdaysByMonth: Map<string, number>;
   } | null = null;
+  private taskForceAttendanceSubs: Subscription[] = [];
+  private taskForceAttendanceDaysByWeek: Record<string, Record<string, unknown>> =
+    {};
+  taskForceLocationsByDateLabel: Record<string, string[]> = {};
   private foundationAutomaticAttendanceCacheKey = '';
   private foundationAutomaticAttendanceCache: FoundationMonthDeduction[] = [];
 
@@ -590,6 +599,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.weeklyTargetSub?.unsubscribe();
     this.auditScopedSub?.unsubscribe();
     this.auditLegacySub?.unsubscribe();
+    this.clearTaskForceAttendanceSubscriptions();
   }
 
   get canViewFoundationAccount(): boolean {
@@ -3398,6 +3408,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           this.givenMonth,
           this.givenYear
         );
+        this.loadTaskForceAttendanceLocations(
+          this.givenMonth,
+          this.givenYear
+        );
 
         this.generateAttendanceTable(this.givenMonth, this.givenYear);
         await this.loadDayTotalsForMonth(this.givenMonth, this.givenYear);
@@ -4298,6 +4312,160 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  private loadTaskForceAttendanceLocations(month: number, year: number): void {
+    this.clearTaskForceAttendanceSubscriptions();
+    this.taskForceAttendanceDaysByWeek = {};
+    this.taskForceLocationsByDateLabel = {};
+
+    if (!this.shouldShowTaskForceLocationsOnAttendance()) {
+      return;
+    }
+
+    const weekIds = this.taskForceWeekIdsForMonth(month, year);
+    weekIds.forEach((weekId) => {
+      const sub = this.performance.getTaskForce(weekId).subscribe((doc) => {
+        this.taskForceAttendanceDaysByWeek[weekId] = doc?.days ?? {};
+        this.rebuildTaskForceAttendanceLocations(month, year);
+        this.generateAttendanceTable(month, year);
+      });
+      this.taskForceAttendanceSubs.push(sub);
+    });
+  }
+
+  private clearTaskForceAttendanceSubscriptions(): void {
+    this.taskForceAttendanceSubs.forEach((sub) => sub.unsubscribe());
+    this.taskForceAttendanceSubs = [];
+  }
+
+  private shouldShowTaskForceLocationsOnAttendance(): boolean {
+    const role = this.normalizeRoleName(this.employee?.role);
+    return (
+      role === 'verificateur' ||
+      role === 'stagiaire polyvalent' ||
+      role === 'stagaire polyvalent'
+    );
+  }
+
+  private normalizeRoleName(value?: string): string {
+    return (value || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  private taskForceWeekIdsForMonth(month: number, year: number): string[] {
+    const first = new Date(year, month - 1, 1);
+    const last = new Date(year, month, 0);
+    const ids = new Set<string>();
+
+    for (let date = new Date(first); date <= last; date.setDate(date.getDate() + 1)) {
+      ids.add(this.isoWeekIdForDate(date));
+    }
+
+    return Array.from(ids);
+  }
+
+  private rebuildTaskForceAttendanceLocations(month: number, year: number): void {
+    const employeeUid = this.employee?.uid;
+    const next: Record<string, string[]> = {};
+    if (!employeeUid) {
+      this.taskForceLocationsByDateLabel = next;
+      return;
+    }
+
+    Object.values(this.taskForceAttendanceDaysByWeek).forEach((days) => {
+      Object.entries(days || {}).forEach(([isoDay, rawEntries]) => {
+        const day = this.localDateFromIsoDay(isoDay);
+        if (
+          !day ||
+          day.getFullYear() !== year ||
+          day.getMonth() + 1 !== month
+        ) {
+          return;
+        }
+
+        const matchingLocations = this.taskForceEntriesFromDayValue(rawEntries)
+          .filter((entry) => (entry.employees || []).includes(employeeUid))
+          .map((entry) => entry.loc.trim())
+          .filter(Boolean);
+
+        if (!matchingLocations.length) {
+          return;
+        }
+
+        const label = `${month}-${day.getDate()}-${year}`;
+        next[label] = Array.from(
+          new Set([...(next[label] || []), ...matchingLocations])
+        );
+      });
+    });
+
+    this.taskForceLocationsByDateLabel = next;
+  }
+
+  private taskForceEntriesFromDayValue(value: unknown): TaskForceScheduleEntry[] {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+      return value
+        .map((entry) => ({
+          loc: (entry?.loc || '').toString(),
+          employees: Array.isArray(entry?.employees) ? entry.employees : [],
+        }))
+        .filter((entry) => entry.loc);
+    }
+
+    if (typeof value === 'string') {
+      return [{ loc: value, employees: [] }];
+    }
+
+    return Object.values(
+      value as Record<string, { loc: string; employees: string[] }>
+    )
+      .map((entry) => ({
+        loc: (entry?.loc || '').toString(),
+        employees: Array.isArray(entry?.employees) ? entry.employees : [],
+      }))
+      .filter((entry) => entry.loc);
+  }
+
+  private taskForceLocationLabelForDay(dateLabel: string): string {
+    const locations = this.taskForceLocationsByDateLabel[dateLabel] || [];
+    if (!locations.length) {
+      return '';
+    }
+
+    return locations.length === 1
+      ? locations[0]
+      : locations.slice(0, 2).join(', ') +
+          (locations.length > 2 ? ` +${locations.length - 2}` : '');
+  }
+
+  private isoWeekIdForDate(date: Date): string {
+    const target = new Date(date);
+    target.setHours(0, 0, 0, 0);
+    target.setDate(target.getDate() + 3 - ((target.getDay() + 6) % 7));
+    const week1 = new Date(target.getFullYear(), 0, 4);
+    const week = 1 + Math.round(
+      ((target.getTime() - week1.getTime()) / 86400000 -
+        3 +
+        ((week1.getDay() + 6) % 7)) /
+        7
+    );
+    return `${date.getFullYear()}-W${String(week).padStart(2, '0')}`;
+  }
+
+  private localDateFromIsoDay(isoDay: string): Date | null {
+    const [year, month, day] = isoDay.split('-').map(Number);
+    if (!year || !month || !day) {
+      return null;
+    }
+
+    return new Date(year, month - 1, day);
+  }
+
   generateAttendanceTable(month: number, year: number) {
     const tableBody = document.getElementById('attendance-body');
     // Ensure the element exists before proceeding
@@ -4419,6 +4587,15 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
             // Default cell styling for days with no attendance data
             cell.classList.add('border', 'border-black', 'p-4');
             cell.innerHTML = date.toString();
+          }
+          const taskForceLocationLabel =
+            this.taskForceLocationLabelForDay(dateLabel);
+          if (taskForceLocationLabel) {
+            const locationBadge = document.createElement('div');
+            locationBadge.className = 'attendance-location-badge';
+            locationBadge.textContent = taskForceLocationLabel;
+            locationBadge.title = `Lieu d'affectation: ${taskForceLocationLabel}`;
+            cell.appendChild(locationBadge);
           }
           // If an attachment exists for this date, append a small icon
           const att = this.findAttachmentForDay(dateLabel);

@@ -20,6 +20,27 @@
     text-transform: capitalize;
 }
 
+.attendance-location-badge {
+    display: inline-flex;
+    max-width: 100%;
+    margin-top: 6px;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.88);
+    color: #0f172a;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.15;
+    text-transform: none;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.attendance-location-badge::before {
+    content: "Lieu: ";
+    color: #475569;
+    font-weight: 700;
+}
+
 .present {
     background-color: #4caf50; /* Green color for present */
     color: white;
