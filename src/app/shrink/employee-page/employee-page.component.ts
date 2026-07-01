@@ -16,7 +16,7 @@ import {
   Trophy,
   WeeklyObjectiveDeduction,
 } from 'src/app/models/employee';
-import { Comment } from 'src/app/models/client';
+import { Client, Comment } from 'src/app/models/client';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { PerformanceService } from 'src/app/services/performance.service';
@@ -24,7 +24,7 @@ import { TimeService } from 'src/app/services/time.service';
 
 import { DataService } from 'src/app/services/data.service';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
-import { LocationCoordinates } from 'src/app/models/user';
+import { LocationCoordinates, User } from 'src/app/models/user';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { firstValueFrom, Subscription } from 'rxjs';
@@ -165,6 +165,8 @@ type TaskForceScheduleEntry = {
   loc: string;
   employees: string[];
 };
+
+type WeeklyExpectedProgressTone = 'red' | 'yellow' | 'orange' | 'green';
 
 @Component({
   selector: 'app-employee-page',
@@ -326,9 +328,14 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     markedWorkdaysByMonth: Map<string, number>;
   } | null = null;
   private taskForceAttendanceSubs: Subscription[] = [];
+  private taskForcePerformanceClientsSub?: Subscription;
+  private allUsersSub?: Subscription;
+  private paymentPerformanceScheduleMonthKey = '';
+  private paymentPerformanceClientsLocationId = '';
   private taskForceAttendanceDaysByWeek: Record<string, Record<string, unknown>> =
     {};
   taskForceLocationsByDateLabel: Record<string, string[]> = {};
+  allLocations: User[] = [];
   private foundationAutomaticAttendanceCacheKey = '';
   private foundationAutomaticAttendanceCache: FoundationMonthDeduction[] = [];
 
@@ -529,6 +536,21 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   weeklyPaymentTargetFc = 300000;
   weeklyPaymentTargetReached = false;
   weeklyPaymentProgressPercent = 0;
+  paymentPerformanceDate: string = this.time.getTodaysDateYearMonthDay();
+  readonly weeklyPaymentProgressMinimumPercent = 50;
+  readonly weeklyPaymentProgressGoalPercent = 100;
+  dailyPaymentPerformancePercent = 0;
+  dailyPaymentPerformanceTone: WeeklyExpectedProgressTone = 'red';
+  dailyPaymentPerformanceLabel = '';
+  weeklyExpectedProgressPercent = 0;
+  weeklyExpectedProgressTone: WeeklyExpectedProgressTone = 'red';
+  weeklyExpectedRangeLabel = '';
+  previousWeeklyExpectedProgressPercent = 0;
+  previousWeeklyExpectedProgressTone: WeeklyExpectedProgressTone = 'red';
+  previousWeeklyExpectedRangeLabel = '';
+  employeePaymentPerformanceLocation?: User;
+  employeePaymentPerformanceLocationLabel = 'Site';
+  employeePaymentPerformanceClients: Client[] = [];
   private weeklyTargetSub?: Subscription;
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
@@ -587,6 +609,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
   ngOnInit(): void {
     this.retrieveEmployees();
+    this.allUsersSub = this.auth.getAllUsersInfo().subscribe((data) => {
+      this.allLocations = Array.isArray(data) ? (data as User[]) : [];
+      this.updateEmployeePaymentPerformanceLocation();
+    });
     if (this.auth.isAdmninistrator) this.isAuthorized = true;
     this.attendanceTargetDate = this.resolveAttendanceTargetDate('today');
     this.weeklyTargetSub = this.auth.weeklyPaymentTarget$.subscribe(() => {
@@ -599,6 +625,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.weeklyTargetSub?.unsubscribe();
     this.auditScopedSub?.unsubscribe();
     this.auditLegacySub?.unsubscribe();
+    this.allUsersSub?.unsubscribe();
+    this.taskForcePerformanceClientsSub?.unsubscribe();
     this.clearTaskForceAttendanceSubscriptions();
   }
 
@@ -2886,6 +2914,123 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.updateWeeklyPaymentTotals();
   }
 
+  onPaymentPerformanceDateChange(): void {
+    if (!this.paymentPerformanceDate) {
+      this.paymentPerformanceDate = this.time.getTodaysDateYearMonthDay();
+    }
+    this.ensurePaymentPerformanceScheduleLoaded();
+    this.updateEmployeePaymentPerformanceLocation();
+  }
+
+  shiftPaymentPerformanceWeek(deltaWeeks: number): void {
+    const date = this.paymentPerformanceDateAsLocalDate();
+    date.setDate(date.getDate() + deltaWeeks * 7);
+    this.paymentPerformanceDate = this.formatIsoDate(date);
+    this.ensurePaymentPerformanceScheduleLoaded();
+    this.updateEmployeePaymentPerformanceLocation();
+  }
+
+  get usesInvestigationPaymentPerformance(): boolean {
+    return this.shouldShowTaskForceLocationsOnAttendance();
+  }
+
+  get paymentPerformanceCardClasses(): string {
+    const current = this.weeklyExpectedProgressPercent || 0;
+    const previous = this.previousWeeklyExpectedProgressPercent || 0;
+
+    if (current < this.weeklyPaymentProgressMinimumPercent || previous > current) {
+      return 'border-red-200 bg-gradient-to-br from-white to-red-50/80 shadow-red-100/70 dark:border-red-900/40 dark:from-slate-900 dark:to-red-950/20';
+    }
+
+    if (current < 80) {
+      return 'border-amber-200 bg-gradient-to-br from-white to-amber-50/70 shadow-amber-100/60 dark:border-amber-900/40 dark:from-slate-900 dark:to-amber-950/20';
+    }
+
+    return 'border-emerald-200 bg-gradient-to-br from-white to-emerald-50/70 shadow-emerald-100/60 dark:border-emerald-900/40 dark:from-slate-900 dark:to-emerald-950/20';
+  }
+
+  get paymentPerformanceStatusClasses(): string {
+    const daily = this.dailyPaymentPerformancePercent || 0;
+
+    if (daily < this.weeklyPaymentProgressMinimumPercent) {
+      return 'border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200';
+    }
+
+    if (daily < 80) {
+      return 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200';
+    }
+
+    return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200';
+  }
+
+  get paymentPerformanceStatusDotClasses(): string {
+    const daily = this.dailyPaymentPerformancePercent || 0;
+    if (daily < this.weeklyPaymentProgressMinimumPercent) return 'bg-red-500';
+    if (daily < 80) return 'bg-amber-500';
+    return 'bg-emerald-500';
+  }
+
+  get paymentPerformanceStatusMessage(): string {
+    const daily = Math.round(this.dailyPaymentPerformancePercent || 0);
+    if (daily >= 100) return `Aujourd'hui: objectif atteint.`;
+    if (daily < this.weeklyPaymentProgressMinimumPercent) {
+      return `Pas encore aujourd'hui, continuez.`;
+    }
+    return `Aujourd'hui avance bien.`;
+  }
+
+  get weeklyPaymentPerformanceStatusClasses(): string {
+    const weekly = this.weeklyExpectedProgressPercent || 0;
+    const previous = this.previousWeeklyExpectedProgressPercent || 0;
+
+    if (weekly < this.weeklyPaymentProgressMinimumPercent) {
+      return 'border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200';
+    }
+
+    if (weekly < this.weeklyPaymentProgressGoalPercent || previous > weekly) {
+      return 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200';
+    }
+
+    return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200';
+  }
+
+  get weeklyPaymentPerformanceStatusDotClasses(): string {
+    const weekly = this.weeklyExpectedProgressPercent || 0;
+    const previous = this.previousWeeklyExpectedProgressPercent || 0;
+
+    if (weekly < this.weeklyPaymentProgressMinimumPercent) return 'bg-red-500';
+    if (weekly < this.weeklyPaymentProgressGoalPercent || previous > weekly) {
+      return 'bg-amber-500';
+    }
+    return 'bg-emerald-500';
+  }
+
+  get weeklyPaymentPerformanceStatusMessage(): string {
+    const weekly = Math.round(this.weeklyExpectedProgressPercent || 0);
+    const previous = Math.round(this.previousWeeklyExpectedProgressPercent || 0);
+    const isBehindPreviousWeek = previous > weekly;
+
+    if (weekly >= this.weeklyPaymentProgressGoalPercent) {
+      return 'Objectif semaine atteint.';
+    }
+
+    if (weekly < this.weeklyPaymentProgressMinimumPercent) {
+      return isBehindPreviousWeek
+        ? 'Pas encore, semaine passée meilleure.'
+        : 'Pas encore, viser 50%.';
+    }
+
+    if (isBehindPreviousWeek) {
+      return 'Minimum atteint, rattraper la semaine passée.';
+    }
+
+    if (weekly >= 80) {
+      return 'Très bon rythme, viser 100%.';
+    }
+
+    return 'Minimum atteint, viser 100%.';
+  }
+
   private async updateWeeklyPaymentTotals(): Promise<void> {
     const ownerUid = this.auth.currentUser?.uid;
     const empUid = this.employee?.uid;
@@ -2934,6 +3079,292 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       this.weeklyPaymentTargetFc === 0
         ? 0
         : Math.min(100, (total / this.weeklyPaymentTargetFc) * 100);
+  }
+
+  private ensurePaymentPerformanceScheduleLoaded(): void {
+    const date = this.paymentPerformanceDateAsLocalDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    const key = `${year}-${month}`;
+
+    if (this.paymentPerformanceScheduleMonthKey === key) {
+      return;
+    }
+
+    this.loadTaskForceAttendanceLocations(month, year);
+  }
+
+  private paymentPerformanceDateAsLocalDate(): Date {
+    if (this.paymentPerformanceDate) {
+      const [year, month, day] = this.paymentPerformanceDate
+        .split('-')
+        .map(Number);
+      if (
+        Number.isFinite(year) &&
+        Number.isFinite(month) &&
+        Number.isFinite(day)
+      ) {
+        return new Date(year, month - 1, day);
+      }
+    }
+
+    return new Date();
+  }
+
+  private updateEmployeePaymentPerformanceLocation(): void {
+    if (!this.usesInvestigationPaymentPerformance) {
+      this.resetEmployeePaymentPerformance();
+      return;
+    }
+
+    this.ensurePaymentPerformanceScheduleLoaded();
+    const dateKey = this.paymentPerformanceDateKey();
+    const scheduledLocation = this.taskForceLocationsByDateLabel[dateKey]?.[0] || '';
+    const location = scheduledLocation
+      ? this.resolveLocationUserByLabel(scheduledLocation)
+      : undefined;
+
+    if (!location?.uid) {
+      this.employeePaymentPerformanceLocation = undefined;
+      this.employeePaymentPerformanceLocationLabel =
+        scheduledLocation || 'Site non planifié';
+      this.employeePaymentPerformanceClients = [];
+      this.paymentPerformanceClientsLocationId = '';
+      this.taskForcePerformanceClientsSub?.unsubscribe();
+      this.updateEmployeePaymentPerformanceProgress();
+      return;
+    }
+
+    this.employeePaymentPerformanceLocation = location;
+    this.employeePaymentPerformanceLocationLabel =
+      location.firstName || location.email || scheduledLocation || 'Site';
+
+    if (this.paymentPerformanceClientsLocationId === location.uid) {
+      this.updateEmployeePaymentPerformanceProgress();
+      return;
+    }
+
+    this.paymentPerformanceClientsLocationId = location.uid;
+    this.taskForcePerformanceClientsSub?.unsubscribe();
+    this.taskForcePerformanceClientsSub = this.auth
+      .getClientsOfAUser(location.uid)
+      .subscribe((data) => {
+        const base = Array.isArray(data) ? (data.filter(Boolean) as Client[]) : [];
+        this.employeePaymentPerformanceClients = base.map((client) => ({
+          ...client,
+          locationName: this.employeePaymentPerformanceLocationLabel,
+          locationOwnerId: location.uid,
+        }));
+        this.updateEmployeePaymentPerformanceProgress();
+      });
+  }
+
+  private resetEmployeePaymentPerformance(): void {
+    this.taskForcePerformanceClientsSub?.unsubscribe();
+    this.paymentPerformanceClientsLocationId = '';
+    this.employeePaymentPerformanceLocation = undefined;
+    this.employeePaymentPerformanceLocationLabel = 'Site';
+    this.employeePaymentPerformanceClients = [];
+    this.dailyPaymentPerformancePercent = 0;
+    this.dailyPaymentPerformanceTone = 'red';
+    this.dailyPaymentPerformanceLabel = this.formatPerformanceDateLabel(
+      this.paymentPerformanceDateKey()
+    );
+    this.weeklyExpectedProgressPercent = 0;
+    this.weeklyExpectedProgressTone = 'red';
+    this.weeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(
+      this.paymentPerformanceDateKey()
+    );
+    this.previousWeeklyExpectedProgressPercent = 0;
+    this.previousWeeklyExpectedProgressTone = 'red';
+    this.previousWeeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(
+      this.previousWeekDateKey(this.paymentPerformanceDateKey())
+    );
+  }
+
+  private updateEmployeePaymentPerformanceProgress(): void {
+    const dateKey = this.paymentPerformanceDateKey();
+    this.dailyPaymentPerformanceLabel = this.formatPerformanceDateLabel(dateKey);
+    this.weeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(dateKey);
+    this.previousWeeklyExpectedRangeLabel = this.computeWeeklyRangeLabel(
+      this.previousWeekDateKey(dateKey)
+    );
+
+    const user = this.employeePaymentPerformanceLocation;
+    if (!user) {
+      this.dailyPaymentPerformancePercent = 0;
+      this.dailyPaymentPerformanceTone = 'red';
+      this.weeklyExpectedProgressPercent = 0;
+      this.weeklyExpectedProgressTone = 'red';
+      this.previousWeeklyExpectedProgressPercent = 0;
+      this.previousWeeklyExpectedProgressTone = 'red';
+      return;
+    }
+
+    const dayProgress = this.computeDailyExpectedProgressForDate(user, dateKey);
+    const currentWeekProgress = this.computeWeeklyExpectedProgressForDate(
+      user,
+      dateKey
+    );
+    const previousWeekProgress = this.computeWeeklyExpectedProgressForDate(
+      user,
+      this.previousWeekDateKey(dateKey)
+    );
+
+    this.dailyPaymentPerformancePercent = dayProgress.percent;
+    this.dailyPaymentPerformanceTone = dayProgress.tone;
+    this.weeklyExpectedProgressPercent = currentWeekProgress.percent;
+    this.weeklyExpectedProgressTone = currentWeekProgress.tone;
+    this.previousWeeklyExpectedProgressPercent = previousWeekProgress.percent;
+    this.previousWeeklyExpectedProgressTone = previousWeekProgress.tone;
+  }
+
+  private paymentPerformanceDateKey(): string {
+    return this.formatDateKey(this.paymentPerformanceDateAsLocalDate());
+  }
+
+  private previousWeekDateKey(dateKey: string): string {
+    const [month, day, year] = dateKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() - 7);
+    return this.formatDateKey(date);
+  }
+
+  private computeWeeklyExpectedProgressForDate(
+    user: User,
+    dateKey: string
+  ): { percent: number; tone: WeeklyExpectedProgressTone } {
+    const weeklyExpectedFc = this.computeWeeklyExpectedTotalForClients(
+      this.employeePaymentPerformanceClients,
+      dateKey
+    );
+    const weeklyPaymentFc = this.computeWeeklyPaymentTotalForUser(user, dateKey);
+    const percent =
+      weeklyExpectedFc === 0
+        ? weeklyPaymentFc > 0
+          ? 100
+          : 0
+        : Math.min(100, (weeklyPaymentFc / weeklyExpectedFc) * 100);
+
+    return {
+      percent,
+      tone: this.resolveExpectedProgressTone(percent),
+    };
+  }
+
+  private computeDailyExpectedProgressForDate(
+    user: User,
+    dateKey: string
+  ): { percent: number; tone: WeeklyExpectedProgressTone } {
+    const dailyExpectedFc = this.computeDailyExpectedTotalForClients(
+      this.employeePaymentPerformanceClients,
+      dateKey
+    );
+    const dailyPaymentFc = this.computeDailyPaymentTotalForUser(user, dateKey);
+    const percent =
+      dailyExpectedFc === 0
+        ? dailyPaymentFc > 0
+          ? 100
+          : 0
+        : Math.min(100, (dailyPaymentFc / dailyExpectedFc) * 100);
+
+    return {
+      percent,
+      tone: this.resolveExpectedProgressTone(percent),
+    };
+  }
+
+  private computeDailyPaymentTotalForUser(user: User, dateKey: string): number {
+    const amount = Number(user.dailyReimbursement?.[dateKey] ?? 0);
+    return Number.isNaN(amount) ? 0 : amount;
+  }
+
+  private computeWeeklyPaymentTotalForUser(user: User, dateKey: string): number {
+    const { start, end } = this.getWeekBounds(dateKey);
+    const payments = user.dailyReimbursement || {};
+    let total = 0;
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const key = this.formatDateKey(cursor);
+      const amount = Number(payments[key] ?? 0);
+      if (!Number.isNaN(amount)) {
+        total += amount;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private computeDailyExpectedTotalForClients(
+    clients: Client[],
+    dateKey: string
+  ): number {
+    const dayName = this.time.getDayOfWeek(dateKey);
+    const clientsExpectedForDay = this.data
+      .findClientsWithDebts(clients)
+      .filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === dayName &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+    return this.compute.computeExpectedPerDate(clientsExpectedForDay);
+  }
+
+  private computeWeeklyExpectedTotalForClients(
+    clients: Client[],
+    dateKey: string
+  ): number {
+    const clientsWithDebts = this.data.findClientsWithDebts(clients);
+    const { start, end } = this.getWeekBounds(dateKey);
+    const cursor = new Date(start);
+    let total = 0;
+
+    while (cursor <= end) {
+      const dayName = this.time.getDayOfWeek(this.formatDateKey(cursor));
+      const clientsExpectedForDay = clientsWithDebts.filter((client) => {
+        return (
+          Number(client.debtLeft) > 0 &&
+          client.paymentDay === dayName &&
+          this.data.didClientStartThisWeek(client)
+        );
+      });
+
+      total += this.compute.computeExpectedPerDate(clientsExpectedForDay);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  private resolveExpectedProgressTone(
+    percent: number
+  ): WeeklyExpectedProgressTone {
+    const value = Number(percent) || 0;
+
+    if (value >= 100) return 'green';
+    if (value >= 80) return 'orange';
+    if (value >= 50) return 'yellow';
+    return 'red';
+  }
+
+  private computeWeeklyRangeLabel(dateKey: string): string {
+    const { start, end } = this.getWeekBounds(dateKey);
+    return `${this.formatWeekDate(start)} - ${this.formatWeekDate(end)}`;
+  }
+
+  private formatPerformanceDateLabel(dateKey: string): string {
+    const [month, day, year] = dateKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
   private resolveWeeklyTargetFcForDate(dateKey: string): number {
@@ -3271,6 +3702,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.individualReviewsSub?.unsubscribe();
     this.individualReviewsSub = undefined;
     this.individualReviewsLoading = false;
+    this.resetEmployeePaymentPerformance();
   }
   async retrieveEmployees(): Promise<void> {
     this.employeesSub?.unsubscribe();
@@ -4316,8 +4748,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     this.clearTaskForceAttendanceSubscriptions();
     this.taskForceAttendanceDaysByWeek = {};
     this.taskForceLocationsByDateLabel = {};
+    this.paymentPerformanceScheduleMonthKey = `${year}-${month}`;
 
     if (!this.shouldShowTaskForceLocationsOnAttendance()) {
+      this.updateEmployeePaymentPerformanceLocation();
       return;
     }
 
@@ -4327,6 +4761,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         this.taskForceAttendanceDaysByWeek[weekId] = doc?.days ?? {};
         this.rebuildTaskForceAttendanceLocations(month, year);
         this.generateAttendanceTable(month, year);
+        this.updateEmployeePaymentPerformanceLocation();
       });
       this.taskForceAttendanceSubs.push(sub);
     });
@@ -4441,6 +4876,27 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       ? locations[0]
       : locations.slice(0, 2).join(', ') +
           (locations.length > 2 ? ` +${locations.length - 2}` : '');
+  }
+
+  private resolveLocationUserByLabel(label: string): User | undefined {
+    const targetSlug = this.slugLocation(label);
+    if (!targetSlug) {
+      return undefined;
+    }
+
+    return this.allLocations.find((location) => {
+      const locationLabel = (location.firstName || location.email || 'Site').trim();
+      return this.slugLocation(locationLabel) === targetSlug;
+    });
+  }
+
+  private slugLocation(value: string): string {
+    return (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   private isoWeekIdForDate(date: Date): string {
