@@ -2351,9 +2351,39 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
   }
 
+  get totalPayrollSalaryPaidAmount(): number {
+    return this.filteredPayrollRows.reduce(
+      (sum, row) =>
+        row.employee.paidPaymentThisMonth ? sum + row.salaryDue : sum,
+      0
+    );
+  }
+
+  get totalPayrollBonusPaidAmount(): number {
+    return this.filteredPayrollRows.reduce(
+      (sum, row) =>
+        row.employee.paidBonusThisMonth ? sum + row.bonusTotal : sum,
+      0
+    );
+  }
+
   get totalPayrollLeftAmount(): number {
     return this.filteredPayrollRows.reduce(
       (sum, row) => sum + row.remainingTotal,
+      0
+    );
+  }
+
+  get totalPayrollSalaryLeftAmount(): number {
+    return this.filteredPayrollRows.reduce(
+      (sum, row) => sum + row.salaryRemaining,
+      0
+    );
+  }
+
+  get totalPayrollBonusLeftAmount(): number {
+    return this.filteredPayrollRows.reduce(
+      (sum, row) => sum + row.bonusRemaining,
       0
     );
   }
@@ -2364,10 +2394,32 @@ export class TeamRankingMonthComponent implements OnDestroy {
     ).length;
   }
 
+  get totalPayrollSalaryPaidPeople(): number {
+    return this.filteredPayrollRows.filter(
+      (row) => row.salaryDue > 0 && row.employee.paidPaymentThisMonth
+    ).length;
+  }
+
+  get totalPayrollBonusPaidPeople(): number {
+    return this.filteredPayrollRows.filter(
+      (row) => row.bonusTotal > 0 && row.employee.paidBonusThisMonth
+    ).length;
+  }
+
   get totalPayrollLeftPeople(): number {
     return this.filteredPayrollRows.filter(
       (row) => row.remainingTotal > 0
     ).length;
+  }
+
+  get totalPayrollSalaryLeftPeople(): number {
+    return this.filteredPayrollRows.filter(
+      (row) => row.salaryRemaining > 0
+    ).length;
+  }
+
+  get totalPayrollBonusLeftPeople(): number {
+    return this.filteredPayrollRows.filter((row) => row.bonusRemaining > 0).length;
   }
 
   clearPayrollSearch(): void {
