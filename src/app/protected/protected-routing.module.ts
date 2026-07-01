@@ -200,6 +200,11 @@ const routes: Routes = [
     component: ClientGalleryComponent,
     data: { ownerType: 'card' },
   },
+  {
+    path: 'trophy-gallery',
+    component: ClientGalleryComponent,
+    data: { ownerType: 'trophy' },
+  },
   { path: 'add-investment', component: AmountInvestedComponent },
   { path: 'add-expense', component: ExpensesComponent },
   { path: 'add-loss', component: LossesComponent },

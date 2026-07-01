@@ -21,6 +21,10 @@ export type ClientGalleryMediaType = 'image' | 'video';
 export interface ClientGalleryPicture {
   id: string;
   category: ClientGalleryCategory;
+  trophyAwardType?: 'team' | 'employee' | 'manager';
+  trophySubject?: string;
+  trophyMonth?: string;
+  trophyYear?: string;
   mediaType?: ClientGalleryMediaType;
   mimeType?: string;
   url: string;

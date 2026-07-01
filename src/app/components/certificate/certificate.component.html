@@ -144,6 +144,20 @@
                 Consulter le certificat
                 <span aria-hidden="true">↗</span>
               </a>
+              <a
+                class="inline-flex w-fit items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 transition hover:border-amber-300 hover:bg-amber-100"
+                [routerLink]="['/trophy-gallery']"
+                [queryParams]="{
+                  category: 'trophy',
+                  award: 'team',
+                  subject: selectedBest.bestTeam,
+                  month: selectedBest.month,
+                  year: selectedBest.year
+                }"
+              >
+                Voir les photos
+                <span aria-hidden="true">↗</span>
+              </a>
             </div>
           </article>
 
@@ -200,6 +214,20 @@
                 Consulter le certificat
                 <span aria-hidden="true">↗</span>
               </a>
+              <a
+                class="inline-flex w-fit items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 transition hover:border-amber-300 hover:bg-amber-100"
+                [routerLink]="['/trophy-gallery']"
+                [queryParams]="{
+                  category: 'trophy',
+                  award: 'employee',
+                  subject: selectedBest.bestEmployee,
+                  month: selectedBest.month,
+                  year: selectedBest.year
+                }"
+              >
+                Voir les photos
+                <span aria-hidden="true">↗</span>
+              </a>
             </div>
           </article>
 
@@ -248,6 +276,20 @@
                 target="_blank"
               >
                 Consulter le certificat
+                <span aria-hidden="true">↗</span>
+              </a>
+              <a
+                class="inline-flex w-fit items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 transition hover:border-amber-300 hover:bg-amber-100"
+                [routerLink]="['/trophy-gallery']"
+                [queryParams]="{
+                  category: 'trophy',
+                  award: 'manager',
+                  subject: selectedBest.bestManager,
+                  month: selectedBest.month,
+                  year: selectedBest.year
+                }"
+              >
+                Voir les photos
                 <span aria-hidden="true">↗</span>
               </a>
             </div>

@@ -8,7 +8,7 @@ import { LocationCoordinates, User } from '../models/user';
 import { firstValueFrom, Observable } from 'rxjs';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AuthService } from './auth.service';
-import { Client, Comment } from '../models/client';
+import { Client, ClientGalleryPicture, Comment } from '../models/client';
 import { TimeService } from './time.service';
 import {
   AttendanceAttachment,
@@ -461,6 +461,31 @@ export class DataService {
     );
 
     return cardRef.update({ galleryPictures: galleryPictures ?? {} });
+  }
+
+  getTrophyGallery() {
+    return this.afs
+      .doc<{ galleryPictures?: { [key: string]: ClientGalleryPicture } }>(
+        'gallery/trophy'
+      )
+      .valueChanges();
+  }
+
+  replaceTrophyGalleryPictures(
+    galleryPictures: { [key: string]: ClientGalleryPicture }
+  ) {
+    const galleryRef = this.afs.doc('gallery/trophy');
+
+    return galleryRef.set(
+      {
+        uid: 'trophy-gallery',
+        firstName: 'Trophées',
+        lastName: '',
+        homeAddress: 'Photos et vidéos des certificats',
+        galleryPictures: galleryPictures ?? {},
+      },
+      { merge: true }
+    );
   }
 
   clientCardPayment(clientCard: Card) {

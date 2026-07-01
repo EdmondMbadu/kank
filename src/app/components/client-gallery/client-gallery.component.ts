@@ -12,10 +12,12 @@ import {
 import { Card } from 'src/app/models/card';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
+import { TimeService } from 'src/app/services/time.service';
 
-type GalleryOwnerType = 'client' | 'card';
+type GalleryOwnerType = 'client' | 'card' | 'trophy';
 type GalleryOwner = Client | Card;
 type GalleryFilterCategory = ClientGalleryCategory | 'all';
+type TrophyGalleryAwardFilter = 'all' | 'team' | 'employee' | 'manager';
 
 @Component({
   selector: 'app-client-gallery',
@@ -61,15 +63,54 @@ export class ClientGalleryComponent implements OnDestroy {
   uploadCaptureSource: 'exif' | 'fileLastModified' | 'manual' | '' = '';
   uploadError = '';
   selectedPicture?: ClientGalleryPicture;
+  trophyAwardFilter: TrophyGalleryAwardFilter = 'all';
+  trophySubjectFilter = '';
+  trophyMonthFilter = '';
+  trophyYearFilter = '';
+  readonly trophyAwardOptions: {
+    id: TrophyGalleryAwardFilter;
+    label: string;
+  }[] = [
+    { id: 'all', label: 'Tous' },
+    { id: 'team', label: 'Équipe' },
+    { id: 'employee', label: 'Employé' },
+    { id: 'manager', label: 'Manager' },
+  ];
+  readonly trophyMonthsList: string[] = [];
 
   constructor(
     public auth: AuthService,
     private route: ActivatedRoute,
     private storage: AngularFireStorage,
-    private data: DataService
+    private data: DataService,
+    public time: TimeService
   ) {
     this.id = this.route.snapshot.paramMap.get('id') ?? '';
     this.ownerType = this.route.snapshot.data['ownerType'] ?? 'client';
+    const requestedCategory = this.route.snapshot.queryParamMap.get('category');
+    this.trophyMonthsList = [...(this.time.monthFrenchNames || [])];
+    if (this.ownerType === 'trophy') {
+      this.id = 'trophy-gallery';
+      this.activeCategory = 'trophy';
+      this.pendingUploadCategory = 'trophy';
+      this.editDraftCategory = 'trophy';
+      this.trophyAwardFilter = this.normalizeTrophyAwardFilter(
+        this.route.snapshot.queryParamMap.get('award')
+      );
+      this.trophySubjectFilter =
+        this.route.snapshot.queryParamMap.get('subject')?.trim() || '';
+      this.trophyMonthFilter =
+        this.normalizeTrophyMonthFilter(
+          this.route.snapshot.queryParamMap.get('month')
+        ) || this.trophyMonthsList[new Date().getMonth()] || '';
+      this.trophyYearFilter =
+        this.route.snapshot.queryParamMap.get('year') ||
+        String(new Date().getFullYear());
+    } else if (this.isGalleryCategory(requestedCategory || undefined)) {
+      this.activeCategory = requestedCategory as ClientGalleryCategory;
+      this.pendingUploadCategory = requestedCategory as ClientGalleryCategory;
+      this.editDraftCategory = requestedCategory as ClientGalleryCategory;
+    }
   }
 
   ngOnInit(): void {
@@ -81,6 +122,19 @@ export class ClientGalleryComponent implements OnDestroy {
   }
 
   retrieveOwner(): void {
+    if (this.ownerType === 'trophy') {
+      this.data.getTrophyGallery().subscribe((gallery) => {
+        this.owner = {
+          uid: 'trophy-gallery',
+          firstName: 'Trophées',
+          lastName: '',
+          homeAddress: 'Photos et vidéos des certificats',
+          galleryPictures: gallery?.galleryPictures ?? {},
+        } as Client;
+      });
+      return;
+    }
+
     if (this.ownerType === 'card') {
       this.auth.getAllClientsCard().subscribe((cards: any) => {
         this.owner = cards?.[Number(this.id)];
@@ -94,6 +148,10 @@ export class ClientGalleryComponent implements OnDestroy {
   }
 
   get ownerName(): string {
+    if (this.ownerType === 'trophy') {
+      return 'Galerie des trophées';
+    }
+
     const parts = [
       this.owner?.firstName,
       this.owner?.middleName,
@@ -103,6 +161,10 @@ export class ClientGalleryComponent implements OnDestroy {
   }
 
   get backLink(): string[] {
+    if (this.ownerType === 'trophy') {
+      return ['/certificate'];
+    }
+
     return [
       this.ownerType === 'card' ? '/client-portal-card' : '/client-portal',
       this.id,
@@ -110,6 +172,10 @@ export class ClientGalleryComponent implements OnDestroy {
   }
 
   get ownerInitials(): string {
+    if (this.ownerType === 'trophy') {
+      return 'TR';
+    }
+
     const first = this.owner?.firstName?.trim()?.charAt(0) ?? '';
     const last = this.owner?.lastName?.trim()?.charAt(0) ?? '';
     return `${first}${last}`.toUpperCase() || 'CL';
@@ -123,7 +189,31 @@ export class ClientGalleryComponent implements OnDestroy {
   }
 
   get ownerAddress(): string {
+    if (this.ownerType === 'trophy') {
+      return 'Photos et vidéos des meilleures équipes et meilleurs employés';
+    }
+
     return this.owner?.homeAddress || 'Adresse domicile';
+  }
+
+  get visibleCategories(): {
+    id: ClientGalleryCategory;
+    label: string;
+    caption: string;
+  }[] {
+    return this.ownerType === 'trophy'
+      ? this.categories.filter((category) => category.id === 'trophy')
+      : this.categories;
+  }
+
+  get visibleFilterCategories(): {
+    id: GalleryFilterCategory;
+    label: string;
+    caption: string;
+  }[] {
+    return this.ownerType === 'trophy'
+      ? this.filterCategories.filter((category) => category.id === 'trophy')
+      : this.filterCategories;
   }
 
   get pictures(): ClientGalleryPicture[] {
@@ -144,6 +234,148 @@ export class ClientGalleryComponent implements OnDestroy {
     );
   }
 
+  get trophyPictures(): ClientGalleryPicture[] {
+    return this.pictures.filter((picture) => {
+      if (picture.category !== 'trophy') return false;
+      const matchesAward =
+        this.trophyAwardFilter === 'all' ||
+        picture.trophyAwardType === this.trophyAwardFilter;
+      const matchesSubject =
+        !this.trophySubjectFilter ||
+        this.normalizeTextForFilter(picture.trophySubject) ===
+          this.normalizeTextForFilter(this.trophySubjectFilter);
+      const matchesMonth =
+        !this.trophyMonthFilter || picture.trophyMonth === this.trophyMonthFilter;
+      const matchesYear =
+        !this.trophyYearFilter || picture.trophyYear === this.trophyYearFilter;
+      return matchesAward && matchesSubject && matchesMonth && matchesYear;
+    });
+  }
+
+  get displayedPictures(): ClientGalleryPicture[] {
+    return this.ownerType === 'trophy' ? this.trophyPictures : this.activePictures;
+  }
+
+  get trophyYearsList(): string[] {
+    const pictureYears = this.pictures
+      .map((picture) => picture.trophyYear)
+      .filter((year): year is string => !!year);
+    return Array.from(
+      new Set([
+        String(new Date().getFullYear()),
+        this.trophyYearFilter,
+        ...pictureYears,
+      ].filter(Boolean))
+    ).sort((a, b) => Number(b) - Number(a));
+  }
+
+  get trophyScopeLabel(): string {
+    const award =
+      this.trophyAwardOptions.find((option) => option.id === this.trophyAwardFilter)
+        ?.label || 'Tous';
+    return `${award}${
+      this.trophySubjectFilter ? ` · ${this.trophySubjectFilter}` : ''
+    } · ${this.trophyMonthFilter || 'Mois'} ${
+      this.trophyYearFilter || ''
+    }`.trim();
+  }
+
+  get trophyUploadContextLabel(): string {
+    const award =
+      this.trophyAwardOptions.find((option) => option.id === this.trophyAwardFilter)
+        ?.label || 'Trophée';
+    return `${award}${
+      this.trophySubjectFilter ? ` · ${this.trophySubjectFilter}` : ''
+    } · ${this.trophyMonthFilter} ${this.trophyYearFilter}`;
+  }
+
+  onTrophyFilterChange(): void {
+    this.activeCategory = 'trophy';
+    this.pendingUploadCategory = 'trophy';
+    this.editDraftCategory = 'trophy';
+  }
+
+  private normalizeTrophyAwardFilter(
+    value: string | null
+  ): TrophyGalleryAwardFilter {
+    return value === 'team' || value === 'employee' || value === 'manager'
+      ? value
+      : 'all';
+  }
+
+  private normalizeTrophyMonthFilter(value: string | null): string {
+    if (!value) return '';
+    const fromName = this.trophyMonthsList.find(
+      (month) => month.toLowerCase() === value.toLowerCase()
+    );
+    if (fromName) return fromName;
+
+    const monthNumber = Number(value);
+    if (Number.isInteger(monthNumber) && monthNumber >= 1 && monthNumber <= 12) {
+      return this.trophyMonthsList[monthNumber - 1] || '';
+    }
+
+    return value;
+  }
+
+  private trophyPictureMetadata(): Partial<ClientGalleryPicture> {
+    if (this.ownerType !== 'trophy') return {};
+
+    const award =
+      this.trophyAwardFilter === 'all' ? undefined : this.trophyAwardFilter;
+    return {
+      ...(award ? { trophyAwardType: award } : {}),
+      ...(this.trophySubjectFilter
+        ? { trophySubject: this.trophySubjectFilter }
+        : {}),
+      ...(this.trophyMonthFilter ? { trophyMonth: this.trophyMonthFilter } : {}),
+      ...(this.trophyYearFilter ? { trophyYear: this.trophyYearFilter } : {}),
+    };
+  }
+
+  private normalizeTrophyPicture(
+    picture: ClientGalleryPicture
+  ): ClientGalleryPicture {
+    if (this.ownerType !== 'trophy') return picture;
+
+    return {
+      ...picture,
+      category: 'trophy',
+      trophyAwardType:
+        picture.trophyAwardType ||
+        (this.trophyAwardFilter === 'all' ? undefined : this.trophyAwardFilter),
+      trophySubject: picture.trophySubject || this.trophySubjectFilter,
+      trophyMonth: picture.trophyMonth || this.trophyMonthFilter,
+      trophyYear: picture.trophyYear || this.trophyYearFilter,
+    };
+  }
+
+  private normalizeTextForFilter(value?: string): string {
+    return (value || '').trim().toLowerCase();
+  }
+
+  get activePictureCount(): number {
+    return this.displayedPictures.length;
+  }
+
+  private selectedPictureList(): ClientGalleryPicture[] {
+    return this.ownerType === 'trophy' ? this.trophyPictures : this.activePictures;
+  }
+
+  private categoryPictures(categoryId: GalleryFilterCategory): ClientGalleryPicture[] {
+    if (this.ownerType === 'trophy') {
+      return categoryId === 'trophy' ? this.trophyPictures : [];
+    }
+
+    if (categoryId === 'all') {
+      return this.pictures;
+    }
+
+    return this.pictures.filter(
+      (picture) => picture.category === categoryId
+    );
+  }
+
   get editingPicture(): ClientGalleryPicture | undefined {
     if (!this.editingPictureId) {
       return undefined;
@@ -160,19 +392,23 @@ export class ClientGalleryComponent implements OnDestroy {
   }
 
   countFor(categoryId: GalleryFilterCategory): number {
-    if (categoryId === 'all') {
-      return this.pictures.length;
-    }
-
-    return this.pictures.filter((picture) => picture.category === categoryId)
-      .length;
+    return this.categoryPictures(categoryId).length;
   }
 
   setActiveCategory(categoryId: GalleryFilterCategory): void {
+    if (this.ownerType === 'trophy') {
+      this.activeCategory = 'trophy';
+      return;
+    }
+
     this.activeCategory = categoryId;
   }
 
   get uploadCategory(): ClientGalleryCategory {
+    if (this.ownerType === 'trophy') {
+      return 'trophy';
+    }
+
     return this.activeCategory === 'all' ? 'other' : this.activeCategory;
   }
 
@@ -307,7 +543,7 @@ export class ClientGalleryComponent implements OnDestroy {
     const owner = this.owner;
     const ownerId = owner?.uid;
     if (!ownerId) {
-      this.uploadError = 'Client introuvable.';
+      this.uploadError = 'Galerie introuvable.';
       this.resetFileInput();
       return;
     }
@@ -355,7 +591,7 @@ export class ClientGalleryComponent implements OnDestroy {
     const owner = this.owner;
     const ownerId = owner?.uid;
     if (!ownerId) {
-      this.uploadError = 'Client introuvable.';
+      this.uploadError = 'Galerie introuvable.';
       return;
     }
 
@@ -385,6 +621,7 @@ export class ClientGalleryComponent implements OnDestroy {
       const picture: ClientGalleryPicture = {
         id: pictureId,
         category: uploadCategory,
+        ...this.trophyPictureMetadata(),
         mediaType,
         mimeType: file.type,
         url,
@@ -402,7 +639,9 @@ export class ClientGalleryComponent implements OnDestroy {
         [pictureId]: picture,
       };
 
-      if (this.ownerType === 'card') {
+      if (this.ownerType === 'trophy') {
+        await this.data.replaceTrophyGalleryPictures(galleryPictures);
+      } else if (this.ownerType === 'card') {
         await this.data.setCardField('galleryPictures', galleryPictures, ownerId);
       } else {
         await this.data.setClientField(
@@ -441,7 +680,8 @@ export class ClientGalleryComponent implements OnDestroy {
   startEditingPicture(picture: ClientGalleryPicture, event?: Event): void {
     event?.stopPropagation();
     this.editingPictureId = picture.id;
-    this.editDraftCategory = picture.category;
+    this.editDraftCategory =
+      this.ownerType === 'trophy' ? 'trophy' : picture.category;
     this.editCaptureDraftLocal = this.isoToDateTimeLocal(
       picture.captureTimeOriginalISO
     );
@@ -466,10 +706,10 @@ export class ClientGalleryComponent implements OnDestroy {
       return;
     }
 
-    const updatedPicture: ClientGalleryPicture = {
+    const updatedPicture: ClientGalleryPicture = this.normalizeTrophyPicture({
       ...picture,
       category: this.editDraftCategory,
-    };
+    });
 
     if (this.auth.isAdmin) {
       const captureISO = this.dateTimeLocalToISO(this.editCaptureDraftLocal);
@@ -514,7 +754,7 @@ export class ClientGalleryComponent implements OnDestroy {
     const owner = this.owner;
     const ownerId = owner?.uid;
     if (!ownerId) {
-      this.uploadError = 'Client introuvable.';
+      this.uploadError = 'Galerie introuvable.';
       return;
     }
 
@@ -535,7 +775,9 @@ export class ClientGalleryComponent implements OnDestroy {
     this.uploadError = '';
 
     try {
-      if (this.ownerType === 'card') {
+      if (this.ownerType === 'trophy') {
+        await this.data.replaceTrophyGalleryPictures(nextGalleryPictures);
+      } else if (this.ownerType === 'card') {
         await this.data.replaceCardGalleryPictures(
           ownerId,
           nextGalleryPictures
@@ -572,7 +814,7 @@ export class ClientGalleryComponent implements OnDestroy {
     const owner = this.owner;
     const ownerId = owner?.uid;
     if (!ownerId) {
-      throw new Error('Client introuvable.');
+      throw new Error('Galerie introuvable.');
     }
 
     const galleryPictures = { ...(owner.galleryPictures ?? {}) };
@@ -597,7 +839,9 @@ export class ClientGalleryComponent implements OnDestroy {
       delete nextGalleryPictures[key];
     });
 
-    if (this.ownerType === 'card') {
+    if (this.ownerType === 'trophy') {
+      await this.data.replaceTrophyGalleryPictures(nextGalleryPictures);
+    } else if (this.ownerType === 'card') {
       await this.data.replaceCardGalleryPictures(ownerId, nextGalleryPictures);
     } else {
       await this.data.replaceClientGalleryPictures(ownerId, nextGalleryPictures);
@@ -629,13 +873,13 @@ export class ClientGalleryComponent implements OnDestroy {
       return -1;
     }
 
-    return this.activePictures.findIndex(
+    return this.selectedPictureList().findIndex(
       (picture) => picture.id === this.selectedPicture?.id
     );
   }
 
   get canNavigateSelectedPicture(): boolean {
-    return this.activePictures.length > 1;
+    return this.selectedPictureList().length > 1;
   }
 
   get selectedPicturePositionLabel(): string {
@@ -644,7 +888,7 @@ export class ClientGalleryComponent implements OnDestroy {
       return '';
     }
 
-    return `${index + 1} / ${this.activePictures.length}`;
+    return `${index + 1} / ${this.selectedPictureList().length}`;
   }
 
   showPreviousPicture(event?: Event): void {
@@ -678,7 +922,7 @@ export class ClientGalleryComponent implements OnDestroy {
   }
 
   private moveSelectedPicture(direction: -1 | 1): void {
-    const pictures = this.activePictures;
+    const pictures = this.selectedPictureList();
     if (!this.selectedPicture || pictures.length <= 1) {
       return;
     }
