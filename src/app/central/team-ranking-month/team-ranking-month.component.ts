@@ -4870,6 +4870,16 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
   }
 
+  onPayrollMonthChange(): void {
+    this.allEmployees.forEach((employee) =>
+      this.decorateMonthlySignatureState(employee)
+    );
+    this.recomputePayrollRowsForAdmin();
+    if (this.rankingMode === 'monthlyPayments') {
+      void this.loadMonthlyTotalsForEmployees();
+    }
+  }
+
   setTrophyHistoryScope(scope: TrophyHistoryScope): void {
     if (this.trophyHistoryScope === scope) return;
     this.trophyHistoryScope = scope;
