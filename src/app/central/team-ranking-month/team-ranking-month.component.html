@@ -6332,16 +6332,16 @@
   class="px-4 pb-8 mx-auto max-w-5xl lg:px-6"
 >
   <div
-    class="overflow-hidden rounded-2xl border border-emerald-100 bg-white/95 shadow-lg shadow-emerald-100/60 dark:border-emerald-900/40 dark:bg-slate-900/80 dark:shadow-none"
+    class="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-lg shadow-slate-200/50 dark:border-slate-800 dark:bg-slate-900/80 dark:shadow-none"
   >
     <button
       type="button"
       (click)="transportReceiptSectionOpen = !transportReceiptSectionOpen"
-      class="flex w-full flex-col gap-4 bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-left text-white transition hover:from-emerald-700 hover:to-teal-700 sm:flex-row sm:items-center sm:justify-between"
+      class="flex w-full flex-col gap-4 px-6 py-5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50 sm:flex-row sm:items-center sm:justify-between"
     >
       <div class="flex items-center gap-3">
         <div
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md"
         >
           <svg
             class="h-6 w-6"
@@ -6359,19 +6359,21 @@
           </svg>
         </div>
         <div>
-          <h2 class="text-xl font-bold">Crédits & Transports</h2>
-          <p class="mt-1 text-sm text-white/80">
-            Fermé par défaut · deux derniers reçus par équipe.
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+            Crédits & Transports
+          </h2>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Derniers reçus transport par localisation.
           </p>
         </div>
       </div>
 
       <div class="flex items-center gap-3 self-end sm:self-center">
-        <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/25">
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700">
           {{ transportReceiptSectionOpen ? "Ouvert" : "Ouvrir" }}
         </span>
         <svg
-          class="h-6 w-6 transition-transform"
+          class="h-6 w-6 text-slate-500 transition-transform dark:text-slate-300"
           [class.rotate-180]="transportReceiptSectionOpen"
           viewBox="0 0 24 24"
           fill="none"
@@ -6390,36 +6392,41 @@
 
     <div
       *ngIf="transportReceiptSectionOpen"
-      class="border-t border-emerald-100 p-5 dark:border-emerald-900/50"
+      class="border-t border-slate-200 p-5 dark:border-slate-800"
     >
-      <div class="mb-4 max-w-md">
-        <div class="relative">
-          <svg
-            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            viewBox="0 0 18 18"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8 14a6 6 0 100-12 6 6 0 000 12zm5 1l3 3"
-            />
-          </svg>
-          <input
-            [(ngModel)]="transportReceiptSearchText"
-            placeholder="Filtrer par date…"
-            class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </div>
-      </div>
-
       <div
-        class="mb-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60 lg:grid-cols-[1fr_9rem_auto]"
+        class="mb-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60 lg:grid-cols-[1fr_1fr_9rem_auto]"
       >
+        <label class="block">
+          <span
+            class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+          >
+            Localisation
+          </span>
+          <div class="relative">
+            <svg
+              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              viewBox="0 0 18 18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 14a6 6 0 100-12 6 6 0 000 12zm5 1l3 3"
+              />
+            </svg>
+            <input
+              [(ngModel)]="transportReceiptLocationSearchText"
+              placeholder="Filtrer par localisation…"
+              class="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+            />
+          </div>
+        </label>
+
         <label class="block">
           <span
             class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
@@ -6477,8 +6484,15 @@
         *ngIf="transportReceiptTeams.length > 0; else noTransportReceiptTeams"
         class="grid gap-4 lg:grid-cols-2"
       >
+        <div
+          *ngIf="filteredTransportReceiptTeams.length === 0"
+          class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm font-semibold text-slate-500 dark:border-slate-700 dark:text-slate-400 lg:col-span-2"
+        >
+          Aucune localisation ne correspond au filtre.
+        </div>
+
         <article
-          *ngFor="let team of transportReceiptTeams; trackBy: trackBudgetTeamByUid"
+          *ngFor="let team of filteredTransportReceiptTeams; trackBy: trackBudgetTeamByUid"
           class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
         >
           <div class="mb-3 flex items-center justify-between gap-3">

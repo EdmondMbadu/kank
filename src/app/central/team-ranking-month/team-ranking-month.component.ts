@@ -449,7 +449,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   } | null = null;
   payrollReceiptSavingKey = '';
   transportReceiptsByTeam: Record<string, TeamTransportReceipt[]> = {};
-  transportReceiptSearchText = '';
+  transportReceiptLocationSearchText = '';
   selectedTransportReceiptTeamId = '';
   newTransportReceiptAmount: number | null = null;
   transportReceiptUploading = false;
@@ -6339,6 +6339,22 @@ export class TeamRankingMonthComponent implements OnDestroy {
     return this.auth.currentUser?.uid ? [this.auth.currentUser as User] : [];
   }
 
+  get filteredTransportReceiptTeams(): User[] {
+    const query = this.transportReceiptLocationSearchText.trim().toLowerCase();
+    if (!query) return this.transportReceiptTeams;
+
+    return this.transportReceiptTeams.filter((team) =>
+      [
+        this.getTransportReceiptTeamLabel(team),
+        team?.email || '',
+        team?.uid || '',
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
+  }
+
   private initializeTransportReceiptTeamSelection(): void {
     const teams = this.transportReceiptTeams;
     if (!teams.length) {
@@ -6398,21 +6414,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
   filteredTransportReceiptsForTeam(team: User): TeamTransportReceipt[] {
     const ownerUid = team?.uid || '';
     const receipts = this.transportReceiptsByTeam[ownerUid] || [];
-    const query = this.transportReceiptSearchText.trim().toLowerCase();
-    if (!query) return receipts.slice(0, 2);
-
-    return receipts
-      .filter((receipt) =>
-        [
-          receipt.frenchDate,
-          receipt.teamLabel,
-          String(receipt.amount ?? ''),
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(query)
-      )
-      .slice(0, 2);
+    return receipts.slice(0, 2);
   }
 
   trackTransportReceiptByDocId(
