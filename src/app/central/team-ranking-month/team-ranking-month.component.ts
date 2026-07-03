@@ -6355,6 +6355,15 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
   }
 
+  selectTransportReceiptTeam(team?: User): void {
+    if (!team?.uid) return;
+    this.selectedTransportReceiptTeamId = team.uid;
+  }
+
+  isSelectedTransportReceiptTeam(team?: User): boolean {
+    return !!team?.uid && team.uid === this.selectedTransportReceiptTeamId;
+  }
+
   private initializeTransportReceiptTeamSelection(): void {
     const teams = this.transportReceiptTeams;
     if (!teams.length) {
