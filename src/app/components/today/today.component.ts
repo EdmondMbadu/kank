@@ -850,6 +850,24 @@ export class TodayComponent {
     return bands;
   }
 
+  getWeeklyDeductionStepWidthPercent(
+    band: WeeklyShortfallDeductionBand
+  ): number {
+    const maxDeduction = this.selectedShortfallDeductionBands.reduce(
+      (max, item) => Math.max(max, Number(item.deductionUsd || 0)),
+      0
+    );
+
+    if (maxDeduction <= 0 || Number(band.deductionUsd || 0) <= 0) {
+      return 0;
+    }
+
+    return Math.min(
+      100,
+      Math.max(10, (Number(band.deductionUsd || 0) / maxDeduction) * 100)
+    );
+  }
+
   private currentMonthKey(): string {
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
