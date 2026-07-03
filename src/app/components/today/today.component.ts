@@ -207,7 +207,6 @@ export class TodayComponent {
   weeklyShortfalls: WeeklyShortfall[] = [];
   selectedShortfallMonth = '';
   selectedWeeklyShortfall: WeeklyShortfall | null = null;
-  weeklyShortfallModalDate = '';
   showWeeklyShortfallDeductionModal = false;
   weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
     bandFc: 100000,
@@ -793,23 +792,17 @@ export class TodayComponent {
   }
 
   openWeeklyShortfallDeductionModal(shortfall?: WeeklyShortfall): void {
-    this.weeklyShortfallModalDate = shortfall
-      ? this.formatIsoDate(shortfall.start)
-      : this.weekPickerStartDate || this.requestDate;
     this.selectedWeeklyShortfall =
-      shortfall || this.buildWeeklyShortfallForModalDate(this.weeklyShortfallModalDate);
+      shortfall ||
+      this.buildWeeklyShortfallForModalDate(
+        this.weekPickerStartDate || this.requestDate
+      );
     this.showWeeklyShortfallDeductionModal = true;
   }
 
   closeWeeklyShortfallDeductionModal(): void {
     this.showWeeklyShortfallDeductionModal = false;
     this.selectedWeeklyShortfall = null;
-  }
-
-  onWeeklyShortfallModalDateChange(): void {
-    this.selectedWeeklyShortfall = this.buildWeeklyShortfallForModalDate(
-      this.weeklyShortfallModalDate || this.requestDate
-    );
   }
 
   get weeklyObjectiveDeductionHeaderLabel(): string {

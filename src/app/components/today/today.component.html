@@ -1743,152 +1743,147 @@
         </button>
       </div>
 
-      <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/70">
-        <div>
-          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Semaine affichée
-          </p>
-          <p class="mt-0.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
-            {{ selectedWeeklyShortfall?.label || 'Semaine courante' }}
-          </p>
-        </div>
-        <label class="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-300">
-          <span class="hidden sm:inline">Changer</span>
-          <input
-            type="date"
-            [(ngModel)]="weeklyShortfallModalDate"
-            (change)="onWeeklyShortfallModalDateChange()"
-            class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:ring-rose-900/40"
-          />
-        </label>
-      </div>
-
       <div
-        *ngIf="selectedWeeklyShortfall"
-        class="mt-5 grid gap-3 sm:grid-cols-3"
+        *ngIf="selectedWeeklyShortfall as week"
+        class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70"
       >
-        <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase text-slate-500">
-            Objectif
-          </p>
-          <p class="mt-1 text-sm font-extrabold text-slate-900 dark:text-slate-50">
-            {{ selectedWeeklyShortfall.targetFc | number : "1.0-0" }} FC
-          </p>
-        </div>
-        <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
-          <p class="text-[11px] font-semibold uppercase text-slate-500">
-            Payé
-          </p>
-          <p class="mt-1 text-sm font-extrabold text-slate-900 dark:text-slate-50">
-            {{ selectedWeeklyShortfall.totalFc | number : "1.0-0" }} FC
-          </p>
-        </div>
-        <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/40">
-          <p class="text-[11px] font-semibold uppercase text-rose-700 dark:text-rose-200">
-            Manquant
-          </p>
-          <p class="mt-1 text-sm font-extrabold text-rose-900 dark:text-rose-100">
-            {{ selectedShortfallMissingFc | number : "1.0-0" }} FC
-          </p>
-        </div>
-      </div>
-
-      <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
-        Retenue =
-        <strong>{{ selectedShortfallBandCount || 0 }}</strong>
-        tranche(s) manquante(s) ×
-        <strong>$ {{ weeklyObjectiveDeductionConfig.penaltyPerBandUsd | number : "1.0-0" }}</strong>
-        par employé.
-        Une tranche vaut
-        <strong>{{ weeklyObjectiveDeductionConfig.bandFc | number : "1.0-0" }} FC</strong>.
-      </div>
-
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
           <div>
-            <p class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Escalier de retenue
+            <p
+              class="text-xs font-black uppercase tracking-wide"
+              [ngClass]="
+                week.deductionUsd === 0
+                  ? 'text-emerald-700 dark:text-emerald-300'
+                  : 'text-rose-700 dark:text-rose-200'
+              "
+            >
+              {{ week.isComplete ? 'Retenue finale' : 'Projection actuelle' }}
             </p>
             <p class="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Plus le paiement semaine descend, plus la retenue par employé monte.
+              {{
+                week.isComplete
+                  ? 'Semaine terminée avec'
+                  : 'Si la semaine s’arrêtait à'
+              }}
+              {{ week.totalFc | number : "1.0-0" }} FC payés.
             </p>
           </div>
-          <div class="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span class="inline-flex items-center gap-1">
-              <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-              Aucune retenue
-            </span>
-            <span class="inline-flex items-center gap-1">
-              <span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-              Retenue croissante
-            </span>
+          <div
+            class="rounded-xl border px-4 py-3 text-left md:text-right"
+            [ngClass]="
+              week.deductionUsd === 0
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+                : 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-100'
+            "
+          >
+            <div class="text-2xl font-black leading-none">
+              $ {{ week.deductionUsd | number : "1.0-0" }}
+            </div>
+            <div class="mt-1 text-[10px] font-bold uppercase tracking-wide opacity-80">
+              / employé
+            </div>
           </div>
         </div>
 
-        <div class="mt-4 space-y-2">
+        <div class="mt-4 grid gap-2 text-xs sm:grid-cols-3">
+          <div class="rounded-lg bg-white p-3 dark:bg-slate-900/60">
+            <p class="font-bold uppercase tracking-wide text-slate-400">Objectif</p>
+            <p class="mt-1 font-extrabold text-slate-800 dark:text-slate-100">
+              {{ week.targetFc | number : "1.0-0" }} FC
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-3 dark:bg-slate-900/60">
+            <p class="font-bold uppercase tracking-wide text-slate-400">Payé</p>
+            <p class="mt-1 font-extrabold text-slate-800 dark:text-slate-100">
+              {{ week.totalFc | number : "1.0-0" }} FC
+            </p>
+          </div>
+          <div class="rounded-lg bg-white p-3 dark:bg-slate-900/60">
+            <p class="font-bold uppercase tracking-wide text-slate-400">Manquant</p>
+            <p
+              class="mt-1 font-extrabold"
+              [ngClass]="
+                selectedShortfallMissingFc > 0
+                  ? 'text-rose-700 dark:text-rose-200'
+                  : 'text-emerald-700 dark:text-emerald-200'
+              "
+            >
+              {{ selectedShortfallMissingFc | number : "1.0-0" }} FC
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-3 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-900/60 dark:text-slate-300">
+          Retenue =
+          <strong>{{ selectedShortfallBandCount || 0 }}</strong>
+          tranche(s) manquante(s) ×
+          <strong>$ {{ weeklyObjectiveDeductionConfig.penaltyPerBandUsd | number : "1.0-0" }}</strong>.
+          1 tranche =
+          <strong>{{ weeklyObjectiveDeductionConfig.bandFc | number : "1.0-0" }} FC</strong>.
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <div class="flex items-center justify-between gap-3">
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Barème
+          </p>
+          <p class="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+            Plus bas = plus de retenue
+          </p>
+        </div>
+
+        <div class="mt-3 space-y-1.5">
           <div
             *ngFor="let band of selectedShortfallDeductionBands; let i = index"
-            class="relative grid gap-3 rounded-xl border p-3 sm:grid-cols-[190px_minmax(0,1fr)_120px]"
+            class="grid gap-2 rounded-lg border px-3 py-2 sm:grid-cols-[170px_minmax(0,1fr)_110px] sm:items-center"
             [ngClass]="{
-              'border-rose-500 bg-rose-50 shadow-md ring-2 ring-rose-300 dark:border-rose-400 dark:bg-rose-950/50 dark:ring-rose-700': band.isCurrent,
-              'border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/50': !band.isCurrent
+              'border-emerald-400 bg-emerald-50 ring-1 ring-emerald-200 dark:border-emerald-700 dark:bg-emerald-950/30 dark:ring-emerald-800': band.isCurrent && band.deductionUsd === 0,
+              'border-rose-400 bg-rose-50 ring-1 ring-rose-200 dark:border-rose-600 dark:bg-rose-950/40 dark:ring-rose-800': band.isCurrent && band.deductionUsd > 0,
+              'border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/50': !band.isCurrent && band.deductionUsd > 0,
+              'border-emerald-100 bg-emerald-50/70 dark:border-emerald-900 dark:bg-emerald-950/20': !band.isCurrent && band.deductionUsd === 0
             }"
           >
-            <div
-              *ngIf="band.isCurrent"
-              class="absolute -right-2 -top-2 rounded-full bg-rose-600 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm"
-            >
-              Position actuelle
-            </div>
-
             <div>
-              <p
-                class="text-xs font-extrabold"
-                [ngClass]="
-                  band.deductionUsd === 0
-                    ? 'text-emerald-700 dark:text-emerald-300'
-                    : 'text-slate-800 dark:text-slate-100'
-                "
-              >
-                {{ band.deductionUsd === 0 ? 'Sommet' : 'Marche ' + i }}
-              </p>
-              <p class="mt-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">
                 {{ band.label }}
               </p>
+              <span
+                *ngIf="band.isCurrent"
+                class="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                [ngClass]="
+                  band.deductionUsd === 0 ? 'bg-emerald-600' : 'bg-rose-600'
+                "
+              >
+                Position actuelle
+              </span>
             </div>
 
             <div class="flex min-w-0 items-center">
               <div
-                class="relative h-7 w-full rounded-r-full bg-slate-200/80 dark:bg-slate-700/80"
-                [ngClass]="{
-                  'ring-2 ring-rose-200 dark:ring-rose-800': band.isCurrent
-                }"
+                class="h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-700"
               >
                 <div
-                  *ngIf="band.deductionUsd > 0; else noWeeklyDeductionStep"
-                  class="h-7 rounded-r-full bg-rose-500"
-                  [style.width.%]="getWeeklyDeductionStepWidthPercent(band)"
+                  class="h-2.5 rounded-full"
+                  [ngClass]="
+                    band.deductionUsd === 0 ? 'bg-emerald-500' : 'bg-rose-500'
+                  "
+                  [style.width.%]="
+                    band.deductionUsd === 0
+                      ? 100
+                      : getWeeklyDeductionStepWidthPercent(band)
+                  "
                 ></div>
-                <div
-                  *ngIf="band.isCurrent"
-                  class="absolute -left-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-rose-600 shadow dark:border-slate-900"
-                  title="Position actuelle"
-                ></div>
-                <ng-template #noWeeklyDeductionStep>
-                  <div class="flex h-7 items-center px-3 text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
-                    Rien à retirer
-                  </div>
-                </ng-template>
               </div>
             </div>
 
             <div class="flex items-center justify-start sm:justify-end">
               <span
-                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-extrabold"
+                class="text-xs font-extrabold"
                 [ngClass]="
                   band.deductionUsd === 0
-                    ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800'
-                    : 'bg-rose-100 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-800'
+                    ? 'text-emerald-700 dark:text-emerald-300'
+                    : 'text-rose-700 dark:text-rose-200'
                 "
               >
                 {{
