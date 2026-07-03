@@ -273,6 +273,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     // NEW
     missingReasons?: number; // # comments still absent
     totalReasons?: number; // # clients to leave a comment
+    paidClientsToday?: number;
+    unpaidClientsToday?: number;
     moneyInHands: number;
     moneyInHandsDollar: number;
     transportAmount?: number;
@@ -287,6 +289,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
   overallTransportAmount: number = 0;
   overallMissingReasons: number = 0;
   overallTotalReasons: number = 0;
+  overallPaidClientsToday: number = 0;
+  overallUnpaidClientsToday: number = 0;
   weeklyPaymentDate: string = this.time.getTodaysDateYearMonthDay();
   weeklyPaymentDateCorrectFormat: string = this.time.todaysDateMonthDayYear();
   weeklyPaymentRangeLabel: string = '';
@@ -460,6 +464,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     this.overallTransportAmount = 0;
     this.overallMissingReasons = 0;
     this.overallTotalReasons = 0;
+    this.overallPaidClientsToday = 0;
+    this.overallUnpaidClientsToday = 0;
 
     // NEW: reset today's structures
     this.userServeTodayTotals = [];
@@ -552,13 +558,11 @@ export class GestionDayComponent implements OnInit, OnDestroy {
           );
           // ───── 1. Séparer ceux qui ont déjà payé aujourd’hui ───────────
           const unpaidToday: Client[] = this.currentClientsReserve.filter(
-            (cl) => {
-              const paidKeys = Object.keys(cl.payments || {}).filter(
-                (k) => k.startsWith(this.requestDateCorrectFormat)
-              );
-              return paidKeys.length === 0; // ⇦ donc pas encore payé
-            }
+            (cl) => !this.hasClientPaidForDate(cl)
           );
+          const paidClientsToday =
+            this.currentClientsReserve.length - unpaidToday.length;
+          const unpaidClientsToday = unpaidToday.length;
 
           // ───── 2. Compter les raisons manquantes ───────────────────────
           const totalReasons = unpaidToday.length;
@@ -690,6 +694,8 @@ export class GestionDayComponent implements OnInit, OnDestroy {
             /* NEW */
             missingReasons,
             totalReasons,
+            paidClientsToday,
+            unpaidClientsToday,
             /* NEW ↓ */
             moneyInHands: moneyHandsFC,
             moneyInHandsDollar: moneyHandsDollar,
@@ -752,6 +758,16 @@ export class GestionDayComponent implements OnInit, OnDestroy {
             );
             this.overallMissingReasons = reasonsTotals.missing;
             this.overallTotalReasons = reasonsTotals.total;
+            const clientPaymentTotals = this.reserveTotals.reduce(
+              (acc, row) => {
+                acc.paid += row.paidClientsToday ?? 0;
+                acc.unpaid += row.unpaidClientsToday ?? 0;
+                return acc;
+              },
+              { paid: 0, unpaid: 0 }
+            );
+            this.overallPaidClientsToday = clientPaymentTotals.paid;
+            this.overallUnpaidClientsToday = clientPaymentTotals.unpaid;
             this.userRequestTotals.sort((a, b) => {
               return b.total - a.total;
             });
@@ -2431,6 +2447,32 @@ export class GestionDayComponent implements OnInit, OnDestroy {
     const [mm, dd, yyyy] = this.requestDateCorrectFormat.split('-'); // ex. 07-21-2025
     const normalised = `${Number(mm)}-${Number(dd)}-${yyyy}`;
     return client.comments.find((c) => c.time?.startsWith(normalised)) || null;
+  }
+
+  private hasClientPaidForDate(client: Client): boolean {
+    return Object.entries(client.payments || {}).some(([key, value]) => {
+      if (!key.startsWith(this.requestDateCorrectFormat)) {
+        return false;
+      }
+
+      const amount = Number(value ?? 0);
+      return Number.isFinite(amount) && amount > 0;
+    });
+  }
+
+  getClientPaymentTotal(paid?: number, unpaid?: number): number {
+    return Number(paid || 0) + Number(unpaid || 0);
+  }
+
+  getClientPaymentPercent(count?: number, total?: number): number {
+    const numerator = Number(count || 0);
+    const denominator = Number(total || 0);
+
+    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.max(0, (numerator / denominator) * 100));
   }
 
   /* ───── click handler for card ───────── */
