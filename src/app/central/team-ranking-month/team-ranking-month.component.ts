@@ -188,6 +188,8 @@ type EmployeeCreditTransportReceipt = {
   frenchDate: string;
   amount: number;
   reason: string;
+  docPath: string;
+  storagePath: string;
 };
 type PayrollBreakdownRow = {
   employee: Employee;
@@ -444,6 +446,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
     string,
     EmployeeCreditTransportReceipt[]
   > = {};
+  employeeCreditTransportModal = {
+    open: false,
+    mode: 'create' as 'create' | 'edit',
+    row: null as PayrollBreakdownRow | null,
+    receipt: null as EmployeeCreditTransportReceipt | null,
+    amount: null as number | null,
+    reason: '',
+    file: null as File | null,
+    fileName: '',
+    previewUrl: '',
+    submitting: false,
+  };
   private employeeCreditTransportSubs: Subscription[] = [];
   private employeeCreditTransportLoadKey = '';
   payrollControlRowKey = '';
@@ -3250,8 +3264,9 @@ export class TeamRankingMonthComponent implements OnDestroy {
             [key]: snaps.map((snap) => {
               const data = snap.payload.doc.data() as any;
               const ts = Number(data?.ts) || 0;
+              const docId = snap.payload.doc.id;
               return {
-                docId: snap.payload.doc.id,
+                docId,
                 employeeUid: target.employeeUid,
                 ownerUid: target.ownerUid,
                 employeeName: target.row.name,
@@ -3263,6 +3278,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
                   : 'Date inconnue',
                 amount: Number(data?.amount ?? 0) || 0,
                 reason: (data?.reason || '').toString(),
+                docPath: `${collectionPath}/${docId}`,
+                storagePath: `users/${target.ownerUid}/employees/${target.employeeUid}/auditReceipts/${docId}`,
               };
             }),
           };
@@ -3273,6 +3290,175 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   private employeeCreditTransportKey(ownerUid: string, employeeUid: string): string {
     return `${ownerUid}:${employeeUid}`;
+  }
+
+  openEmployeeCreditTransportModal(
+    mode: 'create' | 'edit',
+    row: PayrollBreakdownRow,
+    receipt?: EmployeeCreditTransportReceipt
+  ): void {
+    if (!this.auth.isAdmninistrator || !row?.employee?.uid) return;
+
+    this.closeEmployeeCreditTransportModal();
+    this.employeeCreditTransportModal.open = true;
+    this.employeeCreditTransportModal.mode = mode;
+    this.employeeCreditTransportModal.row = row;
+    this.employeeCreditTransportModal.receipt = receipt || null;
+
+    if (mode === 'edit' && receipt) {
+      this.employeeCreditTransportModal.amount = Number(receipt.amount ?? 0) || null;
+      this.employeeCreditTransportModal.reason = (receipt.reason || '').trim();
+    }
+  }
+
+  closeEmployeeCreditTransportModal(): void {
+    this.clearEmployeeCreditTransportFile();
+    this.employeeCreditTransportModal = {
+      open: false,
+      mode: 'create',
+      row: null,
+      receipt: null,
+      amount: null,
+      reason: '',
+      file: null,
+      fileName: '',
+      previewUrl: '',
+      submitting: false,
+    };
+  }
+
+  async onEmployeeCreditTransportFileSelected(
+    files: FileList | null
+  ): Promise<void> {
+    const file = files?.item(0);
+    if (!file) return;
+    if (!this.isAcceptedTransportReceiptFile(file)) return;
+
+    const prepared = await this.prepareTransportReceiptFile(file);
+    if (!prepared) return;
+
+    this.clearEmployeeCreditTransportFile();
+    this.employeeCreditTransportModal.file = prepared;
+    this.employeeCreditTransportModal.fileName = prepared.name;
+    if (prepared.type.startsWith('image/')) {
+      this.employeeCreditTransportModal.previewUrl =
+        URL.createObjectURL(prepared);
+    }
+  }
+
+  clearEmployeeCreditTransportFile(): void {
+    if (this.employeeCreditTransportModal.previewUrl) {
+      URL.revokeObjectURL(this.employeeCreditTransportModal.previewUrl);
+    }
+    this.employeeCreditTransportModal.file = null;
+    this.employeeCreditTransportModal.fileName = '';
+    this.employeeCreditTransportModal.previewUrl = '';
+  }
+
+  async submitEmployeeCreditTransportModal(): Promise<void> {
+    if (
+      !this.auth.isAdmninistrator ||
+      this.employeeCreditTransportModal.submitting
+    ) {
+      return;
+    }
+
+    const row = this.employeeCreditTransportModal.row;
+    if (!row?.employee?.uid) {
+      alert("Impossible d'identifier l'employé.");
+      return;
+    }
+
+    const amount = Number(this.employeeCreditTransportModal.amount);
+    const reason = (this.employeeCreditTransportModal.reason || '').trim();
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Entrez un montant valide.');
+      return;
+    }
+    if (!reason) {
+      alert('Entrez un motif.');
+      return;
+    }
+    if (
+      this.employeeCreditTransportModal.mode === 'create' &&
+      !this.employeeCreditTransportModal.file
+    ) {
+      alert('Ajoutez un reçu.');
+      return;
+    }
+
+    this.employeeCreditTransportModal.submitting = true;
+    try {
+      const mode = this.employeeCreditTransportModal.mode;
+      if (this.employeeCreditTransportModal.mode === 'create') {
+        await this.createEmployeeCreditTransportReceipt(row, amount, reason);
+      } else {
+        await this.updateEmployeeCreditTransportReceipt(amount, reason);
+      }
+      this.closeEmployeeCreditTransportModal();
+      alert(
+        mode === 'create'
+          ? 'Entrée ajoutée.'
+          : 'Entrée mise à jour.'
+      );
+    } catch (error) {
+      console.error('Erreur crédits/transports employé', error);
+      alert("Impossible d'enregistrer cette entrée. Réessayez.");
+      this.employeeCreditTransportModal.submitting = false;
+    }
+  }
+
+  private async createEmployeeCreditTransportReceipt(
+    row: PayrollBreakdownRow,
+    amount: number,
+    reason: string
+  ): Promise<void> {
+    const ownerUid = row.employee.tempUser?.uid || this.auth.currentUser?.uid;
+    const employeeUid = row.employee.uid;
+    const file = this.employeeCreditTransportModal.file;
+    if (!ownerUid || !employeeUid || !file) {
+      throw new Error('Missing employee credit transport create target.');
+    }
+
+    const docId = this.afs.createId();
+    const storagePath = `users/${ownerUid}/employees/${employeeUid}/auditReceipts/${docId}`;
+    const upload = await this.storage.upload(storagePath, file);
+    const url = await upload.ref.getDownloadURL();
+    await this.afs
+      .doc(`users/${ownerUid}/employees/${employeeUid}/auditReceipts/${docId}`)
+      .set({
+        url,
+        ts: Date.now(),
+        amount,
+        reason,
+        type: file.type || 'application/octet-stream',
+        createdBy: this.auth.currentUser?.uid || 'unknown',
+      });
+  }
+
+  private async updateEmployeeCreditTransportReceipt(
+    amount: number,
+    reason: string
+  ): Promise<void> {
+    const receipt = this.employeeCreditTransportModal.receipt;
+    if (!receipt?.docPath) {
+      throw new Error('Missing employee credit transport edit target.');
+    }
+
+    const update: any = {
+      amount,
+      reason,
+      updatedAt: Date.now(),
+      updatedBy: this.auth.currentUser?.uid || 'unknown',
+    };
+    const file = this.employeeCreditTransportModal.file;
+    if (file) {
+      const upload = await this.storage.upload(receipt.storagePath, file);
+      update.url = await upload.ref.getDownloadURL();
+      update.type = file.type || 'application/octet-stream';
+    }
+
+    await this.afs.doc(receipt.docPath).update(update);
   }
 
   private async setPayrollVisibility(

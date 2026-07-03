@@ -3421,12 +3421,21 @@
                         {{ item.row.locationLabel }} · {{ item.row.role }}
                       </div>
                     </div>
-                    <a
-                      [routerLink]="['/employee-page', item.row.employee.trackingId || item.row.employee.uid]"
-                      class="shrink-0 rounded-lg border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200 dark:hover:bg-emerald-900/20"
-                    >
-                      Gérer
-                    </a>
+                    <div class="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="openEmployeeCreditTransportModal('create', item.row)"
+                        class="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white transition hover:bg-emerald-700"
+                      >
+                        Ajouter
+                      </button>
+                      <a
+                        [routerLink]="['/employee-page', item.row.employee.trackingId || item.row.employee.uid]"
+                        class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                      >
+                        Page
+                      </a>
+                    </div>
                   </div>
 
                   <div *ngIf="item.receipts.length > 0; else employeeCreditTransportEmpty" class="space-y-2">
@@ -3447,14 +3456,23 @@
                           <div class="font-black tabular-nums text-emerald-700 dark:text-emerald-300">
                             {{ receipt.amount | number : "1.0-2" }} $
                           </div>
-                          <a
-                            *ngIf="receipt.url"
-                            [href]="receipt.url"
-                            target="_blank"
-                            class="mt-1 inline-flex rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
-                          >
-                            Reçu
-                          </a>
+                          <div class="mt-1 flex justify-end gap-1.5">
+                            <a
+                              *ngIf="receipt.url"
+                              [href]="receipt.url"
+                              target="_blank"
+                              class="inline-flex rounded-lg bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
+                            >
+                              Reçu
+                            </a>
+                            <button
+                              type="button"
+                              (click)="openEmployeeCreditTransportModal('edit', item.row, receipt)"
+                              class="rounded-lg bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white transition hover:bg-blue-700"
+                            >
+                              Modifier
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -4585,6 +4603,180 @@
         <div class="mt-1 text-base font-semibold text-slate-800">
           {{ employeeModalEmployee.phoneNumber || "Numéro indisponible" }}
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div
+  *ngIf="employeeCreditTransportModal.open"
+  class="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/70 p-4 sm:items-center sm:p-6"
+  role="dialog"
+  aria-modal="true"
+  (click)="closeEmployeeCreditTransportModal()"
+>
+  <div
+    class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 dark:bg-slate-900 dark:text-white dark:ring-white/10"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="border-b border-slate-200 bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-white dark:border-slate-700">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-bold">
+            {{
+              employeeCreditTransportModal.mode === "create"
+                ? "Ajouter crédit/transport"
+                : "Modifier crédit/transport"
+            }}
+          </h3>
+          <p class="mt-1 text-sm text-white/85">
+            {{ employeeCreditTransportModal.row?.name || "Employé" }}
+            <span *ngIf="employeeCreditTransportModal.row?.locationLabel">
+              · {{ employeeCreditTransportModal.row?.locationLabel }}
+            </span>
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="closeEmployeeCreditTransportModal()"
+          class="rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25"
+        >
+          <span class="sr-only">Fermer</span>
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="space-y-5 p-5 sm:p-6">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Montant ($)
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="employeeCreditTransportModal.amount"
+            placeholder="Ex: 35"
+            class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </label>
+
+        <label class="block">
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Reçu
+          </span>
+          <span
+            class="mt-2 flex cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-700"
+          >
+            <input
+              type="file"
+              hidden
+              accept="image/*,application/pdf"
+              (change)="onEmployeeCreditTransportFileSelected($any($event.target).files); $any($event.target).value = ''"
+            />
+            {{
+              employeeCreditTransportModal.fileName ||
+                (employeeCreditTransportModal.mode === "edit"
+                  ? "Choisir un nouveau reçu"
+                  : "Choisir un reçu")
+            }}
+          </span>
+          <div class="mt-2 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span *ngIf="employeeCreditTransportModal.mode === 'create'">
+              Image ou PDF requis
+            </span>
+            <span *ngIf="employeeCreditTransportModal.mode === 'edit'">
+              Laisser vide pour garder le reçu actuel
+            </span>
+            <button
+              *ngIf="employeeCreditTransportModal.fileName"
+              type="button"
+              (click)="clearEmployeeCreditTransportFile()"
+              class="rounded-full bg-slate-200 px-2 py-0.5 font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100"
+            >
+              Retirer
+            </button>
+          </div>
+        </label>
+      </div>
+
+      <label class="block">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Motif
+        </span>
+        <textarea
+          rows="4"
+          [(ngModel)]="employeeCreditTransportModal.reason"
+          placeholder="Ex: Transport terrain, avance mission, correction de dépense"
+          class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+        ></textarea>
+      </label>
+
+      <div
+        *ngIf="employeeCreditTransportModal.previewUrl || employeeCreditTransportModal.receipt?.url"
+        class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/80"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Reçu
+            </div>
+            <div class="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              {{
+                employeeCreditTransportModal.fileName ||
+                  (employeeCreditTransportModal.mode === "edit"
+                    ? "Reçu actuel"
+                    : "Nouveau reçu")
+              }}
+            </div>
+          </div>
+          <a
+            *ngIf="employeeCreditTransportModal.receipt?.url"
+            [href]="employeeCreditTransportModal.receipt?.url"
+            target="_blank"
+            class="text-xs font-bold text-emerald-700 hover:underline dark:text-emerald-300"
+          >
+            Ouvrir actuel
+          </a>
+        </div>
+        <img
+          *ngIf="employeeCreditTransportModal.previewUrl"
+          [src]="employeeCreditTransportModal.previewUrl"
+          alt="Aperçu du reçu"
+          class="mt-3 max-h-64 w-full rounded-xl border border-slate-200 bg-white object-contain dark:border-slate-700 dark:bg-slate-900"
+        />
+      </div>
+
+      <div class="flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 dark:border-slate-700 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          (click)="closeEmployeeCreditTransportModal()"
+          class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          (click)="submitEmployeeCreditTransportModal()"
+          [disabled]="employeeCreditTransportModal.submitting"
+          class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60"
+        >
+          {{
+            employeeCreditTransportModal.submitting
+              ? "Enregistrement..."
+              : employeeCreditTransportModal.mode === "create"
+              ? "Enregistrer"
+              : "Mettre à jour"
+          }}
+        </button>
       </div>
     </div>
   </div>
