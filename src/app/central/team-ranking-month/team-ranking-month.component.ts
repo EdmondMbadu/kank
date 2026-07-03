@@ -177,6 +177,18 @@ type TeamTransportReceipt = {
   frenchDate: string;
   amount: number;
 };
+type EmployeeCreditTransportReceipt = {
+  docId: string;
+  employeeUid: string;
+  ownerUid: string;
+  employeeName: string;
+  locationLabel: string;
+  url: string;
+  ts: number;
+  frenchDate: string;
+  amount: number;
+  reason: string;
+};
 type PayrollBreakdownRow = {
   employee: Employee;
   name: string;
@@ -426,6 +438,14 @@ export class TeamRankingMonthComponent implements OnDestroy {
   payrollBankFilter: '' | 'rawbank' | 'equity' = '';
   payrollPaidFilter: '' | 'paid' | 'unpaid' = '';
   payrollSignedFilter: '' | 'signed' | 'unsigned' = '';
+  payrollMonthlyView: 'payroll' | 'employeeCredits' = 'payroll';
+  employeeCreditTransportSearchTerm = '';
+  employeeCreditTransportReceiptsByEmployee: Record<
+    string,
+    EmployeeCreditTransportReceipt[]
+  > = {};
+  private employeeCreditTransportSubs: Subscription[] = [];
+  private employeeCreditTransportLoadKey = '';
   payrollControlRowKey = '';
   payrollVisibilitySavingKey = '';
   payrollBankSavingKey = '';
@@ -3114,6 +3134,7 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.payrollRows = this.allEmployees.map((employee) =>
       this.buildPayrollBreakdownRow(employee)
     );
+    this.loadEmployeeCreditTransportReceiptsForPayroll();
 
     const netSalaryTotal = this.payrollRows.reduce(
       (sum, row) => sum + row.net,
@@ -3121,6 +3142,137 @@ export class TeamRankingMonthComponent implements OnDestroy {
     );
     this.totalSalary = netSalaryTotal.toString();
     this.total = (netSalaryTotal + Number(this.totalHouse || 0)).toString();
+  }
+
+  get employeeCreditTransportRows(): Array<{
+    row: PayrollBreakdownRow;
+    receipts: EmployeeCreditTransportReceipt[];
+  }> {
+    const query = this.normalizePayrollSearch(
+      this.employeeCreditTransportSearchTerm
+    );
+
+    return this.payrollRows
+      .map((row) => ({
+        row,
+        receipts: this.employeeCreditTransportReceipts(row).filter((receipt) => {
+          if (!query) return true;
+          const haystack = this.normalizePayrollSearch(
+            [
+              row.name,
+              row.locationLabel,
+              row.role,
+              receipt.frenchDate,
+              receipt.reason,
+              String(receipt.amount ?? ''),
+            ].join(' ')
+          );
+          return haystack.includes(query);
+        }),
+      }))
+      .filter(({ row, receipts }) => {
+        if (receipts.length > 0) return true;
+        if (!query) return false;
+        const haystack = this.normalizePayrollSearch(
+          [row.name, row.locationLabel, row.role].join(' ')
+        );
+        return haystack.includes(query);
+      });
+  }
+
+  get employeeCreditTransportTotalAmount(): number {
+    return this.employeeCreditTransportRows.reduce(
+      (sum, item) =>
+        sum +
+        item.receipts.reduce(
+          (receiptSum, receipt) => receiptSum + Number(receipt.amount || 0),
+          0
+        ),
+      0
+    );
+  }
+
+  get employeeCreditTransportEntryCount(): number {
+    return this.employeeCreditTransportRows.reduce(
+      (sum, item) => sum + item.receipts.length,
+      0
+    );
+  }
+
+  clearEmployeeCreditTransportSearch(): void {
+    this.employeeCreditTransportSearchTerm = '';
+  }
+
+  employeeCreditTransportReceipts(
+    row: PayrollBreakdownRow
+  ): EmployeeCreditTransportReceipt[] {
+    const ownerUid = row.employee.tempUser?.uid || this.auth.currentUser?.uid || '';
+    const employeeUid = row.employee.uid || '';
+    return (
+      this.employeeCreditTransportReceiptsByEmployee[
+        this.employeeCreditTransportKey(ownerUid, employeeUid)
+      ] || []
+    );
+  }
+
+  private loadEmployeeCreditTransportReceiptsForPayroll(): void {
+    const targets = this.payrollRows
+      .map((row) => ({
+        row,
+        ownerUid: row.employee.tempUser?.uid || this.auth.currentUser?.uid || '',
+        employeeUid: row.employee.uid || '',
+      }))
+      .filter((target) => !!target.ownerUid && !!target.employeeUid);
+
+    const loadKey = targets
+      .map((target) => `${target.ownerUid}:${target.employeeUid}`)
+      .sort()
+      .join('|');
+    if (loadKey === this.employeeCreditTransportLoadKey) return;
+
+    this.employeeCreditTransportLoadKey = loadKey;
+    this.employeeCreditTransportSubs.forEach((sub) => sub.unsubscribe());
+    this.employeeCreditTransportSubs = [];
+    this.employeeCreditTransportReceiptsByEmployee = {};
+
+    targets.forEach((target) => {
+      const key = this.employeeCreditTransportKey(
+        target.ownerUid,
+        target.employeeUid
+      );
+      const collectionPath = `users/${target.ownerUid}/employees/${target.employeeUid}/auditReceipts`;
+      const sub = this.afs
+        .collection(collectionPath, (ref) => ref.orderBy('ts', 'desc').limit(2))
+        .snapshotChanges()
+        .subscribe((snaps) => {
+          this.employeeCreditTransportReceiptsByEmployee = {
+            ...this.employeeCreditTransportReceiptsByEmployee,
+            [key]: snaps.map((snap) => {
+              const data = snap.payload.doc.data() as any;
+              const ts = Number(data?.ts) || 0;
+              return {
+                docId: snap.payload.doc.id,
+                employeeUid: target.employeeUid,
+                ownerUid: target.ownerUid,
+                employeeName: target.row.name,
+                locationLabel: target.row.locationLabel,
+                url: data?.url || '',
+                ts,
+                frenchDate: ts
+                  ? this.time.formatEpochLongFr(ts)
+                  : 'Date inconnue',
+                amount: Number(data?.amount ?? 0) || 0,
+                reason: (data?.reason || '').toString(),
+              };
+            }),
+          };
+        });
+      this.employeeCreditTransportSubs.push(sub);
+    });
+  }
+
+  private employeeCreditTransportKey(ownerUid: string, employeeUid: string): string {
+    return `${ownerUid}:${employeeUid}`;
   }
 
   private async setPayrollVisibility(
@@ -4134,6 +4286,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.ideaSub?.unsubscribe();
     this.transportReceiptSubs.forEach((sub) => sub.unsubscribe());
     this.transportReceiptSubs = [];
+    this.employeeCreditTransportSubs.forEach((sub) => sub.unsubscribe());
+    this.employeeCreditTransportSubs = [];
     this.employeeCopySubs.forEach((sub) => sub.unsubscribe());
     this.employeeCopySubs = [];
     this.employeeMergeSubs.forEach((sub) => sub.unsubscribe());
