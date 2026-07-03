@@ -168,6 +168,15 @@ type PayrollPaymentHistoryEntry = {
   kind: 'paiement' | 'bonus';
   sourceIndex: number;
 };
+type TeamTransportReceipt = {
+  docId: string;
+  ownerUid: string;
+  teamLabel: string;
+  url: string;
+  ts: number;
+  frenchDate: string;
+  amount: number;
+};
 type PayrollBreakdownRow = {
   employee: Employee;
   name: string;
@@ -439,6 +448,18 @@ export class TeamRankingMonthComponent implements OnDestroy {
     sourceIndex: number;
   } | null = null;
   payrollReceiptSavingKey = '';
+  transportReceiptsByTeam: Record<string, TeamTransportReceipt[]> = {};
+  transportReceiptSearchText = '';
+  selectedTransportReceiptTeamId = '';
+  newTransportReceiptAmount: number | null = null;
+  transportReceiptUploading = false;
+  transportReceiptSavingKey = '';
+  transportReceiptSectionOpen = false;
+  private transportReceiptReplaceTarget: {
+    ownerUid: string;
+    docId: string;
+  } | null = null;
+  private transportReceiptSubs: Subscription[] = [];
   showMonthlyAmounts = false;
   showDailyAmounts = false;
   showWeeklyAmounts = false;
@@ -4085,6 +4106,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
     this.auth.getAllUsersInfo().subscribe((data) => {
       this.allUsers = data;
       this.initializeBudgetTeamSelection();
+      this.initializeTransportReceiptTeamSelection();
+      this.loadTransportReceiptsForTeams();
       this.logDebug('Locations fetched', {
         count: this.allUsers?.length ?? 0,
         ids: this.allUsers?.map((u) => u.uid) ?? [],
@@ -4109,6 +4132,8 @@ export class TeamRankingMonthComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.ideaSub?.unsubscribe();
+    this.transportReceiptSubs.forEach((sub) => sub.unsubscribe());
+    this.transportReceiptSubs = [];
     this.employeeCopySubs.forEach((sub) => sub.unsubscribe());
     this.employeeCopySubs = [];
     this.employeeMergeSubs.forEach((sub) => sub.unsubscribe());
@@ -6291,6 +6316,275 @@ export class TeamRankingMonthComponent implements OnDestroy {
       user.uid ||
       'Equipe inconnue'
     );
+  }
+
+  getTransportReceiptTeamLabel(user?: User): string {
+    return this.getBudgetTeamLabel(user);
+  }
+
+  getTransportReceiptTeamInitials(user?: User): string {
+    const label = this.getTransportReceiptTeamLabel(user);
+    const initials = label
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('');
+    return initials || 'EQ';
+  }
+
+  get transportReceiptTeams(): User[] {
+    const teams = this.sortedBudgetTeams;
+    if (teams.length) return teams;
+    return this.auth.currentUser?.uid ? [this.auth.currentUser as User] : [];
+  }
+
+  private initializeTransportReceiptTeamSelection(): void {
+    const teams = this.transportReceiptTeams;
+    if (!teams.length) {
+      this.selectedTransportReceiptTeamId = '';
+      return;
+    }
+
+    const selectedStillExists = teams.some(
+      (team) => team.uid === this.selectedTransportReceiptTeamId
+    );
+    if (selectedStillExists) return;
+
+    const currentUserId = this.auth.currentUser?.uid;
+    const currentTeam = teams.find((team) => team.uid === currentUserId);
+    this.selectedTransportReceiptTeamId =
+      currentTeam?.uid || teams[0]?.uid || '';
+  }
+
+  private loadTransportReceiptsForTeams(): void {
+    this.transportReceiptSubs.forEach((sub) => sub.unsubscribe());
+    this.transportReceiptSubs = [];
+    this.transportReceiptsByTeam = {};
+
+    const teams = this.transportReceiptTeams.filter((team) => !!team?.uid);
+    teams.forEach((team) => {
+      const ownerUid = team.uid!;
+      const sub = this.afs
+        .collection(`users/${ownerUid}/transportReceipts`, (ref) =>
+          ref.orderBy('ts', 'desc').limit(2)
+        )
+        .snapshotChanges()
+        .subscribe((snaps) => {
+          const teamLabel = this.getTransportReceiptTeamLabel(team);
+          this.transportReceiptsByTeam = {
+            ...this.transportReceiptsByTeam,
+            [ownerUid]: snaps.map((snap) => {
+              const data = snap.payload.doc.data() as any;
+              const ts = Number(data?.ts) || 0;
+              return {
+                docId: snap.payload.doc.id,
+                ownerUid,
+                teamLabel,
+                url: data?.url || '',
+                ts,
+                frenchDate: ts
+                  ? this.time.formatEpochLongFr(ts)
+                  : 'Date inconnue',
+                amount: Number(data?.amount ?? 0) || 0,
+              };
+            }),
+          };
+        });
+      this.transportReceiptSubs.push(sub);
+    });
+  }
+
+  filteredTransportReceiptsForTeam(team: User): TeamTransportReceipt[] {
+    const ownerUid = team?.uid || '';
+    const receipts = this.transportReceiptsByTeam[ownerUid] || [];
+    const query = this.transportReceiptSearchText.trim().toLowerCase();
+    if (!query) return receipts.slice(0, 2);
+
+    return receipts
+      .filter((receipt) =>
+        [
+          receipt.frenchDate,
+          receipt.teamLabel,
+          String(receipt.amount ?? ''),
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(query)
+      )
+      .slice(0, 2);
+  }
+
+  trackTransportReceiptByDocId(
+    _index: number,
+    receipt: TeamTransportReceipt
+  ): string {
+    return `${receipt.ownerUid}-${receipt.docId}`;
+  }
+
+  openTransportReceiptForUpdate(receipt: TeamTransportReceipt): void {
+    if (!this.auth.isAdmin || !receipt?.ownerUid || !receipt?.docId) return;
+    this.transportReceiptReplaceTarget = {
+      ownerUid: receipt.ownerUid,
+      docId: receipt.docId,
+    };
+    const input = document.getElementById(
+      'teamTransportReceiptReplaceInput'
+    ) as HTMLInputElement | null;
+    input?.click();
+  }
+
+  async onTransportReceiptUpload(files: FileList | null): Promise<void> {
+    if (!this.auth.isAdmin || !files?.length || this.transportReceiptUploading) {
+      return;
+    }
+
+    const ownerUid = this.selectedTransportReceiptTeamId;
+    if (!ownerUid) {
+      alert('Choisissez une équipe avant de joindre un reçu.');
+      return;
+    }
+
+    const amount = Number(this.newTransportReceiptAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Entrez un montant valide avant d’envoyer le reçu.');
+      return;
+    }
+
+    const file = files.item(0);
+    if (!file) return;
+    if (!this.isAcceptedTransportReceiptFile(file)) return;
+
+    const id = this.afs.createId();
+    const fileToUpload = await this.prepareTransportReceiptFile(file);
+    if (!fileToUpload) return;
+
+    this.transportReceiptUploading = true;
+    try {
+      const path = `transportReceipts/${ownerUid}/${id}`;
+      const task = await this.storage.upload(path, fileToUpload);
+      const url = await task.ref.getDownloadURL();
+      await this.afs
+        .doc(`users/${ownerUid}/transportReceipts/${id}`)
+        .set({
+          url,
+          ts: Date.now(),
+          amount,
+          type: fileToUpload.type || file.type || 'application/octet-stream',
+          createdBy: this.auth.currentUser?.uid || 'unknown',
+        });
+      this.newTransportReceiptAmount = null;
+      alert('Reçu ajouté avec succès.');
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du reçu transport", error);
+      alert('Échec de l’envoi — réessayez.');
+    } finally {
+      this.transportReceiptUploading = false;
+    }
+  }
+
+  async onTransportReceiptReplace(files: FileList | null): Promise<void> {
+    const target = this.transportReceiptReplaceTarget;
+    if (!this.auth.isAdmin || !files?.length || !target) return;
+
+    const file = files.item(0);
+    if (!file) return;
+    if (!this.isAcceptedTransportReceiptFile(file)) return;
+
+    const fileToUpload = await this.prepareTransportReceiptFile(file);
+    if (!fileToUpload) return;
+
+    this.transportReceiptSavingKey = `${target.ownerUid}-${target.docId}`;
+    try {
+      const path = `transportReceipts/${target.ownerUid}/${target.docId}`;
+      const upload = await this.storage.upload(path, fileToUpload);
+      const url = await upload.ref.getDownloadURL();
+      await this.afs
+        .doc(`users/${target.ownerUid}/transportReceipts/${target.docId}`)
+        .update({
+          url,
+          type: fileToUpload.type || file.type || 'application/octet-stream',
+          updatedAt: Date.now(),
+          updatedBy: this.auth.currentUser?.uid || 'unknown',
+        });
+      alert('Reçu mis à jour.');
+    } catch (error) {
+      console.error('Erreur lors du remplacement du reçu transport', error);
+      alert('Impossible de remplacer le reçu — réessayez.');
+    } finally {
+      this.transportReceiptSavingKey = '';
+      this.transportReceiptReplaceTarget = null;
+    }
+  }
+
+  async updateTransportReceiptAmount(
+    receipt: TeamTransportReceipt
+  ): Promise<void> {
+    if (!this.auth.isAdmin || !receipt?.ownerUid || !receipt?.docId) return;
+
+    const amount = Number(receipt.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      alert('Montant invalide.');
+      return;
+    }
+
+    const key = `${receipt.ownerUid}-${receipt.docId}`;
+    this.transportReceiptSavingKey = key;
+    try {
+      await this.afs
+        .doc(`users/${receipt.ownerUid}/transportReceipts/${receipt.docId}`)
+        .update({
+          amount,
+          updatedAt: Date.now(),
+          updatedBy: this.auth.currentUser?.uid || 'unknown',
+        });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du montant', error);
+      alert('Erreur lors de la mise à jour du montant.');
+    } finally {
+      if (this.transportReceiptSavingKey === key) {
+        this.transportReceiptSavingKey = '';
+      }
+    }
+  }
+
+  transportReceiptIsSaving(receipt: TeamTransportReceipt): boolean {
+    return (
+      this.transportReceiptSavingKey ===
+      `${receipt.ownerUid}-${receipt.docId}`
+    );
+  }
+
+  private isAcceptedTransportReceiptFile(file: File): boolean {
+    const majorType = file.type.split('/')[0];
+    if (majorType !== 'image' && file.type !== 'application/pdf') {
+      alert('Seuls les fichiers image ou PDF sont acceptés.');
+      return false;
+    }
+    if (file.size >= 5_000_000) {
+      alert('Le fichier est trop grand (max 5MB).');
+      return false;
+    }
+    return true;
+  }
+
+  private async prepareTransportReceiptFile(file: File): Promise<File | null> {
+    if (file.type !== 'image/heic') return file;
+    try {
+      const heic2any = (await import('heic2any')).default;
+      const convertedBlob: any = await heic2any({
+        blob: file,
+        toType: 'image/png',
+        quality: 0.7,
+      });
+      return new File([convertedBlob], `${file.name}.png`, {
+        type: 'image/png',
+      });
+    } catch (error) {
+      console.error('Erreur de conversion HEIC -> PNG :', error);
+      alert("Impossible de convertir l'image HEIC.");
+      return null;
+    }
   }
 
   getBudgetAmount(user?: User): number {

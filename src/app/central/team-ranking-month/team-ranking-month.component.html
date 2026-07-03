@@ -1,6 +1,6 @@
 <app-navbar
-  [email]="this.auth.currentUser.email"
-  [firstName]="this.auth.currentUser.firstName"
+  [email]="this.auth.currentUser?.email"
+  [firstName]="this.auth.currentUser?.firstName"
   [path]="'home'"
 ></app-navbar>
 
@@ -6322,6 +6322,266 @@
             : "Appliquer à tous les employés"
         }}
       </button>
+    </div>
+  </div>
+</section>
+
+<!-- === TEAM TRANSPORT RECEIPTS SECTION === -->
+<section
+  *ngIf="auth.isAdmin"
+  class="px-4 pb-8 mx-auto max-w-5xl lg:px-6"
+>
+  <div
+    class="overflow-hidden rounded-2xl border border-emerald-100 bg-white/95 shadow-lg shadow-emerald-100/60 dark:border-emerald-900/40 dark:bg-slate-900/80 dark:shadow-none"
+  >
+    <button
+      type="button"
+      (click)="transportReceiptSectionOpen = !transportReceiptSectionOpen"
+      class="flex w-full flex-col gap-4 bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-4 text-left text-white transition hover:from-emerald-700 hover:to-teal-700 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25"
+        >
+          <svg
+            class="h-6 w-6"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M9 14h6m-6-4h6M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"
+            />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold">Crédits & Transports</h2>
+          <p class="mt-1 text-sm text-white/80">
+            Fermé par défaut · deux derniers reçus par équipe.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 self-end sm:self-center">
+        <span class="rounded-full bg-white/15 px-3 py-1 text-xs font-bold ring-1 ring-white/25">
+          {{ transportReceiptSectionOpen ? "Ouvert" : "Ouvrir" }}
+        </span>
+        <svg
+          class="h-6 w-6 transition-transform"
+          [class.rotate-180]="transportReceiptSectionOpen"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </div>
+    </button>
+
+    <div
+      *ngIf="transportReceiptSectionOpen"
+      class="border-t border-emerald-100 p-5 dark:border-emerald-900/50"
+    >
+      <div class="mb-4 max-w-md">
+        <div class="relative">
+          <svg
+            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            viewBox="0 0 18 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 14a6 6 0 100-12 6 6 0 000 12zm5 1l3 3"
+            />
+          </svg>
+          <input
+            [(ngModel)]="transportReceiptSearchText"
+            placeholder="Filtrer par date…"
+            class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          />
+        </div>
+      </div>
+
+      <div
+        class="mb-5 grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60 lg:grid-cols-[1fr_9rem_auto]"
+      >
+        <label class="block">
+          <span
+            class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+          >
+            Équipe
+          </span>
+          <select
+            [(ngModel)]="selectedTransportReceiptTeamId"
+            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="">Choisir une équipe</option>
+            <option *ngFor="let team of transportReceiptTeams" [value]="team.uid">
+              {{ getTransportReceiptTeamLabel(team) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="block">
+          <span
+            class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+          >
+            Montant
+          </span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="newTransportReceiptAmount"
+            placeholder="Montant"
+            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          />
+        </label>
+
+        <label
+          class="inline-flex cursor-pointer items-center justify-center gap-2 self-end rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700"
+          [class.pointer-events-none]="transportReceiptUploading"
+          [class.opacity-60]="transportReceiptUploading"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M9 3l2 2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2zM12 9a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"
+            />
+          </svg>
+          {{ transportReceiptUploading ? "Envoi..." : "Joindre un reçu" }}
+          <input
+            type="file"
+            hidden
+            accept="image/*,application/pdf"
+            (change)="onTransportReceiptUpload($any($event.target).files); $any($event.target).value = ''"
+          />
+        </label>
+      </div>
+
+      <div
+        *ngIf="transportReceiptTeams.length > 0; else noTransportReceiptTeams"
+        class="grid gap-4 lg:grid-cols-2"
+      >
+        <article
+          *ngFor="let team of transportReceiptTeams; trackBy: trackBudgetTeamByUid"
+          class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
+        >
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <div
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-sm font-black text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800"
+              >
+                {{ getTransportReceiptTeamInitials(team) }}
+              </div>
+              <div class="min-w-0">
+                <div class="truncate text-sm font-bold text-slate-900 dark:text-white">
+                  {{ getTransportReceiptTeamLabel(team) }}
+                </div>
+                <div class="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {{ team.email || team.uid }}
+                </div>
+              </div>
+            </div>
+            <span
+              class="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            >
+              {{ (transportReceiptsByTeam[team.uid || ""] || []).length }}/2
+            </span>
+          </div>
+
+          <div
+            *ngIf="filteredTransportReceiptsForTeam(team).length > 0; else noTeamTransportReceipts"
+            class="divide-y divide-slate-100 dark:divide-slate-800"
+          >
+            <div
+              *ngFor="let receipt of filteredTransportReceiptsForTeam(team); trackBy: trackTransportReceiptByDocId"
+              class="py-3 first:pt-0 last:pb-0"
+            >
+              <div class="flex items-center gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {{ receipt.frenchDate }}
+                  </div>
+                  <div class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Reçu
+                  </div>
+                </div>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  [(ngModel)]="receipt.amount"
+                  (blur)="updateTransportReceiptAmount(receipt)"
+                  class="w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-right text-xs font-bold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  [disabled]="transportReceiptIsSaving(receipt)"
+                />
+
+                <a
+                  [href]="receipt.url"
+                  target="_blank"
+                  title="Voir le reçu"
+                  class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 transition hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-900/20"
+                >
+                  <img
+                    src="../../../assets/img/validating-ticket.png"
+                    class="h-6 w-6 object-contain dark:invert dark:brightness-110"
+                    alt="Reçu"
+                  />
+                </a>
+
+                <button
+                  type="button"
+                  (click)="openTransportReceiptForUpdate(receipt)"
+                  [disabled]="transportReceiptIsSaving(receipt)"
+                  class="rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-blue-700 disabled:cursor-wait disabled:bg-blue-300"
+                >
+                  {{ transportReceiptIsSaving(receipt) ? "..." : "Changer" }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <ng-template #noTeamTransportReceipts>
+            <div
+              class="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-center text-xs font-semibold text-slate-400 dark:border-slate-700"
+            >
+              Aucun reçu transport récent.
+            </div>
+          </ng-template>
+        </article>
+      </div>
+
+      <ng-template #noTransportReceiptTeams>
+        <div
+          class="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
+        >
+          Aucune équipe trouvée.
+        </div>
+      </ng-template>
+
+      <input
+        id="teamTransportReceiptReplaceInput"
+        type="file"
+        hidden
+        accept="image/*,application/pdf"
+        (change)="onTransportReceiptReplace($any($event.target).files); $any($event.target).value = ''"
+      />
     </div>
   </div>
 </section>
