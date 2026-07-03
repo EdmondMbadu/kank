@@ -792,7 +792,8 @@ export class TodayComponent {
   }
 
   openWeeklyShortfallDeductionModal(shortfall?: WeeklyShortfall): void {
-    this.selectedWeeklyShortfall = shortfall || this.weeklyShortfalls[0] || null;
+    this.selectedWeeklyShortfall =
+      shortfall || this.buildWeekPickerShortfallForModal();
     this.showWeeklyShortfallDeductionModal = true;
   }
 
@@ -803,6 +804,38 @@ export class TodayComponent {
 
   get weeklyObjectiveDeductionHeaderLabel(): string {
     return `-$${this.weeklyObjectiveDeductionConfig.penaltyPerBandUsd} / tranche / personne`;
+  }
+
+  private buildWeekPickerShortfallForModal(): WeeklyShortfall | null {
+    const baseIsoDate = this.weekPickerStartDate || this.requestDate;
+    const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
+    const { start, end } = this.getWeekBounds(dateKey);
+    const targetFc = Number(this.weekPickerTargetFc || 0);
+    const totalFc = Number(this.weekPickerTotalN || 0);
+    const totalUsd = Number(
+      this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
+    );
+
+    if (!Number.isFinite(targetFc) || targetFc <= 0) {
+      return null;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return {
+      start,
+      end,
+      label: this.formatWeekShortLabel(start, end),
+      targetFc,
+      totalFc,
+      totalUsd: Number.isNaN(totalUsd) ? 0 : totalUsd,
+      deductionUsd: this.compute.computeWeeklyObjectiveDeductionUsd(
+        totalFc,
+        targetFc
+      ),
+      isComplete: today > end,
+    };
   }
 
   get selectedShortfallMissingFc(): number {

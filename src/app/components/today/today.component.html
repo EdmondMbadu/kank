@@ -1808,12 +1808,19 @@
         <div class="mt-4 space-y-2">
           <div
             *ngFor="let band of selectedShortfallDeductionBands; let i = index"
-            class="grid gap-3 rounded-xl border p-3 sm:grid-cols-[190px_minmax(0,1fr)_120px]"
+            class="relative grid gap-3 rounded-xl border p-3 sm:grid-cols-[190px_minmax(0,1fr)_120px]"
             [ngClass]="{
-              'border-rose-300 bg-rose-50 shadow-sm dark:border-rose-700 dark:bg-rose-950/40': band.isCurrent,
+              'border-rose-500 bg-rose-50 shadow-md ring-2 ring-rose-300 dark:border-rose-400 dark:bg-rose-950/50 dark:ring-rose-700': band.isCurrent,
               'border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-800/50': !band.isCurrent
             }"
           >
+            <div
+              *ngIf="band.isCurrent"
+              class="absolute -right-2 -top-2 rounded-full bg-rose-600 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm"
+            >
+              Position actuelle
+            </div>
+
             <div>
               <p
                 class="text-xs font-extrabold"
@@ -1831,11 +1838,21 @@
             </div>
 
             <div class="flex min-w-0 items-center">
-              <div class="h-7 w-full rounded-r-full bg-slate-200/80 dark:bg-slate-700/80">
+              <div
+                class="relative h-7 w-full rounded-r-full bg-slate-200/80 dark:bg-slate-700/80"
+                [ngClass]="{
+                  'ring-2 ring-rose-200 dark:ring-rose-800': band.isCurrent
+                }"
+              >
                 <div
                   *ngIf="band.deductionUsd > 0; else noWeeklyDeductionStep"
                   class="h-7 rounded-r-full bg-rose-500"
                   [style.width.%]="getWeeklyDeductionStepWidthPercent(band)"
+                ></div>
+                <div
+                  *ngIf="band.isCurrent"
+                  class="absolute -left-2 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-white bg-rose-600 shadow dark:border-slate-900"
+                  title="Position actuelle"
                 ></div>
                 <ng-template #noWeeklyDeductionStep>
                   <div class="flex h-7 items-center px-3 text-[11px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
