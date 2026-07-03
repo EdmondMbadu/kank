@@ -207,6 +207,7 @@ export class TodayComponent {
   weeklyShortfalls: WeeklyShortfall[] = [];
   selectedShortfallMonth = '';
   selectedWeeklyShortfall: WeeklyShortfall | null = null;
+  weeklyShortfallModalDate = '';
   showWeeklyShortfallDeductionModal = false;
   weeklyObjectiveDeductionConfig: WeeklyObjectiveDeductionConfig = {
     bandFc: 100000,
@@ -792,8 +793,11 @@ export class TodayComponent {
   }
 
   openWeeklyShortfallDeductionModal(shortfall?: WeeklyShortfall): void {
+    this.weeklyShortfallModalDate = shortfall
+      ? this.formatIsoDate(shortfall.start)
+      : this.weekPickerStartDate || this.requestDate;
     this.selectedWeeklyShortfall =
-      shortfall || this.buildWeekPickerShortfallForModal();
+      shortfall || this.buildWeeklyShortfallForModalDate(this.weeklyShortfallModalDate);
     this.showWeeklyShortfallDeductionModal = true;
   }
 
@@ -802,16 +806,23 @@ export class TodayComponent {
     this.selectedWeeklyShortfall = null;
   }
 
+  onWeeklyShortfallModalDateChange(): void {
+    this.selectedWeeklyShortfall = this.buildWeeklyShortfallForModalDate(
+      this.weeklyShortfallModalDate || this.requestDate
+    );
+  }
+
   get weeklyObjectiveDeductionHeaderLabel(): string {
     return `-$${this.weeklyObjectiveDeductionConfig.penaltyPerBandUsd} / tranche / personne`;
   }
 
-  private buildWeekPickerShortfallForModal(): WeeklyShortfall | null {
-    const baseIsoDate = this.weekPickerStartDate || this.requestDate;
-    const dateKey = this.time.convertDateToMonthDayYear(baseIsoDate);
+  private buildWeeklyShortfallForModalDate(
+    isoDate: string
+  ): WeeklyShortfall | null {
+    const dateKey = this.time.convertDateToMonthDayYear(isoDate);
     const { start, end } = this.getWeekBounds(dateKey);
-    const targetFc = Number(this.weekPickerTargetFc || 0);
-    const totalFc = Number(this.weekPickerTotalN || 0);
+    const targetFc = this.resolveWeeklyTargetFcForDate(dateKey);
+    const totalFc = this.computeWeeklyPaymentTotal(dateKey);
     const totalUsd = Number(
       this.compute.convertCongoleseFrancToUsDollars(totalFc.toString())
     );
