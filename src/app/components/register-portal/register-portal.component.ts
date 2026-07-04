@@ -5,7 +5,7 @@ import {
   Client,
   Comment,
 } from 'src/app/models/client';
-import { Employee } from 'src/app/models/employee';
+import { Avatar, Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { DataService } from 'src/app/services/data.service';
@@ -268,6 +268,7 @@ export class RegiserPortalComponent {
   }
   isFullPictureVisible = false;
   isHomePictureVisible = false;
+  isHomePictureUploading = false;
 
   /** Open / close the full-screen photo viewer */
   toggleFullPicture(): void {
@@ -275,6 +276,67 @@ export class RegiserPortalComponent {
   }
   toggleHomePicture(): void {
     this.isHomePictureVisible = !this.isHomePictureVisible;
+  }
+  async startHomePictureUpload(event: FileList | null) {
+    const file = event?.item(0);
+    if (!file) {
+      return;
+    }
+
+    if (file.type.split('/')[0] !== 'image') {
+      alert('Veuillez choisir une image pour la photo maison.');
+      this.resetHomePictureInput();
+      return;
+    }
+
+    if (file.size >= 20000000) {
+      alert(
+        "L'image est trop grande. La Taille maximale du fichier est de 10MB"
+      );
+      this.resetHomePictureInput();
+      return;
+    }
+
+    if (!this.client?.uid) {
+      alert('Client introuvable. Impossible de changer la photo maison.');
+      this.resetHomePictureInput();
+      return;
+    }
+
+    this.isHomePictureUploading = true;
+    const safeName = [this.client.firstName, this.client.middleName, this.client.lastName]
+      .filter((part) => !!part?.trim())
+      .join('-')
+      .replace(/[^\w.-]+/g, '-');
+    const path = `clients-home/${this.client.uid}/${Date.now()}-${safeName || 'client'}`;
+
+    try {
+      const uploadTask = await this.storage.upload(path, file);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+      const avatar: Avatar = {
+        path,
+        downloadURL,
+        size: uploadTask.totalBytes.toString(),
+      };
+
+      await this.data.updateClientHomePictureData(this.client, avatar);
+      this.client.homePicture = avatar;
+    } catch (error) {
+      console.error('Error updating client home picture:', error);
+      alert("Impossible de changer la photo maison. Réessayez.");
+    } finally {
+      this.isHomePictureUploading = false;
+      this.resetHomePictureInput();
+    }
+  }
+
+  private resetHomePictureInput(): void {
+    const input = document.getElementById(
+      'changeHomePicture'
+    ) as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
   }
   ngOnInit(): void {
     this.retrieveClient();
