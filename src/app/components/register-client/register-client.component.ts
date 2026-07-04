@@ -79,6 +79,10 @@ export class RegisterClientComponent implements OnInit {
   profession: string = '';
   bussinessCapital: string = '';
   homeAddress: string = '';
+  homeAvenue: string = '';
+  homeQuartier: string = '';
+  homeCommune: string = '';
+  homeNumber: string = '';
   businessAddress: string = '';
   phoneNumber: string = '';
   applicationFee: string = '';
@@ -115,6 +119,9 @@ export class RegisterClientComponent implements OnInit {
   isLoading: boolean = false;
   url: string = '';
   avatar: any;
+  homePictureUrl: string = '';
+  homePictureAvatar: any;
+  homePictureUploading: boolean = false;
   /** ---------- 1.  DUPLICATE‑NAME HELPERS  ---------- */
   private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
 
@@ -154,7 +161,13 @@ export class RegisterClientComponent implements OnInit {
     if (!this.profession?.trim()) missingFields.push('Profession');
     if (!this.bussinessCapital?.toString().trim())
       missingFields.push('Capital');
-    if (!this.homeAddress?.trim()) missingFields.push('Adresse Domicile');
+    if (this.homePictureUploading)
+      missingFields.push('Photo de la maison visitée en cours de chargement');
+    if (!this.homePictureAvatar) missingFields.push('Photo de la maison visitée');
+    if (!this.homeAvenue?.trim()) missingFields.push('Avenue du domicile');
+    if (!this.homeQuartier?.trim()) missingFields.push('Quartier du domicile');
+    if (!this.homeCommune?.trim()) missingFields.push('Commune du domicile');
+    if (!this.homeNumber?.trim()) missingFields.push('Numéro du domicile');
     if (!this.businessAddress?.trim()) missingFields.push('Adresse Business');
     if (
       this.timeInBusiness === '' ||
@@ -364,6 +377,10 @@ export class RegisterClientComponent implements OnInit {
     this.profession = '';
     this.bussinessCapital = '';
     this.homeAddress = '';
+    this.homeAvenue = '';
+    this.homeQuartier = '';
+    this.homeCommune = '';
+    this.homeNumber = '';
     this.businessAddress = '';
     this.phoneNumber = '';
     this.applicationFee = '';
@@ -371,6 +388,9 @@ export class RegisterClientComponent implements OnInit {
     this.savings = '';
     this.birthDate = '';
     this.age = null;
+    this.homePictureUrl = '';
+    this.homePictureAvatar = null;
+    this.homePictureUploading = false;
   }
   setNewClientValues() {
     this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
@@ -383,7 +403,11 @@ export class RegisterClientComponent implements OnInit {
     this.client.businessCapital = this.bussinessCapital;
     this.client.businessAddress = this.businessAddress;
     this.client.phoneNumber = this.phoneNumber;
-    this.client.homeAddress = this.homeAddress;
+    this.client.homeAvenue = this.homeAvenue.trim();
+    this.client.homeQuartier = this.homeQuartier.trim();
+    this.client.homeCommune = this.homeCommune.trim();
+    this.client.homeNumber = this.homeNumber.trim();
+    this.client.homeAddress = this.buildPreciseHomeAddress();
     this.client.applicationFee = this.applicationFee;
     this.client.membershipFee = this.memberShipFee;
     this.client.savings = this.savings;
@@ -392,6 +416,7 @@ export class RegisterClientComponent implements OnInit {
     this.client.requestDate = this.requestDate;
     this.client.dateOfRequest = this.time.todaysDate();
     this.client.profilePicture = this.avatar;
+    this.client.homePicture = this.homePictureAvatar;
 
     // Additional fields
     this.client.timeInBusiness = this.timeInBusiness;
@@ -552,6 +577,53 @@ export class RegisterClientComponent implements OnInit {
     const fileInput = document.getElementById(id) as HTMLInputElement;
     fileInput.click();
   }
+  private buildPreciseHomeAddress(): string {
+    const number = this.homeNumber.trim();
+    const avenue = this.homeAvenue.trim();
+    const quartier = this.homeQuartier.trim();
+    const commune = this.homeCommune.trim();
+    return `N° ${number}, Av. ${avenue}, Q/${quartier}, C/${commune}, Kinshasa`;
+  }
+
+  async startHomePictureUpload(event: FileList) {
+    const file = event?.item(0);
+
+    if (file?.type.split('/')[0] !== 'image') {
+      console.log('unsupported file type');
+      return;
+    }
+    if (file?.size >= 20000000) {
+      alert(
+        "L'image est trop grande. La Taille maximale du fichier est de 10MB"
+      );
+      return;
+    }
+
+    const localPreviewUrl = URL.createObjectURL(file);
+    this.homePictureUrl = localPreviewUrl;
+    this.homePictureAvatar = null;
+    this.homePictureUploading = true;
+
+    try {
+      const uniqueSuffix = Date.now();
+      const path = `clients-home/${this.firstName}-${this.middleName}-${this.lastName}-${uniqueSuffix}`;
+      const uploadTask = await this.storage.upload(path, file);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+      this.homePictureUrl = downloadURL;
+      this.homePictureAvatar = {
+        path: path,
+        downloadURL,
+        size: uploadTask.totalBytes.toString(),
+      };
+      URL.revokeObjectURL(localPreviewUrl);
+    } catch (error) {
+      console.error('Error uploading home picture:', error);
+      alert("Impossible de charger la photo de la maison. Réessayez.");
+    } finally {
+      this.homePictureUploading = false;
+    }
+  }
+
   async startUpload(event: FileList) {
     console.log('current employee', this.client);
     const file = event?.item(0);

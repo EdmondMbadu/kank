@@ -656,6 +656,7 @@ export class ClientPortalComponent {
     }
   }
   isFullPictureVisible = false;
+  isHomePictureVisible = false;
 
   openBonusModal(): void {
     this.ensureBonusState();
@@ -975,6 +976,9 @@ export class ClientPortalComponent {
   /** Open / close the full-screen photo viewer */
   toggleFullPicture(): void {
     this.isFullPictureVisible = !this.isFullPictureVisible;
+  }
+  toggleHomePicture(): void {
+    this.isHomePictureVisible = !this.isHomePictureVisible;
   }
   setComments() {
     this.comments = [];

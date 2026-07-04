@@ -1315,6 +1315,11 @@ export class DataService {
       phoneNumber: client.phoneNumber,
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
+      homeAvenue: client.homeAvenue,
+      homeQuartier: client.homeQuartier,
+      homeCommune: client.homeCommune,
+      homeNumber: client.homeNumber,
+      homePicture: client.homePicture,
       businessAddress: client.businessAddress,
       debtCycle: (Number(client.debtCycle) + 1).toString(),
       membershipFee: client.membershipFee,
@@ -1359,6 +1364,11 @@ export class DataService {
       birthDate: client.birthDate, // ex. 05-21-1985
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
+      homeAvenue: client.homeAvenue,
+      homeQuartier: client.homeQuartier,
+      homeCommune: client.homeCommune,
+      homeNumber: client.homeNumber,
+      homePicture: client.homePicture,
       businessAddress: client.businessAddress,
       creditScore: client.creditScore, // in case they went to 0 and 6 months has passed since they finished. in other case, it does nothing
       debtCycle: (Number(client.debtCycle) + 1).toString(),
@@ -1457,6 +1467,11 @@ export class DataService {
       phoneNumber: client.phoneNumber,
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
+      homeAvenue: client.homeAvenue,
+      homeQuartier: client.homeQuartier,
+      homeCommune: client.homeCommune,
+      homeNumber: client.homeNumber,
+      homePicture: client.homePicture,
       businessAddress: client.businessAddress,
       loanAmount: client.loanAmount,
       profession: client.profession,
@@ -2630,6 +2645,15 @@ export class DataService {
       profilePicture: avatar,
     };
     return employeeRef.set(data, { merge: true });
+  }
+  updateClientHomePictureData(client: Client, avatar: Avatar) {
+    const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
+      `users/${this.auth.currentUser.uid}/clients/${client.uid}`
+    );
+    const data = {
+      homePicture: avatar,
+    };
+    return clientRef.set(data, { merge: true });
   }
   addCommentToClientProfile(client: Client, comments: Comment[]) {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(

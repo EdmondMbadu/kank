@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ActivatedRoute, Router } from '@angular/router';
 import { max } from 'rxjs';
 import { Client } from 'src/app/models/client';
@@ -64,6 +65,8 @@ export class NewCycleRegisterComponent implements OnInit {
   newReference: string = '';
   newReferenceName: string = '';
   newReferencePhone: string = '';
+  homePictureUrl: string = '';
+  homePictureUploading: boolean = false;
 
   /** Normalize text so “  Élodie ” === “elodie” */
   private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
@@ -76,7 +79,8 @@ export class NewCycleRegisterComponent implements OnInit {
     private time: TimeService,
     private performance: PerformanceService,
     private compute: ComputationService,
-    private fns: AngularFireFunctions
+    private fns: AngularFireFunctions,
+    private storage: AngularFireStorage
   ) {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
@@ -97,6 +101,7 @@ export class NewCycleRegisterComponent implements OnInit {
     this.auth.getAllClients().subscribe((data: any) => {
       this.allClients = data;
       this.client = data[Number(this.id)];
+      this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
       this.originalPhoneNumberAtLoad = this.client?.phoneNumber || '';
       // Guarantee the array exists so later merges are predictable
       if (!Array.isArray(this.client.previousPhoneNumbers)) {
@@ -210,8 +215,17 @@ export class NewCycleRegisterComponent implements OnInit {
     if (!this.client.profession?.trim()) missingFields.push('Profession');
     if (!this.client.businessCapital?.toString().trim())
       missingFields.push('Capital');
-    if (!this.client.homeAddress?.trim())
-      missingFields.push('Adresse Domicile');
+    if (this.homePictureUploading)
+      missingFields.push('Photo de la maison visitée en cours de chargement');
+    if (!this.client.homePicture) missingFields.push('Photo de la maison visitée');
+    if (!this.client.homeAvenue?.trim())
+      missingFields.push('Avenue du domicile');
+    if (!this.client.homeQuartier?.trim())
+      missingFields.push('Quartier du domicile');
+    if (!this.client.homeCommune?.trim())
+      missingFields.push('Commune du domicile');
+    if (!this.client.homeNumber?.trim())
+      missingFields.push('Numéro du domicile');
     if (!this.client.businessAddress?.trim())
       missingFields.push('Adresse Business');
     if (!this.applicationFee?.toString().trim())
@@ -401,6 +415,8 @@ export class NewCycleRegisterComponent implements OnInit {
     this.middleName = '';
     this.birthDateInput = '';
     this.age = null;
+    this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
+    this.homePictureUploading = false;
   }
 
   private setClientNewDebtCycleValues(): void {
@@ -410,6 +426,11 @@ export class NewCycleRegisterComponent implements OnInit {
 
     this.client.requestDate = this.requestDate;
     this.client.dateOfRequest = today;
+    this.client.homeAvenue = this.client.homeAvenue?.trim();
+    this.client.homeQuartier = this.client.homeQuartier?.trim();
+    this.client.homeCommune = this.client.homeCommune?.trim();
+    this.client.homeNumber = this.client.homeNumber?.trim();
+    this.client.homeAddress = this.buildPreciseHomeAddress();
     /* --- BirthDate : uniquement si elle n’existe pas déjà et a été saisie --- */
     if (!this.client.birthDate && this.birthDateInput) {
       this.client.birthDate = toAppDate(this.birthDateInput); // jj-mm-aaaa
@@ -481,6 +502,52 @@ export class NewCycleRegisterComponent implements OnInit {
   }
   toggle(property: 'isLoading' | 'showConfirmation') {
     this[property] = !this[property];
+  }
+  onImageClick(id: string): void {
+    const fileInput = document.getElementById(id) as HTMLInputElement | null;
+    fileInput?.click();
+  }
+
+  private buildPreciseHomeAddress(): string {
+    return `N° ${this.client.homeNumber?.trim()}, Av. ${this.client.homeAvenue?.trim()}, Q/${this.client.homeQuartier?.trim()}, C/${this.client.homeCommune?.trim()}, Kinshasa`;
+  }
+
+  async startHomePictureUpload(event: FileList) {
+    const file = event?.item(0);
+
+    if (file?.type.split('/')[0] !== 'image') {
+      console.log('unsupported file type');
+      return;
+    }
+    if (file?.size >= 20000000) {
+      alert(
+        "L'image est trop grande. La Taille maximale du fichier est de 10MB"
+      );
+      return;
+    }
+
+    const localPreviewUrl = URL.createObjectURL(file);
+    this.homePictureUrl = localPreviewUrl;
+    this.homePictureUploading = true;
+
+    try {
+      const uniqueSuffix = Date.now();
+      const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
+      const uploadTask = await this.storage.upload(path, file);
+      const downloadURL = await uploadTask.ref.getDownloadURL();
+      this.homePictureUrl = downloadURL;
+      this.client.homePicture = {
+        path: path,
+        downloadURL,
+        size: uploadTask.totalBytes.toString(),
+      };
+      URL.revokeObjectURL(localPreviewUrl);
+    } catch (error) {
+      console.error('Error uploading home picture:', error);
+      alert("Impossible de charger la photo de la maison. Réessayez.");
+    } finally {
+      this.homePictureUploading = false;
+    }
   }
   sendMyVerificationCode() {
     const { phoneNumber, uid } = this.client;

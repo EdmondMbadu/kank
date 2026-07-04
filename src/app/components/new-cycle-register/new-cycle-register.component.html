@@ -149,16 +149,125 @@
             />
           </label>
 
-          <label class="space-y-2 sm:col-span-2">
-            <span class="cycle-label">Adresse domicile</span>
-            <input
-              type="text"
-              id="address"
-              class="cycle-input"
-              placeholder="Kimayala 41 Mont-Ngafula"
-              [(ngModel)]="client.homeAddress"
-            />
-          </label>
+          <div class="space-y-4 rounded-[24px] border border-emerald-100 bg-emerald-50/60 p-4 sm:col-span-2">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 class="text-base font-semibold text-slate-900">
+                  Visite domicile
+                </h3>
+                <p class="mt-1 text-sm text-slate-500">
+                  Photo de la maison visitée et adresse exacte du client.
+                </p>
+              </div>
+              <span class="w-fit rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
+                Obligatoire
+              </span>
+            </div>
+
+            <div class="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <div class="rounded-[22px] border border-emerald-100 bg-white p-4">
+                <input
+                  type="file"
+                  id="putHomePicture"
+                  accept="image/*"
+                  class="hidden"
+                  (change)="startHomePictureUpload($any($event.target).files)"
+                />
+                <input
+                  type="file"
+                  id="changeHomePicture"
+                  accept="image/*"
+                  class="hidden"
+                  (change)="startHomePictureUpload($any($event.target).files)"
+                />
+
+                <button
+                  type="button"
+                  class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-[20px] border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50"
+                  (click)="onImageClick(homePictureUrl ? 'changeHomePicture' : 'putHomePicture')"
+                >
+                  <img
+                    *ngIf="homePictureUrl; else cycleHomePicturePlaceholder"
+                    [src]="homePictureUrl"
+                    class="h-full w-full bg-slate-100 object-contain"
+                    alt="Photo de la maison visitée"
+                  />
+                  <ng-template #cycleHomePicturePlaceholder>
+                    <span class="px-4 text-center text-sm font-semibold text-emerald-800">
+                      Photo de la Maison Visitée
+                    </span>
+                  </ng-template>
+                </button>
+
+                <button
+                  type="button"
+                  class="cycle-secondary-button mt-3 w-full"
+                  [disabled]="homePictureUploading"
+                  (click)="onImageClick(homePictureUrl ? 'changeHomePicture' : 'putHomePicture')"
+                >
+                  {{ homePictureUploading ? 'Chargement...' : (homePictureUrl ? 'Changer la photo' : 'Ajouter la photo') }}
+                </button>
+                <p
+                  *ngIf="homePictureUploading"
+                  class="mt-2 text-center text-xs font-semibold text-emerald-700"
+                >
+                  Aperçu affiché. Finalisation du chargement...
+                </p>
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <label class="space-y-2">
+                  <span class="cycle-label">Ville</span>
+                  <input
+                    type="text"
+                    class="cycle-input cycle-input-disabled"
+                    value="Kinshasa"
+                    disabled
+                  />
+                </label>
+
+                <label class="space-y-2">
+                  <span class="cycle-label">Numéro</span>
+                  <input
+                    type="text"
+                    class="cycle-input"
+                    placeholder="41"
+                    [(ngModel)]="client.homeNumber"
+                  />
+                </label>
+
+                <label class="space-y-2">
+                  <span class="cycle-label">Avenue</span>
+                  <input
+                    type="text"
+                    class="cycle-input"
+                    placeholder="Kimayala"
+                    [(ngModel)]="client.homeAvenue"
+                  />
+                </label>
+
+                <label class="space-y-2">
+                  <span class="cycle-label">Quartier</span>
+                  <input
+                    type="text"
+                    class="cycle-input"
+                    placeholder="Mapengo"
+                    [(ngModel)]="client.homeQuartier"
+                  />
+                </label>
+
+                <label class="space-y-2 sm:col-span-2">
+                  <span class="cycle-label">Commune</span>
+                  <input
+                    type="text"
+                    class="cycle-input"
+                    placeholder="Mont-Ngafula"
+                    [(ngModel)]="client.homeCommune"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
 
           <label class="space-y-2 sm:col-span-2">
             <span class="cycle-label">Adresse business</span>
@@ -166,7 +275,7 @@
               type="text"
               id="baddress"
               class="cycle-input"
-              placeholder="Kimayala 41 Mont-Ngafula"
+              placeholder="Kimayala 41 Mapengo Mont-Ngafula"
               [(ngModel)]="client.businessAddress"
             />
           </label>

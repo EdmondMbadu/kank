@@ -459,6 +459,11 @@ export class AuthService {
       phoneNumber: client.phoneNumber,
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
+      homeAvenue: client.homeAvenue,
+      homeQuartier: client.homeQuartier,
+      homeCommune: client.homeCommune,
+      homeNumber: client.homeNumber,
+      homePicture: client.homePicture,
       businessAddress: client.businessAddress,
       debtCycle: '0',
       membershipFee: client.membershipFee,
@@ -574,6 +579,10 @@ export class AuthService {
       birthDate: client.birthDate, // ex. 05-21-1985
       businessCapital: client.businessCapital,
       homeAddress: client.homeAddress,
+      homeAvenue: client.homeAvenue,
+      homeQuartier: client.homeQuartier,
+      homeCommune: client.homeCommune,
+      homeNumber: client.homeNumber,
       businessAddress: client.businessAddress,
       membershipFee: client.membershipFee,
       applicationFee: client.applicationFee,
@@ -596,6 +605,7 @@ export class AuthService {
       previousPaymentSources: {},
       clients: [],
       profilePicture: client.profilePicture,
+      homePicture: client.homePicture,
 
       // New fields
       timeInBusiness: client.timeInBusiness,

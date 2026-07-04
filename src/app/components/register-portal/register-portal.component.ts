@@ -267,10 +267,14 @@ export class RegiserPortalComponent {
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
   }
   isFullPictureVisible = false;
+  isHomePictureVisible = false;
 
   /** Open / close the full-screen photo viewer */
   toggleFullPicture(): void {
     this.isFullPictureVisible = !this.isFullPictureVisible;
+  }
+  toggleHomePicture(): void {
+    this.isHomePictureVisible = !this.isHomePictureVisible;
   }
   ngOnInit(): void {
     this.retrieveClient();

@@ -125,6 +125,11 @@ export class Client {
   rejectionReturnAmount?: string; // NEW
   dateOfRequest?: string;
   profilePicture?: Avatar;
+  homePicture?: Avatar;
+  homeAvenue?: string;
+  homeQuartier?: string;
+  homeCommune?: string;
+  homeNumber?: string;
   vitalStatus?: string;
   timeInBusiness?: string;
   monthlyIncome?: string;
