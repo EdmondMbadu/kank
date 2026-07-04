@@ -2552,6 +2552,50 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.selectedActiveClientGalleryPicture = undefined;
   }
 
+  get selectedClientModalGalleryPictureIndex(): number {
+    if (!this.selectedActiveClientGalleryPicture) {
+      return -1;
+    }
+    return this.clientModalGalleryPictures(this.activeClient).findIndex(
+      (picture) =>
+        picture.id === this.selectedActiveClientGalleryPicture?.id ||
+        picture.url === this.selectedActiveClientGalleryPicture?.url
+    );
+  }
+
+  get canNavigateClientModalGalleryPicture(): boolean {
+    return this.clientModalGalleryPictures(this.activeClient).length > 1;
+  }
+
+  get selectedClientModalGalleryPicturePosition(): string {
+    const pictures = this.clientModalGalleryPictures(this.activeClient);
+    const index = this.selectedClientModalGalleryPictureIndex;
+    if (index < 0 || !pictures.length) {
+      return '';
+    }
+    return `${index + 1} / ${pictures.length}`;
+  }
+
+  showPreviousClientModalGalleryPicture(): void {
+    this.showAdjacentClientModalGalleryPicture(-1);
+  }
+
+  showNextClientModalGalleryPicture(): void {
+    this.showAdjacentClientModalGalleryPicture(1);
+  }
+
+  private showAdjacentClientModalGalleryPicture(direction: -1 | 1): void {
+    const pictures = this.clientModalGalleryPictures(this.activeClient);
+    if (!this.selectedActiveClientGalleryPicture || pictures.length <= 1) {
+      return;
+    }
+    const currentIndex = this.selectedClientModalGalleryPictureIndex;
+    const normalizedIndex = currentIndex < 0 ? 0 : currentIndex;
+    const nextIndex =
+      (normalizedIndex + direction + pictures.length) % pictures.length;
+    this.selectedActiveClientGalleryPicture = pictures[nextIndex];
+  }
+
   private isGalleryVideo(picture?: Partial<ClientGalleryPicture>): boolean {
     if (picture?.mediaType === 'video') {
       return true;
