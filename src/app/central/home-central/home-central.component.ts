@@ -4,6 +4,7 @@ import { debounceTime, distinctUntilChanged, firstValueFrom } from 'rxjs';
 import {
   AuditConversationAudioAttachment,
   Client,
+  ClientGalleryPicture,
   Comment,
 } from 'src/app/models/client';
 import { User } from 'src/app/models/user';
@@ -250,6 +251,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   activeClient: Client | null = null;
   showClientModal = false;
   showActiveClientHomePicture = false;
+  selectedActiveClientGalleryPicture?: ClientGalleryPicture;
   phoneEditValue = '';
   phoneEditOpen = false;
   phoneEditSaving = false;
@@ -3365,12 +3367,14 @@ Merci pour ta confiance !`;
     this.showClientAuditAudioSectionExpanded = false;
     this.showClientAuditAudiosExpanded = false;
     this.showActiveClientHomePicture = false;
+    this.selectedActiveClientGalleryPicture = undefined;
     this.showClientModal = true;
   }
   closeClientModal() {
     this.showClientModal = false;
     this.activeClient = null;
     this.showActiveClientHomePicture = false;
+    this.selectedActiveClientGalleryPicture = undefined;
     this.phoneEditOpen = false;
     this.phoneEditSaving = false;
     this.showPhoneHistory = false;
@@ -3421,10 +3425,86 @@ Merci pour ta confiance !`;
   }
   openActiveClientHomePicture(): void {
     if (!this.clientHomePictureUrl(this.activeClient)) return;
-    this.showActiveClientHomePicture = true;
+    const picture = this.clientModalGalleryPictures(this.activeClient)[0];
+    if (picture) {
+      this.selectedActiveClientGalleryPicture = picture;
+    }
   }
   closeActiveClientHomePicture(): void {
     this.showActiveClientHomePicture = false;
+    this.selectedActiveClientGalleryPicture = undefined;
+  }
+  clientModalGalleryPictures(client?: Client | null): ClientGalleryPicture[] {
+    const pictures: ClientGalleryPicture[] = [];
+    const seenUrls = new Set<string>();
+    const homeUrl = this.clientHomePictureUrl(client);
+
+    if (homeUrl) {
+      pictures.push({
+        id: '__home-picture',
+        category: 'domicile',
+        mediaType: 'image',
+        mimeType: 'image/*',
+        url: homeUrl,
+        path: 'clients-home/domicile-verification',
+        size: 0,
+        name: 'Photo maison',
+        uploadedAt: client?.dateOfRequest
+          ? this.toGalleryDate(client.dateOfRequest)
+          : new Date(0).toISOString(),
+      });
+      seenUrls.add(homeUrl);
+    }
+
+    Object.entries(client?.galleryPictures ?? {}).forEach(([id, picture]) => {
+      const url = picture?.url?.trim();
+      if (!url || seenUrls.has(url) || this.isGalleryVideo(picture)) {
+        return;
+      }
+      pictures.push({
+        ...picture,
+        id: picture.id || id,
+        mediaType: 'image',
+        uploadedAt: picture.uploadedAt || new Date(0).toISOString(),
+      });
+      seenUrls.add(url);
+    });
+
+    return pictures.sort(
+      (a, b) => this.galleryPictureDateValue(b) - this.galleryPictureDateValue(a)
+    );
+  }
+  hasMoreClientModalGalleryPictures(client?: Client | null): boolean {
+    return this.clientModalGalleryPictures(client).length > 6;
+  }
+  openClientModalGalleryPicture(picture: ClientGalleryPicture): void {
+    this.selectedActiveClientGalleryPicture = picture;
+  }
+  closeClientModalGalleryPicture(): void {
+    this.selectedActiveClientGalleryPicture = undefined;
+  }
+  private isGalleryVideo(picture?: Partial<ClientGalleryPicture>): boolean {
+    if (picture?.mediaType === 'video') {
+      return true;
+    }
+    const mimeType = picture?.mimeType?.toLowerCase() || '';
+    if (mimeType.startsWith('video/')) {
+      return true;
+    }
+    const source = `${picture?.path || ''} ${picture?.name || ''} ${
+      picture?.url || ''
+    }`.toLowerCase();
+    return /\.(mp4|mov|m4v|webm|ogg)(\?|$|\s)/.test(source);
+  }
+  private toGalleryDate(value: string): string {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime())
+      ? new Date(0).toISOString()
+      : parsed.toISOString();
+  }
+  private galleryPictureDateValue(picture: Partial<ClientGalleryPicture>): number {
+    const parsed = new Date(picture.uploadedAt || '').getTime();
+    return Number.isNaN(parsed) ? 0 : parsed;
   }
   isClientQuitte(client?: Client | null): boolean {
     const normalized = this.normalizeQuitteStatusFields(client);

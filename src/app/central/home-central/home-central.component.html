@@ -4212,21 +4212,6 @@
                 {{ activeClient.homeAddress || "-" }}
               </p>
             </div>
-            <div *ngIf="clientHomePictureUrl(activeClient)">
-              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Photo maison</p>
-              <button
-                type="button"
-                class="mt-1 inline-flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-2 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-200"
-                (click)="openActiveClientHomePicture()"
-              >
-                <img
-                  [src]="clientHomePictureUrl(activeClient)"
-                  alt="Photo de la maison visitée"
-                  class="h-12 w-16 rounded bg-slate-100 object-contain"
-                />
-                Agrandir
-              </button>
-            </div>
             <div class="sm:col-span-2">
               <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Adresse business</p>
               <p class="mt-1 text-sm font-semibold leading-6 text-slate-900 dark:text-slate-100">
@@ -4234,6 +4219,53 @@
               </p>
             </div>
           </div>
+        </div>
+
+        <div
+          *ngIf="clientModalGalleryPictures(activeClient) as galleryPictures"
+          class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="text-base font-semibold text-slate-900 dark:text-slate-100">
+              Photos du client
+            </h4>
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              {{ galleryPictures.length }} photo(s)
+            </span>
+          </div>
+
+          <div *ngIf="galleryPictures.length; else noClientGalleryPictures" class="mt-4 flex gap-2 overflow-x-auto pb-1">
+            <button
+              *ngFor="let picture of galleryPictures | slice : 0 : 6"
+              type="button"
+              class="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
+              (click)="openClientModalGalleryPicture(picture)"
+            >
+              <img
+                [src]="picture.url"
+                [alt]="picture.name || 'Photo du client'"
+                class="h-full w-full object-cover"
+              />
+              <span
+                *ngIf="picture.category === 'domicile'"
+                class="absolute bottom-1 left-1 rounded-full bg-emerald-700/90 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white"
+              >
+                Domicile
+              </span>
+            </button>
+            <div
+              *ngIf="hasMoreClientModalGalleryPictures(activeClient)"
+              class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+            >
+              +{{ galleryPictures.length - 6 }}
+            </div>
+          </div>
+
+          <ng-template #noClientGalleryPictures>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">
+              Aucune photo de galerie.
+            </p>
+          </ng-template>
         </div>
 
         <div class="rounded-3xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/70">
@@ -4482,13 +4514,13 @@
 </div>
 
 <div
-  *ngIf="showActiveClientHomePicture && activeClient"
+  *ngIf="selectedActiveClientGalleryPicture as selectedPicture"
   class="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4"
-  (click)="closeActiveClientHomePicture()"
+  (click)="closeClientModalGalleryPicture()"
 >
   <img
-    [src]="clientHomePictureUrl(activeClient)"
-    alt="Photo de la maison visitée - plein écran"
+    [src]="selectedPicture.url"
+    [alt]="selectedPicture.name || 'Photo du client'"
     class="max-h-[90vh] max-w-[94vw] rounded-2xl object-contain shadow-2xl"
     (click)="$event.stopPropagation()"
   />
@@ -4496,7 +4528,7 @@
     type="button"
     class="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-3xl font-bold text-white transition hover:bg-white/25"
     aria-label="Fermer"
-    (click)="closeActiveClientHomePicture()"
+    (click)="closeClientModalGalleryPicture()"
   >
     &times;
   </button>
