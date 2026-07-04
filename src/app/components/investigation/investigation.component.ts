@@ -197,6 +197,7 @@ export class InvestigationComponent implements OnInit, OnDestroy {
 
   activeClient?: Client;
   showClientModal = false;
+  showActiveClientHomePicture = false;
   clientCommentName = '';
   clientCommentText = '';
   activeClientCommentPresetGroupId = '';
@@ -2459,16 +2460,36 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     this.showPhoneHistory = false;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
+    this.showActiveClientHomePicture = false;
     this.showClientModal = true;
   }
 
   closeClientModal(): void {
     this.showClientModal = false;
     this.activeClient = undefined;
+    this.showActiveClientHomePicture = false;
     this.phoneEditOpen = false;
     this.showPhoneHistory = false;
     this.showRecentPaymentsExpanded = false;
     this.showRecentSavingsExpanded = false;
+  }
+
+  clientHomePictureUrl(client?: Client | null): string {
+    const picture = client?.homePicture as
+      | { downloadURL?: string }
+      | string
+      | undefined;
+    if (!picture) return '';
+    return typeof picture === 'string' ? picture : picture.downloadURL || '';
+  }
+
+  openActiveClientHomePicture(): void {
+    if (!this.clientHomePictureUrl(this.activeClient)) return;
+    this.showActiveClientHomePicture = true;
+  }
+
+  closeActiveClientHomePicture(): void {
+    this.showActiveClientHomePicture = false;
   }
 
   get activeClientCommentPresetChildren(): CommentPreset[] {

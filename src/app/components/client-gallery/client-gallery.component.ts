@@ -25,6 +25,7 @@ type TrophyGalleryAwardFilter = 'all' | 'team' | 'employee' | 'manager';
   styleUrls: ['./client-gallery.component.css'],
 })
 export class ClientGalleryComponent implements OnDestroy {
+  private readonly systemHomePictureId = '__home-picture';
   readonly categories: {
     id: ClientGalleryCategory;
     label: string;
@@ -218,10 +219,21 @@ export class ClientGalleryComponent implements OnDestroy {
 
   get pictures(): ClientGalleryPicture[] {
     const gallery = this.owner?.galleryPictures ?? {};
-    return Object.entries(gallery)
+    const storedPictures = Object.entries(gallery)
       .filter(([, picture]) => Boolean(picture?.url?.trim()))
       .map(([id, picture]) => this.normalizePicture(id, picture))
       .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+    const homePicture = this.systemHomePicture();
+
+    if (!homePicture) {
+      return storedPictures;
+    }
+
+    const alreadyStored = storedPictures.some(
+      (picture) => picture.url === homePicture.url
+    );
+
+    return alreadyStored ? storedPictures : [homePicture, ...storedPictures];
   }
 
   get activePictures(): ClientGalleryPicture[] {
@@ -420,6 +432,10 @@ export class ClientGalleryComponent implements OnDestroy {
     return picture.id;
   }
 
+  isSystemHomePicture(picture?: ClientGalleryPicture): boolean {
+    return picture?.id === this.systemHomePictureId;
+  }
+
   categoryLabel(categoryId: ClientGalleryCategory): string {
     return (
       this.categories.find((category) => category.id === categoryId)?.label ??
@@ -465,6 +481,53 @@ export class ClientGalleryComponent implements OnDestroy {
       category: this.normalizeCategory(picture.category, picture.path),
       mediaType: this.resolveMediaType(picture),
     };
+  }
+
+  private systemHomePicture(): ClientGalleryPicture | undefined {
+    if (this.ownerType !== 'client') {
+      return undefined;
+    }
+
+    const client = this.owner as Client | undefined;
+    const picture = client?.homePicture as
+      | { path?: string; downloadURL?: string; size?: string | number }
+      | string
+      | undefined;
+    const url =
+      typeof picture === 'string' ? picture.trim() : picture?.downloadURL?.trim();
+
+    if (!url) {
+      return undefined;
+    }
+
+    const picturePath =
+      typeof picture === 'string'
+        ? 'clients-home/domicile-verification'
+        : picture?.path || 'clients-home/domicile-verification';
+    const pictureSize =
+      typeof picture === 'string' ? 0 : Number(picture?.size || 0);
+
+    return {
+      id: this.systemHomePictureId,
+      category: 'domicile',
+      mediaType: 'image',
+      mimeType: 'image/*',
+      url,
+      path: picturePath,
+      size: pictureSize,
+      name: 'Photo de la maison visitée',
+      uploadedAt: client?.dateOfRequest
+        ? this.dateLikeToIso(client.dateOfRequest)
+        : new Date(0).toISOString(),
+      uploadedByName: 'Enregistrement client',
+    };
+  }
+
+  private dateLikeToIso(value: string): string {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime())
+      ? new Date(0).toISOString()
+      : parsed.toISOString();
   }
 
   private resolveMediaType(

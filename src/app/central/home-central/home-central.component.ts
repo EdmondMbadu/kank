@@ -249,6 +249,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   showAllFilteredItems = false;
   activeClient: Client | null = null;
   showClientModal = false;
+  showActiveClientHomePicture = false;
   phoneEditValue = '';
   phoneEditOpen = false;
   phoneEditSaving = false;
@@ -3363,11 +3364,13 @@ Merci pour ta confiance !`;
     this.showClientCommentsExpanded = false;
     this.showClientAuditAudioSectionExpanded = false;
     this.showClientAuditAudiosExpanded = false;
+    this.showActiveClientHomePicture = false;
     this.showClientModal = true;
   }
   closeClientModal() {
     this.showClientModal = false;
     this.activeClient = null;
+    this.showActiveClientHomePicture = false;
     this.phoneEditOpen = false;
     this.phoneEditSaving = false;
     this.showPhoneHistory = false;
@@ -3407,6 +3410,21 @@ Merci pour ta confiance !`;
       | undefined;
     if (!picture) return '';
     return typeof picture === 'string' ? picture : picture.downloadURL || '';
+  }
+  clientHomePictureUrl(client?: Client | null): string {
+    const picture = client?.homePicture as
+      | { downloadURL?: string }
+      | string
+      | undefined;
+    if (!picture) return '';
+    return typeof picture === 'string' ? picture : picture.downloadURL || '';
+  }
+  openActiveClientHomePicture(): void {
+    if (!this.clientHomePictureUrl(this.activeClient)) return;
+    this.showActiveClientHomePicture = true;
+  }
+  closeActiveClientHomePicture(): void {
+    this.showActiveClientHomePicture = false;
   }
   isClientQuitte(client?: Client | null): boolean {
     const normalized = this.normalizeQuitteStatusFields(client);

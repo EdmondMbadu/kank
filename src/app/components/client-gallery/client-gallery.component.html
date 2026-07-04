@@ -359,6 +359,7 @@
               </ng-container>
             </span>
             <button
+              *ngIf="!isSystemHomePicture(picture)"
               type="button"
               class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow transition hover:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
               title="Modifier le média"
@@ -708,6 +709,7 @@
   </ng-template>
 
   <button
+    *ngIf="!isSystemHomePicture(selectedPicture)"
     type="button"
     class="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-slate-900 shadow-lg transition hover:bg-white"
     (click)="startEditingPicture(selectedPicture, $event); closePicture()"

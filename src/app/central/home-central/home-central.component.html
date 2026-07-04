@@ -4212,6 +4212,21 @@
                 {{ activeClient.homeAddress || "-" }}
               </p>
             </div>
+            <div *ngIf="clientHomePictureUrl(activeClient)">
+              <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Photo maison</p>
+              <button
+                type="button"
+                class="mt-1 inline-flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-2 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm transition hover:border-emerald-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:text-emerald-200"
+                (click)="openActiveClientHomePicture()"
+              >
+                <img
+                  [src]="clientHomePictureUrl(activeClient)"
+                  alt="Photo de la maison visitée"
+                  class="h-12 w-16 rounded bg-slate-100 object-contain"
+                />
+                Agrandir
+              </button>
+            </div>
             <div class="sm:col-span-2">
               <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">Adresse business</p>
               <p class="mt-1 text-sm font-semibold leading-6 text-slate-900 dark:text-slate-100">
@@ -4464,6 +4479,27 @@
       </div>
     </div>
   </div>
+</div>
+
+<div
+  *ngIf="showActiveClientHomePicture && activeClient"
+  class="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 p-4"
+  (click)="closeActiveClientHomePicture()"
+>
+  <img
+    [src]="clientHomePictureUrl(activeClient)"
+    alt="Photo de la maison visitée - plein écran"
+    class="max-h-[90vh] max-w-[94vw] rounded-2xl object-contain shadow-2xl"
+    (click)="$event.stopPropagation()"
+  />
+  <button
+    type="button"
+    class="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-3xl font-bold text-white transition hover:bg-white/25"
+    aria-label="Fermer"
+    (click)="closeActiveClientHomePicture()"
+  >
+    &times;
+  </button>
 </div>
 
 <!-- ==== CONTACT SMS MODAL (single) ==== -->
