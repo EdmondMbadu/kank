@@ -2692,6 +2692,49 @@
     </div>
 
     <div class="space-y-6 px-4 py-4 sm:px-6">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm">
+          <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                Domicile à vérifier
+              </p>
+              <p class="mt-1 text-base font-extrabold leading-6 text-slate-950">
+                {{ clientDomicileAddress(activeClient) }}
+              </p>
+            </div>
+            <span class="mt-2 inline-flex w-fit rounded-full bg-white px-3 py-1 text-[11px] font-bold uppercase text-emerald-700 ring-1 ring-emerald-200 sm:mt-0">
+              Adresse client
+            </span>
+          </div>
+
+          <div class="mt-4 grid gap-2 sm:grid-cols-4">
+            <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-emerald-100">
+              <p class="text-[11px] font-semibold uppercase text-slate-500">Numéro</p>
+              <p class="mt-1 text-sm font-bold text-slate-900">
+                {{ clientDomicileNumber(activeClient) }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-emerald-100">
+              <p class="text-[11px] font-semibold uppercase text-slate-500">Avenue</p>
+              <p class="mt-1 text-sm font-bold text-slate-900">
+                {{ clientDomicileAvenue(activeClient) }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-emerald-100">
+              <p class="text-[11px] font-semibold uppercase text-slate-500">Quartier</p>
+              <p class="mt-1 text-sm font-bold text-slate-900">
+                {{ clientDomicileQuartier(activeClient) }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-white px-3 py-2 ring-1 ring-emerald-100">
+              <p class="text-[11px] font-semibold uppercase text-slate-500">Commune</p>
+              <p class="mt-1 text-sm font-bold text-slate-900">
+                {{ clientDomicileCommune(activeClient) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div class="grid gap-3 sm:grid-cols-2">
             <div>

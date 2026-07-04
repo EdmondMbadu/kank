@@ -2486,6 +2486,84 @@ export class InvestigationComponent implements OnInit, OnDestroy {
     return typeof picture === 'string' ? picture : picture.downloadURL || '';
   }
 
+  clientDomicileAddress(client?: Client | null): string {
+    const storedAddress = this.firstClientTextValue(client, [
+      'homeAddress',
+      'homeAdress',
+      'domicileAddress',
+      'domicileAdress',
+      'adresseDomicile',
+      'adresseDuDomicile',
+      'address',
+      'adresse',
+      'domicile',
+      'residenceAddress',
+      'residentialAddress',
+    ]);
+    if (storedAddress) {
+      return storedAddress;
+    }
+
+    const number = this.clientDomicileNumber(client, '');
+    const avenue = this.clientDomicileAvenue(client, '');
+    const quartier = this.clientDomicileQuartier(client, '');
+    const commune = this.clientDomicileCommune(client, '');
+    const parts = [
+      number ? `N° ${number}` : '',
+      avenue ? `Av. ${avenue}` : '',
+      quartier ? `Q/${quartier}` : '',
+      commune ? `C/${commune}` : '',
+      'Kinshasa',
+    ].filter(Boolean);
+
+    return parts.length > 1 ? parts.join(', ') : '-';
+  }
+
+  clientDomicileNumber(client?: Client | null, fallback = '-'): string {
+    return (
+      this.firstClientTextValue(client, [
+        'homeNumber',
+        'domicileNumber',
+        'numeroDomicile',
+        'numero',
+        'number',
+      ]) || fallback
+    );
+  }
+
+  clientDomicileAvenue(client?: Client | null, fallback = '-'): string {
+    return (
+      this.firstClientTextValue(client, [
+        'homeAvenue',
+        'domicileAvenue',
+        'avenueDomicile',
+        'avenue',
+      ]) || fallback
+    );
+  }
+
+  clientDomicileQuartier(client?: Client | null, fallback = '-'): string {
+    return (
+      this.firstClientTextValue(client, [
+        'homeQuartier',
+        'domicileQuartier',
+        'quartierDomicile',
+        'quartier',
+      ]) || fallback
+    );
+  }
+
+  clientDomicileCommune(client?: Client | null, fallback = '-'): string {
+    return (
+      this.firstClientTextValue(client, [
+        'homeCommune',
+        'domicileCommune',
+        'communeDomicile',
+        'commune',
+      ]) || fallback
+    );
+  }
+
   openActiveClientHomePicture(): void {
     if (!this.clientHomePictureUrl(this.activeClient)) return;
     const picture = this.clientModalGalleryPictures(this.activeClient)[0];
@@ -2620,6 +2698,28 @@ export class InvestigationComponent implements OnInit, OnDestroy {
   private galleryPictureDateValue(picture: Partial<ClientGalleryPicture>): number {
     const parsed = new Date(picture.uploadedAt || '').getTime();
     return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  private firstClientTextValue(
+    client: Client | null | undefined,
+    fieldNames: string[]
+  ): string {
+    const record = client as Record<string, unknown> | null | undefined;
+    if (!record) {
+      return '';
+    }
+
+    for (const fieldName of fieldNames) {
+      const value = record[fieldName];
+      if (typeof value === 'string' && value.trim()) {
+        return value.trim();
+      }
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return String(value);
+      }
+    }
+
+    return '';
   }
 
   get activeClientCommentPresetChildren(): CommentPreset[] {
