@@ -264,9 +264,10 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   showClientAuditAudioSectionExpanded = false;
   showClientAuditAudiosExpanded = false;
   expandedClientAudioKeys = new Set<string>();
-  birthdayFilterMode: 'all' | 'today' | 'tomorrow' | 'custom' = 'all';
+  birthdayFilterMode: 'all' | 'today' | 'tomorrow' | 'custom' = 'tomorrow';
   customBirthdayInput = '';
-  private birthdayTarget: { month: number; day: number } | null = null;
+  private birthdayTarget: { month: number; day: number } | null =
+    this.createTomorrowBirthdayTarget();
   tomorrowBirthdayGroups: BirthdayTomorrowGroup[] = [];
   birthdayTomorrowResult: Record<string, SendResult | null> = {};
   birthdayTomorrowModal = {
@@ -1059,9 +1060,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       this.birthdayTarget = this.createTargetFromDate(new Date());
     } else if (mode === 'tomorrow') {
       this.customBirthdayInput = '';
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      this.birthdayTarget = this.createTargetFromDate(tomorrow);
+      this.birthdayTarget = this.createTomorrowBirthdayTarget();
     } else if (mode === 'custom') {
       this.birthdayTarget = this.toMonthDayFromDateInput(this.customBirthdayInput);
     }
@@ -1198,9 +1197,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   }
 
   get tomorrowBirthdayDateLabel(): string {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return this.formatBirthdayDateForDisplay(this.createTargetFromDate(tomorrow));
+    return this.formatBirthdayDateForDisplay(this.createTomorrowBirthdayTarget());
   }
 
   get tomorrowBirthdayTotalClients(): number {
@@ -1274,9 +1271,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
   get selectedBirthdayIsTomorrow(): boolean {
     if (!this.birthdayTarget) return false;
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const target = this.createTargetFromDate(tomorrow);
+    const target = this.createTomorrowBirthdayTarget();
     return (
       this.birthdayTarget.month === target.month &&
       this.birthdayTarget.day === target.day
@@ -2384,9 +2379,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   }
 
   private refreshTomorrowBirthdayGroups(): void {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const target = this.createTargetFromDate(tomorrow);
+    const target = this.createTomorrowBirthdayTarget();
     this.tomorrowBirthdayGroups = this.buildBirthdayGroups(target);
     this.syncBirthdayTomorrowState();
   }
@@ -2535,6 +2528,12 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       month: date.getMonth() + 1,
       day: date.getDate(),
     };
+  }
+
+  private createTomorrowBirthdayTarget(): { month: number; day: number } {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return this.createTargetFromDate(tomorrow);
   }
 
   private toMonthDayFromDateInput(value: string) {
