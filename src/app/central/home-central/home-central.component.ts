@@ -163,6 +163,8 @@ type PaymentReminderSummaryStats = {
 };
 
 type PaymentReminderSendMode = 'all' | 'excludeQuitte';
+type BirthdayAutomationDebtMode = 'all' | 'withDebt' | 'withoutDebt';
+type BirthdayAutomationStatusMode = 'all' | 'excludeQuitte' | 'onlyQuitte';
 
 type MasterClientFilterPanel =
   | 'paymentDay'
@@ -288,6 +290,22 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     result: null as BulkResult | null,
   };
   birthdayBulkSending = false;
+  birthdayAutomationEnabled = false;
+  birthdayAutomationDebtMode: BirthdayAutomationDebtMode = 'all';
+  birthdayAutomationStatusMode: BirthdayAutomationStatusMode = 'excludeQuitte';
+  birthdayAutomationSettingsLoading = false;
+  birthdayAutomationSettingsSaving = false;
+  birthdayAutomationSettingsError: string | null = null;
+  birthdayAutomationDebtModes: BirthdayAutomationDebtMode[] = [
+    'all',
+    'withDebt',
+    'withoutDebt',
+  ];
+  birthdayAutomationStatusModes: BirthdayAutomationStatusMode[] = [
+    'excludeQuitte',
+    'all',
+    'onlyQuitte',
+  ];
   private searchTerm = '';
   paymentDayOptions: string[] = [
     'Monday',
@@ -433,6 +451,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     this.listenToScheduledBulkMessages();
     this.loadPaymentReminderLogsForDate();
     this.loadScheduledReminderSendMode();
+    this.loadBirthdayAutomationSettings();
   }
 
   getAllClients() {
@@ -3075,6 +3094,135 @@ Fondation Gervais`;
       messagePreview: this.personalizeBirthdayMessage(recipients[0], template),
       conditionSummary: this.selectedBirthdayConditionSummary,
     });
+  }
+
+  get birthdayAutomationStatusLabel(): string {
+    return this.birthdayAutomationEnabled ? 'Activé' : 'Désactivé';
+  }
+
+  get birthdayAutomationStatusHint(): string {
+    return this.birthdayAutomationEnabled
+      ? 'Chaque jour à 9h Kinshasa, les clients dont l’anniversaire est ce jour recevront le message.'
+      : 'Aucun message anniversaire ne sera envoyé automatiquement.';
+  }
+
+  birthdayAutomationDebtModeLabel(mode: BirthdayAutomationDebtMode): string {
+    switch (mode) {
+      case 'withDebt':
+        return 'Avec dette';
+      case 'withoutDebt':
+        return 'Sans dette';
+      default:
+        return 'Tous';
+    }
+  }
+
+  birthdayAutomationStatusModeLabel(mode: BirthdayAutomationStatusMode): string {
+    switch (mode) {
+      case 'excludeQuitte':
+        return 'Non quittés';
+      case 'onlyQuitte':
+        return 'Quittés';
+      default:
+        return 'Tous';
+    }
+  }
+
+  birthdayAutomationModeButtonClasses(active: boolean) {
+    return {
+      'bg-emerald-600 text-white shadow-sm dark:bg-emerald-500 dark:text-white':
+        active,
+      'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-emerald-300':
+        !active,
+    };
+  }
+
+  async setBirthdayAutomationEnabled(enabled: boolean): Promise<void> {
+    if (this.birthdayAutomationEnabled === enabled) return;
+    await this.saveBirthdayAutomationSettings({ enabled });
+  }
+
+  async setBirthdayAutomationDebtMode(
+    debtMode: BirthdayAutomationDebtMode
+  ): Promise<void> {
+    if (this.birthdayAutomationDebtMode === debtMode) return;
+    await this.saveBirthdayAutomationSettings({ debtMode });
+  }
+
+  async setBirthdayAutomationStatusMode(
+    statusMode: BirthdayAutomationStatusMode
+  ): Promise<void> {
+    if (this.birthdayAutomationStatusMode === statusMode) return;
+    await this.saveBirthdayAutomationSettings({ statusMode });
+  }
+
+  private async saveBirthdayAutomationSettings(update: {
+    enabled?: boolean;
+    debtMode?: BirthdayAutomationDebtMode;
+    statusMode?: BirthdayAutomationStatusMode;
+  }): Promise<void> {
+    this.birthdayAutomationSettingsSaving = true;
+    this.birthdayAutomationSettingsError = null;
+
+    const nextEnabled = update.enabled ?? this.birthdayAutomationEnabled;
+    const nextDebtMode = update.debtMode ?? this.birthdayAutomationDebtMode;
+    const nextStatusMode =
+      update.statusMode ?? this.birthdayAutomationStatusMode;
+
+    try {
+      await this.afs.doc('birthday_automation_settings/default').set(
+        {
+          enabled: nextEnabled,
+          debtMode: nextDebtMode,
+          statusMode: nextStatusMode,
+          sendHour: 9,
+          timeZone: 'Africa/Kinshasa',
+          template: this.birthdayBulkTemplate(),
+          updatedAtMs: Date.now(),
+          updatedBy: this.auth.currentUser?.uid ?? null,
+        },
+        { merge: true }
+      );
+      this.birthdayAutomationEnabled = nextEnabled;
+      this.birthdayAutomationDebtMode = nextDebtMode;
+      this.birthdayAutomationStatusMode = nextStatusMode;
+    } catch (error) {
+      console.error('Birthday automation settings save failed', error);
+      this.birthdayAutomationSettingsError =
+        'Impossible de sauvegarder la préparation automatique.';
+    } finally {
+      this.birthdayAutomationSettingsSaving = false;
+    }
+  }
+
+  private async loadBirthdayAutomationSettings(): Promise<void> {
+    this.birthdayAutomationSettingsLoading = true;
+    this.birthdayAutomationSettingsError = null;
+
+    try {
+      const snap: any = await firstValueFrom(
+        this.afs.doc('birthday_automation_settings/default').get()
+      );
+      const data = snap?.data?.() || {};
+      this.birthdayAutomationEnabled = data.enabled === true;
+      this.birthdayAutomationDebtMode =
+        data.debtMode === 'withDebt' || data.debtMode === 'withoutDebt'
+          ? data.debtMode
+          : 'all';
+      this.birthdayAutomationStatusMode =
+        data.statusMode === 'all' || data.statusMode === 'onlyQuitte'
+          ? data.statusMode
+          : 'excludeQuitte';
+    } catch (error) {
+      console.error('Birthday automation settings load failed', error);
+      this.birthdayAutomationSettingsError =
+        'Impossible de charger la préparation automatique.';
+      this.birthdayAutomationEnabled = false;
+      this.birthdayAutomationDebtMode = 'all';
+      this.birthdayAutomationStatusMode = 'excludeQuitte';
+    } finally {
+      this.birthdayAutomationSettingsLoading = false;
+    }
   }
 
   openBirthdayTomorrowModal(group: BirthdayTomorrowGroup): void {

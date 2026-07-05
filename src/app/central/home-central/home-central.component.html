@@ -271,6 +271,103 @@
           </div>
 
           <div
+            *ngIf="auth.isAdmin"
+            class="mt-4 rounded-2xl border border-sky-200/80 bg-sky-50/70 p-4 shadow-sm dark:border-sky-900/50 dark:bg-sky-950/20"
+          >
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-sky-600 dark:text-sky-300">
+                  Préparation automatique
+                </p>
+                <h3 class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {{ birthdayAutomationStatusLabel }} · 9h Kinshasa
+                </h3>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {{ birthdayAutomationStatusHint }}
+                </p>
+              </div>
+
+              <div class="inline-flex w-fit rounded-full bg-white p-1 text-xs font-semibold shadow-sm dark:bg-slate-800">
+                <button
+                  type="button"
+                  class="rounded-full px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  [disabled]="birthdayAutomationSettingsSaving"
+                  [ngClass]="birthdayAutomationModeButtonClasses(birthdayAutomationEnabled)"
+                  (click)="setBirthdayAutomationEnabled(true)"
+                >
+                  Activé
+                </button>
+                <button
+                  type="button"
+                  class="rounded-full px-3 py-1.5 transition disabled:cursor-not-allowed disabled:opacity-60"
+                  [disabled]="birthdayAutomationSettingsSaving"
+                  [ngClass]="birthdayAutomationModeButtonClasses(!birthdayAutomationEnabled)"
+                  (click)="setBirthdayAutomationEnabled(false)"
+                >
+                  Désactivé
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-4 grid gap-3 lg:grid-cols-2">
+              <div>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
+                  Dette
+                </p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <button
+                    *ngFor="let mode of birthdayAutomationDebtModes"
+                    type="button"
+                    class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                    [disabled]="birthdayAutomationSettingsSaving"
+                    [ngClass]="birthdayAutomationModeButtonClasses(birthdayAutomationDebtMode === mode)"
+                    (click)="setBirthdayAutomationDebtMode(mode)"
+                  >
+                    {{ birthdayAutomationDebtModeLabel(mode) }}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
+                  Statut client
+                </p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <button
+                    *ngFor="let mode of birthdayAutomationStatusModes"
+                    type="button"
+                    class="rounded-full px-3 py-1.5 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                    [disabled]="birthdayAutomationSettingsSaving"
+                    [ngClass]="birthdayAutomationModeButtonClasses(birthdayAutomationStatusMode === mode)"
+                    (click)="setBirthdayAutomationStatusMode(mode)"
+                  >
+                    {{ birthdayAutomationStatusModeLabel(mode) }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p
+              *ngIf="birthdayAutomationSettingsLoading"
+              class="mt-3 text-xs text-slate-500 dark:text-slate-400"
+            >
+              Chargement de la préparation automatique…
+            </p>
+            <p
+              *ngIf="birthdayAutomationSettingsSaving"
+              class="mt-3 text-xs text-sky-600 dark:text-sky-300"
+            >
+              Sauvegarde…
+            </p>
+            <p
+              *ngIf="birthdayAutomationSettingsError"
+              class="mt-3 text-xs text-rose-600 dark:text-rose-300"
+            >
+              {{ birthdayAutomationSettingsError }}
+            </p>
+          </div>
+
+          <div
             class="mt-4 rounded-2xl border border-emerald-200/80 bg-emerald-50/60 p-3 shadow-sm dark:border-emerald-800/60 dark:bg-emerald-900/10"
           >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -338,9 +435,11 @@
                 </div>
 
                 <div class="mt-2 flex flex-wrap gap-1.5">
-                  <span
+                  <button
+                    type="button"
                     *ngFor="let client of group.clients"
-                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-left text-[11px] text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200"
+                    (click)="openClientModal(client)"
                   >
                     {{ client.firstName }} {{ client.lastName }}
                     <span
@@ -349,7 +448,7 @@
                     >
                       (sans tel)
                     </span>
-                  </span>
+                  </button>
                 </div>
 
                 <p
@@ -2757,13 +2856,15 @@
         Destinataires
       </p>
       <div class="mt-2 flex max-h-24 flex-wrap gap-1.5 overflow-y-auto pr-1">
-        <span
+        <button
+          type="button"
           *ngFor="let client of birthdayBulkModal.recipients | slice : 0 : 18"
-          class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-left text-[11px] text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200"
+          (click)="openClientModal(client)"
         >
           {{ client.firstName }} {{ client.lastName }} ·
           {{ formatDisplayPhone(client.phoneNumber) }}
-        </span>
+        </button>
         <span
           *ngIf="birthdayBulkModal.recipients.length > 18"
           class="rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-200"

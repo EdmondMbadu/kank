@@ -34,6 +34,14 @@ const MOBILE_MONEY_LOOKUP_COLLECTION = "mobileMoneyTransactionLookup";
 const PAYMENT_REMINDER_LOGS_COLLECTION = "payment_reminder_logs";
 const PAYMENT_REMINDER_SETTINGS_COLLECTION = "payment_reminder_settings";
 const PAYMENT_REMINDER_SETTINGS_DOC_ID = "default";
+const BIRTHDAY_AUTOMATION_SETTINGS_COLLECTION = "birthday_automation_settings";
+const BIRTHDAY_AUTOMATION_RUNS_COLLECTION = "birthday_automation_runs";
+const BIRTHDAY_AUTOMATION_SETTINGS_DOC_ID = "default";
+const DEFAULT_BIRTHDAY_TEMPLATE = `{fullName},
+Mbotama elamu!
+Na mokolo oyo ya esengo, Fondation Gervais ezali kotombela yo Mbotama elamu pe mapamboli na nionso ozali kosala. 
+Tosepeli kozala elongo na yo.
+Fondation Gervais`;
 
 const flexpayConfig = (functions.config() && functions.config().flexpay) || {};
 const FLEXPAY_MERCHANT =
@@ -67,6 +75,97 @@ function dateKeyForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+function monthDayForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
+  const key = dateKeyForTimeZone(date, timeZone);
+  const [, month, day] = key.split("-").map((part) => Number(part));
+  return {month, day};
+}
+
+function extractBirthdayMonthDayVariants(input) {
+  if (!input) return [];
+  const parts = String(input).match(/\d+/g);
+  if (!parts || parts.length < 2) return [];
+
+  const nums = parts.map((part) => Number(part));
+  const results = [];
+  const seen = new Set();
+
+  const addCandidate = (month, day) => {
+    if (!Number.isFinite(month) || !Number.isFinite(day)) return;
+    if (month < 1 || month > 12) return;
+    if (day < 1 || day > 31) return;
+    const key = `${month}-${day}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    results.push({month, day});
+  };
+
+  const [a, b, c] = nums;
+  if (nums.length >= 3) {
+    if (a > 31) addCandidate(b, c);
+    if (c > 31) addCandidate(a, b);
+    if (a >= 1 && a <= 31 && b >= 1 && b <= 12) addCandidate(b, a);
+    if (a > 31) addCandidate(c, b);
+    addCandidate(a, b);
+    addCandidate(b, a);
+    addCandidate(b, c);
+    addCandidate(c, b);
+  } else {
+    addCandidate(a, b);
+    addCandidate(b, a);
+  }
+
+  return results;
+}
+
+function hasBirthdayOnTarget(client, target) {
+  return extractBirthdayMonthDayVariants(client && client.birthDate).some(
+      (entry) => entry.month === target.month && entry.day === target.day,
+  );
+}
+
+function clientFullName(client) {
+  return `${client.firstName || ""} ${client.lastName || ""}`
+      .trim()
+      .replace(/\s+/g, " ");
+}
+
+function personalizeBirthdayMessage(client, template) {
+  const fullName = clientFullName(client) || "client";
+  return String(template || DEFAULT_BIRTHDAY_TEMPLATE)
+      .replace(/\{\s*fullName\s*\}/gi, fullName)
+      .replace(/\{\{\s*FULL_NAME\s*\}\}/g, fullName);
+}
+
+function clientDebtLeftAmount(client) {
+  const raw = client && (client.debtLeft != null ? client.debtLeft : client.debtInProcess);
+  const normalized = String(raw == null ? "0" : raw).replace(/[^0-9.-]/g, "");
+  const value = Number(normalized);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function matchesBirthdayAutomationCriteria(client, settings) {
+  const debt = clientDebtLeftAmount(client);
+  if (settings.debtMode === "withDebt" && debt <= 0) return false;
+  if (settings.debtMode === "withoutDebt" && debt > 0) return false;
+
+  const isQuitte = isLeftQuitte(client);
+  if (settings.statusMode === "excludeQuitte" && isQuitte) return false;
+  if (settings.statusMode === "onlyQuitte" && !isQuitte) return false;
+
+  return true;
+}
+
+function aggregateClientLocations(clients) {
+  const totals = {};
+  clients.forEach((client) => {
+    const key = String(client.locationName || "Sans localisation").trim() ||
+      "Sans localisation";
+    totals[key] = (totals[key] || 0) + 1;
+  });
+  return totals;
+}
+
 async function recordPaymentReminderLog(payload) {
   const now = new Date();
   await db.collection(PAYMENT_REMINDER_LOGS_COLLECTION).add({
@@ -93,6 +192,15 @@ function normalizePaymentReminderSendMode(value) {
   return value === "excludeQuitte" ? "excludeQuitte" : "all";
 }
 
+function normalizeBirthdayDebtMode(value) {
+  return value === "withDebt" || value === "withoutDebt" ? value : "all";
+}
+
+function normalizeBirthdayStatusMode(value) {
+  if (value === "all" || value === "onlyQuitte") return value;
+  return "excludeQuitte";
+}
+
 async function getPaymentReminderSendMode() {
   try {
     const snap = await db
@@ -103,6 +211,31 @@ async function getPaymentReminderSendMode() {
   } catch (error) {
     console.error("Failed to load payment reminder send mode:", error);
     return "all";
+  }
+}
+
+async function getBirthdayAutomationSettings() {
+  try {
+    const snap = await db
+        .collection(BIRTHDAY_AUTOMATION_SETTINGS_COLLECTION)
+        .doc(BIRTHDAY_AUTOMATION_SETTINGS_DOC_ID)
+        .get();
+    const data = snap.exists ? snap.data() || {} : {};
+    return {
+      enabled: data.enabled === true,
+      debtMode: normalizeBirthdayDebtMode(data.debtMode),
+      statusMode: normalizeBirthdayStatusMode(data.statusMode),
+      template: String(data.template || DEFAULT_BIRTHDAY_TEMPLATE).trim() ||
+        DEFAULT_BIRTHDAY_TEMPLATE,
+    };
+  } catch (error) {
+    console.error("Failed to load birthday automation settings:", error);
+    return {
+      enabled: false,
+      debtMode: "all",
+      statusMode: "excludeQuitte",
+      template: DEFAULT_BIRTHDAY_TEMPLATE,
+    };
   }
 }
 
@@ -2661,6 +2794,179 @@ exports.scheduledSendReminders = functions.pubsub
       } catch (error) {
         console.error("Error in scheduledSendReminders:", error);
         throw error; // Let Firebase log it as a function error
+      }
+    });
+
+exports.scheduledSendBirthdayMessages = functions.pubsub
+    .schedule("0 9 * * *")
+    .timeZone("Africa/Kinshasa")
+    .onRun(async () => {
+      console.log("===> Starting scheduledSendBirthdayMessages at 9AM Kinshasa time...");
+
+      const settings = await getBirthdayAutomationSettings();
+      if (!settings.enabled) {
+        console.log("Birthday automation disabled. Exiting.");
+        return null;
+      }
+
+      const now = new Date();
+      const dateKey = dateKeyForTimeZone(now, KINSHASA_TIME_ZONE);
+      const birthdayTarget = monthDayForTimeZone(now, KINSHASA_TIME_ZONE);
+      const runRef = db.collection(BIRTHDAY_AUTOMATION_RUNS_COLLECTION).doc(dateKey);
+
+      let shouldRun = false;
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(runRef);
+        const existing = snap.exists ? snap.data() || {} : {};
+        if (existing.status === "running" || existing.status === "sent") {
+          return;
+        }
+        tx.set(runRef, {
+          dateKey,
+          status: "running",
+          startedAt: admin.firestore.FieldValue.serverTimestamp(),
+          startedAtMs: Date.now(),
+          settings,
+          birthdayTarget,
+          timeZone: KINSHASA_TIME_ZONE,
+        }, {merge: true});
+        shouldRun = true;
+      });
+
+      if (!shouldRun) {
+        console.log(`Birthday automation already processed or running for ${dateKey}.`);
+        return null;
+      }
+
+      try {
+        if (!sms) {
+          throw new Error("Africa's Talking SMS client is not configured.");
+        }
+
+        const usersSnapshot = await db
+            .collection("users")
+            .where("mode", "!=", "testing")
+            .get();
+
+        const allClients = [];
+        for (const userDoc of usersSnapshot.docs) {
+          const user = userDoc.data() || {};
+          const clientSnapshot = await db
+              .collection("users")
+              .doc(userDoc.id)
+              .collection("clients")
+              .get();
+
+          clientSnapshot.forEach((clientDoc) => {
+            allClients.push({
+              ...clientDoc.data(),
+              docId: clientDoc.id,
+              userId: userDoc.id,
+              locationName: clientDoc.data().locationName || user.firstName || null,
+            });
+          });
+        }
+
+        const birthdayClients = allClients.filter((client) =>
+          hasBirthdayOnTarget(client, birthdayTarget),
+        );
+        const eligibleClients = birthdayClients.filter((client) =>
+          matchesBirthdayAutomationCriteria(client, settings),
+        );
+        const recipients = [];
+        let excludedNoPhone = 0;
+
+        eligibleClients.forEach((client) => {
+          const to = makeValidE164(client.phoneNumber || "");
+          if (!to) {
+            excludedNoPhone += 1;
+            return;
+          }
+          recipients.push({...client, to});
+        });
+
+        let succeeded = 0;
+        let failed = 0;
+        const failures = [];
+
+        for (const client of recipients) {
+          const message = personalizeBirthdayMessage(client, settings.template);
+          try {
+            await sms.send({
+              to: [client.to],
+              message,
+            });
+            succeeded += 1;
+          } catch (error) {
+            failed += 1;
+            failures.push({
+              clientId: client.docId || null,
+              clientName: clientFullName(client),
+              phoneNumber: client.to,
+              error: error && error.message ? error.message : String(error),
+            });
+            console.error("Birthday automation SMS failed:", {
+              clientName: clientFullName(client),
+              phoneNumber: client.to,
+              error,
+            });
+          }
+        }
+
+        const conditionSummary = [
+          `Anniversaire: ${dateKey}`,
+          `Dette: ${settings.debtMode}`,
+          `Statut: ${settings.statusMode}`,
+          `Clients anniversaire: ${birthdayClients.length}`,
+          `Exclus critères: ${birthdayClients.length - eligibleClients.length}`,
+          `Sans téléphone: ${excludedNoPhone}`,
+        ].join(" · ");
+
+        await db.collection("bulk_message_logs").add({
+          type: "birthdays",
+          source: "scheduled",
+          total: recipients.length,
+          succeeded,
+          failed,
+          locationTotals: aggregateClientLocations(recipients),
+          template: settings.template,
+          messagePreview: recipients[0] ?
+            personalizeBirthdayMessage(recipients[0], settings.template) :
+            "",
+          conditionSummary,
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          sentAtMs: Date.now(),
+          sentBy: "Automatique 9h",
+          sentById: null,
+        });
+
+        await runRef.set({
+          status: "sent",
+          finishedAt: admin.firestore.FieldValue.serverTimestamp(),
+          finishedAtMs: Date.now(),
+          plannedTotal: birthdayClients.length,
+          eligibleTotal: eligibleClients.length,
+          total: recipients.length,
+          succeeded,
+          failed,
+          excludedCriteria: birthdayClients.length - eligibleClients.length,
+          excludedNoPhone,
+          failures,
+        }, {merge: true});
+
+        console.log(
+            `Birthday automation done for ${dateKey}. Success: ${succeeded}, Failed: ${failed}`,
+        );
+        return null;
+      } catch (error) {
+        console.error("scheduledSendBirthdayMessages error:", error);
+        await runRef.set({
+          status: "failed",
+          finishedAt: admin.firestore.FieldValue.serverTimestamp(),
+          finishedAtMs: Date.now(),
+          error: error && error.message ? error.message : String(error),
+        }, {merge: true});
+        return null;
       }
     });
 
