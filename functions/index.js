@@ -81,6 +81,21 @@ function monthDayForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
   return {month, day};
 }
 
+function localMinutesForTimeZone(date = new Date(), timeZone = KINSHASA_TIME_ZONE) {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(date);
+  const values = {};
+  parts.forEach((part) => {
+    if (part.type !== "literal") values[part.type] = part.value;
+  });
+  return (Number(values.hour) || 0) * 60 + (Number(values.minute) || 0);
+}
+
 function extractBirthdayMonthDayVariants(input) {
   if (!input) return [];
   const parts = String(input).match(/\d+/g);
@@ -201,6 +216,18 @@ function normalizeBirthdayStatusMode(value) {
   return "excludeQuitte";
 }
 
+function normalizeBirthdaySendTime(value) {
+  const raw = String(value || "").trim();
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(raw) ? raw : "09:00";
+}
+
+function birthdaySendTimeMinutes(sendTimeLocal) {
+  const [hour, minute] = normalizeBirthdaySendTime(sendTimeLocal)
+      .split(":")
+      .map((part) => Number(part));
+  return hour * 60 + minute;
+}
+
 async function getPaymentReminderSendMode() {
   try {
     const snap = await db
@@ -223,6 +250,7 @@ async function getBirthdayAutomationSettings() {
     const data = snap.exists ? snap.data() || {} : {};
     return {
       enabled: data.enabled === true,
+      sendTimeLocal: normalizeBirthdaySendTime(data.sendTimeLocal || data.sendTime),
       debtMode: normalizeBirthdayDebtMode(data.debtMode),
       statusMode: normalizeBirthdayStatusMode(data.statusMode),
       template: String(data.template || DEFAULT_BIRTHDAY_TEMPLATE).trim() ||
@@ -232,6 +260,7 @@ async function getBirthdayAutomationSettings() {
     console.error("Failed to load birthday automation settings:", error);
     return {
       enabled: false,
+      sendTimeLocal: "09:00",
       debtMode: "all",
       statusMode: "excludeQuitte",
       template: DEFAULT_BIRTHDAY_TEMPLATE,
@@ -2798,10 +2827,10 @@ exports.scheduledSendReminders = functions.pubsub
     });
 
 exports.scheduledSendBirthdayMessages = functions.pubsub
-    .schedule("0 9 * * *")
+    .schedule("* * * * *")
     .timeZone("Africa/Kinshasa")
     .onRun(async () => {
-      console.log("===> Starting scheduledSendBirthdayMessages at 9AM Kinshasa time...");
+      console.log("===> Checking scheduledSendBirthdayMessages...");
 
       const settings = await getBirthdayAutomationSettings();
       if (!settings.enabled) {
@@ -2810,6 +2839,15 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
       }
 
       const now = new Date();
+      const currentMinutes = localMinutesForTimeZone(now, KINSHASA_TIME_ZONE);
+      const targetMinutes = birthdaySendTimeMinutes(settings.sendTimeLocal);
+      if (currentMinutes < targetMinutes) {
+        console.log(
+            `Birthday automation waiting for ${settings.sendTimeLocal} Kinshasa.`,
+        );
+        return null;
+      }
+
       const dateKey = dateKeyForTimeZone(now, KINSHASA_TIME_ZONE);
       const birthdayTarget = monthDayForTimeZone(now, KINSHASA_TIME_ZONE);
       const runRef = db.collection(BIRTHDAY_AUTOMATION_RUNS_COLLECTION).doc(dateKey);
@@ -2828,6 +2866,7 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
           startedAtMs: Date.now(),
           settings,
           birthdayTarget,
+          sendTimeLocal: settings.sendTimeLocal,
           timeZone: KINSHASA_TIME_ZONE,
         }, {merge: true});
         shouldRun = true;
@@ -2917,6 +2956,7 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
           `Anniversaire: ${dateKey}`,
           `Dette: ${settings.debtMode}`,
           `Statut: ${settings.statusMode}`,
+          `Heure: ${settings.sendTimeLocal}`,
           `Clients anniversaire: ${birthdayClients.length}`,
           `Exclus critères: ${birthdayClients.length - eligibleClients.length}`,
           `Sans téléphone: ${excludedNoPhone}`,
@@ -2936,7 +2976,7 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
           conditionSummary,
           sentAt: admin.firestore.FieldValue.serverTimestamp(),
           sentAtMs: Date.now(),
-          sentBy: "Automatique 9h",
+          sentBy: `Automatique ${settings.sendTimeLocal}`,
           sentById: null,
         });
 

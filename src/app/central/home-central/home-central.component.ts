@@ -291,6 +291,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   };
   birthdayBulkSending = false;
   birthdayAutomationEnabled = false;
+  birthdayAutomationSendTime = '09:00';
   birthdayAutomationDebtMode: BirthdayAutomationDebtMode = 'all';
   birthdayAutomationStatusMode: BirthdayAutomationStatusMode = 'excludeQuitte';
   birthdayAutomationSettingsLoading = false;
@@ -3102,7 +3103,7 @@ Fondation Gervais`;
 
   get birthdayAutomationStatusHint(): string {
     return this.birthdayAutomationEnabled
-      ? 'Chaque jour à 9h Kinshasa, les clients dont l’anniversaire est ce jour recevront le message.'
+      ? `Chaque jour à ${this.birthdayAutomationSendTime} Kinshasa, les clients dont l’anniversaire est ce jour recevront le message.`
       : 'Aucun message anniversaire ne sera envoyé automatiquement.';
   }
 
@@ -3156,8 +3157,20 @@ Fondation Gervais`;
     await this.saveBirthdayAutomationSettings({ statusMode });
   }
 
+  async onBirthdayAutomationSendTimeChange(event: Event): Promise<void> {
+    const value = (event.target as HTMLInputElement)?.value || '';
+    if (!this.isValidBirthdayAutomationSendTime(value)) return;
+    if (this.birthdayAutomationSendTime === value) return;
+    await this.saveBirthdayAutomationSettings({ sendTime: value });
+  }
+
+  private isValidBirthdayAutomationSendTime(value: string): boolean {
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+  }
+
   private async saveBirthdayAutomationSettings(update: {
     enabled?: boolean;
+    sendTime?: string;
     debtMode?: BirthdayAutomationDebtMode;
     statusMode?: BirthdayAutomationStatusMode;
   }): Promise<void> {
@@ -3165,6 +3178,10 @@ Fondation Gervais`;
     this.birthdayAutomationSettingsError = null;
 
     const nextEnabled = update.enabled ?? this.birthdayAutomationEnabled;
+    const nextSendTime =
+      update.sendTime && this.isValidBirthdayAutomationSendTime(update.sendTime)
+        ? update.sendTime
+        : this.birthdayAutomationSendTime;
     const nextDebtMode = update.debtMode ?? this.birthdayAutomationDebtMode;
     const nextStatusMode =
       update.statusMode ?? this.birthdayAutomationStatusMode;
@@ -3173,9 +3190,9 @@ Fondation Gervais`;
       await this.afs.doc('birthday_automation_settings/default').set(
         {
           enabled: nextEnabled,
+          sendTimeLocal: nextSendTime,
           debtMode: nextDebtMode,
           statusMode: nextStatusMode,
-          sendHour: 9,
           timeZone: 'Africa/Kinshasa',
           template: this.birthdayBulkTemplate(),
           updatedAtMs: Date.now(),
@@ -3184,6 +3201,7 @@ Fondation Gervais`;
         { merge: true }
       );
       this.birthdayAutomationEnabled = nextEnabled;
+      this.birthdayAutomationSendTime = nextSendTime;
       this.birthdayAutomationDebtMode = nextDebtMode;
       this.birthdayAutomationStatusMode = nextStatusMode;
     } catch (error) {
@@ -3205,6 +3223,11 @@ Fondation Gervais`;
       );
       const data = snap?.data?.() || {};
       this.birthdayAutomationEnabled = data.enabled === true;
+      this.birthdayAutomationSendTime = this.isValidBirthdayAutomationSendTime(
+        data.sendTimeLocal
+      )
+        ? data.sendTimeLocal
+        : '09:00';
       this.birthdayAutomationDebtMode =
         data.debtMode === 'withDebt' || data.debtMode === 'withoutDebt'
           ? data.debtMode
@@ -3218,6 +3241,7 @@ Fondation Gervais`;
       this.birthdayAutomationSettingsError =
         'Impossible de charger la préparation automatique.';
       this.birthdayAutomationEnabled = false;
+      this.birthdayAutomationSendTime = '09:00';
       this.birthdayAutomationDebtMode = 'all';
       this.birthdayAutomationStatusMode = 'excludeQuitte';
     } finally {
