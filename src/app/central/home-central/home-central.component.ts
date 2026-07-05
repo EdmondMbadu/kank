@@ -1217,6 +1217,72 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     );
   }
 
+  get selectedBirthdayGroups(): BirthdayTomorrowGroup[] {
+    if (this.birthdayFilterMode === 'all') {
+      return this.buildBirthdayGroups(null);
+    }
+
+    if (!this.birthdayTarget) return [];
+
+    if (this.selectedBirthdayIsTomorrow) {
+      return this.tomorrowBirthdayGroups;
+    }
+
+    return this.buildBirthdayGroups(this.birthdayTarget);
+  }
+
+  get selectedBirthdayDateLabel(): string {
+    if (this.birthdayFilterMode === 'all') return 'Toutes les dates';
+    if (!this.birthdayTarget) return 'Date non choisie';
+    return this.formatBirthdayDateForDisplay(this.birthdayTarget);
+  }
+
+  get selectedBirthdaySectionTitle(): string {
+    switch (this.birthdayFilterMode) {
+      case 'today':
+        return "Anniversaires d'aujourd'hui";
+      case 'tomorrow':
+        return 'Anniversaires de demain';
+      case 'custom':
+        return 'Anniversaires choisis';
+      default:
+        return 'Tous les anniversaires';
+    }
+  }
+
+  get selectedBirthdayTotalClients(): number {
+    return this.selectedBirthdayGroups.reduce(
+      (sum, group) => sum + group.clients.length,
+      0
+    );
+  }
+
+  get selectedBirthdayTotalRecipients(): number {
+    return this.selectedBirthdayGroups.reduce(
+      (sum, group) => sum + group.recipients.length,
+      0
+    );
+  }
+
+  get selectedBirthdayEmptyMessage(): string {
+    if (this.birthdayFilterMode === 'all') {
+      return 'Aucun anniversaire enregistré.';
+    }
+
+    return 'Aucun anniversaire prévu pour cette date.';
+  }
+
+  get selectedBirthdayIsTomorrow(): boolean {
+    if (!this.birthdayTarget) return false;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const target = this.createTargetFromDate(tomorrow);
+    return (
+      this.birthdayTarget.month === target.month &&
+      this.birthdayTarget.day === target.day
+    );
+  }
+
   trackTomorrowBirthdayGroup(index: number, group: BirthdayTomorrowGroup): string {
     return group.key;
   }
@@ -2321,10 +2387,22 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const target = this.createTargetFromDate(tomorrow);
+    this.tomorrowBirthdayGroups = this.buildBirthdayGroups(target);
+    this.syncBirthdayTomorrowState();
+  }
+
+  private buildBirthdayGroups(
+    target: { month: number; day: number } | null
+  ): BirthdayTomorrowGroup[] {
     const grouped = new Map<string, Client[]>();
 
     for (const client of this.allClients ?? []) {
-      if (!this.hasBirthdayOnTarget(client, target)) continue;
+      if (target) {
+        if (!this.hasBirthdayOnTarget(client, target)) continue;
+      } else if (!client.birthDate) {
+        continue;
+      }
+
       const locationName = (client.locationName || 'Sans localisation').trim();
       const key = locationName || 'Sans localisation';
       const list = grouped.get(key) || [];
@@ -2332,7 +2410,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       grouped.set(key, list);
     }
 
-    this.tomorrowBirthdayGroups = Array.from(grouped.entries())
+    return Array.from(grouped.entries())
       .map(([locationName, clients]) => {
         const sortedClients = clients
           .slice()
@@ -2357,7 +2435,9 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
           b.clients.length - a.clients.length ||
           a.locationName.localeCompare(b.locationName)
       );
+  }
 
+  private syncBirthdayTomorrowState(): void {
     const validKeys = new Set(
       this.tomorrowBirthdayGroups.map((group) => group.key)
     );
