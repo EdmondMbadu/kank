@@ -173,9 +173,10 @@ type MasterClientFilterPanel =
   | 'locations';
 
 type TrophyMissingFilterMode = 'all' | 'missing';
-type TopClientFocusPanel = 'birthdays' | 'trophyMissing';
+type TopClientFocusPanel = 'trophyMissing';
 type HomeCentralSection =
   | 'clients'
+  | 'birthdays'
   | 'notPaid'
   | 'reminders'
   | 'relances'
@@ -220,6 +221,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     adminOnly?: boolean;
   }> = [
     { id: 'clients', label: 'Tous les clients', eyebrow: 'Clients' },
+    { id: 'birthdays', label: 'Anniversaires', eyebrow: 'Clients' },
     { id: 'notPaid', label: 'Retards paiement', eyebrow: 'Retards' },
     { id: 'reminders', label: 'Rappel collectif', eyebrow: 'Rappel' },
     { id: 'relances', label: 'Relances multi-sites', eyebrow: 'Relances' },
@@ -1108,15 +1110,11 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   }
 
   get activeTopClientFocusPanelTitle(): string {
-    return this.activeTopClientFocusPanel === 'birthdays'
-      ? 'Anniversaires'
-      : 'Trophée non attribué';
+    return 'Trophée non attribué';
   }
 
   get activeTopClientFocusPanelHint(): string {
-    return this.activeTopClientFocusPanel === 'birthdays'
-      ? 'Choisissez la période pour afficher les clients concernés.'
-      : 'Clients avec score de crédit ≥ 70 et aucune étoile, à revoir pour attribuer un trophée.';
+    return 'Clients avec score de crédit ≥ 70 et aucune étoile, à revoir pour attribuer un trophée.';
   }
 
   setTrophyMissingFilter(mode: TrophyMissingFilterMode) {
