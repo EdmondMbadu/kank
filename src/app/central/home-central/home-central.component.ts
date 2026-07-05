@@ -51,6 +51,7 @@ type BulkLogContext =
   | 'finished_clients'
   | 'general_filters'
   | 'birthday_tomorrow'
+  | 'birthdays'
   | 'prospect_contacts'
   | 'contacts'
   | 'custom';
@@ -279,6 +280,14 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   };
   birthdayTomorrowModalSending = false;
   birthdayTomorrowModalScheduling = false;
+  birthdayBulkModal = {
+    open: false,
+    message: '',
+    recipients: [] as Client[],
+    excludedNoPhone: 0,
+    result: null as BulkResult | null,
+  };
+  birthdayBulkSending = false;
   private searchTerm = '';
   paymentDayOptions: string[] = [
     'Monday',
@@ -1261,6 +1270,17 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     );
   }
 
+  get selectedBirthdayRecipients(): Client[] {
+    return this.selectedBirthdayGroups.flatMap((group) => group.recipients);
+  }
+
+  get selectedBirthdayExcludedNoPhone(): number {
+    return this.selectedBirthdayGroups.reduce(
+      (sum, group) => sum + group.excludedNoPhone,
+      0
+    );
+  }
+
   get selectedBirthdayEmptyMessage(): string {
     if (this.birthdayFilterMode === 'all') {
       return 'Aucun anniversaire enregistré.';
@@ -1276,6 +1296,17 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       this.birthdayTarget.month === target.month &&
       this.birthdayTarget.day === target.day
     );
+  }
+
+  get selectedBirthdayConditionSummary(): string {
+    const parts = [
+      `Anniversaire: ${this.selectedBirthdayDateLabel}`,
+      `Clients: ${this.selectedBirthdayTotalClients}`,
+      `Avec téléphone: ${this.selectedBirthdayTotalRecipients}`,
+      `Sans téléphone: ${this.selectedBirthdayExcludedNoPhone}`,
+    ];
+
+    return this.joinConditionParts(parts);
   }
 
   trackTomorrowBirthdayGroup(index: number, group: BirthdayTomorrowGroup): string {
@@ -2940,6 +2971,112 @@ Merci pona confiance na FONDATION GERVAIS`;
 Mbotama Elamu {{FULL_NAME}}. Nzambe apambola misala na yo.`;
   }
 
+  private birthdayBulkTemplate(): string {
+    return `{fullName},
+Mbotama elamu!
+Na mokolo oyo ya esengo, Fondation Gervais ezali kotombela yo Mbotama elamu pe mapamboli na nionso ozali kosala. 
+Tosepeli kozala elongo na yo.
+Fondation Gervais`;
+  }
+
+  openBirthdayBulkModal(): void {
+    const recipients = this.selectedBirthdayRecipients;
+    if (!recipients.length) return;
+
+    this.birthdayBulkModal.open = true;
+    this.birthdayBulkModal.message = this.birthdayBulkTemplate();
+    this.birthdayBulkModal.recipients = recipients;
+    this.birthdayBulkModal.excludedNoPhone = this.selectedBirthdayExcludedNoPhone;
+    this.birthdayBulkModal.result = null;
+    this.birthdayBulkSending = false;
+  }
+
+  closeBirthdayBulkModal(): void {
+    this.birthdayBulkModal.open = false;
+    this.birthdayBulkModal.message = '';
+    this.birthdayBulkModal.recipients = [];
+    this.birthdayBulkModal.excludedNoPhone = 0;
+    this.birthdayBulkModal.result = null;
+    this.birthdayBulkSending = false;
+  }
+
+  get birthdayBulkPreview(): string {
+    const first = this.birthdayBulkModal.recipients[0];
+    if (!first) return '—';
+    return this.personalizeBirthdayMessage(
+      first,
+      this.birthdayBulkModal.message
+    );
+  }
+
+  private clientFullName(client: Client): string {
+    return `${client.firstName ?? ''} ${client.lastName ?? ''}`
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
+  private personalizeBirthdayMessage(client: Client, template: string): string {
+    const fullName = this.clientFullName(client) || 'client';
+    return template
+      .replace(/\{\s*fullName\s*\}/gi, fullName)
+      .replace(/\{\{\s*FULL_NAME\s*\}\}/g, fullName);
+  }
+
+  async sendBirthdayBulkMessagesFromModal(): Promise<void> {
+    const template = this.birthdayBulkModal.message?.trim() || '';
+    const recipients = [...this.birthdayBulkModal.recipients];
+    if (!template || !recipients.length) return;
+
+    this.birthdayBulkSending = true;
+    this.birthdayBulkModal.result = null;
+
+    const failures: BulkFailure[] = [];
+    let succeeded = 0;
+
+    for (const client of recipients) {
+      try {
+        const phoneNumber = client.phoneNumber!;
+        const message = this.personalizeBirthdayMessage(client, template);
+        await this.messaging.sendCustomSMS(phoneNumber, message, {
+          reason: 'birthday_bulk',
+          clientId: client.trackingId || client.uid || null,
+          clientName: this.clientFullName(client),
+          locationName: client.locationName || null,
+          birthdayDate: this.selectedBirthdayDateLabel,
+        });
+        succeeded += 1;
+      } catch (error: any) {
+        console.error('Birthday bulk SMS failed', error);
+        failures.push({
+          client,
+          error: error?.message || "Échec d'envoi",
+        });
+      }
+    }
+
+    const total = recipients.length;
+    this.birthdayBulkModal.result = {
+      total,
+      succeeded,
+      failed: failures.length,
+      failures,
+    };
+    this.birthdayBulkSending = false;
+
+    await this.logBulkMessage('birthdays', {
+      total,
+      succeeded,
+      failed: failures.length,
+      locationTotals: this.aggregateLocations(
+        recipients,
+        (client) => client.locationName
+      ),
+      template,
+      messagePreview: this.personalizeBirthdayMessage(recipients[0], template),
+      conditionSummary: this.selectedBirthdayConditionSummary,
+    });
+  }
+
   openBirthdayTomorrowModal(group: BirthdayTomorrowGroup): void {
     this.birthdayTomorrowModal.open = true;
     this.birthdayTomorrowModal.group = group;
@@ -2973,13 +3110,7 @@ Mbotama Elamu {{FULL_NAME}}. Nzambe apambola misala na yo.`;
     client: Client,
     template: string
   ): string {
-    const fullName = `${client.firstName ?? ''} ${client.lastName ?? ''}`
-      .trim()
-      .replace(/\s+/g, ' ');
-    return template.replace(
-      /\{\{\s*FULL_NAME\s*\}\}/g,
-      fullName || 'client'
-    );
+    return this.personalizeBirthdayMessage(client, template);
   }
 
   private buildBirthdayTomorrowConditionsSummary(
@@ -5348,6 +5479,8 @@ Merci pona confiance na FONDATION GERVAIS.`;
         return 'Filtre personnalisé';
       case 'birthday_tomorrow':
         return 'Anniversaire demain';
+      case 'birthdays':
+        return 'Anniversaires';
       case 'prospect_contacts':
         return 'Prospects';
       case 'contacts':
