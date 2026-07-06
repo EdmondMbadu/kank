@@ -30,6 +30,8 @@ export class RequestUpdateComponent implements OnInit {
   memberShipFeeOtherDisplay: boolean = false;
   savingsOtherDisplay: boolean = false;
   loanAmountOtherDisplay: boolean = false;
+  private originalLoanAmount: string = '';
+  private originalRequestDate: string = '';
 
   constructor(
     public auth: AuthService,
@@ -66,6 +68,8 @@ export class RequestUpdateComponent implements OnInit {
       this.client.loanAmount === undefined ? '' : this.client.loanAmount;
     this.requestDate =
       this.client.requestDate === undefined ? '' : this.client.requestDate;
+    this.originalLoanAmount = this.loanAmount;
+    this.originalRequestDate = this.requestDate;
   }
 
   retrieveEmployees(): void {
@@ -102,24 +106,15 @@ export class RequestUpdateComponent implements OnInit {
 
   registerClientNewDebtCycle() {
     let inputValid = this.data.numbersValid(
-      this.loanAmount,
-      this.savings,
-      this.applicationFee,
-      this.memberShipFee
+      ...[this.loanAmount, this.savings, this.applicationFee, this.memberShipFee]
+        .filter((value) => this.hasValue(value))
+        .map((value) => String(value))
     );
-    let checkDate = this.time.validateDateWithInOneWeekNotPastOrTodayCard(
-      this.requestDate
-    );
-    if (
-      this.loanAmount === '' ||
-      this.applicationFee === '' ||
-      this.middleName === '' ||
-      this.memberShipFee === '' ||
-      this.requestDate === ''
-    ) {
-      alert('Completer tous les données');
-      return;
-    } else if (!inputValid) {
+    let checkDate =
+      !this.hasValue(this.requestDate) ||
+      !this.isDateInputValue(this.requestDate) ||
+      this.time.validateDateWithInOneWeekNotPastOrTodayCard(this.requestDate);
+    if (!inputValid) {
       alert(
         'Assurez-vous que tous les nombres sont valides et supérieurs ou égaux à 0'
       );
@@ -138,6 +133,12 @@ export class RequestUpdateComponent implements OnInit {
         return;
       }
       this.setClientNewDebtCycleValues();
+      const shouldUpdateDailyMoneyRequests =
+        this.hasValue(this.client.requestAmount) &&
+        this.hasValue(this.client.requestDate) &&
+        (this.loanAmount !== this.originalLoanAmount ||
+          this.requestDate !== this.originalRequestDate);
+
       this.data
         .registerClientRequestUpdate(this.client)
 
@@ -163,22 +164,24 @@ export class RequestUpdateComponent implements OnInit {
       // });
 
       let date = this.time.todaysDateMonthDayYear();
-      this.data
-        .updateUserInfoForRegisterClientRequestUpdate(
-          this.client,
-          this.savings,
-          date
-        )
-        .then(
-          (res: any) => {
-            console.log('Informations utilisateur mises à jour avec succès');
-          },
-          (err: any) => {
-            alert(
-              "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
-            );
-          }
-        );
+      if (shouldUpdateDailyMoneyRequests) {
+        this.data
+          .updateUserInfoForRegisterClientRequestUpdate(
+            this.client,
+            this.savings,
+            date
+          )
+          .then(
+            (res: any) => {
+              console.log('Informations utilisateur mises à jour avec succès');
+            },
+            (err: any) => {
+              alert(
+                "Quelque chose s'est mal passé. Impossible de proceder avec le nouveau cycle!"
+              );
+            }
+          );
+      }
 
       this.resetFields();
       return;
@@ -201,9 +204,13 @@ export class RequestUpdateComponent implements OnInit {
     this.middleName = '';
   }
   setClientNewDebtCycleValues() {
-    this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
+    if (this.hasValue(this.requestDate) && this.isDateInputValue(this.requestDate)) {
+      this.requestDate = this.time.convertDateToMonthDayYear(this.requestDate);
+    }
 
-    this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
+    if (this.hasValue(this.savings)) {
+      this.client.savingsPayments = { [this.time.todaysDate()]: this.savings };
+    }
     this.client.applicationFee = this.applicationFee;
     this.client.middleName = this.middleName;
     this.client.membershipFee = this.memberShipFee;
@@ -211,5 +218,17 @@ export class RequestUpdateComponent implements OnInit {
     this.client.requestAmount = this.loanAmount;
     this.client.requestDate = this.requestDate;
     this.client.dateOfRequest = this.time.todaysDate();
+  }
+
+  private hasValue(value: any): boolean {
+    return value !== undefined && value !== null && String(value).trim() !== '';
+  }
+
+  private isDateInputValue(value: string): boolean {
+    return /^\d{4}-\d{1,2}-\d{1,2}$/.test(value);
+  }
+
+  get canUpdateClientFields(): boolean {
+    return this.auth.isAdmin || this.auth.isAuditTeamViewer;
   }
 }

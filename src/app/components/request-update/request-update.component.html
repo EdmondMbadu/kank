@@ -11,25 +11,25 @@
      
         <div>
             <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Nom</label>
-            <input  [disabled]="!this.auth.isAdmin" type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" [(ngModel)]="client.lastName" required>
+            <input  [disabled]="!canUpdateClientFields" type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Nkokori" [(ngModel)]="client.lastName">
         </div>   
         <div>
             <label for="last_name" class="block mb-2 text-sm font-medium text-gray-900 ">Postnom</label>
-            <input  [disabled]="!this.auth.isAdmin" type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName" required>
+            <input  [disabled]="!canUpdateClientFields" type="text" id="last_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="" [(ngModel)]="middleName">
         </div> 
          
     </div>
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
             <label for="first_name" class="block mb-2 text-sm font-medium text-gray-900">Prenom</label>
-            <input  [disabled]="!this.auth.isAdmin" type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" required [(ngModel)]="client.firstName">
+            <input  [disabled]="!canUpdateClientFields" type="text" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Rebecca" [(ngModel)]="client.firstName">
         </div>
    
        
    
         <div>
             <label for="telelphone" class="block mb-2 text-sm font-medium text-gray-900 ">Telephone</label>
-            <input [disabled]="!this.auth.isAdmin" type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" required pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="client.phoneNumber">
+            <input [disabled]="!canUpdateClientFields" type="tel" id="phone" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="123456789" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" [(ngModel)]="client.phoneNumber">
 
 
         </div>
@@ -38,21 +38,21 @@
     <div class="grid gap-6 mb-6 md:grid-cols-2">
         <div>
             <label for="profession" class="block mb-2 text-sm font-medium text-gray-900">Profession</label>
-            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" required [(ngModel)]="client.profession">
+            <input type="text" id="profession" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Saleswoman" [(ngModel)]="client.profession">
         </div>
         <div>
             <label for="bcapital" class="block mb-2 text-sm font-medium text-gray-900 "> Captial (FC)</label>
-            <input type="text" id="bcapital" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="50000" required [(ngModel)]="client.businessCapital">
+            <input type="text" id="bcapital" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="50000" [(ngModel)]="client.businessCapital">
         </div>   
          
     </div>
     <div class="mb-6">
         <label for="address" class="block mb-2 text-sm font-medium text-gray-900 "> Addresse Domicile</label>
-        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.homeAddress">
+        <input type="text" id="address" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" [(ngModel)]="client.homeAddress">
     </div> 
     <div class="mb-6">
         <label for="address" class="block mb-2 text-sm font-medium text-gray-900 ">Address Business</label>
-        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" required [(ngModel)]="client.businessAddress">
+        <input type="text" id="baddress" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Kimayala 41 Mont-Ngafula" [(ngModel)]="client.businessAddress">
     </div> 
 
    
@@ -61,7 +61,7 @@
 
     <div class="mb-6">
         <label for="applicationFee" class="block mb-2 text-sm font-medium text-gray-900">Frais De Dossier</label>
-        <select  [disabled]="!this.auth.isAdmin" id="applicationFee" [(ngModel)]="applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
+        <select  [disabled]="!canUpdateClientFields" id="applicationFee" [(ngModel)]="applicationFee"class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayApplicationFeeOtherAmount()">
         <option selected>Choose</option>
         <option [ngValue]="0">FC 0</option>
         <option [ngValue]="5000">FC 5000</option>
@@ -73,11 +73,11 @@
     </div>
     <div *ngIf="applicationFeeOtherDisplay" class="mb-6">
         <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais De Dossier Autre Montant</label>
-        <input type="text" [(ngModel)]="applicationFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+        <input type="text" [(ngModel)]="applicationFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000">
     </div> 
     <div class="mb-6">
         <label for="memberFee" class="block mb-2 text-sm font-medium text-gray-900">Frais D'Adhesion</label>
-        <select  [disabled]="!this.auth.isAdmin" id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaymemberShipFeeOtherAmount()">
+        <select  [disabled]="!canUpdateClientFields" id="memberFee" [(ngModel)]="memberShipFee" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  "(change)="displaymemberShipFeeOtherAmount()">
         <option selected>Choose</option>
         <option [ngValue]="0">FC 0</option>
         <option [ngValue]="5000">FC 5000</option>
@@ -89,14 +89,14 @@
     </div>
     <div *ngIf="memberShipFeeOtherDisplay" class="mb-6">
         <label for="savings" class="block mb-2 text-sm font-medium text-gray-900 "> Frais D'Adhesion Autre Montant</label>
-        <input type="text" [(ngModel)]="memberShipFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+        <input type="text" [(ngModel)]="memberShipFee"id="savings" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000">
     </div> 
 
     
     
     <div class="mb-6">
         <label for="countries" class="block mb-2 text-sm font-medium text-red-700">Montant Demandé</label>
-        <select [disabled]="!this.auth.isAdmin" id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
+        <select [disabled]="!canUpdateClientFields" id="countries"[(ngModel)]="loanAmount"  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " (change)="displayLoanOtherAmount()">
         <option selected>Choose</option>
         <option [ngValue]="100000">FC 100,000</option>
         <option [ngValue]="200000">FC 200,000</option>
@@ -107,7 +107,7 @@
     </div>
     <div *ngIf="loanAmountOtherDisplay" class="mb-6">
         <label for="laon" class="block mb-2 text-sm font-medium text-gray-900 "> Montant De Prêt Autre Montant</label>
-        <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000" required>
+        <input type="text" [(ngModel)]="loanAmount"id="loanAmount" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="FC20,000">
     </div> 
 
 <!-- <div class="mb-6">
@@ -137,7 +137,7 @@
 
 <div class="mb-4">
     <label for="start_date" class="block mb-2 text-sm font-medium text-gray-900">Date De Donner L'Argent au Client</label>
-    <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023" required>
+    <input [(ngModel)]="requestDate" type="date" id="first_name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5  " placeholder="11-2-2023">
   
 </div>
 
@@ -151,6 +151,5 @@
 
 
 </div>
-
 
 

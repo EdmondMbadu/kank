@@ -45,6 +45,17 @@ export class DataService {
     private router: Router
   ) {}
 
+  private removeUndefinedFields<T extends Record<string, any>>(
+    data: T
+  ): Partial<T> {
+    return Object.entries(data).reduce((clean, [key, value]) => {
+      if (value !== undefined) {
+        clean[key as keyof T] = value;
+      }
+      return clean;
+    }, {} as Partial<T>);
+  }
+
   private buildMoneyInHandsActivity(
     previousAmount: number,
     newAmount: number,
@@ -1460,7 +1471,7 @@ export class DataService {
   }
 
   registerClientRequestUpdate(client: Client) {
-    const data = {
+    const data = this.removeUndefinedFields({
       firstName: client.firstName,
       lastName: client.lastName,
       middleName: client.middleName,
@@ -1488,15 +1499,18 @@ export class DataService {
       requestType: 'lending',
       requestDate: client.requestDate,
       dateOfRequest: client.dateOfRequest,
-    };
+    });
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`
     );
     return clientRef
       .set(data, { merge: true })
       .then(() => {
-        // Explicitly set `savingsPayments` to ensure it is not merged
-        clientRef.update({ savingsPayments: client.savingsPayments });
+        if (client.savingsPayments !== undefined) {
+          // Explicitly set `savingsPayments` to ensure it is not merged
+          return clientRef.update({ savingsPayments: client.savingsPayments });
+        }
+        return Promise.resolve();
       })
       .catch((error) => console.error('Failed to update client data:', error));
     // return clientRef.set(data, { merge: true });
