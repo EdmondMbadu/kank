@@ -72,6 +72,7 @@ type TrophyMissingGroup = {
 
 type BulkMessageLogDocument = {
   type?: BulkLogContext;
+  source?: string;
   sentAt?: any;
   sentAtMs?: number;
   total: number;
@@ -90,6 +91,16 @@ type BulkMessageLog = BulkMessageLogDocument & {
   sentAtDate: Date;
   locationEntries: { name: string; count: number }[];
   typeLabel: string;
+};
+
+type BirthdayHistoryDayOption = {
+  dateKey: string;
+  label: string;
+  shortLabel: string;
+  isToday: boolean;
+  total: number;
+  succeeded: number;
+  failed: number;
 };
 
 type ScheduledBulkStatus =
@@ -297,6 +308,18 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   birthdayAutomationSettingsLoading = false;
   birthdayAutomationSettingsSaving = false;
   birthdayAutomationSettingsError: string | null = null;
+  birthdayHistoryMonth = this.formatMonthKeyForTimeZone(
+    new Date(),
+    'Africa/Kinshasa'
+  );
+  birthdayHistoryDateKey = this.formatDateKeyForTimeZone(
+    new Date(),
+    'Africa/Kinshasa'
+  );
+  birthdayHistoryLogs: BulkMessageLog[] = [];
+  birthdayHistoryLoading = false;
+  birthdayHistoryError: string | null = null;
+  birthdayHistoryWarning: string | null = null;
   birthdayAutomationDebtModes: BirthdayAutomationDebtMode[] = [
     'all',
     'withDebt',
@@ -449,6 +472,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     }
 
     this.listenToBulkLogs();
+    this.listenToBirthdayHistoryLogsForMonth();
     this.listenToScheduledBulkMessages();
     this.loadPaymentReminderLogsForDate();
     this.loadScheduledReminderSendMode();
@@ -4508,6 +4532,7 @@ Merci pour ta confiance !`;
   showAllBulkLogs = false;
 
   private bulkLogsSub?: Subscription;
+  private birthdayHistorySub?: Subscription;
   scheduledBulkMessages: ScheduledBulkMessage[] = [];
   scheduledBulkLoading = false;
   scheduledBulkError: string | null = null;
@@ -4527,6 +4552,7 @@ Merci pour ta confiance !`;
   ngOnDestroy(): void {
     this.contactsSub?.unsubscribe();
     this.bulkLogsSub?.unsubscribe();
+    this.birthdayHistorySub?.unsubscribe();
     this.scheduledBulkSub?.unsubscribe();
   }
 
@@ -5017,6 +5043,101 @@ Merci pona confiance na FONDATION GERVAIS.`;
     this.showAllBulkLogs = !this.showAllBulkLogs;
   }
 
+  get birthdayHistoryMonthLabel(): string {
+    const [year, month] = this.birthdayHistoryMonth.split('-').map(Number);
+    if (!year || !month) return this.birthdayHistoryMonth;
+    return new Date(year, month - 1, 1, 12).toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  get birthdayHistoryDayOptions(): BirthdayHistoryDayOption[] {
+    const [year, month] = this.birthdayHistoryMonth.split('-').map(Number);
+    if (!year || !month) return [];
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const todayKey = this.formatDateKeyForTimeZone(
+      new Date(),
+      'Africa/Kinshasa'
+    );
+    const summaries = this.birthdayHistoryDaySummaryMap();
+
+    return Array.from({ length: daysInMonth }, (_, index) => {
+      const date = new Date(year, month - 1, index + 1, 12);
+      const dateKey = this.formatDateKeyForInput(date);
+      const summary = summaries.get(dateKey);
+      return {
+        dateKey,
+        label: date.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        }),
+        shortLabel: date.toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'short',
+        }),
+        isToday: dateKey === todayKey,
+        total: summary?.total || 0,
+        succeeded: summary?.succeeded || 0,
+        failed: summary?.failed || 0,
+      };
+    });
+  }
+
+  get birthdayHistoryDaysWithLogs(): BirthdayHistoryDayOption[] {
+    return this.birthdayHistoryDayOptions.filter((day) => day.total > 0);
+  }
+
+  get selectedBirthdayHistoryDayLabel(): string {
+    const option = this.birthdayHistoryDayOptions.find(
+      (day) => day.dateKey === this.birthdayHistoryDateKey
+    );
+    return option?.label || this.birthdayHistoryDateKey;
+  }
+
+  get selectedBirthdayHistoryLogs(): BulkMessageLog[] {
+    return this.birthdayHistoryLogs.filter(
+      (log) =>
+        this.formatDateKeyForTimeZone(log.sentAtDate, 'Africa/Kinshasa') ===
+        this.birthdayHistoryDateKey
+    );
+  }
+
+  get selectedBirthdayHistorySummary(): BirthdayHistoryDayOption {
+    return (
+      this.birthdayHistoryDayOptions.find(
+        (day) => day.dateKey === this.birthdayHistoryDateKey
+      ) || {
+        dateKey: this.birthdayHistoryDateKey,
+        label: this.birthdayHistoryDateKey,
+        shortLabel: this.birthdayHistoryDateKey,
+        isToday: false,
+        total: 0,
+        succeeded: 0,
+        failed: 0,
+      }
+    );
+  }
+
+  onBirthdayHistoryMonthChange(event: Event): void {
+    const value =
+      (event.target as HTMLInputElement | null)?.value?.trim() || '';
+    if (!/^\d{4}-\d{2}$/.test(value) || value === this.birthdayHistoryMonth) {
+      return;
+    }
+
+    this.birthdayHistoryMonth = value;
+    this.birthdayHistoryDateKey = this.defaultBirthdayHistoryDateForMonth(value);
+    this.listenToBirthdayHistoryLogsForMonth();
+  }
+
+  setBirthdayHistoryDate(value: string): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    this.birthdayHistoryDateKey = value;
+  }
+
   get visibleScheduledBulkMessages(): ScheduledBulkMessage[] {
     if (this.showAllScheduledBulk) {
       return this.scheduledBulkMessages;
@@ -5035,6 +5156,14 @@ Merci pona confiance na FONDATION GERVAIS.`;
 
   trackBulkLog(index: number, log: BulkMessageLog): string {
     return log.id;
+  }
+
+  trackBirthdayHistoryLog(index: number, log: BulkMessageLog): string {
+    return log.id;
+  }
+
+  trackBirthdayHistoryDay(index: number, day: BirthdayHistoryDayOption): string {
+    return day.dateKey;
   }
 
   private listenToBulkLogs(): void {
@@ -5061,6 +5190,72 @@ Merci pona confiance na FONDATION GERVAIS.`;
           console.error('Bulk log listener error', error);
           this.bulkLogsError = "Impossible de charger l'historique.";
           this.bulkLogsLoading = false;
+        },
+      });
+  }
+
+  private listenToBirthdayHistoryLogsForMonth(): void {
+    this.birthdayHistoryLoading = true;
+    this.birthdayHistoryError = null;
+    this.birthdayHistoryWarning = null;
+    this.birthdayHistorySub?.unsubscribe();
+
+    const { startMs, endMs } = this.birthdayHistoryQueryRange(
+      this.birthdayHistoryMonth
+    );
+    const limit = 300;
+
+    this.birthdayHistorySub = this.afs
+      .collection<BulkMessageLogDocument>('bulk_message_logs', (ref) =>
+        ref
+          .where('sentAtMs', '>=', startMs)
+          .where('sentAtMs', '<', endMs)
+          .orderBy('sentAtMs', 'desc')
+          .limit(limit)
+      )
+      .snapshotChanges()
+      .subscribe({
+        next: (snaps) => {
+          this.birthdayHistoryLogs = snaps
+            .map((snap) =>
+              this.transformBulkLogDocument(
+                snap.payload.doc.id,
+                snap.payload.doc.data()
+              )
+            )
+            .filter(
+              (log) =>
+                this.isBirthdayHistoryLog(log) &&
+                this.formatMonthKeyForTimeZone(
+                  log.sentAtDate,
+                  'Africa/Kinshasa'
+                ) === this.birthdayHistoryMonth
+            );
+
+          if (
+            this.birthdayHistoryLogs.length &&
+            !this.birthdayHistoryDayOptions.some(
+              (day) => day.dateKey === this.birthdayHistoryDateKey
+            )
+          ) {
+            this.birthdayHistoryDateKey =
+              this.formatDateKeyForTimeZone(
+                this.birthdayHistoryLogs[0].sentAtDate,
+                'Africa/Kinshasa'
+              );
+          }
+
+          this.birthdayHistoryWarning =
+            snaps.length >= limit
+              ? 'Historique limité aux 300 derniers envois du mois.'
+              : null;
+          this.birthdayHistoryLoading = false;
+        },
+        error: (error) => {
+          console.error('Birthday history listener error', error);
+          this.birthdayHistoryError =
+            "Impossible de charger l'historique des anniversaires.";
+          this.birthdayHistoryLoading = false;
         },
       });
   }
@@ -5541,6 +5736,75 @@ Merci pona confiance na FONDATION GERVAIS.`;
       if (part.type !== 'literal') values[part.type] = part.value;
     }
     return `${values['year']}-${values['month']}-${values['day']}`;
+  }
+
+  private formatMonthKeyForTimeZone(date: Date, timeZone: string): string {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+    });
+    const parts = formatter.formatToParts(date);
+    const values: Record<string, string> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') values[part.type] = part.value;
+    }
+    return `${values['year']}-${values['month']}`;
+  }
+
+  private defaultBirthdayHistoryDateForMonth(monthKey: string): string {
+    const todayKey = this.formatDateKeyForTimeZone(
+      new Date(),
+      'Africa/Kinshasa'
+    );
+    if (todayKey.startsWith(`${monthKey}-`)) return todayKey;
+    return `${monthKey}-01`;
+  }
+
+  private birthdayHistoryQueryRange(monthKey: string): {
+    startMs: number;
+    endMs: number;
+  } {
+    const [year, month] = monthKey.split('-').map(Number);
+    if (!year || !month) {
+      const now = Date.now();
+      return { startMs: now - 32 * 24 * 60 * 60 * 1000, endMs: now };
+    }
+
+    const start = new Date(year, month - 1, 1, 0, 0, 0);
+    start.setDate(start.getDate() - 1);
+    const end = new Date(year, month, 1, 0, 0, 0);
+    end.setDate(end.getDate() + 1);
+    return { startMs: start.getTime(), endMs: end.getTime() };
+  }
+
+  private birthdayHistoryDaySummaryMap(): Map<
+    string,
+    { total: number; succeeded: number; failed: number }
+  > {
+    const summaries = new Map<
+      string,
+      { total: number; succeeded: number; failed: number }
+    >();
+
+    for (const log of this.birthdayHistoryLogs) {
+      const dateKey = this.formatDateKeyForTimeZone(
+        log.sentAtDate,
+        'Africa/Kinshasa'
+      );
+      const current =
+        summaries.get(dateKey) || { total: 0, succeeded: 0, failed: 0 };
+      current.total += Number(log.total) || 0;
+      current.succeeded += Number(log.succeeded) || 0;
+      current.failed += Number(log.failed) || 0;
+      summaries.set(dateKey, current);
+    }
+
+    return summaries;
+  }
+
+  private isBirthdayHistoryLog(log: BulkMessageLog): boolean {
+    return log.type === 'birthdays' || log.type === 'birthday_tomorrow';
   }
 
   private formatDateTimeForTimeZone(date: Date, timeZone: string): string {
