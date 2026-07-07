@@ -93,16 +93,6 @@ type BulkMessageLog = BulkMessageLogDocument & {
   typeLabel: string;
 };
 
-type BirthdayHistoryDayOption = {
-  dateKey: string;
-  label: string;
-  shortLabel: string;
-  isToday: boolean;
-  total: number;
-  succeeded: number;
-  failed: number;
-};
-
 type ScheduledBulkStatus =
   | 'scheduled'
   | 'processing'
@@ -309,10 +299,6 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   birthdayAutomationSettingsSaving = false;
   birthdayAutomationSettingsError: string | null = null;
   birthdayHistoryMonth = this.formatMonthKeyForTimeZone(
-    new Date(),
-    'Africa/Kinshasa'
-  );
-  birthdayHistoryDateKey = this.formatDateKeyForTimeZone(
     new Date(),
     'Africa/Kinshasa'
   );
@@ -5052,72 +5038,19 @@ Merci pona confiance na FONDATION GERVAIS.`;
     });
   }
 
-  get birthdayHistoryDayOptions(): BirthdayHistoryDayOption[] {
-    const [year, month] = this.birthdayHistoryMonth.split('-').map(Number);
-    if (!year || !month) return [];
-
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const todayKey = this.formatDateKeyForTimeZone(
-      new Date(),
-      'Africa/Kinshasa'
-    );
-    const summaries = this.birthdayHistoryDaySummaryMap();
-
-    return Array.from({ length: daysInMonth }, (_, index) => {
-      const date = new Date(year, month - 1, index + 1, 12);
-      const dateKey = this.formatDateKeyForInput(date);
-      const summary = summaries.get(dateKey);
-      return {
-        dateKey,
-        label: date.toLocaleDateString('fr-FR', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        }),
-        shortLabel: date.toLocaleDateString('fr-FR', {
-          day: 'numeric',
-          month: 'short',
-        }),
-        isToday: dateKey === todayKey,
-        total: summary?.total || 0,
-        succeeded: summary?.succeeded || 0,
-        failed: summary?.failed || 0,
-      };
-    });
-  }
-
-  get birthdayHistoryDaysWithLogs(): BirthdayHistoryDayOption[] {
-    return this.birthdayHistoryDayOptions.filter((day) => day.total > 0);
-  }
-
-  get selectedBirthdayHistoryDayLabel(): string {
-    const option = this.birthdayHistoryDayOptions.find(
-      (day) => day.dateKey === this.birthdayHistoryDateKey
-    );
-    return option?.label || this.birthdayHistoryDateKey;
-  }
-
-  get selectedBirthdayHistoryLogs(): BulkMessageLog[] {
-    return this.birthdayHistoryLogs.filter(
-      (log) =>
-        this.formatDateKeyForTimeZone(log.sentAtDate, 'Africa/Kinshasa') ===
-        this.birthdayHistoryDateKey
-    );
-  }
-
-  get selectedBirthdayHistorySummary(): BirthdayHistoryDayOption {
-    return (
-      this.birthdayHistoryDayOptions.find(
-        (day) => day.dateKey === this.birthdayHistoryDateKey
-      ) || {
-        dateKey: this.birthdayHistoryDateKey,
-        label: this.birthdayHistoryDateKey,
-        shortLabel: this.birthdayHistoryDateKey,
-        isToday: false,
-        total: 0,
-        succeeded: 0,
-        failed: 0,
-      }
+  get birthdayHistoryMonthSummary(): {
+    total: number;
+    succeeded: number;
+    failed: number;
+  } {
+    return this.birthdayHistoryLogs.reduce(
+      (summary, log) => {
+        summary.total += Number(log.total) || 0;
+        summary.succeeded += Number(log.succeeded) || 0;
+        summary.failed += Number(log.failed) || 0;
+        return summary;
+      },
+      { total: 0, succeeded: 0, failed: 0 }
     );
   }
 
@@ -5129,13 +5062,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
     }
 
     this.birthdayHistoryMonth = value;
-    this.birthdayHistoryDateKey = this.defaultBirthdayHistoryDateForMonth(value);
     this.listenToBirthdayHistoryLogsForMonth();
-  }
-
-  setBirthdayHistoryDate(value: string): void {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
-    this.birthdayHistoryDateKey = value;
   }
 
   get visibleScheduledBulkMessages(): ScheduledBulkMessage[] {
@@ -5160,10 +5087,6 @@ Merci pona confiance na FONDATION GERVAIS.`;
 
   trackBirthdayHistoryLog(index: number, log: BulkMessageLog): string {
     return log.id;
-  }
-
-  trackBirthdayHistoryDay(index: number, day: BirthdayHistoryDayOption): string {
-    return day.dateKey;
   }
 
   private listenToBulkLogs(): void {
@@ -5231,19 +5154,6 @@ Merci pona confiance na FONDATION GERVAIS.`;
                   'Africa/Kinshasa'
                 ) === this.birthdayHistoryMonth
             );
-
-          if (
-            this.birthdayHistoryLogs.length &&
-            !this.birthdayHistoryDayOptions.some(
-              (day) => day.dateKey === this.birthdayHistoryDateKey
-            )
-          ) {
-            this.birthdayHistoryDateKey =
-              this.formatDateKeyForTimeZone(
-                this.birthdayHistoryLogs[0].sentAtDate,
-                'Africa/Kinshasa'
-              );
-          }
 
           this.birthdayHistoryWarning =
             snaps.length >= limit
@@ -5752,15 +5662,6 @@ Merci pona confiance na FONDATION GERVAIS.`;
     return `${values['year']}-${values['month']}`;
   }
 
-  private defaultBirthdayHistoryDateForMonth(monthKey: string): string {
-    const todayKey = this.formatDateKeyForTimeZone(
-      new Date(),
-      'Africa/Kinshasa'
-    );
-    if (todayKey.startsWith(`${monthKey}-`)) return todayKey;
-    return `${monthKey}-01`;
-  }
-
   private birthdayHistoryQueryRange(monthKey: string): {
     startMs: number;
     endMs: number;
@@ -5776,31 +5677,6 @@ Merci pona confiance na FONDATION GERVAIS.`;
     const end = new Date(year, month, 1, 0, 0, 0);
     end.setDate(end.getDate() + 1);
     return { startMs: start.getTime(), endMs: end.getTime() };
-  }
-
-  private birthdayHistoryDaySummaryMap(): Map<
-    string,
-    { total: number; succeeded: number; failed: number }
-  > {
-    const summaries = new Map<
-      string,
-      { total: number; succeeded: number; failed: number }
-    >();
-
-    for (const log of this.birthdayHistoryLogs) {
-      const dateKey = this.formatDateKeyForTimeZone(
-        log.sentAtDate,
-        'Africa/Kinshasa'
-      );
-      const current =
-        summaries.get(dateKey) || { total: 0, succeeded: 0, failed: 0 };
-      current.total += Number(log.total) || 0;
-      current.succeeded += Number(log.succeeded) || 0;
-      current.failed += Number(log.failed) || 0;
-      summaries.set(dateKey, current);
-    }
-
-    return summaries;
   }
 
   private isBirthdayHistoryLog(log: BulkMessageLog): boolean {

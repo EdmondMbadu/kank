@@ -507,11 +507,11 @@
                   Historique anniversaires
                 </h3>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Consultez les envois du jour, puis revenez sur un autre jour ou un autre mois.
+                  Consultez les messages anniversaire envoyés pendant le mois choisi.
                 </p>
               </div>
 
-              <div class="grid gap-2 sm:grid-cols-2">
+              <div class="w-full sm:w-48">
                 <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
                   Mois
                   <input
@@ -521,51 +521,16 @@
                     class="mt-1 block h-9 w-full rounded-full border border-indigo-200 bg-white px-3 text-xs font-semibold normal-case tracking-normal text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-900 dark:text-slate-100"
                   />
                 </label>
-                <label class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-300">
-                  Jour
-                  <select
-                    [value]="birthdayHistoryDateKey"
-                    (change)="setBirthdayHistoryDate($any($event.target).value)"
-                    class="mt-1 block h-9 w-full rounded-full border border-indigo-200 bg-white px-3 text-xs font-semibold normal-case tracking-normal text-slate-700 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-900 dark:text-slate-100"
-                  >
-                    <option
-                      *ngFor="let day of birthdayHistoryDayOptions; trackBy: trackBirthdayHistoryDay"
-                      [value]="day.dateKey"
-                    >
-                      {{ day.label }} · {{ day.total }} envoyé(s)
-                    </option>
-                  </select>
-                </label>
               </div>
-            </div>
-
-            <div
-              *ngIf="birthdayHistoryDaysWithLogs.length"
-              class="mt-4 flex flex-wrap gap-2"
-            >
-              <button
-                *ngFor="let day of birthdayHistoryDaysWithLogs; trackBy: trackBirthdayHistoryDay"
-                type="button"
-                (click)="setBirthdayHistoryDate(day.dateKey)"
-                class="rounded-full border px-3 py-1.5 text-[11px] font-semibold transition"
-                [class.border-indigo-600]="day.dateKey === birthdayHistoryDateKey"
-                [class.bg-indigo-600]="day.dateKey === birthdayHistoryDateKey"
-                [class.text-white]="day.dateKey === birthdayHistoryDateKey"
-                [class.border-indigo-200]="day.dateKey !== birthdayHistoryDateKey"
-                [class.bg-white]="day.dateKey !== birthdayHistoryDateKey"
-                [class.text-indigo-700]="day.dateKey !== birthdayHistoryDateKey"
-              >
-                {{ day.shortLabel }} · {{ day.succeeded }}/{{ day.total }}
-              </button>
             </div>
 
             <div class="mt-4 grid gap-3 sm:grid-cols-3">
               <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm dark:bg-slate-900/60 dark:text-slate-200">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Jour sélectionné
+                  Mois sélectionné
                 </p>
                 <p class="mt-1 text-base font-semibold text-slate-900 dark:text-white">
-                  {{ selectedBirthdayHistoryDayLabel }}
+                  {{ birthdayHistoryMonthLabel }}
                 </p>
               </div>
               <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-emerald-700 shadow-sm dark:bg-slate-900/60 dark:text-emerald-300">
@@ -573,7 +538,7 @@
                   Réussis
                 </p>
                 <p class="mt-1 text-2xl font-semibold">
-                  {{ selectedBirthdayHistorySummary.succeeded | number : "1.0-0" }}
+                  {{ birthdayHistoryMonthSummary.succeeded | number : "1.0-0" }}
                 </p>
               </div>
               <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-rose-700 shadow-sm dark:bg-slate-900/60 dark:text-rose-300">
@@ -581,7 +546,7 @@
                   Échecs
                 </p>
                 <p class="mt-1 text-2xl font-semibold">
-                  {{ selectedBirthdayHistorySummary.failed | number : "1.0-0" }}
+                  {{ birthdayHistoryMonthSummary.failed | number : "1.0-0" }}
                 </p>
               </div>
             </div>
@@ -606,15 +571,15 @@
             </p>
 
             <div
-              *ngIf="!birthdayHistoryLoading && !birthdayHistoryError && !selectedBirthdayHistoryLogs.length"
+              *ngIf="!birthdayHistoryLoading && !birthdayHistoryError && !birthdayHistoryLogs.length"
               class="mt-4 rounded-xl border border-dashed border-indigo-200 bg-white/70 px-3 py-3 text-xs text-indigo-700 dark:border-indigo-900 dark:bg-slate-900/40 dark:text-indigo-300"
             >
-              Aucun message anniversaire envoyé ce jour.
+              Aucun message anniversaire envoyé pendant ce mois.
             </div>
 
-            <div class="mt-4 space-y-3" *ngIf="selectedBirthdayHistoryLogs.length">
+            <div class="mt-4 space-y-3" *ngIf="birthdayHistoryLogs.length">
               <article
-                *ngFor="let log of selectedBirthdayHistoryLogs; trackBy: trackBirthdayHistoryLog"
+                *ngFor="let log of birthdayHistoryLogs; trackBy: trackBirthdayHistoryLog"
                 class="rounded-2xl border border-indigo-100 bg-white/85 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-slate-900/60"
               >
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -623,7 +588,7 @@
                       {{ log.typeLabel }}
                     </p>
                     <p class="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {{ log.sentAtDate | date : "HH:mm:ss" }} · {{ log.sentBy || "—" }}
+                      {{ log.sentAtDate | date : "EEEE d MMMM HH:mm:ss" }} · {{ log.sentBy || "—" }}
                     </p>
                   </div>
                   <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -651,6 +616,9 @@
                   *ngIf="log.messagePreview"
                   class="mt-3 whitespace-pre-line rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300"
                 >
+                  <span class="mb-1 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Message envoyé
+                  </span>
                   {{ log.messagePreview }}
                 </p>
 
