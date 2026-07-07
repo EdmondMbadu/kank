@@ -387,6 +387,29 @@ export class RegiserPortalComponent {
     );
   }
 
+  get selectedAuditAudioOldWarning(): string {
+    if (!this.selectedAuditAudioFile) return '';
+
+    const recordedAt = this.selectedAuditAudioRecordedDate();
+    if (!recordedAt) return '';
+
+    const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+    const ageMs = Date.now() - recordedAt.getTime();
+    if (ageMs < twoDaysMs) return '';
+
+    const formatted = recordedAt.toLocaleString('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    return `Attention : cet audio semble très ancien. Il date du ${formatted}. Vous pouvez continuer, mais vérifiez bien que c’est le bon audio de conversation avec ce client.`;
+  }
+
   get canAddAuditClientComment(): boolean {
     return this.auth.isAdmninistrator || this.auth.isDistributoring;
   }
@@ -1480,6 +1503,13 @@ export class RegiserPortalComponent {
     }
 
     return recordedAt.toISOString();
+  }
+
+  private selectedAuditAudioRecordedDate(): Date | null {
+    if (!this.selectedAuditAudioFile?.lastModified) return null;
+
+    const recordedAt = new Date(this.selectedAuditAudioFile.lastModified);
+    return Number.isNaN(recordedAt.getTime()) ? null : recordedAt;
   }
 
   private async uploadAuditClientCommentAttachment(file: File): Promise<any> {
