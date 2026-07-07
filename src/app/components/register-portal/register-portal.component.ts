@@ -135,6 +135,7 @@ export class RegiserPortalComponent {
   url: string = '';
   agentVerifyingName: string = '';
   agentSubmmittedVerification: string = '';
+  agentVerifiedAt: string = '';
   age: number | null = null; // ← nouveau
   birthDateDisplay = '';
 
@@ -410,6 +411,10 @@ export class RegiserPortalComponent {
         this.client.agentSubmittedVerification ||
         ''
     ).toLowerCase() === 'true';
+  }
+
+  get formattedAgentVerifiedAt(): string {
+    return this.formatAgentVerifiedAt(this.agentVerifiedAt);
   }
 
   get shouldShowLatestClientCommentAttention(): boolean {
@@ -787,6 +792,8 @@ export class RegiserPortalComponent {
     try {
       this.auditVerificationSaving = true;
       let audioFields: Partial<Client> = {};
+      const verifiedAt = this.time.todaysDate();
+      const verifiedBy = String(value).trim();
 
       if (
         this.selectedAuditAudioFile &&
@@ -803,16 +810,19 @@ export class RegiserPortalComponent {
       }
 
       await this.data.setClientFields(this.client.uid, {
-        [field]: String(value).trim(),
+        [field]: verifiedBy,
         agentSubmittedVerification: 'true',
+        agentVerifiedAt: verifiedAt,
         ...audioFields,
       });
 
-      this.client.agentVerifyingName = String(value).trim();
+      this.client.agentVerifyingName = verifiedBy;
       this.client.agentSubmittedVerification = 'true';
+      this.client.agentVerifiedAt = verifiedAt;
       Object.assign(this.client, audioFields);
       this.agentSubmmittedVerification = 'true';
-      this.agentVerifyingName = String(value).trim();
+      this.agentVerifyingName = verifiedBy;
+      this.agentVerifiedAt = verifiedAt;
       alert('Confirmer avec succès');
       this.closeAuditConfirmation();
       this.clearSelectedAuditAudio();
@@ -836,6 +846,9 @@ export class RegiserPortalComponent {
     if (this.client.agentSubmittedVerification) {
       this.agentSubmmittedVerification =
         this.client.agentSubmittedVerification!;
+    }
+    if (this.client.agentVerifiedAt) {
+      this.agentVerifiedAt = this.client.agentVerifiedAt;
     }
     if (this.client.dateJoined) {
       this.dateJoined = this.time.formatDateForDRC(this.client.dateJoined);
@@ -1238,6 +1251,23 @@ export class RegiserPortalComponent {
     return this.time.formatISOToDesiredDateTime(
       audio.recordedAt
     );
+  }
+
+  private formatAgentVerifiedAt(raw: string | undefined | null): string {
+    if (!raw) return '';
+
+    const parsed = this.time.parseFlexibleDateTime(raw);
+    if (Number.isNaN(parsed.getTime())) return raw;
+
+    return parsed.toLocaleString('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   }
 
   async saveAuditConversationAudioOnly(): Promise<void> {

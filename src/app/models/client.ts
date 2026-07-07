@@ -143,6 +143,7 @@ export class Client {
   isPhoneCorrect?: string;
   agentVerifyingName?: string;
   agentSubmittedVerification?: string;
+  agentVerifiedAt?: string;
   auditCommentTag?: AuditClientCommentTag | string;
   auditCommentTagLabel?: string;
   auditCommentTaggedAt?: string;

@@ -1407,6 +1407,7 @@ export class DataService {
       vitalStatus: '',
       agentVerifyingName: '',
       agentSubmittedVerification: '',
+      agentVerifiedAt: '',
       requestDate: client.requestDate,
       dateOfRequest: client.dateOfRequest,
       applicationFeePayments: client.applicationFeePayments,
