@@ -598,7 +598,7 @@
                   Historique anniversaires
                 </h3>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Consultez les messages anniversaire envoyés pendant le mois choisi.
+                  Affiche uniquement les jours où au moins un message anniversaire a été envoyé.
                 </p>
               </div>
 
@@ -623,13 +623,21 @@
                 <p class="mt-1 text-base font-semibold text-slate-900 dark:text-white">
                   {{ birthdayHistoryMonthLabel }}
                 </p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {{ birthdayHistoryMonthSummary.runs | number : "1.0-0" }}
+                  envoi(s) avec activité
+                </p>
               </div>
               <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-emerald-700 shadow-sm dark:bg-slate-900/60 dark:text-emerald-300">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-500">
-                  Réussis
+                  Messages envoyés
                 </p>
                 <p class="mt-1 text-2xl font-semibold">
                   {{ birthdayHistoryMonthSummary.succeeded | number : "1.0-0" }}
+                </p>
+                <p class="mt-1 text-xs text-emerald-700/80 dark:text-emerald-300/80">
+                  sur {{ birthdayHistoryMonthSummary.total | number : "1.0-0" }}
+                  destinataire(s)
                 </p>
               </div>
               <div class="rounded-2xl bg-white/80 px-4 py-3 text-sm text-rose-700 shadow-sm dark:bg-slate-900/60 dark:text-rose-300">
@@ -666,6 +674,31 @@
               class="mt-4 rounded-xl border border-dashed border-indigo-200 bg-white/70 px-3 py-3 text-xs text-indigo-700 dark:border-indigo-900 dark:bg-slate-900/40 dark:text-indigo-300"
             >
               Aucun message anniversaire envoyé pendant ce mois.
+            </div>
+
+            <div
+              *ngIf="birthdayHistoryMessageSummaries.length"
+              class="mt-4 rounded-2xl border border-indigo-100 bg-white/85 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-slate-900/60"
+            >
+              <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
+                Messages utilisés ce mois
+              </p>
+              <div class="mt-3 space-y-3">
+                <article
+                  *ngFor="let message of birthdayHistoryMessageSummaries"
+                  class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-300"
+                >
+                  <div class="mb-2 flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200">
+                      {{ message.succeeded | number : "1.0-0" }} envoyé(s)
+                    </span>
+                    <span class="rounded-full bg-indigo-100 px-2.5 py-1 font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200">
+                      {{ message.count | number : "1.0-0" }} utilisation(s)
+                    </span>
+                  </div>
+                  <p class="whitespace-pre-line">{{ message.text }}</p>
+                </article>
+              </div>
             </div>
 
             <div class="mt-4 space-y-3" *ngIf="birthdayHistoryLogs.length">

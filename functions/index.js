@@ -2960,23 +2960,25 @@ exports.scheduledSendBirthdayMessages = functions.pubsub
           `Sans téléphone: ${excludedNoPhone}`,
         ].join(" · ");
 
-        await db.collection("bulk_message_logs").add({
-          type: "birthdays",
-          source: "scheduled",
-          total: recipients.length,
-          succeeded,
-          failed,
-          locationTotals: aggregateClientLocations(recipients),
-          template: settings.template,
-          messagePreview: recipients[0] ?
-            personalizeBirthdayMessage(recipients[0], settings.template) :
-            "",
-          conditionSummary,
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          sentAtMs: Date.now(),
-          sentBy: `Automatique ${settings.sendTimeLocal}`,
-          sentById: null,
-        });
+        if (recipients.length > 0 || succeeded > 0 || failed > 0) {
+          await db.collection("bulk_message_logs").add({
+            type: "birthdays",
+            source: "scheduled",
+            total: recipients.length,
+            succeeded,
+            failed,
+            locationTotals: aggregateClientLocations(recipients),
+            template: settings.template,
+            messagePreview: recipients[0] ?
+              personalizeBirthdayMessage(recipients[0], settings.template) :
+              "",
+            conditionSummary,
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            sentAtMs: Date.now(),
+            sentBy: `Automatique ${settings.sendTimeLocal}`,
+            sentById: null,
+          });
+        }
 
         await runRef.set({
           status: "sent",

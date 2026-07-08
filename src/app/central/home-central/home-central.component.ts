@@ -93,6 +93,12 @@ type BulkMessageLog = BulkMessageLogDocument & {
   typeLabel: string;
 };
 
+type BirthdayHistoryMessageSummary = {
+  text: string;
+  count: number;
+  succeeded: number;
+};
+
 type ScheduledBulkStatus =
   | 'scheduled'
   | 'processing'
@@ -5108,15 +5114,39 @@ Merci pona confiance na FONDATION GERVAIS.`;
     total: number;
     succeeded: number;
     failed: number;
+    runs: number;
   } {
     return this.birthdayHistoryLogs.reduce(
       (summary, log) => {
         summary.total += Number(log.total) || 0;
         summary.succeeded += Number(log.succeeded) || 0;
         summary.failed += Number(log.failed) || 0;
+        summary.runs += 1;
         return summary;
       },
-      { total: 0, succeeded: 0, failed: 0 }
+      { total: 0, succeeded: 0, failed: 0, runs: 0 }
+    );
+  }
+
+  get birthdayHistoryMessageSummaries(): BirthdayHistoryMessageSummary[] {
+    const byMessage = new Map<string, BirthdayHistoryMessageSummary>();
+    this.birthdayHistoryLogs.forEach((log) => {
+      const text =
+        (log.template || log.messagePreview || '').trim() ||
+        'Message non enregistré';
+      const current =
+        byMessage.get(text) ||
+        ({
+          text,
+          count: 0,
+          succeeded: 0,
+        } as BirthdayHistoryMessageSummary);
+      current.count += 1;
+      current.succeeded += Number(log.succeeded) || 0;
+      byMessage.set(text, current);
+    });
+    return Array.from(byMessage.values()).sort(
+      (a, b) => b.succeeded - a.succeeded || b.count - a.count
     );
   }
 
@@ -5215,6 +5245,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
             .filter(
               (log) =>
                 this.isBirthdayHistoryLog(log) &&
+                this.hasBirthdayHistoryActivity(log) &&
                 this.formatMonthKeyForTimeZone(
                   log.sentAtDate,
                   'Africa/Kinshasa'
@@ -5747,6 +5778,14 @@ Merci pona confiance na FONDATION GERVAIS.`;
 
   private isBirthdayHistoryLog(log: BulkMessageLog): boolean {
     return log.type === 'birthdays' || log.type === 'birthday_tomorrow';
+  }
+
+  private hasBirthdayHistoryActivity(log: BulkMessageLog): boolean {
+    return (
+      (Number(log.total) || 0) > 0 ||
+      (Number(log.succeeded) || 0) > 0 ||
+      (Number(log.failed) || 0) > 0
+    );
   }
 
   private formatDateTimeForTimeZone(date: Date, timeZone: string): string {
