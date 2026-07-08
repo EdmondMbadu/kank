@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { Client } from 'src/app/models/client';
 import { Employee } from 'src/app/models/employee';
 import { User, UserDailyField } from 'src/app/models/user';
 
@@ -11,6 +12,16 @@ type TrackingMonthCentralCard = {
   imagePath: string;
   subtitle?: string;
   isNegative?: boolean;
+};
+
+type CentralLendingBorrower = {
+  id: string;
+  fullName: string;
+  locationName: string;
+  loanAmount: number;
+  dateLabel: string;
+  timestamp: number;
+  paymentPeriodRange: string;
 };
 import { AuthService } from 'src/app/services/auth.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
@@ -33,6 +44,7 @@ export class TrackingMonthCentralComponent {
       this.auth.getAllUsersInfo().subscribe((data) => {
         this.allUsers = data;
         this.initalizeInputs();
+        this.loadLendingClientsForAllLocations();
       });
       this.auth.profitabilityConfig$.subscribe((config) => {
         this.profitabilityThresholdUsd = config.thresholdUsd;
@@ -196,6 +208,10 @@ export class TrackingMonthCentralComponent {
   lendingCurrentAverageAmountDollars = 0;
   copyPaymentsMessage: string | null = null;
   isCopyingPayments = false;
+  allLendingClients: Client[] = [];
+  lendingBorrowersForMonth: CentralLendingBorrower[] = [];
+  isLendingBorrowersModalOpen = false;
+  isLoadingLendingBorrowers = false;
 
   sortedPaymentPreviousMonth: {
     firstName: string;
@@ -230,6 +246,174 @@ export class TrackingMonthCentralComponent {
   selectedPaymentLocation: string | null = null;
   selectedEntrySortieLocation: string | null = null;
   selectedLendingLocation: string | null = null;
+
+  get lendingBorrowersPeriodLabel(): string {
+    return `${this.time.monthFrenchNames[this.givenMonth - 1]} ${
+      this.givenYear
+    }`;
+  }
+
+  get lendingBorrowersTotal(): number {
+    return this.lendingBorrowersForMonth.reduce(
+      (total, borrower) => total + borrower.loanAmount,
+      0
+    );
+  }
+
+  get givenMonthTotalLendingAmountDollars(): string {
+    return `${this.compute.convertCongoleseFrancToUsDollars(
+      this.givenMonthTotalLendingAmount || '0'
+    )}`;
+  }
+
+  get lendingBorrowersLocationCount(): number {
+    return new Set(
+      this.lendingBorrowersForMonth.map((borrower) => borrower.locationName)
+    ).size;
+  }
+
+  isLendingMonthCard(card: TrackingMonthCentralCard): boolean {
+    return card.title.trim().toLowerCase() === 'emprunts du mois';
+  }
+
+  handleMonthlyCardClick(card: TrackingMonthCentralCard): void {
+    if (!this.isLendingMonthCard(card)) {
+      return;
+    }
+
+    this.openLendingBorrowersModal();
+  }
+
+  openLendingBorrowersModal(): void {
+    this.updateLendingBorrowersForSelectedPeriod();
+    this.isLendingBorrowersModalOpen = true;
+  }
+
+  closeLendingBorrowersModal(): void {
+    this.isLendingBorrowersModalOpen = false;
+  }
+
+  trackLendingBorrower(_: number, borrower: CentralLendingBorrower): string {
+    return borrower.id;
+  }
+
+  private async loadLendingClientsForAllLocations(): Promise<void> {
+    if (!this.allUsers?.length || this.isLoadingLendingBorrowers) {
+      return;
+    }
+
+    this.isLoadingLendingBorrowers = true;
+
+    try {
+      const clientGroups = await Promise.all(
+        this.allUsers
+          .filter((user) => !!user.uid)
+          .map(async (user) => {
+            const clients = (await firstValueFrom(
+              this.auth.getClientsOfAUser(user.uid!)
+            )) as Client[] | null;
+
+            return (clients || []).map((client) => ({
+              ...client,
+              locationName: client.locationName || user.firstName || 'Site',
+              locationOwnerId: client.locationOwnerId || user.uid,
+            }));
+          })
+      );
+
+      const uniqueClients = new Map<string, Client>();
+      clientGroups.flat().forEach((client) => {
+        const key = client.uid
+          ? `${client.locationOwnerId || 'site'}-${client.uid}`
+          : `${client.locationName}-${client.firstName}-${client.lastName}-${client.phoneNumber}-${client.debtCycleStartDate}`;
+        if (!uniqueClients.has(key)) {
+          uniqueClients.set(key, client);
+        }
+      });
+
+      this.allLendingClients = Array.from(uniqueClients.values());
+      this.updateLendingBorrowersForSelectedPeriod();
+    } catch (error) {
+      console.error('Unable to load central lending borrowers', error);
+      this.allLendingClients = [];
+      this.lendingBorrowersForMonth = [];
+    } finally {
+      this.isLoadingLendingBorrowers = false;
+    }
+  }
+
+  private updateLendingBorrowersForSelectedPeriod(): void {
+    this.lendingBorrowersForMonth = this.allLendingClients
+      .filter((client) => {
+        const parsed = this.parseLendingDate(client.debtCycleStartDate || '');
+        return (
+          parsed.month === this.givenMonth &&
+          parsed.year === this.givenYear &&
+          Number(client.loanAmount || 0) > 0
+        );
+      })
+      .map((client) => {
+        const parsed = this.parseLendingDate(client.debtCycleStartDate || '');
+        const fullName = [
+          client.firstName,
+          client.lastName,
+          client.middleName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+        return {
+          id: client.uid
+            ? `${client.locationOwnerId || 'site'}-${client.uid}`
+            : `${client.locationName}-${fullName}-${client.debtCycleStartDate}`,
+          fullName: fullName || 'Client',
+          locationName: client.locationName || 'Site',
+          loanAmount: Number(client.loanAmount || 0),
+          dateLabel: this.formatLendingDateLabel(parsed),
+          timestamp: parsed.timestamp,
+          paymentPeriodRange: client.paymentPeriodRange || '',
+        };
+      })
+      .sort((a, b) => b.timestamp - a.timestamp || b.loanAmount - a.loanAmount);
+  }
+
+  private parseLendingDate(rawDate: string): {
+    month: number;
+    year: number;
+    day: number;
+    timestamp: number;
+  } {
+    const parsed = this.time.parseFlexibleDateTime(rawDate);
+    if (!Number.isNaN(parsed.getTime())) {
+      return {
+        month: parsed.getMonth() + 1,
+        year: parsed.getFullYear(),
+        day: parsed.getDate(),
+        timestamp: parsed.getTime(),
+      };
+    }
+
+    return {
+      month: 0,
+      year: 0,
+      day: 0,
+      timestamp: 0,
+    };
+  }
+
+  private formatLendingDateLabel(date: {
+    month: number;
+    year: number;
+    day: number;
+  }): string {
+    const monthName = this.time.monthFrenchNames[date.month - 1] || '';
+    if (!date.day || !monthName || !date.year) {
+      return '';
+    }
+
+    return `${date.day} ${monthName} ${date.year}`;
+  }
 
   setPreviousMonth() {
     if (this.givenMonth === 1) {
@@ -460,6 +644,7 @@ export class TrackingMonthCentralComponent {
     this.updateReserveTableData();
     this.updatePaymentTableData();
     this.updateLendingTableData();
+    this.updateLendingBorrowersForSelectedPeriod();
 
     this.updateReserveGraphics(this.rangeValueFromKey(this.reserveActiveRange));
     this.updatePaymentGraphics(this.rangeValueFromKey(this.paymentActiveRange));

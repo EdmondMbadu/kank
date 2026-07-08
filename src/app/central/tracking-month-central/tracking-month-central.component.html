@@ -148,6 +148,12 @@
   >
     <article
       *ngFor="let card of monthlyCards; let i = index"
+      (click)="handleMonthlyCardClick(card)"
+      (keydown.enter)="handleMonthlyCardClick(card)"
+      (keydown.space)="handleMonthlyCardClick(card); $event.preventDefault()"
+      [attr.role]="isLendingMonthCard(card) ? 'button' : null"
+      [attr.tabindex]="isLendingMonthCard(card) ? 0 : null"
+      [class.cursor-pointer]="isLendingMonthCard(card)"
       class="group relative overflow-hidden rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900"
     >
       <div class="flex items-start gap-4">
@@ -214,6 +220,154 @@
       Aucune donnée de synthèse disponible pour l’instant.
     </div>
   </ng-template>
+</section>
+
+<section
+  *ngIf="isLendingBorrowersModalOpen"
+  class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/70 p-3 sm:p-6"
+  aria-modal="true"
+  role="dialog"
+  (click)="closeLendingBorrowersModal()"
+>
+  <div
+    class="my-4 w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="border-b border-slate-200 px-4 py-4 dark:border-slate-700 sm:px-6">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
+            Emprunts du mois
+          </p>
+          <h2 class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
+            {{ lendingBorrowersPeriodLabel }}
+          </h2>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Tous les sites · Clients dont le cycle d'emprunt commence ce mois.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          (click)="closeLendingBorrowersModal()"
+          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          aria-label="Fermer"
+        >
+          <svg
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="max-h-[calc(100vh-8rem)] overflow-y-auto px-4 py-5 sm:px-6">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+            Total central
+          </p>
+          <p class="mt-1 text-lg font-bold text-slate-900">
+            FC {{ givenMonthTotalLendingAmount | number : "1.0-0" }}
+          </p>
+          <p class="text-xs text-slate-500">
+            ≈ $ {{ givenMonthTotalLendingAmountDollars | number : "1.0-0" }}
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            Clients listés
+          </p>
+          <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+            {{ lendingBorrowersForMonth.length }}
+          </p>
+          <p class="text-xs text-slate-500">Client(s)</p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            Total liste
+          </p>
+          <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+            FC {{ lendingBorrowersTotal | number : "1.0-0" }}
+          </p>
+          <p class="text-xs text-slate-500">
+            Depuis les dossiers clients
+          </p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+            Sites
+          </p>
+          <p class="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+            {{ lendingBorrowersLocationCount }}
+          </p>
+          <p class="text-xs text-slate-500">Avec emprunts listés</p>
+        </div>
+      </div>
+
+      <div class="mt-5 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+        <div class="hidden grid-cols-[1.5fr_1fr_0.8fr_0.9fr] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:bg-slate-800 md:grid">
+          <span>Client</span>
+          <span>Site</span>
+          <span>Date</span>
+          <span class="text-right">Montant</span>
+        </div>
+
+        <div *ngIf="isLoadingLendingBorrowers" class="px-4 py-10 text-center text-sm text-slate-500">
+          Chargement des emprunts...
+        </div>
+
+        <div
+          *ngIf="!isLoadingLendingBorrowers && lendingBorrowersForMonth.length; else noLendingBorrowers"
+          class="divide-y divide-slate-100 dark:divide-slate-800"
+        >
+          <div
+            *ngFor="let borrower of lendingBorrowersForMonth; trackBy: trackLendingBorrower"
+            class="grid gap-3 px-4 py-4 md:grid-cols-[1.5fr_1fr_0.8fr_0.9fr] md:items-center"
+          >
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {{ borrower.fullName }}
+              </p>
+              <p *ngIf="borrower.paymentPeriodRange" class="mt-1 text-xs text-slate-500">
+                {{ borrower.paymentPeriodRange }}
+              </p>
+            </div>
+            <div>
+              <span class="inline-flex max-w-full rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                <span class="truncate">{{ borrower.locationName }}</span>
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 md:text-sm">
+              {{ borrower.dateLabel || "-" }}
+            </p>
+            <p class="text-sm font-semibold text-slate-900 dark:text-white md:text-right">
+              FC {{ borrower.loanAmount | number : "1.0-0" }}
+            </p>
+          </div>
+        </div>
+
+        <ng-template #noLendingBorrowers>
+          <div
+            *ngIf="!isLoadingLendingBorrowers"
+            class="px-4 py-10 text-center text-sm text-slate-500"
+          >
+            Aucun client emprunteur listé pour {{ lendingBorrowersPeriodLabel }}.
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section class="container mx-auto px-6 pb-6">
