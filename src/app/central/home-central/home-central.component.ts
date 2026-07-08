@@ -304,6 +304,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   birthdayAutomationTemplate = this.defaultBirthdayTemplate();
   birthdayAutomationTemplateDraft = this.defaultBirthdayTemplate();
   birthdayAutomationTemplateEditing = false;
+  birthdayAutomationTemplateModalOpen = false;
   birthdayAutomationSettingsLoading = false;
   birthdayAutomationSettingsSaving = false;
   birthdayAutomationSettingsError: string | null = null;
@@ -3215,13 +3216,27 @@ Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli eb
       this.birthdayAutomationTemplate || this.defaultBirthdayTemplate();
     this.birthdayAutomationSettingsError = null;
     this.birthdayAutomationTemplateEditing = true;
+    this.birthdayAutomationTemplateModalOpen = true;
   }
 
-  cancelBirthdayAutomationTemplateEdit(): void {
+  openBirthdayAutomationTemplateViewer(): void {
     this.birthdayAutomationTemplateDraft =
       this.birthdayAutomationTemplate || this.defaultBirthdayTemplate();
     this.birthdayAutomationSettingsError = null;
     this.birthdayAutomationTemplateEditing = false;
+    this.birthdayAutomationTemplateModalOpen = true;
+  }
+
+  closeBirthdayAutomationTemplateModal(): void {
+    this.birthdayAutomationTemplateDraft =
+      this.birthdayAutomationTemplate || this.defaultBirthdayTemplate();
+    this.birthdayAutomationSettingsError = null;
+    this.birthdayAutomationTemplateEditing = false;
+    this.birthdayAutomationTemplateModalOpen = false;
+  }
+
+  cancelBirthdayAutomationTemplateEdit(): void {
+    this.closeBirthdayAutomationTemplateModal();
   }
 
   async saveBirthdayAutomationTemplate(): Promise<void> {
@@ -3234,6 +3249,7 @@ Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli eb
     await this.saveBirthdayAutomationSettings({ template });
     if (!this.birthdayAutomationSettingsError) {
       this.birthdayAutomationTemplateEditing = false;
+      this.birthdayAutomationTemplateModalOpen = false;
     }
   }
 
