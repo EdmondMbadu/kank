@@ -295,6 +295,9 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   birthdayAutomationSendTime = '09:00';
   birthdayAutomationDebtMode: BirthdayAutomationDebtMode = 'all';
   birthdayAutomationStatusMode: BirthdayAutomationStatusMode = 'excludeQuitte';
+  birthdayAutomationTemplate = this.defaultBirthdayTemplate();
+  birthdayAutomationTemplateDraft = this.defaultBirthdayTemplate();
+  birthdayAutomationTemplateEditing = false;
   birthdayAutomationSettingsLoading = false;
   birthdayAutomationSettingsSaving = false;
   birthdayAutomationSettingsError: string | null = null;
@@ -3002,11 +3005,13 @@ Mbotama Elamu {{FULL_NAME}}. Nzambe apambola misala na yo.`;
   }
 
   private birthdayBulkTemplate(): string {
+    return this.birthdayAutomationTemplate?.trim() || this.defaultBirthdayTemplate();
+  }
+
+  private defaultBirthdayTemplate(): string {
     return `{fullName},
-Mbotama elamu!
-Na mokolo oyo ya esengo, Fondation Gervais ezali kotombela yo Mbotama elamu pe mapamboli na nionso ozali kosala. 
-Tosepeli kozala elongo na yo.
-Fondation Gervais`;
+Mbotama elamu !
+Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli ebele. Merci mingi po na confiance na Fondation Gervais. Toza pona kotombola misala nayo.`;
   }
 
   openBirthdayBulkModal(): void {
@@ -3178,11 +3183,60 @@ Fondation Gervais`;
     return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
   }
 
+  get birthdayAutomationTemplatePreview(): string {
+    return this.previewBirthdayAutomationTemplate(this.birthdayAutomationTemplate);
+  }
+
+  get birthdayAutomationTemplateDraftPreview(): string {
+    return this.previewBirthdayAutomationTemplate(
+      this.birthdayAutomationTemplateDraft
+    );
+  }
+
+  private previewBirthdayAutomationTemplate(template: string): string {
+    const sampleClient =
+      this.selectedBirthdayRecipients[0] ||
+      this.allClients?.[0] ||
+      ({ firstName: 'Client', lastName: 'Fondation' } as Client);
+    return this.personalizeBirthdayMessage(
+      sampleClient,
+      template || this.defaultBirthdayTemplate()
+    );
+  }
+
+  openBirthdayAutomationTemplateEditor(): void {
+    this.birthdayAutomationTemplateDraft =
+      this.birthdayAutomationTemplate || this.defaultBirthdayTemplate();
+    this.birthdayAutomationSettingsError = null;
+    this.birthdayAutomationTemplateEditing = true;
+  }
+
+  cancelBirthdayAutomationTemplateEdit(): void {
+    this.birthdayAutomationTemplateDraft =
+      this.birthdayAutomationTemplate || this.defaultBirthdayTemplate();
+    this.birthdayAutomationSettingsError = null;
+    this.birthdayAutomationTemplateEditing = false;
+  }
+
+  async saveBirthdayAutomationTemplate(): Promise<void> {
+    const template = this.birthdayAutomationTemplateDraft?.trim() || '';
+    if (!template) {
+      this.birthdayAutomationSettingsError =
+        'Le message anniversaire ne peut pas être vide.';
+      return;
+    }
+    await this.saveBirthdayAutomationSettings({ template });
+    if (!this.birthdayAutomationSettingsError) {
+      this.birthdayAutomationTemplateEditing = false;
+    }
+  }
+
   private async saveBirthdayAutomationSettings(update: {
     enabled?: boolean;
     sendTime?: string;
     debtMode?: BirthdayAutomationDebtMode;
     statusMode?: BirthdayAutomationStatusMode;
+    template?: string;
   }): Promise<void> {
     this.birthdayAutomationSettingsSaving = true;
     this.birthdayAutomationSettingsError = null;
@@ -3195,6 +3249,9 @@ Fondation Gervais`;
     const nextDebtMode = update.debtMode ?? this.birthdayAutomationDebtMode;
     const nextStatusMode =
       update.statusMode ?? this.birthdayAutomationStatusMode;
+    const nextTemplate =
+      (update.template ?? this.birthdayAutomationTemplate)?.trim() ||
+      this.defaultBirthdayTemplate();
 
     try {
       await this.afs.doc('birthday_automation_settings/default').set(
@@ -3204,7 +3261,7 @@ Fondation Gervais`;
           debtMode: nextDebtMode,
           statusMode: nextStatusMode,
           timeZone: 'Africa/Kinshasa',
-          template: this.birthdayBulkTemplate(),
+          template: nextTemplate,
           updatedAtMs: Date.now(),
           updatedBy: this.auth.currentUser?.uid ?? null,
         },
@@ -3214,6 +3271,8 @@ Fondation Gervais`;
       this.birthdayAutomationSendTime = nextSendTime;
       this.birthdayAutomationDebtMode = nextDebtMode;
       this.birthdayAutomationStatusMode = nextStatusMode;
+      this.birthdayAutomationTemplate = nextTemplate;
+      this.birthdayAutomationTemplateDraft = nextTemplate;
     } catch (error) {
       console.error('Birthday automation settings save failed', error);
       this.birthdayAutomationSettingsError =
@@ -3246,6 +3305,11 @@ Fondation Gervais`;
         data.statusMode === 'all' || data.statusMode === 'onlyQuitte'
           ? data.statusMode
           : 'excludeQuitte';
+      this.birthdayAutomationTemplate =
+        typeof data.template === 'string' && data.template.trim()
+          ? data.template.trim()
+          : this.defaultBirthdayTemplate();
+      this.birthdayAutomationTemplateDraft = this.birthdayAutomationTemplate;
     } catch (error) {
       console.error('Birthday automation settings load failed', error);
       this.birthdayAutomationSettingsError =
@@ -3254,6 +3318,8 @@ Fondation Gervais`;
       this.birthdayAutomationSendTime = '09:00';
       this.birthdayAutomationDebtMode = 'all';
       this.birthdayAutomationStatusMode = 'excludeQuitte';
+      this.birthdayAutomationTemplate = this.defaultBirthdayTemplate();
+      this.birthdayAutomationTemplateDraft = this.birthdayAutomationTemplate;
     } finally {
       this.birthdayAutomationSettingsLoading = false;
     }

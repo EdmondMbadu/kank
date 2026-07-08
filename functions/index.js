@@ -38,10 +38,8 @@ const BIRTHDAY_AUTOMATION_SETTINGS_COLLECTION = "birthday_automation_settings";
 const BIRTHDAY_AUTOMATION_RUNS_COLLECTION = "birthday_automation_runs";
 const BIRTHDAY_AUTOMATION_SETTINGS_DOC_ID = "default";
 const DEFAULT_BIRTHDAY_TEMPLATE = `{fullName},
-Mbotama elamu!
-Na mokolo oyo ya esengo, Fondation Gervais ezali kotombela yo Mbotama elamu pe mapamboli na nionso ozali kosala. 
-Tosepeli kozala elongo na yo.
-Fondation Gervais`;
+Mbotama elamu !
+Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli ebele. Merci mingi po na confiance na Fondation Gervais. Toza pona kotombola misala nayo.`;
 
 const flexpayConfig = (functions.config() && functions.config().flexpay) || {};
 const FLEXPAY_MERCHANT =
