@@ -212,6 +212,8 @@ export class TrackingMonthCentralComponent {
   lendingBorrowersForMonth: CentralLendingBorrower[] = [];
   isLendingBorrowersModalOpen = false;
   isLoadingLendingBorrowers = false;
+  lendingBorrowerSiteFilter = 'all';
+  lendingBorrowerSearchQuery = '';
 
   sortedPaymentPreviousMonth: {
     firstName: string;
@@ -260,6 +262,42 @@ export class TrackingMonthCentralComponent {
     );
   }
 
+  get filteredLendingBorrowers(): CentralLendingBorrower[] {
+    const query = this.lendingBorrowerSearchQuery.trim().toLowerCase();
+
+    return this.lendingBorrowersForMonth.filter((borrower) => {
+      const matchesSite =
+        this.lendingBorrowerSiteFilter === 'all' ||
+        borrower.locationName === this.lendingBorrowerSiteFilter;
+
+      if (!matchesSite) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return [
+        borrower.fullName,
+        borrower.locationName,
+        borrower.dateLabel,
+        borrower.paymentPeriodRange,
+        borrower.loanAmount.toString(),
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    });
+  }
+
+  get filteredLendingBorrowersTotal(): number {
+    return this.filteredLendingBorrowers.reduce(
+      (total, borrower) => total + borrower.loanAmount,
+      0
+    );
+  }
+
   get givenMonthTotalLendingAmountDollars(): string {
     return `${this.compute.convertCongoleseFrancToUsDollars(
       this.givenMonthTotalLendingAmount || '0'
@@ -270,6 +308,19 @@ export class TrackingMonthCentralComponent {
     return new Set(
       this.lendingBorrowersForMonth.map((borrower) => borrower.locationName)
     ).size;
+  }
+
+  get lendingBorrowerSiteOptions(): string[] {
+    return Array.from(
+      new Set(this.lendingBorrowersForMonth.map((borrower) => borrower.locationName))
+    ).sort((a, b) => a.localeCompare(b));
+  }
+
+  get hasActiveLendingBorrowerFilters(): boolean {
+    return (
+      this.lendingBorrowerSiteFilter !== 'all' ||
+      this.lendingBorrowerSearchQuery.trim().length > 0
+    );
   }
 
   isLendingMonthCard(card: TrackingMonthCentralCard): boolean {
@@ -291,6 +342,11 @@ export class TrackingMonthCentralComponent {
 
   closeLendingBorrowersModal(): void {
     this.isLendingBorrowersModalOpen = false;
+  }
+
+  resetLendingBorrowerFilters(): void {
+    this.lendingBorrowerSiteFilter = 'all';
+    this.lendingBorrowerSearchQuery = '';
   }
 
   trackLendingBorrower(_: number, borrower: CentralLendingBorrower): string {
@@ -376,6 +432,13 @@ export class TrackingMonthCentralComponent {
         };
       })
       .sort((a, b) => b.timestamp - a.timestamp || b.loanAmount - a.loanAmount);
+
+    if (
+      this.lendingBorrowerSiteFilter !== 'all' &&
+      !this.lendingBorrowerSiteOptions.includes(this.lendingBorrowerSiteFilter)
+    ) {
+      this.lendingBorrowerSiteFilter = 'all';
+    }
   }
 
   private parseLendingDate(rawDate: string): {
