@@ -94,6 +94,9 @@ export class ClientPortalComponent {
   numberOfPaymentsMade: string = '';
 
   showPhoneHistory = false;
+  isHomePictureHistoryVisible = false;
+  selectedHomePictureHistoryIndex = 0;
+  selectedHomePictureUrl = '';
   copied?: string;
 
   @ViewChild('phoneHistory', { static: false }) phoneHistoryRef?: ElementRef;
@@ -978,8 +981,16 @@ export class ClientPortalComponent {
   toggleFullPicture(): void {
     this.isFullPictureVisible = !this.isFullPictureVisible;
   }
-  toggleHomePicture(): void {
+  toggleHomePicture(url?: string): void {
+    if (url) {
+      this.selectedHomePictureUrl = url;
+      this.isHomePictureVisible = true;
+      return;
+    }
     this.isHomePictureVisible = !this.isHomePictureVisible;
+    if (this.isHomePictureVisible) {
+      this.selectedHomePictureUrl = this.client?.homePicture?.downloadURL || '';
+    }
   }
   async startHomePictureUpload(event: FileList | null) {
     const file = event?.item(0);
@@ -2257,6 +2268,51 @@ export class ClientPortalComponent {
         this.showBonusHistory = false;
       }
     }
+  }
+
+  get homePictureHistory(): Avatar[] {
+    const currentUrl = this.client?.homePicture?.downloadURL || '';
+    const out: Avatar[] = [];
+    for (const picture of this.client?.previousHomePictures || []) {
+      if (!picture?.downloadURL || picture.downloadURL === currentUrl) continue;
+      if (!out.some((item) => item.downloadURL === picture.downloadURL)) {
+        out.push(picture);
+      }
+    }
+    return out;
+  }
+
+  openHomePictureHistory(): void {
+    if (!this.homePictureHistory.length) return;
+    this.selectedHomePictureHistoryIndex = 0;
+    this.isHomePictureHistoryVisible = true;
+  }
+
+  closeHomePictureHistory(): void {
+    this.isHomePictureHistoryVisible = false;
+  }
+
+  get selectedHomePictureHistory(): Avatar | undefined {
+    return this.homePictureHistory[this.selectedHomePictureHistoryIndex];
+  }
+
+  shiftHomePictureHistory(direction: number): void {
+    const total = this.homePictureHistory.length;
+    if (total <= 1) return;
+    this.selectedHomePictureHistoryIndex =
+      (this.selectedHomePictureHistoryIndex + direction + total) % total;
+  }
+
+  homePictureHistoryDate(picture: Avatar): string {
+    const raw = (picture as any)?.replacedAt;
+    if (!raw) return 'Ancienne photo';
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return 'Ancienne photo';
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   }
 
   async copy(p: string) {

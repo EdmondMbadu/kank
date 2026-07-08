@@ -4,7 +4,7 @@ import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { ActivatedRoute, Router } from '@angular/router';
 import { max } from 'rxjs';
 import { Client } from 'src/app/models/client';
-import { Employee } from 'src/app/models/employee';
+import { Avatar, Employee } from 'src/app/models/employee';
 import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
@@ -42,6 +42,7 @@ export class NewCycleRegisterComponent implements OnInit {
 
   /** phone the client had when this page loaded */
   private originalPhoneNumberAtLoad: string = '';
+  private originalHomePictureAtLoad?: Avatar;
   birthDateInput: string = ''; // yyyy-mm-dd (si saisie)
   age: number | null = null; // affichage uniquement
 
@@ -103,9 +104,15 @@ export class NewCycleRegisterComponent implements OnInit {
       this.client = data[Number(this.id)];
       this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
       this.originalPhoneNumberAtLoad = this.client?.phoneNumber || '';
+      this.originalHomePictureAtLoad = this.client?.homePicture
+        ? { ...this.client.homePicture }
+        : undefined;
       // Guarantee the array exists so later merges are predictable
       if (!Array.isArray(this.client.previousPhoneNumbers)) {
         this.client.previousPhoneNumbers = [];
+      }
+      if (!Array.isArray(this.client.previousHomePictures)) {
+        this.client.previousHomePictures = [];
       }
       this.updateAge(); // calcule l’âge si birthDate existe déjà
       this.numberOfCurrentClients = this.data.findClientsWithDebts(data).length; // clients with debt number
@@ -482,6 +489,7 @@ export class NewCycleRegisterComponent implements OnInit {
 
       // Make sure we capture the old phone into history if it changed in this form
       this.ensurePhoneHistoryIfChanged();
+      this.ensureHomePictureHistoryIfChanged();
 
       this.setClientNewDebtCycleValues();
       await this.data.registerNewDebtCycle(this.client);
@@ -775,5 +783,43 @@ export class NewCycleRegisterComponent implements OnInit {
     }
 
     this.client.previousPhoneNumbers = list;
+  }
+
+  private ensureHomePictureHistoryIfChanged(): void {
+    const oldPicture = this.originalHomePictureAtLoad;
+    const newPicture = this.client?.homePicture;
+    if (!oldPicture?.downloadURL || !newPicture?.downloadURL) return;
+    if (
+      oldPicture.downloadURL === newPicture.downloadURL ||
+      (!!oldPicture.path && oldPicture.path === newPicture.path)
+    ) {
+      return;
+    }
+
+    const list = Array.isArray(this.client.previousHomePictures)
+      ? [...this.client.previousHomePictures]
+      : [];
+    const alreadyInList = list.some(
+      (picture) =>
+        picture?.downloadURL === oldPicture.downloadURL ||
+        (!!picture?.path && picture.path === oldPicture.path)
+    );
+
+    if (!alreadyInList) {
+      list.unshift({
+        ...oldPicture,
+        replacedAt: new Date().toISOString(),
+        replacedBy: this.auth.currentUser?.uid ?? null,
+        replacedByName: [
+          this.auth.currentUser?.firstName,
+          this.auth.currentUser?.lastName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim(),
+      });
+    }
+
+    this.client.previousHomePictures = list;
   }
 }

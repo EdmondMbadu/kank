@@ -223,17 +223,12 @@ export class ClientGalleryComponent implements OnDestroy {
       .filter(([, picture]) => Boolean(picture?.url?.trim()))
       .map(([id, picture]) => this.normalizePicture(id, picture))
       .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
-    const homePicture = this.systemHomePicture();
-
-    if (!homePicture) {
-      return storedPictures;
-    }
-
-    const alreadyStored = storedPictures.some(
-      (picture) => picture.url === homePicture.url
+    const systemPictures = this.systemHomePictures().filter(
+      (systemPicture) =>
+        !storedPictures.some((picture) => picture.url === systemPicture.url)
     );
 
-    return alreadyStored ? storedPictures : [homePicture, ...storedPictures];
+    return [...systemPictures, ...storedPictures];
   }
 
   get activePictures(): ClientGalleryPicture[] {
@@ -483,16 +478,48 @@ export class ClientGalleryComponent implements OnDestroy {
     };
   }
 
-  private systemHomePicture(): ClientGalleryPicture | undefined {
+  private systemHomePictures(): ClientGalleryPicture[] {
     if (this.ownerType !== 'client') {
-      return undefined;
+      return [];
     }
 
     const client = this.owner as Client | undefined;
-    const picture = client?.homePicture as
+    const current = this.homePictureToGalleryPicture(
+      client?.homePicture,
+      this.systemHomePictureId,
+      'Photo de la maison visitée',
+      client?.dateOfRequest
+        ? this.dateLikeToIso(client.dateOfRequest)
+        : new Date(0).toISOString(),
+      'Enregistrement client'
+    );
+    const previous = (client?.previousHomePictures || [])
+      .map((picture, index) =>
+        this.homePictureToGalleryPicture(
+          picture,
+          `${this.systemHomePictureId}-previous-${index}`,
+          'Ancienne photo de la maison visitée',
+          picture.replacedAt || new Date(0).toISOString(),
+          picture.replacedByName || 'Historique domicile'
+        )
+      )
+      .filter((picture): picture is ClientGalleryPicture => Boolean(picture));
+
+    return [current, ...previous].filter(
+      (picture): picture is ClientGalleryPicture => Boolean(picture)
+    );
+  }
+
+  private homePictureToGalleryPicture(
+    picture:
       | { path?: string; downloadURL?: string; size?: string | number }
       | string
-      | undefined;
+      | undefined,
+    id: string,
+    name: string,
+    uploadedAt: string,
+    uploadedByName: string
+  ): ClientGalleryPicture | undefined {
     const url =
       typeof picture === 'string' ? picture.trim() : picture?.downloadURL?.trim();
 
@@ -508,18 +535,16 @@ export class ClientGalleryComponent implements OnDestroy {
       typeof picture === 'string' ? 0 : Number(picture?.size || 0);
 
     return {
-      id: this.systemHomePictureId,
+      id,
       category: 'domicile',
       mediaType: 'image',
       mimeType: 'image/*',
       url,
       path: picturePath,
       size: pictureSize,
-      name: 'Photo de la maison visitée',
-      uploadedAt: client?.dateOfRequest
-        ? this.dateLikeToIso(client.dateOfRequest)
-        : new Date(0).toISOString(),
-      uploadedByName: 'Enregistrement client',
+      name,
+      uploadedAt,
+      uploadedByName,
     };
   }
 

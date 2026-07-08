@@ -417,6 +417,7 @@ export class RegisterClientComponent implements OnInit {
     this.client.dateOfRequest = this.time.todaysDate();
     this.client.profilePicture = this.avatar;
     this.client.homePicture = this.homePictureAvatar;
+    this.client.previousHomePictures = [];
 
     // Additional fields
     this.client.timeInBusiness = this.timeInBusiness;

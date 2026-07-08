@@ -1331,6 +1331,7 @@ export class DataService {
       homeCommune: client.homeCommune,
       homeNumber: client.homeNumber,
       homePicture: client.homePicture,
+      previousHomePictures: client.previousHomePictures || [],
       businessAddress: client.businessAddress,
       debtCycle: (Number(client.debtCycle) + 1).toString(),
       membershipFee: client.membershipFee,
@@ -1380,6 +1381,7 @@ export class DataService {
       homeCommune: client.homeCommune,
       homeNumber: client.homeNumber,
       homePicture: client.homePicture,
+      previousHomePictures: client.previousHomePictures || [],
       businessAddress: client.businessAddress,
       creditScore: client.creditScore, // in case they went to 0 and 6 months has passed since they finished. in other case, it does nothing
       debtCycle: (Number(client.debtCycle) + 1).toString(),
@@ -1484,6 +1486,7 @@ export class DataService {
       homeCommune: client.homeCommune,
       homeNumber: client.homeNumber,
       homePicture: client.homePicture,
+      previousHomePictures: client.previousHomePictures || [],
       businessAddress: client.businessAddress,
       loanAmount: client.loanAmount,
       profession: client.profession,
@@ -2665,10 +2668,42 @@ export class DataService {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(
       `users/${this.auth.currentUser.uid}/clients/${client.uid}`
     );
+    const previousHomePictures = this.appendPreviousHomePicture(
+      client.previousHomePictures,
+      client.homePicture
+    );
+    client.previousHomePictures = previousHomePictures;
     const data = {
       homePicture: avatar,
+      previousHomePictures,
     };
     return clientRef.set(data, { merge: true });
+  }
+
+  private appendPreviousHomePicture(
+    previous: Avatar[] | undefined,
+    current: Avatar | undefined
+  ): Avatar[] {
+    if (!current?.downloadURL) return previous || [];
+
+    const alreadySaved = (previous || []).some(
+      (picture) =>
+        picture?.downloadURL === current.downloadURL ||
+        (!!picture?.path && picture.path === current.path)
+    );
+    if (alreadySaved) return previous || [];
+
+    const archivedPicture = this.removeUndefinedFields({
+      ...current,
+      replacedAt: new Date().toISOString(),
+      replacedBy: this.auth.currentUser?.uid ?? null,
+      replacedByName: [this.auth.currentUser?.firstName, this.auth.currentUser?.lastName]
+        .filter(Boolean)
+        .join(' ')
+        .trim(),
+    }) as Avatar;
+
+    return [archivedPicture, ...(previous || [])];
   }
   addCommentToClientProfile(client: Client, comments: Comment[]) {
     const clientRef: AngularFirestoreDocument<Client> = this.afs.doc(

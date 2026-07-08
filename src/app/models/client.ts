@@ -38,6 +38,12 @@ export interface ClientGalleryPicture {
   captureTimeSource?: 'exif' | 'fileLastModified' | 'manual';
 }
 
+export interface ClientHomePictureHistoryEntry extends Avatar {
+  replacedAt?: string;
+  replacedBy?: string | null;
+  replacedByName?: string;
+}
+
 export interface AuditConversationAudioAttachment {
   url: string;
   name?: string;
@@ -126,6 +132,7 @@ export class Client {
   dateOfRequest?: string;
   profilePicture?: Avatar;
   homePicture?: Avatar;
+  previousHomePictures?: ClientHomePictureHistoryEntry[];
   homeAvenue?: string;
   homeQuartier?: string;
   homeCommune?: string;

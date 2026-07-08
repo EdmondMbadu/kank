@@ -3934,6 +3934,26 @@ Merci pour ta confiance !`;
       seenUrls.add(homeUrl);
     }
 
+    (client?.previousHomePictures || []).forEach((picture, index) => {
+      const url = picture?.downloadURL?.trim();
+      if (!url || seenUrls.has(url)) {
+        return;
+      }
+      pictures.push({
+        id: `__home-picture-previous-${index}`,
+        category: 'domicile',
+        mediaType: 'image',
+        mimeType: 'image/*',
+        url,
+        path: picture.path || 'clients-home/domicile-verification',
+        size: Number(picture.size || 0),
+        name: 'Ancienne photo maison',
+        uploadedAt: picture.replacedAt || new Date(0).toISOString(),
+        uploadedByName: picture.replacedByName || 'Historique domicile',
+      });
+      seenUrls.add(url);
+    });
+
     Object.entries(client?.galleryPictures ?? {}).forEach(([id, picture]) => {
       const url = picture?.url?.trim();
       if (!url || seenUrls.has(url) || this.isGalleryVideo(picture)) {

@@ -464,6 +464,7 @@ export class AuthService {
       homeCommune: client.homeCommune,
       homeNumber: client.homeNumber,
       homePicture: client.homePicture,
+      previousHomePictures: client.previousHomePictures || [],
       businessAddress: client.businessAddress,
       debtCycle: '0',
       membershipFee: client.membershipFee,
@@ -606,6 +607,7 @@ export class AuthService {
       clients: [],
       profilePicture: client.profilePicture,
       homePicture: client.homePicture,
+      previousHomePictures: client.previousHomePictures || [],
 
       // New fields
       timeInBusiness: client.timeInBusiness,
