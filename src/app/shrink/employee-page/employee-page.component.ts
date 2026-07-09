@@ -336,6 +336,8 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   private paymentPerformanceClientsLocationId = '';
   private taskForceAttendanceDaysByWeek: Record<string, Record<string, unknown>> =
     {};
+  private taskForceAttendanceExpectedWeekIds = new Set<string>();
+  private taskForceAttendanceLoadedWeekIds = new Set<string>();
   taskForceLocationsByDateLabel: Record<string, string[]> = {};
   allLocations: User[] = [];
   private investigationPerformanceClientsCache = new Map<string, Client[]>();
@@ -562,6 +564,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   investigationMonthlyPerformancePercent = 0;
   investigationMonthlyPerformanceWeeks: InvestigationPerformanceWeek[] = [];
   showInvestigationPerformanceExplanation = false;
+  private investigationMonthlyPerformanceRequestId = 0;
   private weeklyTargetSub?: Subscription;
   recentPerformanceDates: string[] = [];
   recentPerformanceNumbers: number[] = [];
@@ -573,6 +576,11 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     '1A': 12,
     MAX: 0,
   };
+  private readonly investigationPaymentPerformanceRoles = new Set([
+    'verificateur',
+    'stagiaire polyvalent',
+    'stagaire polyvalent',
+  ]);
   performanceMaxRange = 0;
   private performanceGraphLabels: string[] = [];
   private performanceGraphValues: number[] = [];
@@ -2561,13 +2569,34 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   get perfColor(): string {
-    const n = Number(this.performancePercentageMonth) || 0;
-    return this.compute.getGradientColor(n); // e.g. "rgb(255, 0, 0)"
+    return this.compute.getGradientColor(this.performancePercentageMonthWidth);
   }
 
   get perfBg(): string {
     // light tint for the chip background
     return this.perfColor.replace('rgb(', 'rgba(').replace(')', ',0.12)');
+  }
+
+  get performancePercentageMonthWidth(): number {
+    return this.clampPerformancePercent(this.performancePercentageMonth);
+  }
+
+  private setPerformancePercentageMonth(
+    value: string | number | null | undefined
+  ): void {
+    const numericValue = Number(value);
+    this.performancePercentageMonth = Number.isFinite(numericValue)
+      ? String(Math.round(numericValue))
+      : '0';
+  }
+
+  private clampPerformancePercent(value: string | number | null | undefined): number {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+      return 0;
+    }
+
+    return Math.max(0, Math.min(100, numericValue));
   }
 
   get individualReviewsForDisplay(): Comment[] {
@@ -3839,10 +3868,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
           this.averageToday,
           this.totalToday
         );
-        this.performancePercentageMonth = this.computePerformancePercentage(
-          this.averagePointsMonth,
-          this.totalPointsMonth
-        );
+        if (this.usesInvestigationPaymentPerformance) {
+          if (!this.applyStoredInvestigationMonthlyPerformance()) {
+            this.setPerformancePercentageMonth(0);
+          }
+        } else {
+          this.setPerformancePercentageMonth(
+            this.computePerformancePercentage(
+              this.averagePointsMonth,
+              this.totalPointsMonth
+            )
+          );
+        }
 
         // this.computeThisMonthSalary();
         if (
@@ -4038,6 +4075,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       result = rounded.toString();
     }
     return result;
+  }
+  private applyStoredInvestigationMonthlyPerformance(): boolean {
+    const key = this.performanceMonthKey(this.givenMonth, this.givenYear);
+    const monthly = this.employee?.investigationPerformanceMonthly?.[key];
+    const percent = Number(monthly?.percent);
+
+    if (!monthly || !Number.isFinite(percent)) {
+      this.investigationMonthlyPerformancePercent = 0;
+      this.investigationMonthlyPerformanceWeeks = [];
+      return false;
+    }
+
+    this.investigationMonthlyPerformancePercent = percent;
+    this.investigationMonthlyPerformanceWeeks = Array.isArray(monthly.weeks)
+      ? monthly.weeks
+      : [];
+    this.setPerformancePercentageMonth(percent);
+    return true;
   }
   private aggregatePerformanceByMonth(): [string[], string[]] {
     if (this.usesInvestigationPaymentPerformance) {
@@ -4781,6 +4836,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   private loadTaskForceAttendanceLocations(month: number, year: number): void {
     this.clearTaskForceAttendanceSubscriptions();
+    this.investigationMonthlyPerformanceRequestId += 1;
     this.taskForceAttendanceDaysByWeek = {};
     this.taskForceLocationsByDateLabel = {};
     this.paymentPerformanceScheduleMonthKey = `${year}-${month}`;
@@ -4792,13 +4848,24 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     }
 
     const weekIds = this.taskForceWeekIdsForMonth(month, year);
+    this.taskForceAttendanceExpectedWeekIds = new Set(weekIds);
+    this.taskForceAttendanceLoadedWeekIds = new Set();
+
+    if (!weekIds.length) {
+      this.recomputeInvestigationMonthlyPerformance();
+      return;
+    }
+
     weekIds.forEach((weekId) => {
       const sub = this.performance.getTaskForce(weekId).subscribe((doc) => {
         this.taskForceAttendanceDaysByWeek[weekId] = doc?.days ?? {};
+        this.taskForceAttendanceLoadedWeekIds.add(weekId);
         this.rebuildTaskForceAttendanceLocations(month, year);
         this.generateAttendanceTable(month, year);
         this.updateEmployeePaymentPerformanceLocation();
-        this.recomputeInvestigationMonthlyPerformance();
+        if (this.isTaskForceAttendanceScheduleReady(month, year)) {
+          this.recomputeInvestigationMonthlyPerformance();
+        }
       });
       this.taskForceAttendanceSubs.push(sub);
     });
@@ -4816,12 +4883,18 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
     const month = this.givenMonth;
     const year = this.givenYear;
+    if (!this.isTaskForceAttendanceScheduleReady(month, year)) {
+      this.applyStoredInvestigationMonthlyPerformance();
+      return;
+    }
+
+    const requestId = ++this.investigationMonthlyPerformanceRequestId;
     const assignments = this.investigationMonthlyAssignments(month, year);
 
     if (!assignments.length) {
       this.investigationMonthlyPerformancePercent = 0;
       this.investigationMonthlyPerformanceWeeks = [];
-      this.performancePercentageMonth = '0';
+      this.setPerformancePercentageMonth(0);
       this.updatePerformanceGraphics(
         this.rangeValueFromPerformanceKey(this.performanceActiveRange)
       );
@@ -4837,6 +4910,10 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       }
 
       const clients = await this.loadInvestigationPerformanceClients(location);
+      if (requestId !== this.investigationMonthlyPerformanceRequestId) {
+        return;
+      }
+
       const range = this.assignmentPerformanceRange(
         assignment.anchorDate,
         month,
@@ -4879,7 +4956,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
     if (!weeks.length) {
       this.investigationMonthlyPerformancePercent = 0;
       this.investigationMonthlyPerformanceWeeks = [];
-      this.performancePercentageMonth = '0';
+      this.setPerformancePercentageMonth(0);
       this.updatePerformanceGraphics(
         this.rangeValueFromPerformanceKey(this.performanceActiveRange)
       );
@@ -4896,6 +4973,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   }
 
   private resetInvestigationMonthlyPerformance(): void {
+    this.investigationMonthlyPerformanceRequestId += 1;
     this.investigationMonthlyPerformancePercent = 0;
     this.investigationMonthlyPerformanceWeeks = [];
     this.lastSavedInvestigationPerformanceSignature = '';
@@ -4909,18 +4987,29 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   ): void {
     this.investigationMonthlyPerformancePercent = monthly.percent;
     this.investigationMonthlyPerformanceWeeks = monthly.weeks;
-    this.performancePercentageMonth = String(Math.round(monthly.percent));
+    this.setPerformancePercentageMonth(monthly.percent);
 
     const key = this.performanceMonthKey(monthly.month, monthly.year);
+    const currentHistory = this.employee.investigationPerformanceMonthly || {};
+    const currentSignature = this.investigationMonthlyPerformanceSignature(
+      key,
+      currentHistory[key]
+    );
+    const nextSignature = this.investigationMonthlyPerformanceSignature(
+      key,
+      monthly
+    );
     const nextHistory = {
-      ...(this.employee.investigationPerformanceMonthly || {}),
+      ...currentHistory,
       [key]: monthly,
     };
     this.employee.investigationPerformanceMonthly = nextHistory;
     this.updatePerformanceGraphics(
       this.rangeValueFromPerformanceKey(this.performanceActiveRange)
     );
-    this.saveInvestigationMonthlyPerformanceIfChanged(key, monthly);
+    if (currentSignature !== nextSignature) {
+      this.saveInvestigationMonthlyPerformanceIfChanged(key, monthly);
+    }
   }
 
   private saveInvestigationMonthlyPerformanceIfChanged(
@@ -4931,18 +5020,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const signature = JSON.stringify({
-      key,
-      percent: monthly.percent,
-      weeks: monthly.weeks.map((week) => ({
-        weekId: week.weekId,
-        locationName: week.locationName,
-        percent: week.percent,
-        paidFc: week.paidFc,
-        expectedFc: week.expectedFc,
-        daysIncluded: week.daysIncluded,
-      })),
-    });
+    const signature = this.investigationMonthlyPerformanceSignature(key, monthly);
 
     if (signature === this.lastSavedInvestigationPerformanceSignature) {
       return;
@@ -4962,6 +5040,28 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
         );
         this.lastSavedInvestigationPerformanceSignature = '';
       });
+  }
+
+  private investigationMonthlyPerformanceSignature(
+    key: string,
+    monthly?: InvestigationPerformanceMonth
+  ): string {
+    if (!monthly) {
+      return '';
+    }
+
+    return JSON.stringify({
+      key,
+      percent: Number(monthly.percent) || 0,
+      weeks: (monthly.weeks || []).map((week) => ({
+        weekId: week.weekId,
+        locationName: week.locationName,
+        percent: Number(week.percent) || 0,
+        paidFc: Number(week.paidFc) || 0,
+        expectedFc: Number(week.expectedFc) || 0,
+        daysIncluded: Number(week.daysIncluded) || 0,
+      })),
+    });
   }
 
   private investigationMonthlyAssignments(
@@ -5122,15 +5222,31 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
   private clearTaskForceAttendanceSubscriptions(): void {
     this.taskForceAttendanceSubs.forEach((sub) => sub.unsubscribe());
     this.taskForceAttendanceSubs = [];
+    this.taskForceAttendanceExpectedWeekIds = new Set();
+    this.taskForceAttendanceLoadedWeekIds = new Set();
+  }
+
+  private isTaskForceAttendanceScheduleReady(month: number, year: number): boolean {
+    if (!this.shouldShowTaskForceLocationsOnAttendance()) {
+      return true;
+    }
+
+    if (this.paymentPerformanceScheduleMonthKey !== `${year}-${month}`) {
+      return false;
+    }
+
+    if (!this.taskForceAttendanceExpectedWeekIds.size) {
+      return true;
+    }
+
+    return Array.from(this.taskForceAttendanceExpectedWeekIds).every((weekId) =>
+      this.taskForceAttendanceLoadedWeekIds.has(weekId)
+    );
   }
 
   private shouldShowTaskForceLocationsOnAttendance(): boolean {
-    const role = this.normalizeRoleName(this.employee?.role);
-    return (
-      role === 'verificateur' ||
-      role === 'stagiaire polyvalent' ||
-      role === 'stagaire polyvalent'
-    );
+    const role = this.normalizeInvestigationRoleName(this.employee?.role);
+    return this.investigationPaymentPerformanceRoles.has(role);
   }
 
   private normalizeRoleName(value?: string): string {
@@ -5140,6 +5256,12 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, ' ');
+  }
+
+  private normalizeInvestigationRoleName(value?: string): string {
+    return this.normalizeRoleName(value)
+      .replace(/\bpoyvalant\b/g, 'polyvalent')
+      .replace(/\bpolyvalant\b/g, 'polyvalent');
   }
 
   private taskForceWeekIdsForMonth(month: number, year: number): string[] {
@@ -8600,7 +8722,7 @@ export class EmployeePageComponent implements OnInit, OnDestroy {
 
   // Use your computed month % (string) -> number
   get avgPerf(): number {
-    return Number(this.performancePercentageMonth) || 0;
+    return this.performancePercentageMonthWidth;
   }
 
   // Unique-ish gradient id per month/year
