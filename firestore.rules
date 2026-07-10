@@ -101,6 +101,14 @@ service cloud.firestore {
           (signedIn() && !isPortalClient());
       }
 
+      // Location-level transport receipts are administered from the central
+      // team ranking view, including when the administrator belongs to a
+      // different location.
+      match /transportReceipts/{receiptId} {
+        allow read, write: if isOwner(userId) ||
+          (signedIn() && !isPortalClient());
+      }
+
       match /clients/{clientId} {
         allow read: if isOwner(userId) ||
           (signedIn() && !isPortalClient()) ||
