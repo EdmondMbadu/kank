@@ -94,6 +94,13 @@ service cloud.firestore {
         }
       }
 
+      // Employee credits and transport receipts are managed from the same
+      // cross-site administration views as the employee record itself.
+      match /employees/{employeeId}/auditReceipts/{receiptId} {
+        allow read, write: if isOwner(userId) ||
+          (signedIn() && !isPortalClient());
+      }
+
       match /clients/{clientId} {
         allow read: if isOwner(userId) ||
           (signedIn() && !isPortalClient()) ||
