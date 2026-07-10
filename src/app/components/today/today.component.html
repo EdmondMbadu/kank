@@ -2122,8 +2122,18 @@
                 *ngIf="auth.isAdmin"
                 class="ml-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
                 (click)="prepareUpdate(r)"
+                [disabled]="receiptDeletingId === r.docId"
               >
                 Changer
+              </button>
+              <button
+                *ngIf="auth.isAdmin"
+                type="button"
+                class="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-wait disabled:bg-red-300"
+                (click)="deleteReceipt(r)"
+                [disabled]="receiptDeletingId === r.docId"
+              >
+                {{ receiptDeletingId === r.docId ? "..." : "Supprimer" }}
               </button>
             </div>
           </li>

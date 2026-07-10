@@ -6899,6 +6899,36 @@ export class TeamRankingMonthComponent implements OnDestroy {
     }
   }
 
+  async deleteTransportReceipt(receipt: TeamTransportReceipt): Promise<void> {
+    if (!this.auth.isAdmin || !receipt?.ownerUid || !receipt?.docId) return;
+    if (!confirm('Supprimer définitivement cette entrée et son reçu ?')) return;
+
+    const key = `${receipt.ownerUid}-${receipt.docId}`;
+    this.transportReceiptSavingKey = key;
+    try {
+      const storageRef = this.storage.ref(
+        `transportReceipts/${receipt.ownerUid}/${receipt.docId}`
+      );
+      try {
+        await storageRef.delete().toPromise();
+      } catch (error: any) {
+        if (error?.code !== 'storage/object-not-found') throw error;
+      }
+
+      await this.afs
+        .doc(`users/${receipt.ownerUid}/transportReceipts/${receipt.docId}`)
+        .delete();
+      alert('Entrée supprimée.');
+    } catch (error) {
+      console.error('Erreur lors de la suppression du reçu transport', error);
+      alert("Impossible de supprimer l'entrée — réessayez.");
+    } finally {
+      if (this.transportReceiptSavingKey === key) {
+        this.transportReceiptSavingKey = '';
+      }
+    }
+  }
+
   transportReceiptIsSaving(receipt: TeamTransportReceipt): boolean {
     return (
       this.transportReceiptSavingKey ===

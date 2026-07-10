@@ -6972,6 +6972,15 @@
                 >
                   {{ transportReceiptIsSaving(receipt) ? "..." : "Changer" }}
                 </button>
+
+                <button
+                  type="button"
+                  (click)="deleteTransportReceipt(receipt)"
+                  [disabled]="transportReceiptIsSaving(receipt)"
+                  class="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-red-700 disabled:cursor-wait disabled:bg-red-300"
+                >
+                  {{ transportReceiptIsSaving(receipt) ? "..." : "Supprimer" }}
+                </button>
               </div>
             </div>
           </div>
