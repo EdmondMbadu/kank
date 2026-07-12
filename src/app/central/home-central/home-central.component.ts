@@ -1493,23 +1493,6 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     };
   }
 
-  get birthdayFilterSummary(): string | null {
-    switch (this.birthdayFilterMode) {
-      case 'today':
-        return this.birthdayTarget
-          ? "Anniversaires d'aujourd'hui"
-          : null;
-      case 'tomorrow':
-        return this.birthdayTarget ? 'Anniversaires de demain' : null;
-      case 'custom':
-        if (!this.birthdayTarget) return null;
-        const formatted = this.formatBirthdayDateForDisplay(this.birthdayTarget);
-        return formatted ? `Anniversaires du ${formatted}` : null;
-      default:
-        return null;
-    }
-  }
-
   get clientListSummaryBase(): string {
     const count = this.filteredItems.length;
     const hasSearch = this.searchTerm.trim().length > 0;
@@ -1526,7 +1509,6 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     const hasAudioFilter = this.audioFilter !== 'all';
 
     const isDefaultView =
-      !this.birthdayFilterSummary &&
       !hasSearch &&
       !hasScoreFilter &&
       !hasLoanFilter &&
@@ -1543,9 +1525,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     }
 
     const parts: string[] = [];
-    if (this.birthdayFilterSummary) {
-      parts.push(this.birthdayFilterSummary);
-    } else if (hasTrophyMissingFilter) {
+    if (hasTrophyMissingFilter) {
       parts.push('Trophée non attribué');
     } else if (hasSearch) {
       parts.push('Résultats de la recherche');
@@ -1622,7 +1602,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
       .filter((client) => this.matchesDuplicatePhone(client))
       .filter((client) => this.matchesAudioFilter(client));
 
-    this.filteredItems = base.filter((client) => this.matchesBirthdayFilter(client));
+    this.filteredItems = base;
     this.filteredDebtTotal = this.calculateFilteredDebtTotal(this.filteredItems);
     this.updateSelectedPaymentDayTotal();
     if (this.generalBulkModal.open) this.updateGeneralBulkRecipients();
@@ -2527,14 +2507,6 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
     );
   }
 
-  private matchesBirthdayFilter(client: Client): boolean {
-    if (this.birthdayFilterMode === 'all') return true;
-
-    if (!this.birthdayTarget) return false;
-
-    return this.hasBirthdayOnTarget(client, this.birthdayTarget);
-  }
-
   private extractMonthDayVariants(input: string | undefined | null) {
     if (!input) return [];
     const parts = input.match(/\d+/g);
@@ -2901,16 +2873,6 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
 
     if (this.trophyMissingFilter === 'missing') {
       parts.push('Trophée: non attribué');
-    }
-
-    if (this.birthdayFilterMode !== 'all') {
-      if (this.birthdayFilterMode === 'today')
-        parts.push("Anniversaire: aujourd'hui");
-      else if (this.birthdayFilterMode === 'tomorrow')
-        parts.push('Anniversaire: demain');
-      else if (this.birthdayFilterMode === 'custom' && this.customBirthdayInput) {
-        parts.push(`Anniversaire: ${this.customBirthdayInput}`);
-      }
     }
 
     if (this.selectedPaymentDay) {
