@@ -1,9 +1,8 @@
 import {
-  buildClientPhotoDownloadUrl,
-  createClientPhotoDownloadToken,
   describeClientPhotoUploadError,
   isClientPhoto,
   isHeicClientPhoto,
+  uploadClientPhoto,
 } from './client-photo-upload.util';
 
 describe('client photo upload utilities', () => {
@@ -45,18 +44,44 @@ describe('client photo upload utilities', () => {
     expect(result.stage).toBe('envoi');
   });
 
-  it('builds a private Firebase media URL from a client-generated token', () => {
-    const token = createClientPhotoDownloadToken();
-    const url = buildClientPhotoDownloadUrl(
-      'kank-test.appspot.com',
-      'clients-home/Marie Kanku/photo.png',
-      token
+  it('uses the ordinary upload endpoint and Firebase server download URL', async () => {
+    const file = new File(['phone-photo'], 'maison.png', {
+      type: 'image/png',
+    });
+    const delegate = {} as any;
+    const uploadedReference = {} as any;
+    const storage = {
+      storage: {
+        ref: jasmine.createSpy('ref').and.returnValue({ _delegate: delegate }),
+      },
+    } as any;
+    const operations = {
+      uploadBytes: jasmine.createSpy('uploadBytes').and.resolveTo({
+        metadata: { size: file.size },
+        ref: uploadedReference,
+      }),
+      getDownloadURL: jasmine
+        .createSpy('getDownloadURL')
+        .and.resolveTo('https://firebase.test/real-server-token'),
+    } as any;
+
+    const uploaded = await uploadClientPhoto(
+      storage,
+      'clients-home/photo.png',
+      file,
+      operations
     );
 
-    expect(token).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    expect(storage.storage.ref).toHaveBeenCalledWith(
+      'clients-home/photo.png'
     );
-    expect(url).toContain('clients-home%2FMarie%20Kanku%2Fphoto.png');
-    expect(url).toContain(`token=${token}`);
+    expect(operations.uploadBytes).toHaveBeenCalledWith(delegate, file, {
+      contentType: 'image/png',
+    });
+    expect(operations.getDownloadURL).toHaveBeenCalledWith(uploadedReference);
+    expect(uploaded).toEqual({
+      downloadURL: 'https://firebase.test/real-server-token',
+      size: String(file.size),
+    });
   });
 });

@@ -1,3 +1,10 @@
+import { AngularFireStorage } from '@angular/fire/compat/storage';
+import {
+  getDownloadURL,
+  StorageReference,
+  uploadBytes,
+} from 'firebase/storage';
+
 export const MAX_CLIENT_PHOTO_BYTES = 20_000_000;
 
 const IMAGE_FILE_EXTENSION =
@@ -29,33 +36,52 @@ export function isHeicClientPhoto(file: File): boolean {
   );
 }
 
-/** Create the same UUID-shaped token Firebase uses for private download URLs. */
-export function createClientPhotoDownloadToken(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0'));
-
-  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex
-    .slice(6, 8)
-    .join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
+interface CompatStorageReferenceWithDelegate {
+  _delegate: StorageReference;
 }
 
-export function buildClientPhotoDownloadUrl(
-  bucket: string,
+interface ClientPhotoUploadOperations {
+  uploadBytes: typeof uploadBytes;
+  getDownloadURL: typeof getDownloadURL;
+}
+
+const CLIENT_PHOTO_UPLOAD_OPERATIONS: ClientPhotoUploadOperations = {
+  uploadBytes,
+  getDownloadURL,
+};
+
+export interface UploadedClientPhoto {
+  downloadURL: string;
+  size: string;
+}
+
+/**
+ * Upload in one request instead of using Firebase's resumable protocol.
+ *
+ * Some iPhone WebKit versions save a resumable upload successfully and then
+ * fail while reading its completion headers (`storage/unknown`). The ordinary
+ * upload endpoint returns the finished object's metadata in its response and
+ * avoids that false failure. Firebase still creates the private download token;
+ * we always ask Firebase for the real URL instead of guessing the token.
+ */
+export async function uploadClientPhoto(
+  storage: AngularFireStorage,
   path: string,
-  token: string
-): string {
-  return `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(
-    bucket
-  )}/o/${encodeURIComponent(path)}?alt=media&token=${encodeURIComponent(
-    token
-  )}`;
+  file: File,
+  operations: ClientPhotoUploadOperations = CLIENT_PHOTO_UPLOAD_OPERATIONS
+): Promise<UploadedClientPhoto> {
+  const compatReference = storage.storage.ref(
+    path
+  ) as unknown as CompatStorageReferenceWithDelegate;
+  const result = await operations.uploadBytes(compatReference._delegate, file, {
+    contentType: file.type || 'application/octet-stream',
+  });
+  const downloadURL = await operations.getDownloadURL(result.ref);
+
+  return {
+    downloadURL,
+    size: String(result.metadata.size ?? file.size),
+  };
 }
 
 export interface ClientPhotoUploadError {

@@ -13,11 +13,10 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 import {
-  buildClientPhotoDownloadUrl,
-  createClientPhotoDownloadToken,
   describeClientPhotoUploadError,
   isClientPhoto,
   MAX_CLIENT_PHOTO_BYTES,
+  uploadClientPhoto,
 } from 'src/app/utils/client-photo-upload.util';
 import { __generator } from 'tslib';
 @Component({
@@ -551,45 +550,19 @@ export class NewCycleRegisterComponent implements OnInit {
     let uploadStage = 'préparation';
     const uniqueSuffix = Date.now();
     const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
-    const downloadToken = createClientPhotoDownloadToken();
-    const downloadURL = buildClientPhotoDownloadUrl(
-      this.storage.storage.ref().bucket,
-      path,
-      downloadToken
-    );
 
     try {
       uploadStage = 'envoi vers Firebase Storage';
-      const uploadSnapshot = await this.storage.upload(path, file, {
-        contentType: file.type || 'application/octet-stream',
-        customMetadata: {
-          firebaseStorageDownloadTokens: downloadToken,
-        },
-      });
-      uploadStage = 'finalisation des informations de la photo';
+      const uploadedPhoto = await uploadClientPhoto(this.storage, path, file);
+      const downloadURL = uploadedPhoto.downloadURL;
       this.homePictureUrl = downloadURL;
       this.client.homePicture = {
         path: path,
         downloadURL,
-        size: String(uploadSnapshot.totalBytes ?? file.size),
+        size: uploadedPhoto.size,
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
-
-      // The iOS upload is complete in Storage, but Firebase 10's resumable
-      // response parser can still reject it. We supplied the download token up
-      // front, so no second SDK request is needed to keep the successful photo.
-      if ((error as { code?: string } | null)?.code === 'storage/unknown') {
-        this.homePictureUrl = downloadURL;
-        this.client.homePicture = {
-          path,
-          downloadURL,
-          size: String(file.size),
-        };
-        this.homePictureUploadError = '';
-        return;
-      }
-
       const uploadError = describeClientPhotoUploadError(error, uploadStage);
       this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
       this.homePictureUploadError = `${uploadError.message} Étape: ${uploadError.stage}. Code: ${uploadError.code}. Détail: ${uploadError.detail}`;
