@@ -39,11 +39,18 @@ exports.recoverClientPhotoUpload = functions.https.onCall(async (data, context) 
   const bucket = admin.storage().bucket();
   const file = bucket.file(path);
   const [exists] = await file.exists();
+  const rawUploadError = (data && data.uploadError) || {};
+  const uploadError = {
+    code: String(rawUploadError.code || "").slice(0, 100),
+    status: String(rawUploadError.status || "").slice(0, 20),
+    serverResponse: String(rawUploadError.serverResponse || "").slice(0, 1000),
+  };
 
   if (!exists) {
     console.warn("Client photo recovery could not find the object", {
       path,
       uid: context.auth.uid,
+      uploadError,
     });
     return {exists: false};
   }

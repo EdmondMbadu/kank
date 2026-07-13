@@ -10,7 +10,7 @@ import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
-import { recoverClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
+import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 import { __generator } from 'tslib';
@@ -553,7 +553,13 @@ export class NewCycleRegisterComponent implements OnInit {
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
-      const recovered = await recoverClientPhotoUpload(this.fns, error, path);
+      const recovered = await recoverOrRetryClientPhotoUpload(
+        this.fns,
+        this.storage,
+        error,
+        path,
+        file
+      );
 
       if (recovered) {
         this.homePictureUrl = recovered.downloadURL;

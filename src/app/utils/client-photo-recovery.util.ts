@@ -1,4 +1,6 @@
 import { AngularFireFunctions } from '@angular/fire/compat/functions';
+import { AngularFireStorage } from '@angular/fire/compat/storage';
+import { getDownloadURL, uploadBytes } from 'firebase/storage';
 import { firstValueFrom } from 'rxjs';
 
 export interface RecoveredClientPhoto {
@@ -12,8 +14,38 @@ interface ClientPhotoRecoveryResponse {
   size?: unknown;
 }
 
+interface StorageErrorDiagnostics {
+  code: string;
+  serverResponse: string;
+  status: string;
+}
+
+export type ClientPhotoOneShotUploader = (
+  storage: AngularFireStorage,
+  path: string,
+  file: File
+) => Promise<RecoveredClientPhoto>;
+
 export function isUnknownStorageError(error: unknown): boolean {
   return (error as { code?: unknown } | null)?.code === 'storage/unknown';
+}
+
+function storageErrorDiagnostics(error: unknown): StorageErrorDiagnostics {
+  const value = (error || {}) as {
+    code?: unknown;
+    customData?: { serverResponse?: unknown };
+    serverResponse?: unknown;
+    status?: unknown;
+    status_?: unknown;
+  };
+  const serverResponse =
+    value.customData?.serverResponse ?? value.serverResponse ?? '';
+
+  return {
+    code: String(value.code || '').slice(0, 100),
+    serverResponse: String(serverResponse || '').slice(0, 1000),
+    status: String(value.status ?? value.status_ ?? '').slice(0, 20),
+  };
 }
 
 /**
@@ -32,10 +64,12 @@ export async function recoverClientPhotoUpload(
 
   try {
     const callable = functions.httpsCallable<
-      { path: string },
+      { path: string; uploadError: StorageErrorDiagnostics },
       ClientPhotoRecoveryResponse
     >('recoverClientPhotoUpload');
-    const response = await firstValueFrom(callable({ path }));
+    const response = await firstValueFrom(
+      callable({ path, uploadError: storageErrorDiagnostics(error) })
+    );
 
     if (
       response?.exists !== true ||
@@ -52,5 +86,70 @@ export async function recoverClientPhotoUpload(
   } catch (recoveryError) {
     console.error('Client photo recovery failed:', recoveryError);
     return null;
+  }
+}
+
+/**
+ * Uses Firebase's one-request multipart uploader instead of the resumable
+ * transport used by AngularFireStorage.upload(). The compat reference keeps
+ * the existing signed-in Firebase app; uploadBytes only changes the wire
+ * protocol used for this retry.
+ */
+export async function uploadClientPhotoOneShot(
+  storage: AngularFireStorage,
+  path: string,
+  file: File
+): Promise<RecoveredClientPhoto> {
+  const compatReference = storage.storage.ref(path) as unknown as {
+    _delegate?: unknown;
+  };
+
+  if (!compatReference._delegate) {
+    throw new Error('Firebase Storage reference is unavailable.');
+  }
+
+  const result = await uploadBytes(compatReference._delegate as any, file, {
+    contentType: file.type || 'application/octet-stream',
+  });
+  const downloadURL = await getDownloadURL(result.ref);
+
+  return {
+    downloadURL,
+    size: String(result.metadata.size || file.size || 0),
+  };
+}
+
+/**
+ * Resolve an ambiguous completed upload first. If the server confirms that no
+ * object exists, retry the same file with Firebase's non-resumable uploader.
+ * A final server check also covers the unlikely case where that retry commits
+ * the object but its response is lost.
+ */
+export async function recoverOrRetryClientPhotoUpload(
+  functions: AngularFireFunctions,
+  storage: AngularFireStorage,
+  error: unknown,
+  path: string,
+  file: File,
+  oneShotUploader: ClientPhotoOneShotUploader = uploadClientPhotoOneShot
+): Promise<RecoveredClientPhoto | null> {
+  if (!isUnknownStorageError(error)) {
+    return null;
+  }
+
+  const alreadyUploaded = await recoverClientPhotoUpload(
+    functions,
+    error,
+    path
+  );
+  if (alreadyUploaded) {
+    return alreadyUploaded;
+  }
+
+  try {
+    return await oneShotUploader(storage, path, file);
+  } catch (oneShotError) {
+    console.error('Client photo one-shot upload failed:', oneShotError);
+    return recoverClientPhotoUpload(functions, error, path);
   }
 }

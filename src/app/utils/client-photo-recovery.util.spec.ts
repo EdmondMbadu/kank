@@ -1,6 +1,7 @@
 import { of, throwError } from 'rxjs';
 import {
   isUnknownStorageError,
+  recoverOrRetryClientPhotoUpload,
   recoverClientPhotoUpload,
 } from './client-photo-recovery.util';
 
@@ -44,7 +45,14 @@ describe('client photo recovery', () => {
     expect(functions.httpsCallable).toHaveBeenCalledWith(
       'recoverClientPhotoUpload'
     );
-    expect(callable).toHaveBeenCalledWith({ path: 'clients-home/photo.jpg' });
+    expect(callable).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        path: 'clients-home/photo.jpg',
+        uploadError: jasmine.objectContaining({
+          code: 'storage/unknown',
+        }),
+      })
+    );
     expect(recovered).toEqual({
       downloadURL: 'https://firebase.test/real-token',
       size: '63812',
@@ -83,5 +91,111 @@ describe('client photo recovery', () => {
 
     expect(recovered).toBeNull();
     expect(console.error).toHaveBeenCalled();
+  });
+
+  it('uses a one-shot upload when the resumable object is genuinely missing', async () => {
+    const callable = jasmine
+      .createSpy('callable')
+      .and.returnValue(of({ exists: false }));
+    const functions = {
+      httpsCallable: jasmine
+        .createSpy('httpsCallable')
+        .and.returnValue(callable),
+    } as any;
+    const file = new File(['iphone-photo'], 'photo.jpg', {
+      type: 'image/jpeg',
+    });
+    const oneShotUploader = jasmine
+      .createSpy('oneShotUploader')
+      .and.resolveTo({
+        downloadURL: 'https://firebase.test/one-shot-photo',
+        size: String(file.size),
+      });
+
+    const recovered = await recoverOrRetryClientPhotoUpload(
+      functions,
+      {} as any,
+      {
+        code: 'storage/unknown',
+        status_: 400,
+        customData: { serverResponse: '' },
+      },
+      'clients-home/photo.jpg',
+      file,
+      oneShotUploader
+    );
+
+    expect(oneShotUploader).toHaveBeenCalledWith(
+      jasmine.anything(),
+      'clients-home/photo.jpg',
+      file
+    );
+    expect(recovered).toEqual({
+      downloadURL: 'https://firebase.test/one-shot-photo',
+      size: String(file.size),
+    });
+    const request = callable.calls.mostRecent().args[0];
+    expect(request.uploadError).toEqual({
+      code: 'storage/unknown',
+      serverResponse: '',
+      status: '400',
+    });
+  });
+
+  it('does not use the one-shot fallback for a specific Storage error', async () => {
+    const functions = {
+      httpsCallable: jasmine.createSpy('httpsCallable'),
+    } as any;
+    const oneShotUploader = jasmine.createSpy('oneShotUploader');
+
+    const recovered = await recoverOrRetryClientPhotoUpload(
+      functions,
+      {} as any,
+      { code: 'storage/unauthorized' },
+      'clients-avatar/photo.jpg',
+      new File(['photo'], 'photo.jpg', { type: 'image/jpeg' }),
+      oneShotUploader
+    );
+
+    expect(recovered).toBeNull();
+    expect(oneShotUploader).not.toHaveBeenCalled();
+    expect(functions.httpsCallable).not.toHaveBeenCalled();
+  });
+
+  it('checks the server again when the one-shot response also fails', async () => {
+    const callable = jasmine
+      .createSpy('callable')
+      .and.returnValues(
+        of({ exists: false }),
+        of({
+          exists: true,
+          downloadURL: 'https://firebase.test/committed-one-shot',
+          size: '2048',
+        })
+      );
+    const functions = {
+      httpsCallable: jasmine
+        .createSpy('httpsCallable')
+        .and.returnValue(callable),
+    } as any;
+    const oneShotUploader = jasmine
+      .createSpy('oneShotUploader')
+      .and.rejectWith({ code: 'storage/unknown' });
+    spyOn(console, 'error');
+
+    const recovered = await recoverOrRetryClientPhotoUpload(
+      functions,
+      {} as any,
+      { code: 'storage/unknown' },
+      'clients-home/photo.jpg',
+      new File(['photo'], 'photo.jpg', { type: 'image/jpeg' }),
+      oneShotUploader
+    );
+
+    expect(callable).toHaveBeenCalledTimes(2);
+    expect(recovered).toEqual({
+      downloadURL: 'https://firebase.test/committed-one-shot',
+      size: '2048',
+    });
   });
 });

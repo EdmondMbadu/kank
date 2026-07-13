@@ -8,7 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
-import { recoverClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
+import { recoverOrRetryClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 
 @Component({
@@ -619,7 +619,13 @@ export class RegisterClientComponent implements OnInit {
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
-      const recovered = await recoverClientPhotoUpload(this.fns, error, path);
+      const recovered = await recoverOrRetryClientPhotoUpload(
+        this.fns,
+        this.storage,
+        error,
+        path,
+        file
+      );
 
       if (recovered) {
         this.homePictureUrl = recovered.downloadURL;
@@ -679,7 +685,13 @@ export class RegisterClientComponent implements OnInit {
       this.avatar = avatar;
     } catch (error) {
       console.error('Error uploading client profile picture:', error);
-      const recovered = await recoverClientPhotoUpload(this.fns, error, path);
+      const recovered = await recoverOrRetryClientPhotoUpload(
+        this.fns,
+        this.storage,
+        error,
+        path,
+        file
+      );
 
       if (recovered) {
         this.url = recovered.downloadURL;
