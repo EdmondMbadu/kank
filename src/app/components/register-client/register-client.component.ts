@@ -13,7 +13,6 @@ import {
   describeClientPhotoUploadError,
   isClientPhoto,
   MAX_CLIENT_PHOTO_BYTES,
-  uploadClientPhoto,
 } from 'src/app/utils/client-photo-upload.util';
 
 @Component({
@@ -617,16 +616,19 @@ export class RegisterClientComponent implements OnInit {
     let uploadStage = 'préparation';
     const uniqueSuffix = Date.now();
     const path = `clients-home/${this.firstName}-${this.middleName}-${this.lastName}-${uniqueSuffix}`;
+    const localPreviewUrl = URL.createObjectURL(file);
+    this.homePictureUrl = localPreviewUrl;
 
     try {
       uploadStage = 'envoi vers Firebase Storage';
-      const uploadedPhoto = await uploadClientPhoto(this.storage, path, file);
-      const downloadURL = uploadedPhoto.downloadURL;
+      const uploadTask = await this.storage.upload(path, file);
+      uploadStage = 'lecture du lien Firebase';
+      const downloadURL = await uploadTask.ref.getDownloadURL();
       this.homePictureUrl = downloadURL;
       this.homePictureAvatar = {
         path: path,
         downloadURL,
-        size: uploadedPhoto.size,
+        size: uploadTask.totalBytes.toString(),
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
@@ -636,6 +638,7 @@ export class RegisterClientComponent implements OnInit {
       this.homePictureUploadError = `${uploadError.message} Étape: ${uploadError.stage}. Code: ${uploadError.code}. Détail: ${uploadError.detail}`;
       alert(this.homePictureUploadError);
     } finally {
+      URL.revokeObjectURL(localPreviewUrl);
       this.homePictureUploading = false;
       this.resetHomePictureInputs();
     }

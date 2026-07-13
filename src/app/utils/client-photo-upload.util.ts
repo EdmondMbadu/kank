@@ -1,10 +1,3 @@
-import { AngularFireStorage } from '@angular/fire/compat/storage';
-import {
-  getDownloadURL,
-  StorageReference,
-  uploadBytes,
-} from 'firebase/storage';
-
 export const MAX_CLIENT_PHOTO_BYTES = 20_000_000;
 
 const IMAGE_FILE_EXTENSION =
@@ -34,54 +27,6 @@ export function isHeicClientPhoto(file: File): boolean {
     /^image\/hei[cf](?:-sequence)?$/.test(mimeType) ||
     HEIC_FILE_EXTENSION.test(file.name || '')
   );
-}
-
-interface CompatStorageReferenceWithDelegate {
-  _delegate: StorageReference;
-}
-
-interface ClientPhotoUploadOperations {
-  uploadBytes: typeof uploadBytes;
-  getDownloadURL: typeof getDownloadURL;
-}
-
-const CLIENT_PHOTO_UPLOAD_OPERATIONS: ClientPhotoUploadOperations = {
-  uploadBytes,
-  getDownloadURL,
-};
-
-export interface UploadedClientPhoto {
-  downloadURL: string;
-  size: string;
-}
-
-/**
- * Upload in one request instead of using Firebase's resumable protocol.
- *
- * Some iPhone WebKit versions save a resumable upload successfully and then
- * fail while reading its completion headers (`storage/unknown`). The ordinary
- * upload endpoint returns the finished object's metadata in its response and
- * avoids that false failure. Firebase still creates the private download token;
- * we always ask Firebase for the real URL instead of guessing the token.
- */
-export async function uploadClientPhoto(
-  storage: AngularFireStorage,
-  path: string,
-  file: File,
-  operations: ClientPhotoUploadOperations = CLIENT_PHOTO_UPLOAD_OPERATIONS
-): Promise<UploadedClientPhoto> {
-  const compatReference = storage.storage.ref(
-    path
-  ) as unknown as CompatStorageReferenceWithDelegate;
-  const result = await operations.uploadBytes(compatReference._delegate, file, {
-    contentType: file.type || 'application/octet-stream',
-  });
-  const downloadURL = await operations.getDownloadURL(result.ref);
-
-  return {
-    downloadURL,
-    size: String(result.metadata.size ?? file.size),
-  };
 }
 
 export interface ClientPhotoUploadError {

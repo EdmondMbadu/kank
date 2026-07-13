@@ -2,7 +2,6 @@ import {
   describeClientPhotoUploadError,
   isClientPhoto,
   isHeicClientPhoto,
-  uploadClientPhoto,
 } from './client-photo-upload.util';
 
 describe('client photo upload utilities', () => {
@@ -42,46 +41,5 @@ describe('client photo upload utilities', () => {
     expect(result.code).toBe('storage/unauthenticated');
     expect(result.message).toContain('session');
     expect(result.stage).toBe('envoi');
-  });
-
-  it('uses the ordinary upload endpoint and Firebase server download URL', async () => {
-    const file = new File(['phone-photo'], 'maison.png', {
-      type: 'image/png',
-    });
-    const delegate = {} as any;
-    const uploadedReference = {} as any;
-    const storage = {
-      storage: {
-        ref: jasmine.createSpy('ref').and.returnValue({ _delegate: delegate }),
-      },
-    } as any;
-    const operations = {
-      uploadBytes: jasmine.createSpy('uploadBytes').and.resolveTo({
-        metadata: { size: file.size },
-        ref: uploadedReference,
-      }),
-      getDownloadURL: jasmine
-        .createSpy('getDownloadURL')
-        .and.resolveTo('https://firebase.test/real-server-token'),
-    } as any;
-
-    const uploaded = await uploadClientPhoto(
-      storage,
-      'clients-home/photo.png',
-      file,
-      operations
-    );
-
-    expect(storage.storage.ref).toHaveBeenCalledWith(
-      'clients-home/photo.png'
-    );
-    expect(operations.uploadBytes).toHaveBeenCalledWith(delegate, file, {
-      contentType: 'image/png',
-    });
-    expect(operations.getDownloadURL).toHaveBeenCalledWith(uploadedReference);
-    expect(uploaded).toEqual({
-      downloadURL: 'https://firebase.test/real-server-token',
-      size: String(file.size),
-    });
   });
 });
