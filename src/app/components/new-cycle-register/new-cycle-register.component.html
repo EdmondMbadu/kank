@@ -208,12 +208,6 @@
                   {{ homePictureUploading ? 'Chargement...' : (homePictureUrl ? 'Changer la photo' : 'Ajouter la photo') }}
                 </button>
                 <p
-                  *ngIf="homePictureUploading"
-                  class="mt-2 text-center text-xs font-semibold text-emerald-700"
-                >
-                  Chargement sécurisé de la photo vers Firebase...
-                </p>
-                <p
                   *ngIf="homePictureUploadError"
                   class="mt-2 text-center text-xs font-semibold text-red-700"
                 >

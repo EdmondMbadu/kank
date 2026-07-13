@@ -547,10 +547,10 @@ export class NewCycleRegisterComponent implements OnInit {
     this.homePictureUploading = true;
     this.homePictureUploadError = '';
     let uploadStage = 'préparation';
+    const uniqueSuffix = Date.now();
+    const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
 
     try {
-      const uniqueSuffix = Date.now();
-      const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
       uploadStage = 'envoi vers Firebase Storage';
       const uploadSnapshot = await this.storage.upload(path, file);
       uploadStage = 'récupération du lien de la photo';
@@ -564,6 +564,32 @@ export class NewCycleRegisterComponent implements OnInit {
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
+
+      // On iOS, Firebase's resumable upload can create the object successfully
+      // and still reject while parsing the final response as storage/unknown.
+      // Confirm the object at the exact path before treating the upload as failed.
+      if ((error as { code?: string } | null)?.code === 'storage/unknown') {
+        try {
+          uploadStage = 'confirmation de la photo déjà envoyée';
+          const downloadURL = await this.storage.storage
+            .ref(path)
+            .getDownloadURL();
+          this.homePictureUrl = downloadURL;
+          this.client.homePicture = {
+            path,
+            downloadURL,
+            size: String(file.size),
+          };
+          this.homePictureUploadError = '';
+          return;
+        } catch (confirmationError) {
+          console.error(
+            'Uploaded home picture could not be confirmed:',
+            confirmationError
+          );
+        }
+      }
+
       const uploadError = describeClientPhotoUploadError(error, uploadStage);
       this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
       this.homePictureUploadError = `${uploadError.message} Étape: ${uploadError.stage}. Code: ${uploadError.code}. Détail: ${uploadError.detail}`;
