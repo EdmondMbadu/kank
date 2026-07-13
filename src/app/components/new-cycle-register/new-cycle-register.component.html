@@ -169,14 +169,14 @@
                 <input
                   type="file"
                   id="putHomePicture"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   class="hidden"
                   (change)="startHomePictureUpload($any($event.target).files)"
                 />
                 <input
                   type="file"
                   id="changeHomePicture"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   class="hidden"
                   (change)="startHomePictureUpload($any($event.target).files)"
                 />
@@ -614,9 +614,10 @@
           </a>
           <button
             class="cycle-danger-button"
+            [disabled]="homePictureUploading"
             (click)="registerClientNewDebtCycle()"
           >
-            Soumettre
+            {{ homePictureUploading ? 'Chargement de la photo...' : 'Soumettre' }}
           </button>
         </div>
       </div>
