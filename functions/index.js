@@ -3,10 +3,6 @@
 /* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 const functions = require("firebase-functions");
-const {
-  HttpsError: HttpsErrorV2,
-  onCall: onCallV2,
-} = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const {randomUUID} = require("crypto");
 const AfricasTalking = require("africastalking");
@@ -103,91 +99,150 @@ exports.recoverClientPhotoUpload = functions.https.onCall(async (data, context) 
   };
 });
 
-exports.uploadClientPhotoFallback = onCallV2(
-    {
-      region: "us-central1",
-      timeoutSeconds: 120,
-      memory: "512MiB",
-      maxInstances: 10,
-    },
-    async (request) => {
-      if (!request.auth) {
-        throw new HttpsErrorV2(
+exports.uploadClientPhotoChunkFallback = functions
+    .runWith({timeoutSeconds: 120, memory: "512MB"})
+    .https.onCall(async (data, context) => {
+      if (!context.auth) {
+        throw new functions.https.HttpsError(
             "unauthenticated",
             "Authentication is required to upload a client photo.",
         );
       }
 
-      const data = request.data || {};
-      const path = String(data.path || "").trim();
-      const contentType = String(data.contentType || "").trim().toLowerCase();
-      const contentBase64 = String(data.contentBase64 || "");
+      const payload = data || {};
+      const path = String(payload.path || "").trim();
+      const contentType = String(payload.contentType || "").trim().toLowerCase();
+      const chunkBase64 = String(payload.chunkBase64 || "");
+      const uploadId = String(payload.uploadId || "").trim();
+      const chunkIndex = Number(payload.chunkIndex);
+      const totalChunks = Number(payload.totalChunks);
       const allowedPath =
         path.startsWith("clients-home/") || path.startsWith("clients-avatar/");
 
       if (!allowedPath || path.length > 1024 || path.endsWith("/")) {
-        throw new HttpsErrorV2(
+        throw new functions.https.HttpsError(
             "invalid-argument",
             "A valid client photo path is required.",
         );
       }
       if (!/^image\/[a-z0-9.+-]+$/i.test(contentType)) {
-        throw new HttpsErrorV2(
+        throw new functions.https.HttpsError(
             "invalid-argument",
             "A valid image content type is required.",
         );
       }
-      if (
-        !contentBase64 ||
-        contentBase64.length > 28000000 ||
-        !/^[a-z0-9+/]*={0,2}$/i.test(contentBase64)
-      ) {
-        throw new HttpsErrorV2(
+      if (!/^[a-z0-9_-]{10,80}$/i.test(uploadId)) {
+        throw new functions.https.HttpsError(
             "invalid-argument",
-            "The client photo data is invalid or too large.",
+            "A valid photo upload identifier is required.",
+        );
+      }
+      if (
+        !Number.isInteger(chunkIndex) ||
+        !Number.isInteger(totalChunks) ||
+        totalChunks < 1 ||
+        totalChunks > 10 ||
+        chunkIndex < 0 ||
+        chunkIndex >= totalChunks
+      ) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "The photo chunk position is invalid.",
+        );
+      }
+      if (
+        !chunkBase64 ||
+        chunkBase64.length > 4100000 ||
+        !/^[a-z0-9+/]*={0,2}$/i.test(chunkBase64)
+      ) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "The photo chunk is invalid or too large.",
         );
       }
 
-      const photoBuffer = Buffer.from(contentBase64, "base64");
+      const chunkBuffer = Buffer.from(chunkBase64, "base64");
+      if (!chunkBuffer.length || chunkBuffer.length > 3000000) {
+        throw new functions.https.HttpsError(
+            "invalid-argument",
+            "Each photo chunk must be at most 3 MB.",
+        );
+      }
+
+      const bucket = admin.storage().bucket();
+      const chunkPrefix =
+        `client-photo-upload-chunks/${context.auth.uid}/${uploadId}`;
+      const chunkName = String(chunkIndex).padStart(2, "0");
+      await bucket.file(`${chunkPrefix}/${chunkName}`).save(chunkBuffer, {
+        resumable: false,
+        validation: "md5",
+        metadata: {contentType: "application/octet-stream"},
+      });
+
+      if (chunkIndex < totalChunks - 1) {
+        return {complete: false};
+      }
+
+      const chunkFiles = Array.from({length: totalChunks}, (_, index) =>
+        bucket.file(`${chunkPrefix}/${String(index).padStart(2, "0")}`),
+      );
+      let downloadedChunks;
+      try {
+        downloadedChunks = await Promise.all(
+            chunkFiles.map((chunkFile) => chunkFile.download()),
+        );
+      } catch (error) {
+        throw new functions.https.HttpsError(
+            "failed-precondition",
+            "One or more photo chunks could not be assembled.",
+        );
+      }
+
+      const photoBuffer = Buffer.concat(
+          downloadedChunks.map(([buffer]) => buffer),
+      );
       if (!photoBuffer.length || photoBuffer.length >= 20000000) {
-        throw new HttpsErrorV2(
+        throw new functions.https.HttpsError(
             "invalid-argument",
             "The client photo must be smaller than 20 MB.",
         );
       }
 
-      const bucket = admin.storage().bucket();
       const file = bucket.file(path);
       const token = randomUUID();
-
       await file.save(photoBuffer, {
         resumable: false,
         validation: "md5",
         metadata: {
           contentType,
-          metadata: {
-            firebaseStorageDownloadTokens: token,
-          },
+          metadata: {firebaseStorageDownloadTokens: token},
         },
       });
+
+      await Promise.all(
+          chunkFiles.map((chunkFile) =>
+            chunkFile.delete().catch(() => undefined),
+          ),
+      );
 
       const downloadURL =
         `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket.name)}` +
         `/o/${encodeURIComponent(path)}?alt=media&token=${encodeURIComponent(token)}`;
 
-      console.info("Uploaded client photo through authenticated fallback", {
+      console.info("Uploaded client photo through chunked fallback", {
         path,
-        uid: request.auth.uid,
+        uid: context.auth.uid,
         size: String(photoBuffer.length),
         contentType,
+        totalChunks,
       });
 
       return {
+        complete: true,
         downloadURL,
         size: String(photoBuffer.length),
       };
-    },
-);
+    });
 
 // Initialize Africa's Talking SDK (deferred if credentials are missing in emulator)
 let sms = null;

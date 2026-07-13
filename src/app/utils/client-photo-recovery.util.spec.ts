@@ -206,12 +206,16 @@ describe('client photo recovery', () => {
   });
 
   it('sends exact image bytes and metadata through the server fallback', async () => {
-    const callable = jasmine.createSpy('callable').and.returnValue(
-      of({
-        downloadURL: 'https://firebase.test/server-photo',
-        size: '5',
-      })
-    );
+    const callable = jasmine
+      .createSpy('callable')
+      .and.returnValues(
+        of({ complete: false }),
+        of({
+          complete: true,
+          downloadURL: 'https://firebase.test/server-photo',
+          size: '5',
+        })
+      );
     const functions = {
       httpsCallable: jasmine
         .createSpy('httpsCallable')
@@ -221,17 +225,33 @@ describe('client photo recovery', () => {
     const uploaded = await uploadClientPhotoThroughServer(
       functions,
       'clients-avatar/photo.jpg',
-      new File(['photo'], 'photo.jpg', { type: 'image/jpeg' })
+      new File(['photo'], 'photo.jpg', { type: 'image/jpeg' }),
+      3
     );
 
     expect(functions.httpsCallable).toHaveBeenCalledWith(
-      'uploadClientPhotoFallback'
+      'uploadClientPhotoChunkFallback'
     );
-    expect(callable).toHaveBeenCalledWith({
-      path: 'clients-avatar/photo.jpg',
-      contentType: 'image/jpeg',
-      contentBase64: btoa('photo'),
-    });
+    expect(callable).toHaveBeenCalledTimes(2);
+    const firstChunk = callable.calls.argsFor(0)[0];
+    const secondChunk = callable.calls.argsFor(1)[0];
+    expect(firstChunk).toEqual(
+      jasmine.objectContaining({
+        path: 'clients-avatar/photo.jpg',
+        contentType: 'image/jpeg',
+        chunkIndex: 0,
+        totalChunks: 2,
+        chunkBase64: btoa('pho'),
+      })
+    );
+    expect(secondChunk).toEqual(
+      jasmine.objectContaining({
+        uploadId: firstChunk.uploadId,
+        chunkIndex: 1,
+        totalChunks: 2,
+        chunkBase64: btoa('to'),
+      })
+    );
     expect(uploaded.downloadURL).toBe(
       'https://firebase.test/server-photo'
     );

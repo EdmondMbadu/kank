@@ -15,6 +15,7 @@ interface ClientPhotoRecoveryResponse {
 }
 
 interface ClientPhotoFallbackResponse {
+  complete?: unknown;
   downloadURL?: unknown;
   size?: unknown;
 }
@@ -151,22 +152,45 @@ function bytesToBase64(bytes: Uint8Array): string {
 export async function uploadClientPhotoThroughServer(
   functions: AngularFireFunctions,
   path: string,
-  file: File
+  file: File,
+  chunkSize = 3_000_000
 ): Promise<RecoveredClientPhoto> {
   const bytes = new Uint8Array(await file.arrayBuffer());
+  const totalChunks = Math.ceil(bytes.length / chunkSize);
+  const uploadId =
+    typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
   const callable = functions.httpsCallable<
-    { path: string; contentType: string; contentBase64: string },
+    {
+      path: string;
+      contentType: string;
+      uploadId: string;
+      chunkIndex: number;
+      totalChunks: number;
+      chunkBase64: string;
+    },
     ClientPhotoFallbackResponse
-  >('uploadClientPhotoFallback');
-  const response = await firstValueFrom(
-    callable({
-      path,
-      contentType: file.type || 'application/octet-stream',
-      contentBase64: bytesToBase64(bytes),
-    })
-  );
+  >('uploadClientPhotoChunkFallback');
+  let response: ClientPhotoFallbackResponse | undefined;
+
+  for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
+    const start = chunkIndex * chunkSize;
+    const chunk = bytes.subarray(start, start + chunkSize);
+    response = await firstValueFrom(
+      callable({
+        path,
+        contentType: file.type || 'application/octet-stream',
+        uploadId,
+        chunkIndex,
+        totalChunks,
+        chunkBase64: bytesToBase64(chunk),
+      })
+    );
+  }
 
   if (
+    response?.complete !== true ||
     typeof response?.downloadURL !== 'string' ||
     !response.downloadURL
   ) {
