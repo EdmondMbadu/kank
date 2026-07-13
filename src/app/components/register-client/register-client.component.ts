@@ -613,29 +613,28 @@ export class RegisterClientComponent implements OnInit {
     this.homePictureAvatar = null;
     this.homePictureUploading = true;
     this.homePictureUploadError = '';
+    let uploadStage = 'préparation';
 
     try {
-      const hasFreshSession = await this.auth.refreshFirebaseSession();
-      if (!hasFreshSession) {
-        throw { code: 'storage/unauthenticated' };
-      }
-
       const uniqueSuffix = Date.now();
       const path = `clients-home/${this.firstName}-${this.middleName}-${this.lastName}-${uniqueSuffix}`;
-      const uploadTask = await this.storage.upload(path, file);
-      const downloadURL = await uploadTask.ref.getDownloadURL();
+      uploadStage = 'envoi vers Firebase Storage';
+      const uploadSnapshot = await this.storage.upload(path, file);
+      uploadStage = 'récupération du lien de la photo';
+      const downloadURL = await uploadSnapshot.ref.getDownloadURL();
+      uploadStage = 'finalisation des informations de la photo';
       this.homePictureUrl = downloadURL;
       this.homePictureAvatar = {
         path: path,
         downloadURL,
-        size: uploadTask.totalBytes.toString(),
+        size: String(uploadSnapshot.totalBytes ?? file.size),
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
-      const uploadError = describeClientPhotoUploadError(error);
+      const uploadError = describeClientPhotoUploadError(error, uploadStage);
       this.homePictureUrl = '';
       this.homePictureAvatar = null;
-      this.homePictureUploadError = `${uploadError.message} (${uploadError.code})`;
+      this.homePictureUploadError = `${uploadError.message} Étape: ${uploadError.stage}. Code: ${uploadError.code}. Détail: ${uploadError.detail}`;
       alert(this.homePictureUploadError);
     } finally {
       this.homePictureUploading = false;

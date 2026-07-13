@@ -36,9 +36,10 @@ describe('client photo upload utilities', () => {
   it('exposes an authentication failure with an actionable message', () => {
     const result = describeClientPhotoUploadError({
       code: 'storage/unauthenticated',
-    });
+    }, 'envoi');
 
     expect(result.code).toBe('storage/unauthenticated');
     expect(result.message).toContain('session');
+    expect(result.stage).toBe('envoi');
   });
 });

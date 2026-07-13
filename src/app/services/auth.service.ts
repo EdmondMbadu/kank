@@ -348,16 +348,6 @@ export class AuthService {
     });
   }
 
-  /** Ensure Storage receives a current Firebase Auth token on mobile devices. */
-  async refreshFirebaseSession(): Promise<boolean> {
-    const user = await firstValueFrom(this.fireauth.authState.pipe(take(1)));
-    if (!user) {
-      return false;
-    }
-
-    await user.getIdToken(true);
-    return true;
-  }
   // auth.service.ts
   SignOn(email: string, password: string, word: string): Promise<void> {
     return this.fireauth // ← on retourne la promesse

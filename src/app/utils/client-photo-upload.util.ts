@@ -31,16 +31,23 @@ export function isHeicClientPhoto(file: File): boolean {
 
 export interface ClientPhotoUploadError {
   code: string;
+  detail: string;
   message: string;
+  stage: string;
 }
 
 /** Return a useful phone-visible error instead of hiding Firebase's error code. */
 export function describeClientPhotoUploadError(
-  error: unknown
+  error: unknown,
+  stage: string
 ): ClientPhotoUploadError {
   const candidate = error as { code?: unknown; message?: unknown } | null;
   const code =
     typeof candidate?.code === 'string' ? candidate.code : 'storage/unknown';
+  const detail =
+    typeof candidate?.message === 'string' && candidate.message.trim()
+      ? candidate.message.trim()
+      : String(error);
 
   const messages: Record<string, string> = {
     'storage/unauthenticated':
@@ -58,8 +65,10 @@ export function describeClientPhotoUploadError(
 
   return {
     code,
+    detail,
     message:
       messages[code] ||
-      "Firebase n'a pas pu charger cette photo. Réessayez avec une connexion stable.",
+      "Une erreur technique a interrompu le chargement de la photo.",
+    stage,
   };
 }
