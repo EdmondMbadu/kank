@@ -14,6 +14,11 @@ interface ClientPhotoRecoveryResponse {
   size?: unknown;
 }
 
+interface ClientPhotoFallbackResponse {
+  downloadURL?: unknown;
+  size?: unknown;
+}
+
 interface StorageErrorDiagnostics {
   code: string;
   serverResponse: string;
@@ -22,6 +27,12 @@ interface StorageErrorDiagnostics {
 
 export type ClientPhotoOneShotUploader = (
   storage: AngularFireStorage,
+  path: string,
+  file: File
+) => Promise<RecoveredClientPhoto>;
+
+export type ClientPhotoServerUploader = (
+  functions: AngularFireFunctions,
   path: string,
   file: File
 ) => Promise<RecoveredClientPhoto>;
@@ -119,6 +130,55 @@ export async function uploadClientPhotoOneShot(
   };
 }
 
+function bytesToBase64(bytes: Uint8Array): string {
+  const chunks: string[] = [];
+  const chunkSize = 0x8000;
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    chunks.push(
+      String.fromCharCode(...bytes.subarray(offset, offset + chunkSize))
+    );
+  }
+
+  return btoa(chunks.join(''));
+}
+
+/**
+ * Final mobile fallback. The callable channel is already authenticated and
+ * working on affected iPhones, so send the image bytes through it and let the
+ * trusted backend write to Storage without using iOS's failing Storage XHR.
+ */
+export async function uploadClientPhotoThroughServer(
+  functions: AngularFireFunctions,
+  path: string,
+  file: File
+): Promise<RecoveredClientPhoto> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const callable = functions.httpsCallable<
+    { path: string; contentType: string; contentBase64: string },
+    ClientPhotoFallbackResponse
+  >('uploadClientPhotoFallback');
+  const response = await firstValueFrom(
+    callable({
+      path,
+      contentType: file.type || 'application/octet-stream',
+      contentBase64: bytesToBase64(bytes),
+    })
+  );
+
+  if (
+    typeof response?.downloadURL !== 'string' ||
+    !response.downloadURL
+  ) {
+    throw new Error('The photo fallback returned no download URL.');
+  }
+
+  return {
+    downloadURL: response.downloadURL,
+    size: String(response.size || file.size || 0),
+  };
+}
+
 /**
  * Resolve an ambiguous completed upload first. If the server confirms that no
  * object exists, retry the same file with Firebase's non-resumable uploader.
@@ -131,7 +191,8 @@ export async function recoverOrRetryClientPhotoUpload(
   error: unknown,
   path: string,
   file: File,
-  oneShotUploader: ClientPhotoOneShotUploader = uploadClientPhotoOneShot
+  oneShotUploader: ClientPhotoOneShotUploader = uploadClientPhotoOneShot,
+  serverUploader: ClientPhotoServerUploader = uploadClientPhotoThroughServer
 ): Promise<RecoveredClientPhoto | null> {
   if (!isUnknownStorageError(error)) {
     return null;
@@ -150,6 +211,12 @@ export async function recoverOrRetryClientPhotoUpload(
     return await oneShotUploader(storage, path, file);
   } catch (oneShotError) {
     console.error('Client photo one-shot upload failed:', oneShotError);
+  }
+
+  try {
+    return await serverUploader(functions, path, file);
+  } catch (serverUploadError) {
+    console.error('Client photo server upload failed:', serverUploadError);
     return recoverClientPhotoUpload(functions, error, path);
   }
 }

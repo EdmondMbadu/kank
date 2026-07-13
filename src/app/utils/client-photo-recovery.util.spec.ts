@@ -3,6 +3,7 @@ import {
   isUnknownStorageError,
   recoverOrRetryClientPhotoUpload,
   recoverClientPhotoUpload,
+  uploadClientPhotoThroughServer,
 } from './client-photo-recovery.util';
 
 describe('client photo recovery', () => {
@@ -162,7 +163,81 @@ describe('client photo recovery', () => {
     expect(functions.httpsCallable).not.toHaveBeenCalled();
   });
 
-  it('checks the server again when the one-shot response also fails', async () => {
+  it('uploads through the callable channel when both Storage protocols fail', async () => {
+    const callable = jasmine
+      .createSpy('callable')
+      .and.returnValue(of({ exists: false }));
+    const functions = {
+      httpsCallable: jasmine
+        .createSpy('httpsCallable')
+        .and.returnValue(callable),
+    } as any;
+    const oneShotUploader = jasmine
+      .createSpy('oneShotUploader')
+      .and.rejectWith({ code: 'storage/unknown' });
+    const serverUploader = jasmine
+      .createSpy('serverUploader')
+      .and.resolveTo({
+        downloadURL: 'https://firebase.test/server-photo',
+        size: '2048',
+      });
+    const file = new File(['photo'], 'photo.jpg', { type: 'image/jpeg' });
+    spyOn(console, 'error');
+
+    const recovered = await recoverOrRetryClientPhotoUpload(
+      functions,
+      {} as any,
+      { code: 'storage/unknown' },
+      'clients-home/photo.jpg',
+      file,
+      oneShotUploader,
+      serverUploader
+    );
+
+    expect(serverUploader).toHaveBeenCalledWith(
+      functions,
+      'clients-home/photo.jpg',
+      file
+    );
+    expect(recovered).toEqual({
+      downloadURL: 'https://firebase.test/server-photo',
+      size: '2048',
+    });
+  });
+
+  it('sends exact image bytes and metadata through the server fallback', async () => {
+    const callable = jasmine.createSpy('callable').and.returnValue(
+      of({
+        downloadURL: 'https://firebase.test/server-photo',
+        size: '5',
+      })
+    );
+    const functions = {
+      httpsCallable: jasmine
+        .createSpy('httpsCallable')
+        .and.returnValue(callable),
+    } as any;
+
+    const uploaded = await uploadClientPhotoThroughServer(
+      functions,
+      'clients-avatar/photo.jpg',
+      new File(['photo'], 'photo.jpg', { type: 'image/jpeg' })
+    );
+
+    expect(functions.httpsCallable).toHaveBeenCalledWith(
+      'uploadClientPhotoFallback'
+    );
+    expect(callable).toHaveBeenCalledWith({
+      path: 'clients-avatar/photo.jpg',
+      contentType: 'image/jpeg',
+      contentBase64: btoa('photo'),
+    });
+    expect(uploaded.downloadURL).toBe(
+      'https://firebase.test/server-photo'
+    );
+  });
+
+  it('checks Storage once more when every upload response fails', async () => {
     const callable = jasmine
       .createSpy('callable')
       .and.returnValues(
@@ -181,6 +256,9 @@ describe('client photo recovery', () => {
     const oneShotUploader = jasmine
       .createSpy('oneShotUploader')
       .and.rejectWith({ code: 'storage/unknown' });
+    const serverUploader = jasmine
+      .createSpy('serverUploader')
+      .and.rejectWith(new Error('callable transport failed'));
     spyOn(console, 'error');
 
     const recovered = await recoverOrRetryClientPhotoUpload(
@@ -189,7 +267,8 @@ describe('client photo recovery', () => {
       { code: 'storage/unknown' },
       'clients-home/photo.jpg',
       new File(['photo'], 'photo.jpg', { type: 'image/jpeg' }),
-      oneShotUploader
+      oneShotUploader,
+      serverUploader
     );
 
     expect(callable).toHaveBeenCalledTimes(2);

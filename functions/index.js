@@ -3,6 +3,10 @@
 /* eslint-disable valid-jsdoc */
 /* eslint-disable max-len */
 const functions = require("firebase-functions");
+const {
+  HttpsError: HttpsErrorV2,
+  onCall: onCallV2,
+} = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const {randomUUID} = require("crypto");
 const AfricasTalking = require("africastalking");
@@ -11,8 +15,17 @@ const twilio = require("twilio");
 // Initialize Firebase Admin
 admin.initializeApp();
 
+// Gen 1 still exposes legacy Runtime Config. Gen 2 intentionally does not;
+// keep unrelated legacy functions readable without preventing Gen 2 startup.
+let legacyRuntimeConfig = {};
+try {
+  legacyRuntimeConfig = functions.config() || {};
+} catch (error) {
+  console.warn("Legacy Runtime Config is unavailable in this function runtime.");
+}
+
 // Retrieve Africa's Talking credentials from environment variables
-const atConfig = (functions.config() && functions.config().africastalking) || {};
+const atConfig = legacyRuntimeConfig.africastalking || {};
 const apiKey = atConfig.api_key || process.env.AFRICASTALKING_API_KEY || "";
 const username = atConfig.username || process.env.AFRICASTALKING_USERNAME || "";
 const db = admin.firestore();
@@ -90,6 +103,92 @@ exports.recoverClientPhotoUpload = functions.https.onCall(async (data, context) 
   };
 });
 
+exports.uploadClientPhotoFallback = onCallV2(
+    {
+      region: "us-central1",
+      timeoutSeconds: 120,
+      memory: "512MiB",
+      maxInstances: 10,
+    },
+    async (request) => {
+      if (!request.auth) {
+        throw new HttpsErrorV2(
+            "unauthenticated",
+            "Authentication is required to upload a client photo.",
+        );
+      }
+
+      const data = request.data || {};
+      const path = String(data.path || "").trim();
+      const contentType = String(data.contentType || "").trim().toLowerCase();
+      const contentBase64 = String(data.contentBase64 || "");
+      const allowedPath =
+        path.startsWith("clients-home/") || path.startsWith("clients-avatar/");
+
+      if (!allowedPath || path.length > 1024 || path.endsWith("/")) {
+        throw new HttpsErrorV2(
+            "invalid-argument",
+            "A valid client photo path is required.",
+        );
+      }
+      if (!/^image\/[a-z0-9.+-]+$/i.test(contentType)) {
+        throw new HttpsErrorV2(
+            "invalid-argument",
+            "A valid image content type is required.",
+        );
+      }
+      if (
+        !contentBase64 ||
+        contentBase64.length > 28000000 ||
+        !/^[a-z0-9+/]*={0,2}$/i.test(contentBase64)
+      ) {
+        throw new HttpsErrorV2(
+            "invalid-argument",
+            "The client photo data is invalid or too large.",
+        );
+      }
+
+      const photoBuffer = Buffer.from(contentBase64, "base64");
+      if (!photoBuffer.length || photoBuffer.length >= 20000000) {
+        throw new HttpsErrorV2(
+            "invalid-argument",
+            "The client photo must be smaller than 20 MB.",
+        );
+      }
+
+      const bucket = admin.storage().bucket();
+      const file = bucket.file(path);
+      const token = randomUUID();
+
+      await file.save(photoBuffer, {
+        resumable: false,
+        validation: "md5",
+        metadata: {
+          contentType,
+          metadata: {
+            firebaseStorageDownloadTokens: token,
+          },
+        },
+      });
+
+      const downloadURL =
+        `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket.name)}` +
+        `/o/${encodeURIComponent(path)}?alt=media&token=${encodeURIComponent(token)}`;
+
+      console.info("Uploaded client photo through authenticated fallback", {
+        path,
+        uid: request.auth.uid,
+        size: String(photoBuffer.length),
+        contentType,
+      });
+
+      return {
+        downloadURL,
+        size: String(photoBuffer.length),
+      };
+    },
+);
+
 // Initialize Africa's Talking SDK (deferred if credentials are missing in emulator)
 let sms = null;
 if (apiKey && username) {
@@ -115,7 +214,7 @@ const DEFAULT_BIRTHDAY_TEMPLATE = `{fullName},
 Mbotama elamu !
 Fondation Gervais azali kotombela yo bomoyi mulayi, nzoto makasi pe mapamboli ebele. Merci mingi po na confiance na Fondation Gervais. Toza pona kotombola misala nayo.`;
 
-const flexpayConfig = (functions.config() && functions.config().flexpay) || {};
+const flexpayConfig = legacyRuntimeConfig.flexpay || {};
 const FLEXPAY_MERCHANT =
   flexpayConfig.merchant || process.env.FLEXPAY_MERCHANT || "";
 const FLEXPAY_TOKEN = flexpayConfig.token || process.env.FLEXPAY_TOKEN || "";
@@ -4010,7 +4109,7 @@ exports.scheduleExpectedKinshasaProd = functions.pubsub
    WHATSAPP CHATBOT  –  Twilio + Firestore state-machine
    ═══════════════════════════════════════════════════════════════════════ */
 
-const twilioConfig = (functions.config() && functions.config().twilio) || {};
+const twilioConfig = legacyRuntimeConfig.twilio || {};
 const TWILIO_ACCOUNT_SID = twilioConfig.account_sid || process.env.TWILIO_ACCOUNT_SID || "";
 const TWILIO_AUTH_TOKEN = twilioConfig.auth_token || process.env.TWILIO_AUTH_TOKEN || "";
 const TWILIO_WHATSAPP_FROM = twilioConfig.whatsapp_from || process.env.TWILIO_WHATSAPP_FROM || "+18444357154";
