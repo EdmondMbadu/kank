@@ -1,4 +1,6 @@
 import {
+  buildClientPhotoDownloadUrl,
+  createClientPhotoDownloadToken,
   describeClientPhotoUploadError,
   isClientPhoto,
   isHeicClientPhoto,
@@ -41,5 +43,20 @@ describe('client photo upload utilities', () => {
     expect(result.code).toBe('storage/unauthenticated');
     expect(result.message).toContain('session');
     expect(result.stage).toBe('envoi');
+  });
+
+  it('builds a private Firebase media URL from a client-generated token', () => {
+    const token = createClientPhotoDownloadToken();
+    const url = buildClientPhotoDownloadUrl(
+      'kank-test.appspot.com',
+      'clients-home/Marie Kanku/photo.png',
+      token
+    );
+
+    expect(token).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    );
+    expect(url).toContain('clients-home%2FMarie%20Kanku%2Fphoto.png');
+    expect(url).toContain(`token=${token}`);
   });
 });

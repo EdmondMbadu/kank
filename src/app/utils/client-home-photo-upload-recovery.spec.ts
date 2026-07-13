@@ -7,7 +7,6 @@ describe('client home photo upload recovery', () => {
     type: 'image/png',
   });
   const files = { item: () => file } as unknown as FileList;
-  const downloadURL = 'https://example.com/confirmed-phone-photo.png';
 
   function storageThatFinalizesThenReportsUnknown() {
     return {
@@ -16,9 +15,7 @@ describe('client home photo upload recovery', () => {
         .and.returnValue(Promise.reject({ code: 'storage/unknown' })),
       storage: {
         ref: jasmine.createSpy('ref').and.returnValue({
-          getDownloadURL: jasmine
-            .createSpy('getDownloadURL')
-            .and.returnValue(Promise.resolve(downloadURL)),
+          bucket: 'kank-test.appspot.com',
         }),
       },
     };
@@ -43,7 +40,15 @@ describe('client home photo upload recovery', () => {
 
     await component.startHomePictureUpload(files);
 
-    expect(component.homePictureAvatar.downloadURL).toBe(downloadURL);
+    const uploadMetadata = storage.upload.calls.mostRecent().args[2];
+    const downloadToken =
+      uploadMetadata.customMetadata.firebaseStorageDownloadTokens;
+    expect(component.homePictureAvatar.downloadURL).toContain(
+      'kank-test.appspot.com'
+    );
+    expect(component.homePictureAvatar.downloadURL).toContain(
+      encodeURIComponent(downloadToken)
+    );
     expect(component.homePictureAvatar.size).toBe(String(file.size));
     expect(component.homePictureUploadError).toBe('');
     expect(window.alert).not.toHaveBeenCalled();
@@ -72,7 +77,15 @@ describe('client home photo upload recovery', () => {
 
     await component.startHomePictureUpload(files);
 
-    expect(component.client.homePicture?.downloadURL).toBe(downloadURL);
+    const uploadMetadata = storage.upload.calls.mostRecent().args[2];
+    const downloadToken =
+      uploadMetadata.customMetadata.firebaseStorageDownloadTokens;
+    expect(component.client.homePicture?.downloadURL).toContain(
+      'kank-test.appspot.com'
+    );
+    expect(component.client.homePicture?.downloadURL).toContain(
+      encodeURIComponent(downloadToken)
+    );
     expect(component.client.homePicture?.size).toBe(String(file.size));
     expect(component.homePictureUploadError).toBe('');
     expect(window.alert).not.toHaveBeenCalled();
