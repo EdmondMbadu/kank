@@ -10,6 +10,7 @@ import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
+import { recoverClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 import { __generator } from 'tslib';
@@ -537,10 +538,11 @@ export class NewCycleRegisterComponent implements OnInit {
     const localPreviewUrl = URL.createObjectURL(file);
     this.homePictureUrl = localPreviewUrl;
     this.homePictureUploading = true;
+    const uniqueSuffix = Date.now();
+    const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
+    const previousPictureUrl = this.client?.homePicture?.downloadURL || '';
 
     try {
-      const uniqueSuffix = Date.now();
-      const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
       const uploadTask = await this.storage.upload(path, file);
       const downloadURL = await uploadTask.ref.getDownloadURL();
       this.homePictureUrl = downloadURL;
@@ -549,11 +551,23 @@ export class NewCycleRegisterComponent implements OnInit {
         downloadURL,
         size: uploadTask.totalBytes.toString(),
       };
-      URL.revokeObjectURL(localPreviewUrl);
     } catch (error) {
       console.error('Error uploading home picture:', error);
-      alert("Impossible de charger la photo de la maison. Réessayez.");
+      const recovered = await recoverClientPhotoUpload(this.fns, error, path);
+
+      if (recovered) {
+        this.homePictureUrl = recovered.downloadURL;
+        this.client.homePicture = {
+          path,
+          downloadURL: recovered.downloadURL,
+          size: recovered.size || file.size.toString(),
+        };
+      } else {
+        this.homePictureUrl = previousPictureUrl;
+        alert("Impossible de charger la photo de la maison. Réessayez.");
+      }
     } finally {
+      URL.revokeObjectURL(localPreviewUrl);
       this.homePictureUploading = false;
     }
   }

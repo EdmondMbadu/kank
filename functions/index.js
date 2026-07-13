@@ -4,6 +4,7 @@
 /* eslint-disable max-len */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const {randomUUID} = require("crypto");
 const AfricasTalking = require("africastalking");
 const twilio = require("twilio");
 
@@ -15,6 +16,72 @@ const atConfig = (functions.config() && functions.config().africastalking) || {}
 const apiKey = atConfig.api_key || process.env.AFRICASTALKING_API_KEY || "";
 const username = atConfig.username || process.env.AFRICASTALKING_USERNAME || "";
 const db = admin.firestore();
+
+exports.recoverClientPhotoUpload = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication is required to recover a photo upload.",
+    );
+  }
+
+  const path = String((data && data.path) || "").trim();
+  const allowedPath =
+    path.startsWith("clients-home/") || path.startsWith("clients-avatar/");
+
+  if (!allowedPath || path.length > 1024 || path.endsWith("/")) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "A valid client photo path is required.",
+    );
+  }
+
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(path);
+  const [exists] = await file.exists();
+
+  if (!exists) {
+    console.warn("Client photo recovery could not find the object", {
+      path,
+      uid: context.auth.uid,
+    });
+    return {exists: false};
+  }
+
+  let [metadata] = await file.getMetadata();
+  const customMetadata = metadata.metadata || {};
+  let token = String(customMetadata.firebaseStorageDownloadTokens || "")
+      .split(",")
+      .map((value) => value.trim())
+      .find(Boolean);
+
+  if (!token) {
+    token = randomUUID();
+    [metadata] = await file.setMetadata({
+      metadata: {
+        ...customMetadata,
+        firebaseStorageDownloadTokens: token,
+      },
+    });
+  }
+
+  const downloadURL =
+    `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket.name)}` +
+    `/o/${encodeURIComponent(path)}?alt=media&token=${encodeURIComponent(token)}`;
+
+  console.info("Recovered completed client photo upload", {
+    path,
+    uid: context.auth.uid,
+    size: metadata.size || "0",
+    contentType: metadata.contentType || "",
+  });
+
+  return {
+    exists: true,
+    downloadURL,
+    size: String(metadata.size || "0"),
+  };
+});
 
 // Initialize Africa's Talking SDK (deferred if credentials are missing in emulator)
 let sms = null;

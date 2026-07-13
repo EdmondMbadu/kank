@@ -8,6 +8,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { DataService } from 'src/app/services/data.service';
 import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
+import { recoverClientPhotoUpload } from 'src/app/utils/client-photo-recovery.util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 
 @Component({
@@ -604,10 +605,10 @@ export class RegisterClientComponent implements OnInit {
     this.homePictureUrl = localPreviewUrl;
     this.homePictureAvatar = null;
     this.homePictureUploading = true;
+    const uniqueSuffix = Date.now();
+    const path = `clients-home/${this.firstName}-${this.middleName}-${this.lastName}-${uniqueSuffix}`;
 
     try {
-      const uniqueSuffix = Date.now();
-      const path = `clients-home/${this.firstName}-${this.middleName}-${this.lastName}-${uniqueSuffix}`;
       const uploadTask = await this.storage.upload(path, file);
       const downloadURL = await uploadTask.ref.getDownloadURL();
       this.homePictureUrl = downloadURL;
@@ -616,11 +617,24 @@ export class RegisterClientComponent implements OnInit {
         downloadURL,
         size: uploadTask.totalBytes.toString(),
       };
-      URL.revokeObjectURL(localPreviewUrl);
     } catch (error) {
       console.error('Error uploading home picture:', error);
-      alert("Impossible de charger la photo de la maison. Réessayez.");
+      const recovered = await recoverClientPhotoUpload(this.fns, error, path);
+
+      if (recovered) {
+        this.homePictureUrl = recovered.downloadURL;
+        this.homePictureAvatar = {
+          path,
+          downloadURL: recovered.downloadURL,
+          size: recovered.size || file.size.toString(),
+        };
+      } else {
+        this.homePictureUrl = '';
+        this.homePictureAvatar = null;
+        alert("Impossible de charger la photo de la maison. Réessayez.");
+      }
     } finally {
+      URL.revokeObjectURL(localPreviewUrl);
       this.homePictureUploading = false;
     }
   }
@@ -644,22 +658,44 @@ export class RegisterClientComponent implements OnInit {
     // 👇 Add a unique suffix
     const uniqueSuffix = Date.now(); // or you can use uuidv4() if you import uuid
     const path = `clients-avatar/${this.firstName}-${this.middleName}-${this.lastName}-${uniqueSuffix}`;
+    const localPreviewUrl = URL.createObjectURL(file);
+    this.url = localPreviewUrl;
 
     // the main task
     console.log('the path', path);
 
-    // this.task = await this.storage.upload(path, file);
-    const uploadTask = await this.storage.upload(path, file);
-    this.url = await uploadTask.ref.getDownloadURL();
-    uploadTask.totalBytes;
-    // console.log('the download url', this.url);
-    const avatar = {
-      path: path,
-      downloadURL: this.url,
-      size: uploadTask.totalBytes.toString(),
-    };
+    try {
+      // this.task = await this.storage.upload(path, file);
+      const uploadTask = await this.storage.upload(path, file);
+      this.url = await uploadTask.ref.getDownloadURL();
+      uploadTask.totalBytes;
+      // console.log('the download url', this.url);
+      const avatar = {
+        path: path,
+        downloadURL: this.url,
+        size: uploadTask.totalBytes.toString(),
+      };
 
-    this.avatar = avatar;
+      this.avatar = avatar;
+    } catch (error) {
+      console.error('Error uploading client profile picture:', error);
+      const recovered = await recoverClientPhotoUpload(this.fns, error, path);
+
+      if (recovered) {
+        this.url = recovered.downloadURL;
+        this.avatar = {
+          path,
+          downloadURL: recovered.downloadURL,
+          size: recovered.size || file.size.toString(),
+        };
+      } else {
+        this.url = '';
+        this.avatar = null;
+        alert('Impossible de charger la photo du profil. Réessayez.');
+      }
+    } finally {
+      URL.revokeObjectURL(localPreviewUrl);
+    }
     // try {
     // await this.data.updateClientPictureData(this.client, avatar);
     // } catch (error) {
