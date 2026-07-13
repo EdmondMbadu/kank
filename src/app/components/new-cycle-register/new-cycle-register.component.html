@@ -211,7 +211,13 @@
                   *ngIf="homePictureUploading"
                   class="mt-2 text-center text-xs font-semibold text-emerald-700"
                 >
-                  Aperçu affiché. Finalisation du chargement...
+                  Chargement sécurisé de la photo vers Firebase...
+                </p>
+                <p
+                  *ngIf="homePictureUploadError"
+                  class="mt-2 text-center text-xs font-semibold text-red-700"
+                >
+                  {{ homePictureUploadError }}
                 </p>
               </div>
 

@@ -29,34 +29,37 @@ export function isHeicClientPhoto(file: File): boolean {
   );
 }
 
-/**
- * Convert iPhone HEIC/HEIF photos to JPEG so Firebase metadata and previews
- * behave consistently across iOS, Android, and desktop browsers.
- */
-export async function prepareClientPhotoForUpload(file: File): Promise<File> {
-  if (!isHeicClientPhoto(file)) {
-    return file;
-  }
+export interface ClientPhotoUploadError {
+  code: string;
+  message: string;
+}
 
-  try {
-    const heic2any = (await import('heic2any')).default;
-    const converted = await heic2any({
-      blob: file,
-      toType: 'image/jpeg',
-      quality: 0.85,
-    });
-    const convertedBlob = Array.isArray(converted) ? converted[0] : converted;
-    const originalName = file.name || 'photo-maison.heic';
-    const jpegName = originalName.replace(/\.(heic|heif)$/i, '') + '.jpg';
+/** Return a useful phone-visible error instead of hiding Firebase's error code. */
+export function describeClientPhotoUploadError(
+  error: unknown
+): ClientPhotoUploadError {
+  const candidate = error as { code?: unknown; message?: unknown } | null;
+  const code =
+    typeof candidate?.code === 'string' ? candidate.code : 'storage/unknown';
 
-    return new File([convertedBlob], jpegName, {
-      type: 'image/jpeg',
-      lastModified: file.lastModified,
-    });
-  } catch (error) {
-    // Some Safari versions already handle HEIC but cannot run heic2any.
-    // Uploading the original still lets registration finish on those phones.
-    console.warn('HEIC conversion unavailable; uploading original photo.', error);
-    return file;
-  }
+  const messages: Record<string, string> = {
+    'storage/unauthenticated':
+      'Votre session a expiré. Reconnectez-vous, puis réessayez.',
+    'storage/unauthorized':
+      "Votre session n'autorise pas ce chargement. Reconnectez-vous, puis réessayez.",
+    'storage/retry-limit-exceeded':
+      'La connexion est trop lente ou instable. Vérifiez Internet, puis réessayez.',
+    'storage/quota-exceeded':
+      "L'espace de stockage Firebase n'est pas disponible actuellement.",
+    'storage/canceled': 'Le chargement de la photo a été annulé.',
+    'auth/network-request-failed':
+      'Impossible de vérifier votre session à cause de la connexion Internet.',
+  };
+
+  return {
+    code,
+    message:
+      messages[code] ||
+      "Firebase n'a pas pu charger cette photo. Réessayez avec une connexion stable.",
+  };
 }

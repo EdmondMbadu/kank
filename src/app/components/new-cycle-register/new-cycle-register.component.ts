@@ -13,9 +13,9 @@ import { ComputationService } from 'src/app/shrink/services/computation.service'
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 import {
+  describeClientPhotoUploadError,
   isClientPhoto,
   MAX_CLIENT_PHOTO_BYTES,
-  prepareClientPhotoForUpload,
 } from 'src/app/utils/client-photo-upload.util';
 import { __generator } from 'tslib';
 @Component({
@@ -73,6 +73,7 @@ export class NewCycleRegisterComponent implements OnInit {
   newReferencePhone: string = '';
   homePictureUrl: string = '';
   homePictureUploading: boolean = false;
+  homePictureUploadError: string = '';
 
   /** Normalize text so “  Élodie ” === “elodie” */
   private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
@@ -544,22 +545,17 @@ export class NewCycleRegisterComponent implements OnInit {
     }
 
     this.homePictureUploading = true;
-    let localPreviewUrl = '';
+    this.homePictureUploadError = '';
 
     try {
-      const fileToUpload = await prepareClientPhotoForUpload(file);
-      if (fileToUpload.size >= MAX_CLIENT_PHOTO_BYTES) {
-        alert("L'image convertie est trop grande. La taille maximale est de 20 MB.");
-        return;
+      const hasFreshSession = await this.auth.refreshFirebaseSession();
+      if (!hasFreshSession) {
+        throw { code: 'storage/unauthenticated' };
       }
 
-      localPreviewUrl = URL.createObjectURL(fileToUpload);
-      this.homePictureUrl = localPreviewUrl;
       const uniqueSuffix = Date.now();
       const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
-      const uploadTask = await this.storage.upload(path, fileToUpload, {
-        contentType: fileToUpload.type || 'image/jpeg',
-      });
+      const uploadTask = await this.storage.upload(path, file);
       const downloadURL = await uploadTask.ref.getDownloadURL();
       this.homePictureUrl = downloadURL;
       this.client.homePicture = {
@@ -569,14 +565,11 @@ export class NewCycleRegisterComponent implements OnInit {
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
+      const uploadError = describeClientPhotoUploadError(error);
       this.homePictureUrl = this.client?.homePicture?.downloadURL || '';
-      alert(
-        "Impossible de charger cette photo. Essayez une autre image ou prenez une nouvelle photo."
-      );
+      this.homePictureUploadError = `${uploadError.message} (${uploadError.code})`;
+      alert(this.homePictureUploadError);
     } finally {
-      if (localPreviewUrl) {
-        URL.revokeObjectURL(localPreviewUrl);
-      }
       this.homePictureUploading = false;
       this.resetHomePictureInputs();
     }

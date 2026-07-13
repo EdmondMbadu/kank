@@ -10,9 +10,9 @@ import { PerformanceService } from 'src/app/services/performance.service';
 import { TimeService } from 'src/app/services/time.service';
 import { coerceToNumber } from 'src/app/utils/number-utils';
 import {
+  describeClientPhotoUploadError,
   isClientPhoto,
   MAX_CLIENT_PHOTO_BYTES,
-  prepareClientPhotoForUpload,
 } from 'src/app/utils/client-photo-upload.util';
 
 @Component({
@@ -127,6 +127,7 @@ export class RegisterClientComponent implements OnInit {
   homePictureUrl: string = '';
   homePictureAvatar: any;
   homePictureUploading: boolean = false;
+  homePictureUploadError: string = '';
   /** ---------- 1.  DUPLICATE‑NAME HELPERS  ---------- */
   private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
 
@@ -611,22 +612,17 @@ export class RegisterClientComponent implements OnInit {
 
     this.homePictureAvatar = null;
     this.homePictureUploading = true;
-    let localPreviewUrl = '';
+    this.homePictureUploadError = '';
 
     try {
-      const fileToUpload = await prepareClientPhotoForUpload(file);
-      if (fileToUpload.size >= MAX_CLIENT_PHOTO_BYTES) {
-        alert("L'image convertie est trop grande. La taille maximale est de 20 MB.");
-        return;
+      const hasFreshSession = await this.auth.refreshFirebaseSession();
+      if (!hasFreshSession) {
+        throw { code: 'storage/unauthenticated' };
       }
 
-      localPreviewUrl = URL.createObjectURL(fileToUpload);
-      this.homePictureUrl = localPreviewUrl;
       const uniqueSuffix = Date.now();
       const path = `clients-home/${this.firstName}-${this.middleName}-${this.lastName}-${uniqueSuffix}`;
-      const uploadTask = await this.storage.upload(path, fileToUpload, {
-        contentType: fileToUpload.type || 'image/jpeg',
-      });
+      const uploadTask = await this.storage.upload(path, file);
       const downloadURL = await uploadTask.ref.getDownloadURL();
       this.homePictureUrl = downloadURL;
       this.homePictureAvatar = {
@@ -636,15 +632,12 @@ export class RegisterClientComponent implements OnInit {
       };
     } catch (error) {
       console.error('Error uploading home picture:', error);
+      const uploadError = describeClientPhotoUploadError(error);
       this.homePictureUrl = '';
       this.homePictureAvatar = null;
-      alert(
-        "Impossible de charger cette photo. Essayez une autre image ou prenez une nouvelle photo."
-      );
+      this.homePictureUploadError = `${uploadError.message} (${uploadError.code})`;
+      alert(this.homePictureUploadError);
     } finally {
-      if (localPreviewUrl) {
-        URL.revokeObjectURL(localPreviewUrl);
-      }
       this.homePictureUploading = false;
       this.resetHomePictureInputs();
     }

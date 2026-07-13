@@ -1,7 +1,7 @@
 import {
+  describeClientPhotoUploadError,
   isClientPhoto,
   isHeicClientPhoto,
-  prepareClientPhotoForUpload,
 } from './client-photo-upload.util';
 
 describe('client photo upload utilities', () => {
@@ -33,9 +33,12 @@ describe('client photo upload utilities', () => {
     expect(isClientPhoto(document)).toBeFalse();
   });
 
-  it('leaves a normal image unchanged', async () => {
-    const photo = new File(['photo'], 'maison.webp', { type: 'image/webp' });
+  it('exposes an authentication failure with an actionable message', () => {
+    const result = describeClientPhotoUploadError({
+      code: 'storage/unauthenticated',
+    });
 
-    expect(await prepareClientPhotoForUpload(photo)).toBe(photo);
+    expect(result.code).toBe('storage/unauthenticated');
+    expect(result.message).toContain('session');
   });
 });
