@@ -347,7 +347,6 @@ export class AuthService {
       this.currentUser = user;
     });
   }
-
   // auth.service.ts
   SignOn(email: string, password: string, word: string): Promise<void> {
     return this.fireauth // ← on retourne la promesse

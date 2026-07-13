@@ -12,11 +12,6 @@ import { TimeService } from 'src/app/services/time.service';
 import { ComputationService } from 'src/app/shrink/services/computation.service';
 import { toAppDate, toAppDateFull } from 'src/app/utils/date-util';
 import { coerceToNumber } from 'src/app/utils/number-utils';
-import {
-  describeClientPhotoUploadError,
-  isClientPhoto,
-  MAX_CLIENT_PHOTO_BYTES,
-} from 'src/app/utils/client-photo-upload.util';
 import { __generator } from 'tslib';
 @Component({
   selector: 'app-new-cycle-register',
@@ -73,7 +68,6 @@ export class NewCycleRegisterComponent implements OnInit {
   newReferencePhone: string = '';
   homePictureUrl: string = '';
   homePictureUploading: boolean = false;
-  homePictureUploadError: string = '';
 
   /** Normalize text so “  Élodie ” === “elodie” */
   private norm = (s: string | undefined) => (s ?? '').trim().toLowerCase();
@@ -526,37 +520,28 @@ export class NewCycleRegisterComponent implements OnInit {
     return `N° ${this.client.homeNumber?.trim()}, Av. ${this.client.homeAvenue?.trim()}, Q/${this.client.homeQuartier?.trim()}, C/${this.client.homeCommune?.trim()}, Kinshasa`;
   }
 
-  async startHomePictureUpload(event: FileList | null) {
+  async startHomePictureUpload(event: FileList) {
     const file = event?.item(0);
 
-    if (!file) {
+    if (file?.type.split('/')[0] !== 'image') {
+      console.log('unsupported file type');
+      return;
+    }
+    if (file?.size >= 20000000) {
+      alert(
+        "L'image est trop grande. La Taille maximale du fichier est de 10MB"
+      );
       return;
     }
 
-    if (!isClientPhoto(file)) {
-      alert('Veuillez choisir un fichier image valide.');
-      this.resetHomePictureInputs();
-      return;
-    }
-    if (file.size >= MAX_CLIENT_PHOTO_BYTES) {
-      alert("L'image est trop grande. La taille maximale est de 20 MB.");
-      this.resetHomePictureInputs();
-      return;
-    }
-
-    this.homePictureUploading = true;
-    this.homePictureUploadError = '';
-    let uploadStage = 'préparation';
-    const uniqueSuffix = Date.now();
-    const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
-    const previousPictureUrl = this.client?.homePicture?.downloadURL || '';
     const localPreviewUrl = URL.createObjectURL(file);
     this.homePictureUrl = localPreviewUrl;
+    this.homePictureUploading = true;
 
     try {
-      uploadStage = 'envoi vers Firebase Storage';
+      const uniqueSuffix = Date.now();
+      const path = `clients-home/${this.client.firstName}-${this.client.middleName}-${this.client.lastName}-${uniqueSuffix}`;
       const uploadTask = await this.storage.upload(path, file);
-      uploadStage = 'lecture du lien Firebase';
       const downloadURL = await uploadTask.ref.getDownloadURL();
       this.homePictureUrl = downloadURL;
       this.client.homePicture = {
@@ -564,26 +549,13 @@ export class NewCycleRegisterComponent implements OnInit {
         downloadURL,
         size: uploadTask.totalBytes.toString(),
       };
+      URL.revokeObjectURL(localPreviewUrl);
     } catch (error) {
       console.error('Error uploading home picture:', error);
-      const uploadError = describeClientPhotoUploadError(error, uploadStage);
-      this.homePictureUrl = previousPictureUrl;
-      this.homePictureUploadError = `${uploadError.message} Étape: ${uploadError.stage}. Code: ${uploadError.code}. Détail: ${uploadError.detail}`;
-      alert(this.homePictureUploadError);
+      alert("Impossible de charger la photo de la maison. Réessayez.");
     } finally {
-      URL.revokeObjectURL(localPreviewUrl);
       this.homePictureUploading = false;
-      this.resetHomePictureInputs();
     }
-  }
-
-  private resetHomePictureInputs(): void {
-    ['putHomePicture', 'changeHomePicture'].forEach((id) => {
-      const input = document.getElementById(id) as HTMLInputElement | null;
-      if (input) {
-        input.value = '';
-      }
-    });
   }
   sendMyVerificationCode() {
     const { phoneNumber, uid } = this.client;

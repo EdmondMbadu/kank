@@ -169,12 +169,14 @@
                 <input
                   type="file"
                   id="putHomePicture"
+                  accept="image/*"
                   class="hidden"
                   (change)="startHomePictureUpload($any($event.target).files)"
                 />
                 <input
                   type="file"
                   id="changeHomePicture"
+                  accept="image/*"
                   class="hidden"
                   (change)="startHomePictureUpload($any($event.target).files)"
                 />
@@ -206,10 +208,10 @@
                   {{ homePictureUploading ? 'Chargement...' : (homePictureUrl ? 'Changer la photo' : 'Ajouter la photo') }}
                 </button>
                 <p
-                  *ngIf="homePictureUploadError"
-                  class="mt-2 text-center text-xs font-semibold text-red-700"
+                  *ngIf="homePictureUploading"
+                  class="mt-2 text-center text-xs font-semibold text-emerald-700"
                 >
-                  {{ homePictureUploadError }}
+                  Aperçu affiché. Finalisation du chargement...
                 </p>
               </div>
 
@@ -612,10 +614,9 @@
           </a>
           <button
             class="cycle-danger-button"
-            [disabled]="homePictureUploading"
             (click)="registerClientNewDebtCycle()"
           >
-            {{ homePictureUploading ? 'Chargement de la photo...' : 'Soumettre' }}
+            Soumettre
           </button>
         </div>
       </div>

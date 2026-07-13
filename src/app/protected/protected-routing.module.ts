@@ -182,16 +182,8 @@ const routes: Routes = [
     data: { filter: 'finished' },
   },
   { path: 'new-client', component: NewClientComponent },
-  {
-    path: 'register-client',
-    component: RegisterClientComponent,
-    canActivate: [AuthGuard],
-  },
-  {
-    path: 'new-cycle-register/:id',
-    component: NewCycleRegisterComponent,
-    canActivate: [AuthGuard],
-  },
+  { path: 'register-client', component: RegisterClientComponent },
+  { path: 'new-cycle-register/:id', component: NewCycleRegisterComponent },
   { path: 'new-card', component: NewCardComponent },
   { path: 'client-portal/:id', component: ClientPortalComponent },
   {
