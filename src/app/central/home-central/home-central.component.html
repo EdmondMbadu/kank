@@ -545,23 +545,25 @@
               </div>
             </div>
 
-            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-white/75 px-3 py-2 text-xs dark:bg-slate-900/60">
-              <span class="font-semibold text-slate-900 dark:text-slate-100">
+            <button
+              type="button"
+              class="mt-2 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white/80 px-3 py-1.5 text-xs text-slate-600 transition hover:border-indigo-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-indigo-900 dark:bg-slate-900/60 dark:text-slate-300"
+              (click)="openBirthdayHistorySummaryModal()"
+              aria-label="Ouvrir le résumé mensuel des anniversaires"
+            >
+              <svg class="h-3.5 w-3.5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 11h18" />
+              </svg>
+              <span class="font-semibold capitalize text-slate-800 dark:text-slate-100">
                 {{ birthdayHistoryMonthLabel }}
               </span>
-              <span class="text-slate-500 dark:text-slate-400">
-                {{ birthdayHistoryDaySummaries.length }} jour(s)
-              </span>
+              <span class="text-slate-300 dark:text-slate-600">·</span>
               <span class="font-semibold text-emerald-700 dark:text-emerald-300">
                 {{ birthdayHistoryMonthSummary.succeeded | number : "1.0-0" }} envoyé(s)
               </span>
-              <span
-                *ngIf="birthdayHistoryMonthSummary.failed"
-                class="font-semibold text-rose-600 dark:text-rose-300"
-              >
-                {{ birthdayHistoryMonthSummary.failed | number : "1.0-0" }} échec(s)
-              </span>
-            </div>
+              <span class="text-indigo-500" aria-hidden="true">›</span>
+            </button>
 
             <p
               *ngIf="birthdayHistoryLoading"
@@ -610,18 +612,21 @@
                   *ngIf="day.recipients.length"
                   class="mt-2 flex flex-wrap gap-1.5"
                 >
-                  <span
+                  <button
                     *ngFor="let recipient of day.recipients"
-                    class="rounded-full border bg-white px-2.5 py-1 text-[11px] dark:bg-slate-900"
+                    type="button"
+                    class="cursor-pointer rounded-full border bg-white px-2.5 py-1 text-left text-[11px] transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:bg-slate-900 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200"
                     [class.border-rose-200]="recipient.status === 'failed'"
                     [class.text-rose-700]="recipient.status === 'failed'"
                     [class.border-slate-200]="recipient.status !== 'failed'"
                     [class.text-slate-700]="recipient.status !== 'failed'"
+                    (click)="openBirthdayHistoryRecipient(recipient)"
+                    [attr.title]="'Ouvrir la fiche de ' + recipient.name"
                   >
                     <span class="font-semibold">{{ recipient.name }}</span>
                     <span class="text-slate-400"> · {{ recipient.locationName }}</span>
                     <span *ngIf="recipient.status === 'failed'"> · échec</span>
-                  </span>
+                  </button>
                 </div>
 
                 <p
@@ -2992,6 +2997,88 @@
   </div>
   </details>
 </section>
+
+<!-- ==== BIRTHDAY MONTH SUMMARY MODAL ==== -->
+<div
+  *ngIf="birthdayHistorySummaryModalOpen"
+  class="fixed inset-0 z-50 flex items-center justify-center px-4"
+  aria-modal="true"
+  role="dialog"
+  aria-labelledby="birthday-history-summary-title"
+>
+  <div
+    class="absolute inset-0 bg-slate-950/50"
+    (click)="closeBirthdayHistorySummaryModal()"
+  ></div>
+  <div
+    class="relative z-10 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl dark:bg-slate-900"
+  >
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-500">
+          Résumé du mois
+        </p>
+        <h3
+          id="birthday-history-summary-title"
+          class="mt-1 text-lg font-semibold capitalize text-slate-900 dark:text-slate-100"
+        >
+          {{ birthdayHistoryMonthLabel }}
+        </h3>
+      </div>
+      <button
+        type="button"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+        (click)="closeBirthdayHistorySummaryModal()"
+        aria-label="Fermer le résumé mensuel"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="mt-4 grid grid-cols-2 gap-2">
+      <div class="rounded-xl bg-indigo-50 p-3 dark:bg-indigo-950/30">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-500">
+          Jours avec envoi
+        </p>
+        <p class="mt-1 text-xl font-semibold text-indigo-700 dark:text-indigo-200">
+          {{ birthdayHistoryDaySummaries.length }}
+        </p>
+      </div>
+      <div class="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">
+          Envoyés
+        </p>
+        <p class="mt-1 text-xl font-semibold text-emerald-700 dark:text-emerald-200">
+          {{ birthdayHistoryMonthSummary.succeeded | number : "1.0-0" }}
+        </p>
+      </div>
+      <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/70">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+          Destinataires
+        </p>
+        <p class="mt-1 text-xl font-semibold text-slate-800 dark:text-slate-100">
+          {{ birthdayHistoryMonthSummary.total | number : "1.0-0" }}
+        </p>
+      </div>
+      <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/30">
+        <p class="text-[10px] font-semibold uppercase tracking-wide text-rose-500">
+          Échecs
+        </p>
+        <p class="mt-1 text-xl font-semibold text-rose-700 dark:text-rose-200">
+          {{ birthdayHistoryMonthSummary.failed | number : "1.0-0" }}
+        </p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="mt-4 w-full rounded-full bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+      (click)="closeBirthdayHistorySummaryModal()"
+    >
+      Fermer
+    </button>
+  </div>
+</div>
 
 <!-- ==== BIRTHDAY AUTOMATION MESSAGE MODAL ==== -->
 <div

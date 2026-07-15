@@ -69,6 +69,7 @@ type BulkMessageRecipientEntry = {
   locationName?: string | null;
   status?: 'sent' | 'failed';
   inferred?: boolean;
+  client?: Client;
 };
 
 type TrophyMissingGroup = {
@@ -329,6 +330,7 @@ export class HomeCentralComponent implements OnInit, OnDestroy {
   birthdayHistoryLoading = false;
   birthdayHistoryError: string | null = null;
   birthdayHistoryWarning: string | null = null;
+  birthdayHistorySummaryModalOpen = false;
   birthdayAutomationDebtModes: BirthdayAutomationDebtMode[] = [
     'all',
     'withDebt',
@@ -5218,7 +5220,10 @@ Merci pona confiance na FONDATION GERVAIS.`;
     log: BulkMessageLog
   ): BulkMessageRecipientEntry[] {
     if (log.resolvedRecipientEntries.length) {
-      return log.resolvedRecipientEntries;
+      return log.resolvedRecipientEntries.map((recipient) => ({
+        ...recipient,
+        client: this.findBirthdayHistoryClient(recipient) || undefined,
+      }));
     }
 
     const target = this.birthdayTargetForHistoryLog(log);
@@ -5245,6 +5250,7 @@ Merci pona confiance na FONDATION GERVAIS.`;
               name: this.clientFullName(client) || 'Client',
               locationName: location.name,
               inferred: true,
+              client,
             })
           );
       });
@@ -5254,11 +5260,46 @@ Merci pona confiance na FONDATION GERVAIS.`;
           name: this.clientFullName(client) || 'Client',
           locationName: client.locationName || 'Sans localisation',
           inferred: true,
+          client,
         })
       );
     }
 
     return inferred;
+  }
+
+  private findBirthdayHistoryClient(
+    recipient: BulkMessageRecipientEntry
+  ): Client | null {
+    const normalize = (value?: string | null) =>
+      String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .toLocaleLowerCase();
+    const recipientName = normalize(recipient.name);
+    const recipientLocation = normalize(recipient.locationName);
+    const clients = this.allClients || [];
+    const matches = clients.filter(
+      (client) =>
+        normalize(this.clientFullName(client)) === recipientName &&
+        normalize(client.locationName || 'Sans localisation') ===
+          recipientLocation
+    );
+    if (matches.length === 1) return matches[0];
+
+    const nameMatches = clients.filter(
+      (client) => normalize(this.clientFullName(client)) === recipientName
+    );
+    return nameMatches.length === 1 ? nameMatches[0] : null;
+  }
+
+  openBirthdayHistoryRecipient(recipient: BulkMessageRecipientEntry): void {
+    const client = recipient.client || this.findBirthdayHistoryClient(recipient);
+    if (client) {
+      this.openClientModal(client);
+    }
   }
 
   private birthdayTargetForHistoryLog(
@@ -5317,7 +5358,16 @@ Merci pona confiance na FONDATION GERVAIS.`;
     }
 
     this.birthdayHistoryMonth = value;
+    this.birthdayHistorySummaryModalOpen = false;
     this.listenToBirthdayHistoryLogsForMonth();
+  }
+
+  openBirthdayHistorySummaryModal(): void {
+    this.birthdayHistorySummaryModalOpen = true;
+  }
+
+  closeBirthdayHistorySummaryModal(): void {
+    this.birthdayHistorySummaryModalOpen = false;
   }
 
   get visibleScheduledBulkMessages(): ScheduledBulkMessage[] {
